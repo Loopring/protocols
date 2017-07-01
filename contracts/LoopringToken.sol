@@ -1,6 +1,5 @@
 pragma solidity ^0.4.11;
 
-
 import "./StandardToken.sol";
 
 contract LoopringToken is StandardToken {
@@ -15,11 +14,8 @@ contract LoopringToken is StandardToken {
   uint public constant targetBlocksHeight = 5082 * 30; // 30 days.
   uint public constant ethGoalPerPhase = 20000;
   address public target = 0xaea169db31cdd2375bafc08fdb2b56e437edafc6;
- /* address public target = 0x5B6b68eeC6836cC7017Ba3f39CD022Ca4c377c90; */
   uint public firstblock = 0;
   uint public deadlineSecs = 0;
-  /* uint public ethAmountRaised = 0; */
-  /* uint public loopringTokenAmountSaled = 0; */
   bool public isTokensSendedToTarget = false;
   
   Funder[] public funders;
@@ -154,6 +150,10 @@ contract LoopringToken is StandardToken {
     transfer(target, tokenAmount);
   }
 
+  function destroy() payable isOwner afterEnd {
+    suicide(target);
+  }
+
   function computeTokenAmount(uint ethAmount) constant returns (uint result) {
     uint ethBalance = target.balance;
     uint quotBefore = ethBalance / ethGoalPerPhase;
@@ -171,7 +171,6 @@ contract LoopringToken is StandardToken {
   }
 
   function checkSaleEnded() constant returns (bool result) {
-    //if (now >= deadlineSecs) return true;
     if (block.number > targetBlocksHeight) {
       SaleEnded();
       return true;
