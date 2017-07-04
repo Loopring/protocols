@@ -122,10 +122,9 @@ contract('LoopringToken', function(accounts) {
       return web3.eth.getBalance(target);
     }).then(function(balance) {
       console.log("balance", balance.toNumber());
-
-      return false;
+      return loopring.computeTokenAmount(web3.toWei(1));
     }).then(function(result) {
-      assert.equal(result, true, "token amount not compute correctly.");
+      assert.equal(result.toNumber(), 6000000000000000000000, "token amount not compute correctly.");
     });
 
   });
