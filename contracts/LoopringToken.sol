@@ -12,7 +12,7 @@ contract LoopringToken is StandardToken {
   uint16[5] public phases = [6000, 5750, 5500, 5250, 5000];
   uint public constant blocksPerDay = 5082;
   uint public constant targetBlocksHeight = 5082 * 30; // 30 days.
-  uint public constant ethGoalPerPhase = 20000;
+  uint public constant ethGoalPerPhase = 20000 ether;
   address public target = 0xaea169db31cdd2375bafc08fdb2b56e437edafc6;
   uint public firstblock = 0;
   uint public deadlineSecs = 0;
@@ -30,10 +30,9 @@ contract LoopringToken is StandardToken {
   event InvalidCaller(address caller);
   event InvalidState(bytes msg);
   event Issue(address addr, uint value);
-  event PrtEthBalance(address addr, uint value);
   event IcoSucceeded();
   event IcoFailed();
-
+  
   modifier isOwner {
     if (target == msg.sender) {
         _;
@@ -73,9 +72,10 @@ contract LoopringToken is StandardToken {
     if (firstblock > 0 || _firstblock <= block.number) {
       throw;
     }
+    
     firstblock = _firstblock;
-    deadlineSecs = now + 30 * 1 days;
     SaleStarted();
+    
     return firstblock;
   }
 
@@ -84,18 +84,17 @@ contract LoopringToken is StandardToken {
   }
 
   function createTokens(address recipient) payable afterStart beforeEnd {
-    if (msg.value == 0) {
-      throw;
-    }
-
+    assert(msg.value >= 0.01 ether);
+    
     var numFunders = funders.length;
     Funder f = funders[numFunders++];
     f.addr = msg.sender;
     f.amount = msg.value;
 
-    uint tokens = computeTokenAmount(msg.value); 
+    uint tokens = computeTokenAmount(msg.value);
     totalSupply = totalSupply.add(tokens);
-    transferFrom(target, recipient, tokens);
+    balances[recipient] = balances[recipient].add(tokens);
+        
     Issue(recipient, tokens);
     Issue(target, msg.value);
     
@@ -104,7 +103,23 @@ contract LoopringToken is StandardToken {
     }
   }
 
-  function end() payable isOwner afterEnd {
+  function computeTokenAmount(uint ethAmount) constant returns (uint result) {
+    uint ethBalance = target.balance;
+    uint quotBefore = ethBalance / ethGoalPerPhase;
+    uint quotAfter = (ethBalance +  ethAmount) / ethGoalPerPhase;
+    if (quotBefore == quotAfter) {
+      return ethAmount.mul(phases[quotBefore]);
+    } else {
+      uint edgeNumber = quotAfter.mul(ethGoalPerPhase);
+      uint preNumber = edgeNumber - ethBalance;
+      uint tailNumber = ethBalance + ethAmount - edgeNumber;
+      assert(preNumber > 0);
+      assert(tailNumber > 0);
+      return preNumber.mul(phases[quotBefore]).add(tailNumber.mul(phases[quotAfter]));
+    }
+  }
+
+  function end() isOwner afterEnd {
     uint ethBalance = target.balance;
     if (ethBalance <= 50000) {
       IcoFailed();
@@ -114,19 +129,27 @@ contract LoopringToken is StandardToken {
     }
   }
 
-  function refund() payable isOwner afterEnd {
+  function refund() isOwner afterEnd {
     uint ethBalance = target.balance;
     if (ethBalance <= 50000) {
       for (uint i = 0; i < funders.length; i++) {
-        if (funders[i].addr.send(funders[i].amount)) {
-          funders[i].addr = 0;
-          funders[i].amount = 0;
-        } 
+        uint amount = funders[i].amount;
+        funders[i].amount = 0;
+        funders[i].addr = 0;
+        funders[i].addr.transfer(amount);
       }
     }
   }
   
-  function createTokensForOwner() public payable isOwner afterEnd {
+  function createTokensForOwner() public isOwner afterEnd {
+    uint tokenAmount = tokenAmountForOwner();
+    totalSupply = totalSupply.add(tokenAmount);
+    balances[target] = balances[target].add(tokenAmount);
+    
+    Issue(target, tokenAmount);
+  }
+
+  function tokenAmountForOwner() constant returns (uint result) {
     uint ethBalance = target.balance;
     uint tokenSaled = 0;
 
@@ -147,27 +170,11 @@ contract LoopringToken is StandardToken {
     }
 
     uint tokenAmount = tokenSaled.mul((1000 - saleAmountPerThousand[idx])/1000);
-    transfer(target, tokenAmount);
+    return tokenAmount;
   }
 
   function destroy() payable isOwner afterEnd {
     suicide(target);
-  }
-
-  function computeTokenAmount(uint ethAmount) constant returns (uint result) {
-    uint ethBalance = target.balance;
-    uint quotBefore = ethBalance / ethGoalPerPhase;
-    uint quotAfter = (ethBalance +  ethAmount) / ethGoalPerPhase;
-    if (quotBefore == quotAfter) {
-      return ethAmount.mul(phases[quotBefore]);
-    } else {
-      uint edgeNumber = quotAfter.mul(ethGoalPerPhase);
-      uint preNumber = edgeNumber - ethBalance;
-      uint tailNumber = ethBalance + ethAmount - edgeNumber;
-      assert(preNumber > 0);
-      assert(tailNumber > 0);
-      return preNumber.mul(phases[quotBefore]).add(tailNumber.mul(phases[quotAfter]));
-    }
   }
 
   function checkSaleEnded() constant returns (bool result) {
