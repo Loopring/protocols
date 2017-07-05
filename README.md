@@ -13,8 +13,8 @@ To initialize a project with this exapmple, run `truffle init webpack` inside an
 
 ## Run tests
 
-1. run `testrpc -u 0xaea169db31cdd2375bafc08fdb2b56e437edafc6` in another terminal
-2. run `truffle test` to execute tests.
+1. run `./testrpc.sh` in terminal
+2. run `truffle test` in another terminal to execute tests.
 
 ## Possible upgrades
 
@@ -22,7 +22,7 @@ To initialize a project with this exapmple, run `truffle init webpack` inside an
 
 ## Common Errors
 
-* **Error: Can't resolve '../build/contracts/MetaCoin.json'**
+* **Error: Can't resolve '../build/contracts/LoopringToken.json'**
 
 This means you haven't compiled or migrated your contracts yet. Run `truffle compile` and `truffle migrate` first.
 
@@ -30,6 +30,6 @@ Full error:
 
 ```
 ERROR in ./app/main.js
-Module not found: Error: Can't resolve '../build/contracts/MetaCoin.json' in '/Users/tim/Documents/workspace/Consensys/test3/app'
+Module not found: Error: Can't resolve '../build/contracts/LoopringToken.json' in '/Users/tim/Documents/workspace/Consensys/test3/app'
  @ ./app/main.js 11:16-59
 ```

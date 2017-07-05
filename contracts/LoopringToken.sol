@@ -13,10 +13,10 @@ contract LoopringToken is StandardToken {
   uint public constant blocksPerDay = 5082;
   uint public constant targetBlocksHeight = 5082 * 30; // 30 days.
   uint public constant ethGoalPerPhase = 20000 ether;
-  address public target = 0xaea169db31cdd2375bafc08fdb2b56e437edafc6;
+  //address public target = 0xaea169db31cdd2375bafc08fdb2b56e437edafc6;
+  address public target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
   uint public firstblock = 0;
-  uint public deadlineSecs = 0;
-  bool public isTokensSendedToTarget = false;
+  uint public targetInitBalance;
   
   Funder[] public funders;
 
@@ -74,6 +74,7 @@ contract LoopringToken is StandardToken {
     }
     
     firstblock = _firstblock;
+    targetInitBalance = target.balance;
     SaleStarted();
     
     return firstblock;
@@ -104,8 +105,12 @@ contract LoopringToken is StandardToken {
   }
 
   function computeTokenAmount(uint ethAmount) constant returns (uint result) {
-    uint ethBalance = target.balance;
+    uint ethBalance = target.balance.sub(targetInitBalance);
     uint quotBefore = ethBalance / ethGoalPerPhase;
+    if (quotBefore >= (phases.length - 1)) {
+      return ethAmount.mul(phases[phases.length - 1]);
+    }
+    
     uint quotAfter = (ethBalance +  ethAmount) / ethGoalPerPhase;
     if (quotBefore == quotAfter) {
       return ethAmount.mul(phases[quotBefore]);
@@ -120,7 +125,7 @@ contract LoopringToken is StandardToken {
   }
 
   function end() isOwner afterEnd {
-    uint ethBalance = target.balance;
+    uint ethBalance = target.balance.sub(targetInitBalance);
     if (ethBalance <= 50000) {
       IcoFailed();
     } else {
@@ -130,7 +135,7 @@ contract LoopringToken is StandardToken {
   }
 
   function refund() isOwner afterEnd {
-    uint ethBalance = target.balance;
+    uint ethBalance = target.balance.sub(targetInitBalance);
     if (ethBalance <= 50000) {
       for (uint i = 0; i < funders.length; i++) {
         uint amount = funders[i].amount;
@@ -150,7 +155,7 @@ contract LoopringToken is StandardToken {
   }
 
   function tokenAmountForOwner() constant returns (uint result) {
-    uint ethBalance = target.balance;
+    uint ethBalance = target.balance.sub(targetInitBalance);
     uint tokenSaled = 0;
 
     for (uint i = 0; i < phases.length; i++) {
@@ -183,7 +188,7 @@ contract LoopringToken is StandardToken {
       return true;
     }
 
-    uint ethBalance = target.balance;
+    uint ethBalance = target.balance.sub(targetInitBalance);
     if (ethBalance >= ethGoalPerPhase * phases.length) {
       SaleEnded();
       return true;
