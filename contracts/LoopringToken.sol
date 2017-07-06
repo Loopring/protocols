@@ -17,7 +17,7 @@ contract LoopringToken is StandardToken {
   address public target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
   uint public firstblock = 0;
   uint public targetInitBalance;
-  
+
   Funder[] public funders;
 
   struct Funder {
@@ -32,7 +32,7 @@ contract LoopringToken is StandardToken {
   event Issue(address addr, uint value);
   event IcoSucceeded();
   event IcoFailed();
-  
+
   modifier isOwner {
     if (target == msg.sender) {
         _;
@@ -72,11 +72,11 @@ contract LoopringToken is StandardToken {
     if (firstblock > 0 || _firstblock <= block.number) {
       throw;
     }
-    
+
     firstblock = _firstblock;
     targetInitBalance = target.balance;
     SaleStarted();
-    
+
     return firstblock;
   }
 
@@ -86,7 +86,7 @@ contract LoopringToken is StandardToken {
 
   function createTokens(address recipient) payable afterStart beforeEnd {
     assert(msg.value >= 0.01 ether);
-    
+
     var numFunders = funders.length;
     Funder f = funders[numFunders++];
     f.addr = msg.sender;
@@ -95,10 +95,10 @@ contract LoopringToken is StandardToken {
     uint tokens = computeTokenAmount(msg.value);
     totalSupply = totalSupply.add(tokens);
     balances[recipient] = balances[recipient].add(tokens);
-        
+
     Issue(recipient, tokens);
     Issue(target, msg.value);
-    
+
     if (!target.send(msg.value)) {
       throw;
     }
@@ -110,7 +110,7 @@ contract LoopringToken is StandardToken {
     if (quotBefore >= (phases.length - 1)) {
       return ethAmount.mul(phases[phases.length - 1]);
     }
-    
+
     uint quotAfter = (ethBalance +  ethAmount) / ethGoalPerPhase;
     if (quotBefore == quotAfter) {
       return ethAmount.mul(phases[quotBefore]);
@@ -145,17 +145,19 @@ contract LoopringToken is StandardToken {
       }
     }
   }
-  
+
   function createTokensForOwner() public isOwner afterEnd {
     uint tokenAmount = tokenAmountForOwner();
     totalSupply = totalSupply.add(tokenAmount);
     balances[target] = balances[target].add(tokenAmount);
-    
+
     Issue(target, tokenAmount);
   }
 
   function tokenAmountForOwner() constant returns (uint result) {
     uint ethBalance = target.balance.sub(targetInitBalance);
+
+    assert(ethBalance > 50000 ether);
     uint tokenSaled = 0;
 
     for (uint i = 0; i < phases.length; i++) {
@@ -164,17 +166,23 @@ contract LoopringToken is StandardToken {
         if (_ethAmount > 0) {
           tokenSaled = tokenSaled.add(_ethAmount.mul(phases[i]));
         }
+        break;
       } else {
         tokenSaled = tokenSaled.add(ethGoalPerPhase.mul(phases[i]));
+        if (i == phases.length - 1) {
+          uint _ethAmountTail = ethBalance - ethGoalPerPhase * phases.length;
+          tokenSaled = tokenSaled.add(_ethAmountTail.mul(phases[i]));
+        }
       }
     }
 
-    uint idx = (tokenSaled - 50000) / 10000;
+    uint idx = (ethBalance - 50000 ether) / (10000 ether);
     if (idx >= saleAmountPerThousand.length) {
       idx = saleAmountPerThousand.length - 1;
     }
 
-    uint tokenAmount = tokenSaled.mul((1000 - saleAmountPerThousand[idx])/1000);
+    uint tokenAmount = tokenSaled.mul((1000 - saleAmountPerThousand[idx])/saleAmountPerThousand[idx]);
+    
     return tokenAmount;
   }
 
@@ -193,7 +201,7 @@ contract LoopringToken is StandardToken {
       SaleEnded();
       return true;
     }
-    
+
     return false;
   }
 }

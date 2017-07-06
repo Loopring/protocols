@@ -215,3 +215,40 @@ contract('LoopringToken', function(accounts) {
 
   });
 });
+
+contract('LoopringToken', function(accounts) {
+  it("should be able to compute LRC token amount correctly for owner after sale.", function() {
+    console.log("\n" + "-".repeat(100) + "\n");
+    var loopring;
+    var target;
+    var targetBalance;
+    var targetInitBalance;
+    var ethGoalPerPhase;
+    var totalEthAmountAchieved;
+    return LoopringToken.deployed().then(function(instance) {
+      loopring = instance;
+      return loopring.target.call({from: accounts[1]});
+    }).then(function(t){
+      target = t;
+      return loopring.ethGoalPerPhase.call({from: accounts[1]});
+    }).then(function(goal){
+      ethGoalPerPhase = goal;
+      console.log("ethGoalPerPhase:", ethGoalPerPhase);
+      return web3.eth.getBalance(target);
+    }).then(function(balance) {
+      console.log("target balance at begin:", balance.toNumber());
+      targetBalance = balance.toNumber();
+      totalEthAmountAchieved = 50000 + Math.random() * 10000;
+      console.log("totalEthAmountAchieved: ", totalEthAmountAchieved);
+      return web3.eth.sendTransaction({from: accounts[1], to: target, value: web3.toWei(totalEthAmountAchieved) - targetBalance });
+    }).then(function(tx) {
+      console.log("txHash 1: ", tx);
+      return loopring.tokenAmountForOwner({from: accounts[1]});
+    }).then(function(amount1){
+      console.log("amount1:", amount1);
+      var tokenSaled = 20000 * 6000 + 20000 * 5750 + (totalEthAmountAchieved - 40000) * 5500;
+      assert.equal(amount1.toNumber(), web3.toWei(tokenSaled) * (60/40) , "token amount not computed correctly for owner after sale.");
+    });
+
+  });
+});
