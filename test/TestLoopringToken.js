@@ -31,33 +31,34 @@ contract('LoopringToken', function(accounts) {
     });
   });
 
-  // it("should not allow create tokens before it starts", function() {
-  //   console.log("\n" + "-".repeat(100) + "\n");
-  //   var loopring;
-  //   var target;
-  //   return LoopringToken.deployed().then(function(instance) {
-  //     loopring = instance;
-  //     return loopring.target.call({from: accounts[1]});
-  //   }).then(function(t){
-  //     target = t;
-  //     console.log("target:", target);
-  //     return web3.eth.sendTransaction({from: accounts[1], to: target, value: web3.toWei(1) })
-  //   }).then(function(tx) {
-  //     console.log("tx:", tx);
-  //     if (tx.logs) {
-  //       for (var i = 0; i < tx.logs.length; i++) {
-  //         var log = tx.logs[i];
-  //         console.log("log: ", log);
-  //         if (log.event == "Transfer") {
-  //           return false;
-  //         }
-  //       }
-  //     }
-  //     return true;
-  //   }).then(function(result) {
-  //     assert.equal(result, true, "create tokens before sale start");
-  //   });
-  // });
+  it("should not allow create tokens before it starts", function() {
+    console.log("\n" + "-".repeat(100) + "\n");
+    var loopring;
+    var target;
+    return LoopringToken.deployed().then(function(instance) {
+      loopring = instance;
+      return loopring.target.call({from: accounts[1]});
+    }).then(function(t){
+      target = t;
+      console.log("target:", target);
+      web3.eth.sendTransaction({from: accounts[1], to: target, value: web3.toWei(1) });
+      return loopring.createTokens(accounts[1], {from: accounts[1]});
+    }).then(function(tx) {
+      console.log("tx:", tx);
+      if (tx.logs) {
+        for (var i = 0; i < tx.logs.length; i++) {
+          var log = tx.logs[i];
+          console.log("log: ", log);
+          if (log.event == "InvalidState") {
+            return true;
+          }
+        }
+      }
+      return false;
+    }).then(function(result) {
+      assert.equal(result, true, "create tokens before sale start");
+    });
+  });
 
   it("should be able to start ico sale when called by owner.", function() {
     console.log("\n" + "-".repeat(100) + "\n");
@@ -105,6 +106,7 @@ contract('LoopringToken', function(accounts) {
       return loopring.totalSupply.call({from:accounts[1]});
     }).then(function(b) {
       assert.equal(true, true, "no Loopring token Transfer event found");
+      web3.eth.sendTransaction({from: target, to: accounts[1], value: web3.toWei(1) });
     });
   });
 
@@ -176,6 +178,39 @@ contract('LoopringToken', function(accounts) {
     }).then(function(amount6){
       console.log("amount6:", amount6);
       assert.equal(amount6.toNumber(), 1e+18 * 5000, "token amount not compute correctly in phase 5.");
+    });
+
+  });
+});
+
+contract('LoopringToken', function(accounts) {
+  it("should be able to compute LRC token amount correctly when across phases", function() {
+    console.log("\n" + "-".repeat(100) + "\n");
+    var loopring;
+    var target;
+    var targetBalance;
+    var targetInitBalance;
+    var ethGoalPerPhase;
+    return LoopringToken.deployed().then(function(instance) {
+      loopring = instance;
+      return loopring.target.call({from: accounts[1]});
+    }).then(function(t){
+      target = t;
+      return loopring.ethGoalPerPhase.call({from: accounts[1]});
+    }).then(function(goal){
+      ethGoalPerPhase = goal;
+      console.log("ethGoalPerPhase:", ethGoalPerPhase);
+      return web3.eth.getBalance(target);
+    }).then(function(balance) {
+      console.log("target balance at begin:", balance.toNumber());
+      targetBalance = balance.toNumber();
+      return web3.eth.sendTransaction({from: accounts[1], to: target, value: ethGoalPerPhase - targetBalance - web3.toWei(1) });
+    }).then(function(tx) {
+      console.log("txHash 1: ", tx);
+      return loopring.computeTokenAmount(web3.toWei(12.19), {from: accounts[1]});
+    }).then(function(amount1){
+      console.log("amount1:", amount1);
+      assert.equal(amount1.toNumber(), (1e+18) * 6000 + 11.19e+18 * 5750, "token amount not computed correctly in phase 1 across phase 2.");
     });
 
   });

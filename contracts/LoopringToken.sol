@@ -116,8 +116,8 @@ contract LoopringToken is StandardToken {
       return ethAmount.mul(phases[quotBefore]);
     } else {
       uint edgeNumber = quotAfter.mul(ethGoalPerPhase);
-      uint preNumber = edgeNumber - ethBalance;
-      uint tailNumber = ethBalance + ethAmount - edgeNumber;
+      uint preNumber = edgeNumber.sub(ethBalance);
+      uint tailNumber = ethAmount.sub(preNumber);
       assert(preNumber > 0);
       assert(tailNumber > 0);
       return preNumber.mul(phases[quotBefore]).add(tailNumber.mul(phases[quotAfter]));
