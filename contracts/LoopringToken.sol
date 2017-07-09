@@ -154,6 +154,7 @@ contract LoopringToken is StandardToken {
       balances[target] = balances[target].add(tokenAmount);
 
       Issue(target, tokenAmount);
+      isTokensCreatedForOwner = true;
     } else {
       InvalidState("tokens already created for owner.");
     }
