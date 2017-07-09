@@ -247,7 +247,18 @@ contract('LoopringToken', function(accounts) {
     }).then(function(amount1){
       console.log("amount1:", amount1);
       var tokenSaled = 20000 * 6000 + 20000 * 5750 + (totalEthAmountAchieved - 40000) * 5500;
-      assert.equal(amount1.toNumber(), web3.toWei(tokenSaled) * (60/40) , "token amount not computed correctly for owner after sale.");
+      console.log("tokenSaled:", tokenSaled);
+      assert.equal(amount1.toNumber(), web3.toWei(tokenSaled) * (60.0/40) , "token amount not computed correctly for owner after sale.");
+      totalEthAmountAchieved += 10000;
+      return web3.eth.sendTransaction({from: accounts[1], to: target, value: web3.toWei(10000) });
+    }).then(function(tx) {
+      console.log("txHash 1: ", tx);
+      return loopring.tokenAmountForOwner({from: accounts[1]});
+    }).then(function(amount1){
+      console.log("amount1:", amount1);
+      var tokenSaled = 20000 * 6000 + 20000 * 5750 + (totalEthAmountAchieved - 40000) * 5500;
+      console.log("tokenSaled:", tokenSaled);
+      assert.equal(amount1.toNumber(), web3.toWei(tokenSaled) * (60.0/40) , "token amount not computed correctly for owner after sale.");
     });
 
   });

@@ -17,6 +17,7 @@ contract LoopringToken is StandardToken {
   address public target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
   uint public firstblock = 0;
   uint public targetInitBalance;
+  bool public isTokensCreatedForOwner = false;
 
   Funder[] public funders;
 
@@ -147,41 +148,45 @@ contract LoopringToken is StandardToken {
   }
 
   function createTokensForOwner() public isOwner afterEnd {
-    uint tokenAmount = tokenAmountForOwner();
-    totalSupply = totalSupply.add(tokenAmount);
-    balances[target] = balances[target].add(tokenAmount);
+    if (!isTokensCreatedForOwner) {
+      uint tokenAmount = tokenAmountForOwner();
+      totalSupply = totalSupply.add(tokenAmount);
+      balances[target] = balances[target].add(tokenAmount);
 
-    Issue(target, tokenAmount);
+      Issue(target, tokenAmount);
+    } else {
+      InvalidState("tokens already created for owner.");
+    }
   }
 
   function tokenAmountForOwner() constant returns (uint result) {
     uint ethBalance = target.balance.sub(targetInitBalance);
 
     assert(ethBalance > 50000 ether);
-    uint tokenSaled = 0;
+    uint tokenSaled =  0;
 
     for (uint i = 0; i < phases.length; i++) {
       if (ethBalance < ethGoalPerPhase * (i + 1)) {
         uint _ethAmount = ethBalance - ethGoalPerPhase * i;
-        if (_ethAmount > 0) {
-          tokenSaled = tokenSaled.add(_ethAmount.mul(phases[i]));
-        }
+        tokenSaled = tokenSaled.add(_ethAmount.mul(phases[i]));
         break;
       } else {
         tokenSaled = tokenSaled.add(ethGoalPerPhase.mul(phases[i]));
-        if (i == phases.length - 1) {
-          uint _ethAmountTail = ethBalance - ethGoalPerPhase * phases.length;
-          tokenSaled = tokenSaled.add(_ethAmountTail.mul(phases[i]));
-        }
       }
+    }
+
+    if (ethBalance > ethGoalPerPhase * phases.length) {
+      uint _ethAmountTail = ethBalance - ethGoalPerPhase * phases.length;
+      tokenSaled = tokenSaled.add(_ethAmountTail.mul(phases[phases.length - 1]));
     }
 
     uint idx = (ethBalance - 50000 ether) / (10000 ether);
     if (idx >= saleAmountPerThousand.length) {
       idx = saleAmountPerThousand.length - 1;
     }
+    uint16 saleThousandth = saleAmountPerThousand[idx];
 
-    uint tokenAmount = tokenSaled.mul((1000 - saleAmountPerThousand[idx])/saleAmountPerThousand[idx]);
+    uint tokenAmount = tokenSaled.mul(1000 - saleThousandth) / saleThousandth;
     
     return tokenAmount;
   }
