@@ -91,6 +91,7 @@ contract LoopringToken is StandardToken {
     if (totalEthReceived < 50000 ether) {
       IcoFailed();
     } else {
+      createTokensForOwner();
       IcoSucceeded();
     }
   }
