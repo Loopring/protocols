@@ -5,7 +5,7 @@ import "./StandardToken.sol";
 /**
    @title Loopring Protocol Token.
    For more information about this token sale, please visit https://loopring.org
-   foundation@loopring.org
+   foundation at loopring.org
 */
 contract LoopringToken is StandardToken {
 
