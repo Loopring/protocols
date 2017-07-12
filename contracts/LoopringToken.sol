@@ -2,27 +2,139 @@ pragma solidity ^0.4.11;
 
 import "./StandardToken.sol";
 
+/** 
+  @title Loopring Protocol Token.
+*/
 contract LoopringToken is StandardToken {
 
-  string public constant name = "LoopringToken";
+  string public constant name = "LoopringCoin";
   string public constant symbol = "LRC";
   uint public constant decimals = 18;
 
-  uint8[9] public rewardPercentages = [20, 16, 14, 12, 10, 8, 6, 4, 2];
+  /*
+    During token sale, we use one consistent price: 5000LRC/ETH.
+    We splict the entire token sale period into 10 phases, each
+    phase has a different bonus setting as specified in `bonusPercentages`.
+    The real price for phase i is `(1 + bonusPercentages[i]/100.0) * 5000LRC/ETH`.
+
+    The first phase or early-bird phase has a much higher bonus.
+  */
+  uint8[10] public constant bonusPercentages = [20, 16, 14, 12, 10, 8, 6, 4, 2, 0];
+
+  /*
+    Each phase contains exactly 15264 Ethereum blocks, which is roughfy 3 days. 
+    TODO(dongw): add a reference to num of blocks per day.
+  */
   uint16 public constant blocksPerPhase = 15264;
+
+  /*
+    This is where we hold ETH during this token sale. We will not transfer any Ether
+    out of this address before we invocate the `endSale` function. This promise is not 
+    guanranteed by smart contract by can be verified based on public transactions.
+
+    This is also the only address from which `start` and `endSale` can be invocated.
+
+    TODO(dongw): this should also be a multi-sig address in production.
+  */
   address public constant target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
-  
+
+  /*
+    `firstblock` specifies from which block our token sale starts. 
+    This can only be modified once by the owner of `target` address.
+  */
   uint public firstblock = 0;
-  bool public isTokensCreatedForOwner = false;
+
+  /*
+    Specifies whether tokens that are not sold have been issued. This part of LRC token
+    is managed by the project team and is issued directly to `target`. 
+  */
+
+  bool public unsoldTokenIssued = false;
+
+
+  /*
+    A simple stat for emitting events.
+  */
   uint public totalEthReceived = 0;
 
+
+  // EVENTS -----------------------------------------------
+
+  /*
+    Emitted only once after token sale starts.
+  */
   event SaleStarted();
+
+  /*
+    Emitted only once after token sale ended (all token issued).
+  */
   event SaleEnded();
+
+  /*
+    Emitted when a function is invocated by unauthorized addresses.
+  */
   event InvalidCaller(address caller);
+
+  /*
+    Emitted when a function is invocated without the specified preconditions.
+    This event will not come alone with an exception.
+  */
   event InvalidState(bytes msg);
+
+  /*
+    Emitted for each sucuessful token purchase.
+  */
   event Issue(address addr, uint ethAmount, uint tokenAmount);
-  event IcoSucceeded();
-  event IcoFailed();
+
+  /*
+    Emitted if the token sale succeeded.
+  */
+  event SaleSucceeded();
+
+  /*
+    Emitted if the token sale failed.
+    When token sale failed, all Ether will be return to the original purchasing
+    address with a minor deduction of transaction fee（gas)
+  */
+  event SaleFailed();
+
+
+  // PUBLIC FUNCTIONS -------------------------------------
+
+  /**
+    Start the token sale by specifying the starting block.
+  */
+  function start(uint _firstblock) public isOwner beforeStart returns (uint firstblock) {
+    if (_firstblock <= block.number) {
+      // Must specified a block in the future.
+      throw;
+    }
+
+    firstblock = _firstblock;
+    SaleStarted();
+  }
+
+  /**
+    Triggers unsold tokens to be issued to `target` address.
+  */
+  function close() public isOwner afterEnd {
+    if (totalEthReceived < 50000 ether) {
+      SaleFailed();
+    } else {
+      issueUnsoldToken();
+      SaleSucceeded();
+    }
+  }
+
+  /**
+    This default function allows token to be purchased by directly
+    sending ether to this smart contract.
+  */
+  function () payable {
+    issueToken(msg.sender);
+  }
+
+  // MODIFIERS --------------------------------------------
 
   modifier isOwner {
     if (target == msg.sender) {
@@ -31,37 +143,30 @@ contract LoopringToken is StandardToken {
     else InvalidCaller(msg.sender);
   }
 
-  modifier inProgress {
-    if (firstblock > 0
-        && block.number >= firstblock
-        && !checkSaleEnded()) {
+  modifier beforeStart {
+    if (!saleStarted()) {
       _;
-    } else InvalidState("sale not in progress."); 
+    }
+    else InvalidState("Sale not started yet");
+  }
+
+  modifier inProgress {
+    if (saleStarted() && !saleEnded()) {
+      _;
+    } else InvalidState("Sale not in progress"); 
   }
 
   modifier afterEnd {
-    if (checkSaleEnded()) {
+    if (saleEnded()) {
       _;
     }
-    else InvalidState("sale not end yet.");
+    else InvalidState("Sale not ended yet");
   }
 
-  function start(uint _firstblock) public isOwner returns (uint) {
-    if (firstblock > 0 || _firstblock <= block.number) {
-      throw;
-    }
+  // INTERNAL FUNCTIONS -----------------------------------
 
-    firstblock = _firstblock;
-    SaleStarted();
-
-    return firstblock;
-  }
-
-  function () payable {
-    createTokens(msg.sender);
-  }
-
-  function createTokens(address recipient) payable inProgress {
+  function issueToken(address recipient) payable inProgress {
+    // We only accept minimum purchase of 0.01 ETH.
     assert(msg.value >= 0.01 ether);
 
     uint tokens = computeTokenAmount(msg.value);
@@ -76,58 +181,60 @@ contract LoopringToken is StandardToken {
     }
   }
 
-  function computeTokenAmount(uint ethAmount) internal returns (uint result) {
-    uint tokenAmountBase = ethAmount.mul(5000);
-    uint phase = (block.number - firstblock) / blocksPerPhase;
-    if (phase >= rewardPercentages.length) {
-      phase = rewardPercentages.length - 1;
-    }
-    uint tokenAmountReward = tokenAmountBase.mul(rewardPercentages[phase])/100;
+  function computeTokenAmount(uint ethAmount) returns (uint tokens) {
+    uint8 phase = (block.number - firstblock).div(blocksPerPhase);
 
-    return tokenAmountBase.add(tokenAmountReward);
+    // A safe check
+    if (phase >= bonusPercentages.length) {
+      phase = bonusPercentages.length - 1;
+    }
+
+    uint tokenBase = ethAmount.mul(5000 /* base price */);
+    uint tokenBonus = tokenBase.mul(bonusPercentages[phase]).div(100);
+
+    tokens = tokenBase.add(tokenBonus);
   }
 
-  function endSale() isOwner afterEnd {
-    if (totalEthReceived < 50000 ether) {
-      IcoFailed();
+  /**
+    Issue unsold token to `target` address.
+    The math is as follows:
+    if totalEthReceived >= 50K but < 60K, the unsold part is 67.5% of all token;
+    if totalEthReceived >= 60K but < 70K, the unsold part is 65.0% of all token;
+    if totalEthReceived >= 70K but < 80K, the unsold part is 62.5% of all token;
+    if totalEthReceived >= 80K but < 90K, the unsold part is 60.0% of all token;
+    if totalEthReceived >= 90K but < 100K, the unsold part is 57.5% of all token;
+    if totalEthReceived >= 100K but < 110K, the unsold part is 55.0% of all token;
+    if totalEthReceived >= 110K but < 120K, the unsold part is 52.5% of all token;
+    if totalEthReceived >= 120K, the unsold part is 50.0% of all token;
+  */
+  function issueUnsoldToken() {
+    if(unsoldTokenIssued) {
+      InvalidState("Unsold token issued already");
     } else {
-      createTokensForOwner();
-      IcoSucceeded();
+        
+      uint8 level = totalEthReceived.sub(50000 ether).div(10000 ether);
+      if (level > 7) {
+        level = 7;
+      }
+      
+      uint16 unsoldRatioInThousand = 675 - 25 * level;
+      uint unsoldToken = totalSupply.div(1000 - unsoldRatioInThousand).mul(unsoldRatioInThousand);
+
+      totalSupply = totalSupply.add(unsoldToken);
+      balances[target] = balances[target].add(unsoldToken);
+
+      Issue(target, 0, unsoldToken);
+      unsoldTokenIssued = true;
     }
   }
 
-  function createTokensForOwner() internal {
-    if (!isTokensCreatedForOwner) {
-      uint level = totalEthReceived.sub(50000 ether) / 10000 ether;
-      if (level > 10) {
-        level = 10;
-      }
-      uint unSaledThousandth = 675 - 25*level;
-      if (unSaledThousandth < 500) {
-        unSaledThousandth = 500;
-      }
-      uint tokenAmount = totalSupply.mul(unSaledThousandth) / (1000 - unSaledThousandth);
-      totalSupply = totalSupply.add(tokenAmount);
-      balances[target] = balances[target].add(tokenAmount);
-
-      Issue(target, 0, tokenAmount);
-      isTokensCreatedForOwner = true;
-    } else {
-      InvalidState("tokens already created for owner.");
-    }
+  function saleStarted() constant returns (bool) {
+    return (firstblock > 0 && block.number >= firstblock);
   }
 
-  function checkSaleEnded() constant returns (bool result) {
-    if (block.number > (firstblock + blocksPerPhase * 10)) {
-      SaleEnded();
-      return true;
-    }
-
-    if (totalEthReceived >= 120000 ether) {
-      SaleEnded();
-      return true;
-    }
-
-    return false;
+  function saleEnded() constant returns (bool) {
+    return (firstblock > 0 && (
+      (block.number >= firstblock + blocksPerPhase * 10 /* num of phases */) ||
+      (totalEthReceived >= 120000 ether /* upper bound */)));
   }
 }
