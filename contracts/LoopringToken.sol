@@ -52,12 +52,10 @@ contract LoopringToken is StandardToken {
 
   bool public unsoldTokenIssued = false;
 
-
   /*
     A simple stat for emitting events.
   */
   uint public totalEthReceived = 0;
-
 
   // EVENTS -----------------------------------------------
 
