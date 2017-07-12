@@ -11,6 +11,7 @@ contract('LoopringToken', function(accounts) {
       return loopring.target.call({from: accounts[1]});
     }).then(function(t){
       target = accounts[1];
+      web3.eth.sendTransaction({from: accounts[1], to: loopring.address, value: web3.toWei(1) })
       return web3.eth.sendTransaction({from: accounts[1], to: target, value: web3.toWei(1) })
     }).then(function(tx) {
       console.log("tx:", tx);
@@ -63,7 +64,7 @@ contract('LoopringToken', function(accounts) {
       return loopring.target.call();
     }).then(function(t){
       target = t;
-      return loopring.start(9, {from: target});
+      return loopring.start(10, {from: target});
     }).then(function(tx) {
       console.log("tx: ", tx);
       if (tx.logs) {
@@ -90,13 +91,13 @@ contract('LoopringToken', function(accounts) {
       return loopring.target.call({from: accounts[1]});
     }).then(function(t){
       target = t;
-      return web3.eth.sendTransaction({from: accounts[1], to: loopring.address, value: web3.toWei(1) });
+      return web3.eth.sendTransaction({from: accounts[1], to: loopring.address, value: web3.toWei(1), gas: 500000 });
     }).then(function(tx) {
       console.log("tx:", tx);
       return loopring.balanceOf(accounts[1], {from: accounts[1]});
     }).then(function(bal) {
       console.log("bal: ", bal.toNumber());
-      assert.equal(bal, web3.toWei(6000), "no Loopring token Transfer event found");
+      assert.equal(bal.toNumber(), web3.toWei(6000), "no Loopring token Transfer event found");
     });
   });
 
