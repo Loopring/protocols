@@ -5,6 +5,7 @@ import "./StandardToken.sol";
 /**
    @title Loopring Protocol Token.
    For more information about this token sale, please visit https://loopring.org
+   foundation@loopring.org
 */
 contract LoopringToken is StandardToken {
 
@@ -23,19 +24,21 @@ contract LoopringToken is StandardToken {
   uint8[10] public bonusPercentages = [20, 16, 14, 12, 10, 8, 6, 4, 2, 0];
 
   /*
-    Each phase contains exactly 15250 Ethereum blocks, which is roughfy 3 days.
+    Each phase contains exactly 15250 Ethereum blocks, which is roughly 3 days,
+    which makes this 10-phase sale period roughly 30 days.
     See https://www.ethereum.org/crowdsale#scheduling-a-call
   */
   uint16 public constant blocksPerPhase = 15250;
 
   /*
     This is where we hold ETH during this token sale. We will not transfer any Ether
-    out of this address before we invocate the `endSale` function. This promise is not
-    guanranteed by smart contract by can be verified based on public transactions.
+    out of this address before we invocate the `close` function to finalize the sale. 
+    This promise is not guanranteed by smart contract by can be verified with public
+    Ethereum transactions data available on several blockchain browsers.
 
-    This is also the only address from which `start` and `endSale` can be invocated.
+    This is the only address from which `start` and `close` can be invocated.
 
-    TODO(dongw): this should also be a multi-sig address in production.
+    TODO(dongw): this address will change!!!
   */
   address public constant target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
 
@@ -46,7 +49,7 @@ contract LoopringToken is StandardToken {
   uint public firstblock = 0;
 
   /*
-    Specifies whether tokens that are not sold have been issued. This part of LRC token
+    Indicates whether unsold token have been issued. This part of LRC token
     is managed by the project team and is issued directly to `target`.
   */
 
