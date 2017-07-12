@@ -2,8 +2,8 @@ pragma solidity ^0.4.11;
 
 import "./StandardToken.sol";
 
-/** 
-  @title Loopring Protocol Token.
+/**
+   @title Loopring Protocol Token.
 */
 contract LoopringToken is StandardToken {
 
@@ -19,17 +19,17 @@ contract LoopringToken is StandardToken {
 
     The first phase or early-bird phase has a much higher bonus.
   */
-  uint8[10] public constant bonusPercentages = [20, 16, 14, 12, 10, 8, 6, 4, 2, 0];
+  uint8[10] public bonusPercentages = [20, 16, 14, 12, 10, 8, 6, 4, 2, 0];
 
   /*
-    Each phase contains exactly 15264 Ethereum blocks, which is roughfy 3 days. 
+    Each phase contains exactly 15264 Ethereum blocks, which is roughfy 3 days.
     TODO(dongw): add a reference to num of blocks per day.
   */
   uint16 public constant blocksPerPhase = 15264;
 
   /*
     This is where we hold ETH during this token sale. We will not transfer any Ether
-    out of this address before we invocate the `endSale` function. This promise is not 
+    out of this address before we invocate the `endSale` function. This promise is not
     guanranteed by smart contract by can be verified based on public transactions.
 
     This is also the only address from which `start` and `endSale` can be invocated.
@@ -39,14 +39,14 @@ contract LoopringToken is StandardToken {
   address public constant target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
 
   /*
-    `firstblock` specifies from which block our token sale starts. 
+    `firstblock` specifies from which block our token sale starts.
     This can only be modified once by the owner of `target` address.
   */
   uint public firstblock = 0;
 
   /*
     Specifies whether tokens that are not sold have been issued. This part of LRC token
-    is managed by the project team and is issued directly to `target`. 
+    is managed by the project team and is issued directly to `target`.
   */
 
   bool public unsoldTokenIssued = false;
@@ -102,7 +102,7 @@ contract LoopringToken is StandardToken {
   // PUBLIC FUNCTIONS -------------------------------------
 
   /**
-    Start the token sale by specifying the starting block.
+     Start the token sale by specifying the starting block.
   */
   function start(uint _firstblock) public isOwner beforeStart returns (uint firstblock) {
     if (_firstblock <= block.number) {
@@ -115,7 +115,7 @@ contract LoopringToken is StandardToken {
   }
 
   /**
-    Triggers unsold tokens to be issued to `target` address.
+     Triggers unsold tokens to be issued to `target` address.
   */
   function close() public isOwner afterEnd {
     if (totalEthReceived < 50000 ether) {
@@ -127,8 +127,8 @@ contract LoopringToken is StandardToken {
   }
 
   /**
-    This default function allows token to be purchased by directly
-    sending ether to this smart contract.
+     This default function allows token to be purchased by directly
+     sending ether to this smart contract.
   */
   function () payable {
     issueToken(msg.sender);
@@ -153,7 +153,7 @@ contract LoopringToken is StandardToken {
   modifier inProgress {
     if (saleStarted() && !saleEnded()) {
       _;
-    } else InvalidState("Sale not in progress"); 
+    } else InvalidState("Sale not in progress");
   }
 
   modifier afterEnd {
@@ -164,7 +164,7 @@ contract LoopringToken is StandardToken {
   }
 
   // INTERNAL FUNCTIONS -----------------------------------
-
+  
   function issueToken(address recipient) payable inProgress {
     // We only accept minimum purchase of 0.01 ETH.
     assert(msg.value >= 0.01 ether);
@@ -182,7 +182,7 @@ contract LoopringToken is StandardToken {
   }
 
   function computeTokenAmount(uint ethAmount) returns (uint tokens) {
-    uint8 phase = (block.number - firstblock).div(blocksPerPhase);
+    uint phase = (block.number - firstblock).div(blocksPerPhase);
 
     // A safe check
     if (phase >= bonusPercentages.length) {
@@ -196,28 +196,27 @@ contract LoopringToken is StandardToken {
   }
 
   /**
-    Issue unsold token to `target` address.
-    The math is as follows:
-    if totalEthReceived >= 50K but < 60K, the unsold part is 67.5% of all token;
-    if totalEthReceived >= 60K but < 70K, the unsold part is 65.0% of all token;
-    if totalEthReceived >= 70K but < 80K, the unsold part is 62.5% of all token;
-    if totalEthReceived >= 80K but < 90K, the unsold part is 60.0% of all token;
-    if totalEthReceived >= 90K but < 100K, the unsold part is 57.5% of all token;
-    if totalEthReceived >= 100K but < 110K, the unsold part is 55.0% of all token;
-    if totalEthReceived >= 110K but < 120K, the unsold part is 52.5% of all token;
-    if totalEthReceived >= 120K, the unsold part is 50.0% of all token;
+     Issue unsold token to `target` address.
+     The math is as follows:
+     if totalEthReceived >= 50K but < 60K, the unsold part is 67.5% of all token;
+     if totalEthReceived >= 60K but < 70K, the unsold part is 65.0% of all token;
+     if totalEthReceived >= 70K but < 80K, the unsold part is 62.5% of all token;
+     if totalEthReceived >= 80K but < 90K, the unsold part is 60.0% of all token;
+     if totalEthReceived >= 90K but < 100K, the unsold part is 57.5% of all token;
+     if totalEthReceived >= 100K but < 110K, the unsold part is 55.0% of all token;
+     if totalEthReceived >= 110K but < 120K, the unsold part is 52.5% of all token;
+     if totalEthReceived >= 120K, the unsold part is 50.0% of all token;
   */
   function issueUnsoldToken() {
     if(unsoldTokenIssued) {
       InvalidState("Unsold token issued already");
     } else {
-        
-      uint8 level = totalEthReceived.sub(50000 ether).div(10000 ether);
+      uint level = totalEthReceived.sub(50000 ether).div(10000 ether);
       if (level > 7) {
         level = 7;
       }
-      
-      uint16 unsoldRatioInThousand = 675 - 25 * level;
+
+      uint unsoldRatioInThousand = 675 - 25 * level;
       uint unsoldToken = totalSupply.div(1000 - unsoldRatioInThousand).mul(unsoldRatioInThousand);
 
       totalSupply = totalSupply.add(unsoldToken);
@@ -233,8 +232,8 @@ contract LoopringToken is StandardToken {
   }
 
   function saleEnded() constant returns (bool) {
-    return (firstblock > 0 && (
-      (block.number >= firstblock + blocksPerPhase * 10 /* num of phases */) ||
-      (totalEthReceived >= 120000 ether /* upper bound */)));
+    return firstblock > 0 &&
+            ((block.number >= firstblock + blocksPerPhase * 10 /* num of phases */)
+             ||(totalEthReceived >= 120000 ether /* upper bound */));
   }
 }
