@@ -93,20 +93,12 @@ contract('LoopringToken', function(accounts) {
       return web3.eth.sendTransaction({from: accounts[1], to: loopring.address, value: web3.toWei(1) });
     }).then(function(tx) {
       console.log("tx:", tx);
-      return loopring.balanceOf.call({from:accounts[1]});
+      return loopring.balanceOf(accounts[1], {from: accounts[1]});
     }).then(function(bal) {
       console.log("bal: ", bal.toNumber());
-      assert.equal(true, true, "no Loopring token Transfer event found");
+      assert.equal(bal, web3.toWei(6000), "no Loopring token Transfer event found");
     });
   });
-
-  // it("should be able to pay correct number of lrcs and eths to proxies when ico succeeded and ended ", function() {
-  //   assert.equals(true, false, "TODO");
-  // });
-
-  // it("should be able to refund eths to participants when ico failed ", function() {
-  //   assert.equals(true, false, "TODO");
-  // });
 
 });
 
