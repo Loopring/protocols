@@ -26,7 +26,7 @@ contract LoopringToken is StandardToken {
     Each phase contains exactly 15264 Ethereum blocks, which is roughfy 3 days.
     TODO(dongw): add a reference to num of blocks per day.
   */
-  uint16 public constant blocksPerPhase = 15264;
+  uint16 public constant blocksPerPhase = 15246;
 
   /*
     This is where we hold ETH during this token sale. We will not transfer any Ether
@@ -37,7 +37,8 @@ contract LoopringToken is StandardToken {
 
     TODO(dongw): this should also be a multi-sig address in production.
   */
-  address public constant target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
+  //address public constant target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
+  address public constant target = 0x3ddb3b8A28a954c90c1eF0b6E1c0854f89a681cc;
 
   /*
     `firstblock` specifies from which block our token sale starts.
@@ -99,42 +100,6 @@ contract LoopringToken is StandardToken {
   */
   event SaleFailed();
 
-
-  // PUBLIC FUNCTIONS -------------------------------------
-
-  /**
-     Start the token sale by specifying the starting block.
-  */
-  function start(uint _firstblock) public isOwner beforeStart returns (uint firstblock) {
-    if (_firstblock <= block.number) {
-      // Must specified a block in the future.
-      throw;
-    }
-
-    firstblock = _firstblock;
-    SaleStarted();
-  }
-
-  /**
-     Triggers unsold tokens to be issued to `target` address.
-  */
-  function close() public isOwner afterEnd {
-    if (totalEthReceived < 50000 ether) {
-      SaleFailed();
-    } else {
-      issueUnsoldToken();
-      SaleSucceeded();
-    }
-  }
-
-  /**
-     This default function allows token to be purchased by directly
-     sending ether to this smart contract.
-  */
-  function () payable {
-    issueToken(msg.sender);
-  }
-
   // MODIFIERS --------------------------------------------
 
   modifier isOwner {
@@ -162,6 +127,41 @@ contract LoopringToken is StandardToken {
       _;
     }
     else InvalidState("Sale not ended yet");
+  }
+
+  // PUBLIC FUNCTIONS -------------------------------------
+
+  /**
+     Start the token sale by specifying the starting block.
+  */
+  function start(uint _firstblock) public isOwner beforeStart {
+    if (_firstblock <= block.number) {
+      // Must specified a block in the future.
+      throw;
+    }
+
+    firstblock = _firstblock;
+    SaleStarted();
+  }
+
+  /**
+     Triggers unsold tokens to be issued to `target` address.
+  */
+  function close() public isOwner afterEnd {
+    if (totalEthReceived < 50000 ether) {
+      SaleFailed();
+    } else {
+      issueUnsoldToken();
+      SaleSucceeded();
+    }
+  }
+
+  /**
+     This default function allows token to be purchased by directly
+     sending ether to this smart contract.
+  */
+  function () payable {
+    issueToken(msg.sender);
   }
 
   // INTERNAL FUNCTIONS -----------------------------------

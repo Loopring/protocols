@@ -35,10 +35,6 @@ contract StandardToken is BasicToken, ERC20 {
     Transfer(_from, _to, _value);
   }
 
-  function balanceOf(address _owner) constant returns (uint balance) {
-    return balances[_owner];
-  }
-  
   /**
    * @dev Aprove the passed address to spend the specified amount of tokens on beahlf of msg.sender.
    * @param _spender The address which will spend the funds.
