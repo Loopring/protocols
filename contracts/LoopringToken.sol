@@ -179,7 +179,7 @@ contract LoopringToken is StandardToken {
     }
   }
 
-  function computeTokenAmount(uint ethAmount) returns (uint tokens) {
+  function computeTokenAmount(uint ethAmount) internal returns (uint tokens) {
     uint phase = (block.number - firstblock).div(blocksPerPhase);
 
     // A safe check
@@ -205,7 +205,7 @@ contract LoopringToken is StandardToken {
      if totalEthReceived >= 110K but < 120K, the unsold part is 52.5% of all token;
      if totalEthReceived >= 120K, the unsold part is 50.0% of all token;
   */
-  function issueUnsoldToken() {
+  function issueUnsoldToken() internal {
     if(unsoldTokenIssued) {
       InvalidState("Unsold token issued already");
     } else {
