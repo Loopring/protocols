@@ -26,7 +26,7 @@ contract LoopringToken is StandardToken {
     Each phase contains exactly 15264 Ethereum blocks, which is roughfy 3 days.
     TODO(dongw): add a reference to num of blocks per day.
   */
-  uint16 public constant blocksPerPhase = 15246;
+  uint16 public constant blocksPerPhase = 15250;
 
   /*
     This is where we hold ETH during this token sale. We will not transfer any Ether
