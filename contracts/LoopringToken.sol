@@ -3,7 +3,8 @@ pragma solidity ^0.4.11;
 import "./StandardToken.sol";
 
 /**
-   @title Loopring Protocol Token.
+  @title Loopring Protocol Token.
+  For more information about this token sale, please visit https://loopring.org
 */
 contract LoopringToken is StandardToken {
 
