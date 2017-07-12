@@ -3,8 +3,8 @@ pragma solidity ^0.4.11;
 import "./StandardToken.sol";
 
 /**
-  @title Loopring Protocol Token.
-  For more information about this token sale, please visit https://loopring.org
+   @title Loopring Protocol Token.
+   For more information about this token sale, please visit https://loopring.org
 */
 contract LoopringToken is StandardToken {
 
@@ -23,7 +23,7 @@ contract LoopringToken is StandardToken {
   uint8[10] public bonusPercentages = [20, 16, 14, 12, 10, 8, 6, 4, 2, 0];
 
   /*
-    Each phase contains exactly 15264 Ethereum blocks, which is roughfy 3 days.
+    Each phase contains exactly 15250 Ethereum blocks, which is roughfy 3 days.
     See https://www.ethereum.org/crowdsale#scheduling-a-call
   */
   uint16 public constant blocksPerPhase = 15250;
@@ -37,8 +37,7 @@ contract LoopringToken is StandardToken {
 
     TODO(dongw): this should also be a multi-sig address in production.
   */
-  //address public constant target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
-  address public constant target = 0x3ddb3b8A28a954c90c1eF0b6E1c0854f89a681cc;
+  address public constant target = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
 
   /*
     `firstblock` specifies from which block our token sale starts.
@@ -165,7 +164,7 @@ contract LoopringToken is StandardToken {
   }
 
   // INTERNAL FUNCTIONS -----------------------------------
-  
+
   function issueToken(address recipient) payable inProgress {
     // We only accept minimum purchase of 0.01 ETH.
     assert(msg.value >= 0.01 ether);
@@ -234,7 +233,7 @@ contract LoopringToken is StandardToken {
 
   function saleEnded() constant returns (bool) {
     return firstblock > 0 &&
-            ((block.number >= firstblock + blocksPerPhase * 10 /* num of phases */)
-             ||(totalEthReceived >= 120000 ether /* upper bound */));
+      ((block.number >= firstblock + blocksPerPhase * 10 /* num of phases */)
+       ||(totalEthReceived >= 120000 ether /* upper bound */));
   }
 }
