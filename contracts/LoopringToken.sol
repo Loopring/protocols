@@ -1,3 +1,20 @@
+/*
+
+  Copyright 2017 Loopring Foundation.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+*/
 pragma solidity ^0.4.11;
 
 import "./StandardToken.sol";
@@ -5,7 +22,7 @@ import "./StandardToken.sol";
 
 /// @title Loopring Protocol Token.
 /// For more information about this token sale, please visit https://loopring.org
-/// foundation at loopring.org
+/// @author Kongliang Zhong - <kongliang@loopring.org>, Daniel Wang - <daniel@loopring.org>.
 contract LoopringToken is StandardToken {
 
   string public constant name = "LoopringCoin";
@@ -41,30 +58,30 @@ contract LoopringToken is StandardToken {
   bool public unsoldTokenIssued = false;
 
 
-  // A simple stat for emitting events.
+  /// A simple stat for emitting events.
   uint public totalEthReceived = 0;
 
   /* 
    * EVENTS
    */
 
-  // Emitted only once after token sale starts.
+  /// Emitted only once after token sale starts.
   event SaleStarted();
 
-  // Emitted only once after token sale ended (all token issued).
+  /// Emitted only once after token sale ended (all token issued).
   event SaleEnded();
 
-  // Emitted when a function is invocated by unauthorized addresses.
+  /// Emitted when a function is invocated by unauthorized addresses.
   event InvalidCaller(address caller);
 
   /// Emitted when a function is invocated without the specified preconditions.
   /// This event will not come alone with an exception.
   event InvalidState(bytes msg);
 
-  // Emitted for each sucuessful token purchase.
+  /// Emitted for each sucuessful token purchase.
   event Issue(address addr, uint ethAmount, uint tokenAmount);
 
-  // Emitted if the token sale succeeded.
+  /// Emitted if the token sale succeeded.
   event SaleSucceeded();
 
   /// Emitted if the token sale failed.
@@ -107,7 +124,8 @@ contract LoopringToken is StandardToken {
    * PUBLIC FUNCTIONS
    */
 
-  // Start the token sale by specifying the starting block.
+  /// @dev Start the token sale.
+  /// @param _firstblock The block from which the sale will start.
   function start(uint _firstblock) public isOwner beforeStart {
     if (_firstblock <= block.number) {
       // Must specified a block in the future.
@@ -118,7 +136,7 @@ contract LoopringToken is StandardToken {
     SaleStarted();
   }
 
-  // Triggers unsold tokens to be issued to `target` address.
+  /// @dev Triggers unsold tokens to be issued to `target` address.
   function close() public isOwner afterEnd {
     if (totalEthReceived < 50000 ether) {
       SaleFailed();
@@ -128,12 +146,14 @@ contract LoopringToken is StandardToken {
     }
   }
 
-  /// This default function allows token to be purchased by directly
+  /// @dev This default function allows token to be purchased by directly
   /// sending ether to this smart contract.
   function () payable {
     issueToken(msg.sender);
   }
 
+  /// @dev Issue token based on Ether received.
+  /// @param recipient Address that newly issued token will be sent to.
   function issueToken(address recipient) payable inProgress {
     // We only accept minimum purchase of 0.01 ETH.
     assert(msg.value >= 0.01 ether);
@@ -154,6 +174,9 @@ contract LoopringToken is StandardToken {
    * INTERNAL FUNCTIONS
    */
   
+  /// @dev Compute the amount of LRC token that can be purchased.
+  /// @param ethAmount Amount of Ether to purchase LRC.
+  /// @return Amount of LRC token to purchase
   function computeTokenAmount(uint ethAmount) internal returns (uint tokens) {
     uint phase = (block.number - firstblock).div(blocksPerPhase);
 
@@ -168,7 +191,7 @@ contract LoopringToken is StandardToken {
     tokens = tokenBase.add(tokenBonus);
   }
 
-  /// Issue unsold token to `target` address.
+  /// @dev Issue unsold token to `target` address.
   /// The math is as follows:
   /// if totalEthReceived >= 50K but < 60K, the unsold part is 67.5% of all token;
   /// if totalEthReceived >= 60K but < 70K, the unsold part is 65.0% of all token;
@@ -198,10 +221,12 @@ contract LoopringToken is StandardToken {
     }
   }
 
+  /// @return true if sale has started, false otherwise.
   function saleStarted() constant returns (bool) {
     return (firstblock > 0 && block.number >= firstblock);
   }
 
+  /// @return true if sale has ended, false otherwise.
   function saleEnded() constant returns (bool) {
     return firstblock > 0 &&
       ((block.number >= firstblock + blocksPerPhase * 10 /* num of phases */)
