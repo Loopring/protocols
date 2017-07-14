@@ -29,10 +29,10 @@ contract LoopringToken is StandardToken {
     string public constant SYMBOL = "LRC";
     uint public constant DECIMALS = 18;
 
-    /// During token sale, we use one consistent price: 5000LRC/ETH.
-    /// We splict the entire token sale period into 10 phases, each
+    /// During token sale, we use one consistent price: 5000 LRC/ETH.
+    /// We split the entire token sale period into 10 phases, each
     /// phase has a different bonus setting as specified in `bonusPercentages`.
-    /// The real price for phase i is `(1 + bonusPercentages[i]/100.0) * 5000LRC/ETH`.
+    /// The real price for phase i is `(1 + bonusPercentages[i]/100.0) * 5000 LRC/ETH`.
     /// The first phase or early-bird phase has a much higher bonus.
     uint8[10] public bonusPercentages = [
         20,
@@ -44,20 +44,24 @@ contract LoopringToken is StandardToken {
         6,
         4,
         2,
-        0];
+        0
+    ];
+
+    uint public constant NUM_OF_PHASE = 10;
   
     /// Each phase contains exactly 15250 Ethereum blocks, which is roughly 3 days,
     /// which makes this 10-phase sale period roughly 30 days.
     /// See https://www.ethereum.org/crowdsale#scheduling-a-call
-    uint16 public constant BLOCKSPERPHASE = 15250;
+    uint16 public constant BLOCKS_PER_PHASE = 15250;
 
     /// This is where we hold ETH during this token sale. We will not transfer any Ether
     /// out of this address before we invocate the `close` function to finalize the sale. 
     /// This promise is not guanranteed by smart contract by can be verified with public
     /// Ethereum transactions data available on several blockchain browsers.
     /// This is the only address from which `start` and `close` can be invocated.
-    /// TODO(dongw): this address will change!!!
-    address public constant TARGET = 0x249acd967f6eb5b8907e5c888cbd8a005d0b23f4;
+    ///
+    /// Note: this will be initialized during the contract deployment.
+    address public target;
 
     /// `firstblock` specifies from which block our token sale starts.
     /// This can only be modified once by the owner of `target` address.
@@ -66,6 +70,18 @@ contract LoopringToken is StandardToken {
     /// Indicates whether unsold token have been issued. This part of LRC token
     /// is managed by the project team and is issued directly to `target`.
     bool public unsoldTokenIssued = false;
+
+
+    /// Minimum amount of funds to be raised for the sale to succeed. 
+    uint256 public constant goal = 50000 ether;
+
+    uint256 public constant hardCap = 
+
+    /// Maximum unsold ratio, this is hit when the mininum level of amount of fund is raised.
+    uint public constant maxUnsoldRatio = 675;
+
+    /// Base exchange rate is set to 1 ETH = 5000 LRC.
+    uint256 public constant baseExchangeRate = 5000;
 
 
     /// A simple stat for emitting events.
@@ -104,7 +120,7 @@ contract LoopringToken is StandardToken {
      */
 
     modifier isOwner {
-        if (TARGET == msg.sender) {
+        if (target == msg.sender) {
             _;
         }
         else
@@ -116,7 +132,7 @@ contract LoopringToken is StandardToken {
             _;
         }
         else
-            InvalidState("Sale not started yet");
+            InvalidState("Sale has not started yet");
     }
 
     modifier inProgress {
@@ -124,7 +140,7 @@ contract LoopringToken is StandardToken {
             _;
         }
         else
-            InvalidState("Sale not in progress");
+            InvalidState("Sale is not in progress");
     }
 
     modifier afterEnd {
@@ -132,7 +148,18 @@ contract LoopringToken is StandardToken {
             _;
         }
         else
-            InvalidState("Sale not ended yet");
+            InvalidState("Sale is not ended yet");
+    }
+
+    /**
+     * CONSTRUCTOR 
+     * 
+     * @dev Initialize the Loopring Token
+     * @param _target the escrow account address, all ethers will
+     * be sent to this address.
+     */
+    function LoopringToken(address _target) {
+        target = _target;
     }
 
     /*
@@ -143,7 +170,7 @@ contract LoopringToken is StandardToken {
     /// @param _firstblock The block from which the sale will start.
     function start(uint _firstblock) public isOwner beforeStart {
         if (_firstblock <= block.number) {
-            // Must specified a block in the future.
+            // Must specify a block in the future.
             throw;
         }
 
@@ -153,7 +180,7 @@ contract LoopringToken is StandardToken {
 
     /// @dev Triggers unsold tokens to be issued to `target` address.
     function close() public isOwner afterEnd {
-        if (totalEthReceived < 50000 ether) {
+        if (totalEthReceived < goal) {
             SaleFailed();
         } else {
             issueUnsoldToken();
@@ -180,7 +207,7 @@ contract LoopringToken is StandardToken {
 
         Issue(recipient, msg.value, tokens);
 
-        if (!TARGET.send(msg.value)) {
+        if (!target.send(msg.value)) {
             throw;
         }
     }
@@ -193,14 +220,14 @@ contract LoopringToken is StandardToken {
     /// @param ethAmount Amount of Ether to purchase LRC.
     /// @return Amount of LRC token to purchase
     function computeTokenAmount(uint ethAmount) internal returns (uint tokens) {
-        uint phase = (block.number - firstblock).div(BLOCKSPERPHASE);
+        uint phase = (block.number - firstblock).div(BLOCKS_PER_PHASE);
 
         // A safe check
         if (phase >= bonusPercentages.length) {
             phase = bonusPercentages.length - 1;
         }
 
-        uint tokenBase = ethAmount.mul(5000); // 5000: base price
+        uint tokenBase = ethAmount.mul(baseExchangeRate);
         uint tokenBonus = tokenBase.mul(bonusPercentages[phase]).div(100);
 
         tokens = tokenBase.add(tokenBonus);
@@ -208,30 +235,46 @@ contract LoopringToken is StandardToken {
 
     /// @dev Issue unsold token to `target` address.
     /// The math is as follows:
-    /// if totalEthReceived >= 50K but < 60K, the unsold part is 67.5% of all token;
-    /// if totalEthReceived >= 60K but < 70K, the unsold part is 65.0% of all token;
-    /// if totalEthReceived >= 70K but < 80K, the unsold part is 62.5% of all token;
-    /// if totalEthReceived >= 80K but < 90K, the unsold part is 60.0% of all token;
-    /// if totalEthReceived >= 90K but < 100K, the unsold part is 57.5% of all token;
-    /// if totalEthReceived >= 100K but < 110K, the unsold part is 55.0% of all token;
-    /// if totalEthReceived >= 110K but < 120K, the unsold part is 52.5% of all token;
-    /// if totalEthReceived >= 120K, the unsold part is 50.0% of all token;
+    ///   +-------------------------------------------------------------+
+    ///   |       Total Ethers Received        |                        |
+    ///   +------------------------------------+  Unsold Token Portion  |
+    ///   |   Lower Bound   |   Upper Bound    |                        |
+    ///   +-------------------------------------------------------------+
+    ///   |      50,000     |     60,000       |         67.5%          |
+    ///   +-------------------------------------------------------------+
+    ///   |      60,000     |     70,000       |         65.0%          |
+    ///   +-------------------------------------------------------------+
+    ///   |      70,000     |     80,000       |         62.5%          |
+    ///   +-------------------------------------------------------------+
+    ///   |      80,000     |     90,000       |         60.0%          |
+    ///   +-------------------------------------------------------------+
+    ///   |      90,000     |    100,000       |         57.5%          |
+    ///   +-------------------------------------------------------------+
+    ///   |     100,000     |    110,000       |         55.0%          |
+    ///   +-------------------------------------------------------------+
+    ///   |     110,000     |    120,000       |         52.5%          |
+    ///   +-------------------------------------------------------------+
+    ///   |     120,000     |                  |         50.0%          |
+    ///   +-------------------------------------------------------------+
     function issueUnsoldToken() internal {
         if (unsoldTokenIssued) {
-            InvalidState("Unsold token issued already");
+            InvalidState("Unsold token has been issued already");
         } else {
-            uint level = totalEthReceived.sub(50000 ether).div(10000 ether);
+            // Add another safe guard 
+            require(totalEthReceived >= goal);
+
+            uint level = totalEthReceived.sub(goal).div(10000 ether);
             if (level > 7) {
                 level = 7;
             }
 
-            uint unsoldRatioInThousand = 675 - 25 * level;
+            uint unsoldRatioInThousand = maxUnsoldRatio - 25 * level;
             uint unsoldToken = totalSupply.div(1000 - unsoldRatioInThousand).mul(unsoldRatioInThousand);
 
             totalSupply = totalSupply.add(unsoldToken);
-            balances[TARGET] = balances[TARGET].add(unsoldToken);
+            balances[target] = balances[target].add(unsoldToken);
 
-            Issue(TARGET, 0, unsoldToken);
+            Issue(target, 0, unsoldToken);
             unsoldTokenIssued = true;
         }
     }
@@ -244,7 +287,7 @@ contract LoopringToken is StandardToken {
     /// @return true if sale has ended, false otherwise.
     function saleEnded() constant returns (bool) {
         return firstblock > 0 &&
-        ((block.number >= firstblock + BLOCKSPERPHASE * 10 /* num of phases */) ||
-        (totalEthReceived >= 120000 ether /* upper bound */));
+        ((block.number >= firstblock + BLOCKS_PER_PHASE * NUM_OF_PHASE) ||
+        (totalEthReceived >= hardCap));
     }
 }
