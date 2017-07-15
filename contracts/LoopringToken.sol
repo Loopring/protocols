@@ -73,6 +73,9 @@ contract LoopringToken is StandardToken {
     /// Minimum amount of funds to be raised for the sale to succeed. 
     uint256 public constant goal = 50000 ether;
 
+    /// Maximum amount of fund to be raised, the sale ends on reaching this amount.
+    uint256 public constant hardCap = 120000 ether;
+
     /// Maximum unsold ratio, this is hit when the mininum level of amount of fund is raised.
     uint public constant maxUnsoldRatio = 675;
 
@@ -114,7 +117,7 @@ contract LoopringToken is StandardToken {
      * MODIFIERS
      */
 
-    modifier isOwner {
+    modifier onlyOwner {
         if (target == msg.sender) {
             _;
         }
@@ -163,7 +166,7 @@ contract LoopringToken is StandardToken {
 
     /// @dev Start the token sale.
     /// @param _firstblock The block from which the sale will start.
-    function start(uint _firstblock) public isOwner beforeStart {
+    function start(uint _firstblock) public onlyOwner beforeStart {
         if (_firstblock <= block.number) {
             // Must specify a block in the future.
             throw;
@@ -174,7 +177,7 @@ contract LoopringToken is StandardToken {
     }
 
     /// @dev Triggers unsold tokens to be issued to `target` address.
-    function close() public isOwner afterEnd {
+    function close() public onlyOwner afterEnd {
         if (totalEthReceived < goal) {
             SaleFailed();
         } else {
@@ -264,9 +267,19 @@ contract LoopringToken is StandardToken {
             }
 
             uint unsoldRatioInThousand = maxUnsoldRatio - 25 * level;
+
+
+            // Calculate the `unsoldToken` to be issued, the amount of `unsoldToken`
+            // is based on the issued amount, that is the `totalSupply`, during 
+            // the sale:
+            //                   totalSupply
+            //   unsoldToken = --------------- * r
+            //                      1 - r
             uint unsoldToken = totalSupply.div(1000 - unsoldRatioInThousand).mul(unsoldRatioInThousand);
 
+            // Adjust `totalSupply`.
             totalSupply = totalSupply.add(unsoldToken);
+            // Issue `unsoldToken` to the target account.
             balances[target] = balances[target].add(unsoldToken);
 
             Issue(target, 0, unsoldToken);
@@ -281,8 +294,17 @@ contract LoopringToken is StandardToken {
 
     /// @return true if sale has ended, false otherwise.
     function saleEnded() constant returns (bool) {
-        return firstblock > 0 &&
-        ((block.number >= firstblock + BLOCKS_PER_PHASE * NUM_OF_PHASE) ||
-        (totalEthReceived >= goal));
+        return firstblock > 0 && (saleDue() || hardCapReached());
+    }
+
+    /// @return true if sale is due when the last phase is finished.
+    function saleDue() constant returns (bool) {
+        return block.number >= firstblock + BLOCKS_PER_PHASE * NUM_OF_PHASE;
+    }
+
+    /// @return true if the hard cap is reached.
+    function hardCapReached() constant returns (bool) {
+        return totalEthReceived >= hardCap;
     }
 }
+
