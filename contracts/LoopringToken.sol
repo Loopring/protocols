@@ -75,8 +75,6 @@ contract LoopringToken is StandardToken {
     /// Minimum amount of funds to be raised for the sale to succeed. 
     uint256 public constant goal = 50000 ether;
 
-    uint256 public constant hardCap = 
-
     /// Maximum unsold ratio, this is hit when the mininum level of amount of fund is raised.
     uint public constant maxUnsoldRatio = 675;
 
@@ -288,6 +286,6 @@ contract LoopringToken is StandardToken {
     function saleEnded() constant returns (bool) {
         return firstblock > 0 &&
         ((block.number >= firstblock + BLOCKS_PER_PHASE * NUM_OF_PHASE) ||
-        (totalEthReceived >= hardCap));
+        (totalEthReceived >= goal));
     }
 }
