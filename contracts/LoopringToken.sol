@@ -121,7 +121,7 @@ contract LoopringToken is StandardToken {
      * MODIFIERS
      */
 
-    modifier isOwner {
+    modifier onlyOwner {
         if (target == msg.sender) {
             _;
         }
@@ -170,7 +170,7 @@ contract LoopringToken is StandardToken {
 
     /// @dev Start the token sale.
     /// @param _firstblock The block from which the sale will start.
-    function start(uint _firstblock) public isOwner beforeStart {
+    function start(uint _firstblock) public onlyOwner beforeStart {
         if (_firstblock <= block.number) {
             // Must specify a block in the future.
             throw;
@@ -181,7 +181,7 @@ contract LoopringToken is StandardToken {
     }
 
     /// @dev Triggers unsold tokens to be issued to `target` address.
-    function close() public isOwner afterEnd {
+    function close() public onlyOwner afterEnd {
         if (totalEthReceived < goal) {
             SaleFailed();
         } else {
