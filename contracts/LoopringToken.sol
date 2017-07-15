@@ -19,7 +19,6 @@ pragma solidity ^0.4.11;
 
 import "./StandardToken.sol";
 
-
 /// @title Loopring Protocol Token.
 /// For more information about this token sale, please visit https://loopring.org
 /// @author Kongliang Zhong - <kongliang@loopring.org>, Daniel Wang - <daniel@loopring.org>.
@@ -71,10 +70,8 @@ contract LoopringToken is StandardToken {
     /// is managed by the project team and is issued directly to `target`.
     bool public unsoldTokenIssued = false;
 
-
     /// Minimum amount of funds to be raised for the sale to succeed. 
     uint256 public constant goal = 50000 ether;
-
 
     /// Maximum amount of fund to be raised, the sale ends on reaching this amount.
     uint256 public constant hardCap = 120000 ether;
@@ -84,7 +81,6 @@ contract LoopringToken is StandardToken {
 
     /// Base exchange rate is set to 1 ETH = 5000 LRC.
     uint256 public constant baseExchangeRate = 5000;
-
 
     /// A simple stat for emitting events.
     uint public totalEthReceived = 0;
