@@ -120,33 +120,33 @@ contract LoopringToken is StandardToken {
     modifier onlyOwner {
         if (target == msg.sender) {
             _;
-        }
-        else
+        } else {
             InvalidCaller(msg.sender);
+        }
     }
 
     modifier beforeStart {
         if (!saleStarted()) {
             _;
-        }
-        else
+        } else {
             InvalidState("Sale has not started yet");
+        }
     }
 
     modifier inProgress {
         if (saleStarted() && !saleEnded()) {
             _;
-        }
-        else
+        } else {
             InvalidState("Sale is not in progress");
+        }
     }
 
     modifier afterEnd {
         if (saleEnded()) {
             _;
-        }
-        else
+        } else {
             InvalidState("Sale is not ended yet");
+        }
     }
 
     /**
