@@ -19,11 +19,11 @@ pragma solidity ^0.4.11;
 
 import "./StandardToken.sol";
 
+
 /// @title Loopring Protocol Token.
 /// For more information about this token sale, please visit https://loopring.org
 /// @author Kongliang Zhong - <kongliang@loopring.org>, Daniel Wang - <daniel@loopring.org>.
 contract LoopringToken is StandardToken {
-
     string public constant NAME = "LoopringCoin";
     string public constant SYMBOL = "LRC";
     uint public constant DECIMALS = 18;
@@ -71,16 +71,16 @@ contract LoopringToken is StandardToken {
     bool public unsoldTokenIssued = false;
 
     /// Minimum amount of funds to be raised for the sale to succeed. 
-    uint256 public constant goal = 50000 ether;
+    uint256 public constant GOAL = 50000 ether;
 
     /// Maximum amount of fund to be raised, the sale ends on reaching this amount.
-    uint256 public constant hardCap = 120000 ether;
+    uint256 public constant HARD_CAP = 120000 ether;
 
     /// Maximum unsold ratio, this is hit when the mininum level of amount of fund is raised.
-    uint public constant maxUnsoldRatio = 675;
+    uint public constant MAX_UNSOLD_RATIO = 675;
 
     /// Base exchange rate is set to 1 ETH = 5000 LRC.
-    uint256 public constant baseExchangeRate = 5000;
+    uint256 public constant BASE_RATE = 5000;
 
     /// A simple stat for emitting events.
     uint public totalEthReceived = 0;
@@ -178,7 +178,7 @@ contract LoopringToken is StandardToken {
 
     /// @dev Triggers unsold tokens to be issued to `target` address.
     function close() public onlyOwner afterEnd {
-        if (totalEthReceived < goal) {
+        if (totalEthReceived < GOAL) {
             SaleFailed();
         } else {
             issueUnsoldToken();
@@ -225,7 +225,7 @@ contract LoopringToken is StandardToken {
             phase = bonusPercentages.length - 1;
         }
 
-        uint tokenBase = ethAmount.mul(baseExchangeRate);
+        uint tokenBase = ethAmount.mul(BASE_RATE);
         uint tokenBonus = tokenBase.mul(bonusPercentages[phase]).div(100);
 
         tokens = tokenBase.add(tokenBonus);
@@ -259,14 +259,14 @@ contract LoopringToken is StandardToken {
             InvalidState("Unsold token has been issued already");
         } else {
             // Add another safe guard 
-            require(totalEthReceived >= goal);
+            require(totalEthReceived >= GOAL);
 
-            uint level = totalEthReceived.sub(goal).div(10000 ether);
+            uint level = totalEthReceived.sub(GOAL).div(10000 ether);
             if (level > 7) {
                 level = 7;
             }
 
-            uint unsoldRatioInThousand = maxUnsoldRatio - 25 * level;
+            uint unsoldRatioInThousand = MAX_UNSOLD_RATIO - 25 * level;
 
 
             // Calculate the `unsoldToken` to be issued, the amount of `unsoldToken`
@@ -304,7 +304,7 @@ contract LoopringToken is StandardToken {
 
     /// @return true if the hard cap is reached.
     function hardCapReached() constant returns (bool) {
-        return totalEthReceived >= hardCap;
+        return totalEthReceived >= HARD_CAP;
     }
 }
 
