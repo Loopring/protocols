@@ -51,7 +51,7 @@ contract LoopringToken is StandardToken {
     /// Each phase contains exactly 15250 Ethereum blocks, which is roughly 3 days,
     /// which makes this 10-phase sale period roughly 30 days.
     /// See https://www.ethereum.org/crowdsale#scheduling-a-call
-    uint16 public constant BLOCKS_PER_PHASE = 15250;
+    uint16 public constant BLOCKS_PER_PHASE = 10;
 
     /// This is where we hold ETH during this token sale. We will not transfer any Ether
     /// out of this address before we invocate the `close` function to finalize the sale. 
@@ -71,10 +71,10 @@ contract LoopringToken is StandardToken {
     bool public unsoldTokenIssued = false;
 
     /// Minimum amount of funds to be raised for the sale to succeed. 
-    uint256 public constant goal = 50000 ether;
+    uint256 public constant goal = 0.01 ether;
 
     /// Maximum amount of fund to be raised, the sale ends on reaching this amount.
-    uint256 public constant hardCap = 120000 ether;
+    uint256 public constant hardCap = 0.1 ether;
 
     /// Maximum unsold ratio, this is hit when the mininum level of amount of fund is raised.
     uint public constant maxUnsoldRatio = 675;
@@ -195,9 +195,6 @@ contract LoopringToken is StandardToken {
     /// @dev Issue token based on Ether received.
     /// @param recipient Address that newly issued token will be sent to.
     function issueToken(address recipient) payable inProgress {
-        // We only accept minimum purchase of 0.01 ETH.
-        assert(msg.value >= 0.01 ether);
-
         uint tokens = computeTokenAmount(msg.value);
         totalEthReceived = totalEthReceived.add(msg.value);
         totalSupply = totalSupply.add(tokens);
