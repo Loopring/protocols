@@ -85,6 +85,9 @@ contract LoopringToken is StandardToken {
     /// A simple stat for emitting events.
     uint public totalEthReceived = 0;
 
+    /// Issue index. start from 1.
+    uint public index = 0;
+
     /* 
      * EVENTS
      */
@@ -103,7 +106,7 @@ contract LoopringToken is StandardToken {
     event InvalidState(bytes msg);
 
     /// Emitted for each sucuessful token purchase.
-    event Issue(address addr, uint ethAmount, uint tokenAmount);
+    event Issue(uint index, address addr, uint ethAmount, uint tokenAmount);
 
     /// Emitted if the token sale succeeded.
     event SaleSucceeded();
@@ -203,7 +206,12 @@ contract LoopringToken is StandardToken {
         totalSupply = totalSupply.add(tokens);
         balances[recipient] = balances[recipient].add(tokens);
 
-        Issue(recipient, msg.value, tokens);
+        Issue(
+            ++index,
+            recipient,
+            msg.value,
+            tokens
+        );
 
         if (!target.send(msg.value)) {
             throw;
@@ -282,7 +290,13 @@ contract LoopringToken is StandardToken {
             // Issue `unsoldToken` to the target account.
             balances[target] = balances[target].add(unsoldToken);
 
-            Issue(target, 0, unsoldToken);
+            Issue(
+                ++index,
+                target,
+                0,
+                unsoldToken
+            );
+            
             unsoldTokenIssued = true;
         }
     }
