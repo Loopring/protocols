@@ -22,7 +22,9 @@ import "./StandardToken.sol";
 
 /// @title Loopring Protocol Token.
 /// For more information about this token sale, please visit https://loopring.org
-/// @author Kongliang Zhong - <kongliang@loopring.org>, Daniel Wang - <daniel@loopring.org>.
+/// @author:
+///     Kongliang Zhong - <kongliang@loopring.org>
+///     Daniel Wang - <daniel@loopring.org>
 contract LoopringToken is StandardToken {
     string public constant NAME = "LoopringCoin";
     string public constant SYMBOL = "LRC";
@@ -31,7 +33,7 @@ contract LoopringToken is StandardToken {
     /// During token sale, we use one consistent price: 5000 LRC/ETH.
     /// We split the entire token sale period into 10 phases, each
     /// phase has a different bonus setting as specified in `bonusPercentages`.
-    /// The real price for phase i is `(1 + bonusPercentages[i]/100.0) * 5000 LRC/ETH`.
+    /// The real price for phase i is `(1 + bonusPercentages[i]/100.0) * BASE_RATE`.
     /// The first phase or early-bird phase has a much higher bonus.
     uint8[10] public bonusPercentages = [
         20,
@@ -77,7 +79,7 @@ contract LoopringToken is StandardToken {
     uint256 public constant HARD_CAP = 120000 ether;
 
     /// Maximum unsold ratio, this is hit when the mininum level of amount of fund is raised.
-    uint public constant MAX_UNSOLD_RATIO = 675;
+    uint public constant MAX_UNSOLD_RATIO = 675; // 67.5%
 
     /// Base exchange rate is set to 1 ETH = 5000 LRC.
     uint256 public constant BASE_RATE = 5000;
@@ -85,8 +87,8 @@ contract LoopringToken is StandardToken {
     /// A simple stat for emitting events.
     uint public totalEthReceived = 0;
 
-    /// Issue index. start from 1.
-    uint public index = 0;
+    /// Issue event index starting from 0.
+    uint public issueIndex = 0;
 
     /* 
      * EVENTS
@@ -106,7 +108,7 @@ contract LoopringToken is StandardToken {
     event InvalidState(bytes msg);
 
     /// Emitted for each sucuessful token purchase.
-    event Issue(uint index, address addr, uint ethAmount, uint tokenAmount);
+    event Issue(uint issueIndex, address addr, uint ethAmount, uint tokenAmount);
 
     /// Emitted if the token sale succeeded.
     event SaleSucceeded();
@@ -156,7 +158,7 @@ contract LoopringToken is StandardToken {
      * CONSTRUCTOR 
      * 
      * @dev Initialize the Loopring Token
-     * @param _target the escrow account address, all ethers will
+     * @param _target The escrow account address, all ethers will
      * be sent to this address.
      */
     function LoopringToken(address _target) {
@@ -207,7 +209,7 @@ contract LoopringToken is StandardToken {
         balances[recipient] = balances[recipient].add(tokens);
 
         Issue(
-            ++index,
+            issueIndex++,
             recipient,
             msg.value,
             tokens
@@ -291,7 +293,7 @@ contract LoopringToken is StandardToken {
             balances[target] = balances[target].add(unsoldToken);
 
             Issue(
-                ++index,
+                issueIndex++,
                 target,
                 0,
                 unsoldToken
