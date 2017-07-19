@@ -160,6 +160,7 @@ contract LoopringToken is StandardToken {
      * @dev Initialize the Loopring Token
      * @param _target The escrow account address, all ethers will
      * be sent to this address.
+     * This address will be : 0x00073F7155459C9205010Cb3453a0f392a0C3210
      */
     function LoopringToken(address _target) {
         target = _target;
