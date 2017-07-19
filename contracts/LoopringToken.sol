@@ -192,6 +192,11 @@ contract LoopringToken is StandardToken {
         }
     }
 
+    /// @dev Returns the current price.
+    function price() public constant returns (uint tokens) {
+        return computeTokenAmount(1 ether);
+    }
+
     /// @dev This default function allows token to be purchased by directly
     /// sending ether to this smart contract.
     function () payable {
