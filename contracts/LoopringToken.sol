@@ -22,9 +22,7 @@ import "./StandardToken.sol";
 
 /// @title Loopring Protocol Token.
 /// For more information about this token sale, please visit https://loopring.org
-/// @author:
-///     Kongliang Zhong - <kongliang@loopring.org>
-///     Daniel Wang - <daniel@loopring.org>
+/// @author Kongliang Zhong - <kongliang@loopring.org>, Daniel Wang - <daniel@loopring.org>.
 contract LoopringToken is StandardToken {
     string public constant NAME = "LoopringCoin";
     string public constant SYMBOL = "LRC";
