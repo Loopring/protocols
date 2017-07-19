@@ -125,6 +125,7 @@ contract LoopringToken is StandardToken {
             _;
         } else {
             InvalidCaller(msg.sender);
+            throw;
         }
     }
 
@@ -133,6 +134,7 @@ contract LoopringToken is StandardToken {
             _;
         } else {
             InvalidState("Sale has not started yet");
+            throw;
         }
     }
 
@@ -141,6 +143,7 @@ contract LoopringToken is StandardToken {
             _;
         } else {
             InvalidState("Sale is not in progress");
+            throw;
         }
     }
 
@@ -149,6 +152,7 @@ contract LoopringToken is StandardToken {
             _;
         } else {
             InvalidState("Sale is not ended yet");
+            throw;
         }
     }
 
