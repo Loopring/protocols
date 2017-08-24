@@ -1,0 +1,21 @@
+{
+  "name": "loopring-smart-contracts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled; tsc",
+    "test": "npm run transpile; truffle test",
+    "compile": "rm -rf build/contracts; truffle compile",
+    "migrate": "npm run transpile; truffle migrate",
+    "deploy": "npm run migrate --network kovan",
+    "testrpc": "testrpc --networkId 100"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "copyfiles": "^1.2.0"
+  }
+}
