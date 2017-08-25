@@ -16,6 +16,12 @@
   },
   "license": "ISC",
   "devDependencies": {
-    "copyfiles": "^1.2.0"
+    "@types/bignumber.js": "^4.0.2",
+    "copyfiles": "^1.2.0",
+    "dirty-chai": "^2.0.0",
+    "truffle": "3.4.3",
+    "solc": "^0.4.11",
+    "typescript": "^2.2.2",
+    "web3-typescript-typings": "0.0.3"
   }
 }

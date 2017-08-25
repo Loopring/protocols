@@ -6,9 +6,11 @@
     "module": "commonjs",    
     "target": "es6",
     "baseUrl": ".",
-    "allowJs": true
+    "allowJs": true,
+    "moduleResolution": "node"
   },
   "include": [
+    "node_modules/web3-typescript-typings/index.d.ts",
     "./globals.d.ts",
     "./util/**/*",    
     "./test/**/*",
