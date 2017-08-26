@@ -17,6 +17,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/bignumber.js": "^4.0.2",
+    "@types/node": "^7.0.13",
     "copyfiles": "^1.2.0",
     "dirty-chai": "^2.0.0",
     "truffle": "3.4.3",

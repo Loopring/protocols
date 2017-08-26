@@ -6,8 +6,8 @@ const {
   DummyToken,
 } = new Artifacts(artifacts)
 
-var TokenRegistry = artifacts.require("./TokenRegistry.sol");
-var LoopringExchange = artifacts.require("./LoopringExchange.sol");
+// var TokenRegistry = artifacts.require("./TokenRegistry.sol");
+// var LoopringExchange = artifacts.require("./LoopringExchange.sol");
 
 module.exports = (deployer: any) => {
   deployer.deploy(TokenRegistry);

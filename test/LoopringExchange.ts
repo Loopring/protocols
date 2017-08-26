@@ -8,12 +8,10 @@ const {
 
 contract('LoopringExchange', (accounts: string[])=>{
 
-    let loopringExchange: LoopringExchange;
-
     before(async () => {
         console.log("init in before.");
-        loopringExchange = new LoopringExchange("0x1234567");
-        //console.log(loopringExchange);
+
+        //console.log(oopringExchange);
     });
 
     describe('test1', () => {
