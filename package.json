@@ -20,9 +20,7 @@
     "@types/node": "^7.0.13",
     "copyfiles": "^1.2.0",
     "dirty-chai": "^2.0.0",
-    "truffle": "3.4.3",
-    "solc": "^0.4.11",
-    "typescript": "^2.2.2",
-    "web3-typescript-typings": "0.0.3"
+    "web3-typescript-typings": "0.0.3",
+    "zeppelin-solidity": "^1.2.0"
   }
 }

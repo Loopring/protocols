@@ -1,9 +1,8 @@
 pragma solidity ^0.4.11;
 
-import "./../base/Ownable.sol";
-import "./Mintable.sol";
+import "zeppelin-solidity/contracts/token/MintableToken.sol";
 
-contract DummyToken is Ownable, Mintable {
+contract DummyToken is MintableToken {
     string public name;
     string public symbol;
     uint public decimals;
@@ -24,9 +23,9 @@ contract DummyToken is Ownable, Mintable {
     function setBalance(address _target, uint _value) onlyOwner {
         uint currBalance = balanceOf(_target);
         if (_value < currBalance) {
-            totalSupply = safeSub(totalSupply, safeSub(currBalance, _value));
+            totalSupply = totalSupply.sub(currBalance.sub(_value));
         } else {
-            totalSupply = safeAdd(totalSupply, safeSub(_value, currBalance));
+            totalSupply = totalSupply.add(_value.sub(currBalance));
         }
         balances[_target] = _value;
     }
