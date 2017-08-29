@@ -1,19 +1,19 @@
 import { Artifacts } from '../util/artifacts';
 
 const {
-  LoopringExchange,
+  LoopringProtocol,
   TokenRegistry,
   DummyToken,
 } = new Artifacts(artifacts);
 
-contract('LoopringExchange', (accounts: string[])=>{
+contract('LoopringProtocol', (accounts: string[])=>{
 
-  let loopringExchange: any;
+  let LoopringProtocol: any;
   let tokenRegistry: any;
   let dummyToken: any;
 
   before( async () => {
-    loopringExchange = await LoopringExchange.deployed();
+    LoopringProtocol = await LoopringProtocol.deployed();
     tokenRegistry = await TokenRegistry.deployed();
     dummyToken = await DummyToken.deployed();
   });

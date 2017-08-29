@@ -1,4 +1,4 @@
-var LoopringExchange = artifacts.require("./LoopringExchange");
+var LoopringProtocol = artifacts.require("./LoopringProtocol");
 var TokenRegistry = artifacts.require("./TokenRegistry");
 var DummyToken = artifacts.require("./DummyToken");
 
@@ -6,6 +6,6 @@ module.exports = function(deployer) {
   deployer.deploy(DummyToken);
   deployer.deploy(TokenRegistry);
 
-  var _exchangeAddr = '0x0';
-  deployer.deploy(LoopringExchange, _exchangeAddr);
+  var ownerAddress = '0x0';
+  deployer.deploy(LoopringProtocol, ownerAddress);
 };

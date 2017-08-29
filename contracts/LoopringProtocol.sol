@@ -19,7 +19,7 @@ pragma solidity ^0.4.11;
 
 /// @title Loopring Token Exchange Contract
 /// @author Kongliang Zhong - <kongliang@loopring.org>, Daniel Wang - <daniel@loopring.org>.
-contract LoopringExchange {
+contract LoopringProtocol {
 
     address public   owner;
     uint    public   loopringId = 0;
@@ -44,7 +44,8 @@ contract LoopringExchange {
 
     event RingFilled(address _ringOwner, uint _loopringId);
 
-    function LoopringExchange(address _owner) public {
+    function LoopringProtocol(address _owner) public {
+        require(_owner != address(0));
         owner = _owner;
     }
 
