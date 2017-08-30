@@ -21,69 +21,136 @@ pragma solidity ^0.4.11;
 /// @author Kongliang Zhong - <kongliang@loopring.org>, Daniel Wang - <daniel@loopring.org>.
 contract LoopringProtocol {
 
+    uint    public constant MAX_RING_SIZE = 5;
     address public   owner;
-    uint    public   loopringId = 0;
+    uint    public   ringIndex = 0;
 
-    struct OrderRing {
-        address owner;
+    struct Ring {
+        string  miner;
         Order[] orders;
     }
 
     struct Order {
-        address outToken;
-        address inToken;
-        uint outTokenAmount;
-        uint inTokenAmount;
-        uint expirationInSecs;
-        uint fee;
-        uint8 savingShare;
-        uint8 v;
+        address tokenS;                         // token to sell
+        address tokenB;                         // token to buy
+        uint    amountS;
+        uint    amountB;
+        uint    expiration;                     // If this value < X (TBD), treat it as block height;
+                                                // otherwise treat it as seconds since epoch.
+        uint    rand;                           // a random number
+        uint    feeLRC;                         // LRC amount as fee
+        uint8   percentageSavingShare;          // Percentage of saving sare
+        bool    isCompleteFillMeasuredByAllSellTokenBeenSpent;
+        // Signature fields
+        uint8   v;
         bytes32 r;
         bytes32 s;
     }
 
-    event RingFilled(address _ringOwner, uint _loopringId);
+    struct OrderState {
+        Order   order;
+        uint    fillAmountS;
+        uint8   feeSelection;
+        uint    netfeeLRC;
+        uint    netfeeS;
+        uint    netfeeB;
+    }
 
+    event RingMined(
+        address indexed miner,
+        address indexed feeRecepient,
+        uint    indexed ringIndex);
+
+    event OrderFilled(
+        uint    indexed ringIndex,
+        string  indexed orderId, // TODO: what should this be
+        uint    amountS,
+        uint    amountB,
+        uint    feeLRC,
+        uint    feeS,
+        uint    feeB);
+
+    /// Constructor
     function LoopringProtocol(address _owner) public {
         require(_owner != address(0));
         owner = _owner;
     }
 
-    function fillRing(
-        address orderRingOwner,
-        address[3][] orderAddresses,
-        uint[5][] orderValues,
-        uint8[] savingShares,
-        uint8[] v,
-        bytes32[] r,
-        bytes32[] s)
-    {
-        for (uint i = 0; i < orderAddresses.length; i++) {
-            require(fillOrder(orderAddresses[i],
-                              orderValues[i],
-                              savingShares[i],
-                              v[i],
-                              r[i],
-                              s[i]
-            ));
-        }
+    function submitRing(
+        address     feeRecepient,
+        bool        throwIfTokenAllowanceOrBalanceIsInsuffcient,
+        address[]   tokenSList,
+        uint[6][]   arg1List, // amountS,AmountB,fillAmountS,expiration,rand,lrcFee
+        uint8[2][]  arg2List, // percentageSavingShareList,feeSelectionList
+        bool[]      isCompleteFillMeasuredByAllSellTokenBeenSpentList,
+        uint8[]     vList,
+        bytes32[]   rList,
+        bytes32[]   sList) {
 
-        RingFilled(orderRingOwner, loopringId++);
+        // Verify data integrity.
+        uint ringSize = tokenSList.length;
+        require(ringSize > 1 && ringSize <= MAX_RING_SIZE);
+        var orders = assambleOrders(
+            ringSize,
+            tokenSList,
+            arg1List, // amountS,AmountB,fillAmountS,expiration,rand,lrcFee
+            arg2List, // percentageSavingShareList,feeSelectionList
+            isCompleteFillMeasuredByAllSellTokenBeenSpentList,
+            vList,
+            rList,
+            sList);
+  
+
+        // RingFilled(miner, loopringId++);
     }
 
-    function fillOrder(
-        address[3] orderAddress,
-        uint[5] orderValue,
-        uint8 savingShare,
-        uint8 v,
-        bytes32 r,
-        bytes32 s)
-        internal
-        returns (bool)
-    {
+    function assambleOrders(
+        uint        ringSize,
+        address[]   tokenSList,
+        uint[6][]   arg1List, // amountS,AmountB,expiration,rand,lrcFee,fillAmountS
+        uint8[2][]  arg2List, // percentageSavingShareList,feeSelectionList
+        bool[]      isCompleteFillMeasuredByAllSellTokenBeenSpentList,
+        uint8[]     vList,
+        bytes32[]   rList,
+        bytes32[]   sList) internal constant returns (OrderState[]) {
 
-        // TODO
-        return true;
+        require(ringSize == tokenSList.length);
+        require(ringSize == arg1List.length);
+        require(ringSize == arg2List.length);
+        require(ringSize == isCompleteFillMeasuredByAllSellTokenBeenSpentList.length);
+        require(ringSize + 1 == vList.length);
+        require(ringSize + 1 == rList.length);
+        require(ringSize + 1 == sList.length);
+
+
+        var orders = new OrderState[](ringSize);
+        for (uint i = 0; i < ringSize; i++) {
+            uint j = (i + ringSize- 1) % ringSize;
+
+            var order = Order(
+                tokenSList[i],
+                tokenSList[j],
+                arg1List[i][0],
+                arg1List[i][1],
+                arg1List[i][2],
+                arg1List[i][3],
+                arg1List[i][4],
+                arg2List[i][0],
+                isCompleteFillMeasuredByAllSellTokenBeenSpentList[i],
+                vList[i],
+                rList[i],
+                sList[i]);
+
+            orders[i] = OrderState(
+                order, 
+                arg1List[i][5],
+                arg2List[i][1],
+                0,
+                0,
+                0);
+        }
+
+        return orders;
     }
 
     /// @dev Verifies that an order signature is valid.
@@ -93,7 +160,7 @@ contract LoopringProtocol {
     /// @param r ECDSA signature parameters r.
     /// @param s ECDSA signature parameters s.
     /// @return Validity of order signature.
-    function isValidSignature(
+    function isSignatureValid(
         address signer,
         bytes32 hash,
         uint8 v,
@@ -101,8 +168,7 @@ contract LoopringProtocol {
         bytes32 s)
         public
         constant
-        returns (bool)
-    {
+        returns (bool) {
         return signer == ecrecover(
             keccak256("\x19Ethereum Signed Message:\n32", hash),
             v,
