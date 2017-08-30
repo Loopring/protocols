@@ -8,12 +8,12 @@ const {
 
 contract('LoopringProtocol', (accounts: string[])=>{
 
-  let LoopringProtocol: any;
+  let loopringProtocol: any;
   let tokenRegistry: any;
   let dummyToken: any;
 
   before( async () => {
-    LoopringProtocol = await LoopringProtocol.deployed();
+    loopringProtocol = await LoopringProtocol.deployed();
     tokenRegistry = await TokenRegistry.deployed();
     dummyToken = await DummyToken.deployed();
   });
