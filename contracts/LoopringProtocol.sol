@@ -17,9 +17,15 @@
 */
 pragma solidity ^0.4.11;
 
+import "zeppelin-solidity/contracts/token/ERC20.sol";
+import "zeppelin-solidity/contracts/math/Math.sol";
+import "zeppelin-solidity/contracts/math/SafeMath.sol";
+
 /// @title Loopring Token Exchange Contract
 /// @author Kongliang Zhong - <kongliang@loopring.org>, Daniel Wang - <daniel@loopring.org>.
 contract LoopringProtocol {
+    using SafeMath for uint;
+    using Math for uint;
 
     uint    public constant MAX_RING_SIZE = 5;
     address public   owner;
@@ -49,11 +55,12 @@ contract LoopringProtocol {
 
     struct OrderState {
         Order   order;
-        uint    fillAmountS;
-        uint8   feeSelection;
-        uint    netfeeLRC;
-        uint    netfeeS;
-        uint    netfeeB;
+        uint    fillAmountS;    // provided by ring-miner, verified by protocol
+        uint8   feeSelection;   // provided by ring-miner
+        address owner;          // calculated by protocol
+        uint    netfeeLRC;      // calculated by protocol
+        uint    netfeeS;        // calculated by protocol
+        uint    netfeeB;        // calculated by protocol
     }
 
     event RingMined(
@@ -90,7 +97,7 @@ contract LoopringProtocol {
         // Verify data integrity.
         uint ringSize = tokenSList.length;
         require(ringSize > 1 && ringSize <= MAX_RING_SIZE);
-        var orders = assambleOrders(
+        var orderStates = assambleOrders(
             ringSize,
             tokenSList,
             arg1List, // amountS,AmountB,fillAmountS,expiration,rand,lrcFee
@@ -99,10 +106,52 @@ contract LoopringProtocol {
             vList,
             rList,
             sList);
+
+        orderStates = getUpdateOrders(ringSize, orderStates);
   
 
         // RingFilled(miner, loopringId++);
     }
+
+    function getUpdateOrders(
+        uint ringSize,
+        OrderState[] orderStates
+        ) internal constant returns (OrderState[] newOrderStates) {
+
+        newOrderStates = new OrderState[](ringSize);
+        for (uint i = 0; i < ringSize; i++) {
+            newOrderStates[i] = getUpdatedOrder(orderStates[i]);
+        }
+    }
+
+    function getUpdatedOrder(
+        OrderState orderState
+        ) internal constant returns (OrderState newOrderState) {
+
+        newOrderState = orderState;
+
+        require(orderState.fillAmountS > 0);
+        var order = newOrderState.order;
+
+        // TODO(daniel): verify signature and calculate owner address
+        newOrderState.owner = address(0);
+
+        uint spendableS = getSpendable(order.tokenS, newOrderState.owner);
+
+        require(spendableS >= newOrderState.fillAmountS);
+    }
+
+    function getSpendable(
+        address tokenAddress,
+        address owner
+        ) internal constant returns (uint) {
+
+        var token = ERC20(tokenAddress);
+        return token
+            .allowance(owner, address(this))
+            .min256(token.balanceOf(owner));
+    }
+
 
     function assambleOrders(
         uint        ringSize,
@@ -112,7 +161,8 @@ contract LoopringProtocol {
         bool[]      isCompleteFillMeasuredByAllSellTokenBeenSpentList,
         uint8[]     vList,
         bytes32[]   rList,
-        bytes32[]   sList) internal constant returns (OrderState[]) {
+        bytes32[]   sList
+        ) internal constant returns (OrderState[]) {
 
         require(ringSize == tokenSList.length);
         require(ringSize == arg1List.length);
@@ -145,6 +195,7 @@ contract LoopringProtocol {
                 order, 
                 arg1List[i][5],
                 arg2List[i][1],
+                address(0),
                 0,
                 0,
                 0);
