@@ -28,6 +28,9 @@ contract LoopringProtocol {
     using SafeMath for uint;
     using Math for uint;
 
+    uint    public constant FEE_SELECT_LRC          = 0;
+    uint    public constant FEE_SELECT_SAVING_SHARE = 1;
+
     address public  lrcTokenAddress                  = address(0);
     address public  owner                            = address(0);
     uint    public  maxRingSize                      = 0;
@@ -85,10 +88,18 @@ contract LoopringProtocol {
 
     /// @param order        The order
     /// @param owner        This order owner's address. This value is calculated.
-    /// @param feeSelection A miner-supplied value indicating if LRC or saving
-    ///                     share is choosen by the miner.
-    /// @param fillAmountS  This value is initially provided by miner and later
-    ///                     will be updated by protocol based on order state.
+    /// @param feeSelection A miner-supplied value indicating if LRC (value = 0)
+    ///                     or saving share is choosen by the miner (value = 1).
+    ///                     We may support more fee model in the future.
+    /// @param scaledAMountS Amount of tokenS to trade, computed by protocol.
+    /// @param scaledAMountB Amount of tokenB to trade, computed by protocol.
+    /// @param fillAmountS  This value is initially provided by miner and is
+    ///                     calculated by based on the original information of
+    ///                     all orders of the order-ring, in other orders, this
+    ///                     value is independent of the order's current state.
+    ///                     This value and `fillAmountB` can be used to calculate
+    ///                     the proposed exchange rate calculated by miner.
+    /// @param fillAmountB  See `fillAmountS`.
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for sharing-share.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
@@ -101,7 +112,10 @@ contract LoopringProtocol {
         bytes32 orderHash;
         address owner;
         uint8   feeSelection;
-        uint    fillAmountS;            
+        uint    scaledAmountS;
+        uint    scaledAmountB;
+        uint    fillAmountS;
+        uint    fillAmountB;
         uint    lrcReward;
         uint    lrcFee;
         uint    feeSForThisOrder;
@@ -197,15 +211,16 @@ contract LoopringProtocol {
             vList[ringSize],
             rList[ringSize],
             sList[ringSize]);
-        uint i;
 
         checkRingMatchingRate(ring);
 
 
-        ring = updateRing(ring);
+        scaleOrders(ring);
+
+        updateRingWithTradeAmount(ring);
 
         // Check there is no dust order in this ring.
-        for (i = 0; i < ringSize; i++) {
+        for (uint i = 0; i < ringSize; i++) {
             require(!isDustOrder(orders[i]));
         }
     }
@@ -235,7 +250,72 @@ contract LoopringProtocol {
     }
 
 
-    function updateRing(
+    function updateRingWithTradeAmount(
+        Ring ring
+        )
+        internal
+        constant {
+
+        uint ringSize = ring.orders.length;
+        uint smallestOrderIndex = 0;
+        uint scaledAmountS = ring.orders[0].scaledAmountS;
+
+        for (uint i = 0; i < ringSize; i++) {
+            (scaledAmountS, smallestOrderIndex) = calculateOrderTradeAmount(
+                ring,
+                ringSize,
+                scaledAmountS,
+                i);
+        }
+
+        for (i = 0; i < smallestOrderIndex; i++) {
+            (scaledAmountS, ) = calculateOrderTradeAmount(
+                ring,
+                ringSize,
+                scaledAmountS,
+                i);
+        }
+    }
+
+    function calculateOrderTradeAmount(
+        Ring ring,
+        uint ringSize,
+        uint scaledAmountS,
+        uint orderIndex
+        )
+        internal
+        constant
+        returns (
+            uint newScaledAmountS,
+            uint indexOfSmallerOrder) {
+
+        uint nextOrderIndex = (orderIndex + 1) % ringSize;
+        var thisState = ring.orders[orderIndex];
+        var nextState = ring.orders[nextOrderIndex];
+
+        uint scaledAmountB  = scale(
+            scaledAmountS,
+            thisState.fillAmountB,
+            thisState.fillAmountS);
+
+        if (thisState.order.isCompleteFillMeasuredByTokenSDepleted) {
+            thisState.scaledAmountB = scaledAmountB;
+        } else {
+
+        }
+
+        if (thisState.scaledAmountB > nextState.scaledAmountS) {
+            indexOfSmallerOrder = nextOrderIndex;
+        } else {
+            nextState.scaledAmountS = thisState.scaledAmountB;
+            indexOfSmallerOrder = orderIndex;
+        }
+
+        newScaledAmountS = nextState.scaledAmountS;
+    }
+
+
+    function scaleOrders(
         Ring ring
         )
         internal
@@ -247,40 +327,37 @@ contract LoopringProtocol {
             var order = state.order;
 
             // Scale orders based on their fill hisotry, cancellation history,
-            // ERC20 balance and allowance.
+            // ERC20 balance, and allowance.
             uint availableS = getSpendable(order.tokenS, state.owner);
             uint availableB = getSpendable(order.tokenB, state.owner);
 
-            uint originalAmountS = order.amountS;
-            uint originalAmountB = order.amountB;
-
             if (order.isCompleteFillMeasuredByTokenSDepleted) {
-                order.amountS -= cancelledS[state.orderHash];
-                order.amountS -= filledS[state.orderHash];
+                state.scaledAmountS -= cancelledS[state.orderHash];
+                state.scaledAmountS -= filledS[state.orderHash];
 
-                order.amountB = scale(
-                    order.amountS.min256(availableS),
-                    originalAmountB,
-                    originalAmountS);
+                state.scaledAmountB = scale(
+                    state.scaledAmountS.min256(availableS),
+                    order.amountB,
+                    order.amountS);
 
-                order.amountS = scale(
-                    order.amountB.min256(availableB),
-                    originalAmountS,
-                    originalAmountB);
+                state.scaledAmountS = scale(
+                    state.scaledAmountB.min256(availableB),
+                    order.amountS,
+                    order.amountB);
 
             } else {
-                order.amountB -= cancelledB[state.orderHash];
-                order.amountB -= filledB[state.orderHash];
+                state.scaledAmountB -= cancelledB[state.orderHash];
+                state.scaledAmountS -= filledB[state.orderHash];
 
-                order.amountS = scale(
-                    order.amountB.min256(availableB),
-                    originalAmountS,
-                    originalAmountB);
+                state.scaledAmountS = scale(
+                    state.scaledAmountB.min256(availableB),
+                    order.amountS,
+                    order.amountB);
 
-                order.amountB = scale(
-                    order.amountS.min256(availableS),
-                    originalAmountB,
-                    originalAmountS);
+                state.scaledAmountB = scale(
+                    state.scaledAmountS.min256(availableS),
+                    order.amountB,
+                    order.amountS);
             }
         }
         return ring;
@@ -373,7 +450,10 @@ contract LoopringProtocol {
                 getOrderHash(order),
                 ownerAddress,
                 arg2List[i][1],  // feeSelectionList
+                order.amountS,   // scaledAmountS
+                order.amountB,   // scaledAmountB
                 arg1List[i][5],  // fillAmountS
+                arg1List[j][5],  // fillAmountB
                 0,  // lrcReward
                 0,  // lrcFee
                 0,  // feeSForThisOrder
