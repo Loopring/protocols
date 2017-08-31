@@ -216,7 +216,7 @@ contract LoopringProtocol {
 
         checkRingMatchingRate(ring);
 
-        scaleOrdersBasedOnHistoryAndBalance(ring);
+        scaleOrdersBasedOnHistory(ring);
 
         calculateRingOrderFillAmount(ring);
 
@@ -303,7 +303,7 @@ contract LoopringProtocol {
     }
 
 
-    function scaleOrdersBasedOnHistoryAndBalance(
+    function scaleOrdersBasedOnHistory(
         Ring ring
         )
         internal
