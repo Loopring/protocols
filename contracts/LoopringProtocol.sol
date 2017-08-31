@@ -28,26 +28,27 @@ contract LoopringProtocol {
     using Math for uint;
 
     uint    public constant MAX_RING_SIZE = 5;
-    address public   owner;
     uint    public   ringIndex = 0;
 
     struct Ring {
-        string  miner;
+        address  miner;
         Order[] orders;
     }
 
     struct Order {
+        address owner;
         address tokenS;                         // token to sell
         address tokenB;                         // token to buy
         uint    amountS;
         uint    amountB;
+        uint    feeLRC;                         // LRC amount as fee
+        uint    percentageSavingShare;          // Percentage of saving sare
         uint    expiration;                     // If this value < X (TBD), treat it as block height;
                                                 // otherwise treat it as seconds since epoch.
         uint    rand;                           // a random number
-        uint    feeLRC;                         // LRC amount as fee
-        uint8   percentageSavingShare;          // Percentage of saving sare
         bool    isCompleteFillMeasuredByAllSellTokenBeenSpent;
         // Signature fields
+        bytes32 orderHash;
         uint8   v;
         bytes32 r;
         bytes32 s;
@@ -56,7 +57,7 @@ contract LoopringProtocol {
     struct OrderState {
         Order   order;
         uint    fillAmountS;    // provided by ring-miner, verified by protocol
-        uint8   feeSelection;   // provided by ring-miner
+        uint    feeSelection;   // provided by ring-miner
         address owner;          // calculated by protocol
         uint    netfeeLRC;      // calculated by protocol
         uint    netfeeS;        // calculated by protocol
@@ -66,49 +67,47 @@ contract LoopringProtocol {
     event RingMined(
         address indexed miner,
         address indexed feeRecepient,
-        uint    indexed ringIndex);
+        uint    ringIndex);
 
     event OrderFilled(
-        uint    indexed ringIndex,
-        string  indexed orderId, // TODO: what should this be
-        uint    amountS,
-        uint    amountB,
-        uint    feeLRC,
-        uint    feeS,
-        uint    feeB);
+        uint     ringIndex,
+        bytes32  orderHash,
+        uint     amountS,
+        uint     amountB,
+        uint     feeLRC,
+        uint     feeS,
+        uint     feeB);
 
     /// Constructor
-    function LoopringProtocol(address _owner) public {
-        require(_owner != address(0));
-        owner = _owner;
+    function LoopringProtocol() public {
+        /* require(_owner != address(0)); */
+        /* owner = _owner; */
     }
 
     function submitRing(
         address     feeRecepient,
         bool        throwIfTokenAllowanceOrBalanceIsInsuffcient,
+        address[]   orderOwnerList,
         address[]   tokenSList,
-        uint[6][]   arg1List, // amountS,AmountB,fillAmountS,expiration,rand,lrcFee
-        uint8[2][]  arg2List, // percentageSavingShareList,feeSelectionList
+        uint[8][]   orderValueList, // amountS,AmountB,fillAmountS,lrcFee,percentageSavingShare,feeSelection,expiration,rand
         bool[]      isCompleteFillMeasuredByAllSellTokenBeenSpentList,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList) {
-
         // Verify data integrity.
         uint ringSize = tokenSList.length;
         require(ringSize > 1 && ringSize <= MAX_RING_SIZE);
         var orderStates = assambleOrders(
             ringSize,
+            orderOwnerList,
             tokenSList,
-            arg1List, // amountS,AmountB,fillAmountS,expiration,rand,lrcFee
-            arg2List, // percentageSavingShareList,feeSelectionList
+            orderValuesList,
             isCompleteFillMeasuredByAllSellTokenBeenSpentList,
             vList,
             rList,
             sList);
 
         orderStates = getUpdateOrders(ringSize, orderStates);
-  
 
         // RingFilled(miner, loopringId++);
     }
@@ -155,47 +154,52 @@ contract LoopringProtocol {
 
     function assambleOrders(
         uint        ringSize,
+        address[]   orderOwnerList,
         address[]   tokenSList,
-        uint[6][]   arg1List, // amountS,AmountB,expiration,rand,lrcFee,fillAmountS
-        uint8[2][]  arg2List, // percentageSavingShareList,feeSelectionList
+        uint[8][]   orderValueList, // amountS,AmountB,fillAmountS,lrcFee,percentageSavingShare,feeSelection,expiration,rand
         bool[]      isCompleteFillMeasuredByAllSellTokenBeenSpentList,
         uint8[]     vList,
         bytes32[]   rList,
-        bytes32[]   sList
-        ) internal constant returns (OrderState[]) {
-
+        bytes32[]   sList)
+        internal
+        constant
+        returns (OrderState[])
+    {
+        require(ringSize == orderOwnerList.length);
         require(ringSize == tokenSList.length);
-        require(ringSize == arg1List.length);
-        require(ringSize == arg2List.length);
+        require(ringSize == orderValueList.length);
         require(ringSize == isCompleteFillMeasuredByAllSellTokenBeenSpentList.length);
         require(ringSize + 1 == vList.length);
         require(ringSize + 1 == rList.length);
         require(ringSize + 1 == sList.length);
 
-
         var orders = new OrderState[](ringSize);
         for (uint i = 0; i < ringSize; i++) {
-            uint j = (i + ringSize- 1) % ringSize;
+            uint j = (i + ringSize - 1) % ringSize;
 
             var order = Order(
+                orderOwnerList[i],
                 tokenSList[i],
                 tokenSList[j],
-                arg1List[i][0],
-                arg1List[i][1],
-                arg1List[i][2],
-                arg1List[i][3],
-                arg1List[i][4],
-                arg2List[i][0],
+                orderValueList[i][0],
+                orderValueList[i][1],
+                orderValueList[i][3],
+                orderValueList[i][4],
+                orderValueList[i][6],
+                orderValueList[i][7],
                 isCompleteFillMeasuredByAllSellTokenBeenSpentList[i],
+                '',
                 vList[i],
                 rList[i],
                 sList[i]);
+            order.orderHash = getOrderHash(order);
+            require(isValidSignature(order.owner, order.orderHash, order.v, order.r, order.s));
 
             orders[i] = OrderState(
-                order, 
-                arg1List[i][5],
-                arg2List[i][1],
-                address(0),
+                order,
+                orderValueList[i][2],
+                orderValueList[i][5],
+                order.owner,
                 0,
                 0,
                 0);
@@ -211,6 +215,8 @@ contract LoopringProtocol {
     /// @param r ECDSA signature parameters r.
     /// @param s ECDSA signature parameters s.
     /// @return Validity of order signature.
+    /// For how validation works, See https://ethereum.stackexchange.com/questions/1777/workflow-on-signing-a-string-with-private-key-followed-by-signature-verificatio
+    /// For keccak256 prefix, See https://ethereum.stackexchange.com/questions/19582/does-ecrecover-in-solidity-expects-the-x19ethereum-signed-message-n-prefix
     function isSignatureValid(
         address signer,
         bytes32 hash,
@@ -225,6 +231,27 @@ contract LoopringProtocol {
             v,
             r,
             s
+        );
+    }
+
+    /// @dev Calculates Keccak-256 hash of order with specified parameters.
+    /// @return Keccak-256 hash of order.
+    function getOrderHash(Order order)
+        internal
+        constant
+        returns (bytes32)
+    {
+        return keccak256(
+            address(this),
+            order.owner,
+            order.tokenS,
+            order.tokenB,
+            order.amountS,
+            order.amountB,
+            order.feeLRC,
+            order.percentageSavingShare,
+            order.expiration,
+            order.rand
         );
     }
 
