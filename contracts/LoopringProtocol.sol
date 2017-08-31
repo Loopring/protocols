@@ -28,6 +28,7 @@ contract LoopringProtocol {
     using SafeMath for uint;
     using Math for uint;
 
+    address public  lrcTokenAddress                  = address(0);
     address public  owner                            = address(0);
     uint    public  maxRingSize                      = 0;
     uint    public  defaultDustThreshold             = 0;
@@ -125,7 +126,7 @@ contract LoopringProtocol {
 
     event OrderFilled(
         uint    indexed _ringIndex,
-        string  indexed _orderId, // TODO: what should this be
+        string  indexed _orderHash,
         uint    _amountS,
         uint    _amountB,
         uint    _lrcReward,
@@ -135,17 +136,20 @@ contract LoopringProtocol {
 
     /// Constructor
     function LoopringProtocol(
+        address _lrcTokenAddress,
         address _owner,
         uint    _maxRingSize,
         uint    _defaultDustThreshold,
         uint    _expirationAsBlockHeightThreshold
         ) public {
 
-        require(_owner != address(0));
+        require(address(0) != _lrcTokenAddress);
+        require(address(0) != _owner);
         require(_maxRingSize >= 2);
         require(_defaultDustThreshold >= 0);
         require(_expirationAsBlockHeightThreshold > block.number * 100);
 
+        lrcTokenAddress                  = _lrcTokenAddress;
         owner                            = _owner;
         maxRingSize                      = _maxRingSize;
         defaultDustThreshold             = _defaultDustThreshold;
@@ -311,6 +315,15 @@ contract LoopringProtocol {
             .min256(token.balanceOf(_owner));
     }
 
+    function getLRCSpendable(
+        address _owner
+        )
+        internal
+        constant
+        returns (uint) {
+
+        return getSpendable(lrcTokenAddress, _owner);
+    }
 
     function assambleOrders(
         uint        ringSize,
