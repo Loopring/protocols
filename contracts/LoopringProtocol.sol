@@ -213,7 +213,6 @@ contract LoopringProtocol {
             vList[ringSize],
             rList[ringSize],
             sList[ringSize]);
-        uint i;
 
         checkRingMatchingRate(ring);
 
@@ -221,15 +220,12 @@ contract LoopringProtocol {
 
         calculateRingOrderFillAmount(ring);
 
-        // Check there is no dust order in this ring.
-        for (i = 0; i < ringSize; i++) {
-            require(!isDustOrder(orders[i]));
-        }
+        calculateRingOrderFees(ring);
     }
 
 
     function checkRingMatchingRate(
-        Ring _ring
+        Ring ring
         )
         internal
         constant {
@@ -237,16 +233,24 @@ contract LoopringProtocol {
 
     }
 
+    function calculateRingOrderFees(
+        Ring ring
+        )
+        internal
+        constant {
+
+    }
+
     function calculateRingOrderFillAmount(
         Ring ring
         )
         internal
-        constant
-        returns (Ring) {
+        constant {
 
+        uint ringSize = ring.orders.length;
         uint smallestOrderIndex = 0;
 
-        for (uint i = 0; i < ring.orders.length; i++) {
+        for (uint i = 0; i < ringSize; i++) {
             smallestOrderIndex = calculateOrderFillAmount(ring, i);
         }
 
@@ -254,7 +258,12 @@ contract LoopringProtocol {
             calculateOrderFillAmount(ring, i);
         }
 
-        return ring;
+        // These seciton is redundant.
+        for (i = 0; i < ringSize; i++) {
+            var state = ring.orders[i];
+            var next = ring.orders[ (i + 1) % ringSize];
+            require(state.fillAmountB == next.fillAmountS);
+        }
     }
 
     function calculateOrderFillAmount(
@@ -350,20 +359,6 @@ contract LoopringProtocol {
         require(xx > 0 && y > 0 && x > 0);
         yy = xx.mul(y).div(x);
         require(yy > 0);
-    }
-  
-
-    /// TODO(daniel): For each token, a dust threshold should be maintained by
-    /// a TokenRegistry contract. 
-    function isDustOrder(
-        OrderState orderState
-        )
-        internal
-        constant
-        returns (bool isDust) {
-
-        if (orderState.order.amountS < defaultDustThreshold) return true;
-        if (orderState.order.amountB < defaultDustThreshold) return true;
     }
 
     function getSpendable(
