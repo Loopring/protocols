@@ -162,7 +162,8 @@ contract LoopringProtocol {
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList
-        ) {
+        )
+        public {
 
         // Verify data integrity.
         uint ringSize = tokenSList.length;
@@ -208,7 +209,9 @@ contract LoopringProtocol {
 
     function checkRingMatchingRate(
         Ring _ring
-        ) internal constant {
+        )
+        internal
+        constant {
 
 
     }
@@ -217,14 +220,24 @@ contract LoopringProtocol {
         uint xx,
         uint y,
         uint x
-        ) internal constant returns (uint yy) {
+        )
+        internal
+        constant
+        returns (uint yy) {
+
         require(xx > 0 && y > 0 && x > 0);
         yy = xx.mul(y).div(x);
         require(yy > 0);
     }
 
 
-    function updateRing(Ring ring) internal constant returns (Ring) {
+    function updateRing(
+        Ring ring
+        )
+        internal
+        constant
+        returns (Ring) {
+
         for (uint i = 0; i < ring.orders.length; i++) {
             var state = ring.orders[i];
             var order = state.order;
@@ -275,7 +288,10 @@ contract LoopringProtocol {
     /// a TokenRegistry contract. 
     function isDustOrder(
         OrderState orderState
-        ) internal constant returns (bool isDust) {
+        )
+        internal
+        constant
+        returns (bool isDust) {
 
         if (orderState.order.amountS < defaultDustThreshold) return true;
         if (orderState.order.amountB < defaultDustThreshold) return true;
@@ -284,7 +300,10 @@ contract LoopringProtocol {
     function getSpendable(
         address _tokenAddress,
         address _owner
-        ) internal constant returns (uint) {
+        )
+        internal
+        constant
+        returns (uint) {
 
         var token = ERC20(_tokenAddress);
         return token
@@ -302,7 +321,10 @@ contract LoopringProtocol {
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList
-        ) internal constant returns (OrderState[]) {
+        )
+        internal
+        constant
+        returns (OrderState[]) {
 
         require(ringSize == tokenSList.length);
         require(ringSize == arg1List.length);
@@ -349,8 +371,10 @@ contract LoopringProtocol {
         return orders;
     }
 
-    function validateMinerSignatureForAddress(
-        ) internal constant returns (address addr) {
+    function validateMinerSignatureForAddress()
+        internal
+        constant
+        returns (address addr) {
 
         return address(0);
     }
@@ -361,11 +385,29 @@ contract LoopringProtocol {
         return address(0);
     }
 
-    function getOrderHash(Order orde) internal returns (bytes32) {
+   /// @dev Calculates Keccak-256 hash of order with specified parameters.
+   /// @return Keccak-256 hash of order.
+   function getOrderHash(Order order)
+       internal
+       constant
+       returns (bytes32) {
 
-    }
+       return keccak256(
+            address(this),
+            order.tokenS,
+            order.tokenB,
+            order.amountS,
+            order.amountB,
+            order.expiration,
+            order.rand,
+            order.feeLRC,
+            order.percentageSavingShare,
+            order.isCompleteFillMeasuredByTokenSDepleted);
+   }
 
     /// @dev            Verifies that an order signature is valid.
+    ///                 For how validation works, See https://ethereum.stackexchange.com/questions/1777/workflow-on-signing-a-string-with-private-key-followed-by-signature-verificatio
+    ///                 For keccak256 prefix, See https://ethereum.stackexchange.com/questions/19582/does-ecrecover-in-solidity-expects-the-x19ethereum-signed-message-n-prefix
     /// @param signer   address of signer.
     /// @param hash     Signed Keccak-256 hash.
     /// @param v        ECDSA signature parameter v.
@@ -381,6 +423,7 @@ contract LoopringProtocol {
         public
         constant
         returns (bool) {
+
         return signer == ecrecover(
             keccak256("\x19Ethereum Signed Message:\n32", hash),
             v,
