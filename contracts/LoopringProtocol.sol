@@ -91,15 +91,15 @@ contract LoopringProtocol {
     /// @param feeSelection A miner-supplied value indicating if LRC (value = 0)
     ///                     or saving share is choosen by the miner (value = 1).
     ///                     We may support more fee model in the future.
-    /// @param scaledAMountS Amount of tokenS to trade, computed by protocol.
-    /// @param scaledAMountB Amount of tokenB to trade, computed by protocol.
-    /// @param fillAmountS  This value is initially provided by miner and is
+    /// @param fillAmountS  Amount of tokenS to sell, computed by protocol.
+    /// @param fillAmountB  Amount of tokenB to buy, computed by protocol.
+    /// @param rateAmountS  This value is initially provided by miner and is
     ///                     calculated by based on the original information of
     ///                     all orders of the order-ring, in other orders, this
     ///                     value is independent of the order's current state.
-    ///                     This value and `fillAmountB` can be used to calculate
-    ///                     the proposed exchange rate calculated by miner.
-    /// @param fillAmountB  See `fillAmountS`.
+    ///                     This value and `rateAmountB` can be used to calculate
+    ///                     the proposed exchange rate calculated by miner.                    
+    /// @param rateAmountB  See `rateAmountS`.
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for sharing-share.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
@@ -112,8 +112,10 @@ contract LoopringProtocol {
         bytes32 orderHash;
         address owner;
         uint8   feeSelection;
-        uint    scaledAmountS;
-        uint    scaledAmountB;
+        uint    rateAmountS;
+        uint    rateAmountB; 
+        uint    availableAmountS;
+        uint    availableAmountB;
         uint    fillAmountS;
         uint    fillAmountB;
         uint    lrcReward;
@@ -174,7 +176,7 @@ contract LoopringProtocol {
         address     feeRecepient,
         bool        throwIfTokenAllowanceOrBalanceIsInsuffcient,
         address[]   tokenSList,
-        uint[6][]   arg1List, // amountS,AmountB,fillAmountS,expiration,rand,lrcFee
+        uint[6][]   arg1List, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
         uint8[2][]  arg2List, // percentageSavingShareList,feeSelectionList
         bool[]      isCompleteFillMeasuredByTokenSDepletedList,
         uint8[]     vList,
@@ -190,7 +192,7 @@ contract LoopringProtocol {
         var orders = assambleOrders(
             ringSize,
             tokenSList,
-            arg1List, // amountS,AmountB,fillAmountS,expiration,rand,lrcFee
+            arg1List, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
             arg2List, // percentageSavingShareList,feeSelectionList
             isCompleteFillMeasuredByTokenSDepletedList,
             vList,
@@ -211,16 +213,16 @@ contract LoopringProtocol {
             vList[ringSize],
             rList[ringSize],
             sList[ringSize]);
+        uint i;
 
         checkRingMatchingRate(ring);
 
+        scaleOrdersBasedOnHistoryAndBalance(ring);
 
-        scaleOrders(ring);
-
-        updateRingWithTradeAmount(ring);
+        calculateRingOrderFillAmount(ring);
 
         // Check there is no dust order in this ring.
-        for (uint i = 0; i < ringSize; i++) {
+        for (i = 0; i < ringSize; i++) {
             require(!isDustOrder(orders[i]));
         }
     }
@@ -235,7 +237,108 @@ contract LoopringProtocol {
 
     }
 
-    function scale(
+    function calculateRingOrderFillAmount(
+        Ring ring
+        )
+        internal
+        constant
+        returns (Ring) {
+
+        uint smallestOrderIndex = 0;
+
+        for (uint i = 0; i < ring.orders.length; i++) {
+            smallestOrderIndex = calculateOrderFillAmount(ring, i);
+        }
+
+        for (i = 0; i < smallestOrderIndex; i++) {
+            calculateOrderFillAmount(ring, i);
+        }
+
+        return ring;
+    }
+
+    function calculateOrderFillAmount(
+        Ring ring,
+        uint orderIndex
+        )
+        internal
+        constant
+        returns (uint indexOfSmallerOrder) {
+
+        uint nextIndex = (orderIndex + 1) % ring.orders.length;
+        var state = ring.orders[orderIndex];
+        var next = ring.orders[nextIndex];
+
+        state.fillAmountS = state.fillAmountS.min256(state.availableAmountS);
+
+        state.fillAmountB  = scale(
+            state.fillAmountS,
+            state.rateAmountB,
+            state.rateAmountS)
+            .min256(state.availableAmountB);
+
+        if (!state.order.isCompleteFillMeasuredByTokenSDepleted) {
+            state.fillAmountB = state.fillAmountB.min256(state.order.amountB);
+        }
+
+        state.fillAmountS  = scale(
+            state.fillAmountB,
+            state.rateAmountS,
+            state.rateAmountB);
+
+        if (state.fillAmountB > next.fillAmountS) {
+            indexOfSmallerOrder = nextIndex;
+        } else {
+            next.fillAmountS = state.fillAmountB;
+        }
+    }
+
+
+    function scaleOrdersBasedOnHistoryAndBalance(
+        Ring ring
+        )
+        internal
+        constant {
+
+        for (uint i = 0; i < ring.orders.length; i++) {
+            var state = ring.orders[i];
+            var order = state.order;
+
+            // ERC20 balance, and allowance.
+            state.availableAmountS = getSpendable(order.tokenS, state.owner);
+            require(state.availableAmountS > 0);
+
+            state.availableAmountB = getSpendable(order.tokenB, state.owner);
+            require(state.availableAmountB > 0);
+
+            if (order.isCompleteFillMeasuredByTokenSDepleted) {
+                order.amountS -= cancelledS[state.orderHash];
+                order.amountS -= filledS[state.orderHash];
+
+                order.amountB = scale(
+                    order.amountS,
+                    order.amountB,
+                    order.amountS);
+
+
+            } else {
+                order.amountB -= cancelledB[state.orderHash];
+                order.amountB -= filledB[state.orderHash];
+
+                order.amountS = scale(
+                    order.amountB,
+                    order.amountS,
+                    order.amountB);
+            }
+
+            // Initialize fill amounts
+            state.fillAmountS = order.amountS;
+            state.fillAmountB = order.amountB;
+        }
+    }
+
+
+  function scale(
         uint xx,
         uint y,
         uint x
@@ -248,121 +351,6 @@ contract LoopringProtocol {
         yy = xx.mul(y).div(x);
         require(yy > 0);
     }
-
-
-    function updateRingWithTradeAmount(
-        Ring ring
-        )
-        internal
-        constant {
-
-        uint ringSize = ring.orders.length;
-        uint smallestOrderIndex = 0;
-        uint scaledAmountS = ring.orders[0].scaledAmountS;
-
-        for (uint i = 0; i < ringSize; i++) {
-            (scaledAmountS, smallestOrderIndex) = calculateOrderTradeAmount(
-                ring,
-                ringSize,
-                scaledAmountS,
-                i);
-        }
-
-        for (i = 0; i < smallestOrderIndex; i++) {
-            (scaledAmountS, ) = calculateOrderTradeAmount(
-                ring,
-                ringSize,
-                scaledAmountS,
-                i);
-        }
-    }
-
-    function calculateOrderTradeAmount(
-        Ring ring,
-        uint ringSize,
-        uint scaledAmountS,
-        uint orderIndex
-        )
-        internal
-        constant
-        returns (
-            uint newScaledAmountS,
-            uint indexOfSmallerOrder) {
-
-        uint nextOrderIndex = (orderIndex + 1) % ringSize;
-        var thisState = ring.orders[orderIndex];
-        var nextState = ring.orders[nextOrderIndex];
-
-        uint scaledAmountB  = scale(
-            scaledAmountS,
-            thisState.fillAmountB,
-            thisState.fillAmountS);
-
-        if (thisState.order.isCompleteFillMeasuredByTokenSDepleted) {
-            thisState.scaledAmountB = scaledAmountB;
-        } else {
-
-        }
-
-        if (thisState.scaledAmountB > nextState.scaledAmountS) {
-            indexOfSmallerOrder = nextOrderIndex;
-        } else {
-            nextState.scaledAmountS = thisState.scaledAmountB;
-            indexOfSmallerOrder = orderIndex;
-        }
-
-        newScaledAmountS = nextState.scaledAmountS;
-    }
-
-
-    function scaleOrders(
-        Ring ring
-        )
-        internal
-        constant
-        returns (Ring) {
-
-        for (uint i = 0; i < ring.orders.length; i++) {
-            var state = ring.orders[i];
-            var order = state.order;
-
-            // Scale orders based on their fill hisotry, cancellation history,
-            // ERC20 balance, and allowance.
-            uint availableS = getSpendable(order.tokenS, state.owner);
-            uint availableB = getSpendable(order.tokenB, state.owner);
-
-            if (order.isCompleteFillMeasuredByTokenSDepleted) {
-                state.scaledAmountS -= cancelledS[state.orderHash];
-                state.scaledAmountS -= filledS[state.orderHash];
-
-                state.scaledAmountB = scale(
-                    state.scaledAmountS.min256(availableS),
-                    order.amountB,
-                    order.amountS);
-
-                state.scaledAmountS = scale(
-                    state.scaledAmountB.min256(availableB),
-                    order.amountS,
-                    order.amountB);
-
-            } else {
-                state.scaledAmountB -= cancelledB[state.orderHash];
-                state.scaledAmountS -= filledB[state.orderHash];
-
-                state.scaledAmountS = scale(
-                    state.scaledAmountB.min256(availableB),
-                    order.amountS,
-                    order.amountB);
-
-                state.scaledAmountB = scale(
-                    state.scaledAmountS.min256(availableS),
-                    order.amountB,
-                    order.amountS);
-            }
-        }
-        return ring;
-    }
-
   
 
     /// TODO(daniel): For each token, a dust threshold should be maintained by
@@ -405,7 +393,7 @@ contract LoopringProtocol {
     function assambleOrders(
         uint        ringSize,
         address[]   tokenSList,
-        uint[6][]   arg1List, // amountS,AmountB,expiration,rand,lrcFee,fillAmountS
+        uint[6][]   arg1List, // amountS,AmountB,expiration,rand,lrcFee,rateAmountS
         uint8[2][]  arg2List, // percentageSavingShareList,feeSelectionList
         bool[]      isCompleteFillMeasuredByTokenSDepletedList,
         uint8[]     vList,
@@ -450,14 +438,16 @@ contract LoopringProtocol {
                 getOrderHash(order),
                 ownerAddress,
                 arg2List[i][1],  // feeSelectionList
-                order.amountS,   // scaledAmountS
-                order.amountB,   // scaledAmountB
-                arg1List[i][5],  // fillAmountS
-                arg1List[j][5],  // fillAmountB
-                0,  // lrcReward
-                0,  // lrcFee
-                0,  // feeSForThisOrder
-                0   // feeSForNextOrder
+                arg1List[i][5],  // rateAmountS
+                arg1List[j][5],  // rateAmountB
+                0,   // availableAmountS
+                0,   // availableAmountB
+                0,   // fillAmountS
+                0,   // fillAmountB
+                0,   // lrcReward
+                0,   // lrcFee
+                0,   // feeSForThisOrder
+                0    // feeSForNextOrder
                 );
         }
 
