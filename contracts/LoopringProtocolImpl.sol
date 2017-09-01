@@ -228,6 +228,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             feeRecepient,
             throwIfLRCIsInsuffcient);
 
+        // Do the hard work.
         processRing(ring);
     }
 
@@ -244,12 +245,26 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function processRing(Ring ring) internal {
+        // Exchange rates calculation are performed by ring-miners as solidity
+        // cannot get power-of-1/n operation, therefore we have to verify
+        // these rates are correct. 
         verifyMinerSuppliedFillRates(ring);
 
+
+        // Scale down each order independently by substracting amount-filled and
+        // amount-cancelled. Order owner's current balance and allowance are
+        // not taken into consideration in these operations.
         scaleRingBasedOnHistoricalRecords(ring);
 
+        // Based on the already verified exchange rate provided by ring-miners,
+        // we can furthur scale down orders based on token balance and allowance,
+        // then find the smallest order of the ring, then calculate each order's
+        // `fillAmountS`.
         calculateRingFillAmount(ring);
 
+        // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
+        // of `fillAmountS` shall be paid to matching order or miner as saving-
+        // share.
         calculateRingFees(ring);  
     }
 
