@@ -23,7 +23,7 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
 import "./utils/ArrayUtil.sol";
 import "./Protocol.sol";
-
+import "./TokenRegistry.sol";
 
 /// TODO(daniel): rename to LoopringProtocolV1.sol
 
@@ -40,9 +40,10 @@ contract LoopringProtocolV1 is LoopringProtocol {
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
 
-    address public  lrcTokenAddress     = address(0);
-    uint    public  maxRingSize         = 0;
-    uint    public  ringIndex           = 0;
+    address public  lrcTokenAddress       = address(0);
+    address public  tokenRegistryContract = address(0);
+    uint    public  maxRingSize           = 0;
+    uint    public  ringIndex             = 0;
 
     /// The following two maps are used to keep order fill and cancellation
     /// historical records for orders whose buyNoMoreThanAmountB
@@ -124,14 +125,17 @@ contract LoopringProtocolV1 is LoopringProtocol {
 
     function LoopringProtocolV1(
         address _lrcTokenAddress,
+        address _tokenRegistryContract,
         uint    _maxRingSize
         )
         public {
 
         require(address(0) != _lrcTokenAddress);
+        require(address(0) != _tokenRegistryContract);
         require(_maxRingSize >= 2);
 
         lrcTokenAddress = _lrcTokenAddress;
+        tokenRegistryContract = _tokenRegistryContract;
         maxRingSize     = _maxRingSize;
     }
 
@@ -183,6 +187,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
         // Check ring size
         uint ringSize = tokenSList.length;
         require(ringSize > 1 && ringSize <= maxRingSize);
+        verifyTokensRegistered(tokenSList);
 
         bytes32 ringHash = getRingHash(
             ringSize,
@@ -235,6 +240,13 @@ contract LoopringProtocolV1 is LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
     /// Internal & Private Functions                                         ///
     ////////////////////////////////////////////////////////////////////////////
+
+    function verifyTokensRegistered(address[] tokens) internal constant {
+        var registryContract = TokenRegistry(tokenRegistryContract);
+        for (uint i = 0; i < tokens.length; i++) {
+            require(registryContract.isTokenRegistered(tokens[i]));
+        }
+    }
 
     function verifyMinerSuppliedFillRates(Ring ring)
         internal
