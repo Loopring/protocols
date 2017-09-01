@@ -475,7 +475,8 @@ contract LoopringProtocol {
         return getSpendable(lrcTokenAddress, _owner);
     }
 
-    /// @dev assmble order parameters into Order struct.
+    /// @dev        assmble order parameters into Order struct.
+    /// @return     A list of orders.
     function assembleOrders(
         uint        ringSize,
         address[]   tokenSList,
@@ -502,7 +503,8 @@ contract LoopringProtocol {
         for (uint i = 0; i < ringSize; i++) {
             uint j = i.prev(ringSize);
 
-            address ownerAddress = validateOrderOwnerSignatureForAddress();
+            // Get order owner's address.
+            address orderOwner = validateOrderOwnerSignatureForAddress();
 
             var order = Order(
                 address(this),
@@ -524,10 +526,10 @@ contract LoopringProtocol {
             orders[i] = OrderState(
                 order, 
                 getOrderHash(order),
-                ownerAddress,
+                orderOwner,
                 uint8ArgsList[i][1],  // feeSelectionList
                 uintArgsList[i][5],   // rateAmountS
-                getSpendable(order.tokenS, ownerAddress),
+                getSpendable(order.tokenS, orderOwner),
                 0,   // fillAmountS, to be initialized to amountS after scaling.
                 0,   // lrcReward, to be calculated.
                 0,   // lrcFee, to be calculated.
@@ -540,17 +542,20 @@ contract LoopringProtocol {
         return orders;
     }
 
+    /// @dev validate order's parameters are OK.
     function validateOrder(Order order) internal constant {
         require(order.tokenS != address(0));
         require(order.tokenB != address(0));
         require(order.amountS > 0);
         require(order.amountB > 0);
-        require(order.expiration >= block.number);
+        require(order.expiration > block.number);
         require(order.rand > 0);
         require(order.savingSharePercentage >= 0);
         require(order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE);
     }
 
+    /// @dev        Validate miner's signature.
+    /// @return     Ring-miner's address.
     function validateMinerSignatureForAddress(
         uint8[]     vList,
         bytes32[]   rList,
@@ -565,14 +570,19 @@ contract LoopringProtocol {
         return address(0);
     }
 
+    /// @dev        Validate order's signature.
+    /// @return     Order owner's address.
     function validateOrderOwnerSignatureForAddress(
-        ) internal constant returns (address addr) {
+        )
+        internal
+        constant
+        returns (address addr) {
 
         return address(0);
     }
 
-   /// @dev Calculates Keccak-256 hash of order with specified parameters.
-   /// @return Keccak-256 hash of order.
+   /// @dev         Calculates Keccak-256 hash of order with specified parameters.
+   /// @return      Keccak-256 hash of order.
    function getOrderHash(Order order)
        internal
        constant
