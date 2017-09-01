@@ -21,12 +21,15 @@ import "zeppelin-solidity/contracts/token/ERC20.sol";
 import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
+import "./utils/ArrayUtil.sol";
+
 /// @title Loopring Token Exchange Contract - v0.1
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocol {
     using SafeMath for uint;
     using Math     for uint;
+    using ArrayUtil for uint;
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -128,7 +131,6 @@ contract LoopringProtocol {
         uint    feeS;
     }
 
-
     struct Ring {
         OrderState[] orders;
         address      miner;
@@ -183,16 +185,6 @@ contract LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
 
     /// @dev Submit a order-ring for validation and settlement.
-    /// @param feeRecepient The recepient address for fee collection. If this is
-    ///                     '0x0', all fees will be paid to the address who had
-    ///                     signed this transaction, not `msg.sender`. Noted if
-    ///                     LRC need to be paid back to order owner as the result
-    ///                     of fee selection model, LRC will also be sent from
-    ///                     this address.
-    /// @param throwIfLRCIsInsuffcient 
-    ///                     If true, throw exception if any order's spendable
-    ///                     LRC amount is smaller than requried; if false, ring-
-    ///                     minor will give up collection the LRC fee.
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
@@ -209,39 +201,57 @@ contract LoopringProtocol {
     /// @param sList        List of s for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
+    /// @param feeRecepient The recepient address for fee collection. If this is
+    ///                     '0x0', all fees will be paid to the address who had
+    ///                     signed this transaction, not `msg.sender`. Noted if
+    ///                     LRC need to be paid back to order owner as the result
+    ///                     of fee selection model, LRC will also be sent from
+    ///                     this address.
+    /// @param throwIfLRCIsInsuffcient 
+    ///                     If true, throw exception if any order's spendable
+    ///                     LRC amount is smaller than requried; if false, ring-
+    ///                     minor will give up collection the LRC fee.
     function submitRing(
-        address     feeRecepient,
-        bool        throwIfLRCIsInsuffcient,
         address[]   tokenSList,
         uint[6][]   uintArgsList,
         uint8[2][]  uint8ArgsList,
         bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
         bytes32[]   rList,
-        bytes32[]   sList
+        bytes32[]   sList,
+        address     feeRecepient,
+        bool        throwIfLRCIsInsuffcient
         )
         public {
 
-        // Verify data integrity.
+        // Check ring size
         uint ringSize = tokenSList.length;
         require(ringSize > 1 && ringSize <= maxRingSize);
 
-        var orders = assambleOrders(
+        // Assemble input data into a struct so we can pass it to functions.
+        var orders = assembleOrders(
             ringSize,
             tokenSList,
-            uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
-            uint8ArgsList, // savingSharePercentageList,feeSelectionList
+            uintArgsList,
+            uint8ArgsList,
             buyNoMoreThanAmountBList,
             vList,
             rList,
             sList);
 
-        address minerAddress = validateMinerSignatureForAddress();
+        address minerAddress = validateMinerSignatureForAddress(
+            vList,
+            rList,
+            sList,
+            feeRecepient,
+            throwIfLRCIsInsuffcient
+            );
 
         if (feeRecepient == address(0)) {
             feeRecepient = minerAddress;
         }
 
+        // TODO(daniel): compulte the ring's hash to drop v,r,s?
         var ring = Ring(
             orders,
             minerAddress,
@@ -251,7 +261,7 @@ contract LoopringProtocol {
             rList[ringSize],
             sList[ringSize]);
 
-        checkRingMatchingRate(ring);
+        verifyMinerSuppliedFillRates(ring);
 
         scaleOrdersBasedOnHistory(ring);
 
@@ -265,7 +275,7 @@ contract LoopringProtocol {
     /// Internal & Private Functions                                         ///
     ////////////////////////////////////////////////////////////////////////////
 
-    function checkRingMatchingRate(Ring ring)
+    function verifyMinerSuppliedFillRates(Ring ring)
         internal
         constant {
 
@@ -283,7 +293,7 @@ contract LoopringProtocol {
         for (uint i = 0; i < ringSize; i++) {
             var state = ring.orders[i];
 
-            uint j = (i + 1) % ringSize;
+            uint j = i.next(ringSize);
             var next = ring.orders[j];
 
             if (state.feeSelection == FEE_SELECT_LRC) {
@@ -353,7 +363,7 @@ contract LoopringProtocol {
         
         var state = ring.orders[orderIndex];
 
-        uint nextIndex = (orderIndex + 1) % ring.orders.length;
+        uint nextIndex = orderIndex.next(ring.orders.length);
         var next = ring.orders[nextIndex];
 
         state.fillAmountS = state.fillAmountS.min256(state.availableAmountS);
@@ -465,7 +475,8 @@ contract LoopringProtocol {
         return getSpendable(lrcTokenAddress, _owner);
     }
 
-    function assambleOrders(
+    /// @dev assmble order parameters into Order struct.
+    function assembleOrders(
         uint        ringSize,
         address[]   tokenSList,
         uint[6][]   uintArgsList,
@@ -487,10 +498,9 @@ contract LoopringProtocol {
         require(ringSize + 1 == rList.length);
         require(ringSize + 1 == sList.length);
 
-
         var orders = new OrderState[](ringSize);
         for (uint i = 0; i < ringSize; i++) {
-            uint j = (i + ringSize - 1) % ringSize;
+            uint j = i.prev(ringSize);
 
             address ownerAddress = validateOrderOwnerSignatureForAddress();
 
@@ -541,7 +551,13 @@ contract LoopringProtocol {
         require(order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE);
     }
 
-    function validateMinerSignatureForAddress()
+    function validateMinerSignatureForAddress(
+        uint8[]     vList,
+        bytes32[]   rList,
+        bytes32[]   sList,
+        address     feeRecepient,
+        bool        throwIfLRCIsInsuffcient
+        )
         internal
         constant
         returns (address addr) {
@@ -601,5 +617,4 @@ contract LoopringProtocol {
             s
         );
     }
-
 }
