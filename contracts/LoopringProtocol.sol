@@ -35,6 +35,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
     using Math     for uint;
     using ArrayUtil for uint;
 
+
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
@@ -54,6 +55,69 @@ contract LoopringProtocolV1 is LoopringProtocol {
     /// values are `false`.
     mapping (bytes32 => uint) public filledB;
     mapping (bytes32 => uint) public cancelledB;
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Structs                                                              ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @param order        The original order
+    /// @param owner        This order owner's address. This value is calculated.
+    /// @param feeSelection A miner-supplied value indicating if LRC (value = 0)
+    ///                     or saving share is choosen by the miner (value = 1).
+    ///                     We may support more fee model in the future.
+    /// @param fillAmountS  Amount of tokenS to sell, calculated by protocol.
+    /// @param rateAmountS  This value is initially provided by miner and is
+    ///                     calculated by based on the original information of
+    ///                     all orders of the order-ring, in other orders, this
+    ///                     value is independent of the order's current state.
+    ///                     This value and `rateAmountB` can be used to calculate
+    ///                     the proposed exchange rate calculated by miner.                    
+    /// @param lrcReward    The amount of LRC paid by miner to order owner in
+    ///                     exchange for sharing-share.
+    /// @param lrcFee       The amount of LR paid by order owner to miner.
+    /// @param feeS         TokenS paid to miner, as the fee of this order and
+    ///                     next order, calculated by protocol.
+    struct OrderState {
+        Order   order;
+        bytes32 orderHash;
+        address owner;
+        uint8   feeSelection;
+        uint    rateAmountS;
+        uint    availableAmountS;
+        uint    fillAmountS;
+        uint    lrcReward;
+        uint    lrcFee;
+        uint    feeS;
+    }
+
+    struct Ring {
+        OrderState[] orders;
+        address      miner;
+        address      feeRecepient;
+        bool         throwIfLRCIsInsuffcient;
+        uint8        v;
+        bytes32      r;
+        bytes32      s;
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Evemts                                                               ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    event RingMined(
+        address indexed _miner,
+        address indexed _feeRecepient,
+        uint    indexed _ringIndex);
+
+    event OrderFilled(
+        uint    indexed _ringIndex,
+        string  indexed _orderHash,
+        uint    _amountS,
+        uint    _amountB,
+        uint    _lrcReward,
+        uint    _lrcFee);
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -475,9 +539,10 @@ contract LoopringProtocolV1 is LoopringProtocol {
         return address(0);
     }
 
-   /// @dev         Calculates Keccak-256 hash of order with specified parameters.
-   /// @return      Keccak-256 hash of order.
-   function getOrderHash(Order order)
+
+    /// @dev         Calculates Keccak-256 hash of order with specified parameters.
+    /// @return      Keccak-256 hash of order.
+    function getOrderHash(Order order)
        internal
        constant
        returns (bytes32) {
@@ -493,7 +558,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
             order.lrcFee,
             order.savingSharePercentage,
             order.buyNoMoreThanAmountB);
-   }
+    }
 
     /// @dev            Verifies that an order signature is valid.
     ///                 For how validation works, See https://ethereum.stackexchange.com/questions/1777/workflow-on-signing-a-string-with-private-key-followed-by-signature-verificatio
