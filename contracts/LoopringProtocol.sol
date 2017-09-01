@@ -33,7 +33,6 @@ contract LoopringProtocol {
     uint    public constant SAVING_SHARE_PERCENTAGE_BASE = 10000;
 
     address public  lrcTokenAddress                  = address(0);
-    address public  owner                            = address(0);
     uint    public  maxRingSize                      = 0;
     uint    public  expirationAsBlockHeightThreshold = 0;
     uint    public  ringIndex                        = 0;
@@ -49,6 +48,11 @@ contract LoopringProtocol {
     /// values are `false`.
     mapping (bytes32 => uint) public filledB;
     mapping (bytes32 => uint) public cancelledB;
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Structs                                                              ///
+    ////////////////////////////////////////////////////////////////////////////
 
     /// @param protocol     Protocol address
     /// @param tokenS       Token to sell
@@ -67,7 +71,7 @@ contract LoopringProtocol {
     ///                     The percentage of savings paid to miner.
     /// @param buyNoMoreThanAmountB
     ///                     If true, this order does not accept buying more than
-    ///                     `amountB' tokenB.
+    ///                     amountB tokenB.
     struct Order {
         address protocol;
         address tokenS;
@@ -89,7 +93,7 @@ contract LoopringProtocol {
     /// @param feeSelection A miner-supplied value indicating if LRC (value = 0)
     ///                     or saving share is choosen by the miner (value = 1).
     ///                     We may support more fee model in the future.
-    /// @param fillAmountS  Amount of tokenS to sell, computed by protocol.
+    /// @param fillAmountS  Amount of tokenS to sell, calculated by protocol.
     /// @param rateAmountS  This value is initially provided by miner and is
     ///                     calculated by based on the original information of
     ///                     all orders of the order-ring, in other orders, this
@@ -99,10 +103,8 @@ contract LoopringProtocol {
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for sharing-share.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
-    /// @param feeSForThisOrder TokenS paid to miner, as the fee of this order,
-    ///                         calculated by protocol.
-    /// @param feeSForNextOrder TokenS paid to miner, as the fee of next order,
-    ///                         calculated by protocol.
+    /// @param feeS         TokenS paid to miner, as the fee of this order and
+    ///                     next order, calculated by protocol.
     struct OrderState {
         Order   order;
         bytes32 orderHash;
@@ -113,8 +115,7 @@ contract LoopringProtocol {
         uint    fillAmountS;
         uint    lrcReward;
         uint    lrcFee;
-        uint    feeSForThisOrder;
-        uint    feeSForNextOrder;
+        uint    feeS;
     }
 
 
@@ -128,6 +129,9 @@ contract LoopringProtocol {
         bytes32      s;
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    /// Evemts                                                               ///
+    ////////////////////////////////////////////////////////////////////////////
     event RingMined(
         address indexed _miner,
         address indexed _feeRecepient,
@@ -143,25 +147,27 @@ contract LoopringProtocol {
         uint    _feeS,
         uint    _feeB);
 
-    /// Constructor
+    ////////////////////////////////////////////////////////////////////////////
+    /// Constructor                                                          ///
+    ////////////////////////////////////////////////////////////////////////////
     function LoopringProtocol(
         address _lrcTokenAddress,
-        address _owner,
         uint    _maxRingSize,
         uint    _expirationAsBlockHeightThreshold
         ) public {
 
         require(address(0) != _lrcTokenAddress);
-        require(address(0) != _owner);
         require(_maxRingSize >= 2);
         require(_expirationAsBlockHeightThreshold > block.number * 100);
 
         lrcTokenAddress                  = _lrcTokenAddress;
-        owner                            = _owner;
         maxRingSize                      = _maxRingSize;
         expirationAsBlockHeightThreshold = _expirationAsBlockHeightThreshold;
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    /// Public Functions                                                     ///
+    ////////////////////////////////////////////////////////////////////////////
     function submitRing(
         address     feeRecepient,
         bool        throwIfTokenAllowanceOrBalanceIsInsuffcient,
@@ -213,6 +219,9 @@ contract LoopringProtocol {
         calculateRingOrderFees(ring);
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    /// Internal & Private Functions                                         ///
+    ////////////////////////////////////////////////////////////////////////////
 
     function checkRingMatchingRate(Ring ring)
         internal
@@ -470,8 +479,7 @@ contract LoopringProtocol {
                 0,   // fillAmountS, to be initialized to amountS after scaling.
                 0,   // lrcReward, to be calculated.
                 0,   // lrcFee, to be calculated.
-                0,   // feeSForThisOrder, to be calculated.
-                0    // feeSForNextOrder, to be calculated.
+                0    // feeS, to be calculated.
                 );
 
             require(orders[i].availableAmountS > 0);
