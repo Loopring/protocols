@@ -22,23 +22,18 @@ import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
 import "./utils/ArrayUtil.sol";
+import "./Protocol.sol";
 
-/// @title Loopring Token Exchange Contract - v0.1
+
+/// TODO(daniel): rename to LoopringProtocolV1.sol
+
+/// @title Loopring Token Exchange Protocol Contract V1 Implementation
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-contract LoopringProtocol {
+contract LoopringProtocolV1 is LoopringProtocol {
     using SafeMath for uint;
     using Math     for uint;
     using ArrayUtil for uint;
-
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Constants                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
-    uint    public constant FEE_SELECT_LRC               = 0;
-    uint    public constant FEE_SELECT_SAVING_SHARE      = 1;
-    uint    public constant SAVING_SHARE_PERCENTAGE_BASE = 10000;
-
 
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///
@@ -62,111 +57,10 @@ contract LoopringProtocol {
 
 
     ////////////////////////////////////////////////////////////////////////////
-    /// Structs                                                              ///
-    ////////////////////////////////////////////////////////////////////////////
-
-    /// @param protocol     Protocol address.
-    /// @param tokenS       Token to sell.
-    /// @param tokenB       Token to buy.
-    /// @param amountS      Maximum amount of tokenS to sell.
-    /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
-    /// @param expiration   Indicating when this order will expire. If the value
-    ///                     is smaller than `now`, it will be treated as
-    ///                     Ethereum block height, otherwise it will be treated
-    ///                     as Ethereum block time (in second).
-    /// @param rand         A random number to make this order's hash unique.
-    /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
-    ///                     to pay is proportional to fill amount.
-    /// @param buyNoMoreThanAmountB
-    ///                     If true, this order does not accept buying more than
-    /// @param savingSharePercentage
-    ///                     The percentage of savings paid to miner.
-    ///                     amountB tokenB.
-    /// @param v            ECDSA signature parameter v.
-    /// @param r            ECDSA signature parameters r.
-    /// @param s            ECDSA signature parameters s.
-    struct Order {
-        address protocol;
-        address tokenS;
-        address tokenB;
-        uint    amountS;
-        uint    amountB;
-        uint    expiration;
-        uint    rand;
-        uint    lrcFee;
-        bool    buyNoMoreThanAmountB;
-        uint8   savingSharePercentage;
-        uint8   v;
-        bytes32 r;
-        bytes32 s;
-    }
-
-    /// @param order        The original order
-    /// @param owner        This order owner's address. This value is calculated.
-    /// @param feeSelection A miner-supplied value indicating if LRC (value = 0)
-    ///                     or saving share is choosen by the miner (value = 1).
-    ///                     We may support more fee model in the future.
-    /// @param fillAmountS  Amount of tokenS to sell, calculated by protocol.
-    /// @param rateAmountS  This value is initially provided by miner and is
-    ///                     calculated by based on the original information of
-    ///                     all orders of the order-ring, in other orders, this
-    ///                     value is independent of the order's current state.
-    ///                     This value and `rateAmountB` can be used to calculate
-    ///                     the proposed exchange rate calculated by miner.                    
-    /// @param lrcReward    The amount of LRC paid by miner to order owner in
-    ///                     exchange for sharing-share.
-    /// @param lrcFee       The amount of LR paid by order owner to miner.
-    /// @param feeS         TokenS paid to miner, as the fee of this order and
-    ///                     next order, calculated by protocol.
-    struct OrderState {
-        Order   order;
-        bytes32 orderHash;
-        address owner;
-        uint8   feeSelection;
-        uint    rateAmountS;
-        uint    availableAmountS;
-        uint    fillAmountS;
-        uint    lrcReward;
-        uint    lrcFee;
-        uint    feeS;
-    }
-
-    struct Ring {
-        OrderState[] orders;
-        address      miner;
-        address      feeRecepient;
-        bool         throwIfLRCIsInsuffcient;
-        uint8        v;
-        bytes32      r;
-        bytes32      s;
-    }
-
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Evemts                                                               ///
-    ////////////////////////////////////////////////////////////////////////////
-
-    event RingMined(
-        address indexed _miner,
-        address indexed _feeRecepient,
-        uint    indexed _ringIndex);
-
-    event OrderFilled(
-        uint    indexed _ringIndex,
-        string  indexed _orderHash,
-        uint    _amountS,
-        uint    _amountB,
-        uint    _lrcReward,
-        uint    _lrcFee,
-        uint    _feeS,
-        uint    _feeB);
-
-
-    ////////////////////////////////////////////////////////////////////////////
     /// Constructor                                                          ///
     ////////////////////////////////////////////////////////////////////////////
 
-    function LoopringProtocol(
+    function LoopringProtocolV1(
         address _lrcTokenAddress,
         uint    _maxRingSize
         )
