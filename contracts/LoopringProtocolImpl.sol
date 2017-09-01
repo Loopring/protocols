@@ -47,13 +47,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// The following two maps are used to keep order fill and cancellation
     /// historical records for orders whose buyNoMoreThanAmountB
-    /// values are `true`.
+    /// values are `false`.
     mapping (bytes32 => uint) public filledS;
     mapping (bytes32 => uint) public cancelledS;
 
     /// The following two maps are used to keep order fill and cancellation
     /// historical records if orders whose buyNoMoreThanAmountB
-    /// values are `false`.
+    /// values are `true`.
     mapping (bytes32 => uint) public filledB;
     mapping (bytes32 => uint) public cancelledB;
 
@@ -242,17 +242,44 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function cancelOrder(
         address[2] tokenAddresses,
         uint[7]    orderValues,
-        uint8      savingSharePercentage,
         bool       buyNoMoreThanAmountB,
+        uint8      savingSharePercentage,
         uint8      v,
         bytes32    r,
         bytes32    s
         )
         public {
 
+        uint cancelAmountS = orderValues[5];
+        uint cancelAmountB = orderValues[6];
+        if (buyNoMoreThanAmountB) {
+            require(cancelAmountB > 0);
+        } else {
+            require(cancelAmountS > 0);
+        }
+
+        Order memory order = Order(
+            tokenAddresses[0],
+            tokenAddresses[1],
+            orderValues[0],
+            orderValues[1],
+            orderValues[2],
+            orderValues[3],
+            orderValues[4],
+            buyNoMoreThanAmountB,
+            savingSharePercentage,
+            v,
+            r,
+            s
+        );
+        bytes32 orderHash = getOrderHash(order);
+
+        if (buyNoMoreThanAmountB) {
+            cancelledB[orderHash] = cancelAmountB.add(cancelledB[orderHash]);
+        } else {
+            cancelledS[orderHash] = cancelAmountS.add(cancelledS[orderHash]);
+        }
     }
-
-
 
     ////////////////////////////////////////////////////////////////////////////
     /// Internal & Private Functions                                         ///
@@ -268,7 +295,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function processRing(Ring ring) internal {
         // Exchange rates calculation are performed by ring-miners as solidity
         // cannot get power-of-1/n operation, therefore we have to verify
-        // these rates are correct. 
+        // these rates are correct.
         verifyMinerSuppliedFillRates(ring);
 
 
@@ -286,7 +313,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
         // of `fillAmountS` shall be paid to matching order or miner as saving-
         // share.
-        calculateRingFees(ring);  
+        calculateRingFees(ring);
     }
 
 
@@ -496,7 +523,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint j = i.prev(ringSize);
 
             var order = Order(
-
                 tokenSList[i],
                 tokenSList[j],
                 uintArgsList[i][0],
@@ -512,7 +538,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             validateOrder(order);
 
-            bytes32 orderHash = calculateOrderHash(order);
+            bytes32 orderHash = getOrderHash(order);
             address orderOwner = calculateSignerAddress(
                 orderHash,
                 order.v,
@@ -585,8 +611,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             throwIfLRCIsInsuffcient);
     }
 
-    /// @return The Keccak-256 hash of the order with specified parameters.
-    function calculateOrderHash(Order order)
+    /// @dev Get the Keccak-256 hash of order with specified parameters.
+    function getOrderHash(Order order)
         internal
         constant
         returns (bytes32) {

@@ -132,8 +132,8 @@ contract LoopringProtocol {
     function cancelOrder(
         address[2] tokenAddresses,
         uint[7]    orderValues,
-        uint8      savingSharePercentage,
         bool       buyNoMoreThanAmountB,
+        uint8      savingSharePercentage,
         uint8      v,
         bytes32    r,
         bytes32    s
