@@ -21,7 +21,7 @@ import "zeppelin-solidity/contracts/token/ERC20.sol";
 import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
-/// @title Loopring Token Exchange Contract
+/// @title Loopring Token Exchange Contract - v0.1
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocol {
@@ -35,23 +35,20 @@ contract LoopringProtocol {
     address public  lrcTokenAddress                  = address(0);
     address public  owner                            = address(0);
     uint    public  maxRingSize                      = 0;
-    uint    public  defaultDustThreshold             = 0;
     uint    public  expirationAsBlockHeightThreshold = 0;
     uint    public  ringIndex                        = 0;
 
     /// The following two maps are used to keep order fill and cancellation
-    /// historical records for orders whose isCompleteFillMeasuredByTokenSDepleted
-    /// value is `true`.
+    /// historical records for orders whose buyNoMoreThanAmountB
+    /// values are `true`.
     mapping (bytes32 => uint) public filledS;
     mapping (bytes32 => uint) public cancelledS;
 
     /// The following two maps are used to keep order fill and cancellation
-    /// historical records if orders whose isCompleteFillMeasuredByTokenSDepleted
-    /// value is `false`.
+    /// historical records if orders whose buyNoMoreThanAmountB
+    /// values are `false`.
     mapping (bytes32 => uint) public filledB;
     mapping (bytes32 => uint) public cancelledB;
-
-
 
     /// @param protocol     Protocol address
     /// @param tokenS       Token to sell
@@ -66,13 +63,11 @@ contract LoopringProtocol {
     /// @param rand         A random number to make this order's hash unique.
     /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
     ///                     to pay is proportional to fill amount.
-    /// @param savingSharePercentage The percentage of savings paid to miner.
-    /// @param isCompleteFillMeasuredByTokenSDepleted If true, this order
-    ///        is considered 'fully filled' if amountS is smaller than a
-    ///        dust-threshold; if false, this order is considered 'fully filled'
-    ///        if amountB is smaller than a dust-threshold. Noted each token may
-    ///        have a different dust-threshold. The default dust-threshold is
-    ///        specified by defaultDustThreshold.
+    /// @param savingSharePercentage
+    ///                     The percentage of savings paid to miner.
+    /// @param buyNoMoreThanAmountB
+    ///                     If true, this order does not accept buying more than
+    ///                     `amountB' tokenB.
     struct Order {
         address protocol;
         address tokenS;
@@ -83,7 +78,7 @@ contract LoopringProtocol {
         uint    rand;
         uint    lrcFee;
         uint8   savingSharePercentage;
-        bool    isCompleteFillMeasuredByTokenSDepleted;
+        bool    buyNoMoreThanAmountB;
         uint8   v;
         bytes32 r;
         bytes32 s;
@@ -101,7 +96,6 @@ contract LoopringProtocol {
     ///                     value is independent of the order's current state.
     ///                     This value and `rateAmountB` can be used to calculate
     ///                     the proposed exchange rate calculated by miner.                    
-    /// @param rateAmountB  See `rateAmountS`.
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for sharing-share.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
@@ -115,7 +109,6 @@ contract LoopringProtocol {
         address owner;
         uint8   feeSelection;
         uint    rateAmountS;
-        uint    rateAmountB; 
         uint    availableAmountS;
         uint    fillAmountS;
         uint    lrcReward;
@@ -155,20 +148,17 @@ contract LoopringProtocol {
         address _lrcTokenAddress,
         address _owner,
         uint    _maxRingSize,
-        uint    _defaultDustThreshold,
         uint    _expirationAsBlockHeightThreshold
         ) public {
 
         require(address(0) != _lrcTokenAddress);
         require(address(0) != _owner);
         require(_maxRingSize >= 2);
-        require(_defaultDustThreshold >= 0);
         require(_expirationAsBlockHeightThreshold > block.number * 100);
 
         lrcTokenAddress                  = _lrcTokenAddress;
         owner                            = _owner;
         maxRingSize                      = _maxRingSize;
-        defaultDustThreshold             = _defaultDustThreshold;
         expirationAsBlockHeightThreshold = _expirationAsBlockHeightThreshold;
     }
 
@@ -178,7 +168,7 @@ contract LoopringProtocol {
         address[]   tokenSList,
         uint[6][]   uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
         uint8[2][]  uint8ArgsList, // savingSharePercentageList,feeSelectionList
-        bool[]      isCompleteFillMeasuredByTokenSDepletedList,
+        bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList
@@ -194,7 +184,7 @@ contract LoopringProtocol {
             tokenSList,
             uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
             uint8ArgsList, // savingSharePercentageList,feeSelectionList
-            isCompleteFillMeasuredByTokenSDepletedList,
+            buyNoMoreThanAmountBList,
             vList,
             rList,
             sList);
@@ -326,11 +316,11 @@ contract LoopringProtocol {
 
         uint fillAmountB  = scale(
             state.fillAmountS,
-            state.rateAmountB,
+            next.rateAmountS,  // state.rateAmountB
             state.rateAmountS)
             .min256(next.availableAmountS);
 
-        if (!state.order.isCompleteFillMeasuredByTokenSDepleted) {
+        if (state.order.buyNoMoreThanAmountB) {
             fillAmountB = fillAmountB.min256(state.order.amountB);
         }
 
@@ -340,7 +330,7 @@ contract LoopringProtocol {
             state.fillAmountS  = scale(
                 fillAmountB,
                 state.rateAmountS,
-                state.rateAmountB);
+                next.rateAmountS);
 
             next.fillAmountS = fillAmountB;
         }
@@ -361,33 +351,39 @@ contract LoopringProtocol {
             state.availableAmountS = getSpendable(order.tokenS, state.owner);
             require(state.availableAmountS > 0);
 
-            if (order.isCompleteFillMeasuredByTokenSDepleted) {
-                order.amountS -= cancelledS[state.orderHash];
-                order.amountS -= filledS[state.orderHash];
-
-                order.amountB = scale(
-                    order.amountS,
-                    order.amountB,
-                    order.amountS);
-
-                order.lrcFee = scale(
-                    order.amountS,
-                    order.lrcFee,
-                    order.amountS);
-            } else {
-                order.amountB -= cancelledB[state.orderHash];
-                order.amountB -= filledB[state.orderHash];
+            // Scale down this order.
+            if (order.buyNoMoreThanAmountB) {
+                uint amountB = order.amountB
+                    .sub(cancelledB[state.orderHash])
+                    .sub(filledB[state.orderHash]);
 
                 order.amountS = scale(
-                    order.amountB,
+                    amountB,
                     order.amountS,
                     order.amountB);
 
-
                 order.lrcFee = scale(
-                    order.amountB,
+                    amountB,
                     order.lrcFee,
                     order.amountB);
+
+                order.amountB = amountB;
+            } else {
+                uint amountS = order.amountS
+                    .sub(cancelledS[state.orderHash])
+                    .sub(filledS[state.orderHash]);
+
+                order.amountB = scale(
+                    amountS,
+                    order.amountB,
+                    order.amountS);
+
+                order.lrcFee = scale(
+                    amountS,
+                    order.lrcFee,
+                    order.amountS);
+
+                order.amountS = amountS;
             }
 
             // Initialize fill amounts
@@ -439,7 +435,7 @@ contract LoopringProtocol {
         address[]   tokenSList,
         uint[6][]   uintArgsList, // amountS,AmountB,expiration,rand,lrcFee,rateAmountS
         uint8[2][]  uint8ArgsList, // savingSharePercentageList,feeSelectionList
-        bool[]      isCompleteFillMeasuredByTokenSDepletedList,
+        bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList
@@ -451,7 +447,7 @@ contract LoopringProtocol {
         require(ringSize == tokenSList.length);
         require(ringSize == uintArgsList.length);
         require(ringSize == uint8ArgsList.length);
-        require(ringSize == isCompleteFillMeasuredByTokenSDepletedList.length);
+        require(ringSize == buyNoMoreThanAmountBList.length);
         require(ringSize + 1 == vList.length);
         require(ringSize + 1 == rList.length);
         require(ringSize + 1 == sList.length);
@@ -473,7 +469,7 @@ contract LoopringProtocol {
                 uintArgsList[i][3],
                 uintArgsList[i][4],
                 uint8ArgsList[i][0],
-                isCompleteFillMeasuredByTokenSDepletedList[i],
+                buyNoMoreThanAmountBList[i],
                 vList[i],
                 rList[i],
                 sList[i]);
@@ -486,7 +482,6 @@ contract LoopringProtocol {
                 ownerAddress,
                 uint8ArgsList[i][1],  // feeSelectionList
                 uintArgsList[i][5],  // rateAmountS
-                uintArgsList[j][5],  // rateAmountB
                 0,   // availableAmountS
                 0,   // fillAmountS
                 0,   // lrcReward
@@ -541,7 +536,7 @@ contract LoopringProtocol {
             order.rand,
             order.lrcFee,
             order.savingSharePercentage,
-            order.isCompleteFillMeasuredByTokenSDepleted);
+            order.buyNoMoreThanAmountB);
    }
 
     /// @dev            Verifies that an order signature is valid.
