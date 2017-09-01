@@ -92,13 +92,11 @@ contract LoopringProtocolV1 is LoopringProtocol {
     }
 
     struct Ring {
+        bytes32      ringHash;
         OrderState[] orders;
         address      miner;
         address      feeRecepient;
         bool         throwIfLRCIsInsuffcient;
-        uint8        v;
-        bytes32      r;
-        bytes32      s;
     }
 
 
@@ -195,13 +193,12 @@ contract LoopringProtocolV1 is LoopringProtocol {
             sList
         );
 
-        require(isSignatureValid(
-            msg.sender,
+        address minerAddress = caculateSignerAddress(
             ringHash,
             vList[ringSize],
             rList[ringSize],
             sList[ringSize]
-        ));
+        );
 
         // Assemble input data into a struct so we can pass it to functions.
         var orders = assembleOrders(
@@ -214,27 +211,16 @@ contract LoopringProtocolV1 is LoopringProtocol {
             rList,
             sList);
 
-        address minerAddress = validateMinerSignatureForAddress(
-            vList,
-            rList,
-            sList,
-            feeRecepient,
-            throwIfLRCIsInsuffcient
-            );
-
         if (feeRecepient == address(0)) {
             feeRecepient = minerAddress;
         }
 
-        // TODO(daniel): compulte the ring's hash to drop v,r,s?
         var ring = Ring(
+            ringHash,
             orders,
             minerAddress,
             feeRecepient,
-            throwIfLRCIsInsuffcient,
-            vList[ringSize],
-            rList[ringSize],
-            sList[ringSize]);
+            throwIfLRCIsInsuffcient);
 
         verifyMinerSuppliedFillRates(ring);
 
@@ -653,6 +639,5 @@ contract LoopringProtocolV1 is LoopringProtocol {
             s
         );
     }
-
 
 }
