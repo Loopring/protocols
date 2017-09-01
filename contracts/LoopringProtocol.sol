@@ -187,7 +187,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
         bytes32 ringHash = getRingHash(
             ringSize,
             feeRecepient,
-            throwIfTokenAllowanceOrBalanceIsInsuffcient,
+            throwIfLRCIsInsuffcient,
             vList,
             rList,
             sList
@@ -201,7 +201,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
         );
 
         // Assemble input data into a struct so we can pass it to functions.
-        var orders = assambleOrders(
+        var orders = assembleOrders(
             ringSize,
             tokenSList,
             uintArgsList,
@@ -545,7 +545,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
     function getRingHash(
         uint ringSize,
         address feeRecepient,
-        bool throwIfTokenAllowanceOrBalanceIsInsuffcient,
+        bool throwIfLRCIsInsuffcient,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList)
@@ -571,7 +571,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
         return keccak256(
             address(this),
             feeRecepient,
-            throwIfTokenAllowanceOrBalanceIsInsuffcient,
+            throwIfLRCIsInsuffcient,
             allSignBytes
         );
     }
@@ -591,7 +591,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
             order.amountB,
             order.expiration,
             order.rand,
-            order.feeLRC,
+            order.lrcFee,
             order.percentageSavingShare,
             order.isCompleteFillMeasuredByTokenSDepleted
         );
