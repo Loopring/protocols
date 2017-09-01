@@ -53,6 +53,7 @@ contract LoopringProtocol {
 
 
 
+    /// @param protocol     Protocol address
     /// @param tokenS       Token to sell
     /// @param tokenB       Token to buy
     /// @param amountS      Maximum amount of tokenS to sell
@@ -73,6 +74,7 @@ contract LoopringProtocol {
     ///        have a different dust-threshold. The default dust-threshold is
     ///        specified by defaultDustThreshold.
     struct Order {
+        address protocol;
         address tokenS;
         address tokenB;
         uint    amountS;
@@ -457,11 +459,12 @@ contract LoopringProtocol {
 
         var orders = new OrderState[](ringSize);
         for (uint i = 0; i < ringSize; i++) {
-            uint j = (i + ringSize- 1) % ringSize;
+            uint j = (i + ringSize - 1) % ringSize;
 
             address ownerAddress = validateOrderOwnerSignatureForAddress();
 
             var order = Order(
+                address(this),
                 tokenSList[i],
                 tokenSList[j],
                 uintArgsList[i][0],
