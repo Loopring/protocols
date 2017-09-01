@@ -145,7 +145,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
     ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee.
-    /// @param uint8ArgsList
+    /// param uint8ArgsList
     ///                     List of unit8-type arguments, in this order:
     ///                     savingSharePercentageList,feeSelectionList.
     /// @param vList        List of v for each order. This list is 1-larger than
@@ -163,7 +163,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
     ///                     LRC need to be paid back to order owner as the result
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
-    /// @param throwIfLRCIsInsuffcient
+    /// param throwIfLRCIsInsuffcient
     ///                     If true, throw exception if any order's spendable
     ///                     LRC amount is smaller than requried; if false, ring-
     ///                     minor will give up collection the LRC fee.
@@ -555,7 +555,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
 
         uint singleSignLen = 1 + 32 + 32;
         uint allSignLen = singleSignLen * ringSize;
-        bytes allSignBytes = new bytes(allSignLen);
+        bytes memory allSignBytes = new bytes(allSignLen);
         for (uint i = 0; i < allSignLen; i ++) {
             uint mod = i % singleSignLen;
             uint ind = i / singleSignLen;
@@ -592,8 +592,8 @@ contract LoopringProtocolV1 is LoopringProtocol {
             order.expiration,
             order.rand,
             order.lrcFee,
-            order.percentageSavingShare,
-            order.isCompleteFillMeasuredByTokenSDepleted
+            order.buyNoMoreThanAmountB,
+            order.savingSharePercentage
         );
    }
 
