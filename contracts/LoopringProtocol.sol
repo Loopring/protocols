@@ -30,7 +30,7 @@ contract LoopringProtocol {
 
     uint    public constant FEE_SELECT_LRC               = 0;
     uint    public constant FEE_SELECT_SAVING_SHARE      = 1;
-    uint    public constant SAVING_SHARE_PERCENTAGE_BASE = 1000000;
+    uint    public constant SAVING_SHARE_PERCENTAGE_BASE = 10000;
 
     address public  lrcTokenAddress                  = address(0);
     address public  owner                            = address(0);
@@ -231,6 +231,7 @@ contract LoopringProtocol {
 
     }
 
+    /// TODO(daniel): not done right;
     function calculateRingOrderFees(
         Ring ring
         )
