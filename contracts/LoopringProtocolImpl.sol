@@ -137,7 +137,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         maxRingSize     = _maxRingSize;
     }
 
-
     ////////////////////////////////////////////////////////////////////////////
     /// Public Functions                                                     ///
     ////////////////////////////////////////////////////////////////////////////
@@ -147,7 +146,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
     ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee.
-    /// @param uint8ArgsList - 
+    /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     savingSharePercentageList,feeSelectionList.
     /// @param vList        List of v for each order. This list is 1-larger than
@@ -234,6 +233,28 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         calculateRingOrderFees(ring);
     }
+
+    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified in orderValues.
+    /// @param tokenAddresses     tokenS,tokenB
+    /// @param orderValues        amountS,amountB,expiration,rand,lrcFee,cancelAmountS,cancelAmountB
+    /// @param savingSharePercentage -
+    /// @param buyNoMoreThanAmountB -
+    /// @param v                  Order ECDSA signature parameter v.
+    /// @param r                  Order ECDSA signature parameters r.
+    /// @param s                  Order ECDSA signature parameters s.
+    function cancelOrder(
+        address[2] tokenAddresses,
+        uint[7]    orderValues,
+        uint8      savingSharePercentage,
+        bool       buyNoMoreThanAmountB,
+        uint8      v,
+        bytes32    r,
+        bytes32    s
+        )
+        public {
+
+    }
+
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -476,7 +497,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint j = i.prev(ringSize);
 
             var order = Order(
-                address(this),
+
                 tokenSList[i],
                 tokenSList[j],
                 uintArgsList[i][0],
@@ -600,7 +621,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         returns (bytes32) {
 
         return keccak256(
-            order.protocol,
+            address(this),
             order.tokenS,
             order.tokenB,
             order.amountS,

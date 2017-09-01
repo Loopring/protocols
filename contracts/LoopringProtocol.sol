@@ -43,7 +43,6 @@ contract LoopringProtocol {
     /// Structs                                                              ///
     ////////////////////////////////////////////////////////////////////////////
 
-    /// @param protocol     Protocol address.
     /// @param tokenS       Token to sell.
     /// @param tokenB       Token to buy.
     /// @param amountS      Maximum amount of tokenS to sell.
@@ -64,7 +63,6 @@ contract LoopringProtocol {
     /// @param r            ECDSA signature parameters r.
     /// @param s            ECDSA signature parameters s.
     struct Order {
-        address protocol;
         address tokenS;
         address tokenB;
         uint    amountS;
@@ -88,8 +86,8 @@ contract LoopringProtocol {
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee. 
-    /// @param uint8ArgsList 
+    ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee.
+    /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     savingSharePercentageList,feeSelectionList.
     /// @param vList        List of v for each order. This list is 1-larger than
@@ -107,7 +105,7 @@ contract LoopringProtocol {
     ///                     LRC need to be paid back to order owner as the result
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
-    /// @param throwIfLRCIsInsuffcient 
+    /// @param throwIfLRCIsInsuffcient -
     ///                     If true, throw exception if any order's spendable
     ///                     LRC amount is smaller than requried; if false, ring-
     ///                     minor will give up collection the LRC fee.
@@ -121,6 +119,24 @@ contract LoopringProtocol {
         bytes32[]   sList,
         address     feeRecepient,
         bool        throwIfLRCIsInsuffcient
+        ) public;
+
+    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified in orderValues.
+    /// @param tokenAddresses     tokenS,tokenB
+    /// @param orderValues        amountS,amountB,expiration,rand,lrcFee,cancelAmountS,cancelAmountB
+    /// @param savingSharePercentage -
+    /// @param buyNoMoreThanAmountB -
+    /// @param v                  Order ECDSA signature parameter v.
+    /// @param r                  Order ECDSA signature parameters r.
+    /// @param s                  Order ECDSA signature parameters s.
+    function cancelOrder(
+        address[2] tokenAddresses,
+        uint[7]    orderValues,
+        uint8      savingSharePercentage,
+        bool       buyNoMoreThanAmountB,
+        uint8      v,
+        bytes32    r,
+        bytes32    s
         ) public;
 
 }
