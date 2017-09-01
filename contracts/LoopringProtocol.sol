@@ -22,8 +22,8 @@ import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
 /// @title Loopring Token Exchange Contract
-/// @author Kongliang Zhong - <kongliang@loopring.org>
 /// @author Daniel Wang - <daniel@loopring.org>
+/// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocol {
     using SafeMath for uint;
     using Math for uint;
@@ -92,7 +92,6 @@ contract LoopringProtocol {
     ///                     or saving share is choosen by the miner (value = 1).
     ///                     We may support more fee model in the future.
     /// @param fillAmountS  Amount of tokenS to sell, computed by protocol.
-    /// @param fillAmountB  Amount of tokenB to buy, computed by protocol.
     /// @param rateAmountS  This value is initially provided by miner and is
     ///                     calculated by based on the original information of
     ///                     all orders of the order-ring, in other orders, this
@@ -115,9 +114,7 @@ contract LoopringProtocol {
         uint    rateAmountS;
         uint    rateAmountB; 
         uint    availableAmountS;
-        uint    availableAmountB;
         uint    fillAmountS;
-        uint    fillAmountB;
         uint    lrcReward;
         uint    lrcFee;
         uint    feeSForThisOrder;
@@ -176,8 +173,8 @@ contract LoopringProtocol {
         address     feeRecepient,
         bool        throwIfTokenAllowanceOrBalanceIsInsuffcient,
         address[]   tokenSList,
-        uint[6][]   arg1List, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
-        uint8[2][]  arg2List, // percentageSavingShareList,feeSelectionList
+        uint[6][]   uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
+        uint8[2][]  uint8ArgsList, // percentageSavingShareList,feeSelectionList
         bool[]      isCompleteFillMeasuredByTokenSDepletedList,
         uint8[]     vList,
         bytes32[]   rList,
@@ -192,8 +189,8 @@ contract LoopringProtocol {
         var orders = assambleOrders(
             ringSize,
             tokenSList,
-            arg1List, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
-            arg2List, // percentageSavingShareList,feeSelectionList
+            uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
+            uint8ArgsList, // percentageSavingShareList,feeSelectionList
             isCompleteFillMeasuredByTokenSDepletedList,
             vList,
             rList,
@@ -257,13 +254,6 @@ contract LoopringProtocol {
         for (i = 0; i < smallestOrderIndex; i++) {
             calculateOrderFillAmount(ring, i);
         }
-
-        // These seciton is redundant.
-        for (i = 0; i < ringSize; i++) {
-            var state = ring.orders[i];
-            var next = ring.orders[ (i + 1) % ringSize];
-            require(state.fillAmountB == next.fillAmountS);
-        }
     }
 
     function calculateOrderFillAmount(
@@ -274,31 +264,33 @@ contract LoopringProtocol {
         constant
         returns (uint indexOfSmallerOrder) {
 
-        uint nextIndex = (orderIndex + 1) % ring.orders.length;
+        
         var state = ring.orders[orderIndex];
+
+        uint nextIndex = (orderIndex + 1) % ring.orders.length;
         var next = ring.orders[nextIndex];
 
         state.fillAmountS = state.fillAmountS.min256(state.availableAmountS);
 
-        state.fillAmountB  = scale(
+        uint fillAmountB  = scale(
             state.fillAmountS,
             state.rateAmountB,
             state.rateAmountS)
-            .min256(state.availableAmountB);
+            .min256(next.availableAmountS);
 
         if (!state.order.isCompleteFillMeasuredByTokenSDepleted) {
-            state.fillAmountB = state.fillAmountB.min256(state.order.amountB);
+            fillAmountB = fillAmountB.min256(state.order.amountB);
         }
 
-        state.fillAmountS  = scale(
-            state.fillAmountB,
-            state.rateAmountS,
-            state.rateAmountB);
-
-        if (state.fillAmountB > next.fillAmountS) {
+        if (fillAmountB > next.fillAmountS) {
             indexOfSmallerOrder = nextIndex;
         } else {
-            next.fillAmountS = state.fillAmountB;
+            state.fillAmountS  = scale(
+                fillAmountB,
+                state.rateAmountS,
+                state.rateAmountB);
+
+            next.fillAmountS = fillAmountB;
         }
     }
 
@@ -316,9 +308,6 @@ contract LoopringProtocol {
             // ERC20 balance, and allowance.
             state.availableAmountS = getSpendable(order.tokenS, state.owner);
             require(state.availableAmountS > 0);
-
-            state.availableAmountB = getSpendable(order.tokenB, state.owner);
-            require(state.availableAmountB > 0);
 
             if (order.isCompleteFillMeasuredByTokenSDepleted) {
                 order.amountS -= cancelledS[state.orderHash];
@@ -342,7 +331,6 @@ contract LoopringProtocol {
 
             // Initialize fill amounts
             state.fillAmountS = order.amountS;
-            state.fillAmountB = order.amountB;
         }
     }
 
@@ -388,8 +376,8 @@ contract LoopringProtocol {
     function assambleOrders(
         uint        ringSize,
         address[]   tokenSList,
-        uint[6][]   arg1List, // amountS,AmountB,expiration,rand,lrcFee,rateAmountS
-        uint8[2][]  arg2List, // percentageSavingShareList,feeSelectionList
+        uint[6][]   uintArgsList, // amountS,AmountB,expiration,rand,lrcFee,rateAmountS
+        uint8[2][]  uint8ArgsList, // percentageSavingShareList,feeSelectionList
         bool[]      isCompleteFillMeasuredByTokenSDepletedList,
         uint8[]     vList,
         bytes32[]   rList,
@@ -400,8 +388,8 @@ contract LoopringProtocol {
         returns (OrderState[]) {
 
         require(ringSize == tokenSList.length);
-        require(ringSize == arg1List.length);
-        require(ringSize == arg2List.length);
+        require(ringSize == uintArgsList.length);
+        require(ringSize == uint8ArgsList.length);
         require(ringSize == isCompleteFillMeasuredByTokenSDepletedList.length);
         require(ringSize + 1 == vList.length);
         require(ringSize + 1 == rList.length);
@@ -417,12 +405,12 @@ contract LoopringProtocol {
             var order = Order(
                 tokenSList[i],
                 tokenSList[j],
-                arg1List[i][0],
-                arg1List[i][1],
-                arg1List[i][2],
-                arg1List[i][3],
-                arg1List[i][4],
-                arg2List[i][0],
+                uintArgsList[i][0],
+                uintArgsList[i][1],
+                uintArgsList[i][2],
+                uintArgsList[i][3],
+                uintArgsList[i][4],
+                uint8ArgsList[i][0],
                 isCompleteFillMeasuredByTokenSDepletedList[i],
                 vList[i],
                 rList[i],
@@ -432,13 +420,11 @@ contract LoopringProtocol {
                 order, 
                 getOrderHash(order),
                 ownerAddress,
-                arg2List[i][1],  // feeSelectionList
-                arg1List[i][5],  // rateAmountS
-                arg1List[j][5],  // rateAmountB
+                uint8ArgsList[i][1],  // feeSelectionList
+                uintArgsList[i][5],  // rateAmountS
+                uintArgsList[j][5],  // rateAmountB
                 0,   // availableAmountS
-                0,   // availableAmountB
                 0,   // fillAmountS
-                0,   // fillAmountB
                 0,   // lrcReward
                 0,   // lrcFee
                 0,   // feeSForThisOrder
