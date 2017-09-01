@@ -26,7 +26,7 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocol {
     using SafeMath for uint;
-    using Math for uint;
+    using Math     for uint;
 
     uint    public constant FEE_SELECT_LRC               = 0;
     uint    public constant FEE_SELECT_SAVING_SHARE      = 1;
@@ -214,19 +214,14 @@ contract LoopringProtocol {
     }
 
 
-    function checkRingMatchingRate(
-        Ring ring
-        )
+    function checkRingMatchingRate(Ring ring)
         internal
         constant {
-
 
     }
 
     /// TODO(daniel): not done right;
-    function calculateRingOrderFees(
-        Ring ring
-        )
+    function calculateRingOrderFees(Ring ring)
         internal
         constant {
 
@@ -280,9 +275,7 @@ contract LoopringProtocol {
 
     }
 
-    function calculateRingOrderFillAmount(
-        Ring ring
-        )
+    function calculateRingOrderFillAmount(Ring ring)
         internal
         constant {
 
@@ -337,9 +330,7 @@ contract LoopringProtocol {
     }
 
 
-    function scaleOrdersBasedOnHistory(
-        Ring ring
-        )
+    function scaleOrdersBasedOnHistory(Ring ring)
         internal
         constant {
 
@@ -347,11 +338,6 @@ contract LoopringProtocol {
             var state = ring.orders[i];
             var order = state.order;
 
-            // ERC20 balance, and allowance.
-            state.availableAmountS = getSpendable(order.tokenS, state.owner);
-            require(state.availableAmountS > 0);
-
-            // Scale down this order.
             if (order.buyNoMoreThanAmountB) {
                 uint amountB = order.amountB
                     .sub(cancelledB[state.orderHash])
@@ -420,9 +406,7 @@ contract LoopringProtocol {
             .min256(token.balanceOf(_owner));
     }
 
-    function getLRCSpendable(
-        address _owner
-        )
+    function getLRCSpendable(address _owner)
         internal
         constant
         returns (uint) {
@@ -481,14 +465,16 @@ contract LoopringProtocol {
                 getOrderHash(order),
                 ownerAddress,
                 uint8ArgsList[i][1],  // feeSelectionList
-                uintArgsList[i][5],  // rateAmountS
-                0,   // availableAmountS
-                0,   // fillAmountS
-                0,   // lrcReward
-                0,   // lrcFee
-                0,   // feeSForThisOrder
-                0    // feeSForNextOrder
+                uintArgsList[i][5],   // rateAmountS
+                getSpendable(order.tokenS, ownerAddress),
+                0,   // fillAmountS, to be initialized to amountS after scaling.
+                0,   // lrcReward, to be calculated.
+                0,   // lrcFee, to be calculated.
+                0,   // feeSForThisOrder, to be calculated.
+                0    // feeSForNextOrder, to be calculated.
                 );
+
+            require(orders[i].availableAmountS > 0);
         }
 
         return orders;
