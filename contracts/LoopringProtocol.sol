@@ -21,58 +21,70 @@ import "zeppelin-solidity/contracts/token/ERC20.sol";
 import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
-/// @title Loopring Token Exchange Contract
+import "./utils/ArrayUtil.sol";
+
+/// @title Loopring Token Exchange Contract - v0.1
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocol {
     using SafeMath for uint;
-    using Math for uint;
+    using Math     for uint;
+    using ArrayUtil for uint;
 
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Constants                                                            ///
+    ////////////////////////////////////////////////////////////////////////////
     uint    public constant FEE_SELECT_LRC               = 0;
     uint    public constant FEE_SELECT_SAVING_SHARE      = 1;
     uint    public constant SAVING_SHARE_PERCENTAGE_BASE = 10000;
 
-    address public  lrcTokenAddress                  = address(0);
-    address public  owner                            = address(0);
-    uint    public  maxRingSize                      = 0;
-    uint    public  defaultDustThreshold             = 0;
-    uint    public  expirationAsBlockHeightThreshold = 0;
-    uint    public  ringIndex                        = 0;
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Variables                                                            ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    address public  lrcTokenAddress     = address(0);
+    uint    public  maxRingSize         = 0;
+    uint    public  ringIndex           = 0;
 
     /// The following two maps are used to keep order fill and cancellation
-    /// historical records for orders whose isCompleteFillMeasuredByTokenSDepleted
-    /// value is `true`.
+    /// historical records for orders whose buyNoMoreThanAmountB
+    /// values are `true`.
     mapping (bytes32 => uint) public filledS;
     mapping (bytes32 => uint) public cancelledS;
 
     /// The following two maps are used to keep order fill and cancellation
-    /// historical records if orders whose isCompleteFillMeasuredByTokenSDepleted
-    /// value is `false`.
+    /// historical records if orders whose buyNoMoreThanAmountB
+    /// values are `false`.
     mapping (bytes32 => uint) public filledB;
     mapping (bytes32 => uint) public cancelledB;
 
 
+    ////////////////////////////////////////////////////////////////////////////
+    /// Structs                                                              ///
+    ////////////////////////////////////////////////////////////////////////////
 
-    /// @param protocol     Protocol address
-    /// @param tokenS       Token to sell
-    /// @param tokenB       Token to buy
-    /// @param amountS      Maximum amount of tokenS to sell
-    /// @param amountB      Minimum amount of tokenB to buy
+    /// @param protocol     Protocol address.
+    /// @param tokenS       Token to sell.
+    /// @param tokenB       Token to buy.
+    /// @param amountS      Maximum amount of tokenS to sell.
+    /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
     /// @param expiration   Indicating when this order will expire. If the value
-    ///                     is smaller than EXPIRATION_AS_BLOCKHEIGHT_THRESHOLD,
-    ///                     it will be treated as Ethereum block height,
-    ///                     otherwise it will be treated as Ethereum block
-    ///                     time (in second).
+    ///                     is smaller than `now`, it will be treated as
+    ///                     Ethereum block height, otherwise it will be treated
+    ///                     as Ethereum block time (in second).
     /// @param rand         A random number to make this order's hash unique.
     /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
     ///                     to pay is proportional to fill amount.
-    /// @param savingSharePercentage The percentage of savings paid to miner.
-    /// @param isCompleteFillMeasuredByTokenSDepleted If true, this order
-    ///        is considered 'fully filled' if amountS is smaller than a
-    ///        dust-threshold; if false, this order is considered 'fully filled'
-    ///        if amountB is smaller than a dust-threshold. Noted each token may
-    ///        have a different dust-threshold. The default dust-threshold is
-    ///        specified by defaultDustThreshold.
+    /// @param buyNoMoreThanAmountB
+    ///                     If true, this order does not accept buying more than
+    /// @param savingSharePercentage
+    ///                     The percentage of savings paid to miner.
+    ///                     amountB tokenB.
+    /// @param v            ECDSA signature parameter v.
+    /// @param r            ECDSA signature parameters r.
+    /// @param s            ECDSA signature parameters s.
     struct Order {
         address protocol;
         address tokenS;
@@ -82,58 +94,57 @@ contract LoopringProtocol {
         uint    expiration;
         uint    rand;
         uint    lrcFee;
+        bool    buyNoMoreThanAmountB;
         uint8   savingSharePercentage;
-        bool    isCompleteFillMeasuredByTokenSDepleted;
         uint8   v;
         bytes32 r;
         bytes32 s;
     }
 
-    /// @param order        The order
+    /// @param order        The original order
     /// @param owner        This order owner's address. This value is calculated.
     /// @param feeSelection A miner-supplied value indicating if LRC (value = 0)
     ///                     or saving share is choosen by the miner (value = 1).
     ///                     We may support more fee model in the future.
-    /// @param fillAmountS  Amount of tokenS to sell, computed by protocol.
+    /// @param fillAmountS  Amount of tokenS to sell, calculated by protocol.
     /// @param rateAmountS  This value is initially provided by miner and is
     ///                     calculated by based on the original information of
     ///                     all orders of the order-ring, in other orders, this
     ///                     value is independent of the order's current state.
     ///                     This value and `rateAmountB` can be used to calculate
     ///                     the proposed exchange rate calculated by miner.                    
-    /// @param rateAmountB  See `rateAmountS`.
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for sharing-share.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
-    /// @param feeSForThisOrder TokenS paid to miner, as the fee of this order,
-    ///                         calculated by protocol.
-    /// @param feeSForNextOrder TokenS paid to miner, as the fee of next order,
-    ///                         calculated by protocol.
+    /// @param feeS         TokenS paid to miner, as the fee of this order and
+    ///                     next order, calculated by protocol.
     struct OrderState {
         Order   order;
         bytes32 orderHash;
         address owner;
         uint8   feeSelection;
         uint    rateAmountS;
-        uint    rateAmountB; 
         uint    availableAmountS;
         uint    fillAmountS;
         uint    lrcReward;
         uint    lrcFee;
-        uint    feeSForThisOrder;
-        uint    feeSForNextOrder;
+        uint    feeS;
     }
-
 
     struct Ring {
         OrderState[] orders;
         address      miner;
         address      feeRecepient;
-        bool         throwIfTokenAllowanceOrBalanceIsInsuffcient;
+        bool         throwIfLRCIsInsuffcient;
         uint8        v;
         bytes32      r;
         bytes32      s;
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Evemts                                                               ///
+    ////////////////////////////////////////////////////////////////////////////
 
     event RingMined(
         address indexed _miner,
@@ -150,71 +161,107 @@ contract LoopringProtocol {
         uint    _feeS,
         uint    _feeB);
 
-    /// Constructor
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Constructor                                                          ///
+    ////////////////////////////////////////////////////////////////////////////
+
     function LoopringProtocol(
         address _lrcTokenAddress,
-        address _owner,
-        uint    _maxRingSize,
-        uint    _defaultDustThreshold,
-        uint    _expirationAsBlockHeightThreshold
-        ) public {
-
-        require(address(0) != _lrcTokenAddress);
-        require(address(0) != _owner);
-        require(_maxRingSize >= 2);
-        require(_defaultDustThreshold >= 0);
-        require(_expirationAsBlockHeightThreshold > block.number * 100);
-
-        lrcTokenAddress                  = _lrcTokenAddress;
-        owner                            = _owner;
-        maxRingSize                      = _maxRingSize;
-        defaultDustThreshold             = _defaultDustThreshold;
-        expirationAsBlockHeightThreshold = _expirationAsBlockHeightThreshold;
-    }
-
-    function submitRing(
-        address     feeRecepient,
-        bool        throwIfTokenAllowanceOrBalanceIsInsuffcient,
-        address[]   tokenSList,
-        uint[6][]   uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
-        uint8[2][]  uint8ArgsList, // savingSharePercentageList,feeSelectionList
-        bool[]      isCompleteFillMeasuredByTokenSDepletedList,
-        uint8[]     vList,
-        bytes32[]   rList,
-        bytes32[]   sList
+        uint    _maxRingSize
         )
         public {
 
-        // Verify data integrity.
+        require(address(0) != _lrcTokenAddress);
+        require(_maxRingSize >= 2);
+
+        lrcTokenAddress = _lrcTokenAddress;
+        maxRingSize     = _maxRingSize;
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Public Functions                                                     ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @dev Submit a order-ring for validation and settlement.
+    /// @param tokenSList   List of each order's tokenS. Note that next order's
+    ///                     `tokenS` equals this order's `tokenB`.
+    /// @param uintArgsList List of uint-type arguments in this order:
+    ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee. 
+    /// @param uint8ArgsList 
+    ///                     List of unit8-type arguments, in this order:
+    ///                     savingSharePercentageList,feeSelectionList.
+    /// @param vList        List of v for each order. This list is 1-larger than
+    ///                     the previous lists, with the last element being the
+    ///                     v value of the ring signature.
+    /// @param rList        List of r for each order. This list is 1-larger than
+    ///                     the previous lists, with the last element being the
+    ///                     r value of the ring signature.
+    /// @param sList        List of s for each order. This list is 1-larger than
+    ///                     the previous lists, with the last element being the
+    ///                     s value of the ring signature.
+    /// @param feeRecepient The recepient address for fee collection. If this is
+    ///                     '0x0', all fees will be paid to the address who had
+    ///                     signed this transaction, not `msg.sender`. Noted if
+    ///                     LRC need to be paid back to order owner as the result
+    ///                     of fee selection model, LRC will also be sent from
+    ///                     this address.
+    /// @param throwIfLRCIsInsuffcient 
+    ///                     If true, throw exception if any order's spendable
+    ///                     LRC amount is smaller than requried; if false, ring-
+    ///                     minor will give up collection the LRC fee.
+    function submitRing(
+        address[]   tokenSList,
+        uint[6][]   uintArgsList,
+        uint8[2][]  uint8ArgsList,
+        bool[]      buyNoMoreThanAmountBList,
+        uint8[]     vList,
+        bytes32[]   rList,
+        bytes32[]   sList,
+        address     feeRecepient,
+        bool        throwIfLRCIsInsuffcient
+        )
+        public {
+
+        // Check ring size
         uint ringSize = tokenSList.length;
         require(ringSize > 1 && ringSize <= maxRingSize);
 
-        var orders = assambleOrders(
+        // Assemble input data into a struct so we can pass it to functions.
+        var orders = assembleOrders(
             ringSize,
             tokenSList,
-            uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
-            uint8ArgsList, // savingSharePercentageList,feeSelectionList
-            isCompleteFillMeasuredByTokenSDepletedList,
+            uintArgsList,
+            uint8ArgsList,
+            buyNoMoreThanAmountBList,
             vList,
             rList,
             sList);
 
-        address minerAddress = validateMinerSignatureForAddress();
+        address minerAddress = validateMinerSignatureForAddress(
+            vList,
+            rList,
+            sList,
+            feeRecepient,
+            throwIfLRCIsInsuffcient
+            );
 
         if (feeRecepient == address(0)) {
             feeRecepient = minerAddress;
         }
 
+        // TODO(daniel): compulte the ring's hash to drop v,r,s?
         var ring = Ring(
             orders,
             minerAddress,
             feeRecepient,
-            throwIfTokenAllowanceOrBalanceIsInsuffcient,
+            throwIfLRCIsInsuffcient,
             vList[ringSize],
             rList[ringSize],
             sList[ringSize]);
 
-        checkRingMatchingRate(ring);
+        verifyMinerSuppliedFillRates(ring);
 
         scaleOrdersBasedOnHistory(ring);
 
@@ -224,19 +271,18 @@ contract LoopringProtocol {
     }
 
 
-    function checkRingMatchingRate(
-        Ring ring
-        )
+    ////////////////////////////////////////////////////////////////////////////
+    /// Internal & Private Functions                                         ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    function verifyMinerSuppliedFillRates(Ring ring)
         internal
         constant {
-
 
     }
 
     /// TODO(daniel): not done right;
-    function calculateRingOrderFees(
-        Ring ring
-        )
+    function calculateRingOrderFees(Ring ring)
         internal
         constant {
 
@@ -247,13 +293,13 @@ contract LoopringProtocol {
         for (uint i = 0; i < ringSize; i++) {
             var state = ring.orders[i];
 
-            uint j = (i + 1) % ringSize;
+            uint j = i.next(ringSize);
             var next = ring.orders[j];
 
             if (state.feeSelection == FEE_SELECT_LRC) {
                 uint lrcSpendable = getLRCSpendable(state.owner);
                 if (lrcSpendable < state.order.lrcFee) {
-                    if (ring.throwIfTokenAllowanceOrBalanceIsInsuffcient) {
+                    if (ring.throwIfLRCIsInsuffcient) {
                         revert();
                     }
 
@@ -290,9 +336,7 @@ contract LoopringProtocol {
 
     }
 
-    function calculateRingOrderFillAmount(
-        Ring ring
-        )
+    function calculateRingOrderFillAmount(Ring ring)
         internal
         constant {
 
@@ -319,18 +363,18 @@ contract LoopringProtocol {
         
         var state = ring.orders[orderIndex];
 
-        uint nextIndex = (orderIndex + 1) % ring.orders.length;
+        uint nextIndex = orderIndex.next(ring.orders.length);
         var next = ring.orders[nextIndex];
 
         state.fillAmountS = state.fillAmountS.min256(state.availableAmountS);
 
         uint fillAmountB  = scale(
             state.fillAmountS,
-            state.rateAmountB,
+            next.rateAmountS,  // state.rateAmountB
             state.rateAmountS)
             .min256(next.availableAmountS);
 
-        if (!state.order.isCompleteFillMeasuredByTokenSDepleted) {
+        if (state.order.buyNoMoreThanAmountB) {
             fillAmountB = fillAmountB.min256(state.order.amountB);
         }
 
@@ -340,16 +384,14 @@ contract LoopringProtocol {
             state.fillAmountS  = scale(
                 fillAmountB,
                 state.rateAmountS,
-                state.rateAmountB);
+                next.rateAmountS);
 
             next.fillAmountS = fillAmountB;
         }
     }
 
 
-    function scaleOrdersBasedOnHistory(
-        Ring ring
-        )
+    function scaleOrdersBasedOnHistory(Ring ring)
         internal
         constant {
 
@@ -357,37 +399,38 @@ contract LoopringProtocol {
             var state = ring.orders[i];
             var order = state.order;
 
-            // ERC20 balance, and allowance.
-            state.availableAmountS = getSpendable(order.tokenS, state.owner);
-            require(state.availableAmountS > 0);
-
-            if (order.isCompleteFillMeasuredByTokenSDepleted) {
-                order.amountS -= cancelledS[state.orderHash];
-                order.amountS -= filledS[state.orderHash];
-
-                order.amountB = scale(
-                    order.amountS,
-                    order.amountB,
-                    order.amountS);
-
-                order.lrcFee = scale(
-                    order.amountS,
-                    order.lrcFee,
-                    order.amountS);
-            } else {
-                order.amountB -= cancelledB[state.orderHash];
-                order.amountB -= filledB[state.orderHash];
+            if (order.buyNoMoreThanAmountB) {
+                uint amountB = order.amountB
+                    .sub(cancelledB[state.orderHash])
+                    .sub(filledB[state.orderHash]);
 
                 order.amountS = scale(
-                    order.amountB,
+                    amountB,
                     order.amountS,
                     order.amountB);
 
-
                 order.lrcFee = scale(
-                    order.amountB,
+                    amountB,
                     order.lrcFee,
                     order.amountB);
+
+                order.amountB = amountB;
+            } else {
+                uint amountS = order.amountS
+                    .sub(cancelledS[state.orderHash])
+                    .sub(filledS[state.orderHash]);
+
+                order.amountB = scale(
+                    amountS,
+                    order.amountB,
+                    order.amountS);
+
+                order.lrcFee = scale(
+                    amountS,
+                    order.lrcFee,
+                    order.amountS);
+
+                order.amountS = amountS;
             }
 
             // Initialize fill amounts
@@ -424,9 +467,7 @@ contract LoopringProtocol {
             .min256(token.balanceOf(_owner));
     }
 
-    function getLRCSpendable(
-        address _owner
-        )
+    function getLRCSpendable(address _owner)
         internal
         constant
         returns (uint) {
@@ -434,12 +475,14 @@ contract LoopringProtocol {
         return getSpendable(lrcTokenAddress, _owner);
     }
 
-    function assambleOrders(
+    /// @dev        assmble order parameters into Order struct.
+    /// @return     A list of orders.
+    function assembleOrders(
         uint        ringSize,
         address[]   tokenSList,
-        uint[6][]   uintArgsList, // amountS,AmountB,expiration,rand,lrcFee,rateAmountS
-        uint8[2][]  uint8ArgsList, // savingSharePercentageList,feeSelectionList
-        bool[]      isCompleteFillMeasuredByTokenSDepletedList,
+        uint[6][]   uintArgsList,
+        uint8[2][]  uint8ArgsList,
+        bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList
@@ -451,17 +494,17 @@ contract LoopringProtocol {
         require(ringSize == tokenSList.length);
         require(ringSize == uintArgsList.length);
         require(ringSize == uint8ArgsList.length);
-        require(ringSize == isCompleteFillMeasuredByTokenSDepletedList.length);
+        require(ringSize == buyNoMoreThanAmountBList.length);
         require(ringSize + 1 == vList.length);
         require(ringSize + 1 == rList.length);
         require(ringSize + 1 == sList.length);
 
-
         var orders = new OrderState[](ringSize);
         for (uint i = 0; i < ringSize; i++) {
-            uint j = (i + ringSize - 1) % ringSize;
+            uint j = i.prev(ringSize);
 
-            address ownerAddress = validateOrderOwnerSignatureForAddress();
+            // Get order owner's address.
+            address orderOwner = validateOrderOwnerSignatureForAddress();
 
             var order = Order(
                 address(this),
@@ -472,8 +515,8 @@ contract LoopringProtocol {
                 uintArgsList[i][2],
                 uintArgsList[i][3],
                 uintArgsList[i][4],
+                buyNoMoreThanAmountBList[i],
                 uint8ArgsList[i][0],
-                isCompleteFillMeasuredByTokenSDepletedList[i],
                 vList[i],
                 rList[i],
                 sList[i]);
@@ -483,34 +526,43 @@ contract LoopringProtocol {
             orders[i] = OrderState(
                 order, 
                 getOrderHash(order),
-                ownerAddress,
+                orderOwner,
                 uint8ArgsList[i][1],  // feeSelectionList
-                uintArgsList[i][5],  // rateAmountS
-                uintArgsList[j][5],  // rateAmountB
-                0,   // availableAmountS
-                0,   // fillAmountS
-                0,   // lrcReward
-                0,   // lrcFee
-                0,   // feeSForThisOrder
-                0    // feeSForNextOrder
+                uintArgsList[i][5],   // rateAmountS
+                getSpendable(order.tokenS, orderOwner),
+                0,   // fillAmountS, to be initialized to amountS after scaling.
+                0,   // lrcReward, to be calculated.
+                0,   // lrcFee, to be calculated.
+                0    // feeS, to be calculated.
                 );
+
+            require(orders[i].availableAmountS > 0);
         }
 
         return orders;
     }
 
+    /// @dev validate order's parameters are OK.
     function validateOrder(Order order) internal constant {
         require(order.tokenS != address(0));
         require(order.tokenB != address(0));
         require(order.amountS > 0);
         require(order.amountB > 0);
-        require(order.expiration >= block.number);
+        require(order.expiration > block.number);
         require(order.rand > 0);
         require(order.savingSharePercentage >= 0);
         require(order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE);
     }
 
-    function validateMinerSignatureForAddress()
+    /// @dev        Validate miner's signature.
+    /// @return     Ring-miner's address.
+    function validateMinerSignatureForAddress(
+        uint8[]     vList,
+        bytes32[]   rList,
+        bytes32[]   sList,
+        address     feeRecepient,
+        bool        throwIfLRCIsInsuffcient
+        )
         internal
         constant
         returns (address addr) {
@@ -518,14 +570,19 @@ contract LoopringProtocol {
         return address(0);
     }
 
+    /// @dev        Validate order's signature.
+    /// @return     Order owner's address.
     function validateOrderOwnerSignatureForAddress(
-        ) internal constant returns (address addr) {
+        )
+        internal
+        constant
+        returns (address addr) {
 
         return address(0);
     }
 
-   /// @dev Calculates Keccak-256 hash of order with specified parameters.
-   /// @return Keccak-256 hash of order.
+   /// @dev         Calculates Keccak-256 hash of order with specified parameters.
+   /// @return      Keccak-256 hash of order.
    function getOrderHash(Order order)
        internal
        constant
@@ -541,7 +598,7 @@ contract LoopringProtocol {
             order.rand,
             order.lrcFee,
             order.savingSharePercentage,
-            order.isCompleteFillMeasuredByTokenSDepleted);
+            order.buyNoMoreThanAmountB);
    }
 
     /// @dev            Verifies that an order signature is valid.
@@ -570,5 +627,4 @@ contract LoopringProtocol {
             s
         );
     }
-
 }
