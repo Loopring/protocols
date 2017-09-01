@@ -149,7 +149,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
     ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee.
-    /// param uint8ArgsList
+    /// @param uint8ArgsList - 
     ///                     List of unit8-type arguments, in this order:
     ///                     savingSharePercentageList,feeSelectionList.
     /// @param vList        List of v for each order. This list is 1-larger than
@@ -167,7 +167,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
     ///                     LRC need to be paid back to order owner as the result
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
-    /// param throwIfLRCIsInsuffcient
+    /// @param throwIfLRCIsInsuffcient -
     ///                     If true, throw exception if any order's spendable
     ///                     LRC amount is smaller than requried; if false, ring-
     ///                     minor will give up collection the LRC fee.
@@ -565,18 +565,18 @@ contract LoopringProtocolV1 is LoopringProtocol {
         constant
         returns (bytes32) {
 
-        uint singleSignLen = 1 + 32 + 32;
-        uint allSignLen = singleSignLen * ringSize;
-        bytes memory allSignBytes = new bytes(allSignLen);
-        for (uint i = 0; i < allSignLen; i ++) {
-            uint mod = i % singleSignLen;
-            uint ind = i / singleSignLen;
+        uint size = 65; // = 1 + 32 + 32;
+        uint targetSize = size * ringSize;
+        bytes memory targetBytes = new bytes(targetSize);
+        for (uint i = 0; i < targetSize; i ++) {
+            uint mod = i % size;
+            uint ind = i / size;
             if (mod == 0) {
-                allSignBytes[i] = byte(vList[ind]);
+                targetBytes[i] = byte(vList[ind]);
             } else if (mod > 0 && mod <= 32) {
-                allSignBytes[i + mod] = byte(rList[ind][mod - 1]);
+                targetBytes[i + mod] = byte(rList[ind][mod - 1]);
             } else {
-                allSignBytes[i + mod] = byte(sList[ind][mod - 1 - 32]);
+                targetBytes[i + mod] = byte(sList[ind][mod - 1 - 32]);
             }
         }
 
@@ -584,7 +584,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
             address(this),
             feeRecepient,
             throwIfLRCIsInsuffcient,
-            allSignBytes
+            targetBytes
         );
     }
 
@@ -596,7 +596,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
         returns (bytes32) {
 
         return keccak256(
-            address(this),
+            order.protocol,
             order.tokenS,
             order.tokenB,
             order.amountS,
@@ -606,33 +606,6 @@ contract LoopringProtocolV1 is LoopringProtocol {
             order.lrcFee,
             order.buyNoMoreThanAmountB,
             order.savingSharePercentage
-        );
-   }
-
-    /// @dev            Verifies that an order signature is valid.
-    ///                 For how validation works, See https://ethereum.stackexchange.com/questions/1777/workflow-on-signing-a-string-with-private-key-followed-by-signature-verificatio
-    ///                 For keccak256 prefix, See https://ethereum.stackexchange.com/questions/19582/does-ecrecover-in-solidity-expects-the-x19ethereum-signed-message-n-prefix
-    /// @param signer   address of signer.
-    /// @param hash     Signed Keccak-256 hash.
-    /// @param v        ECDSA signature parameter v.
-    /// @param r        ECDSA signature parameters r.
-    /// @param s        ECDSA signature parameters s.
-    /// @return         Validity of order signature.
-    function isSignatureValid(
-        address signer,
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s)
-        public
-        constant
-        returns (bool) {
-
-        return signer == ecrecover(
-            keccak256("\x19Ethereum Signed Message:\n32", hash),
-            v,
-            r,
-            s
         );
     }
 
