@@ -72,7 +72,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
     ///                     all orders of the order-ring, in other orders, this
     ///                     value is independent of the order's current state.
     ///                     This value and `rateAmountB` can be used to calculate
-    ///                     the proposed exchange rate calculated by miner.                    
+    ///                     the proposed exchange rate calculated by miner.
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for sharing-share.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
@@ -146,8 +146,8 @@ contract LoopringProtocolV1 is LoopringProtocol {
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee. 
-    /// @param uint8ArgsList 
+    ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee.
+    /// @param uint8ArgsList
     ///                     List of unit8-type arguments, in this order:
     ///                     savingSharePercentageList,feeSelectionList.
     /// @param vList        List of v for each order. This list is 1-larger than
@@ -165,7 +165,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
     ///                     LRC need to be paid back to order owner as the result
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
-    /// @param throwIfLRCIsInsuffcient 
+    /// @param throwIfLRCIsInsuffcient
     ///                     If true, throw exception if any order's spendable
     ///                     LRC amount is smaller than requried; if false, ring-
     ///                     minor will give up collection the LRC fee.
@@ -186,8 +186,25 @@ contract LoopringProtocolV1 is LoopringProtocol {
         uint ringSize = tokenSList.length;
         require(ringSize > 1 && ringSize <= maxRingSize);
 
+        bytes32 ringHash = getRingHash(
+            ringSize,
+            feeRecepient,
+            throwIfTokenAllowanceOrBalanceIsInsuffcient,
+            vList,
+            rList,
+            sList
+        );
+
+        require(isSignatureValid(
+            msg.sender,
+            ringHash,
+            vList[ringSize],
+            rList[ringSize],
+            sList[ringSize]
+        ));
+
         // Assemble input data into a struct so we can pass it to functions.
-        var orders = assembleOrders(
+        var orders = assambleOrders(
             ringSize,
             tokenSList,
             uintArgsList,
@@ -287,7 +304,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
                             state.order.lrcFee,
                             state.order.amountS);
                     }
-                }     
+                }
             } else revert();
 
         }
@@ -318,7 +335,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
         constant
         returns (uint indexOfSmallerOrder) {
 
-        
+
         var state = ring.orders[orderIndex];
 
         uint nextIndex = orderIndex.next(ring.orders.length);
@@ -482,7 +499,7 @@ contract LoopringProtocolV1 is LoopringProtocol {
             validateOrder(order);
 
             orders[i] = OrderState(
-                order, 
+                order,
                 getOrderHash(order),
                 orderOwner,
                 uint8ArgsList[i][1],  // feeSelectionList
@@ -539,15 +556,48 @@ contract LoopringProtocolV1 is LoopringProtocol {
         return address(0);
     }
 
+    function getRingHash(
+        uint ringSize,
+        address feeRecepient,
+        bool throwIfTokenAllowanceOrBalanceIsInsuffcient,
+        uint8[]     vList,
+        bytes32[]   rList,
+        bytes32[]   sList)
+        internal
+        constant
+        returns (bytes32) {
 
-    /// @dev         Calculates Keccak-256 hash of order with specified parameters.
-    /// @return      Keccak-256 hash of order.
+        uint singleSignLen = 1 + 32 + 32;
+        uint allSignLen = singleSignLen * ringSize;
+        bytes allSignBytes = new bytes(allSignLen);
+        for (uint i = 0; i < allSignLen; i ++) {
+            uint mod = i % singleSignLen;
+            uint ind = i / singleSignLen;
+            if (mod == 0) {
+                allSignBytes[i] = byte(vList[ind]);
+            } else if (mod > 0 && mod <= 32) {
+                allSignBytes[i + mod] = byte(rList[ind][mod - 1]);
+            } else {
+                allSignBytes[i + mod] = byte(sList[ind][mod - 1 - 32]);
+            }
+        }
+
+        return keccak256(
+            address(this),
+            feeRecepient,
+            throwIfTokenAllowanceOrBalanceIsInsuffcient,
+            allSignBytes
+        );
+    }
+
+    /// @dev Calculates Keccak-256 hash of order with specified parameters.
+    /// @return Keccak-256 hash of order.
     function getOrderHash(Order order)
-       internal
-       constant
-       returns (bytes32) {
+        internal
+        constant
+        returns (bytes32) {
 
-       return keccak256(
+        return keccak256(
             address(this),
             order.tokenS,
             order.tokenB,
@@ -555,10 +605,11 @@ contract LoopringProtocolV1 is LoopringProtocol {
             order.amountB,
             order.expiration,
             order.rand,
-            order.lrcFee,
-            order.savingSharePercentage,
-            order.buyNoMoreThanAmountB);
-    }
+            order.feeLRC,
+            order.percentageSavingShare,
+            order.isCompleteFillMeasuredByTokenSDepleted
+        );
+   }
 
     /// @dev            Verifies that an order signature is valid.
     ///                 For how validation works, See https://ethereum.stackexchange.com/questions/1777/workflow-on-signing-a-string-with-private-key-followed-by-signature-verificatio
@@ -586,4 +637,22 @@ contract LoopringProtocolV1 is LoopringProtocol {
             s
         );
     }
+
+    function caculateSignerAddress(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s)
+        public
+        constant
+        returns (address) {
+        return ecrecover(
+            keccak256("\x19Ethereum Signed Message:\n32", hash),
+            v,
+            r,
+            s
+        );
+    }
+
+
 }
