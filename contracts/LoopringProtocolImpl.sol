@@ -44,6 +44,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  tokenRegistryContract = address(0);
     uint    public  maxRingSize           = 0;
     uint    public  ringIndex             = 0;
+    uint    public  maxPriceRateDeviation = 0;
 
     /// The following two maps are used to keep order fill and cancellation
     /// historical records for orders whose buyNoMoreThanAmountB
@@ -126,17 +127,20 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function LoopringProtocolImpl(
         address _lrcTokenAddress,
         address _tokenRegistryContract,
-        uint    _maxRingSize
+        uint    _maxRingSize,
+        uint    _maxPriceRateDeviation
         )
         public {
 
         require(address(0) != _lrcTokenAddress);
         require(address(0) != _tokenRegistryContract);
         require(_maxRingSize >= 2);
+        require(_maxPriceRateDeviation >= 1);
 
-        lrcTokenAddress = _lrcTokenAddress;
-        tokenRegistryContract = _tokenRegistryContract;
-        maxRingSize     = _maxRingSize;
+        lrcTokenAddress             = _lrcTokenAddress;
+        tokenRegistryContract       = _tokenRegistryContract;
+        maxRingSize                 = _maxRingSize;
+        maxPriceRateDeviation       = _maxPriceRateDeviation;
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -320,7 +324,39 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function verifyMinerSuppliedFillRates(Ring ring)
         internal
         constant {
+        uint ringSize = ring.orders.length;
+        var orders = ring.orders;
+        uint[] memory priceSavingRateList = new uint[](ringSize);
+        uint savingRateSum = 0;
+        for (uint i = 0; i < ringSize; i++) {
+            uint rateAmountB = orders[i.next(ringSize)].rateAmountS;
+            uint s0b1 = orders[i].order.amountS.mul(rateAmountB);
+            uint b0s1 = orders[i].rateAmountS.mul(orders[i].order.amountB);
+            require(s0b1 >= b0s1);
+            priceSavingRateList[i] = s0b1.sub(b0s1).mul(10000).div(s0b1);
+            savingRateSum += priceSavingRateList[i];
+        }
 
+        uint savingRateAvg = savingRateSum.div(ringSize);
+        uint variance = caculateVariance(priceSavingRateList, savingRateAvg);
+        require(variance <= maxPriceRateDeviation);
+    }
+
+    function caculateVariance(uint[] arr, uint avg) internal constant returns (uint) {
+        uint len = arr.length;
+        uint variance = 0;
+        for (uint i = 0; i < len; i++) {
+            uint _sub = 0;
+            if (arr[i] > avg) {
+                _sub = arr[i] - avg;
+            } else {
+                _sub = avg - arr[i];
+            }
+            variance += _sub.mul(_sub);
+        }
+        variance = variance.div(len);
+        variance = variance.div(avg).div(avg);
+        return variance;
     }
 
     /// TODO(daniel): not done right;
