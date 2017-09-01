@@ -28,14 +28,22 @@ contract LoopringProtocol {
     using SafeMath for uint;
     using Math     for uint;
 
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Constants                                                            ///
+    ////////////////////////////////////////////////////////////////////////////
     uint    public constant FEE_SELECT_LRC               = 0;
     uint    public constant FEE_SELECT_SAVING_SHARE      = 1;
     uint    public constant SAVING_SHARE_PERCENTAGE_BASE = 10000;
 
-    address public  lrcTokenAddress                  = address(0);
-    uint    public  maxRingSize                      = 0;
-    uint    public  expirationAsBlockHeightThreshold = 0;
-    uint    public  ringIndex                        = 0;
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Variables                                                            ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    address public  lrcTokenAddress     = address(0);
+    uint    public  maxRingSize         = 0;
+    uint    public  ringIndex           = 0;
 
     /// The following two maps are used to keep order fill and cancellation
     /// historical records for orders whose buyNoMoreThanAmountB
@@ -54,24 +62,26 @@ contract LoopringProtocol {
     /// Structs                                                              ///
     ////////////////////////////////////////////////////////////////////////////
 
-    /// @param protocol     Protocol address
-    /// @param tokenS       Token to sell
-    /// @param tokenB       Token to buy
-    /// @param amountS      Maximum amount of tokenS to sell
-    /// @param amountB      Minimum amount of tokenB to buy
+    /// @param protocol     Protocol address.
+    /// @param tokenS       Token to sell.
+    /// @param tokenB       Token to buy.
+    /// @param amountS      Maximum amount of tokenS to sell.
+    /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
     /// @param expiration   Indicating when this order will expire. If the value
-    ///                     is smaller than EXPIRATION_AS_BLOCKHEIGHT_THRESHOLD,
-    ///                     it will be treated as Ethereum block height,
-    ///                     otherwise it will be treated as Ethereum block
-    ///                     time (in second).
+    ///                     is smaller than `now`, it will be treated as
+    ///                     Ethereum block height, otherwise it will be treated
+    ///                     as Ethereum block time (in second).
     /// @param rand         A random number to make this order's hash unique.
     /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
     ///                     to pay is proportional to fill amount.
-    /// @param savingSharePercentage
-    ///                     The percentage of savings paid to miner.
     /// @param buyNoMoreThanAmountB
     ///                     If true, this order does not accept buying more than
+    /// @param savingSharePercentage
+    ///                     The percentage of savings paid to miner.
     ///                     amountB tokenB.
+    /// @param v            ECDSA signature parameter v.
+    /// @param r            ECDSA signature parameters r.
+    /// @param s            ECDSA signature parameters s.
     struct Order {
         address protocol;
         address tokenS;
@@ -81,14 +91,14 @@ contract LoopringProtocol {
         uint    expiration;
         uint    rand;
         uint    lrcFee;
-        uint8   savingSharePercentage;
         bool    buyNoMoreThanAmountB;
+        uint8   savingSharePercentage;
         uint8   v;
         bytes32 r;
         bytes32 s;
     }
 
-    /// @param order        The order
+    /// @param order        The original order
     /// @param owner        This order owner's address. This value is calculated.
     /// @param feeSelection A miner-supplied value indicating if LRC (value = 0)
     ///                     or saving share is choosen by the miner (value = 1).
@@ -123,15 +133,17 @@ contract LoopringProtocol {
         OrderState[] orders;
         address      miner;
         address      feeRecepient;
-        bool         throwIfTokenAllowanceOrBalanceIsInsuffcient;
+        bool         throwIfLRCIsInsuffcient;
         uint8        v;
         bytes32      r;
         bytes32      s;
     }
 
+
     ////////////////////////////////////////////////////////////////////////////
     /// Evemts                                                               ///
     ////////////////////////////////////////////////////////////////////////////
+
     event RingMined(
         address indexed _miner,
         address indexed _feeRecepient,
@@ -147,33 +159,62 @@ contract LoopringProtocol {
         uint    _feeS,
         uint    _feeB);
 
+
     ////////////////////////////////////////////////////////////////////////////
     /// Constructor                                                          ///
     ////////////////////////////////////////////////////////////////////////////
+
     function LoopringProtocol(
         address _lrcTokenAddress,
-        uint    _maxRingSize,
-        uint    _expirationAsBlockHeightThreshold
-        ) public {
+        uint    _maxRingSize
+        )
+        public {
 
         require(address(0) != _lrcTokenAddress);
         require(_maxRingSize >= 2);
-        require(_expirationAsBlockHeightThreshold > block.number * 100);
 
-        lrcTokenAddress                  = _lrcTokenAddress;
-        maxRingSize                      = _maxRingSize;
-        expirationAsBlockHeightThreshold = _expirationAsBlockHeightThreshold;
+        lrcTokenAddress = _lrcTokenAddress;
+        maxRingSize     = _maxRingSize;
     }
+
 
     ////////////////////////////////////////////////////////////////////////////
     /// Public Functions                                                     ///
     ////////////////////////////////////////////////////////////////////////////
+
+    /// @dev Submit a order-ring for validation and settlement.
+    /// @param feeRecepient The recepient address for fee collection. If this is
+    ///                     '0x0', all fees will be paid to the address who had
+    ///                     signed this transaction, not `msg.sender`. Noted if
+    ///                     LRC need to be paid back to order owner as the result
+    ///                     of fee selection model, LRC will also be sent from
+    ///                     this address.
+    /// @param throwIfLRCIsInsuffcient 
+    ///                     If true, throw exception if any order's spendable
+    ///                     LRC amount is smaller than requried; if false, ring-
+    ///                     minor will give up collection the LRC fee.
+    /// @param tokenSList   List of each order's tokenS. Note that next order's
+    ///                     `tokenS` equals this order's `tokenB`.
+    /// @param uintArgsList List of uint-type arguments in this order:
+    ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee. 
+    /// @param uint8ArgsList 
+    ///                     List of unit8-type arguments, in this order:
+    ///                     savingSharePercentageList,feeSelectionList.
+    /// @param vList        List of v for each order. This list is 1-larger than
+    ///                     the previous lists, with the last element being the
+    ///                     v value of the ring signature.
+    /// @param rList        List of r for each order. This list is 1-larger than
+    ///                     the previous lists, with the last element being the
+    ///                     r value of the ring signature.
+    /// @param sList        List of s for each order. This list is 1-larger than
+    ///                     the previous lists, with the last element being the
+    ///                     s value of the ring signature.
     function submitRing(
         address     feeRecepient,
-        bool        throwIfTokenAllowanceOrBalanceIsInsuffcient,
+        bool        throwIfLRCIsInsuffcient,
         address[]   tokenSList,
-        uint[6][]   uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
-        uint8[2][]  uint8ArgsList, // savingSharePercentageList,feeSelectionList
+        uint[6][]   uintArgsList,
+        uint8[2][]  uint8ArgsList,
         bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
         bytes32[]   rList,
@@ -205,7 +246,7 @@ contract LoopringProtocol {
             orders,
             minerAddress,
             feeRecepient,
-            throwIfTokenAllowanceOrBalanceIsInsuffcient,
+            throwIfLRCIsInsuffcient,
             vList[ringSize],
             rList[ringSize],
             sList[ringSize]);
@@ -218,6 +259,7 @@ contract LoopringProtocol {
 
         calculateRingOrderFees(ring);
     }
+
 
     ////////////////////////////////////////////////////////////////////////////
     /// Internal & Private Functions                                         ///
@@ -247,7 +289,7 @@ contract LoopringProtocol {
             if (state.feeSelection == FEE_SELECT_LRC) {
                 uint lrcSpendable = getLRCSpendable(state.owner);
                 if (lrcSpendable < state.order.lrcFee) {
-                    if (ring.throwIfTokenAllowanceOrBalanceIsInsuffcient) {
+                    if (ring.throwIfLRCIsInsuffcient) {
                         revert();
                     }
 
@@ -426,8 +468,8 @@ contract LoopringProtocol {
     function assambleOrders(
         uint        ringSize,
         address[]   tokenSList,
-        uint[6][]   uintArgsList, // amountS,AmountB,expiration,rand,lrcFee,rateAmountS
-        uint8[2][]  uint8ArgsList, // savingSharePercentageList,feeSelectionList
+        uint[6][]   uintArgsList,
+        uint8[2][]  uint8ArgsList,
         bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
         bytes32[]   rList,
@@ -461,8 +503,8 @@ contract LoopringProtocol {
                 uintArgsList[i][2],
                 uintArgsList[i][3],
                 uintArgsList[i][4],
-                uint8ArgsList[i][0],
                 buyNoMoreThanAmountBList[i],
+                uint8ArgsList[i][0],
                 vList[i],
                 rList[i],
                 sList[i]);
