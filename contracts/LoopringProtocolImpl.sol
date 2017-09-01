@@ -25,10 +25,8 @@ import "./utils/ArrayUtil.sol";
 import "./TokenRegistry.sol";
 import "./LoopringProtocol.sol";
 
-/// TODO(daniel): rename to LoopringProtocolV1.sol
-
 /// @title Loopring Token Exchange Protocol Implementation Contract v1
-/// @author Daniel Wang - <daniel@loopring.org>
+/// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocolImpl is LoopringProtocol {
     using SafeMath for uint;
@@ -187,6 +185,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Check ring size
         uint ringSize = tokenSList.length;
         require(ringSize > 1 && ringSize <= maxRingSize);
+        
         verifyTokensRegistered(tokenSList);
 
         bytes32 ringHash = getRingHash(
@@ -198,7 +197,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList
         );
 
-        address minerAddress = caculateSignerAddress(
+        address minerAddress = calculateSignerAddress(
             ringHash,
             vList[ringSize],
             rList[ringSize],
@@ -476,9 +475,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize; i++) {
             uint j = i.prev(ringSize);
 
-            // Get order owner's address.
-            address orderOwner = validateOrderOwnerSignatureForAddress();
-
             var order = Order(
                 address(this),
                 tokenSList[i],
@@ -496,9 +492,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             validateOrder(order);
 
+            bytes32 orderHash = calculateOrderHash(order);
+            address orderOwner = calculateSignerAddress(
+                orderHash,
+                order.v,
+                order.r,
+                order.s);
+
             orders[i] = OrderState(
                 order,
-                getOrderHash(order),
+                orderHash,
                 orderOwner,
                 uint8ArgsList[i][1],  // feeSelectionList
                 uintArgsList[i][5],   // rateAmountS
@@ -554,6 +557,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         return address(0);
     }
 
+
+    /// @dev    Calculate the hash of a ring.
+    ///         To calculate the has of a ring, first concatenate each order's
+    ///         `v`, `r`, and `s` in the given order, followed by 'feeREcepient',
+    ///         and `throwIfLRCIsInsuffcient`, tthen calculate Keccak256 hash.
     function getRingHash(
         uint ringSize,
         address feeRecepient,
@@ -565,32 +573,28 @@ contract LoopringProtocolImpl is LoopringProtocol {
         constant
         returns (bytes32) {
 
-        uint size = 65; // = 1 + 32 + 32;
-        uint targetSize = size * ringSize;
+        uint targetSize = 65 * ringSize;
         bytes memory targetBytes = new bytes(targetSize);
-        for (uint i = 0; i < targetSize; i ++) {
-            uint mod = i % size;
-            uint ind = i / size;
-            if (mod == 0) {
-                targetBytes[i] = byte(vList[ind]);
-            } else if (mod > 0 && mod <= 32) {
-                targetBytes[i + mod] = byte(rList[ind][mod - 1]);
-            } else {
-                targetBytes[i + mod] = byte(sList[ind][mod - 1 - 32]);
+
+        uint d = 0;
+        for (uint i = 0; i < ringSize; i++) {
+            targetBytes[d++] = byte(vList[i]);
+            for (uint j = 0; j < 32; j++) {
+                targetBytes[d++] = byte(rList[i][j]);
+            }
+            for (j = 0; j < 32; j++) {
+                targetBytes[d++] = byte(sList[i][j]);
             }
         }
 
         return keccak256(
-            address(this),
+            targetBytes,
             feeRecepient,
-            throwIfLRCIsInsuffcient,
-            targetBytes
-        );
+            throwIfLRCIsInsuffcient);
     }
 
-    /// @dev Calculates Keccak-256 hash of order with specified parameters.
-    /// @return Keccak-256 hash of order.
-    function getOrderHash(Order order)
+    /// @dev Get the Keccak-256 hash of order with specified parameters.
+    function calculateOrderHash(Order order)
         internal
         constant
         returns (bytes32) {
@@ -605,11 +609,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.rand,
             order.lrcFee,
             order.buyNoMoreThanAmountB,
-            order.savingSharePercentage
-        );
+            order.savingSharePercentage);
     }
 
-    function caculateSignerAddress(
+    /// @dev Get signer's address.
+    function calculateSignerAddress(
         bytes32 hash,
         uint8 v,
         bytes32 r,
@@ -617,12 +621,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         public
         constant
         returns (address) {
+
         return ecrecover(
             keccak256("\x19Ethereum Signed Message:\n32", hash),
             v,
             r,
-            s
-        );
+            s);
     }
 
 }

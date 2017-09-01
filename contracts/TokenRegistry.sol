@@ -20,7 +20,8 @@ pragma solidity ^0.4.11;
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 /// @title Token Register Contract
-/// @author Kongliang Zhong - <kongliang@loopring.org>, Daniel Wang - <daniel@loopring.org>.
+/// @author Kongliang Zhong - <kongliang@loopring.org>,
+/// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenRegistry is Ownable {
 
     address[] public tokenAddresses;
