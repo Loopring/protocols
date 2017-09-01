@@ -28,8 +28,9 @@ contract LoopringProtocol {
     using SafeMath for uint;
     using Math for uint;
 
-    uint    public constant FEE_SELECT_LRC          = 0;
-    uint    public constant FEE_SELECT_SAVING_SHARE = 1;
+    uint    public constant FEE_SELECT_LRC               = 0;
+    uint    public constant FEE_SELECT_SAVING_SHARE      = 1;
+    uint    public constant SAVING_SHARE_PERCENTAGE_BASE = 1000000;
 
     address public  lrcTokenAddress                  = address(0);
     address public  owner                            = address(0);
@@ -62,9 +63,9 @@ contract LoopringProtocol {
     ///                     otherwise it will be treated as Ethereum block
     ///                     time (in second).
     /// @param rand         A random number to make this order's hash unique.
-    /// @param feeLRC       Max amount of LRC to pay for miner. The real amount
+    /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
     ///                     to pay is proportional to fill amount.
-    /// @param percentageSavingShare The percentage of savings paid to miner.
+    /// @param savingSharePercentage The percentage of savings paid to miner.
     /// @param isCompleteFillMeasuredByTokenSDepleted If true, this order
     ///        is considered 'fully filled' if amountS is smaller than a
     ///        dust-threshold; if false, this order is considered 'fully filled'
@@ -78,8 +79,8 @@ contract LoopringProtocol {
         uint    amountB;
         uint    expiration;
         uint    rand;
-        uint    feeLRC;
-        uint8   percentageSavingShare;
+        uint    lrcFee;
+        uint8   savingSharePercentage;
         bool    isCompleteFillMeasuredByTokenSDepleted;
         uint8   v;
         bytes32 r;
@@ -174,7 +175,7 @@ contract LoopringProtocol {
         bool        throwIfTokenAllowanceOrBalanceIsInsuffcient,
         address[]   tokenSList,
         uint[6][]   uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
-        uint8[2][]  uint8ArgsList, // percentageSavingShareList,feeSelectionList
+        uint8[2][]  uint8ArgsList, // savingSharePercentageList,feeSelectionList
         bool[]      isCompleteFillMeasuredByTokenSDepletedList,
         uint8[]     vList,
         bytes32[]   rList,
@@ -190,7 +191,7 @@ contract LoopringProtocol {
             ringSize,
             tokenSList,
             uintArgsList, // amountS,AmountB,rateAmountS,expiration,rand,lrcFee
-            uint8ArgsList, // percentageSavingShareList,feeSelectionList
+            uint8ArgsList, // savingSharePercentageList,feeSelectionList
             isCompleteFillMeasuredByTokenSDepletedList,
             vList,
             rList,
@@ -235,6 +236,54 @@ contract LoopringProtocol {
         )
         internal
         constant {
+
+
+        uint ringSize = ring.orders.length;
+        uint minerLrcSpendable = getLRCSpendable(ring.feeRecepient);
+
+        for (uint i = 0; i < ringSize; i++) {
+            var state = ring.orders[i];
+
+            uint j = (i + 1) % ringSize;
+            var next = ring.orders[j];
+
+            if (state.feeSelection == FEE_SELECT_LRC) {
+                uint lrcSpendable = getLRCSpendable(state.owner);
+                if (lrcSpendable < state.order.lrcFee) {
+                    if (ring.throwIfTokenAllowanceOrBalanceIsInsuffcient) {
+                        revert();
+                    }
+
+                    state.lrcFee = lrcSpendable;
+                }
+                else {
+                    state.lrcFee = state.order.lrcFee;
+                }
+
+            } else if (state.feeSelection == FEE_SELECT_SAVING_SHARE) {
+                if (minerLrcSpendable >= state.order.lrcFee) {
+                    uint saving = scale(
+                        state.fillAmountS,
+                        state.order.amountB,
+                        state.order.amountS) - next.fillAmountS;
+
+                    require(saving >= 0);
+
+                    uint savingShare = saving
+                        .mul(state.order.savingSharePercentage)
+                        .div(SAVING_SHARE_PERCENTAGE_BASE);
+
+                    if (savingShare > 0) {
+                        minerLrcSpendable -= state.order.lrcFee;
+                        state.lrcReward = scale(
+                            state.fillAmountS,
+                            state.order.lrcFee,
+                            state.order.amountS);
+                    }
+                }     
+            } else revert();
+
+        }
 
     }
 
@@ -318,7 +367,10 @@ contract LoopringProtocol {
                     order.amountB,
                     order.amountS);
 
-
+                order.lrcFee = scale(
+                    order.amountS,
+                    order.lrcFee,
+                    order.amountS);
             } else {
                 order.amountB -= cancelledB[state.orderHash];
                 order.amountB -= filledB[state.orderHash];
@@ -326,6 +378,12 @@ contract LoopringProtocol {
                 order.amountS = scale(
                     order.amountB,
                     order.amountS,
+                    order.amountB);
+
+
+                order.lrcFee = scale(
+                    order.amountB,
+                    order.lrcFee,
                     order.amountB);
             }
 
@@ -377,7 +435,7 @@ contract LoopringProtocol {
         uint        ringSize,
         address[]   tokenSList,
         uint[6][]   uintArgsList, // amountS,AmountB,expiration,rand,lrcFee,rateAmountS
-        uint8[2][]  uint8ArgsList, // percentageSavingShareList,feeSelectionList
+        uint8[2][]  uint8ArgsList, // savingSharePercentageList,feeSelectionList
         bool[]      isCompleteFillMeasuredByTokenSDepletedList,
         uint8[]     vList,
         bytes32[]   rList,
@@ -416,6 +474,8 @@ contract LoopringProtocol {
                 rList[i],
                 sList[i]);
 
+            validateOrder(order);
+
             orders[i] = OrderState(
                 order, 
                 getOrderHash(order),
@@ -433,6 +493,17 @@ contract LoopringProtocol {
         }
 
         return orders;
+    }
+
+    function validateOrder(Order order) internal constant {
+        require(order.tokenS != address(0));
+        require(order.tokenB != address(0));
+        require(order.amountS > 0);
+        require(order.amountB > 0);
+        require(order.expiration >= block.number);
+        require(order.rand > 0);
+        require(order.savingSharePercentage >= 0);
+        require(order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE);
     }
 
     function validateMinerSignatureForAddress()
@@ -464,8 +535,8 @@ contract LoopringProtocol {
             order.amountB,
             order.expiration,
             order.rand,
-            order.feeLRC,
-            order.percentageSavingShare,
+            order.lrcFee,
+            order.savingSharePercentage,
             order.isCompleteFillMeasuredByTokenSDepleted);
    }
 
