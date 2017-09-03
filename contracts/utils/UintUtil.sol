@@ -26,12 +26,6 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 library UintUtil {
     using SafeMath  for uint;
 
-    function scaled(uint y, uint x, uint xSmaller) constant returns (uint ySmaller) {
-        require(xSmaller > 0 && y > 0 && x > 0);
-        ySmaller = xSmaller.mul(y).div(x);
-        require(ySmaller > 0);
-    }
-
     function tolerantSub(uint x, uint y) constant returns (uint z) {
         if (x >= y) z = x - y; 
         else z = 0;
