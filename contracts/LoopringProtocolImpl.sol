@@ -101,17 +101,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
 
     event RingMined(
-        address indexed _miner,
-        address indexed _feeRecepient,
-        uint    indexed _ringIndex);
+        uint                _ringIndex,
+        uint                _blocknumber,
+        bytes32     indexed _ringHash,
+        address     indexed _miner,
+        address     indexed _feeRecepient,
+        bool                _fingerprintFound);
 
     event OrderFilled(
-        uint    indexed _ringIndex,
-        string  indexed _orderHash,
-        uint    _amountS,
-        uint    _amountB,
-        uint    _lrcReward,
-        uint    _lrcFee);
+        uint                _ringIndex,
+        uint                _blocknumber,
+        bytes32     indexed _orderHash,
+        uint                _amountS,
+        uint                _amountB,
+        uint                _lrcReward,
+        uint                _lrcFee);
 
     event Exception(string message);
 
@@ -358,8 +362,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             if (prev.order.buyNoMoreThanAmountB) {
                 tokenS.transferFrom(
                     state.owner,
-                    prev.owner, state.
-                    fillAmountS);
+                    prev.owner,
+                    state.fillAmountS);
             } else {
                 tokenS.transferFrom(
                     state.owner,
@@ -405,7 +409,29 @@ contract LoopringProtocolImpl is LoopringProtocol {
             } else {
                 filled[state.orderHash] += state.fillAmountS;
             }
+
+            // TODO(daniel): currently this event doesn't reflect how much
+            // EXCACTLY an order gets or pays.
+            OrderFilled(
+                ringIndex,
+                block.number,
+                state.orderHash,
+                state.fillAmountS,
+                next.fillAmountS,
+                state.lrcReward,
+                state.lrcFee
+                );
         }
+
+        RingMined(
+            ringIndex,
+            block.number,
+            ring.ringHash,
+            ring.miner,
+            ring.feeRecepient,
+            false //TODO(kongliang): update this
+            );
+        ringIndex++;
     }
 
     function verifyMinerSuppliedFillRates(
