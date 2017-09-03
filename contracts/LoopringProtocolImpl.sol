@@ -47,16 +47,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     uint    public  maxPriceRateDeviation = 0;
 
     /// The following two maps are used to keep order fill and cancellation
-    /// historical records for orders whose buyNoMoreThanAmountB
-    /// values are `false`.
-    mapping (bytes32 => uint) public filledS;
-    mapping (bytes32 => uint) public cancelledS;
-
-    /// The following two maps are used to keep order fill and cancellation
-    /// historical records if orders whose buyNoMoreThanAmountB
-    /// values are `true`.
-    mapping (bytes32 => uint) public filledB;
-    mapping (bytes32 => uint) public cancelledB;
+    /// historical records.
+    mapping (bytes32 => uint) public filled;
+    mapping (bytes32 => uint) public cancelled;
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -65,7 +58,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @param order        The original order
     /// @param owner        This order owner's address. This value is calculated.
-    /// @param savingShareelection A miner-supplied value indicating if LRC (value = 0)
+    /// @param savingShareelection -
+    ///                     A miner-supplied value indicating if LRC (value = 0)
     ///                     or saving share is choosen by the miner (value = 1).
     ///                     We may support more fee model in the future.
     /// @param fillAmountS  Amount of tokenS to sell, calculated by protocol.
@@ -78,7 +72,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for sharing-share.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
-    /// @param savingShare         TokenS paid to miner, as the fee of this order and
+    /// @param savingShare  TokenS paid to miner, as the fee of this order and
     ///                     next order, calculated by protocol.
     struct OrderState {
         Order   order;
@@ -277,13 +271,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             r,
             s
         );
+        
         bytes32 orderHash = calculateOrderHash(order);
-
-        if (buyNoMoreThanAmountB) {
-            cancelledB[orderHash] = cancelledB[orderHash].add(cancelAmount);
-        } else {
-            cancelledS[orderHash] = cancelledS[orderHash].add(cancelAmount);
-        }
+        cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -398,9 +388,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // Update fill records
             if (state.order.buyNoMoreThanAmountB) {
-                filledB[state.orderHash] += next.fillAmountS;
+                filled[state.orderHash] += next.fillAmountS;
             } else {
-                filledS[state.orderHash] += state.fillAmountS;
+                filled[state.orderHash] += state.fillAmountS;
             }
         }
     }
@@ -613,8 +603,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             if (order.buyNoMoreThanAmountB) {
                 uint amountB = order.amountB
-                    .sub(filledB[state.orderHash])
-                    .tolerantSub(cancelledB[state.orderHash]);
+                    .sub(filled[state.orderHash])
+                    .tolerantSub(cancelled[state.orderHash]);
 
                 order.amountS = amountB.mul(order.amountS).div(order.amountB);
                 order.lrcFee = amountB.mul(order.lrcFee).div(order.amountB);
@@ -622,8 +612,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order.amountB = amountB;
             } else {
                 uint amountS = order.amountS
-                    .sub(filledS[state.orderHash])
-                    .tolerantSub(cancelledS[state.orderHash]);
+                    .sub(filled[state.orderHash])
+                    .tolerantSub(cancelled[state.orderHash]);
 
                 order.amountB = amountS.mul(order.amountB).div(order.amountS);
                 order.lrcFee = amountS.mul(order.lrcFee).div(order.amountS);
