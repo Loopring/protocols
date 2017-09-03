@@ -113,6 +113,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    _lrcReward,
         uint    _lrcFee);
 
+    event Exception(string message);
+
 
     ////////////////////////////////////////////////////////////////////////////
     /// Constructor                                                          ///
@@ -183,7 +185,17 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         // Check ring size
         uint ringSize = tokenSList.length;
-        require(ringSize > 1 && ringSize <= maxRingSize);
+        check(ringSize > 1 && ringSize <= maxRingSize, "invalid ring size");
+
+        verifyInputDataIntegrity(
+            ringSize,
+            tokenSList,
+            uintArgsList,
+            uint8ArgsList,
+            buyNoMoreThanAmountBList,
+            vList,
+            rList,
+            sList);
 
         verifyTokensRegistered(tokenSList);
 
@@ -255,7 +267,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         public {
 
         uint cancelAmount = orderValues[5];
-        require(cancelAmount > 0);
+        check(cancelAmount > 0, "amount to cancel is zero");
 
         var order = Order(
             tokenAddresses[0],
@@ -292,7 +304,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize -1; i++) {
             address tokenS = ring.orders[i].order.tokenS;
             for (uint j = i + 1; j < ringSize; j++){
-                 require(tokenS != ring.orders[j].order.tokenS);
+                 check(tokenS != ring.orders[j].order.tokenS, "found sub-ring");
             }
         }  
     }
@@ -300,7 +312,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function verifyTokensRegistered(address[] tokens) internal constant {
         var registryContract = TokenRegistry(tokenRegistryContract);
         for (uint i = 0; i < tokens.length; i++) {
-            require(registryContract.isTokenRegistered(tokens[i]));
+            check(registryContract.isTokenRegistered(tokens[i]),
+                "token not registered");
         }
     }
 
@@ -411,7 +424,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint s0b1 = orders[i].order.amountS.mul(rateAmountB);
             uint b0s1 = orders[i].rateAmountS.mul(orders[i].order.amountB);
 
-            require(s0b1 >= b0s1);
+            check(s0b1 >= b0s1, "miner supplied exchange rate is invalid");
 
             //TODO(kongliang): Make `10000` a constant.
             priceSavingRateList[i] = s0b1.sub(b0s1).mul(10000).div(s0b1);
@@ -421,7 +434,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint savingRateAvg = savingRateSum.div(ringSize);
         uint variance = caculateVariance(priceSavingRateList, savingRateAvg);
 
-        require(variance <= maxPriceRateDeviation);
+        check(variance <= maxPriceRateDeviation,
+            "miner supplied exchange rate is invalid");
     }
 
     function caculateVariance(
@@ -534,9 +548,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         for (i = 0; i < smallestIdx; i++) {
             j = i.next(ring.orders.length);
-            require(0 == calculateOrderFillAmount(
-                ring.orders[i],
-                ring.orders[j]));
+            check(
+                0 == calculateOrderFillAmount(ring.orders[i], ring.orders[j]),
+                "unexpected exception in calculateRingFillAmount");
         }
     }
 
@@ -621,8 +635,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order.amountS = amountS;
             }
 
-            require(order.amountS > 0);
-            require(order.amountB > 0);
+            check(order.amountS > 0, "amountS is zero");
+            check(order.amountB > 0, "amountB is zero");
 
             state.fillAmountS = order.amountS.min256(state.availableAmountS);
         }
@@ -652,6 +666,35 @@ contract LoopringProtocolImpl is LoopringProtocol {
         return getSpendable(lrcTokenAddress, tokenOwner);
     }
 
+    function verifyInputDataIntegrity(
+        uint ringSize,
+        address[]   tokenSList,
+        uint[6][]   uintArgsList,
+        uint8[2][]  uint8ArgsList,
+        bool[]      buyNoMoreThanAmountBList,
+        uint8[]     vList,
+        bytes32[]   rList,
+        bytes32[]   sList
+        )
+        internal
+        constant {
+            
+        check(ringSize == tokenSList.length,
+            "ring data is inconsistent - tokenSList");
+        check(ringSize == uintArgsList.length,
+            "ring data is inconsistent - uintArgsList");
+        check(ringSize == uint8ArgsList.length,
+            "ring data is inconsistent - uint8ArgsList");
+        check(ringSize == buyNoMoreThanAmountBList.length,
+            "ring data is inconsistent - buyNoMoreThanAmountBList");
+        check(ringSize + 1 == vList.length,
+            "ring data is inconsistent - vList");
+        check(ringSize + 1 == rList.length,
+            "ring data is inconsistent - rList");
+        check(ringSize + 1 == sList.length,
+            "ring data is inconsistent - sList");  
+    }
+
     /// @dev        assmble order parameters into Order struct.
     /// @return     A list of orders.
     function assembleOrders(
@@ -667,14 +710,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
         returns (OrderState[]) {
-
-        require(ringSize == tokenSList.length);
-        require(ringSize == uintArgsList.length);
-        require(ringSize == uint8ArgsList.length);
-        require(ringSize == buyNoMoreThanAmountBList.length);
-        require(ringSize + 1 == vList.length);
-        require(ringSize + 1 == rList.length);
-        require(ringSize + 1 == sList.length);
 
         var orders = new OrderState[](ringSize);
 
@@ -718,7 +753,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0    // savingShare
                 );
 
-            require(orders[i].availableAmountS > 0);
+            check(orders[i].availableAmountS > 0, "order balance is zero");
         }
 
         return orders;
@@ -726,14 +761,20 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev validate order's parameters are OK.
     function validateOrder(Order order) internal constant {
-        require(order.tokenS != address(0));
-        require(order.tokenB != address(0));
-        require(order.amountS > 0);
-        require(order.amountB > 0);
-        require(order.expiration > block.number);
-        require(order.rand > 0);
-        require(order.savingSharePercentage >= 0);
-        require(order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE);
+        check(order.tokenS != address(0),
+            "invalid order tokenS");
+        check(order.tokenB != address(0),
+            "invalid order tokenB");
+        check(order.amountS > 0,
+            "invalid order amountS");
+        check(order.amountB > 0,
+            "invalid order amountB");
+        check(order.expiration > block.number,
+            "invalid order expiration");
+        check(order.rand > 0,
+            "invalid order rand");
+        check(order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE,
+            "invalid order savingSharePercentage");
     }
 
     /// @dev    Calculate the hash of a ring.
@@ -807,4 +848,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s);
     }
 
+    function check(
+        bool condition,
+        string message) {
+        if (!condition) {
+            Exception(message);
+            revert();
+        }
+    }
 }
