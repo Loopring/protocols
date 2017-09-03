@@ -254,8 +254,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param tokenAddresses     tokenS,tokenB
     /// @param orderValues        amountS, amountB, expiration, rand, lrcFee,
     ///                           and cancelAmount
-    /// @param savingSharePercentage -
     /// @param buyNoMoreThanAmountB -
+    ///                           If true, this order does not accept buying
+    ///                           more than `amountB`.
+    /// @param savingSharePercentage -
+    ///                           The percentage of savings paid to miner.
     /// @param v                  Order ECDSA signature parameter v.
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.

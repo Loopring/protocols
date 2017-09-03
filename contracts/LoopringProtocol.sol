@@ -54,11 +54,11 @@ contract LoopringProtocol {
     /// @param rand         A random number to make this order's hash unique.
     /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
     ///                     to pay is proportional to fill amount.
-    /// @param buyNoMoreThanAmountB
-    ///                     If true, this order does not accept buying more than
-    /// @param savingSharePercentage
+    /// @param buyNoMoreThanAmountB -
+    ///                     If true, this order does not accept buying more
+    ///                     than `amountB`.
+    /// @param savingSharePercentage -
     ///                     The percentage of savings paid to miner.
-    ///                     amountB tokenB.
     /// @param v            ECDSA signature parameter v.
     /// @param r            ECDSA signature parameters r.
     /// @param s            ECDSA signature parameters s.
