@@ -318,7 +318,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Exchange rates calculation are performed by ring-miners as solidity
         // cannot get power-of-1/n operation, therefore we have to verify
         // these rates are correct.
-        verifyMinerSuppliedFillRates(ring);
+        verifyMinerSuppliedFillRates(ringSize, ring);
 
 
         // Scale down each order independently by substracting amount-filled and
@@ -405,28 +405,43 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
     }
 
-    function verifyMinerSuppliedFillRates(Ring ring)
+    function verifyMinerSuppliedFillRates(
+        uint ringSize,
+        Ring ring
+        )
         internal
         constant {
-        uint ringSize = ring.orders.length;
+
         var orders = ring.orders;
         uint[] memory priceSavingRateList = new uint[](ringSize);
         uint savingRateSum = 0;
+
         for (uint i = 0; i < ringSize; i++) {
             uint rateAmountB = orders[i.next(ringSize)].rateAmountS;
             uint s0b1 = orders[i].order.amountS.mul(rateAmountB);
             uint b0s1 = orders[i].rateAmountS.mul(orders[i].order.amountB);
+
             require(s0b1 >= b0s1);
+
+            //TODO(kongliang): Make `10000` a constant.
             priceSavingRateList[i] = s0b1.sub(b0s1).mul(10000).div(s0b1);
             savingRateSum += priceSavingRateList[i];
         }
 
         uint savingRateAvg = savingRateSum.div(ringSize);
         uint variance = caculateVariance(priceSavingRateList, savingRateAvg);
+
         require(variance <= maxPriceRateDeviation);
     }
 
-    function caculateVariance(uint[] arr, uint avg) internal constant returns (uint) {
+    function caculateVariance(
+        uint[] arr,
+        uint avg
+        )
+        internal
+        constant
+        returns (uint) {
+            
         uint len = arr.length;
         uint variance = 0;
         for (uint i = 0; i < len; i++) {
