@@ -58,7 +58,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @param order        The original order
     /// @param owner        This order owner's address. This value is calculated.
-    /// @param savingShareelection -
+    /// @param feeSelection -
     ///                     A miner-supplied value indicating if LRC (value = 0)
     ///                     or saving share is choosen by the miner (value = 1).
     ///                     We may support more fee model in the future.
@@ -72,19 +72,20 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for sharing-share.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
-    /// @param savingShare  TokenS paid to miner, as the fee of this order and
-    ///                     next order, calculated by protocol.
+    /// @param savingS      TokenS paid to miner.
+    /// @param savingB      TokenB paid to miner.
     struct OrderState {
         Order   order;
         bytes32 orderHash;
         address owner;
-        uint8   savingShareelection;
+        uint8   feeSelection;
         uint    rateAmountS;
         uint    availableAmountS;
         uint    fillAmountS;
         uint    lrcReward;
         uint    lrcFee;
-        uint    savingShare;
+        uint    savingS;
+        uint    savingB;
     }
 
     struct Ring {
@@ -97,7 +98,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
 
     ////////////////////////////////////////////////////////////////////////////
-    /// Evemts                                                               ///
+    /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
 
     event RingMined(
@@ -154,7 +155,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
-    ///                     savingSharePercentageList,savingShareelectionList.
+    ///                     savingSharePercentageList,feeSelectionList.
     /// @param vList        List of v for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     v value of the ring signature.
@@ -362,33 +363,17 @@ contract LoopringProtocolImpl is LoopringProtocol {
             // Pay tokenS to previous order, or to miner as previous order's
             // saving share or/and this order's saving share.
             var tokenS = ERC20(state.order.tokenS);
-            if (prev.order.buyNoMoreThanAmountB) {
-                tokenS.transferFrom(
-                    state.owner,
-                    prev.owner,
-                    state.fillAmountS);
-            } else {
-                tokenS.transferFrom(
-                    state.owner,
-                    prev.owner,
-                    state.fillAmountS - prev.savingShare);
+            tokenS.transferFrom(
+                state.owner,
+                prev.owner,
+                state.fillAmountS - prev.savingB);
 
-                if (prev.savingShare > 0) {
-                    tokenS.transferFrom(
-                        state.owner,
-                        ring.feeRecepient,
-                        prev.savingShare);
-                }
+            if (prev.savingB + state.savingS > 0) {
+                tokenS.transferFrom(
+                    state.owner,
+                    ring.feeRecepient,
+                    prev.savingB + state.savingS);
             }
-
-            if (state.order.buyNoMoreThanAmountB) {
-                if (state.savingShare > 0) {
-                    tokenS.transferFrom(
-                        state.owner,
-                        ring.feeRecepient,
-                        state.savingShare);
-                }
-            } 
 
             // Pay LRC
             var lrc = ERC20(lrcTokenAddress);
@@ -413,14 +398,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 filled[state.orderHash] += state.fillAmountS;
             }
 
-            // TODO(daniel): currently this event doesn't reflect how much
-            // EXCACTLY an order gets or pays.
             OrderFilled(
                 ringIndex,
                 block.number,
                 state.orderHash,
-                state.fillAmountS,
-                next.fillAmountS,
+                state.fillAmountS + state.savingS,
+                next.fillAmountS - state.savingB,
                 state.lrcReward,
                 state.lrcFee
                 );
@@ -504,51 +487,53 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var state = ring.orders[i];
             var next = ring.orders[i.next(ringSize)];
 
-            if (state.savingShareelection == FEE_SELECT_LRC) {
+
+            if (state.feeSelection == FEE_SELECT_LRC) {
                 
                 uint lrcSpendable = getLRCSpendable(state.owner);
 
                 if (lrcSpendable < state.lrcFee) {
-                    if (ring.throwIfLRCIsInsuffcient) {
-                        revert();
-                    }
+                    check(!ring.throwIfLRCIsInsuffcient,
+                        "order LRC balance insuffcient");
                     
                     state.lrcFee = lrcSpendable;
+                    minerLrcSpendable += lrcSpendable;
                 }
 
-            } else if (state.savingShareelection == FEE_SELECT_SAVING_SHARE) {
+            } else if (state.feeSelection == FEE_SELECT_SAVING_SHARE) {
                 if (minerLrcSpendable >= state.lrcFee) {
-                    uint savings;
                     if (state.order.buyNoMoreThanAmountB) {
-                        savings = next.fillAmountS
+                        uint savingS = next.fillAmountS
                             .mul(state.order.amountS)
                             .div(state.order.amountB)
                             .sub(state.fillAmountS);
-                    
+
+                        state.savingS = savingS
+                            .mul(state.order.savingSharePercentage)
+                            .div(SAVING_SHARE_PERCENTAGE_BASE);
                     } else {
-                        savings = next.fillAmountS.sub(
+                        uint savingB = next.fillAmountS.sub(
                             state.fillAmountS
                                 .mul(state.order.amountB)
                                 .div(state.order.amountS));
-                    }
 
-                    state.savingShare = savings
-                        .mul(state.order.savingSharePercentage)
-                        .div(SAVING_SHARE_PERCENTAGE_BASE);
+                        state.savingB = savingB
+                            .mul(state.order.savingSharePercentage)
+                            .div(SAVING_SHARE_PERCENTAGE_BASE);
+                    }
 
                     // This implicits that has smaller index in the ring will
                     // be paid LRC reward first, so the orders in the ring does
                     // mater.
-                    if (state.savingShare > 0) {
+                    if (state.savingS > 0 || state.savingB > 0) {
                         minerLrcSpendable = minerLrcSpendable.sub(state.lrcFee);
                         state.lrcReward = state.lrcFee;
-                    }
-                    // Do not charge LRC fee if miner doest' have enough to pay
-                    // LRC reward.
-                    state.lrcFee = 0;
+                    }      
+                    state.lrcFee = 0;          
                 }
-            } else revert();
-
+            } else {
+                check(false, "unsupported feeSelection value");
+            }
         }
 
     }
@@ -773,13 +758,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order,
                 orderHash,
                 orderOwner,
-                uint8ArgsList[i][1],  // savingShareelectionList
+                uint8ArgsList[i][1],  // feeSelectionList
                 uintArgsList[i][5],   // rateAmountS
                 getSpendable(order.tokenS, orderOwner),
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
-                0    // savingShare
+                0,   // savingS
+                0    // savingB
                 );
 
             check(orders[i].availableAmountS > 0, "order balance is zero");
