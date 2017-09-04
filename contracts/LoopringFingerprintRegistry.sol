@@ -68,6 +68,10 @@ contract LoopringFingerprintRegistry {
         }
     }
 
+    function fingerprintFound(bytes32 ringHash) public constant returns (bool) {
+        return ringHashSubmitters[ringHash] != address(0);
+    }
+
     function isExpired(bytes32 ringHash) internal constant returns (bool) {
         uint blockNumber = ringHashSubmitBlockNumbers[ringHash];
         if (blockNumber > 0 && (block.number - blockNumber) > maxSurvivalBlockCount) {

@@ -46,6 +46,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     uint    public  ringIndex                   = 0;
     uint    public  maxPriceRateDeviation       = 0;
 
+    uint    public constant SCALE_AMOUNT        = 10000;
+
     /// The following two maps are used to keep order fill and cancellation
     /// historical records.
     mapping (bytes32 => uint) public filled;
@@ -278,6 +280,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         /// Make payments.
         settleRing(ring);
+
+        RingMined(
+            ringIndex++,
+            block.number,
+            ringHash,
+            ring.miner,
+            ring.feeRecepient,
+            fingerprintRegistry.fingerprintFound(ringHash)
+            );
+
     }
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
@@ -410,14 +422,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 );
         }
 
-        RingMined(
-            ringIndex++,
-            block.number,
-            ring.ringHash,
-            ring.miner,
-            ring.feeRecepient,
-            false //TODO(kongliang): update this
-            );
     }
 
     function verifyMinerSuppliedFillRates(Ring ring) internal constant {
@@ -434,8 +438,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             check(s0b1 >= b0s1, "miner supplied exchange rate is invalid");
 
-            //TODO(kongliang): Make `10000` a constant.
-            priceSavingRateList[i] = s0b1.sub(b0s1).mul(10000).div(s0b1);
+            priceSavingRateList[i] = s0b1.sub(b0s1).mul(SCALE_AMOUNT).div(s0b1);
             savingRateSum += priceSavingRateList[i];
         }
 
