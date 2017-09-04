@@ -211,7 +211,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(tokenSList);
 
-        bytes32 ringHash = LoopringFingerprintRegistry(fingerprintRegistryContract).getRingHash(
+        var fingerprintRegistry = LoopringFingerprintRegistry(fingerprintRegistryContract);
+        bytes32 ringHash = fingerprintRegistry.getRingHash(
             ringSize,
             feeRecepient,
             throwIfLRCIsInsuffcient,
@@ -219,6 +220,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             rList,
             sList
         );
+
+        require(fingerprintRegistry.canSubmit(ringHash, feeRecepient));
 
         address minerAddress = calculateSignerAddress(
             ringHash,

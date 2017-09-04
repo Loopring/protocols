@@ -34,7 +34,7 @@ contract LoopringFingerprintRegistry {
         maxSurvivalBlockCount = _maxSurvivalBlockCount;
     }
 
-    function submitRingFingerPrint(
+    function submitRingFingerprint(
         uint ringSize,
         address feeRecepient,
         bool throwIfLRCIsInsuffcient,
@@ -55,7 +55,7 @@ contract LoopringFingerprintRegistry {
         ringHashSubmitBlockNumbers[ringHash] = block.number;
     }
 
-    function canSubmit(bytes32 ringHash, address submitter) internal constant returns (bool) {
+    function canSubmit(bytes32 ringHash, address submitter) public constant returns (bool) {
         address priorSubmitter = ringHashSubmitters[ringHash];
         if (priorSubmitter == address(0)) {
             return true;
