@@ -24,6 +24,7 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./MathLib.sol";
 import "./TokenRegistry.sol";
 import "./LoopringProtocol.sol";
+import "./LoopringFingerprintRegistry.sol";
 
 /// @title Loopring Token Exchange Protocol Implementation Contract v1
 /// @author Daniel Wang - <daniel@loopring.org>,
@@ -38,11 +39,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
 
-    address public  lrcTokenAddress       = address(0);
-    address public  tokenRegistryContract = address(0);
-    uint    public  maxRingSize           = 0;
-    uint    public  ringIndex             = 0;
-    uint    public  maxPriceRateDeviation = 0;
+    address public  lrcTokenAddress             = address(0);
+    address public  tokenRegistryContract       = address(0);
+    address public  fingerprintRegistryContract = address(0);
+    uint    public  maxRingSize                 = 0;
+    uint    public  ringIndex                   = 0;
+    uint    public  maxPriceRateDeviation       = 0;
 
     /// The following two maps are used to keep order fill and cancellation
     /// historical records.
@@ -126,6 +128,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function LoopringProtocolImpl(
         address _lrcTokenAddress,
         address _tokenRegistryContract,
+        address _fingerprintRegistryContract,
         uint    _maxRingSize,
         uint    _maxPriceRateDeviation
         )
@@ -138,6 +141,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         lrcTokenAddress             = _lrcTokenAddress;
         tokenRegistryContract       = _tokenRegistryContract;
+        fingerprintRegistryContract = _fingerprintRegistryContract;
         maxRingSize                 = _maxRingSize;
         maxPriceRateDeviation       = _maxPriceRateDeviation;
     }
@@ -207,7 +211,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(tokenSList);
 
-        bytes32 ringHash = getRingHash(
+        bytes32 ringHash = LoopringFingerprintRegistry(fingerprintRegistryContract).getRingHash(
             ringSize,
             feeRecepient,
             throwIfLRCIsInsuffcient,
@@ -267,7 +271,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
         // of `fillAmountS` shall be paid to matching order or miner as saving-
         // share.
-        calculateRingFees(ring);  
+        calculateRingFees(ring);
 
         /// Make payments.
         settleRing(ring);
@@ -314,7 +318,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             r,
             s
         );
-        
+
         bytes32 orderHash = calculateOrderHash(order);
         cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
     }
@@ -336,7 +340,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             for (uint j = i + 1; j < ringSize; j++){
                  check(tokenS != ring.orders[j].order.tokenS, "found sub-ring");
             }
-        }  
+        }
     }
 
     function verifyTokensRegistered(address[] tokens) internal constant {
@@ -348,7 +352,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function settleRing(Ring ring) internal {
-
         uint ringSize = ring.orders.length;
         for (uint i = 0; i < ringSize; i++) {
             var state = ring.orders[i];
@@ -443,7 +446,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function calculateRingFees(Ring ring) internal constant {
-
         uint minerLrcSpendable = getLRCSpendable(ring.feeRecepient);
         uint ringSize = ring.orders.length;
 
@@ -451,15 +453,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var state = ring.orders[i];
             var next = ring.orders[i.next(ringSize)];
 
-
             if (state.feeSelection == FEE_SELECT_LRC) {
-                
+
                 uint lrcSpendable = getLRCSpendable(state.owner);
 
                 if (lrcSpendable < state.lrcFee) {
                     check(!ring.throwIfLRCIsInsuffcient,
                         "order LRC balance insuffcient");
-                    
                     state.lrcFee = lrcSpendable;
                     minerLrcSpendable += lrcSpendable;
                 }
@@ -492,8 +492,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     if (state.savingS > 0 || state.savingB > 0) {
                         minerLrcSpendable = minerLrcSpendable.sub(state.lrcFee);
                         state.lrcReward = state.lrcFee;
-                    }      
-                    state.lrcFee = 0;          
+                    }
+                    state.lrcFee = 0;
                 }
             } else {
                 check(false, "unsupported feeSelection value");
@@ -513,7 +513,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             j = i.next(ring.orders.length);
 
             uint res = calculateOrderFillAmount(
-                ring.orders[i], 
+                ring.orders[i],
                 ring.orders[j]);
 
             if (res == 1) smallestIdx = i;
@@ -649,7 +649,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         internal
         constant {
-            
+
         check(ringSize == tokenSList.length,
             "ring data is inconsistent - tokenSList");
         check(ringSize == uintArgsList.length,
@@ -663,7 +663,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         check(ringSize + 1 == rList.length,
             "ring data is inconsistent - rList");
         check(ringSize + 1 == sList.length,
-            "ring data is inconsistent - sList");  
+            "ring data is inconsistent - sList");
     }
 
     /// @dev        assmble order parameters into Order struct.
@@ -747,41 +747,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             "invalid order rand");
         check(order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE,
             "invalid order savingSharePercentage");
-    }
-
-    /// @dev    Calculate the hash of a ring.
-    ///         To calculate the has of a ring, first concatenate each order's
-    ///         `v`, `r`, and `s` in the given order, followed by 'feeRecepient',
-    ///         and `throwIfLRCIsInsuffcient`, tthen calculate Keccak256 hash.
-    function getRingHash(
-        uint ringSize,
-        address feeRecepient,
-        bool throwIfLRCIsInsuffcient,
-        uint8[]     vList,
-        bytes32[]   rList,
-        bytes32[]   sList)
-        internal
-        constant
-        returns (bytes32) {
-
-        uint targetSize = 65 * ringSize;
-        bytes memory targetBytes = new bytes(targetSize);
-
-        uint d = 0;
-        for (uint i = 0; i < ringSize; i++) {
-            targetBytes[d++] = byte(vList[i]);
-            for (uint j = 0; j < 32; j++) {
-                targetBytes[d++] = byte(rList[i][j]);
-            }
-            for (j = 0; j < 32; j++) {
-                targetBytes[d++] = byte(sList[i][j]);
-            }
-        }
-
-        return keccak256(
-            targetBytes,
-            feeRecepient,
-            throwIfLRCIsInsuffcient);
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
