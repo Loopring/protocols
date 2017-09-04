@@ -21,8 +21,7 @@ import "zeppelin-solidity/contracts/token/ERC20.sol";
 import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
-import "./utils/ArrayUtil.sol";
-import "./utils/UintUtil.sol";
+import "./MathLib.sol";
 import "./TokenRegistry.sol";
 import "./LoopringProtocol.sol";
 
@@ -30,10 +29,9 @@ import "./LoopringProtocol.sol";
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocolImpl is LoopringProtocol {
-    using SafeMath  for uint;
-    using Math      for uint;
-    using ArrayUtil for uint;
-    using UintUtil  for uint;
+    using SafeMath for uint;
+    using Math     for uint;
+    using MathLib  for uint;
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -148,6 +146,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// Public Functions                                                     ///
     ////////////////////////////////////////////////////////////////////////////
 
+    /// @dev Do not allow default function.
+    function () payable {
+        revert();
+    }
+
     /// @dev Submit a order-ring for validation and settlement.
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
@@ -243,11 +246,31 @@ contract LoopringProtocolImpl is LoopringProtocol {
             throwIfLRCIsInsuffcient);
 
         // Do the hard work.
-        verifyRingHasNoSubRing(ringSize, ring);
+        verifyRingHasNoSubRing(ring);
 
-        processRing(ringSize, ring);
+        // Exchange rates calculation are performed by ring-miners as solidity
+        // cannot get power-of-1/n operation, therefore we have to verify
+        // these rates are correct.
+        verifyMinerSuppliedFillRates(ring);
 
-        settleRing(ringSize, ring);
+        // Scale down each order independently by substracting amount-filled and
+        // amount-cancelled. Order owner's current balance and allowance are
+        // not taken into consideration in these operations.
+        scaleRingBasedOnHistoricalRecords(ring);
+
+        // Based on the already verified exchange rate provided by ring-miners,
+        // we can furthur scale down orders based on token balance and allowance,
+        // then find the smallest order of the ring, then calculate each order's
+        // `fillAmountS`.
+        calculateRingFillAmount(ring);
+
+        // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
+        // of `fillAmountS` shall be paid to matching order or miner as saving-
+        // share.
+        calculateRingFees(ring);  
+
+        /// Make payments.
+        settleRing(ring);
     }
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
@@ -300,14 +323,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// Internal & Private Functions                                         ///
     ////////////////////////////////////////////////////////////////////////////
 
+
     /// @dev Validate a ring.
-    function verifyRingHasNoSubRing(
-        uint ringSize,
-        Ring ring
-        )
+    function verifyRingHasNoSubRing(Ring ring)
         internal
         constant {
 
+        uint ringSize = ring.orders.length;
         // Check the ring has no sub-ring.
         for (uint i = 0; i < ringSize -1; i++) {
             address tokenS = ring.orders[i].order.tokenS;
@@ -325,36 +347,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
     }
 
-    function processRing(uint ringSize, Ring ring) internal constant {
-        // Exchange rates calculation are performed by ring-miners as solidity
-        // cannot get power-of-1/n operation, therefore we have to verify
-        // these rates are correct.
-        verifyMinerSuppliedFillRates(ringSize, ring);
+    function settleRing(Ring ring) internal {
 
-
-        // Scale down each order independently by substracting amount-filled and
-        // amount-cancelled. Order owner's current balance and allowance are
-        // not taken into consideration in these operations.
-        scaleRingBasedOnHistoricalRecords(ringSize, ring);
-
-        // Based on the already verified exchange rate provided by ring-miners,
-        // we can furthur scale down orders based on token balance and allowance,
-        // then find the smallest order of the ring, then calculate each order's
-        // `fillAmountS`.
-        calculateRingFillAmount(ringSize, ring);
-
-        // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
-        // of `fillAmountS` shall be paid to matching order or miner as saving-
-        // share.
-        calculateRingFees(ringSize, ring);  
-    }
-
-    function settleRing(
-        uint ringSize, 
-        Ring ring
-        )
-        internal {
-
+        uint ringSize = ring.orders.length;
         for (uint i = 0; i < ringSize; i++) {
             var state = ring.orders[i];
             var prev = ring.orders[i.prev(ringSize)];
@@ -410,24 +405,19 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         RingMined(
-            ringIndex,
+            ringIndex++,
             block.number,
             ring.ringHash,
             ring.miner,
             ring.feeRecepient,
             false //TODO(kongliang): update this
             );
-        ringIndex++;
     }
 
-    function verifyMinerSuppliedFillRates(
-        uint ringSize,
-        Ring ring
-        )
-        internal
-        constant {
+    function verifyMinerSuppliedFillRates(Ring ring) internal constant {
 
         var orders = ring.orders;
+        uint ringSize = orders.length;
         uint[] memory priceSavingRateList = new uint[](ringSize);
         uint savingRateSum = 0;
 
@@ -444,44 +434,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         uint savingRateAvg = savingRateSum.div(ringSize);
-        uint variance = caculateVariance(priceSavingRateList, savingRateAvg);
+        uint variance = MathLib.caculateVariance(
+            priceSavingRateList,
+            savingRateAvg);
 
         check(variance <= maxPriceRateDeviation,
             "miner supplied exchange rate is invalid");
     }
 
-    function caculateVariance(
-        uint[] arr,
-        uint avg
-        )
-        internal
-        constant
-        returns (uint) {
-            
-        uint len = arr.length;
-        uint variance = 0;
-        for (uint i = 0; i < len; i++) {
-            uint _sub = 0;
-            if (arr[i] > avg) {
-                _sub = arr[i] - avg;
-            } else {
-                _sub = avg - arr[i];
-            }
-            variance += _sub.mul(_sub);
-        }
-        variance = variance.div(len);
-        variance = variance.div(avg).div(avg);
-        return variance;
-    }
-
-    function calculateRingFees(
-        uint ringSize,
-        Ring ring
-        )
-        internal
-        constant {
+    function calculateRingFees(Ring ring) internal constant {
 
         uint minerLrcSpendable = getLRCSpendable(ring.feeRecepient);
+        uint ringSize = ring.orders.length;
 
         for (uint i = 0; i < ringSize; i++) {
             var state = ring.orders[i];
@@ -538,13 +502,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     }
 
-    function calculateRingFillAmount(
-        uint ringSize,
-        Ring ring
-        )
-        internal
-        constant {
+    function calculateRingFillAmount(Ring ring) internal constant {
 
+        uint ringSize = ring.orders.length;
         uint smallestIdx = 0;
         uint i;
         uint j;
@@ -618,13 +578,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev Scale down all orders based on historical fill or cancellation
     ///      stats but key the order's original exchange rate.
-    function scaleRingBasedOnHistoricalRecords(
-        uint ringSize,
-        Ring ring
-        )
-        internal
-        constant {
+    function scaleRingBasedOnHistoricalRecords(Ring ring) internal constant {
 
+        uint ringSize = ring.orders.length;
         for (uint i = 0; i < ringSize; i++) {
             var state = ring.orders[i];
             var order = state.order;
@@ -680,6 +636,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         return getSpendable(lrcTokenAddress, tokenOwner);
     }
 
+    /// @dev verify input data's basic integrity.
     function verifyInputDataIntegrity(
         uint ringSize,
         address[]   tokenSList,
@@ -863,6 +820,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s);
     }
 
+    /// @dev Check if condition hold, if not, log an exception and revert.
     function check(
         bool condition,
         string message) {

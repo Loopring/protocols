@@ -17,15 +17,49 @@
 */
 pragma solidity ^0.4.11;
 
-/// @title ArrayUtil
+/// @title UintUtil
 /// @author Daniel Wang - <daniel@loopring.org>
-/// @dev Array utility functions
-library ArrayUtil {
+/// @dev uint utility functions
+
+import "zeppelin-solidity/contracts/math/SafeMath.sol";
+
+library MathLib {
+    using SafeMath  for uint;
+
+    function tolerantSub(uint x, uint y) constant returns (uint z) {
+        if (x >= y) z = x - y; 
+        else z = 0;
+    }
+
     function next(uint i, uint size) internal constant returns (uint) {
         return (i + 1) % size;
     }
 
     function prev(uint i, uint size) internal constant returns (uint) {
         return (i + size - 1) % size;
+    }
+
+    function caculateVariance(
+        uint[] arr,
+        uint avg
+        )
+        internal
+        constant
+        returns (uint) {
+            
+        uint len = arr.length;
+        uint variance = 0;
+        for (uint i = 0; i < len; i++) {
+            uint _sub = 0;
+            if (arr[i] > avg) {
+                _sub = arr[i] - avg;
+            } else {
+                _sub = avg - arr[i];
+            }
+            variance += _sub.mul(_sub);
+        }
+        variance = variance.div(len);
+        variance = variance.div(avg).div(avg);
+        return variance;
     }
 }
