@@ -140,45 +140,4 @@ contract LoopringFingerprintRegistry {
         }
     }
 
-    /* /// @dev Sort a uint8 array ascending. */
-    /* function sortUint8Array(uint8[] arr, uint len) internal { */
-    /*     uint8 temp = 0; */
-    /*     if (len > arr.length) len = arr.length; */
-    /*     for (uint i = 0; i < len; i++) { */
-    /*         for (uint j = i; j < len; j++) { */
-    /*             if (arr[i] > arr[j]) { */
-    /*                 temp = arr[i]; */
-    /*                 arr[i] = arr[j]; */
-    /*                 arr[j] = temp; */
-    /*             } */
-    /*         } */
-    /*     } */
-    /* } */
-
-    /* /// @dev Sort a bytes32 array ascending. */
-    /* function sortBytes32Array(bytes32[] bsArr, uint len) internal { */
-    /*     bytes32 temp; */
-    /*     if (len > bsArr.length) len = bsArr.length; */
-    /*     for (uint i = 0; i < len; i++) { */
-    /*         for (uint j = i; j < len; j++) { */
-    /*             if (bsArr[i].isLarderThan(bsArr[j])) { */
-    /*                 temp = bsArr[i]; */
-    /*                 bsArr[i] = bsArr[j]; */
-    /*                 bsArr[j] = temp; */
-    /*             } */
-    /*         } */
-    /*     } */
-    /* } */
-
-    /* /// @dev Check if src larger than dest. */
-    /* /// returns true if src is larger than dest, false otherwise. */
-    /* function isLargerThan(bytes32 src, bytes32 dest) internal returns (bool) { */
-    /*     for (uint i = 0; i < 32; i++) { */
-    /*         if (src[i] == src[j]) continue; */
-    /*         return src[i] > src[j]; */
-    /*     } */
-
-    /*     // return false if src == dest. */
-    /*     return false; */
-    /* } */
 }
