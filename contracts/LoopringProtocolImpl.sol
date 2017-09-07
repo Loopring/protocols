@@ -23,8 +23,8 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
 import "./MathLib.sol";
 import "./TokenRegistry.sol";
+import "./RingHashRegistry.sol";
 import "./LoopringProtocol.sol";
-import "./LoopringFingerprintRegistry.sol";
 
 /// @title Loopring Token Exchange Protocol Implementation Contract v1
 /// @author Daniel Wang - <daniel@loopring.org>,
@@ -41,7 +41,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     address public  lrcTokenAddress             = address(0);
     address public  tokenRegistryContract       = address(0);
-    address public  fingerprintRegistryContract = address(0);
+    address public  ringHashContract            = address(0);
     uint    public  maxRingSize                 = 0;
     uint    public  ringIndex                   = 0;
     uint    public  maxPriceRateDeviation       = 0;
@@ -130,7 +130,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function LoopringProtocolImpl(
         address _lrcTokenAddress,
         address _tokenRegistryContract,
-        address _fingerprintRegistryContract,
+        address _ringHashContract,
         uint    _maxRingSize,
         uint    _maxPriceRateDeviation
         )
@@ -143,7 +143,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         lrcTokenAddress             = _lrcTokenAddress;
         tokenRegistryContract       = _tokenRegistryContract;
-        fingerprintRegistryContract = _fingerprintRegistryContract;
+        ringHashContract            = _ringHashContract;
         maxRingSize                 = _maxRingSize;
         maxPriceRateDeviation       = _maxPriceRateDeviation;
     }
@@ -152,7 +152,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// Public Functions                                                     ///
     ////////////////////////////////////////////////////////////////////////////
 
-    /// @dev Do not allow default function.
+    /// @dev Disable default function.
     function () payable {
         revert();
     }
@@ -213,7 +213,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(tokenSList);
 
-        var fingerprintRegistry = LoopringFingerprintRegistry(fingerprintRegistryContract);
+        var fingerprintRegistry = RingHashRegistry(ringHashContract);
         bytes32 ringHash = fingerprintRegistry.getRingHash(
             ringSize,
             feeRecepient,
@@ -292,8 +292,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     }
 
-    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
-    ///      in orderValues.
+    /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be
+    ///                           specified using orderValues.
     /// @param tokenAddresses     tokenS,tokenB
     /// @param orderValues        amountS, amountB, expiration, rand, lrcFee,
     ///                           and cancelAmount
@@ -492,7 +492,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                             .div(SAVING_SHARE_PERCENTAGE_BASE);
                     }
 
-                    // This implicits that has smaller index in the ring will
+                    // This implicits order with smaller index in the ring will
                     // be paid LRC reward first, so the orders in the ring does
                     // mater.
                     if (state.savingS > 0 || state.savingB > 0) {
