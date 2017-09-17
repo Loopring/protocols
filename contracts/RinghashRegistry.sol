@@ -107,8 +107,8 @@ contract RinghashRegistry {
             .orThrow("invalid ring data");
 
         return keccak256(
-            feeRecepient,
-            throwIfLRCIsInsuffcient,
+            // feeRecepient,
+            // throwIfLRCIsInsuffcient,
             vList.xorReduce(ringSize),
             rList.xorReduce(ringSize),
             sList.xorReduce(ringSize));
