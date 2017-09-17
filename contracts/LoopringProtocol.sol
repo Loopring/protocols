@@ -17,8 +17,6 @@
 */
 pragma solidity ^0.4.11;
 
-/// TODO(daniel): rename to LoopringProtocol.sol
-
 /// @title Loopring Token Exchange Protocol Contract Interface
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>

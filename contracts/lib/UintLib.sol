@@ -23,7 +23,7 @@ pragma solidity ^0.4.11;
 
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 
-library MathLib {
+library UintLib {
     using SafeMath  for uint;
 
     function tolerantSub(uint x, uint y) constant returns (uint z) {

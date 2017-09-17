@@ -17,43 +17,40 @@
 */
 pragma solidity ^0.4.11;
 
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
-
 /// @title Token Register Contract
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TokenRegistry is Ownable {
-
-    address[] public tokens;
-
-    function registerToken(address _token)
-        public
-        onlyOwner {
-        tokens.push(_token);
-    }
-
-    function unregisterToken(address _token)
-        public
-        onlyOwner {
-
-        for (uint i = 0; i < tokens.length; i++) {
-            if (tokens[i] == _token) {
-                tokens[i] == tokens[tokens.length - 1];
-                tokens.length -= 1;
-            }
-        }
-    }
-
-    function isTokenRegistered(address _token)
+library Bytes32Lib {
+  
+    function xorReduce(
+        bytes32[]   arr,
+        uint        len
+        )
         public
         constant
-        returns (bool) {
+        returns (bytes32 res) {
 
-        for (uint i = 0; i < tokens.length; i++) {
-            if (tokens[i] == _token) {
-                return true;
-            }
+        res = arr[0];
+        for (uint i = 1; i < len; i++) {
+            res = _xor(res, arr[i]);
         }
-        return false;
+    }
+
+    function _xor(
+        bytes32 bs1,
+        bytes32 bs2
+        )
+        public
+        constant
+        returns (bytes32 res) {
+
+        bytes memory temp = new bytes(32);
+        for (uint i = 0; i < 32; i++) {
+            temp[i] = bs1[i] ^ bs2[i];
+        }
+        string memory str = string(temp);
+        assembly {
+            res := mload(add(str, 32))
+        }
     }
 }

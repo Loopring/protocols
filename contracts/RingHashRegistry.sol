@@ -18,23 +18,32 @@
 pragma solidity ^0.4.11;
 
 /// @title Ring Hash Registry Contract
-/// @author Kongliang Zhong - <kongliang@loopring.org>
-contract RingHashRegistry {
+/// @author Kongliang Zhong - <kongliang@loopring.org>,
+/// @author Daniel Wang - <daniel@loopring.org>.
+import "./lib/Bytes32Lib.sol";
+import "./lib/ErrorLib.sol";
+import "./lib/Uint8Lib.sol";
+
+contract RinghashRegistry {
+    using Bytes32Lib    for bytes32[];
+    using ErrorLib      for bool;
+    using Uint8Lib      for uint8[];
 
     uint public blocksToLive;
 
-    // ringHash => feeRecepient
-    mapping (bytes32 => address) ringHashSubmitters;
+    struct Submission {
+        address feeRecepient;
+        uint block;
+    }
 
-    // ringHash => block number
-    mapping (bytes32 => uint) ringHashSubmitBlockNumbers;
+    mapping (bytes32 => Submission) submissions;
 
-    function RingHashRegistry(uint _blocksToLive) public {
+    function RinghashRegistry(uint _blocksToLive) public {
         require(_blocksToLive > 0);
         blocksToLive = _blocksToLive;
     }
 
-    function submitRingFingerprint(
+    function submitRinghash(
         uint        ringSize,
         address     feeRecepient,
         bool        throwIfLRCIsInsuffcient,
@@ -42,7 +51,7 @@ contract RingHashRegistry {
         bytes32[]   rList,
         bytes32[]   sList)
         public {
-        bytes32 ringHash = getRingHash(
+        bytes32 ringhash = calculateRinghash(
             ringSize,
             feeRecepient,
             throwIfLRCIsInsuffcient,
@@ -50,124 +59,58 @@ contract RingHashRegistry {
             rList,
             sList);
 
-        require(canSubmit(ringHash, feeRecepient));
-        ringHashSubmitters[ringHash] = feeRecepient;
-        ringHashSubmitBlockNumbers[ringHash] = block.number;
+        canSubmit(ringhash, feeRecepient)
+            .orThrow("Ringhash submitted");
+
+        submissions[ringhash] = Submission(feeRecepient, block.number);
     }
 
     function canSubmit(
-        bytes32 ringHash,
-        address submitter
+        bytes32 ringhash,
+        address feeRecepient
         )
         public
         constant
         returns (bool) {
 
-        address priorSubmitter = ringHashSubmitters[ringHash];
-        if (priorSubmitter == address(0)) {
-            return true;
-        } else {
-            if (isExpired(ringHash)) {
-                return true;
-            } else {
-                return submitter == priorSubmitter;
-            }
-        }
+        var submission = submissions[ringhash];
+        return (submission.feeRecepient == address(0)
+            || submission.block + blocksToLive < block.number
+            || submission.feeRecepient == feeRecepient);
     }
 
-    function fingerprintFound(bytes32 ringHash) public constant returns (bool) {
-        return ringHashSubmitters[ringHash] != address(0);
+    /// @return True if a ring's hash has ever been submitted; false otherwise.
+    function ringhashFound(bytes32 ringhash)
+        public
+        constant
+        returns (bool) {
+
+        return submissions[ringhash].feeRecepient != address(0);
     }
 
-    function isExpired(bytes32 ringHash) internal constant returns (bool) {
-        uint blockNumber = ringHashSubmitBlockNumbers[ringHash];
-        if (blockNumber > 0 && (block.number - blockNumber) > blocksToLive) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /// @dev    Calculate the hash of a ring.
-    function getRingHash(
+    /// @dev Calculate the hash of a ring.
+    function calculateRinghash(
         uint        ringSize,
         address     feeRecepient,
         bool        throwIfLRCIsInsuffcient,
         uint8[]     vList,
         bytes32[]   rList,
-        bytes32[]   sList)
+        bytes32[]   sList
+        )
         public
         constant
         returns (bytes32) {
 
-        require(ringSize == vList.length - 1);
-        require(ringSize == rList.length - 1);
-        require(ringSize == sList.length - 1);
-
-        uint8 vXor = uint8ArrayXor(vList, ringSize - 1);
-        bytes32 rXor = bytes32ArrayXor(rList, ringSize - 1);
-        bytes32 sXor = bytes32ArrayXor(sList, ringSize - 1);
+        (ringSize == vList.length - 1
+            && ringSize == rList.length - 1
+            && ringSize == sList.length - 1)
+            .orThrow("invalid ring data");
 
         return keccak256(
             feeRecepient,
             throwIfLRCIsInsuffcient,
-            vXor,
-            rXor,
-            sXor);
+            vList.xorReduce(ringSize),
+            rList.xorReduce(ringSize),
+            sList.xorReduce(ringSize));
     }
-
-    function uint8ArrayXor(
-        uint8[] arr,
-        uint    len
-        )
-        internal
-        returns (uint8 res) {
-
-        assert(len >= 2 && len <= arr.length);
-        for (uint i = 1; i < len; i++) {
-            if (i == 1) {
-                res = arr[i] ^ arr[i-1];
-            } else {
-                res = res ^ arr[i];
-            }
-        }
-    }
-
-    function bytes32ArrayXor(
-        bytes32[]   bsArr,
-        uint        len
-        )
-        internal
-        returns (bytes32 res) {
-
-        assert(len >= 2 && len <= bsArr.length);
-        for (uint i = 1; i < len; i++) {
-            if (i == 1) {
-                res = stringToBytes32(bytes32Xor(bsArr[i-1], bsArr[i]));
-            } else {
-                res = stringToBytes32(bytes32Xor(res, bsArr[i]));
-            }
-        }
-    }
-
-    function bytes32Xor(
-        bytes32 bs1,
-        bytes32 bs2
-        )
-        internal
-        returns (string) {
-
-        bytes memory res = new bytes(32);
-        for (uint i = 0; i < 32; i++) {
-            res[i] = bs1[i] ^ bs2[i];
-        }
-        return string(res);
-    }
-
-    function stringToBytes32(string str) internal returns (bytes32 res) {
-        assembly {
-            res := mload(add(str, 32))
-        }
-    }
-
 }

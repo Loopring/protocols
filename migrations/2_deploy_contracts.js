@@ -1,12 +1,12 @@
-var DummyToken 				= artifacts.require("./DummyToken");
+var DummyToken 				= artifacts.require("./test/DummyToken");
 var TokenRegistry 			= artifacts.require("./TokenRegistry");
-var RingHashRegistry		= artifacts.require("./RingHashRegistry");
+var RinghashRegistry		= artifacts.require("./RinghashRegistry");
 var LoopringProtocolImpl 	= artifacts.require("./LoopringProtocolImpl");
 
 module.exports = function(deployer, network, accounts) {
   deployer.deploy(DummyToken);
   deployer.deploy(TokenRegistry);
-  deployer.deploy(RingHashRegistry);
+  deployer.deploy(RinghashRegistry);
   // TODO(kongliang): give constructor parameters.
   deployer.deploy(
   	LoopringProtocolImpl,
