@@ -12,7 +12,7 @@
     "compile": "rm -rf build/contracts; truffle compile",
     "migrate": "npm run transpile; truffle migrate",
     "deploy": "npm run migrate --network kovan",
-    "testrpc": "testrpc --networkId 100"
+    "testrpc": "./testrpc.sh --networkId 100"
   },
   "license": "ISC",
   "devDependencies": {

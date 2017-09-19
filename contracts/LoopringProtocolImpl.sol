@@ -234,7 +234,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         var ringhashRegistry = RinghashRegistry(ringhashRegistryAddress);
-        
+
         bytes32 ringhash = ringhashRegistry.calculateRinghash(
             ringSize,
             feeRecepient,
@@ -791,5 +791,19 @@ contract LoopringProtocolImpl is LoopringProtocol {
             v,
             r,
             s);
+    }
+
+    function getOrderFilled(bytes32 orderHash)
+        public
+        constant
+        returns (uint) {
+        return filled(orderHash);
+    }
+
+    function getOrderCancelled(bytes32 orderHash)
+        public
+        constant
+        returns (uint) {
+        return cancelled(orderHash);
     }
 }

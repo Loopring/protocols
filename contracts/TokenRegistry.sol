@@ -40,6 +40,7 @@ contract TokenRegistry is Ownable {
             if (tokens[i] == _token) {
                 tokens[i] == tokens[tokens.length - 1];
                 tokens.length -= 1;
+                break;
             }
         }
     }
