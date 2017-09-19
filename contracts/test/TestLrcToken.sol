@@ -7,7 +7,7 @@ contract TestLrcToken is MintableToken {
     string public symbol;
     uint public decimals;
 
-    function DummyToken(
+    function TestLrcToken(
         string _name,
         string _symbol,
         uint _decimals,

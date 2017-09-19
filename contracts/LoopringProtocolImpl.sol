@@ -797,13 +797,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
         public
         constant
         returns (uint) {
-        return filled(orderHash);
+        return filled[orderHash];
     }
 
     function getOrderCancelled(bytes32 orderHash)
         public
         constant
         returns (uint) {
-        return cancelled(orderHash);
+        return cancelled[orderHash];
     }
 }
