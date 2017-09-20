@@ -1,6 +1,5 @@
 var ErrorLib                = artifacts.require("./lib/ErrorLib");
 var UintLib                 = artifacts.require("./lib/UintLib");
-var DummyToken              = artifacts.require("./test/DummyToken");
 var TestLrcToken            = artifacts.require("./test/TestLrcToken");
 var TokenRegistry           = artifacts.require("./TokenRegistry");
 var RinghashRegistry        = artifacts.require("./RinghashRegistry");

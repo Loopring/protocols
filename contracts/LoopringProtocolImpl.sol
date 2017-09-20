@@ -40,8 +40,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
 
     address public  lrcTokenAddress             = address(0);
-    address public  tokenRegistryAddress       = address(0);
-    address public  ringhashRegistryAddress            = address(0);
+    address public  tokenRegistryAddress        = address(0);
+    address public  ringhashRegistryAddress     = address(0);
     uint    public  maxRingSize                 = 0;
     uint    public  ringIndex                   = 0;
     uint    public  maxPriceRateDeviation       = 0;
@@ -246,13 +246,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         ringhashRegistry.canSubmit(ringhash, feeRecepient)
             .orThrow("Ring claimed by others");
-
-        /* var ring = Ring( */
-        /*     ringhash, */
-        /*     orders, */
-        /*     minerAddress, */
-        /*     feeRecepient, */
-        /*     throwIfLRCIsInsuffcient); */
 
         handleRing(ringhash, orders, minerAddress, feeRecepient, throwIfLRCIsInsuffcient);
     }
