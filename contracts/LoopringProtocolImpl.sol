@@ -194,7 +194,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public {
 
-        // Check ring size
+        Check ring size
         uint ringSize = tokenSList.length;
         (ringSize > 1 && ringSize <= maxRingSize)
             .orThrow("invalid ring size");
@@ -289,7 +289,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ring.feeRecepient,
             ringhashRegistry.ringhashFound(ringhash)
             );
-
     }
 
     /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be

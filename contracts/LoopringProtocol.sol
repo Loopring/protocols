@@ -112,36 +112,6 @@ contract LoopringProtocol {
         bool        throwIfLRCIsInsuffcient
         ) public;
 
-    /// @dev Submit ring fingerprint.
-    /// @param ringSize ring order size.
-    /// @param feeRecepient The recepient address for fee collection. If this is
-    ///                     '0x0', all fees will be paid to the address who had
-    ///                     signed this transaction, not `msg.sender`. Noted if
-    ///                     LRC need to be paid back to order owner as the result
-    ///                     of fee selection model, LRC will also be sent from
-    ///                     this address.
-    /// @param throwIfLRCIsInsuffcient -
-    ///                     If true, throw exception if any order's spendable
-    ///                     LRC amount is smaller than requried; if false, ring-
-    ///                     minor will give up collection the LRC fee.
-    /// @param vList        List of v for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     v value of the ring signature.
-    /// @param rList        List of r for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     r value of the ring signature.
-    /// @param sList        List of s for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     s value of the ring signature.
-    function submitRingFingerPrint(
-        uint ringSize,
-        address feeRecepient,
-        bool throwIfLRCIsInsuffcient,
-        uint8[]     vList,
-        bytes32[]   rList,
-        bytes32[]   sList)
-        public;
-
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified in orderValues.
     /// @param tokenAddresses     tokenS,tokenB
     /// @param orderValues        amountS,amountB,expiration,rand,lrcFee,cancelAmountS,cancelAmountB
