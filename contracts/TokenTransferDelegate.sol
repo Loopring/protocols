@@ -17,6 +17,7 @@
 */
 pragma solidity ^0.4.11;
 
+import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/token/ERC20.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
@@ -25,6 +26,7 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 /// re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenTransferDelegate is Ownable {
+    using Math for uint;
 
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///
@@ -98,6 +100,25 @@ contract TokenTransferDelegate is Ownable {
         VersionRemoved(addr, version);
     }
 
+
+    /// @return Amount of ERC20 token that can be spent by this contract.
+    /// @param tokenAddress Address of token to transfer.
+    /// @param owner Address of the token owner.
+    function getSpendable(
+        address tokenAddress,
+        address owner
+        )
+        isVersioned(msg.sender)
+        constant
+        returns (uint) {
+
+        var token = ERC20(tokenAddress);
+        return token
+            .allowance(owner, address(this))
+            .min256(token.balanceOf(owner));
+    }
+
+
     /// @dev Invoke ERC20 transferFrom method.
     /// @param token Address of token to transfer.
     /// @param from Address to transfer token from.
@@ -110,8 +131,7 @@ contract TokenTransferDelegate is Ownable {
         address to,
         uint value)
         isVersioned(msg.sender)
-        returns (bool)
-        {
+        returns (bool) {
         return ERC20(token).transferFrom(from, to, value);
     }
 
@@ -119,8 +139,7 @@ contract TokenTransferDelegate is Ownable {
     /// @return Array of versioned addresses.
     function getVersions()
         constant
-        returns (address[])
-        {
+        returns (address[]) {
         return versions;
     }
 }

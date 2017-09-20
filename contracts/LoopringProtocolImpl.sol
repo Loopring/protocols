@@ -650,10 +650,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         constant
         returns (uint) {
 
-        var token = ERC20(tokenAddress);
-        return token
-            .allowance(tokenOwner, address(this))
-            .min256(token.balanceOf(tokenOwner));
+        return TokenTransferDelegate(delegateAddress)
+            .getSpendable(tokenAddress, tokenOwner);
     }
 
     /// @return Amount of LRC token that can be spent by this contract.
