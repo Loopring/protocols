@@ -194,7 +194,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public {
 
-        Check ring size
+        //Check ring size
         uint ringSize = tokenSList.length;
         (ringSize > 1 && ringSize <= maxRingSize)
             .orThrow("invalid ring size");
@@ -247,48 +247,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
         ringhashRegistry.canSubmit(ringhash, feeRecepient)
             .orThrow("Ring claimed by others");
 
-        var ring = Ring(
-            ringhash,
-            orders,
-            minerAddress,
-            feeRecepient,
-            throwIfLRCIsInsuffcient);
+        /* var ring = Ring( */
+        /*     ringhash, */
+        /*     orders, */
+        /*     minerAddress, */
+        /*     feeRecepient, */
+        /*     throwIfLRCIsInsuffcient); */
 
-        // Do the hard work.
-        verifyRingHasNoSubRing(ring);
-
-        // Exchange rates calculation are performed by ring-miners as solidity
-        // cannot get power-of-1/n operation, therefore we have to verify
-        // these rates are correct.
-        verifyMinerSuppliedFillRates(ring);
-
-        // Scale down each order independently by substracting amount-filled and
-        // amount-cancelled. Order owner's current balance and allowance are
-        // not taken into consideration in these operations.
-        scaleRingBasedOnHistoricalRecords(ring);
-
-        // Based on the already verified exchange rate provided by ring-miners,
-        // we can furthur scale down orders based on token balance and allowance,
-        // then find the smallest order of the ring, then calculate each order's
-        // `fillAmountS`.
-        calculateRingFillAmount(ring);
-
-        // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
-        // of `fillAmountS` shall be paid to matching order or miner as saving-
-        // share.
-        calculateRingFees(ring);
-
-        /// Make payments.
-        settleRing(ring);
-
-        RingMined(
-            ringIndex++,
-            block.number,
-            ringhash,
-            ring.miner,
-            ring.feeRecepient,
-            ringhashRegistry.ringhashFound(ringhash)
-            );
+        handleRing(ringhash, orders, minerAddress, feeRecepient, throwIfLRCIsInsuffcient);
     }
 
     /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be
@@ -364,6 +330,58 @@ contract LoopringProtocolImpl is LoopringProtocol {
             registryContract.isTokenRegistered(tokens[i])
                 .orThrow("token not registered");
         }
+    }
+
+    function handleRing(
+        bytes32 ringhash,
+        OrderState[] orders,
+        address miner,
+        address feeRecepient,
+        bool throwIfLRCIsInsuffcient
+        )
+        internal {
+        var ring = Ring(
+            ringhash,
+            orders,
+            miner,
+            feeRecepient,
+            throwIfLRCIsInsuffcient);
+
+        // Do the hard work.
+        verifyRingHasNoSubRing(ring);
+
+        // Exchange rates calculation are performed by ring-miners as solidity
+        // cannot get power-of-1/n operation, therefore we have to verify
+        // these rates are correct.
+        verifyMinerSuppliedFillRates(ring);
+
+        // Scale down each order independently by substracting amount-filled and
+        // amount-cancelled. Order owner's current balance and allowance are
+        // not taken into consideration in these operations.
+        scaleRingBasedOnHistoricalRecords(ring);
+
+        // Based on the already verified exchange rate provided by ring-miners,
+        // we can furthur scale down orders based on token balance and allowance,
+        // then find the smallest order of the ring, then calculate each order's
+        // `fillAmountS`.
+        calculateRingFillAmount(ring);
+
+        // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
+        // of `fillAmountS` shall be paid to matching order or miner as saving-
+        // share.
+        calculateRingFees(ring);
+
+        /// Make payments.
+        settleRing(ring);
+
+        RingMined(
+            ringIndex++,
+            block.number,
+            ring.ringhash,
+            ring.miner,
+            ring.feeRecepient,
+            RinghashRegistry(ringhashRegistryAddress).ringhashFound(ring.ringhash)
+            );
     }
 
     function settleRing(Ring ring) internal {
