@@ -30,7 +30,7 @@ contract TokenTransferDelegate is Ownable {
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
     
-    uint lastSequenceId = 0;
+    uint lastVersion = 0;
     address[] public versions;
     mapping (address => uint) public versioned;
 
@@ -58,13 +58,9 @@ contract TokenTransferDelegate is Ownable {
     /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
 
-    event VersionAdded(
-        address indexed addr,
-        uint sequenceId);
+    event VersionAdded(address indexed addr, uint version);
 
-    event VersionRemoved(
-        address indexed addr, 
-        uint sequenceId);
+    event VersionRemoved(address indexed addr, uint version);
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -77,9 +73,9 @@ contract TokenTransferDelegate is Ownable {
         onlyOwner
         notVersioned(addr)
         {
-        versioned[addr] = ++lastSequenceId;
+        versioned[addr] = ++lastVersion;
         versions.push(addr);
-        VersionAdded(addr, lastSequenceId);
+        VersionAdded(addr, lastVersion);
     }
 
     /// @dev Remove a Loopring protocol address.
@@ -88,7 +84,7 @@ contract TokenTransferDelegate is Ownable {
         onlyOwner
         isVersioned(addr)
         {
-        uint sequenceId = versioned[addr];
+        uint version = versioned[addr];
         delete versioned[addr];
 
         uint length = versions.length;
@@ -99,7 +95,7 @@ contract TokenTransferDelegate is Ownable {
                 break;
             }
         }
-        VersionRemoved(addr, sequenceId);
+        VersionRemoved(addr, version);
     }
 
     /// @dev Invoke ERC20 transferFrom method.
