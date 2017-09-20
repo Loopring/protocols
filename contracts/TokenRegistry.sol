@@ -57,4 +57,11 @@ contract TokenRegistry is Ownable {
         }
         return false;
     }
+
+    function getRegisteredTokenSize()
+        public
+        constant
+        returns (uint) {
+        return tokens.length;
+    }
 }
