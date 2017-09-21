@@ -3,6 +3,7 @@ var Bytes32Lib              = artifacts.require("./lib/Bytes32Lib");
 var Uint8Lib                = artifacts.require("./lib/Uint8Lib");
 var TokenRegistry           = artifacts.require("./TokenRegistry");
 var RinghashRegistry        = artifacts.require("./RinghashRegistry");
+var TokenTransferDelegate   = artifacts.require("./TokenTransferDelegate");
 
 module.exports = function(deployer, network, accounts) {
   if (network == 'live') {
@@ -22,6 +23,8 @@ module.exports = function(deployer, network, accounts) {
       deployer.link(ErrorLib, RinghashRegistry);
       deployer.link(Uint8Lib, RinghashRegistry);
       return deployer.deploy(RinghashRegistry, 10000);
+    }).then(() => {
+      return deployer.deploy(TokenTransferDelegate);
     });
   }
 };
