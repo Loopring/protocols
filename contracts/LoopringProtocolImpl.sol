@@ -25,6 +25,7 @@ import "./lib/UintLib.sol";
 import "./LoopringProtocol.sol";
 import "./RinghashRegistry.sol";
 import "./TokenRegistry.sol";
+import "./TokenTransferDelegate.sol";
 
 /// @title Loopring Token Exchange Protocol Implementation Contract v1
 /// @author Daniel Wang - <daniel@loopring.org>,
@@ -42,6 +43,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  lrcTokenAddress             = address(0);
     address public  tokenRegistryAddress        = address(0);
     address public  ringhashRegistryAddress     = address(0);
+    address public  delegateAddress             = address(0);
+
     uint    public  maxRingSize                 = 0;
     uint    public  ringIndex                   = 0;
     uint    public  maxPriceRateDeviation       = 0;
@@ -128,6 +131,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address _lrcTokenAddress,
         address _tokenRegistryAddress,
         address _ringhashRegistryAddress,
+        address _delegateAddress,
         uint    _maxRingSize,
         uint    _maxPriceRateDeviation
         )
@@ -135,12 +139,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         require(address(0) != _lrcTokenAddress);
         require(address(0) != _tokenRegistryAddress);
+        require(address(0) != _delegateAddress);
+
         require(_maxRingSize >= 2);
         require(_maxPriceRateDeviation >= 1);
 
         lrcTokenAddress             = _lrcTokenAddress;
         tokenRegistryAddress        = _tokenRegistryAddress;
         ringhashRegistryAddress     = _ringhashRegistryAddress;
+        delegateAddress             = _delegateAddress;
         maxRingSize                 = _maxRingSize;
         maxPriceRateDeviation       = _maxPriceRateDeviation;
     }
@@ -379,6 +386,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     function settleRing(Ring ring) internal {
         uint ringSize = ring.orders.length;
+        var delegate = TokenTransferDelegate(delegateAddress);
+
         for (uint i = 0; i < ringSize; i++) {
             var state = ring.orders[i];
             var prev = ring.orders[i.prev(ringSize)];
@@ -386,30 +395,33 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // Pay tokenS to previous order, or to miner as previous order's
             // saving share or/and this order's saving share.
-            var tokenS = ERC20(state.order.tokenS);
-            tokenS.transferFrom(
+
+            delegate.transferToken(
+                state.order.tokenS,
                 state.owner,
                 prev.owner,
                 state.fillAmountS - prev.savingB);
 
             if (prev.savingB + state.savingS > 0) {
-                tokenS.transferFrom(
+                delegate.transferToken(
+                    state.order.tokenS,
                     state.owner,
                     ring.feeRecepient,
                     prev.savingB + state.savingS);
             }
 
             // Pay LRC
-            var lrc = ERC20(lrcTokenAddress);
             if (state.lrcReward > 0) {
-                lrc.transferFrom(
+                delegate.transferToken(
+                    lrcTokenAddress,
                     ring.feeRecepient,
                     state.owner,
                     state.lrcReward);
             }
 
             if (state.lrcFee > 0) {
-                lrc.transferFrom(
+                 delegate.transferToken(
+                    lrcTokenAddress,
                     state.owner,
                     ring.feeRecepient,
                     state.lrcFee);
@@ -638,10 +650,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         constant
         returns (uint) {
 
-        var token = ERC20(tokenAddress);
-        return token
-            .allowance(tokenOwner, address(this))
-            .min256(token.balanceOf(tokenOwner));
+        return TokenTransferDelegate(delegateAddress)
+            .getSpendable(tokenAddress, tokenOwner);
     }
 
     /// @return Amount of LRC token that can be spent by this contract.
