@@ -16,7 +16,7 @@ contract('TokenRegistry', (accounts: string[])=>{
   before(async () => {
     tokenRegistry = await TokenRegistry.deployed();
     lrcTokenAddr = await tokenRegistry.getAddressBySymbol("LRC");
-    console.log("lrcTokenAddr", lrcTokenAddr);
+    //console.log("lrcTokenAddr", lrcTokenAddr);
   });
 
   describe('owner', () => {
