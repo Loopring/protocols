@@ -15,20 +15,18 @@ module.exports = function(deployer, network, accounts) {
     deployer.then(() => {
       return TokenRegistry.deployed();
     }).then((tokenRegistry) => {
-      deployer.deploy(TestLrcToken, "TestLrcToken", "TLRC", 18, 1e27).then(() => {
-        return Bluebird.each(devTokenInfos.map(token =>  DummyToken.new(
-          token.name,
-          token.symbol,
-          token.decimals,
-          totalSupply,
-        )), _.noop).then(dummyTokens => {
-          return Bluebird.each(dummyTokens.map(tokenContract => {
-            return tokenRegistry.registerToken(tokenContract.address);
-          }), _.noop);
-        });
+      return Bluebird.each(devTokenInfos.map(token =>  DummyToken.new(
+        token.name,
+        token.symbol,
+        token.decimals,
+        totalSupply,
+      )), _.noop).then(dummyTokens => {
+        return Bluebird.each(dummyTokens.map((tokenContract, i) => {
+          var token = devTokenInfos[i];
+          return tokenRegistry.registerToken(tokenContract.address, token.symbol);
+        }), _.noop);
       });
 
     });
-
   }
 }

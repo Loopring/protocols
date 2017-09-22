@@ -11,34 +11,31 @@ contract('TokenRegistry', (accounts: string[])=>{
   const user = accounts[1];
 
   let tokenRegistry: any;
-  let dummyToken: any;
-  let dummyTokenAddr: string;
+  let lrcTokenAddr: string;
 
   before(async () => {
     tokenRegistry = await TokenRegistry.deployed();
-    dummyToken = await DummyToken.deployed();
-
-    dummyTokenAddr = dummyToken.address;
+    lrcTokenAddr = await tokenRegistry.getAddressBySymbol("LRC");
+    console.log("lrcTokenAddr", lrcTokenAddr);
   });
 
   describe('owner', () => {
     it('should be able to register a token', async () => {
-      await tokenRegistry.registerToken(dummyTokenAddr, {from: owner});
-      const isRegistered = await tokenRegistry.isTokenRegistered(dummyTokenAddr);
-      assert.equal(isRegistered, true, 'dummy token should be registered');
+      const isRegistered = await tokenRegistry.isTokenRegistered(lrcTokenAddr);
+      assert.equal(isRegistered, true, 'token should be registered');
     });
 
     it('should be able to unregister a token', async () => {
-      await tokenRegistry.unregisterToken(dummyTokenAddr, {from: owner});
-      const isRegistered = await tokenRegistry.isTokenRegistered(dummyTokenAddr);
-      assert.equal(isRegistered, false, 'dummy token should be unregistered');
+      await tokenRegistry.unregisterToken(lrcTokenAddr, "LRC", {from: owner});
+      const isRegistered = await tokenRegistry.isTokenRegistered(lrcTokenAddr);
+      assert.equal(isRegistered, false, 'token should be unregistered');
     });
 
   });
 
   describe('any user', () => {
     it('should be able to check a token registered or not', async () => {
-      const isRegistered = await tokenRegistry.isTokenRegistered(dummyTokenAddr, {from: user});
+      const isRegistered = await tokenRegistry.isTokenRegistered(lrcTokenAddr, {from: user});
       assert.equal(isRegistered, isRegistered, 'any one should be able to check token registered or not ');
     });
   });

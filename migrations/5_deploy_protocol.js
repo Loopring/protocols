@@ -11,23 +11,23 @@ module.exports = function(deployer, network, accounts) {
   if (network == 'live') {
 
   } else {
-    //deployer.deploy(LoopringProtocolImpl);
-
     deployer.then(() => {
       return Promise.all([
         ErrorLib.deployed(),
         UintLib.deployed(),
-        TestLrcToken.deployed(),
         TokenRegistry.deployed(),
         RinghashRegistry.deployed(),
         TokenTransferDelegate.deployed(),
       ]);
-    }).then(() => {
+    }).then((contracts) => {
+      var [errLib, uintLib, tokenRegistry] = contracts;
+      return tokenRegistry.getAddressBySymbol("LRC");
+    }).then(lrcAddr => {
       deployer.link(ErrorLib, LoopringProtocolImpl);
       deployer.link(UintLib, LoopringProtocolImpl);
       return deployer.deploy(
         LoopringProtocolImpl,
-        TestLrcToken.address,
+        lrcAddr,
         TokenRegistry.address,
         RinghashRegistry.address,
         TokenTransferDelegate.address,

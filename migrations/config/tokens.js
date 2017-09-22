@@ -2,8 +2,8 @@
 module.exports = {
   development: [
     {
-      name: '0x Protocol Token',
-      symbol: 'ZRX',
+      name: 'Loopring Coin',
+      symbol: 'LRC',
       decimals: 18,
     },
     {

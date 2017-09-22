@@ -10,12 +10,11 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
   let loopringProtocolImpl: any;
   let tokenRegistry: any;
-  let dummyToken: any;
 
   before( async () => {
     loopringProtocolImpl = await LoopringProtocolImpl.deployed();
     tokenRegistry = await TokenRegistry.deployed();
-    dummyToken = await DummyToken.deployed();
+    //dummyToken = await DummyToken.deployed();
   });
 
   describe('fillRing', () => {
