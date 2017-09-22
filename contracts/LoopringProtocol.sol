@@ -38,11 +38,8 @@ contract LoopringProtocol {
     /// @param tokenB       Token to buy.
     /// @param amountS      Maximum amount of tokenS to sell.
     /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
-    /// @param expiration   Indicating when this order will expire. If the value
-    ///                     is smaller than `now`, it will be treated as
-    ///                     Ethereum block height, otherwise it will be treated
-    ///                     as Ethereum block time (in second).
-    /// @param rand         A random number to make this order's hash unique.
+    /// @param expiration   Indicating when this order will expire.
+    /// @param salt         A random number to make this order's hash unique.
     /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
     ///                     to pay is proportional to fill amount.
     /// @param buyNoMoreThanAmountB -
@@ -59,7 +56,7 @@ contract LoopringProtocol {
         uint    amountS;
         uint    amountB;
         uint    expiration;
-        uint    rand;
+        uint    salt;
         uint    lrcFee;
         bool    buyNoMoreThanAmountB;
         uint8   savingSharePercentage;
@@ -77,7 +74,7 @@ contract LoopringProtocol {
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee.
+    ///                     amountS,AmountB,rateAmountS,expiration,salt,lrcFee.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     savingSharePercentageList,feeSelectionList.
@@ -114,7 +111,7 @@ contract LoopringProtocol {
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified in orderValues.
     /// @param tokenAddresses     tokenS,tokenB
-    /// @param orderValues        amountS,amountB,expiration,rand,lrcFee,cancelAmountS,cancelAmountB
+    /// @param orderValues        amountS,amountB,expiration,salt,lrcFee,cancelAmountS,cancelAmountB
     /// @param savingSharePercentage -
     /// @param buyNoMoreThanAmountB -
     /// @param v                  Order ECDSA signature parameter v.

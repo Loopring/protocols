@@ -167,7 +167,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee.
+    ///                     amountS,AmountB,rateAmountS,expiration,salt,lrcFee.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     savingSharePercentageList,feeSelectionList.
@@ -262,7 +262,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be
     ///                           specified using orderValues.
     /// @param tokenAddresses     tokenS,tokenB
-    /// @param orderValues        amountS, amountB, expiration, rand, lrcFee,
+    /// @param orderValues        amountS, amountB, expiration, salt, lrcFee,
     ///                           and cancelAmount
     /// @param buyNoMoreThanAmountB -
     ///                           If true, this order does not accept buying
@@ -773,10 +773,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             .orThrow("invalid order amountS");
         (order.amountB > 0)
             .orThrow("invalid order amountB");
-        (order.expiration > block.number)
+        (order.expiration >= now)
             .orThrow("invalid order expiration");
-        (order.rand > 0)
-            .orThrow("invalid order rand");
+        (order.salt > 0)
+            .orThrow("invalid order salt");
         (order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE)
             .orThrow("invalid order savingSharePercentage");
     }
@@ -794,7 +794,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.amountS,
             order.amountB,
             order.expiration,
-            order.rand,
+            order.salt,
             order.lrcFee,
             order.buyNoMoreThanAmountB,
             order.savingSharePercentage);
