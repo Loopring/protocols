@@ -117,7 +117,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     event OrderFilled(
         uint                _ringIndex,
         uint                _blocknumber,
+        bytes32     indexed _prevOrderHash,
         bytes32     indexed _orderHash,
+        bytes32     indexed _nextOrderHash,
         uint                _amountS,
         uint                _amountB,
         uint                _lrcReward,
@@ -437,7 +439,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             OrderFilled(
                 ringIndex,
                 block.number,
+                prev.orderHash,
                 state.orderHash,
+                next.orderHash,
                 state.fillAmountS + state.savingS,
                 next.fillAmountS - state.savingB,
                 state.lrcReward,
