@@ -26,23 +26,35 @@ contract TokenRegistry is Ownable {
 
     address[] public tokens;
 
-    function registerToken(address _token)
+    mapping (string => address) tokenSymbolMap;
+
+    function registerToken(address _token, string _symbol)
         public
         onlyOwner {
+        require(_token != address(0));
+        require(!isTokenRegisteredBySymbol(_symbol));
         tokens.push(_token);
+        tokenSymbolMap[_symbol] = _token;
     }
 
-    function unregisterToken(address _token)
+    function unregisterToken(address _token, string _symbol)
         public
         onlyOwner {
-
+        require(tokenSymbolMap[_symbol] == _token);
+        delete tokenSymbolMap[_symbol];
         for (uint i = 0; i < tokens.length; i++) {
             if (tokens[i] == _token) {
                 tokens[i] == tokens[tokens.length - 1];
                 tokens.length -= 1;
-                break;
             }
         }
+    }
+
+    function isTokenRegisteredBySymbol(string symbol)
+        public
+        constant
+        returns (bool) {
+        return tokenSymbolMap[symbol] != address(0);
     }
 
     function isTokenRegistered(address _token)
@@ -58,10 +70,10 @@ contract TokenRegistry is Ownable {
         return false;
     }
 
-    function getRegisteredTokenSize()
+    function getAddressBySymbol(string symbol)
         public
         constant
-        returns (uint) {
-        return tokens.length;
+        returns (address) {
+        return tokenSymbolMap[symbol];
     }
 }
