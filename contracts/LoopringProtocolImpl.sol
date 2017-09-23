@@ -220,6 +220,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(tokenSList);
 
+        
+        var ringhashRegistry = RinghashRegistry(ringhashRegistryAddress);
+
+        bytes32 ringhash = ringhashRegistry.calculateRinghash(
+            ringSize,
+            feeRecepient,
+            throwIfLRCIsInsuffcient,
+            vList,
+            rList,
+            sList
+        );
+
+        ringhashRegistry.canSubmit(ringhash, feeRecepient)
+            .orThrow("Ring claimed by others");
+
         address minerAddress = calculateSignerAddress(
             ringhash,
             vList[ringSize],
@@ -242,19 +257,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             feeRecepient = minerAddress;
         }
 
-        var ringhashRegistry = RinghashRegistry(ringhashRegistryAddress);
-
-        bytes32 ringhash = ringhashRegistry.calculateRinghash(
-            ringSize,
-            feeRecepient,
-            throwIfLRCIsInsuffcient,
-            vList,
-            rList,
-            sList
-        );
-
-        ringhashRegistry.canSubmit(ringhash, feeRecepient)
-            .orThrow("Ring claimed by others");
 
         handleRing(ringhash, orders, minerAddress, feeRecepient, throwIfLRCIsInsuffcient);
     }
