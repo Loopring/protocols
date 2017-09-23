@@ -129,6 +129,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint                _lrcReward,
         uint                _lrcFee);
 
+    event OrderCancelled(
+        uint                _blocknumber,
+        bytes32     indexed _orderHash,
+        uint                _amountCancelled);
+
     ////////////////////////////////////////////////////////////////////////////
     /// Constructor                                                          ///
     ////////////////////////////////////////////////////////////////////////////
@@ -309,6 +314,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         bytes32 orderHash = calculateOrderHash(order);
         cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
+
+        OrderCancelled(
+            block.number,
+            orderHash,
+            cancelAmount
+        );
     }
 
     ////////////////////////////////////////////////////////////////////////////
