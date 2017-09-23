@@ -112,6 +112,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     event RingMined(
         uint                _ringIndex,
+        uint                _time,
         uint                _blocknumber,
         bytes32     indexed _ringhash,
         address     indexed _miner,
@@ -120,6 +121,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     event OrderFilled(
         uint                _ringIndex,
+        uint                _time,
         uint                _blocknumber,
         bytes32     indexed _prevOrderHash,
         bytes32     indexed _orderHash,
@@ -130,6 +132,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint                _lrcFee);
 
     event OrderCancelled(
+        uint                _time,
         uint                _blocknumber,
         bytes32     indexed _orderHash,
         uint                _amountCancelled);
@@ -316,6 +319,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
 
         OrderCancelled(
+            block.timestamp,
             block.number,
             orderHash,
             cancelAmount
@@ -395,6 +399,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         RingMined(
             ringIndex++,
+            block.timestamp,
             block.number,
             ring.ringhash,
             ring.miner,
@@ -455,6 +460,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             OrderFilled(
                 ringIndex,
+                block.timestamp,
                 block.number,
                 prev.orderHash,
                 state.orderHash,
@@ -785,7 +791,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             .orThrow("invalid order amountS");
         (order.amountB > 0)
             .orThrow("invalid order amountB");
-        (order.expiration >= now)
+        (order.expiration >= block.timestamp)
             .orThrow("invalid order expiration");
         (order.salt > 0)
             .orThrow("invalid order salt");
