@@ -47,9 +47,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     uint    public  maxRingSize                 = 0;
     uint    public  ringIndex                   = 0;
-    uint    public  maxPriceRateDeviation       = 0;
 
-    uint    public constant SCALE_AMOUNT        = 10000;
+    // To require all orders' saving ratio fell into a 2.5% Coefficient of
+    // Variation, this number should be set to:
+    //     `sqrt(0.025 * SAVING_RATIO_SCALE)` or 62500. 
+    uint    public  savingRatioCVSThreshold     = 0;
+
+    uint    public constant SAVING_RATIO_SCALE  = 10000;
 
     /// The following two maps are used to keep order fill and cancellation
     /// historical records.
@@ -135,7 +139,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address _ringhashRegistryAddress,
         address _delegateAddress,
         uint    _maxRingSize,
-        uint    _maxPriceRateDeviation
+        uint    _savingRatioCVSThreshold
         )
         public {
 
@@ -143,15 +147,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(address(0) != _tokenRegistryAddress);
         require(address(0) != _delegateAddress);
 
-        require(_maxRingSize >= 2);
-        require(_maxPriceRateDeviation >= 1);
+        require(_maxRingSize > 1);
+        require(_savingRatioCVSThreshold > 0);
 
         lrcTokenAddress             = _lrcTokenAddress;
         tokenRegistryAddress        = _tokenRegistryAddress;
         ringhashRegistryAddress     = _ringhashRegistryAddress;
         delegateAddress             = _delegateAddress;
         maxRingSize                 = _maxRingSize;
-        maxPriceRateDeviation       = _maxPriceRateDeviation;
+        savingRatioCVSThreshold       = _savingRatioCVSThreshold;
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -167,7 +171,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS,AmountB,rateAmountS,expiration,rand,lrcFee.
+    ///                     amountS,AmountB,rateAmountS,expiration,salt,lrcFee.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     savingSharePercentageList,feeSelectionList.
@@ -264,7 +268,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be
     ///                           specified using orderValues.
     /// @param tokenAddresses     tokenS,tokenB
-    /// @param orderValues        amountS, amountB, expiration, rand, lrcFee,
+    /// @param orderValues        amountS, amountB, expiration, salt, lrcFee,
     ///                           and cancelAmount
     /// @param buyNoMoreThanAmountB -
     ///                           If true, this order does not accept buying
@@ -458,7 +462,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         var orders = ring.orders;
         uint ringSize = orders.length;
         uint[] memory priceSavingRateList = new uint[](ringSize);
-        uint savingRateSum = 0;
 
         for (uint i = 0; i < ringSize; i++) {
             uint rateAmountB = orders[i.next(ringSize)].rateAmountS;
@@ -467,16 +470,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             (s0b1 >= b0s1).orThrow("miner supplied exchange rate is invalid");
 
-            priceSavingRateList[i] = s0b1.sub(b0s1).mul(SCALE_AMOUNT).div(s0b1);
-            savingRateSum += priceSavingRateList[i];
+            priceSavingRateList[i] = s0b1.sub(b0s1).mul(SAVING_RATIO_SCALE).div(s0b1);
         }
 
-        uint savingRateAvg = savingRateSum.div(ringSize);
-        uint variance = UintLib.caculateVariance(
-            priceSavingRateList,
-            savingRateAvg);
+        uint cvs = UintLib.cvsquare(priceSavingRateList, SAVING_RATIO_SCALE);
 
-        (variance <= maxPriceRateDeviation)
+        (cvs <= savingRatioCVSThreshold)
             .orThrow("miner supplied exchange rate is invalid");
     }
 
@@ -775,10 +774,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             .orThrow("invalid order amountS");
         (order.amountB > 0)
             .orThrow("invalid order amountB");
-        (order.expiration > block.number)
+        (order.expiration >= now)
             .orThrow("invalid order expiration");
-        (order.rand > 0)
-            .orThrow("invalid order rand");
+        (order.salt > 0)
+            .orThrow("invalid order salt");
         (order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE)
             .orThrow("invalid order savingSharePercentage");
     }
@@ -796,7 +795,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.amountS,
             order.amountB,
             order.expiration,
-            order.rand,
+            order.salt,
             order.lrcFee,
             order.buyNoMoreThanAmountB,
             order.savingSharePercentage);
