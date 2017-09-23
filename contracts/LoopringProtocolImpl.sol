@@ -48,9 +48,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     uint    public  maxRingSize                 = 0;
     uint    public  ringIndex                   = 0;
 
-    // To require all orders' saving ratio fell into a 2.5% Coefficient of
-    // Variation, this number should be set to:
-    //     `sqrt(0.025 * SAVING_RATIO_SCALE)` or 62500. 
+    // To require all orders' saving ratio to be smaller than a 2.5% coefficient
+    // of variation, this number should be set to:
+    //     `(0.025 * SAVING_RATIO_SCALE)^2` or 62500. 
     uint    public  savingRatioCVSThreshold     = 0;
 
     uint    public constant SAVING_RATIO_SCALE  = 10000;
