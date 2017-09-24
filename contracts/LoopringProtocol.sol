@@ -27,6 +27,8 @@ contract LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
     uint    public constant FEE_SELECT_LRC               = 0;
     uint    public constant FEE_SELECT_SAVING_SHARE      = 1;
+    uint    public constant FEE_SELECT_MAX_VALUE         = 1;
+    
     uint    public constant SAVING_SHARE_PERCENTAGE_BASE = 10000;
 
 
