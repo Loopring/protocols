@@ -48,15 +48,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
     uint    public  maxRingSize                 = 0;
     uint    public  ringIndex                   = 0;
 
-    // To require all orders' rate ratio to have a smaller coefficient of
-    // variation (CV) smaller than 2.5% , this number should be:
+    // To require all orders' rate ratios to have coefficient ofvariation (CV)
+    // smaller than 2.5% for an example , this number should be:
     //     `(0.025 * RATE_RATIO_SCALE)^2` or 62500. 
     uint    public  rateRatioCVSThreshold       = 0;
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
 
-    /// The following two maps are used to keep order fill and cancellation
-    /// historical records.
+    // The following two maps are used to keep trace of order fill and
+    // cancellation history.
     mapping (bytes32 => uint) public filled;
     mapping (bytes32 => uint) public cancelled;
 
