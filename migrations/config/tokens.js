@@ -7,7 +7,7 @@ module.exports = {
       decimals: 18,
     },
     {
-      name: 'Eos',
+      name: 'EOS',
       symbol: 'EOS',
       decimals: 18,
     },

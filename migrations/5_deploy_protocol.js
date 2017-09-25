@@ -32,7 +32,7 @@ module.exports = function(deployer, network, accounts) {
         RinghashRegistry.address,
         TokenTransferDelegate.address,
         5,
-        2);
+        100);
     });
 
   }
