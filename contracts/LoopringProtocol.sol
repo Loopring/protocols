@@ -40,6 +40,7 @@ contract LoopringProtocol {
     /// @param tokenB       Token to buy.
     /// @param amountS      Maximum amount of tokenS to sell.
     /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
+    /// @param timestamp    Indicating whtn this order is created/signed.
     /// @param expiration   Indicating when this order will expire.
     /// @param salt         A random number to make this order's hash unique.
     /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
@@ -57,6 +58,7 @@ contract LoopringProtocol {
         address tokenB;
         uint    amountS;
         uint    amountB;
+        uint    timestamp;
         uint    expiration;
         uint    salt;
         uint    lrcFee;
@@ -76,10 +78,11 @@ contract LoopringProtocol {
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS,AmountB,rateAmountS,expiration,salt,lrcFee.
+    ///                     amountS, AmountB, rateAmountS, timestamp, expiration,
+    ///                     salt, and lrcFee.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
-    ///                     savingSharePercentageList,feeSelectionList.
+    ///                     savingSharePercentageList, feeSelectionList.
     /// @param vList        List of v for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     v value of the ring signature.
@@ -101,7 +104,7 @@ contract LoopringProtocol {
     ///                     minor will give up collection the LRC fee.
     function submitRing(
         address[]   tokenSList,
-        uint[6][]   uintArgsList,
+        uint[7][]   uintArgsList,
         uint8[2][]  uint8ArgsList,
         bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
@@ -111,9 +114,11 @@ contract LoopringProtocol {
         bool        throwIfLRCIsInsuffcient
         ) public;
 
-    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified in orderValues.
+    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
+    ///      in orderValues.
     /// @param tokenAddresses     tokenS,tokenB
-    /// @param orderValues        amountS,amountB,expiration,salt,lrcFee,cancelAmountS,cancelAmountB
+    /// @param orderValues        amountS, amountB, timestamp, expiration, salt,
+    ///                           lrcFee, cancelAmountS, and cancelAmountB.
     /// @param savingSharePercentage -
     /// @param buyNoMoreThanAmountB -
     /// @param v                  Order ECDSA signature parameter v.
@@ -128,4 +133,11 @@ contract LoopringProtocol {
         bytes32    r,
         bytes32    s
         ) public;
+
+    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
+    ///        is smaller than or equal to the new value of the address's cutoff
+    ///        timestamp.
+    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
+    ///        if it is 0.
+    function setCutoff(uint cutoff) public;
 }

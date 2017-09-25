@@ -66,6 +66,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     mapping (bytes32 => uint) public filled;
     mapping (bytes32 => uint) public cancelled;
 
+    // A map from address to its cutoff timestamp.
+    mapping (address => uint) public cutoffs;
+
 
     ////////////////////////////////////////////////////////////////////////////
     /// Structs                                                              ///
@@ -143,6 +146,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32     indexed _orderHash,
         uint                _amountCancelled);
 
+    event CutoffTimestampChanged(
+        uint                _time,
+        uint                _blocknumber,
+        address     indexed _address,
+        uint                _cutoff);
+
+
     ////////////////////////////////////////////////////////////////////////////
     /// Constructor                                                          ///
     ////////////////////////////////////////////////////////////////////////////
@@ -172,6 +182,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         rateRatioCVSThreshold       = _rateRatioCVSThreshold;
     }
 
+
     ////////////////////////////////////////////////////////////////////////////
     /// Public Functions                                                     ///
     ////////////////////////////////////////////////////////////////////////////
@@ -185,7 +196,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS,AmountB,expiration,salt,lrcFee,rateAmountS.
+    ///                     amountS,AmountB,timestamp,expiration,salt,lrcFee,
+    ///                     rateAmountS.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     savingSharePercentageList,feeSelectionList.
@@ -210,7 +222,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     minor will give up collection the LRC fee.
     function submitRing(
         address[]   tokenSList,
-        uint[6][]   uintArgsList,
+        uint[7][]   uintArgsList,
         uint8[2][]  uint8ArgsList,
         bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
@@ -282,8 +294,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be
     ///                           specified using orderValues.
     /// @param tokenAddresses     tokenS,tokenB
-    /// @param orderValues        amountS, amountB, expiration, salt, lrcFee,
-    ///                           and cancelAmount
+    /// @param orderValues        amountS, amountB, timestamp, expiration, salt,
+    ///                           lrcFee, and cancelAmount
     /// @param buyNoMoreThanAmountB -
     ///                           If true, this order does not accept buying
     ///                           more than `amountB`.
@@ -303,7 +315,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public {
 
-        uint cancelAmount = orderValues[5];
+        uint cancelAmount = orderValues[6];
         (cancelAmount > 0).orThrow("amount to cancel is zero");
 
         var order = Order(
@@ -314,6 +326,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderValues[2],
             orderValues[3],
             orderValues[4],
+            orderValues[5],
             buyNoMoreThanAmountB,
             savingSharePercentage,
             v,
@@ -332,10 +345,31 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
+
+    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
+    ///        is smaller than or equal to the new value of the address's cutoff
+    ///        timestamp.
+    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
+    ///        if it is 0.
+    function setCutoff(uint cutoff) public {
+        uint t = cutoff;
+        if (t == 0) {
+            t = block.timestamp;
+        }
+        cutoffs[msg.sender] = t;
+
+        CutoffTimestampChanged(
+            block.timestamp,
+            block.number,
+            msg.sender,
+            t
+        );
+    }
+
+
     ////////////////////////////////////////////////////////////////////////////
     /// Internal & Private Functions                                         ///
     ////////////////////////////////////////////////////////////////////////////
-
 
     /// @dev Validate a ring.
     function verifyRingHasNoSubRing(Ring ring)
@@ -696,7 +730,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function verifyInputDataIntegrity(
         uint ringSize,
         address[]   tokenSList,
-        uint[6][]   uintArgsList,
+        uint[7][]   uintArgsList,
         uint8[2][]  uint8ArgsList,
         bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
@@ -733,7 +767,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function assembleOrders(
         uint        ringSize,
         address[]   tokenSList,
-        uint[6][]   uintArgsList,
+        uint[7][]   uintArgsList,
         uint8[2][]  uint8ArgsList,
         bool[]      buyNoMoreThanAmountBList,
         uint8[]     vList,
@@ -757,13 +791,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uintArgsList[i][2],
                 uintArgsList[i][3],
                 uintArgsList[i][4],
+                uintArgsList[i][5],
                 buyNoMoreThanAmountBList[i],
                 uint8ArgsList[i][0],
                 vList[i],
                 rList[i],
                 sList[i]);
-
-            validateOrder(order);
 
             bytes32 orderHash = calculateOrderHash(order);
 
@@ -773,12 +806,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order.r,
                 order.s);
 
+            validateOrder(orderOwner, order);
+
             orders[i] = OrderState(
                 order,
                 orderHash,
                 orderOwner,
                 uint8ArgsList[i][1],  // feeSelection
-                uintArgsList[i][5],   // rateAmountS
+                uintArgsList[i][6],   // rateAmountS
                 getSpendable(order.tokenS, orderOwner),
                 0,   // fillAmountS
                 0,   // lrcReward
@@ -795,7 +830,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev validate order's parameters are OK.
-    function validateOrder(Order order) internal constant {
+    function validateOrder(
+        address owner,
+        Order   order
+        )
+        internal
+        constant {
         (order.tokenS != address(0))
             .orThrow("invalid order tokenS");
         (order.tokenB != address(0))
@@ -804,7 +844,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             .orThrow("invalid order amountS");
         (order.amountB > 0)
             .orThrow("invalid order amountB");
-        (order.expiration >= block.timestamp)
+        (order.timestamp > cutoffs[owner])
+            .orThrow("order is cut off");
+        (order.expiration >= order.timestamp
+            && order.expiration >= block.timestamp)
             .orThrow("invalid order expiration");
         (order.salt > 0)
             .orThrow("invalid order salt");
@@ -824,6 +867,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.tokenB,
             order.amountS,
             order.amountB,
+            order.timestamp,
             order.expiration,
             order.salt,
             order.lrcFee,
