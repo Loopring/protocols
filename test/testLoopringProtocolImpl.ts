@@ -2,21 +2,31 @@ import * as BigNumber from 'bignumber.js';
 import { Artifacts } from '../util/artifacts';
 import { OrderParams } from '../util/types';
 import { Order } from '../util/order';
+import { Ring } from '../util/ring';
 
 const {
   LoopringProtocolImpl,
   TokenRegistry,
+  TokenTransferDelegate,
   DummyToken,
 } = new Artifacts(artifacts);
 
 contract('LoopringProtocolImpl', (accounts: string[])=>{
 
   const owner = accounts[0];
+  const order1Owner = accounts[1];
+  const order2Owner = accounts[2];
+  const ringOwner = accounts[3];
   let loopringProtocolImpl: any;
   let tokenRegistry: any;
   let order1: Order;
   let order2: Order;
+  let ring: Ring;
   let lrcAddress: string;
+
+  let lrc: any;
+  let eos: any;
+  let neo: any;
 
   before( async () => {
     [loopringProtocolImpl, tokenRegistry] = await Promise.all([
@@ -31,20 +41,34 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     const eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
     const neoAddress = await tokenRegistry.getAddressBySymbol("NEO");
 
+    var delegateAddr = TokenTransferDelegate.address;
+
+    [lrc, eos, neo] = await Promise.all([
+      DummyToken.at(lrcAddress),
+      DummyToken.at(eosAddress),
+      DummyToken.at(neoAddress),
+    ]);
+
+    await lrc.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
+    await eos.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
+    await neo.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
+
+    await lrc.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
+    await eos.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
+    await neo.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
+
     const orderPrams1 = {
       loopringProtocol: LoopringProtocolImpl.address,
       tokenS: eosAddress,
       tokenB: neoAddress,
       amountS: new BigNumber(1000),
       amountB: new BigNumber(100),
+      timestamp: currBlockTimeStamp,
       expiration: currBlockTimeStamp + 360000,
       rand: 1234,
       lrcFee: new BigNumber(10),
       buyNoMoreThanAmountB: false,
       savingSharePercentage: 0,
-      v: 0,
-      r: "",
-      s: "",
     };
 
     const orderPrams2 = {
@@ -53,22 +77,25 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       tokenB: eosAddress,
       amountS: new BigNumber(100),
       amountB: new BigNumber(1000),
+      timestamp: currBlockTimeStamp,
       expiration: currBlockTimeStamp + 360000,
       rand: 4321,
       lrcFee: new BigNumber(10),
       buyNoMoreThanAmountB: false,
       savingSharePercentage: 0,
-      v: 0,
-      r: "",
-      s: "",
     };
 
-    order1 = new Order(owner, orderPrams1);
-    order2 = new Order(owner, orderPrams2);
+    order1 = new Order(order1Owner, orderPrams1);
+    order2 = new Order(order2Owner, orderPrams2);
 
     await order1.signAsync();
     await order2.signAsync();
 
+    ring = new Ring(ringOwner, [order1, order2]);
+    // console.log("order 1:", order1);
+    // console.log("order 2:", order2);
+
+    await ring.signAsync();
   });
 
   describe('submitRing', () => {
@@ -80,6 +107,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const uintArgsList = [
         [order1.params.amountS,
          order1.params.amountB,
+         order1.params.timestamp,
          order1.params.expiration,
          order1.params.rand,
          order1.params.lrcFee,
@@ -87,6 +115,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
         ],
         [order2.params.amountS,
          order2.params.amountB,
+         order2.params.timestamp,
          order2.params.expiration,
          order2.params.rand,
          order2.params.lrcFee,
@@ -95,32 +124,30 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       ];
 
       const uint8ArgsList = [
-        [order1.params.savingSharePercentage,
-         0
-        ],
-        [order2.params.savingSharePercentage,
-         0
-        ]
+        [0, 0],
+        [0, 0],
       ];
 
       const buyNoMoreThanAmountBList = [true, true];
-      const vList = [order1.params.v, order2.params.v];
-      const sList = [order1.params.s, order2.params.s];
-      const rList = [order1.params.r, order2.params.r];
+      const vList = [order1.params.v, order2.params.v, ring.v];
+      const sList = [order1.params.s, order2.params.s, ring.s];
+      const rList = [order1.params.r, order2.params.r, ring.r];
 
       const feeRecepient = accounts[1];
       const throwIfLRCIsInsuffcient = true;
 
-      await loopringProtocolImpl.submitRing(tokenSList,
-                                            uintArgsList,
-                                            uint8ArgsList,
-                                            buyNoMoreThanAmountBList,
-                                            vList,
-                                            sList,
-                                            rList,
-                                            feeRecepient,
-                                            throwIfLRCIsInsuffcient
-                                           );
+      const tx =  await loopringProtocolImpl.submitRing(tokenSList,
+                                                        uintArgsList,
+                                                        uint8ArgsList,
+                                                        buyNoMoreThanAmountBList,
+                                                        vList,
+                                                        sList,
+                                                        rList,
+                                                        feeRecepient,
+                                                        throwIfLRCIsInsuffcient
+                                                       );
+
+      console.log("tx:", tx);
 
     });
 

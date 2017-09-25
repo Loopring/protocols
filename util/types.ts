@@ -6,6 +6,7 @@ export interface OrderParams {
   tokenB: string;
   amountS: BigNumber.BigNumber;
   amountB: BigNumber.BigNumber;
+  timestamp: number;
   expiration: number;
   rand: number;
   lrcFee: BigNumber.BigNumber;

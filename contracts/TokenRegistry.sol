@@ -33,6 +33,7 @@ contract TokenRegistry is Ownable {
         onlyOwner {
         require(_token != address(0));
         require(!isTokenRegisteredBySymbol(_symbol));
+        require(!isTokenRegistered(_token));
         tokens.push(_token);
         tokenSymbolMap[_symbol] = _token;
     }
@@ -45,7 +46,8 @@ contract TokenRegistry is Ownable {
         for (uint i = 0; i < tokens.length; i++) {
             if (tokens[i] == _token) {
                 tokens[i] == tokens[tokens.length - 1];
-                tokens.length -= 1;
+                tokens.length --;
+                break;
             }
         }
     }
@@ -76,4 +78,5 @@ contract TokenRegistry is Ownable {
         returns (address) {
         return tokenSymbolMap[symbol];
     }
+
 }

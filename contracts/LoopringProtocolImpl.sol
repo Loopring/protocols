@@ -49,14 +49,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
     uint    public  ringIndex                   = 0;
 
     // Exchange rate (rate) is the amount to sell or sold divided by the amount
-    // to buy or bought. 
+    // to buy or bought.
     //
     // Rate ratio is the ratio between executed rate and an order's original
     // rate.
     //
     // To require all orders' rate ratios to have coefficient ofvariation (CV)
     // smaller than 2.5%, for an example , rateRatioCVSThreshold should be:
-    //     `(0.025 * RATE_RATIO_SCALE)^2` or 62500. 
+    //     `(0.025 * RATE_RATIO_SCALE)^2` or 62500.
     uint    public  rateRatioCVSThreshold       = 0;
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
@@ -132,9 +132,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint                _ringIndex,
         uint                _time,
         uint                _blocknumber,
-        bytes32     indexed _prevOrderHash,
+        bytes32     indexed _ringhash,
+        bytes32             _prevOrderHash,
         bytes32     indexed _orderHash,
-        bytes32     indexed _nextOrderHash,
+        bytes32              _nextOrderHash,
         uint                _amountS,
         uint                _amountB,
         uint                _lrcReward,
@@ -250,7 +251,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(tokenSList);
 
-        
+
         var ringhashRegistry = RinghashRegistry(ringhashRegistryAddress);
 
         bytes32 ringhash = ringhashRegistry.calculateRinghash(
@@ -502,6 +503,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 ringIndex,
                 block.timestamp,
                 block.number,
+                ring.ringhash,
                 prev.orderHash,
                 state.orderHash,
                 next.orderHash,

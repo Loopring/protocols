@@ -18,7 +18,7 @@ export const crypto = {
     _.each(args, (arg, i) => {
       const isNumber = _.isFinite(arg);
       if (isNumber) {
-        argTypes.push('uint8');
+        argTypes.push('uint32');
       } else if ((arg as BigNumber.BigNumber).isBigNumber) {
         argTypes.push('uint256');
         args[i] = new BN(arg.toString(10), 10);

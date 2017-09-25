@@ -31,7 +31,7 @@ contract TokenTransferDelegate is Ownable {
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
-    
+
     uint lastVersion = 0;
     address[] public versions;
     mapping (address => uint) public versioned;
@@ -103,10 +103,10 @@ contract TokenTransferDelegate is Ownable {
 
     /// @return Amount of ERC20 token that can be spent by this contract.
     /// @param tokenAddress Address of token to transfer.
-    /// @param owner Address of the token owner.
+    /// @param _owner Address of the token owner.
     function getSpendable(
         address tokenAddress,
-        address owner
+        address _owner
         )
         isVersioned(msg.sender)
         constant
@@ -114,8 +114,8 @@ contract TokenTransferDelegate is Ownable {
 
         var token = ERC20(tokenAddress);
         return token
-            .allowance(owner, address(this))
-            .min256(token.balanceOf(owner));
+            .allowance(_owner, address(this))
+            .min256(token.balanceOf(_owner));
     }
 
 
