@@ -26,10 +26,10 @@ contract LoopringProtocol {
     /// Constants                                                            ///
     ////////////////////////////////////////////////////////////////////////////
     uint    public constant FEE_SELECT_LRC               = 0;
-    uint    public constant FEE_SELECT_SAVING_SHARE      = 1;
+    uint    public constant FEE_SELECT_MARGIN_SPLIT      = 1;
     uint    public constant FEE_SELECT_MAX_VALUE         = 1;
     
-    uint    public constant SAVING_SHARE_PERCENTAGE_BASE = 10000;
+    uint    public constant MARGIN_SPLIT_PERCENTAGE_BASE = 10000;
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -41,15 +41,16 @@ contract LoopringProtocol {
     /// @param amountS      Maximum amount of tokenS to sell.
     /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
     /// @param timestamp    Indicating whtn this order is created/signed.
-    /// @param expiration   Indicating when this order will expire.
+    /// @param ttl          Indicating after how many seconds from `timestamp`
+    ///                     this order will expire.
     /// @param salt         A random number to make this order's hash unique.
     /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
     ///                     to pay is proportional to fill amount.
     /// @param buyNoMoreThanAmountB -
     ///                     If true, this order does not accept buying more
     ///                     than `amountB`.
-    /// @param savingSharePercentage -
-    ///                     The percentage of savings paid to miner.
+    /// @param marginSplitPercentage -
+    ///                     The percentage of margin paid to miner.
     /// @param v            ECDSA signature parameter v.
     /// @param r            ECDSA signature parameters r.
     /// @param s            ECDSA signature parameters s.
@@ -59,11 +60,11 @@ contract LoopringProtocol {
         uint    amountS;
         uint    amountB;
         uint    timestamp;
-        uint    expiration;
+        uint    ttl;
         uint    salt;
         uint    lrcFee;
         bool    buyNoMoreThanAmountB;
-        uint8   savingSharePercentage;
+        uint8   marginSplitPercentage;
         uint8   v;
         bytes32 r;
         bytes32 s;
@@ -78,11 +79,11 @@ contract LoopringProtocol {
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS, AmountB, rateAmountS, timestamp, expiration,
-    ///                     salt, and lrcFee.
+    ///                     amountS, AmountB, rateAmountS, timestamp, ttl, salt,
+    ///                     and lrcFee.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
-    ///                     savingSharePercentageList, feeSelectionList.
+    ///                     marginSplitPercentageList, feeSelectionList.
     /// @param vList        List of v for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     v value of the ring signature.
@@ -117,9 +118,9 @@ contract LoopringProtocol {
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in orderValues.
     /// @param tokenAddresses     tokenS,tokenB
-    /// @param orderValues        amountS, amountB, timestamp, expiration, salt,
-    ///                           lrcFee, cancelAmountS, and cancelAmountB.
-    /// @param savingSharePercentage -
+    /// @param orderValues        amountS, amountB, timestamp, ttl, salt, lrcFee,
+    ///                           cancelAmountS, and cancelAmountB.
+    /// @param marginSplitPercentage -
     /// @param buyNoMoreThanAmountB -
     /// @param v                  Order ECDSA signature parameter v.
     /// @param r                  Order ECDSA signature parameters r.
@@ -128,7 +129,7 @@ contract LoopringProtocol {
         address[2] tokenAddresses,
         uint[7]    orderValues,
         bool       buyNoMoreThanAmountB,
-        uint8      savingSharePercentage,
+        uint8      marginSplitPercentage,
         uint8      v,
         bytes32    r,
         bytes32    s

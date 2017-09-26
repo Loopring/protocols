@@ -78,7 +78,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param owner        This order owner's address. This value is calculated.
     /// @param feeSelection -
     ///                     A miner-supplied value indicating if LRC (value = 0)
-    ///                     or saving share is choosen by the miner (value = 1).
+    ///                     or margin split is choosen by the miner (value = 1).
     ///                     We may support more fee model in the future.
     /// @param fillAmountS  Amount of tokenS to sell, calculated by protocol.
     /// @param rateAmountS  This value is initially provided by miner and is
@@ -88,10 +88,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     This value and `rateAmountB` can be used to calculate
     ///                     the proposed exchange rate calculated by miner.
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
-    ///                     exchange for sharing-share.
+    ///                     exchange for margin split.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
-    /// @param savingS      TokenS paid to miner.
-    /// @param savingB      TokenB paid to miner.
+    /// @param splitS      TokenS paid to miner.
+    /// @param splitB      TokenB paid to miner.
     struct OrderState {
         Order   order;
         bytes32 orderHash;
@@ -102,8 +102,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    fillAmountS;
         uint    lrcReward;
         uint    lrcFee;
-        uint    savingS;
-        uint    savingB;
+        uint    splitS;
+        uint    splitB;
     }
 
     struct Ring {
@@ -197,11 +197,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param tokenSList   List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS,AmountB,timestamp,expiration,salt,lrcFee,
+    ///                     amountS, amountB, timestamp, ttl, salt, lrcFee,
     ///                     rateAmountS.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
-    ///                     savingSharePercentageList,feeSelectionList.
+    ///                     marginSplitPercentageList,feeSelectionList.
     /// @param vList        List of v for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     v value of the ring signature.
@@ -288,19 +288,25 @@ contract LoopringProtocolImpl is LoopringProtocol {
             feeRecepient = minerAddress;
         }
 
-        handleRing(ringhash, orders, minerAddress, feeRecepient, throwIfLRCIsInsuffcient);
+        handleRing(
+            ringhash, 
+            orders,
+            minerAddress, 
+            feeRecepient, 
+            throwIfLRCIsInsuffcient
+        );
     }
 
     /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be
     ///                           specified using orderValues.
     /// @param tokenAddresses     tokenS,tokenB
-    /// @param orderValues        amountS, amountB, timestamp, expiration, salt,
+    /// @param orderValues        amountS, amountB, timestamp, ttl, salt,
     ///                           lrcFee, and cancelAmount
     /// @param buyNoMoreThanAmountB -
     ///                           If true, this order does not accept buying
     ///                           more than `amountB`.
-    /// @param savingSharePercentage -
-    ///                           The percentage of savings paid to miner.
+    /// @param marginSplitPercentage -
+    ///                           The percentage of margin paid to miner.
     /// @param v                  Order ECDSA signature parameter v.
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
@@ -308,7 +314,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address[2] tokenAddresses,
         uint[7]    orderValues,
         bool       buyNoMoreThanAmountB,
-        uint8      savingSharePercentage,
+        uint8      marginSplitPercentage,
         uint8      v,
         bytes32    r,
         bytes32    s
@@ -328,7 +334,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderValues[4],
             orderValues[5],
             buyNoMoreThanAmountB,
-            savingSharePercentage,
+            marginSplitPercentage,
             v,
             r,
             s
@@ -356,6 +362,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         if (t == 0) {
             t = block.timestamp;
         }
+
+        (cutoffs[msg.sender] < t)
+            .orThrow("attempted to set cutoff to a smaller value");
+
         cutoffs[msg.sender] = t;
 
         CutoffTimestampChanged(
@@ -430,8 +440,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         calculateRingFillAmount(ring);
 
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
-        // of `fillAmountS` shall be paid to matching order or miner as saving-
-        // share.
+        // of `fillAmountS` shall be paid to matching order or miner as margin
+        // split.
         calculateRingFees(ring);
 
         /// Make payments.
@@ -458,20 +468,20 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var next = ring.orders[i.next(ringSize)];
 
             // Pay tokenS to previous order, or to miner as previous order's
-            // saving share or/and this order's saving share.
+            // margin split or/and this order's margin split.
 
             delegate.transferToken(
                 state.order.tokenS,
                 state.owner,
                 prev.owner,
-                state.fillAmountS - prev.savingB);
+                state.fillAmountS - prev.splitB);
 
-            if (prev.savingB + state.savingS > 0) {
+            if (prev.splitB + state.splitS > 0) {
                 delegate.transferToken(
                     state.order.tokenS,
                     state.owner,
                     ring.feeRecepient,
-                    prev.savingB + state.savingS);
+                    prev.splitB + state.splitS);
             }
 
             // Pay LRC
@@ -506,8 +516,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 prev.orderHash,
                 state.orderHash,
                 next.orderHash,
-                state.fillAmountS + state.savingS,
-                next.fillAmountS - state.savingB,
+                state.fillAmountS + state.splitS,
+                next.fillAmountS - state.splitB,
                 state.lrcReward,
                 state.lrcFee
                 );
@@ -558,39 +568,39 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     minerLrcSpendable += lrcSpendable;
                 }
 
-            } else if (state.feeSelection == FEE_SELECT_SAVING_SHARE) {
+            } else if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
                 if (minerLrcSpendable >= state.lrcFee) {
                     if (state.order.buyNoMoreThanAmountB) {
-                        uint savingS = next.fillAmountS
+                        uint splitS = next.fillAmountS
                             .mul(state.order.amountS)
                             .div(state.order.amountB)
                             .sub(state.fillAmountS);
 
-                        state.savingS = savingS
-                            .mul(state.order.savingSharePercentage)
-                            .div(SAVING_SHARE_PERCENTAGE_BASE);
+                        state.splitS = splitS
+                            .mul(state.order.marginSplitPercentage)
+                            .div(MARGIN_SPLIT_PERCENTAGE_BASE);
                     } else {
-                        uint savingB = next.fillAmountS.sub(
+                        uint splitB = next.fillAmountS.sub(
                             state.fillAmountS
                                 .mul(state.order.amountB)
                                 .div(state.order.amountS));
 
-                        state.savingB = savingB
-                            .mul(state.order.savingSharePercentage)
-                            .div(SAVING_SHARE_PERCENTAGE_BASE);
+                        state.splitB = splitB
+                            .mul(state.order.marginSplitPercentage)
+                            .div(MARGIN_SPLIT_PERCENTAGE_BASE);
                     }
 
                     // This implicits order with smaller index in the ring will
                     // be paid LRC reward first, so the orders in the ring does
                     // mater.
-                    if (state.savingS > 0 || state.savingB > 0) {
+                    if (state.splitS > 0 || state.splitB > 0) {
                         minerLrcSpendable = minerLrcSpendable.sub(state.lrcFee);
                         state.lrcReward = state.lrcFee;
                     }
                     state.lrcFee = 0;
                 }
             } else {
-                ErrorLib.error("unsupported feeSelection value");
+                ErrorLib.error("unsupported fee selection value");
             }
         }
 
@@ -819,8 +829,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
-                0,   // savingS
-                0    // savingB
+                0,   // splitS
+                0    // splitB
                 );
 
             /* (orders[i].availableAmountS > 0) */
@@ -847,13 +857,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
             .orThrow("invalid order amountB");
         (order.timestamp > cutoffs[owner])
             .orThrow("order is cut off");
-        (order.expiration >= order.timestamp
-            && order.expiration >= block.timestamp)
-            .orThrow("invalid order expiration");
+        (order.ttl > 0)
+            .orThrow("order ttl is 0");
+        (order.timestamp + order.ttl > block.timestamp)
+            .orThrow("order is expired");
         (order.salt > 0)
             .orThrow("invalid order salt");
-        (order.savingSharePercentage <= SAVING_SHARE_PERCENTAGE_BASE)
-            .orThrow("invalid order savingSharePercentage");
+        (order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE)
+            .orThrow("invalid order marginSplitPercentage");
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
@@ -869,11 +880,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.amountS,
             order.amountB,
             order.timestamp,
-            order.expiration,
+            order.ttl,
             order.salt,
             order.lrcFee,
             order.buyNoMoreThanAmountB,
-            order.savingSharePercentage);
+            order.marginSplitPercentage);
     }
 
     /// @return The signer's address.

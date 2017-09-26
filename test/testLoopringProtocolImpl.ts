@@ -72,7 +72,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       rand: 1234,
       lrcFee: new BigNumber(10),
       buyNoMoreThanAmountB: false,
-      savingSharePercentage: 0,
+      marginSplitPercentage: 0,
     };
 
     const orderPrams2 = {
@@ -86,7 +86,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       rand: 4321,
       lrcFee: new BigNumber(10),
       buyNoMoreThanAmountB: false,
-      savingSharePercentage: 0,
+      marginSplitPercentage: 0,
     };
 
     order1 = new Order(order1Owner, orderPrams1);
