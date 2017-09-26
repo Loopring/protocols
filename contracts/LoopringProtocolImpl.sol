@@ -288,7 +288,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             feeRecepient = minerAddress;
         }
 
-
         handleRing(ringhash, orders, minerAddress, feeRecepient, throwIfLRCIsInsuffcient);
     }
 
@@ -824,8 +823,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0    // savingB
                 );
 
-            (orders[i].availableAmountS > 0)
-                .orThrow("order balance is zero");
+            /* (orders[i].availableAmountS > 0) */
+            /*     .orThrow("order balance is zero"); */
         }
 
         return orders;

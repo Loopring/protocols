@@ -19,6 +19,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   const ringOwner = accounts[3];
   let loopringProtocolImpl: any;
   let tokenRegistry: any;
+  let tokenTransferDelegate: any;
   let order1: Order;
   let order2: Order;
   let ring: Ring;
@@ -29,9 +30,10 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   let neo: any;
 
   before( async () => {
-    [loopringProtocolImpl, tokenRegistry] = await Promise.all([
+    [loopringProtocolImpl, tokenRegistry, tokenTransferDelegate] = await Promise.all([
       LoopringProtocolImpl.deployed(),
       TokenRegistry.deployed(),
+      TokenTransferDelegate.deployed(),
     ]);
 
     const currBlockNumber = web3.eth.blockNumber;
@@ -40,6 +42,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
     const eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
     const neoAddress = await tokenRegistry.getAddressBySymbol("NEO");
+
+    tokenTransferDelegate.addVersion(LoopringProtocolImpl.address);
 
     var delegateAddr = TokenTransferDelegate.address;
 
