@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.15;
 
 /// @title Token Register Contract
 /// @author Daniel Wang - <daniel@loopring.org>.

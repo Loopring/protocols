@@ -235,7 +235,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public {
 
-        (!entered).orThrow("attepted to re-enter submitRing function");
+        (!entered).orThrow("attepted to re-ent submitRing function");
         entered = true;
 
         //Check ring size
@@ -260,8 +260,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         bytes32 ringhash = ringhashRegistry.calculateRinghash(
             ringSize,
-            feeRecepient,
-            throwIfLRCIsInsuffcient,
+            // feeRecepient,
+            // throwIfLRCIsInsuffcient,
             vList,
             rList,
             sList

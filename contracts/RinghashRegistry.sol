@@ -46,15 +46,15 @@ contract RinghashRegistry {
     function submitRinghash(
         uint        ringSize,
         address     feeRecepient,
-        bool        throwIfLRCIsInsuffcient,
+        // bool        throwIfLRCIsInsuffcient,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList)
         public {
         bytes32 ringhash = calculateRinghash(
             ringSize,
-            feeRecepient,
-            throwIfLRCIsInsuffcient,
+            // feeRecepient,
+            // throwIfLRCIsInsuffcient,
             vList,
             rList,
             sList);
@@ -91,8 +91,8 @@ contract RinghashRegistry {
     /// @dev Calculate the hash of a ring.
     function calculateRinghash(
         uint        ringSize,
-        address     feeRecepient,
-        bool        throwIfLRCIsInsuffcient,
+        // address     feeRecepient,
+        // bool        throwIfLRCIsInsuffcient,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList
