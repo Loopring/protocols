@@ -2,7 +2,6 @@ var tokenInfo               = require('./config/tokens.js');
 var Bluebird                = require('bluebird');
 var _                       = require('lodash');
 var DummyToken              = artifacts.require("./test/DummyToken");
-var TestLrcToken            = artifacts.require("./test/TestLrcToken");
 var TokenRegistry           = artifacts.require("./TokenRegistry");
 
 module.exports = function(deployer, network, accounts) {
