@@ -895,7 +895,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @return The signer's address.
     function verifySignature(
-        address ringminer,
+        address signer,
         bytes32 hash,
         uint8   v,
         bytes32 r,
@@ -909,7 +909,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             v,
             r,
             s);
-        (ringminer == addr).orThrow("invalid signature");
+        (signer == addr).orThrow("invalid signature");
     }
 
     function getOrderFilled(bytes32 orderHash)
