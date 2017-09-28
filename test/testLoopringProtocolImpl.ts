@@ -29,6 +29,12 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   let eos: any;
   let neo: any;
 
+  const getTokenBalanceAsync = async (token: any, addr: string) => {
+    const tokenBalanceStr = await token.balanceOf(addr);
+    const balance = new BigNumber(tokenBalanceStr);
+    return balance;
+  }
+
   before( async () => {
     [loopringProtocolImpl, tokenRegistry, tokenTransferDelegate] = await Promise.all([
       LoopringProtocolImpl.deployed(),
@@ -53,6 +59,9 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       DummyToken.at(neoAddress),
     ]);
 
+    await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
+    await neo.setBalance(order2Owner, web3.toWei(1000), {from: owner});
+
     await lrc.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
     await eos.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
     await neo.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
@@ -61,16 +70,22 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     await eos.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
     await neo.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
 
+    const lrcBalance1 = await getTokenBalanceAsync(lrc, order1Owner);
+    const eosBalance1 = await getTokenBalanceAsync(eos, order1Owner);
+    const neoBalance1 = await getTokenBalanceAsync(neo, order1Owner);
+
+    //console.log(lrcBalance1, eosBalance1, neoBalance1);
+
     const orderPrams1 = {
       loopringProtocol: LoopringProtocolImpl.address,
       tokenS: eosAddress,
       tokenB: neoAddress,
-      amountS: new BigNumber(1000),
-      amountB: new BigNumber(100),
+      amountS: new BigNumber(1000e18),
+      amountB: new BigNumber(100e18),
       timestamp: currBlockTimeStamp,
       expiration: currBlockTimeStamp + 360000,
       rand: 1234,
-      lrcFee: new BigNumber(10),
+      lrcFee: new BigNumber(10e18),
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
     };
@@ -79,12 +94,12 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       loopringProtocol: LoopringProtocolImpl.address,
       tokenS: neoAddress,
       tokenB: eosAddress,
-      amountS: new BigNumber(100),
-      amountB: new BigNumber(1000),
+      amountS: new BigNumber(100e18),
+      amountB: new BigNumber(1000e18),
       timestamp: currBlockTimeStamp,
       expiration: currBlockTimeStamp + 360000,
       rand: 4321,
-      lrcFee: new BigNumber(10),
+      lrcFee: new BigNumber(10e18),
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
     };
@@ -151,7 +166,14 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                         throwIfLRCIsInsuffcient
                                                        );
 
-      console.log("tx:", tx);
+      //console.log("tx:", tx);
+
+      const lrcBalance1 = await getTokenBalanceAsync(lrc, order1Owner);
+      const eosBalance1 = await getTokenBalanceAsync(eos, order1Owner);
+      const neoBalance1 = await getTokenBalanceAsync(neo, order1Owner);
+
+      //console.log(lrcBalance1, eosBalance1, neoBalance1);
+
 
     });
 

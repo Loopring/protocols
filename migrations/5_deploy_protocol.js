@@ -9,7 +9,27 @@ var LoopringProtocolImpl    = artifacts.require("./LoopringProtocolImpl");
 module.exports = function(deployer, network, accounts) {
 
   if (network == 'live') {
-
+    deployer.then(() => {
+      return Promise.all([
+        ErrorLib.deployed(),
+        UintLib.deployed(),
+        TokenRegistry.deployed(),
+        RinghashRegistry.deployed(),
+        TokenTransferDelegate.deployed(),
+      ]);
+    }).then((contracts) => {
+      var lrcAddr = "0xEF68e7C694F40c8202821eDF525dE3782458639f";
+      deployer.link(ErrorLib, LoopringProtocolImpl);
+      deployer.link(UintLib, LoopringProtocolImpl);
+      return deployer.deploy(
+        LoopringProtocolImpl,
+        lrcAddr,
+        TokenRegistry.address,
+        RinghashRegistry.address,
+        TokenTransferDelegate.address,
+        5,
+        100);
+    });
   } else {
     deployer.then(() => {
       return Promise.all([

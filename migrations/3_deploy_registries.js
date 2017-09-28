@@ -6,9 +6,6 @@ var RinghashRegistry        = artifacts.require("./RinghashRegistry");
 var TokenTransferDelegate   = artifacts.require("./TokenTransferDelegate");
 
 module.exports = function(deployer, network, accounts) {
-  if (network == 'live') {
-
-  } else {
     deployer.then(() => {
       return Promise.all([
         Bytes32Lib.deployed(),
@@ -18,13 +15,11 @@ module.exports = function(deployer, network, accounts) {
     }).then(() => {
       deployer.deploy(TokenRegistry);
     }).then(() => {
-      deployer.deploy(Bytes32Lib);
       deployer.link(Bytes32Lib, RinghashRegistry);
       deployer.link(ErrorLib, RinghashRegistry);
       deployer.link(Uint8Lib, RinghashRegistry);
-      return deployer.deploy(RinghashRegistry, 10000);
+      return deployer.deploy(RinghashRegistry, 500000);
     }).then(() => {
       return deployer.deploy(TokenTransferDelegate);
     });
-  }
 };

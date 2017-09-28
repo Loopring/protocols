@@ -56,7 +56,7 @@ export class Order {
       this.params.rand,
       this.params.lrcFee,
       this.params.buyNoMoreThanAmountB,
-      this.params.savingSharePercentage,
+      this.params.marginSplitPercentage,
     ]);
     return orderHash;
   }

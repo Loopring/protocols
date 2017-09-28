@@ -11,7 +11,7 @@ export interface OrderParams {
   rand: number;
   lrcFee: BigNumber.BigNumber;
   buyNoMoreThanAmountB: boolean;
-  savingSharePercentage: number;
+  marginSplitPercentage: number;
   orderHashHex?: string;
   v?: number;
   r?: string;
