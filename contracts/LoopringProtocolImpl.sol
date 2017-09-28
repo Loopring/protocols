@@ -76,7 +76,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
 
     /// @param order        The original order
-    /// @param owner        This order owner's address. This value is calculated.
     /// @param feeSelection -
     ///                     A miner-supplied value indicating if LRC (value = 0)
     ///                     or margin split is choosen by the miner (value = 1).
@@ -96,7 +95,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     struct OrderState {
         Order   order;
         bytes32 orderHash;
-        address owner;
         uint8   feeSelection;
         uint    rateAmountS;
         uint    availableAmountS;
@@ -195,7 +193,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev Submit a order-ring for validation and settlement.
-    /// @param tokenSList   List of each order's tokenS. Note that next order's
+    /// @param addressList  List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
     ///                     amountS, amountB, timestamp, ttl, salt, lrcFee,
@@ -212,6 +210,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param sList        List of s for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
+    /// @param ringminer    The address that signed this tx.
     /// @param feeRecepient The recepient address for fee collection. If this is
     ///                     '0x0', all fees will be paid to the address who had
     ///                     signed this transaction, not `msg.sender`. Noted if
@@ -223,15 +222,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     LRC amount is smaller than requried; if false, ring-
     ///                     minor will give up collection the LRC fee.
     function submitRing(
-        address[]   tokenSList,
-        uint[7][]   uintArgsList,
-        uint8[2][]  uint8ArgsList,
-        bool[]      buyNoMoreThanAmountBList,
-        uint8[]     vList,
-        bytes32[]   rList,
-        bytes32[]   sList,
-        address     feeRecepient,
-        bool        throwIfLRCIsInsuffcient
+        address[2][]    addressList,
+        uint[7][]       uintArgsList,
+        uint8[2][]      uint8ArgsList,
+        bool[]          buyNoMoreThanAmountBList,
+        uint8[]         vList,
+        bytes32[]       rList,
+        bytes32[]       sList,
+        address         ringminer,
+        address         feeRecepient,
+        bool            throwIfLRCIsInsuffcient
         )
         public {
 
@@ -239,13 +239,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
         entered = true;
 
         //Check ring size
-        uint ringSize = tokenSList.length;
+        uint ringSize = addressList.length;
         (ringSize > 1 && ringSize <= maxRingSize)
             .orThrow("invalid ring size");
 
         verifyInputDataIntegrity(
             ringSize,
-            tokenSList,
+            addressList,
             uintArgsList,
             uint8ArgsList,
             buyNoMoreThanAmountBList,
@@ -253,7 +253,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             rList,
             sList);
 
-        verifyTokensRegistered(tokenSList);
+        verifyTokensRegistered(addressList);
 
 
         var ringhashRegistry = RinghashRegistry(ringhashRegistryAddress);
@@ -270,7 +270,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         ringhashRegistry.canSubmit(ringhash, feeRecepient)
             .orThrow("Ring claimed by others");
 
-        address minerAddress = calculateSignerAddress(
+        verifySignature(
+            ringminer,
             ringhash,
             vList[ringSize],
             rList[ringSize],
@@ -280,7 +281,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Assemble input data into a struct so we can pass it to functions.
         var orders = assembleOrders(
             ringSize,
-            tokenSList,
+            addressList,
             uintArgsList,
             uint8ArgsList,
             buyNoMoreThanAmountBList,
@@ -289,13 +290,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList);
 
         if (feeRecepient == address(0)) {
-            feeRecepient = minerAddress;
+            feeRecepient = ringminer;
         }
 
         handleRing(
             ringhash, 
             orders,
-            minerAddress, 
+            ringminer, 
             feeRecepient, 
             throwIfLRCIsInsuffcient
         );
@@ -305,7 +306,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be
     ///                           specified using orderValues.
-    /// @param tokenAddresses     tokenS,tokenB
+    /// @param addresses          owner, tokenS, tokenB
     /// @param orderValues        amountS, amountB, timestamp, ttl, salt,
     ///                           lrcFee, and cancelAmount
     /// @param buyNoMoreThanAmountB -
@@ -317,7 +318,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
     function cancelOrder(
-        address[2] tokenAddresses,
+        address[3] addresses,
         uint[7]    orderValues,
         bool       buyNoMoreThanAmountB,
         uint8      marginSplitPercentage,
@@ -331,8 +332,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         (cancelAmount > 0).orThrow("amount to cancel is zero");
 
         var order = Order(
-            tokenAddresses[0],
-            tokenAddresses[1],
+            addresses[0],
+            addresses[1],
+            addresses[2],
             orderValues[0],
             orderValues[1],
             orderValues[2],
@@ -403,10 +405,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
     }
 
-    function verifyTokensRegistered(address[] tokens) internal constant {
+    function verifyTokensRegistered(address[2][] addressList) internal constant {
         var registryContract = TokenRegistry(tokenRegistryAddress);
-        for (uint i = 0; i < tokens.length; i++) {
-            registryContract.isTokenRegistered(tokens[i])
+        for (uint i = 0; i < addressList.length; i++) {
+            registryContract.isTokenRegistered(addressList[i][1])
                 .orThrow("token not registered");
         }
     }
@@ -478,14 +480,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             delegate.transferToken(
                 state.order.tokenS,
-                state.owner,
-                prev.owner,
+                state.order.owner,
+                prev.order.owner,
                 state.fillAmountS - prev.splitB);
 
             if (prev.splitB + state.splitS > 0) {
                 delegate.transferToken(
                     state.order.tokenS,
-                    state.owner,
+                    state.order.owner,
                     ring.feeRecepient,
                     prev.splitB + state.splitS);
             }
@@ -495,14 +497,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 delegate.transferToken(
                     lrcTokenAddress,
                     ring.feeRecepient,
-                    state.owner,
+                    state.order.owner,
                     state.lrcReward);
             }
 
             if (state.lrcFee > 0) {
                  delegate.transferToken(
                     lrcTokenAddress,
-                    state.owner,
+                    state.order.owner,
                     ring.feeRecepient,
                     state.lrcFee);
             }
@@ -564,7 +566,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             if (state.feeSelection == FEE_SELECT_LRC) {
 
-                uint lrcSpendable = getLRCSpendable(state.owner);
+                uint lrcSpendable = getLRCSpendable(state.order.owner);
 
                 if (lrcSpendable < state.lrcFee) {
                     (!ring.throwIfLRCIsInsuffcient)
@@ -746,19 +748,19 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev verify input data's basic integrity.
     function verifyInputDataIntegrity(
         uint ringSize,
-        address[]   tokenSList,
-        uint[7][]   uintArgsList,
-        uint8[2][]  uint8ArgsList,
-        bool[]      buyNoMoreThanAmountBList,
-        uint8[]     vList,
-        bytes32[]   rList,
-        bytes32[]   sList
+        address[2][]    addressList,
+        uint[7][]       uintArgsList,
+        uint8[2][]      uint8ArgsList,
+        bool[]          buyNoMoreThanAmountBList,
+        uint8[]         vList,
+        bytes32[]       rList,
+        bytes32[]       sList
         )
         internal
         constant {
 
-        (ringSize == tokenSList.length)
-            .orThrow("ring data is inconsistent - tokenSList");
+        (ringSize == addressList.length)
+            .orThrow("ring data is inconsistent - addressList");
         (ringSize == uintArgsList.length)
             .orThrow("ring data is inconsistent - uintArgsList");
         (ringSize == uint8ArgsList.length)
@@ -782,14 +784,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev        assmble order parameters into Order struct.
     /// @return     A list of orders.
     function assembleOrders(
-        uint        ringSize,
-        address[]   tokenSList,
-        uint[7][]   uintArgsList,
-        uint8[2][]  uint8ArgsList,
-        bool[]      buyNoMoreThanAmountBList,
-        uint8[]     vList,
-        bytes32[]   rList,
-        bytes32[]   sList
+        uint            ringSize,
+        address[2][]    addressList,
+        uint[7][]       uintArgsList,
+        uint8[2][]      uint8ArgsList,
+        bool[]          buyNoMoreThanAmountBList,
+        uint8[]         vList,
+        bytes32[]       rList,
+        bytes32[]       sList
         )
         internal
         constant
@@ -801,8 +803,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint j = i.prev(ringSize);
 
             var order = Order(
-                tokenSList[i],
-                tokenSList[j],
+                addressList[i][0],
+                addressList[i][1],
+                addressList[j][1],
                 uintArgsList[i][0],
                 uintArgsList[i][1],
                 uintArgsList[i][2],
@@ -817,21 +820,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             bytes32 orderHash = calculateOrderHash(order);
 
-            address orderOwner = calculateSignerAddress(
+            verifySignature(
+                order.owner,
                 orderHash,
                 order.v,
                 order.r,
                 order.s);
 
-            validateOrder(orderOwner, order);
+            validateOrder(order);
 
             orders[i] = OrderState(
                 order,
                 orderHash,
-                orderOwner,
                 uint8ArgsList[i][1],  // feeSelection
                 uintArgsList[i][6],   // rateAmountS
-                getSpendable(order.tokenS, orderOwner),
+                getSpendable(order.tokenS, order.owner),
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
@@ -847,12 +850,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev validate order's parameters are OK.
-    function validateOrder(
-        address owner,
-        Order   order
-        )
-        internal
-        constant {
+    function validateOrder(Order order) internal constant {
+        (order.owner != address(0))
+            .orThrow("invalid order owner");
         (order.tokenS != address(0))
             .orThrow("invalid order tokenS");
         (order.tokenB != address(0))
@@ -861,7 +861,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             .orThrow("invalid order amountS");
         (order.amountB > 0)
             .orThrow("invalid order amountB");
-        (order.timestamp > cutoffs[owner])
+        (order.timestamp > cutoffs[order.owner])
             .orThrow("order is cut off");
         (order.ttl > 0)
             .orThrow("order ttl is 0");
@@ -894,20 +894,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @return The signer's address.
-    function calculateSignerAddress(
+    function verifySignature(
+        address ringminer,
         bytes32 hash,
-        uint8 v,
+        uint8   v,
         bytes32 r,
         bytes32 s)
         public
         constant
-        returns (address) {
+        {
 
-        return ecrecover(
+        address addr = ecrecover(
             keccak256("\x19Ethereum Signed Message:\n32", hash),
             v,
             r,
             s);
+        (ringminer == addr).orThrow("invalid signature");
     }
 
     function getOrderFilled(bytes32 orderHash)

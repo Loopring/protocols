@@ -55,6 +55,7 @@ contract LoopringProtocol {
     /// @param r            ECDSA signature parameters r.
     /// @param s            ECDSA signature parameters s.
     struct Order {
+        address owner;
         address tokenS;
         address tokenB;
         uint    amountS;
@@ -76,8 +77,8 @@ contract LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
 
     /// @dev Submit a order-ring for validation and settlement.
-    /// @param tokenSList   List of each order's tokenS. Note that next order's
-    ///                     `tokenS` equals this order's `tokenB`.
+    /// @param addressList  List of each order's owner and tokenS. Note that next
+    ///                     order's `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
     ///                     amountS, AmountB, rateAmountS, timestamp, ttl, salt,
     ///                     and lrcFee.
@@ -93,6 +94,7 @@ contract LoopringProtocol {
     /// @param sList        List of s for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
+    /// @param ringminer    The address that signed this tx.
     /// @param feeRecepient The recepient address for fee collection. If this is
     ///                     '0x0', all fees will be paid to the address who had
     ///                     signed this transaction, not `msg.sender`. Noted if
@@ -104,20 +106,21 @@ contract LoopringProtocol {
     ///                     LRC amount is smaller than requried; if false, ring-
     ///                     minor will give up collection the LRC fee.
     function submitRing(
-        address[]   tokenSList,
-        uint[7][]   uintArgsList,
-        uint8[2][]  uint8ArgsList,
-        bool[]      buyNoMoreThanAmountBList,
-        uint8[]     vList,
-        bytes32[]   rList,
-        bytes32[]   sList,
-        address     feeRecepient,
-        bool        throwIfLRCIsInsuffcient
+        address[2][]    addressList,
+        uint[7][]       uintArgsList,
+        uint8[2][]      uint8ArgsList,
+        bool[]          buyNoMoreThanAmountBList,
+        uint8[]         vList,
+        bytes32[]       rList,
+        bytes32[]       sList,
+        address         ringminer,
+        address         feeRecepient,
+        bool            throwIfLRCIsInsuffcient
         ) public;
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in orderValues.
-    /// @param tokenAddresses     tokenS,tokenB
+    /// @param addresses          owner, tokenS, tokenB
     /// @param orderValues        amountS, amountB, timestamp, ttl, salt, lrcFee,
     ///                           cancelAmountS, and cancelAmountB.
     /// @param marginSplitPercentage -
@@ -126,7 +129,7 @@ contract LoopringProtocol {
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
     function cancelOrder(
-        address[2] tokenAddresses,
+        address[3] addresses,
         uint[7]    orderValues,
         bool       buyNoMoreThanAmountB,
         uint8      marginSplitPercentage,
