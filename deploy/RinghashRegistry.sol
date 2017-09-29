@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.15;
 
 /// @title Token Register Contract
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
@@ -93,9 +93,6 @@ library Bytes32Lib {
     }
 }
 
-/// @title Ring Hash Registry Contract
-/// @author Kongliang Zhong - <kongliang@loopring.org>,
-/// @author Daniel Wang - <daniel@loopring.org>.
 contract RinghashRegistry {
     using Bytes32Lib    for bytes32[];
     using ErrorLib      for bool;
@@ -118,15 +115,15 @@ contract RinghashRegistry {
     function submitRinghash(
         uint        ringSize,
         address     feeRecepient,
-        bool        throwIfLRCIsInsuffcient,
+        // bool        throwIfLRCIsInsuffcient,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList)
         public {
         bytes32 ringhash = calculateRinghash(
             ringSize,
-            feeRecepient,
-            throwIfLRCIsInsuffcient,
+            // feeRecepient,
+            // throwIfLRCIsInsuffcient,
             vList,
             rList,
             sList);
@@ -163,8 +160,8 @@ contract RinghashRegistry {
     /// @dev Calculate the hash of a ring.
     function calculateRinghash(
         uint        ringSize,
-        address     feeRecepient,
-        bool        throwIfLRCIsInsuffcient,
+        // address     feeRecepient,
+        // bool        throwIfLRCIsInsuffcient,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList

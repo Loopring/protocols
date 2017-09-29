@@ -4,7 +4,6 @@ import promisify = require('es6-promisify');
 import Web3 = require('web3');
 import { crypto } from './crypto';
 import { Order } from './order';
-import * as BigNumber from 'bignumber.js';
 
 const web3Instance: Web3 = web3;
 
@@ -24,7 +23,7 @@ export class Ring {
     if (_.isUndefined(this.v) || _.isUndefined(this.r) || _.isUndefined(this.s)) {
       throw new Error('Cannot call isValidSignature on unsigned order');
     }
-    const orderHash = this.getOrderHash();
+    const orderHash = this.getRingHash();
     const msgHash = ethUtil.hashPersonalMessage(orderHash);
     try {
       const pubKey = ethUtil.ecrecover(msgHash, this.v,
@@ -38,7 +37,7 @@ export class Ring {
   }
 
   public async signAsync() {
-    const orderHash = this.getOrderHash();
+    const orderHash = this.getRingHash();
     const signature = await promisify(web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(orderHash));
     const { v, r, s } = ethUtil.fromRpcSig(signature);
     this.v = v;
@@ -46,7 +45,7 @@ export class Ring {
     this.s = ethUtil.bufferToHex(s);
   }
 
-  private getOrderHash() {
+  private getRingHash() {
     const size = this.orders.length;
     let vList = new Uint8Array(size);
     let rList: string[] = [];

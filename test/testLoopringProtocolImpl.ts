@@ -115,6 +115,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     // console.log("order 2:", order2);
 
     await ring.signAsync();
+    //console.log("ring: is valid signature:", ring.isValidSignature());
   });
 
   describe('submitRing', () => {
@@ -122,6 +123,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     let rateAmountS2 : BigNumber.BigNumber;
 
     it('should be able to fill orders.', async () => {
+      const addressList = [order1Owner, order2Owner];
+
       const tokenSList = [order1.params.tokenS, order2.params.tokenS];
       const uintArgsList = [
         [order1.params.amountS,
@@ -155,22 +158,29 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const feeRecepient = accounts[1];
       const throwIfLRCIsInsuffcient = true;
 
-      const tx =  await loopringProtocolImpl.submitRing(tokenSList,
-                                                        uintArgsList,
-                                                        uint8ArgsList,
-                                                        buyNoMoreThanAmountBList,
-                                                        vList,
-                                                        sList,
-                                                        rList,
-                                                        feeRecepient,
-                                                        throwIfLRCIsInsuffcient
-                                                       );
+      // console.log(addressList);
+      // console.log(order1);
+      // console.log(order2);
 
-      //console.log("tx:", tx);
+      //console.log("is valid signature:", order1.isValidSignature())
 
-      const lrcBalance1 = await getTokenBalanceAsync(lrc, order1Owner);
-      const eosBalance1 = await getTokenBalanceAsync(eos, order1Owner);
-      const neoBalance1 = await getTokenBalanceAsync(neo, order1Owner);
+      // const tx =  await loopringProtocolImpl.submitRing(addressList,
+      //                                                   tokenSList,
+      //                                                   uintArgsList,
+      //                                                   uint8ArgsList,
+      //                                                   buyNoMoreThanAmountBList,
+      //                                                   vList,
+      //                                                   sList,
+      //                                                   rList,
+      //                                                   feeRecepient,
+      //                                                   throwIfLRCIsInsuffcient
+      //                                                  );
+
+      // //console.log("tx:", tx);
+
+      // const lrcBalance1 = await getTokenBalanceAsync(lrc, order1Owner);
+      // const eosBalance1 = await getTokenBalanceAsync(eos, order1Owner);
+      // const neoBalance1 = await getTokenBalanceAsync(neo, order1Owner);
 
       //console.log(lrcBalance1, eosBalance1, neoBalance1);
 
