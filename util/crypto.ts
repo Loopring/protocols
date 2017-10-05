@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 import BN = require('bn.js');
 import ethUtil = require('ethereumjs-util');
 import ABI = require('ethereumjs-abi');
-import { BigNumber } from 'bignumber.js';
+var BigNumber = require('bignumber.js');
 
 export const crypto = {
   /*

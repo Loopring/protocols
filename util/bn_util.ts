@@ -1,6 +1,6 @@
 import BN = require('bn.js');
-import { BigNumber } from 'bignumber.js';
 import { bigNumberConfigs } from './bignumber_config';
+var BigNumber = require('bignumber.js');
 
 bigNumberConfigs.configure();
 

@@ -1,4 +1,4 @@
-import { BigNumber } from 'bignumber.js';
+var BigNumber = require('bignumber.js');
 
 export const bigNumberConfigs = {
     configure() {
