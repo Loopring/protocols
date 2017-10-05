@@ -1,5 +1,5 @@
 import BN = require('bn.js');
-import * as BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { bigNumberConfigs } from './bignumber_config';
 
 bigNumberConfigs.configure();

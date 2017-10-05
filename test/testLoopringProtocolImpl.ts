@@ -1,4 +1,4 @@
-import * as BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { Artifacts } from '../util/artifacts';
 import { OrderParams } from '../util/types';
 import { Order } from '../util/order';
