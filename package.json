@@ -1,0 +1,40 @@
+{
+  "name": "loopring.js",
+  "version": "0.0.0",
+  "description": "Loopring javascript library",
+  "main": "lib/src/index.js",
+  "types": "lib/src/index.d.ts",
+  "scripts": {
+    "build:commonjs": "rm -rf lib/;tsc",
+    "build:umd": "rm -rf dist;webpack",
+    "test": "rm -rf lib/test;tsc;mocha lib/test/**/*_test.js --timeout 5000 --bail --exit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loopring/loopring.js.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/loopring/loopring.js/issues"
+  },
+  "homepage": "https://github.com/loopring/loopring.js#readme",
+  "devDependencies": {
+    "@types/chai": "^4.0.4",
+    "@types/jasmine": "^2.6.0",
+    "chai": "^4.1.2",
+    "jasmine-core": "^2.8.0",
+    "json-loader": "^0.5.7",
+    "karma": "^1.7.1",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-jasmine": "^1.1.0",
+    "karma-webpack": "^2.0.4",
+    "mocha": "^4.0.1",
+    "ts-loader": "^2.3.7",
+    "typescript": "^2.5.3",
+    "webpack": "^3.6.0",
+    "webpack-dev-server": "^2.9.1"
+  },
+  "dependencies": {}
+}
