@@ -294,10 +294,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         handleRing(
-            ringhash, 
+            ringhash,
             orders,
-            ringminer, 
-            feeRecepient, 
+            ringminer,
+            feeRecepient,
             throwIfLRCIsInsuffcient
         );
 
@@ -861,8 +861,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             .orThrow("invalid order amountS");
         (order.amountB > 0)
             .orThrow("invalid order amountB");
-        (order.timestamp <= block.timestamp)
-            .orThrow("order is too early to match");
+        /* (order.timestamp <= block.timestamp) */
+        /*     .orThrow("order is too early to match"); */
         (order.timestamp > cutoffs[order.owner])
             .orThrow("order is cut off");
         (order.ttl > 0)
