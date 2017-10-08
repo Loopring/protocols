@@ -61,3 +61,5 @@ typings/
 lib
 # UMD bundles that export the global variable
 dist
+# WebStorm will create this directory
+.idea/
