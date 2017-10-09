@@ -75,18 +75,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// Structs                                                              ///
     ////////////////////////////////////////////////////////////////////////////
 
+
+    struct Rate {
+        uint amountS;
+        uint amountB;
+    }
     /// @param order        The original order
+    /// @param orderHash    The order's hash
     /// @param feeSelection -
     ///                     A miner-supplied value indicating if LRC (value = 0)
     ///                     or margin split is choosen by the miner (value = 1).
     ///                     We may support more fee model in the future.
+    /// @param rate         Exchange rate provided by miner.
+    /// @param availableAmountS -
+    ///                     The actual spendable amountS.
     /// @param fillAmountS  Amount of tokenS to sell, calculated by protocol.
-    /// @param rateAmountS  This value is initially provided by miner and is
-    ///                     calculated by based on the original information of
-    ///                     all orders of the order-ring, in other orders, this
-    ///                     value is independent of the order's current state.
-    ///                     This value and `rateAmountB` can be used to calculate
-    ///                     the proposed exchange rate calculated by miner.
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for margin split.
     /// @param lrcFee       The amount of LR paid by order owner to miner.
@@ -96,7 +99,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         Order   order;
         bytes32 orderHash;
         uint8   feeSelection;
-        uint    rateAmountS;
+        Rate    rate;
         uint    availableAmountS;
         uint    fillAmountS;
         uint    lrcReward;
@@ -539,10 +542,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint[] memory rateRatios = new uint[](ringSize);
 
         for (uint i = 0; i < ringSize; i++) {
-            uint rateAmountB = orders[i.next(ringSize)].rateAmountS;
-
-            uint s1b0 = orders[i].rateAmountS.mul(orders[i].order.amountB);
-            uint s0b1 = orders[i].order.amountS.mul(rateAmountB);
+            uint s1b0 = orders[i].rate.amountS.mul(orders[i].order.amountB);
+            uint s0b1 = orders[i].order.amountS.mul(orders[i].rate.amountB);
 
             (s1b0 <= s0b1)
                 .orThrow("miner supplied exchange rate provides invalid discount");
@@ -634,7 +635,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         for (i = 0; i < smallestIdx; i++) {
             j = i.next(ring.orders.length);
-            (calculateOrderFillAmount(ring.orders[i], ring.orders[j]) == 0)
+            (calculateOrderFillAmount(
+                ring.orders[i],
+                ring.orders[j]) == 0)
                 .orThrow("unexpected exception in calculateRingFillAmount");
         }
     }
@@ -648,41 +651,32 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         internal
         constant
-        returns (uint state2IsSmaller) {
+        returns (uint whichIsSmaller) {
 
-        // Update the amount of tokenB this order can buy, whose logic could be
-        // a brain-burner:
-        // We have `fillAmountB / state.fillAmountS = state.rateAmountB / state.rateAmountS`,
-        // therefore, `fillAmountB = state.rateAmountB * state.fillAmountS / state.rateAmountS`,
-        // therefore  `fillAmountB = next.rateAmountS * state.fillAmountS / state.rateAmountS`,
-        uint fillAmountB  = next.rateAmountS
-            .mul(state.fillAmountS)
-            .div(state.rateAmountS);
+        uint fillAmountB  = state.fillAmountS
+            .mul(state.rate.amountB)
+            .div(state.rate.amountS);
 
         if (state.order.buyNoMoreThanAmountB) {
             if (fillAmountB > state.order.amountB) {
                 fillAmountB = state.order.amountB;
 
-                state.fillAmountS = state.rateAmountS
-                    .mul(fillAmountB)
-                    .div(next.rateAmountS);
+                state.fillAmountS = fillAmountB
+                    .mul(state.rate.amountS)
+                    .div(state.rate.amountB);
 
-                state2IsSmaller = 1;
+                whichIsSmaller = 1;
             }
-
-            state.lrcFee = state.order.lrcFee
-                .mul(fillAmountB)
-                .div(next.order.amountS);
-        } else {
-            state.lrcFee = state.order.lrcFee
-                .mul(state.fillAmountS)
-                .div(state.order.amountS);
         }
 
+        state.lrcFee = state.order.lrcFee
+            .mul(state.fillAmountS)
+            .div(state.order.amountS);
+        
         if (fillAmountB <= next.fillAmountS) {
             next.fillAmountS = fillAmountB;
         } else {
-            state2IsSmaller = 2;
+            whichIsSmaller = 2;
         }
     }
 
@@ -692,6 +686,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function scaleRingBasedOnHistoricalRecords(Ring ring) internal constant {
 
         uint ringSize = ring.orders.length;
+
         for (uint i = 0; i < ringSize; i++) {
             var state = ring.orders[i];
             var order = state.order;
@@ -833,7 +828,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order,
                 orderHash,
                 uint8ArgsList[i][1],  // feeSelection
-                uintArgsList[i][6],   // rateAmountS
+                Rate(uintArgsList[i][6], order.amountB),
                 getSpendable(order.tokenS, order.owner),
                 0,   // fillAmountS
                 0,   // lrcReward
@@ -842,8 +837,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0    // splitB
                 );
 
-            /* (orders[i].availableAmountS > 0) */
-            /*     .orThrow("order balance is zero"); */
+            // TODO(kongliang): we should fix the test and uncomment the following lines.
+            // (orders[i].availableAmountS > 0)
+            //     .orThrow("order spendable amountS is zero");
         }
 
         return orders;
