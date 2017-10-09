@@ -8,7 +8,7 @@
     "build:commonjs": "rm -rf lib/;tsc",
     "build:umd": "rm -rf dist;webpack",
     "test": "rm -rf lib/test;tsc;mocha lib/test/**/*_test.js --timeout 5000 --bail --exit",
-    "lint": "tslint -c tslint.json 'src/**/*.ts'",
+    "lint": "tslint -p tsconfig.json -c tslint.json 'src/**/*.ts'",
     "precommit": "npm run lint",
     "commitmsg": "validate-commit-msg"
   },
