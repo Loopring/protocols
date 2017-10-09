@@ -132,7 +132,8 @@ contract TokenTransferDelegate is Ownable {
         uint value)
         isVersioned(msg.sender)
         returns (bool) {
-        return ERC20(token).transferFrom(from, to, value);
+        if (from == to) return false;
+        else return ERC20(token).transferFrom(from, to, value);
     }
 
     /// @dev Gets all versioned addresses.
