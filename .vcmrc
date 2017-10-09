@@ -1,0 +1,18 @@
+{
+  "types": [
+    "feat",
+    "fix",
+    "docs",
+    "style",
+    "refactor",
+    "example",
+    "perf",
+    "test",
+    "chore",
+    "revert"
+  ],
+  "warnOnFail": false,
+  "subjectPattern": ".+",
+  "subjectPatternErrorMsg": "Subject does not match subject pattern!",
+  "helpMessage": "\n# Allowed type: feat, fix, docs, style, refactor, example, perf, test, chore, revert."
+}
