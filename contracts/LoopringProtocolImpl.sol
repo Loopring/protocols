@@ -672,7 +672,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         state.lrcFee = state.order.lrcFee
             .mul(state.fillAmountS)
             .div(state.order.amountS);
-        
+
         if (fillAmountB <= next.fillAmountS) {
             next.fillAmountS = fillAmountB;
         } else {
@@ -837,9 +837,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0    // splitB
                 );
 
-            // TODO(kongliang): we should fix the test and uncomment the following lines.
-            // (orders[i].availableAmountS > 0)
-            //     .orThrow("order spendable amountS is zero");
+            (orders[i].availableAmountS > 0)
+                .orThrow("order spendable amountS is zero");
         }
 
         return orders;
@@ -857,8 +856,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             .orThrow("invalid order amountS");
         (order.amountB > 0)
             .orThrow("invalid order amountB");
-        /* (order.timestamp <= block.timestamp) */
-        /*     .orThrow("order is too early to match"); */
+        (order.timestamp <= block.timestamp)
+            .orThrow("order is too early to match");
         (order.timestamp > cutoffs[order.owner])
             .orThrow("order is cut off");
         (order.ttl > 0)
