@@ -304,7 +304,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             throwIfLRCIsInsuffcient
         );
 
-        entered = true;
+        entered = false;
     }
 
     /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be

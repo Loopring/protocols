@@ -38,7 +38,7 @@ export class Ring {
 
   public async signAsync() {
     const ringHash = this.getRingHash();
-    console.log("ring.ts-ringhash:", ethUtil.bufferToHex(ringHash));
+
     const signature = await promisify(web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(ringHash));
     const { v, r, s } = ethUtil.fromRpcSig(signature);
     this.v = v;
@@ -48,7 +48,7 @@ export class Ring {
 
   private getRingHash() {
     const size = this.orders.length;
-    let vList = new Uint8Array(size);
+    let vList: number[] = [];
     let rList: string[] = [];
     let sList: string[] = [];
 
@@ -70,10 +70,11 @@ export class Ring {
     return ringHash;
   }
 
-  private xorReduce(numberArr: Uint8Array) {
+  private xorReduce(numberArr: number[]) {
     const n0 = numberArr[0];
     const tail = numberArr.slice(1);
-    return tail.reduce((n1: number, n2: number) => n1 ^ n2,  n0);
+    const intRes = tail.reduce((n1: number, n2: number) => n1 ^ n2,  n0);
+    return intRes;
   }
 
   private xorReduceStr(strArr: string[]) {
@@ -86,9 +87,12 @@ export class Ring {
       for (let i = 0; i < 32; i++) {
         res[i] = buf1[i] ^ buf2[i];
       }
-      return res.toString();
+
+      const strRes = res.toString();
+      return strRes;
     };
 
-    return tail.reduce((s1, s2) => strXor(s1, s2), s0);
+    const reduceRes = tail.reduce((s1, s2) => strXor(s1, s2), s0);
+    return reduceRes;
   }
 }

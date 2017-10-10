@@ -176,20 +176,20 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       //console.log("is valid signature:", order1.isValidSignature())
 
-      const tx =  await loopringProtocolImpl.submitRing(addressList,
-                                                        uintArgsList,
-                                                        uint8ArgsList,
-                                                        buyNoMoreThanAmountBList,
-                                                        vList,
-                                                        rList,
-                                                        sList,
-                                                        ringOwner,
-                                                        feeRecepient,
-                                                        throwIfLRCIsInsuffcient
-                                                       );
+      // const tx =  await loopringProtocolImpl.submitRing(addressList,
+      //                                                   uintArgsList,
+      //                                                   uint8ArgsList,
+      //                                                   buyNoMoreThanAmountBList,
+      //                                                   vList,
+      //                                                   rList,
+      //                                                   sList,
+      //                                                   ringOwner,
+      //                                                   feeRecepient,
+      //                                                   throwIfLRCIsInsuffcient
+      //                                                  );
 
 
-      console.log(tx.receipt.logs);
+      // console.log(tx.receipt.logs);
 
       //const event0 = tx.receipt.logs[0];
       //console.log("event0:", event0);
