@@ -23,8 +23,8 @@ export class Ring {
     if (_.isUndefined(this.v) || _.isUndefined(this.r) || _.isUndefined(this.s)) {
       throw new Error('Cannot call isValidSignature on unsigned order');
     }
-    const orderHash = this.getRingHash();
-    const msgHash = ethUtil.hashPersonalMessage(orderHash);
+    const ringHash = this.getRingHash();
+    const msgHash = ethUtil.hashPersonalMessage(ringHash);
     try {
       const pubKey = ethUtil.ecrecover(msgHash, this.v,
                                        ethUtil.toBuffer(this.r),
@@ -37,8 +37,9 @@ export class Ring {
   }
 
   public async signAsync() {
-    const orderHash = this.getRingHash();
-    const signature = await promisify(web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(orderHash));
+    const ringHash = this.getRingHash();
+    console.log("ring.ts-ringhash:", ethUtil.bufferToHex(ringHash));
+    const signature = await promisify(web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(ringHash));
     const { v, r, s } = ethUtil.fromRpcSig(signature);
     this.v = v;
     this.r = ethUtil.bufferToHex(r);
@@ -57,12 +58,16 @@ export class Ring {
       sList[i] = this.orders[i].params.s;
     }
 
-    const orderHash = crypto.solSHA3([
+    // console.log("vlist xor:", this.xorReduce(vList));
+    // console.log("rlist xor: ", this.xorReduceStr(rList) + "");
+
+    const ringHash = crypto.solSHA3([
       this.xorReduce(vList),
       this.xorReduceStr(rList),
       this.xorReduceStr(sList),
     ]);
-    return orderHash;
+
+    return ringHash;
   }
 
   private xorReduce(numberArr: Uint8Array) {

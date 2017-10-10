@@ -6,9 +6,9 @@ export interface OrderParams {
   tokenB: string;
   amountS: BigNumber.BigNumber;
   amountB: BigNumber.BigNumber;
-  timestamp: number;
-  expiration: number;
-  rand: number;
+  timestamp: BigNumber.BigNumber;
+  ttl: BigNumber.BigNumber;
+  salt: BigNumber.BigNumber;
   lrcFee: BigNumber.BigNumber;
   buyNoMoreThanAmountB: boolean;
   marginSplitPercentage: number;

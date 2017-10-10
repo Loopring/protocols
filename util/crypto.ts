@@ -18,7 +18,7 @@ export const crypto = {
     _.each(args, (arg, i) => {
       const isNumber = _.isFinite(arg);
       if (isNumber) {
-        argTypes.push('uint32');
+        argTypes.push('uint8');
       } else if ((arg as BigNumber.BigNumber).isBigNumber) {
         argTypes.push('uint256');
         args[i] = new BN(arg.toString(10), 10);
@@ -27,6 +27,7 @@ export const crypto = {
       } else if (_.isString(arg)) {
         argTypes.push('string');
       } else if  (_.isBoolean(arg)) {
+        //console.log("boolean:", arg);
         argTypes.push('bool');
       } else {
         throw new Error(`Unable to guess arg type: ${arg}`);
