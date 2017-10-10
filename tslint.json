@@ -137,7 +137,6 @@
       "check-preblock",
       "check-separator",
       "check-type"
-    ],
-    "no-access-missing-member": true
+    ]
   }
 }
