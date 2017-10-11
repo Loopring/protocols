@@ -125,11 +125,11 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     // let rateAmountS1 : BigNumber.BigNumber;
     // let rateAmountS2 : BigNumber.BigNumber;
 
-    it('should be able to validate singnatures for orders.', async () => {
-      assert(order1.isValidSignature());
-      assert(order2.isValidSignature());
-      assert(ring.isValidSignature());
-    });
+    // it('should be able to validate singnatures for orders.', async () => {
+    //   assert(order1.isValidSignature());
+    //   assert(order2.isValidSignature());
+    //   assert(ring.isValidSignature());
+    // });
 
     it('should be able to fill orders.', async () => {
       const addressList = [
@@ -164,8 +164,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const buyNoMoreThanAmountBList = [order1.params.buyNoMoreThanAmountB,
                                         order1.params.buyNoMoreThanAmountB];
       const vList = [order1.params.v, order2.params.v, ring.v];
-      const sList = [order1.params.s, order2.params.s, ring.s];
       const rList = [order1.params.r, order2.params.r, ring.r];
+      const sList = [order1.params.s, order2.params.s, ring.s];
 
       const feeRecepient = accounts[1];
       const throwIfLRCIsInsuffcient = true;
@@ -176,20 +176,20 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       //console.log("is valid signature:", order1.isValidSignature())
 
-      // const tx =  await loopringProtocolImpl.submitRing(addressList,
-      //                                                   uintArgsList,
-      //                                                   uint8ArgsList,
-      //                                                   buyNoMoreThanAmountBList,
-      //                                                   vList,
-      //                                                   rList,
-      //                                                   sList,
-      //                                                   ringOwner,
-      //                                                   feeRecepient,
-      //                                                   throwIfLRCIsInsuffcient
-      //                                                  );
+      const tx =  await loopringProtocolImpl.submitRing(addressList,
+                                                        uintArgsList,
+                                                        uint8ArgsList,
+                                                        buyNoMoreThanAmountBList,
+                                                        vList,
+                                                        rList,
+                                                        sList,
+                                                        ringOwner,
+                                                        feeRecepient,
+                                                        throwIfLRCIsInsuffcient
+                                                       );
 
 
-      // console.log(tx.receipt.logs);
+      console.log(tx.receipt.logs);
 
       //const event0 = tx.receipt.logs[0];
       //console.log("event0:", event0);
@@ -201,7 +201,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       // const neoBalance1 = await getTokenBalanceAsync(neo, order1Owner);
 
       // console.log(lrcBalance1, eosBalance1, neoBalance1);
-
 
     });
 

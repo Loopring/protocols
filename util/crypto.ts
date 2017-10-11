@@ -24,10 +24,11 @@ export const crypto = {
         args[i] = new BN(arg.toString(10), 10);
       } else if (ethUtil.isValidAddress(arg)) {
         argTypes.push('address');
+      } else if (_.isBuffer(arg)) {
+        argTypes.push('bytes');
       } else if (_.isString(arg)) {
         argTypes.push('string');
       } else if  (_.isBoolean(arg)) {
-        //console.log("boolean:", arg);
         argTypes.push('bool');
       } else {
         throw new Error(`Unable to guess arg type: ${arg}`);
