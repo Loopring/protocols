@@ -3,6 +3,7 @@ import { Artifacts } from '../util/artifacts';
 import { OrderParams } from '../util/types';
 import { Order } from '../util/order';
 import { Ring } from '../util/ring';
+import promisify = require('es6-promisify');
 
 const {
   LoopringProtocolImpl,
@@ -16,7 +17,9 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   const owner = accounts[0];
   const order1Owner = accounts[1];
   const order2Owner = accounts[2];
+  const order3Owner = accounts[3];
   const ringOwner = accounts[0];
+  const feeRecepient = accounts[6];
   let loopringProtocolImpl: any;
   let tokenRegistry: any;
   let tokenTransferDelegate: any;
@@ -24,6 +27,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   let order2: Order;
   let ring: Ring;
   let lrcAddress: string;
+  let eosAddress: string;
+  let neoAddress: string;
 
   let lrc: any;
   let eos: any;
@@ -35,6 +40,12 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     return balance;
   }
 
+  const getEthBalanceAsync = async (addr: string) => {
+    const balanceStr = await promisify(web3.eth.getBalance)(addr);
+    const balance = new BigNumber(balanceStr);
+    return balance;
+  };
+
   before( async () => {
     [loopringProtocolImpl, tokenRegistry, tokenTransferDelegate] = await Promise.all([
       LoopringProtocolImpl.deployed(),
@@ -42,16 +53,11 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       TokenTransferDelegate.deployed(),
     ]);
 
-    const currBlockNumber = web3.eth.blockNumber;
-    const currBlockTimeStamp = web3.eth.getBlock(currBlockNumber).timestamp;
-
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
-    const eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
-    const neoAddress = await tokenRegistry.getAddressBySymbol("NEO");
+    eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
+    neoAddress = await tokenRegistry.getAddressBySymbol("NEO");
 
     tokenTransferDelegate.addVersion(LoopringProtocolImpl.address);
-
-    var delegateAddr = TokenTransferDelegate.address;
 
     [lrc, eos, neo] = await Promise.all([
       DummyToken.at(lrcAddress),
@@ -59,79 +65,65 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       DummyToken.at(neoAddress),
     ]);
 
-    await lrc.setBalance(order1Owner, web3.toWei(10000), {from: owner});
-    await lrc.setBalance(order2Owner, web3.toWei(10000), {from: owner});
-
-    await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
-    await neo.setBalance(order2Owner, web3.toWei(1000), {from: owner});
-
-    await lrc.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
-    await eos.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
-    await neo.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
-
-    await lrc.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
-    await eos.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
-    await neo.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
-
-    const lrcBalance1 = await getTokenBalanceAsync(lrc, order1Owner);
-    const eosBalance1 = await getTokenBalanceAsync(eos, order1Owner);
-    const neoBalance1 = await getTokenBalanceAsync(neo, order1Owner);
-
-    //console.log(lrcBalance1, eosBalance1, neoBalance1);
-
-    const orderPrams1 = {
-      loopringProtocol: LoopringProtocolImpl.address,
-      tokenS: eosAddress,
-      tokenB: neoAddress,
-      amountS: new BigNumber(1000e18),
-      amountB: new BigNumber(100e18),
-      timestamp: new BigNumber(currBlockTimeStamp),
-      ttl: new BigNumber(360000),
-      salt: new BigNumber(1234),
-      lrcFee: new BigNumber(10e18),
-      buyNoMoreThanAmountB: false,
-      marginSplitPercentage: 0,
-    };
-
-    const orderPrams2 = {
-      loopringProtocol: LoopringProtocolImpl.address,
-      tokenS: neoAddress,
-      tokenB: eosAddress,
-      amountS: new BigNumber(100e18),
-      amountB: new BigNumber(1000e18),
-      timestamp: new BigNumber(currBlockTimeStamp),
-      ttl: new BigNumber(360000),
-      salt: new BigNumber(4321),
-      lrcFee: new BigNumber(10e18),
-      buyNoMoreThanAmountB: false,
-      marginSplitPercentage: 0,
-    };
-
-    order1 = new Order(order1Owner, orderPrams1);
-    order2 = new Order(order2Owner, orderPrams2);
-
-    await order1.signAsync();
-    await order2.signAsync();
-
-    ring = new Ring(ringOwner, [order1, order2]);
-    // console.log("order 1:", order1);
-    // console.log("order 2:", order2);
-
-    await ring.signAsync();
-    //console.log("ring: is valid signature:", ring.isValidSignature());
   });
 
   describe('submitRing', () => {
-    // let rateAmountS1 : BigNumber.BigNumber;
-    // let rateAmountS2 : BigNumber.BigNumber;
-
-    // it('should be able to validate singnatures for orders.', async () => {
-    //   assert(order1.isValidSignature());
-    //   assert(order2.isValidSignature());
-    //   assert(ring.isValidSignature());
-    // });
+    const currBlockNumber = web3.eth.blockNumber;
+    const currBlockTimeStamp = web3.eth.getBlock(currBlockNumber).timestamp;
 
     it('should be able to fill orders.', async () => {
+      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+      await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
+      await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
+      await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
+      await lrc.setBalance(feeRecepient, 0, {from: owner});
+
+      const delegateAddr = TokenTransferDelegate.address;
+      await lrc.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
+      await eos.approve(delegateAddr, web3.toWei(100000), {from: order1Owner});
+      await lrc.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
+      await neo.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
+
+      const orderPrams1 = {
+        loopringProtocol: LoopringProtocolImpl.address,
+        tokenS: eosAddress,
+        tokenB: neoAddress,
+        amountS: new BigNumber(1000e18),
+        amountB: new BigNumber(100e18),
+        timestamp: new BigNumber(currBlockTimeStamp),
+        ttl: new BigNumber(360000),
+        salt: new BigNumber(1234),
+        lrcFee: new BigNumber(10e18),
+        buyNoMoreThanAmountB: false,
+        marginSplitPercentage: 0,
+      };
+
+      const orderPrams2 = {
+        loopringProtocol: LoopringProtocolImpl.address,
+        tokenS: neoAddress,
+        tokenB: eosAddress,
+        amountS: new BigNumber(100e18),
+        amountB: new BigNumber(1000e18),
+        timestamp: new BigNumber(currBlockTimeStamp),
+        ttl: new BigNumber(360000),
+        salt: new BigNumber(4321),
+        lrcFee: new BigNumber(10e18),
+        buyNoMoreThanAmountB: false,
+        marginSplitPercentage: 0,
+      };
+
+      order1 = new Order(order1Owner, orderPrams1);
+      order2 = new Order(order2Owner, orderPrams2);
+      await order1.signAsync();
+      await order2.signAsync();
+
+      ring = new Ring(ringOwner, [order1, order2]);
+      await ring.signAsync();
+
+      assert(order1.isValidSignature());
+      assert(order2.isValidSignature());
+      assert(ring.isValidSignature());
+
       const addressList = [
         [order1Owner, order1.params.tokenS],
         [order2Owner, order2.params.tokenS]
@@ -167,14 +159,22 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const rList = [order1.params.r, order2.params.r, ring.r];
       const sList = [order1.params.s, order2.params.s, ring.s];
 
-      const feeRecepient = accounts[1];
       const throwIfLRCIsInsuffcient = true;
+
+      // const lrcBalance11 = await getTokenBalanceAsync(lrc, order1Owner);
+      // const eosBalance11 = await getTokenBalanceAsync(eos, order1Owner);
+
+      // const lrcBalance12 = await getTokenBalanceAsync(lrc, order2Owner);
+      // const neoBalance12 = await getTokenBalanceAsync(neo, order2Owner);
+      // console.log(lrcBalance11, eosBalance11, lrcBalance12, neoBalance12);
 
       // console.log(addressList);
       // console.log(order1);
       // console.log(order2);
 
       //console.log("is valid signature:", order1.isValidSignature())
+
+      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
 
       const tx =  await loopringProtocolImpl.submitRing(addressList,
                                                         uintArgsList,
@@ -185,22 +185,38 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                         sList,
                                                         ringOwner,
                                                         feeRecepient,
-                                                        throwIfLRCIsInsuffcient
+                                                        throwIfLRCIsInsuffcient,
+                                                        {from: owner}
                                                        );
 
+      const ethOfOwnerAfter = await getEthBalanceAsync(owner);
+      const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
+      console.log("all gas cost(ether):", allGas);
 
-      console.log(tx.receipt.logs);
+      //console.log(tx.receipt.logs);
 
-      //const event0 = tx.receipt.logs[0];
-      //console.log("event0:", event0);
+      const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
+      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+      const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
+
+      const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
+      const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
+      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+
+      const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+      assert.equal(lrcBalance21.toNumber(), 90e18, "lrc balance not match for order1Owner.");
+      assert.equal(eosBalance21.toNumber(), 9000e18, "eos balance not match for order1Owner.");
+      assert.equal(neoBalance21.toNumber(), 100e18, "neo balance not match for order1Owner.");
+
+      assert.equal(lrcBalance22.toNumber(), 90e18, "lrc balance not match for order2Owner.");
+      assert.equal(eosBalance22.toNumber(), 1000e18, "neo balance not match for order2Owner.");
+      assert.equal(neoBalance22.toNumber(), 900e18, "neo balance not match for order2Owner.");
+
+      assert.equal(lrcBalance23.toNumber(), 20e18, "lrc balance not match for feeRecepient.");
 
 
 
-      // const lrcBalance1 = await getTokenBalanceAsync(lrc, order1Owner);
-      // const eosBalance1 = await getTokenBalanceAsync(eos, order1Owner);
-      // const neoBalance1 = await getTokenBalanceAsync(neo, order1Owner);
-
-      // console.log(lrcBalance1, eosBalance1, neoBalance1);
 
     });
 

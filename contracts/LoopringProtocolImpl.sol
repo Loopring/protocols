@@ -75,11 +75,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// Structs                                                              ///
     ////////////////////////////////////////////////////////////////////////////
 
-
     struct Rate {
         uint amountS;
         uint amountB;
     }
+
     /// @param order        The original order
     /// @param orderHash    The order's hash
     /// @param feeSelection -
