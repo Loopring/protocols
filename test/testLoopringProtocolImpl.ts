@@ -1,3 +1,4 @@
+import * as _ from 'lodash';
 import { BigNumber } from 'bignumber.js';
 import { Artifacts } from '../util/artifacts';
 import { OrderParams } from '../util/types';
@@ -79,7 +80,9 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
   describe('submitRing', () => {
     it('should be able to fill orders.', async () => {
-      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+
+      await lrc.setBalance(order1Owner, web3.toWei(1),   {from: owner});
       await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
       await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
       await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
@@ -91,25 +94,42 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await lrc.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
       await neo.approve(delegateAddr, web3.toWei(100000), {from: order2Owner});
 
-      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient, true);
 
       const ethOfOwnerBefore = await getEthBalanceAsync(owner);
 
-      const tx =  await loopringProtocolImpl.submitRing(p.addressList,
-                                                        p.uintArgsList,
-                                                        p.uint8ArgsList,
-                                                        p.buyNoMoreThanAmountBList,
-                                                        p.vList,
-                                                        p.rList,
-                                                        p.sList,
-                                                        p.ringOwner,
-                                                        p.feeRecepient,
-                                                        p.throwIfLRCIsInsuffcient,
-                                                        {from: owner}
-                                                       );
-      //console.log("tx:", tx);
-      //console.log(tx.receipt.logs);
+      try {
+        const tx1 =  await loopringProtocolImpl.submitRing(p.addressList,
+                                                           p.uintArgsList,
+                                                           p.uint8ArgsList,
+                                                           p.buyNoMoreThanAmountBList,
+                                                           p.vList,
+                                                           p.rList,
+                                                           p.sList,
+                                                           p.ringOwner,
+                                                           p.feeRecepient,
+                                                           p.throwIfLRCIsInsuffcient,
+                                                           {from: owner});
+      } catch (err) {
+        const errMsg = `${err}`;
+        //console.log("errMsg:", errMsg);
+        assert(_.includes(errMsg, 'invalid opcode'), `Expected contract to throw, got: ${err}`);
+      }
+
+      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+      const tx2 = await loopringProtocolImpl.submitRing(p.addressList,
+                                                       p.uintArgsList,
+                                                       p.uint8ArgsList,
+                                                       p.buyNoMoreThanAmountBList,
+                                                       p.vList,
+                                                       p.rList,
+                                                       p.sList,
+                                                       p.ringOwner,
+                                                       p.feeRecepient,
+                                                       p.throwIfLRCIsInsuffcient,
+                                                       {from: owner});
+      //console.log("tx:", tx2);
+      //console.log(tx2.receipt.logs);
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;

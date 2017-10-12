@@ -258,7 +258,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(addressList);
 
-
         var ringhashRegistry = RinghashRegistry(ringhashRegistryAddress);
 
         bytes32 ringhash = ringhashRegistry.calculateRinghash(
