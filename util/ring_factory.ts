@@ -2,6 +2,9 @@ import { BigNumber } from 'bignumber.js';
 import { OrderParams, LoopringSubmitParams } from '../util/types';
 import { Order } from './order';
 import { Ring } from './ring';
+import { bigNumberConfigs } from './bignumber_config';
+
+bigNumberConfigs.configure();
 
 export class RingFactory {
   public loopringProtocolAddr: string;
@@ -64,6 +67,71 @@ export class RingFactory {
     return ring;
   }
 
+  public async generateSize2Ring02(order1Owner: string,
+                                   order2Owner: string,
+                                   ringOwner: string) {
+    const orderPrams1 = {
+      loopringProtocol: this.loopringProtocolAddr,
+      tokenS: this.eosAddress,
+      tokenB: this.neoAddress,
+      amountS: new BigNumber(1000e18),
+      amountB: new BigNumber(100e18),
+      timestamp: new BigNumber(this.currBlockTimeStamp),
+      ttl: new BigNumber(360000),
+      salt: new BigNumber(1234),
+      lrcFee: new BigNumber(0),
+      buyNoMoreThanAmountB: false,
+      marginSplitPercentage: 100,
+    };
+
+    const orderPrams2 = {
+      loopringProtocol: this.loopringProtocolAddr,
+      tokenS: this.neoAddress,
+      tokenB: this.eosAddress,
+      amountS: new BigNumber(100e18),
+      amountB: new BigNumber(900e18),
+      timestamp: new BigNumber(this.currBlockTimeStamp),
+      ttl: new BigNumber(360000),
+      salt: new BigNumber(4321),
+      lrcFee: new BigNumber(0),
+      buyNoMoreThanAmountB: false,
+      marginSplitPercentage: 100,
+    };
+
+    const order1 = new Order(order1Owner, orderPrams1);
+    const order2 = new Order(order2Owner, orderPrams2);
+    await order1.signAsync();
+    await order2.signAsync();
+
+    const ring = new Ring(ringOwner, [order1, order2]);
+    await ring.signAsync();
+
+    return ring;
+  }
+
+  caculateRateAmountS(ring: Ring) {
+    let rate: number = 1;
+    let result: BigNumber[] = [];
+    const size = ring.orders.length;
+    for (let i = 0; i < size; i++) {
+      const order = ring.orders[i];
+      rate = rate * order.params.amountS.toNumber() / order.params.amountB.toNumber();
+    }
+
+    rate = Math.pow(rate, -1/size)
+
+    console.log("rate:", rate);
+
+    for (let i = 0; i < size; i ++) {
+      const order = ring.orders[i];
+      const rateAmountS = order.params.amountS.toNumber() * rate;
+      console.log(rateAmountS);
+      result.push(new BigNumber(rateAmountS));
+    }
+
+    return result;
+  }
+
   public ringToSubmitableParams(ring: Ring,
                                 feeSelectionList: number[],
                                 feeRecepient: string,
@@ -77,6 +145,8 @@ export class RingFactory {
     let rList: string[] = [];
     let sList: string[] = [];
 
+    const rateAmountSList = this.caculateRateAmountS(ring);
+
     for (let i = 0; i < ringSize; i++) {
       const order = ring.orders[i];
       const addressListItem = [order.owner, order.params.tokenS];
@@ -89,11 +159,12 @@ export class RingFactory {
         order.params.ttl,
         order.params.salt,
         order.params.lrcFee,
-        order.params.amountS
+        rateAmountSList[i]
       ];
       uintArgsList.push(uintArgsListItem);
 
       const uint8ArgsListItem = [order.params.marginSplitPercentage, feeSelectionList[i]];
+
       uint8ArgsList.push(uint8ArgsListItem);
 
       buyNoMoreThanAmountBList.push(order.params.buyNoMoreThanAmountB);

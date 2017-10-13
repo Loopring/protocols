@@ -238,7 +238,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public {
 
-        (!entered).orThrow("attepted to re-ent submitRing function");
+        (!entered).orThrow("attempted to re-ent submitRing function");
         entered = true;
 
         //Check ring size
