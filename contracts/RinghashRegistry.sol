@@ -32,7 +32,7 @@ contract RinghashRegistry {
     uint public blocksToLive;
 
     struct Submission {
-        address feeRecepient;
+        address ringminer;
         uint block;
     }
 
@@ -45,38 +45,36 @@ contract RinghashRegistry {
 
     function submitRinghash(
         uint        ringSize,
-        address     feeRecepient,
-        // bool        throwIfLRCIsInsuffcient,
+        address     ringminer,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList)
         public {
         bytes32 ringhash = calculateRinghash(
+            ringminer,
             ringSize,
-            // feeRecepient,
-            // throwIfLRCIsInsuffcient,
             vList,
             rList,
             sList);
 
-        canSubmit(ringhash, feeRecepient)
+        canSubmit(ringhash, ringminer)
             .orThrow("Ringhash submitted");
 
-        submissions[ringhash] = Submission(feeRecepient, block.number);
+        submissions[ringhash] = Submission(ringminer, block.number);
     }
 
     function canSubmit(
         bytes32 ringhash,
-        address feeRecepient
+        address ringminer
         )
         public
         constant
         returns (bool) {
 
         var submission = submissions[ringhash];
-        return (submission.feeRecepient == address(0)
+        return (submission.ringminer == address(0)
             || submission.block + blocksToLive < block.number
-            || submission.feeRecepient == feeRecepient);
+            || submission.ringminer == ringminer);
     }
 
     /// @return True if a ring's hash has ever been submitted; false otherwise.
@@ -85,14 +83,13 @@ contract RinghashRegistry {
         constant
         returns (bool) {
 
-        return submissions[ringhash].feeRecepient != address(0);
+        return submissions[ringhash].ringminer != address(0);
     }
 
     /// @dev Calculate the hash of a ring.
     function calculateRinghash(
+        address     ringminer,
         uint        ringSize,
-        // address     feeRecepient,
-        // bool        throwIfLRCIsInsuffcient,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList
@@ -107,8 +104,7 @@ contract RinghashRegistry {
             .orThrow("invalid ring data");
 
         return keccak256(
-            // feeRecepient,
-            // throwIfLRCIsInsuffcient,
+            ringminer,
             vList.xorReduce(ringSize),
             rList.xorReduce(ringSize),
             sList.xorReduce(ringSize));

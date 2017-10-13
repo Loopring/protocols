@@ -53,6 +53,7 @@ export class Order {
   private getOrderHash() {
     const orderHash = crypto.solSHA3([
       this.params.loopringProtocol,
+      this.owner,
       this.params.tokenS,
       this.params.tokenB,
       this.params.amountS,

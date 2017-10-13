@@ -261,9 +261,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         var ringhashRegistry = RinghashRegistry(ringhashRegistryAddress);
 
         bytes32 ringhash = ringhashRegistry.calculateRinghash(
+            ringminer,
             ringSize,
-            // feeRecepient,
-            // throwIfLRCIsInsuffcient,
             vList,
             rList,
             sList
@@ -877,6 +876,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         return keccak256(
             address(this),
+            order.owner,
             order.tokenS,
             order.tokenB,
             order.amountS,

@@ -59,6 +59,7 @@ export class Ring {
     }
 
     const ringHash = crypto.solSHA3([
+      this.owner,
       this.xorReduce(vList),
       this.xorReduceStr(rList),
       this.xorReduceStr(sList),
