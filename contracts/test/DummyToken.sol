@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity 0.4.15;
 
 import "zeppelin-solidity/contracts/token/MintableToken.sol";
 
@@ -21,6 +21,7 @@ contract DummyToken is MintableToken {
     }
 
     function setBalance(address _target, uint _value)
+        public
         onlyOwner
     {
         uint currBalance = balanceOf(_target);

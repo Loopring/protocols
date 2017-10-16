@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity ^0.4.15;
+pragma solidity 0.4.15;
 
 
 /// @title Token Register Contract
@@ -33,11 +33,11 @@ library Bytes32Lib {
     {
         res = arr[0];
         for (uint i = 1; i < len; i++) {
-            res = _xor(res, arr[i]);
+            res = xorOp(res, arr[i]);
         }
     }
 
-    function _xor(
+    function xorOp(
         bytes32 bs1,
         bytes32 bs2
         )
