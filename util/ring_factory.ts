@@ -119,14 +119,15 @@ export class RingFactory {
     }
 
     rate = Math.pow(rate, -1/size)
-
-    console.log("rate:", rate);
+    //rate = rate.toPrecision(12);
+    //console.log("rate:", rate);
 
     for (let i = 0; i < size; i ++) {
       const order = ring.orders[i];
       const rateAmountS = order.params.amountS.toNumber() * rate;
-      console.log(rateAmountS);
-      result.push(new BigNumber(rateAmountS));
+      rateAmountS.toPrecision(12);
+      //console.log(rateAmountS.toPrecision(12));
+      result.push(new BigNumber(rateAmountS.toPrecision(12)));
     }
 
     return result;
@@ -146,6 +147,7 @@ export class RingFactory {
     let sList: string[] = [];
 
     const rateAmountSList = this.caculateRateAmountS(ring);
+    //console.log("rateAmountSList", rateAmountSList);
 
     for (let i = 0; i < ringSize; i++) {
       const order = ring.orders[i];
@@ -164,6 +166,7 @@ export class RingFactory {
       uintArgsList.push(uintArgsListItem);
 
       const uint8ArgsListItem = [order.params.marginSplitPercentage, feeSelectionList[i]];
+      //console.log("uint8ArgsListItem", uint8ArgsListItem);
 
       uint8ArgsList.push(uint8ArgsListItem);
 

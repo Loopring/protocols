@@ -17,6 +17,7 @@
 */
 pragma solidity ^0.4.15;
 
+
 /// @title Loopring Token Exchange Protocol Contract Interface
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>

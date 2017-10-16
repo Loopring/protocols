@@ -2,6 +2,7 @@ pragma solidity ^0.4.15;
 
 import "zeppelin-solidity/contracts/token/MintableToken.sol";
 
+
 contract DummyToken is MintableToken {
     string public name;
     string public symbol;
@@ -11,8 +12,7 @@ contract DummyToken is MintableToken {
         string _name,
         string _symbol,
         uint _decimals,
-        uint _totalSupply)
-    {
+        uint _totalSupply) {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;

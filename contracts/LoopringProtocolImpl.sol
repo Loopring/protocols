@@ -279,7 +279,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList[ringSize]
         );
 
-        // Assemble input data into a struct so we can pass it to functions.
+        //Assemble input data into a struct so we can pass it to functions.
         var orders = assembleOrders(
             ringSize,
             addressList,
@@ -769,7 +769,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         // Validate ring-mining related arguments.
         for (uint i = 0; i < ringSize; i++) {
-            (uintArgsList[i][5] > 0).orThrow("order rateAmountS is zero");
+            (uintArgsList[i][6] > 0).orThrow("order rateAmountS is zero");
             (uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE).orThrow("invalid order fee selection ");
         }
     }

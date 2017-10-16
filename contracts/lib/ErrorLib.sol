@@ -17,6 +17,7 @@
 */
 pragma solidity ^0.4.15;
 
+
 /// @title Token Register Contract
 /// @author Daniel Wang - <daniel@loopring.org>.
 library ErrorLib {

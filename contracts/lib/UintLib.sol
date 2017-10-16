@@ -17,18 +17,20 @@
 */
 pragma solidity ^0.4.15;
 
+import "zeppelin-solidity/contracts/math/SafeMath.sol";
+
+
 /// @title UintUtil
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @dev uint utility functions
-
-import "zeppelin-solidity/contracts/math/SafeMath.sol";
-
 library UintLib {
     using SafeMath  for uint;
 
     function tolerantSub(uint x, uint y) constant returns (uint z) {
-        if (x >= y) z = x - y; 
-        else z = 0;
+        if (x >= y)
+            z = x - y;
+        else
+            z = 0;
     }
 
     function next(uint i, uint size) internal constant returns (uint) {
@@ -47,8 +49,8 @@ library UintLib {
         )
         internal
         constant
-        returns (uint) {
-
+        returns (uint)
+    {
         uint len = arr.length;
         require(len > 1);
         require(scale > 0);
@@ -74,6 +76,7 @@ library UintLib {
             }
             cvs += sub.mul(sub);
         }
+
         return cvs
             .mul(scale)
             .div(avg)
