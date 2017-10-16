@@ -27,11 +27,11 @@ import "./RinghashRegistry.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
 
+
 /// @title Loopring Token Exchange Protocol Implementation Contract v1
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocolImpl is LoopringProtocol {
-    using ErrorLib  for bool;
     using Math      for uint;
     using SafeMath  for uint;
     using UintLib   for uint;
@@ -168,8 +168,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    _maxRingSize,
         uint    _rateRatioCVSThreshold
         )
-        public {
-
+        public
+    {
         require(address(0) != _lrcTokenAddress);
         require(address(0) != _tokenRegistryAddress);
         require(address(0) != _delegateAddress);
@@ -177,21 +177,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(_maxRingSize > 1);
         require(_rateRatioCVSThreshold > 0);
 
-        lrcTokenAddress             = _lrcTokenAddress;
-        tokenRegistryAddress        = _tokenRegistryAddress;
-        ringhashRegistryAddress     = _ringhashRegistryAddress;
-        delegateAddress             = _delegateAddress;
-        maxRingSize                 = _maxRingSize;
-        rateRatioCVSThreshold       = _rateRatioCVSThreshold;
+        lrcTokenAddress = _lrcTokenAddress;
+        tokenRegistryAddress = _tokenRegistryAddress;
+        ringhashRegistryAddress = _ringhashRegistryAddress;
+        delegateAddress = _delegateAddress;
+        maxRingSize = _maxRingSize;
+        rateRatioCVSThreshold = _rateRatioCVSThreshold;
     }
-
 
     ////////////////////////////////////////////////////////////////////////////
     /// Public Functions                                                     ///
     ////////////////////////////////////////////////////////////////////////////
 
     /// @dev Disable default function.
-    function () payable {
+    function ()
+        payable
+    {
         revert();
     }
 
@@ -236,15 +237,17 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address         feeRecepient,
         bool            throwIfLRCIsInsuffcient
         )
-        public {
-
-        (!entered).orThrow("attempted to re-ent submitRing function");
+        public
+    {
+        ErrorLib.check(entered, "attempted to re-ent submitRing function");
         entered = true;
 
         //Check ring size
         uint ringSize = addressList.length;
-        (ringSize > 1 && ringSize <= maxRingSize)
-            .orThrow("invalid ring size");
+        ErrorLib.check(
+            ringSize > 1 && ringSize <= maxRingSize,
+            "invalid ring size"
+        );
 
         verifyInputDataIntegrity(
             ringSize,
@@ -254,7 +257,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             buyNoMoreThanAmountBList,
             vList,
             rList,
-            sList);
+            sList
+        );
 
         verifyTokensRegistered(addressList);
 
@@ -268,8 +272,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList
         );
 
-        ringhashRegistry.canSubmit(ringhash, feeRecepient)
-            .orThrow("Ring claimed by others");
+        ErrorLib.check(
+            ringhashRegistry.canSubmit(ringhash, feeRecepient),
+            "Ring claimed by others"
+        );
 
         verifySignature(
             ringminer,
@@ -288,7 +294,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             buyNoMoreThanAmountBList,
             vList,
             rList,
-            sList);
+            sList
+        );
 
         if (feeRecepient == address(0)) {
             feeRecepient = ringminer;
@@ -318,6 +325,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param v                  Order ECDSA signature parameter v.
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
+    
     function cancelOrder(
         address[3] addresses,
         uint[7]    orderValues,
@@ -327,10 +335,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32    r,
         bytes32    s
         )
-        public {
-
+        public
+    {
         uint cancelAmount = orderValues[6];
-        (cancelAmount > 0).orThrow("amount to cancel is zero");
+        ErrorLib.check(cancelAmount > 0, "amount to cancel is zero");
 
         var order = Order(
             addresses[0],
@@ -360,20 +368,23 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
     ///        timestamp.
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
-    function setCutoff(uint cutoff) public {
+    function setCutoff(uint cutoff)
+        public
+    {
         uint t = cutoff;
         if (t == 0) {
             t = block.timestamp;
         }
 
-        (cutoffs[msg.sender] < t)
-            .orThrow("attempted to set cutoff to a smaller value");
+        ErrorLib.check(
+            cutoffs[msg.sender] < t,
+            "attempted to set cutoff to a smaller value"
+        );
 
         cutoffs[msg.sender] = t;
 
@@ -385,7 +396,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-
     ////////////////////////////////////////////////////////////////////////////
     /// Internal & Private Functions                                         ///
     ////////////////////////////////////////////////////////////////////////////
@@ -393,24 +403,31 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Validate a ring.
     function verifyRingHasNoSubRing(Ring ring)
         internal
-        constant {
-
+        constant
+    {
         uint ringSize = ring.orders.length;
         // Check the ring has no sub-ring.
-        for (uint i = 0; i < ringSize -1; i++) {
+        for (uint i = 0; i < ringSize - 1; i++) {
             address tokenS = ring.orders[i].order.tokenS;
-            for (uint j = i + 1; j < ringSize; j++){
-                 (tokenS != ring.orders[j].order.tokenS)
-                    .orThrow("found sub-ring");
+            for (uint j = i + 1; j < ringSize; j++) {
+                ErrorLib.check(
+                    tokenS != ring.orders[j].order.tokenS,
+                    "found sub-ring"
+                );
             }
         }
     }
 
-    function verifyTokensRegistered(address[2][] addressList) internal constant {
+    function verifyTokensRegistered(address[2][] addressList)
+        internal
+        constant
+    {
         var registryContract = TokenRegistry(tokenRegistryAddress);
         for (uint i = 0; i < addressList.length; i++) {
-            registryContract.isTokenRegistered(addressList[i][1])
-                .orThrow("token not registered");
+            ErrorLib.check(
+                registryContract.isTokenRegistered(addressList[i][1]),
+                "token not registered"
+            );
         }
     }
 
@@ -421,13 +438,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address feeRecepient,
         bool throwIfLRCIsInsuffcient
         )
-        internal {
+        internal
+    {
         var ring = Ring(
             ringhash,
             orders,
             miner,
             feeRecepient,
-            throwIfLRCIsInsuffcient);
+            throwIfLRCIsInsuffcient
+        );
 
         // Do the hard work.
         verifyRingHasNoSubRing(ring);
@@ -464,10 +483,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ring.miner,
             ring.feeRecepient,
             RinghashRegistry(ringhashRegistryAddress).ringhashFound(ring.ringhash)
-            );
+        );
     }
 
-    function settleRing(Ring ring) internal {
+    function settleRing(Ring ring)
+        internal
+    {
         uint ringSize = ring.orders.length;
         var delegate = TokenTransferDelegate(delegateAddress);
 
@@ -483,14 +504,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.order.tokenS,
                 state.order.owner,
                 prev.order.owner,
-                state.fillAmountS - prev.splitB);
+                state.fillAmountS - prev.splitB
+            );
 
             if (prev.splitB + state.splitS > 0) {
                 delegate.transferToken(
                     state.order.tokenS,
                     state.order.owner,
                     ring.feeRecepient,
-                    prev.splitB + state.splitS);
+                    prev.splitB + state.splitS
+                );
             }
 
             // Pay LRC
@@ -499,15 +522,17 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     lrcTokenAddress,
                     ring.feeRecepient,
                     state.order.owner,
-                    state.lrcReward);
+                    state.lrcReward
+                );
             }
 
             if (state.lrcFee > 0) {
-                 delegate.transferToken(
+                delegate.transferToken(
                     lrcTokenAddress,
                     state.order.owner,
                     ring.feeRecepient,
-                    state.lrcFee);
+                    state.lrcFee
+                );
             }
 
             // Update fill records
@@ -529,12 +554,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 next.fillAmountS - state.splitB,
                 state.lrcReward,
                 state.lrcFee
-                );
+            );
         }
 
     }
 
-    function verifyMinerSuppliedFillRates(Ring ring) internal constant {
+    function verifyMinerSuppliedFillRates(Ring ring)
+        internal
+        constant
+    {
         var orders = ring.orders;
         uint ringSize = orders.length;
         uint[] memory rateRatios = new uint[](ringSize);
@@ -543,19 +571,26 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint s1b0 = orders[i].rate.amountS.mul(orders[i].order.amountB);
             uint s0b1 = orders[i].order.amountS.mul(orders[i].rate.amountB);
 
-            (s1b0 <= s0b1)
-                .orThrow("miner supplied exchange rate provides invalid discount");
+            ErrorLib.check(
+                s1b0 <= s0b1,
+                "miner supplied exchange rate provides invalid discount"
+            );
 
             rateRatios[i] = RATE_RATIO_SCALE.mul(s1b0).div(s0b1);
         }
 
         uint cvs = UintLib.cvsquare(rateRatios, RATE_RATIO_SCALE);
 
-        (cvs <= rateRatioCVSThreshold)
-            .orThrow("miner supplied exchange rate is not evenly discounted");
+        ErrorLib.check(
+            cvs <= rateRatioCVSThreshold,
+            "miner supplied exchange rate is not evenly discounted"
+        );
     }
 
-    function calculateRingFees(Ring ring) internal constant {
+    function calculateRingFees(Ring ring) 
+        internal
+        constant
+    {
         uint minerLrcSpendable = getLRCSpendable(ring.feeRecepient);
         uint ringSize = ring.orders.length;
 
@@ -568,8 +603,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uint lrcSpendable = getLRCSpendable(state.order.owner);
 
                 if (lrcSpendable < state.lrcFee) {
-                    (!ring.throwIfLRCIsInsuffcient)
-                        .orThrow("order LRC balance insuffcient");
+                    ErrorLib.check(
+                        !ring.throwIfLRCIsInsuffcient,
+                        "order LRC balance insuffcient"
+                    );
 
                     state.lrcFee = lrcSpendable;
                     minerLrcSpendable += lrcSpendable;
@@ -578,23 +615,33 @@ contract LoopringProtocolImpl is LoopringProtocol {
             } else if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
                 if (minerLrcSpendable >= state.lrcFee) {
                     if (state.order.buyNoMoreThanAmountB) {
-                        uint splitS = next.fillAmountS
-                            .mul(state.order.amountS)
-                            .div(state.order.amountB)
-                            .sub(state.fillAmountS);
+                        uint splitS = next.fillAmountS.mul(
+                            state.order.amountS
+                        ).div(
+                            state.order.amountB
+                        ).sub(
+                            state.fillAmountS
+                        );
 
-                        state.splitS = splitS
-                            .mul(state.order.marginSplitPercentage)
-                            .div(MARGIN_SPLIT_PERCENTAGE_BASE);
+                        state.splitS = splitS.mul(
+                            state.order.marginSplitPercentage
+                        ).div(
+                            MARGIN_SPLIT_PERCENTAGE_BASE
+                        );
                     } else {
                         uint splitB = next.fillAmountS.sub(
-                            state.fillAmountS
-                                .mul(state.order.amountB)
-                                .div(state.order.amountS));
+                            state.fillAmountS.mul(
+                                state.order.amountB
+                            ).div(
+                                state.order.amountS
+                            )
+                        );
 
-                        state.splitB = splitB
-                            .mul(state.order.marginSplitPercentage)
-                            .div(MARGIN_SPLIT_PERCENTAGE_BASE);
+                        state.splitB = splitB.mul(
+                            state.order.marginSplitPercentage
+                        ).div(
+                            MARGIN_SPLIT_PERCENTAGE_BASE
+                        );
                     }
 
                     // This implicits order with smaller index in the ring will
@@ -613,8 +660,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     }
 
-    function calculateRingFillAmount(Ring ring) internal constant {
-
+    function calculateRingFillAmount(Ring ring)
+        internal
+        constant
+    {
         uint ringSize = ring.orders.length;
         uint smallestIdx = 0;
         uint i;
@@ -625,18 +674,25 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             uint res = calculateOrderFillAmount(
                 ring.orders[i],
-                ring.orders[j]);
+                ring.orders[j]
+            );
 
-            if (res == 1) smallestIdx = i;
-            else if (res == 2) smallestIdx = j;
+            if (res == 1) {
+                smallestIdx = i;
+            } else if (res == 2) {
+                smallestIdx = j;
+            }
         }
 
         for (i = 0; i < smallestIdx; i++) {
             j = i.next(ring.orders.length);
-            (calculateOrderFillAmount(
-                ring.orders[i],
-                ring.orders[j]) == 0)
-                .orThrow("unexpected exception in calculateRingFillAmount");
+            ErrorLib.check(
+                calculateOrderFillAmount(
+                    ring.orders[i],
+                    ring.orders[j]
+                ) == 0,
+                "unexpected exception in calculateRingFillAmount"
+            );
         }
     }
 
@@ -649,27 +705,33 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         internal
         constant
-        returns (uint whichIsSmaller) {
-
-        uint fillAmountB  = state.fillAmountS
-            .mul(state.rate.amountB)
-            .div(state.rate.amountS);
+        returns (uint whichIsSmaller)
+    {
+        uint fillAmountB = state.fillAmountS.mul(
+            state.rate.amountB
+        ).div(
+            state.rate.amountS
+        );
 
         if (state.order.buyNoMoreThanAmountB) {
             if (fillAmountB > state.order.amountB) {
                 fillAmountB = state.order.amountB;
 
-                state.fillAmountS = fillAmountB
-                    .mul(state.rate.amountS)
-                    .div(state.rate.amountB);
+                state.fillAmountS = fillAmountB.mul(
+                    state.rate.amountS
+                ).div(
+                    state.rate.amountB
+                );
 
                 whichIsSmaller = 1;
             }
         }
 
-        state.lrcFee = state.order.lrcFee
-            .mul(state.fillAmountS)
-            .div(state.order.amountS);
+        state.lrcFee = state.order.lrcFee.mul(
+            state.fillAmountS
+        ).div(
+            state.order.amountS
+        );
 
         if (fillAmountB <= next.fillAmountS) {
             next.fillAmountS = fillAmountB;
@@ -678,11 +740,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
     }
 
-
     /// @dev Scale down all orders based on historical fill or cancellation
     ///      stats but key the order's original exchange rate.
-    function scaleRingBasedOnHistoricalRecords(Ring ring) internal constant {
-
+    function scaleRingBasedOnHistoricalRecords(Ring ring)
+        internal
+        constant
+    {
         uint ringSize = ring.orders.length;
 
         for (uint i = 0; i < ringSize; i++) {
@@ -690,18 +753,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var order = state.order;
 
             if (order.buyNoMoreThanAmountB) {
-                uint amountB = order.amountB
-                    .sub(filled[state.orderHash])
-                    .tolerantSub(cancelled[state.orderHash]);
+                uint amountB = order.amountB.sub(
+                    filled[state.orderHash]
+                ).tolerantSub(
+                    cancelled[state.orderHash]
+                );
 
                 order.amountS = amountB.mul(order.amountS).div(order.amountB);
                 order.lrcFee = amountB.mul(order.lrcFee).div(order.amountB);
 
                 order.amountB = amountB;
             } else {
-                uint amountS = order.amountS
-                    .sub(filled[state.orderHash])
-                    .tolerantSub(cancelled[state.orderHash]);
+                uint amountS = order.amountS.sub(
+                    filled[state.orderHash]
+                ).tolerantSub(
+                    cancelled[state.orderHash]
+                );
 
                 order.amountB = amountS.mul(order.amountB).div(order.amountS);
                 order.lrcFee = amountS.mul(order.lrcFee).div(order.amountS);
@@ -709,8 +776,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order.amountS = amountS;
             }
 
-            (order.amountS > 0).orThrow("amountS is zero");
-            (order.amountB > 0).orThrow("amountB is zero");
+            ErrorLib.check(order.amountS > 0, "amountS is zero");
+            ErrorLib.check(order.amountB > 0, "amountB is zero");
 
             state.fillAmountS = order.amountS.min256(state.availableAmountS);
         }
@@ -723,18 +790,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         internal
         constant
-        returns (uint) {
-
-        return TokenTransferDelegate(delegateAddress)
-            .getSpendable(tokenAddress, tokenOwner);
+        returns (uint)
+    {
+        return TokenTransferDelegate(
+            delegateAddress
+        ).getSpendable(
+            tokenAddress,
+            tokenOwner
+        );
     }
 
     /// @return Amount of LRC token that can be spent by this contract.
     function getLRCSpendable(address tokenOwner)
         internal
         constant
-        returns (uint) {
-
+        returns (uint)
+    {
         return getSpendable(lrcTokenAddress, tokenOwner);
     }
 
@@ -750,27 +821,54 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32[]       sList
         )
         internal
-        constant {
+        constant
+    {
+        ErrorLib.check(
+            ringSize == addressList.length,
+            "ring data is inconsistent - addressList"
+        );
 
-        (ringSize == addressList.length)
-            .orThrow("ring data is inconsistent - addressList");
-        (ringSize == uintArgsList.length)
-            .orThrow("ring data is inconsistent - uintArgsList");
-        (ringSize == uint8ArgsList.length)
-            .orThrow("ring data is inconsistent - uint8ArgsList");
-        (ringSize == buyNoMoreThanAmountBList.length)
-            .orThrow("ring data is inconsistent - buyNoMoreThanAmountBList");
-        (ringSize + 1 == vList.length)
-            .orThrow("ring data is inconsistent - vList");
-        (ringSize + 1 == rList.length)
-            .orThrow("ring data is inconsistent - rList");
-        (ringSize + 1 == sList.length)
-            .orThrow("ring data is inconsistent - sList");
+        ErrorLib.check(
+            ringSize == uintArgsList.length,
+            "ring data is inconsistent - uintArgsList"
+        );
+
+        ErrorLib.check(
+            ringSize == uint8ArgsList.length,
+            "ring data is inconsistent - uint8ArgsList"
+        );
+
+        ErrorLib.check(
+            ringSize == buyNoMoreThanAmountBList.length,
+            "ring data is inconsistent - buyNoMoreThanAmountBList"
+        );
+
+        ErrorLib.check(
+            ringSize + 1 == vList.length,
+            "ring data is inconsistent - vList"
+        );
+
+        ErrorLib.check(
+            ringSize + 1 == rList.length,
+            "ring data is inconsistent - rList"
+        );
+
+        ErrorLib.check(
+            ringSize + 1 == sList.length,
+            "ring data is inconsistent - sList"
+        );
 
         // Validate ring-mining related arguments.
         for (uint i = 0; i < ringSize; i++) {
-            (uintArgsList[i][6] > 0).orThrow("order rateAmountS is zero");
-            (uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE).orThrow("invalid order fee selection ");
+            ErrorLib.check(
+                uintArgsList[i][6] > 0,
+                "order rateAmountS is zero"
+            );
+
+            ErrorLib.check(
+                uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE,
+                "invalid order fee selection"
+            );
         }
     }
 
@@ -788,8 +886,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         internal
         constant
-        returns (OrderState[]) {
-
+        returns (OrderState[])
+    {
         var orders = new OrderState[](ringSize);
 
         for (uint i = 0; i < ringSize; i++) {
@@ -809,7 +907,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uint8ArgsList[i][0],
                 vList[i],
                 rList[i],
-                sList[i]);
+                sList[i]
+            );
 
             bytes32 orderHash = calculateOrderHash(order);
 
@@ -818,7 +917,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 orderHash,
                 order.v,
                 order.r,
-                order.s);
+                order.s
+            );
 
             validateOrder(order);
 
@@ -833,47 +933,84 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0,   // lrcFee
                 0,   // splitS
                 0    // splitB
-                );
+            );
 
-            (orders[i].availableAmountS > 0)
-                .orThrow("order spendable amountS is zero");
+            ErrorLib.check(
+                orders[i].availableAmountS > 0,
+                "order spendable amountS is zero"
+            );
         }
 
         return orders;
     }
 
     /// @dev validate order's parameters are OK.
-    function validateOrder(Order order) internal constant {
-        (order.owner != address(0))
-            .orThrow("invalid order owner");
-        (order.tokenS != address(0))
-            .orThrow("invalid order tokenS");
-        (order.tokenB != address(0))
-            .orThrow("invalid order tokenB");
-        (order.amountS > 0)
-            .orThrow("invalid order amountS");
-        (order.amountB > 0)
-            .orThrow("invalid order amountB");
-        (order.timestamp <= block.timestamp)
-            .orThrow("order is too early to match");
-        (order.timestamp > cutoffs[order.owner])
-            .orThrow("order is cut off");
-        (order.ttl > 0)
-            .orThrow("order ttl is 0");
-        (order.timestamp + order.ttl > block.timestamp)
-            .orThrow("order is expired");
-        (order.salt > 0)
-            .orThrow("invalid order salt");
-        (order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE)
-            .orThrow("invalid order marginSplitPercentage");
+    function validateOrder(Order order)
+        internal
+        constant
+    {
+        ErrorLib.check(
+            order.owner != address(0),
+            "invalid order owner"
+        );
+
+        ErrorLib.check(
+            order.tokenS != address(0),
+            "invalid order tokenS"
+        );
+
+        ErrorLib.check(
+            order.tokenB != address(0),
+            "invalid order tokenB"
+        );
+
+        ErrorLib.check(
+            order.amountS > 0,
+            "invalid order amountS"
+        );
+
+        ErrorLib.check(
+            order.amountB > 0,
+            "invalid order amountB"
+        );
+
+        ErrorLib.check(
+            order.timestamp <= block.timestamp,
+            "order is too early to match"
+        );
+
+        ErrorLib.check(
+            order.timestamp > cutoffs[order.owner],
+            "order is cut off"
+        );
+
+        ErrorLib.check(
+            order.ttl > 0,
+            "order ttl is 0"
+        );
+
+        ErrorLib.check(
+            order.timestamp + order.ttl > block.timestamp,
+            "order is expired"
+        );
+
+        ErrorLib.check(
+            order.salt > 0,
+            "invalid order salt"
+        );
+
+        ErrorLib.check(
+            order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE,
+            "invalid order marginSplitPercentage"
+        );
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
     function calculateOrderHash(Order order)
         internal
         constant
-        returns (bytes32) {
-
+        returns (bytes32)
+    {
         return keccak256(
             address(this),
             order.owner,
@@ -886,7 +1023,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.salt,
             order.lrcFee,
             order.buyNoMoreThanAmountB,
-            order.marginSplitPercentage);
+            order.marginSplitPercentage
+        );
     }
 
     /// @return The signer's address.
@@ -898,27 +1036,30 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32 s)
         public
         constant
-        {
-
+    {
         address addr = ecrecover(
             keccak256("\x19Ethereum Signed Message:\n32", hash),
             v,
             r,
-            s);
-        (signer == addr).orThrow("invalid signature");
+            s
+        );
+
+        ErrorLib.check(signer == addr, "invalid signature");
     }
 
     function getOrderFilled(bytes32 orderHash)
         public
         constant
-        returns (uint) {
+        returns (uint)
+    {
         return filled[orderHash];
     }
 
     function getOrderCancelled(bytes32 orderHash)
         public
         constant
-        returns (uint) {
+        returns (uint)
+    {
         return cancelled[orderHash];
     }
 }

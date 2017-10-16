@@ -19,6 +19,7 @@ pragma solidity ^0.4.15;
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
+
 /// @title Token Register Contract
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
@@ -30,7 +31,8 @@ contract TokenRegistry is Ownable {
 
     function registerToken(address _token, string _symbol)
         public
-        onlyOwner {
+        onlyOwner
+    {
         require(_token != address(0));
         require(!isTokenRegisteredBySymbol(_symbol));
         require(!isTokenRegistered(_token));
@@ -40,7 +42,8 @@ contract TokenRegistry is Ownable {
 
     function unregisterToken(address _token, string _symbol)
         public
-        onlyOwner {
+        onlyOwner
+    {
         require(tokenSymbolMap[_symbol] == _token);
         delete tokenSymbolMap[_symbol];
         for (uint i = 0; i < tokens.length; i++) {
@@ -55,14 +58,16 @@ contract TokenRegistry is Ownable {
     function isTokenRegisteredBySymbol(string symbol)
         public
         constant
-        returns (bool) {
+        returns (bool)
+    {
         return tokenSymbolMap[symbol] != address(0);
     }
 
     function isTokenRegistered(address _token)
         public
         constant
-        returns (bool) {
+        returns (bool)
+    {
 
         for (uint i = 0; i < tokens.length; i++) {
             if (tokens[i] == _token) {
@@ -75,7 +80,8 @@ contract TokenRegistry is Ownable {
     function getAddressBySymbol(string symbol)
         public
         constant
-        returns (address) {
+        returns (address)
+    {
         return tokenSymbolMap[symbol];
     }
 

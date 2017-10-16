@@ -45,8 +45,7 @@ library UintLib {
     /// https://en.wikipedia.org/wiki/Coefficient_of_variation
     function cvsquare(
         uint[] arr,
-        uint scale
-        )
+        uint scale)
         internal
         constant
         returns (uint)
@@ -77,11 +76,6 @@ library UintLib {
             cvs += sub.mul(sub);
         }
 
-        return cvs
-            .mul(scale)
-            .div(avg)
-            .mul(scale)
-            .div(avg)
-            .div(len - 1);
+        return cvs.mul(scale).div(avg).mul(scale).div(avg).div(len - 1);
     }
 }

@@ -1,1 +1,5 @@
 node_modules
+deploy
+test
+transpiled
+build

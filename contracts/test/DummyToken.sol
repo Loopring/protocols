@@ -20,7 +20,9 @@ contract DummyToken is MintableToken {
         balances[msg.sender] = _totalSupply;
     }
 
-    function setBalance(address _target, uint _value) onlyOwner {
+    function setBalance(address _target, uint _value)
+        onlyOwner
+    {
         uint currBalance = balanceOf(_target);
         if (_value < currBalance) {
             totalSupply = totalSupply.sub(currBalance.sub(_value));
