@@ -109,7 +109,7 @@ export class RingFactory {
     return ring;
   }
 
-  caculateRateAmountS(ring: Ring) {
+  public caculateRateAmountS(ring: Ring) {
     let rate: number = 1;
     let result: BigNumber[] = [];
     const size = ring.orders.length;
