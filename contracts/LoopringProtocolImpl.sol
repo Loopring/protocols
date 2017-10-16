@@ -325,7 +325,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param v                  Order ECDSA signature parameter v.
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
-    
+
     function cancelOrder(
         address[3] addresses,
         uint[7]    orderValues,
@@ -587,7 +587,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    function calculateRingFees(Ring ring) 
+    function calculateRingFees(Ring ring)
         internal
         constant
     {
@@ -629,12 +629,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                             MARGIN_SPLIT_PERCENTAGE_BASE
                         );
                     } else {
-                        uint splitB = next.fillAmountS.sub(
-                            state.fillAmountS.mul(
-                                state.order.amountB
-                            ).div(
-                                state.order.amountS
-                            )
+                        uint splitB = next.fillAmountS.sub(state.fillAmountS
+                            .mul(state.order.amountB)
+                            .div(state.order.amountS)
                         );
 
                         state.splitB = splitB.mul(
