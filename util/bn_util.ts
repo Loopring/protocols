@@ -4,7 +4,7 @@ import { bigNumberConfigs } from './bignumber_config';
 
 bigNumberConfigs.configure();
 
-type BNValue = number|string|BigNumber.BigNumber;
+type BNValue = number|string|BigNumber;
 
 export const BNUtil = {
   add(numA: BNValue, numB: BNValue): string {

@@ -2,9 +2,9 @@ import { BigNumber } from 'bignumber.js';
 import { OrderParams, LoopringSubmitParams } from '../util/types';
 import { Order } from './order';
 import { Ring } from './ring';
-import { bigNumberConfigs } from './bignumber_config';
+import { BNUtil } from './bn_util';
 
-bigNumberConfigs.configure();
+//bigNumberConfigs.configure();
 
 export class RingFactory {
   public loopringProtocolAddr: string;
@@ -88,8 +88,8 @@ export class RingFactory {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.neoAddress,
       tokenB: this.eosAddress,
-      amountS: new BigNumber(100e18),
-      amountB: new BigNumber(900e18),
+      amountS: new BigNumber(50e18),
+      amountB: new BigNumber(450e18),
       timestamp: new BigNumber(this.currBlockTimeStamp),
       ttl: new BigNumber(360000),
       salt: new BigNumber(4321),
@@ -195,6 +195,103 @@ export class RingFactory {
     }
 
     return submitParams;
+  }
+
+  public caculateRingFeesAndBalances(ring: Ring, feeSelectionList: number[]) {
+    const rateAmountSList = this.caculateRateAmountS(ring);
+    let fillAmountSList: number[] = [];
+    const size = ring.orders.length;
+
+    // caculate fillAmountS, scale by smallest index.
+    let smallestIndex = -1;
+    for (let i = 0; i < size; i++) {
+      const order = ring.orders[i];
+
+      if (i == 0) {
+        fillAmountSList.push(rateAmountSList[0].toNumber());
+      } else {
+        const fillAmountSMax: number = fillAmountSList[i - 1] * order.params.amountB.toNumber() / rateAmountSList[i - 1].toNumber();
+
+        if (fillAmountSMax > order.params.amountS.toNumber()) {
+          smallestIndex = i;
+          fillAmountSList.push(order.params.amountS.toNumber());
+        } else {
+          if (fillAmountSMax > rateAmountSList[i].toNumber()) {
+            if (order.params.buyNoMoreThanAmountB) {
+              fillAmountSList.push(rateAmountSList[i].toNumber());
+            } else {
+              fillAmountSList.push(fillAmountSMax);
+            }
+          } else {
+            fillAmountSList.push(fillAmountSMax);
+          }
+          smallestIndex = i - 1;
+        }
+      }
+    }
+
+    for (let i = 0; i < size; i++) {
+      const ind = (smallestIndex + i) % size;
+      const nextInd = (ind + 1) % size;
+      const order = ring.orders[ind];
+      const nextFillAmountSNumber = fillAmountSList[ind] * order.params.amountB.toNumber() / rateAmountSList[ind].toNumber();
+      fillAmountSList[nextInd] = nextFillAmountSNumber;
+    }
+
+    let result: any = {};
+    let fees: any = [];
+    let balances: any = [];
+
+    // caculate fees for each order. and assemble result.
+    for (let i = 0; i < size; i++) {
+      const nextInd = (i+1) % size;
+      const order = ring.orders[i];
+
+      let feeItem: any = {};
+      feeItem.fillS = fillAmountSList[i];
+      if (0 == feeSelectionList[i]) {
+        feeItem.feeLrc = order.params.lrcFee.toNumber();
+        feeItem.feeS = 0;
+        feeItem.feeB = 0;
+      } else if (1 == feeSelectionList[i]) {
+        if (order.params.buyNoMoreThanAmountB) {
+          feeItem.feeS = fillAmountSList[i] * order.params.amountS.toNumber() / rateAmountSList[i].toNumber()  - fillAmountSList[i];
+          feeItem.feeS = feeItem.feeS * order.params.marginSplitPercentage / 100;
+          feeItem.feeB = 0;
+        } else {
+          feeItem.feeS = 0;
+          feeItem.feeB = fillAmountSList[nextInd] - fillAmountSList[i] * order.params.amountB.toNumber() / order.params.amountS.toNumber();
+          feeItem.feeB = feeItem.feeB * order.params.marginSplitPercentage / 100;
+        }
+      } else {
+        throw new Error("invalid fee selection value.");
+      }
+
+      fees.push(feeItem);
+    }
+
+    result.fees = fees;
+
+    for (let i = 0; i < size; i++) {
+      const order = ring.orders[i];
+      const prevInd = this.getPrevIndex(i, size);
+
+      let balanceItem: any = {};
+      balanceItem.balanceS = order.params.amountS.toNumber() - fillAmountSList[i] - fees[i].feeS;
+      balanceItem.balanceB = fillAmountSList[prevInd] - fees[i].feeB;
+      balanceItem.feeSTotal = fees[i].feeS + fees[prevInd].feeB;
+      balances.push(balanceItem);
+    }
+
+    result.balances = balances;
+
+    //console.log("result:", result);
+    return result;
+  }
+
+  getPrevIndex(i: number, size: number) {
+    if (i <= 0) return size - 1;
+    else return (i - 1) % size;
   }
 
 };

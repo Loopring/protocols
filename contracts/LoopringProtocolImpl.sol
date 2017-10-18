@@ -683,12 +683,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         for (i = 0; i < smallestIdx; i++) {
             j = i.next(ring.orders.length);
-            ErrorLib.check(
-                calculateOrderFillAmount(
-                    ring.orders[i],
-                    ring.orders[j]
-                ) == 0,
-                "unexpected exception in calculateRingFillAmount"
+            calculateOrderFillAmount(
+                ring.orders[i],
+                ring.orders[j]
             );
         }
     }
