@@ -56,6 +56,14 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     return assert(n1.toPrecision(precision), n2.toPrecision(precision));
   }
 
+  const clear = async (tokens: any[], addresses: string[]) => {
+    for (let i = 0; i < tokens.length; i ++) {
+      for (let j = 0; j < addresses.length; j++) {
+        await tokens[i].setBalance(addresses[j], 0, {from: owner});
+      }
+    }
+  }
+
   before( async () => {
     [loopringProtocolImpl, tokenRegistry, tokenTransferDelegate] = await Promise.all([
       LoopringProtocolImpl.deployed(),
@@ -167,15 +175,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       assert.equal(lrcBalance23.toNumber(), 15e18, "lrc balance not match for feeRecepient.");
 
-      await eos.setBalance(order1Owner, 0, {from: owner});
-      await eos.setBalance(order2Owner, 0, {from: owner});
-
-      await neo.setBalance(order1Owner, 0, {from: owner});
-      await neo.setBalance(order2Owner, 0, {from: owner});
-
-      await lrc.setBalance(order1Owner, 0, {from: owner});
-      await lrc.setBalance(order2Owner, 0, {from: owner});
-      await lrc.setBalance(feeRecepient, 0, {from: owner});
+      await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
 
     it('should be able to fill orders where fee selection type is margin split.', async () => {
@@ -227,13 +227,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[0].feeSTotal);
       assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
 
-      await eos.setBalance(order1Owner, 0, {from: owner});
-      await eos.setBalance(order2Owner, 0, {from: owner});
-      await eos.setBalance(feeRecepient, 0, {from: owner});
-
-      await neo.setBalance(order1Owner, 0, {from: owner});
-      await neo.setBalance(order2Owner, 0, {from: owner});
-      await neo.setBalance(feeRecepient, 0, {from: owner});
+      await clear([eos, neo], [order1Owner, order2Owner, feeRecepient]);
     });
 
     it('should be able to fill orders where fee selection type is margin split and lrc.', async () => {
@@ -290,6 +284,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
 
       assertNumberEqualsWithPrecision(lrcBalance23.toNumber(), feeAndBalanceExpected.fees[1].feeLrc);
+
+      await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
 
   });
