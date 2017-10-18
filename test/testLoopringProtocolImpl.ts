@@ -161,11 +161,11 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       assert.equal(eosBalance21.toNumber(), 9000e18, "eos balance not match for order1Owner.");
       assert.equal(neoBalance21.toNumber(), 100e18, "neo balance not match for order1Owner.");
 
-      assert.equal(lrcBalance22.toNumber(), 90e18, "lrc balance not match for order2Owner.");
+      assert.equal(lrcBalance22.toNumber(), 95e18, "lrc balance not match for order2Owner.");
       assert.equal(eosBalance22.toNumber(), 1000e18, "eos balance not match for order2Owner.");
       assert.equal(neoBalance22.toNumber(), 900e18, "neo balance not match for order2Owner.");
 
-      assert.equal(lrcBalance23.toNumber(), 20e18, "lrc balance not match for feeRecepient.");
+      assert.equal(lrcBalance23.toNumber(), 15e18, "lrc balance not match for feeRecepient.");
 
       await eos.setBalance(order1Owner, 0, {from: owner});
       await eos.setBalance(order2Owner, 0, {from: owner});
@@ -207,11 +207,9 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
       //console.log("all gas cost(ether):", allGas);
 
-      //const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
       const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
 
-      //const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
       const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
       const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
 
@@ -229,22 +227,69 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[0].feeSTotal);
       assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
 
-      //const rateAmountS = ringFactory.caculateRateAmountS(ring);
+      await eos.setBalance(order1Owner, 0, {from: owner});
+      await eos.setBalance(order2Owner, 0, {from: owner});
+      await eos.setBalance(feeRecepient, 0, {from: owner});
 
-      // const eosBalance21Expected = (10000e18 - rateAmountS[0].toNumber()).toPrecision(6);
-      // const neoBalance21Expected = rateAmountS[1].toNumber().toPrecision(6);
+      await neo.setBalance(order1Owner, 0, {from: owner});
+      await neo.setBalance(order2Owner, 0, {from: owner});
+      await neo.setBalance(feeRecepient, 0, {from: owner});
+    });
 
-      // const eosBalance22Expected = rateAmountS[0].toNumber().toPrecision(6);
+    it('should be able to fill orders where fee selection type is margin split and lrc.', async () => {
+      const ring = await ringFactory.generateSize2Ring03(order1Owner, order2Owner, ringOwner);
 
-      // assert.equal(lrcBalance21.toNumber(), 90e18, "lrc balance not match for order1Owner.");
-      // assert.equal(eosBalance21.toNumber().toPrecision(6), eosBalance21Expected, "eos balance not match for order1Owner.");
-      // assert.equal(neoBalance21.toNumber().toPrecision(6), neoBalance21Expected, "neo balance not match for order1Owner.");
+      const feeSelectionList = [1, 0];
 
-      // // assert.equal(lrcBalance22.toNumber(), 90e18, "lrc balance not match for order2Owner.");
-      // assert.equal(eosBalance22.toNumber().toPrecision(6), 900e18, "eos balance not match for order2Owner.");
-      // assert.equal(neoBalance22.toNumber().toPrecision(6), 900e18, "neo balance not match for order2Owner.");
+      await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
+      await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
+      await lrc.setBalance(order2Owner, web3.toWei(20),  {from: owner});
 
-      // assert.equal(lrcBalance23.toNumber(), 0, "lrc balance not match for feeRecepient.");
+      const feeAndBalanceExpected = ringFactory.caculateRingFeesAndBalances(ring, feeSelectionList);
+      console.log();
+
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
+
+      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
+
+      const tx = await loopringProtocolImpl.submitRing(p.addressList,
+                                                        p.uintArgsList,
+                                                        p.uint8ArgsList,
+                                                        p.buyNoMoreThanAmountBList,
+                                                        p.vList,
+                                                        p.rList,
+                                                        p.sList,
+                                                        p.ringOwner,
+                                                        p.feeRecepient,
+                                                        p.throwIfLRCIsInsuffcient,
+                                                        {from: owner});
+
+      const ethOfOwnerAfter = await getEthBalanceAsync(owner);
+      const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
+      //console.log("all gas cost(ether):", allGas);
+
+      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+      const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
+
+      const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
+      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+
+      const eosBalance23 = await getTokenBalanceAsync(eos, feeRecepient);
+      const neoBalance23 = await getTokenBalanceAsync(neo, feeRecepient);
+      const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+      // console.log("eosBalance21:", eosBalance21, "neoBalance21:", neoBalance21);
+      // console.log("eosBalance22:", eosBalance22, "neoBalance22:", neoBalance22);
+      // console.log("eosBalance23:", eosBalance23, "neoBalance23:", neoBalance23);
+
+      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
+      assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+      assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[0].feeSTotal);
+      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
+
+      assertNumberEqualsWithPrecision(lrcBalance23.toNumber(), feeAndBalanceExpected.fees[1].feeLrc);
     });
 
   });

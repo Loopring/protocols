@@ -51,7 +51,7 @@ export class RingFactory {
       timestamp: new BigNumber(this.currBlockTimeStamp),
       ttl: new BigNumber(360000),
       salt: new BigNumber(4321),
-      lrcFee: new BigNumber(10e18),
+      lrcFee: new BigNumber(5e18),
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
     };
@@ -95,7 +95,49 @@ export class RingFactory {
       salt: new BigNumber(4321),
       lrcFee: new BigNumber(0),
       buyNoMoreThanAmountB: false,
-      marginSplitPercentage: 100,
+      marginSplitPercentage: 45,
+    };
+
+    const order1 = new Order(order1Owner, orderPrams1);
+    const order2 = new Order(order2Owner, orderPrams2);
+    await order1.signAsync();
+    await order2.signAsync();
+
+    const ring = new Ring(ringOwner, [order1, order2]);
+    await ring.signAsync();
+
+    return ring;
+  }
+
+  public async generateSize2Ring03(order1Owner: string,
+                                   order2Owner: string,
+                                   ringOwner: string) {
+    const orderPrams1 = {
+      loopringProtocol: this.loopringProtocolAddr,
+      tokenS: this.eosAddress,
+      tokenB: this.neoAddress,
+      amountS: new BigNumber(1000e18),
+      amountB: new BigNumber(100e18),
+      timestamp: new BigNumber(this.currBlockTimeStamp),
+      ttl: new BigNumber(360000),
+      salt: new BigNumber(1234),
+      lrcFee: new BigNumber(0),
+      buyNoMoreThanAmountB: true,
+      marginSplitPercentage: 65,
+    };
+
+    const orderPrams2 = {
+      loopringProtocol: this.loopringProtocolAddr,
+      tokenS: this.neoAddress,
+      tokenB: this.eosAddress,
+      amountS: new BigNumber(50e18),
+      amountB: new BigNumber(450e18),
+      timestamp: new BigNumber(this.currBlockTimeStamp),
+      ttl: new BigNumber(360000),
+      salt: new BigNumber(4321),
+      lrcFee: new BigNumber(5e17),
+      buyNoMoreThanAmountB: false,
+      marginSplitPercentage: 45,
     };
 
     const order1 = new Order(order1Owner, orderPrams1);
@@ -284,7 +326,6 @@ export class RingFactory {
     }
 
     result.balances = balances;
-
     //console.log("result:", result);
     return result;
   }
