@@ -20,4 +20,4 @@ npm run compile
     
 ## Run Unit Tests  
 * run `npm run testrpc` from project's root directory in terminal.  
-* run `npm run testrpc` from project's root directory in another terminal window.  
+* run `npm run test` from project's root directory in another terminal window.  
