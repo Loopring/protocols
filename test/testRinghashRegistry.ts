@@ -1,4 +1,3 @@
-import { BigNumber } from 'bignumber.js';
 import { Artifacts } from '../util/artifacts';
 import { Ring } from '../util/ring';
 import { RingFactory } from '../util/ring_factory';
