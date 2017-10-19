@@ -391,7 +391,7 @@ export class RingFactory {
     return result;
   }
 
-  getPrevIndex(i: number, size: number) {
+  private getPrevIndex(i: number, size: number) {
     if (i <= 0) return size - 1;
     else return (i - 1) % size;
   }
