@@ -19,6 +19,7 @@ contract('TokenTransferDelegate', (accounts: string[])=>{
 
   let lrc: any;
   let lrcAddress: string;
+  let delegateAddr: string;
 
   before(async () => {
     [tokenRegistry, tokenTransferDelegate] = await Promise.all([
@@ -26,17 +27,45 @@ contract('TokenTransferDelegate', (accounts: string[])=>{
       TokenTransferDelegate.deployed(),
     ]);
 
+    delegateAddr = TokenTransferDelegate.address;
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
+    lrc = await DummyToken.at(lrcAddress);
   });
 
   describe('TokenTransferDelegate', () => {
 
     it('should be able to add loopring protocol version', async () => {
       const addVersionTx = await tokenTransferDelegate.addVersion(loopringProtocolV1, {from: owner});
-      const versions = await tokenTransferDelegate.getVersions({from: owner});
-      //console.log("versions: ", versions);
-      assert(_.includes(versions, loopringProtocolV1), "loopring protocol not added.")
 
+      const versions = await tokenTransferDelegate.getVersions({from: owner});
+      assert(_.includes(versions, loopringProtocolV1), "loopring protocol not added successfully.")
+
+      const version = await tokenTransferDelegate.versioned(loopringProtocolV1, {from: owner});
+      assert(version > 0, "loopring protocol version value is 0 after added.")
+    });
+
+    it('should be able to remove loopring protocol version', async () => {
+      const removeVersionTx = await tokenTransferDelegate.removeVersion(loopringProtocolV1, {from: owner});
+      const versions = await tokenTransferDelegate.getVersions({from: owner});
+      assert(!_.includes(versions, loopringProtocolV1), "loopring protocol not removed successfully.")
+
+      const version = await tokenTransferDelegate.versioned(loopringProtocolV1, {from: owner});
+      assert(version == 0, "loopring protocol version value is not 0 after removed.")
+    });
+
+    it('should be able to get spendable amount of token for address', async () => {
+      await tokenTransferDelegate.addVersion(loopringProtocolV1, {from: owner});
+
+      await lrc.setBalance(trader1, web3.toWei(10), {from: owner});
+      await lrc.approve(delegateAddr, web3.toWei(5), {from: trader1});
+
+      const spendable = await tokenTransferDelegate.getSpendable(lrcAddress, trader1, {from: loopringProtocolV1});
+      assert(spendable.toNumber(), 5e18, "get wrong spendable amount");
+
+      await lrc.approve(delegateAddr, 0, {from: trader1});
+      await lrc.approve(delegateAddr, web3.toWei(15), {from: trader1});
+      const spendable2 = await tokenTransferDelegate.getSpendable(lrcAddress, trader1, {from: loopringProtocolV1});
+      assert(spendable2.toNumber(), 10e18, "get wrong spendable amount");
     });
 
   });

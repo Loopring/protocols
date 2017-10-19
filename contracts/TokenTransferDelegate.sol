@@ -87,6 +87,7 @@ contract TokenTransferDelegate is Ownable {
         onlyOwner
         isVersioned(addr)
     {
+        require(versioned[addr] > 0);
         uint version = versioned[addr];
         delete versioned[addr];
 
