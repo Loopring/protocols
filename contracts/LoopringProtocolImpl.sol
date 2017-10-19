@@ -667,7 +667,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint j;
 
         for (i = 0; i < ringSize; i++) {
-            j = i.next(ring.orders.length);
+            j = i.next(ringSize);
 
             uint res = calculateOrderFillAmount(
                 ring.orders[i],
@@ -682,7 +682,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         for (i = 0; i < smallestIdx; i++) {
-            j = i.next(ring.orders.length);
+            j = i.next(ringSize);
             calculateOrderFillAmount(
                 ring.orders[i],
                 ring.orders[j]
@@ -885,7 +885,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         var orders = new OrderState[](ringSize);
 
         for (uint i = 0; i < ringSize; i++) {
-            uint j = i.prev(ringSize);
+            uint j = i.next(ringSize);
 
             var order = Order(
                 addressList[i][0],
