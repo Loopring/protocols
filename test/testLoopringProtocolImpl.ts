@@ -32,11 +32,13 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   let lrcAddress: string;
   let eosAddress: string;
   let neoAddress: string;
+  let qtumAddress: string;
   let delegateAddr: string;
 
   let lrc: any;
   let eos: any;
   let neo: any;
+  let qtum: any;
 
   let ringFactory: RingFactory;
 
@@ -74,14 +76,16 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
     eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
     neoAddress = await tokenRegistry.getAddressBySymbol("NEO");
+    qtumAddress = await tokenRegistry.getAddressBySymbol("QTUM");
     delegateAddr = TokenTransferDelegate.address;
 
     tokenTransferDelegate.addVersion(LoopringProtocolImpl.address);
 
-    [lrc, eos, neo] = await Promise.all([
+    [lrc, eos, neo, qtum] = await Promise.all([
       DummyToken.at(lrcAddress),
       DummyToken.at(eosAddress),
       DummyToken.at(neoAddress),
+      DummyToken.at(qtumAddress),
     ]);
 
     const currBlockNumber = web3.eth.blockNumber;
@@ -91,22 +95,21 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                   eosAddress,
                                   neoAddress,
                                   lrcAddress,
+                                  qtumAddress,
                                   currBlockTimeStamp);
 
-    // approve only once for all tests.
-    await eos.approve(delegateAddr, web3.toWei(1000000), {from: order1Owner});
-    await eos.approve(delegateAddr, web3.toWei(1000000), {from: order2Owner});
-
-    await neo.approve(delegateAddr, web3.toWei(1000000), {from: order1Owner});
-    await neo.approve(delegateAddr, web3.toWei(1000000), {from: order2Owner});
-
-    await lrc.approve(delegateAddr, web3.toWei(1000000), {from: order1Owner});
-    await lrc.approve(delegateAddr, web3.toWei(1000000), {from: order2Owner});
-
+    // approve only once for all test cases.
+    const allTokens = [lrc, eos, neo, qtum];
+    const allAddresses = [order1Owner, order2Owner, order3Owner, feeRecepient];
+    for (let i = 0; i < allTokens.length; i++) {
+      for (let j = 0; j < allAddresses.length; j++) {
+        await allTokens[i].approve(delegateAddr, web3.toWei(1000000), {from: allAddresses[j]});
+      }
+    }
   });
 
   describe('submitRing', () => {
-    it('should be able to fill orders.', async () => {
+    it('should be able to fill ring with 2 orders.', async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
 
       await lrc.setBalance(order1Owner, web3.toWei(1),   {from: owner});
@@ -178,7 +181,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
 
-    it('should be able to fill orders where fee selection type is margin split.', async () => {
+    it('should be able to fill ring with 2 orders where fee selection type is margin split.', async () => {
       const ring = await ringFactory.generateSize2Ring02(order1Owner, order2Owner, ringOwner);
       const feeSelectionList = [1, 1];
 
@@ -240,7 +243,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await lrc.setBalance(order2Owner, web3.toWei(20),  {from: owner});
 
       const feeAndBalanceExpected = ringFactory.caculateRingFeesAndBalances(ring, feeSelectionList);
-      console.log();
 
       const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
 
@@ -257,6 +259,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                         p.feeRecepient,
                                                         p.throwIfLRCIsInsuffcient,
                                                         {from: owner});
+      //console.log(tx.receipt.logs);
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
@@ -286,6 +289,75 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       assertNumberEqualsWithPrecision(lrcBalance23.toNumber(), feeAndBalanceExpected.fees[1].feeLrc);
 
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
+    });
+
+    it('should be able to fill ring with 3 orders.', async () => {
+      const ring = await ringFactory.generateSize3Ring01(order1Owner, order2Owner, order3Owner, ringOwner);
+
+      assert(ring.orders[0].isValidSignature(), true, "invalid signature");
+      assert(ring.orders[1].isValidSignature(), true, "invalid signature");
+      assert(ring.orders[2].isValidSignature(), true, "invalid signature");
+
+      const feeSelectionList = [1, 0, 1];
+
+      await eos.setBalance(order1Owner, web3.toWei(80000), {from: owner});
+      await neo.setBalance(order2Owner, web3.toWei(234),  {from: owner});
+      await lrc.setBalance(order2Owner, web3.toWei(20),  {from: owner});
+      await qtum.setBalance(order3Owner, web3.toWei(6780),  {from: owner});
+
+      const feeAndBalanceExpected = ringFactory.caculateRingFeesAndBalances(ring, feeSelectionList);
+
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
+
+      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
+
+      const tx = await loopringProtocolImpl.submitRing(p.addressList,
+                                                       p.uintArgsList,
+                                                       p.uint8ArgsList,
+                                                       p.buyNoMoreThanAmountBList,
+                                                       p.vList,
+                                                       p.rList,
+                                                       p.sList,
+                                                       p.ringOwner,
+                                                       p.feeRecepient,
+                                                       p.throwIfLRCIsInsuffcient,
+                                                       {from: owner});
+
+      //console.log(tx.receipt.logs);
+
+      const ethOfOwnerAfter = await getEthBalanceAsync(owner);
+      const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
+      //console.log("all gas cost(ether):", allGas);
+
+      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+      const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
+
+      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+      const qtumBalance22 = await getTokenBalanceAsync(qtum, order2Owner);
+
+      const qtumBalance23 = await getTokenBalanceAsync(qtum, order3Owner);
+      const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
+
+      const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
+      const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
+      const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
+      const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
+      assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+      assertNumberEqualsWithPrecision(qtumBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+
+      assertNumberEqualsWithPrecision(qtumBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
+      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
+
+      assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.balances[0].feeSTotal);
+      assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
+      assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.balances[2].feeSTotal);
+
+      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.fees[1].feeLrc);
+
+      await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
 
   });
