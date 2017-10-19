@@ -39,12 +39,24 @@ contract RinghashRegistry {
 
     mapping (bytes32 => Submission) submissions;
 
+
+    /// Events
+
+    event RinghashSubmitted(
+        address indexed _ringminer,
+        bytes32 indexed _ringhash
+    );
+
+    /// Constructor
+
     function RinghashRegistry(uint _blocksToLive)
         public
     {
         require(_blocksToLive > 0);
         blocksToLive = _blocksToLive;
     }
+
+    /// Public Functions
 
     function submitRinghash(
         uint        ringSize,
@@ -68,6 +80,7 @@ contract RinghashRegistry {
         );
 
         submissions[ringhash] = Submission(ringminer, block.number);
+        RinghashSubmitted(ringminer, ringhash);
     }
 
     function canSubmit(
