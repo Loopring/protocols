@@ -18,7 +18,7 @@ module.exports = function(deployer, network, accounts) {
       deployer.link(Bytes32Lib, RinghashRegistry);
       deployer.link(ErrorLib, RinghashRegistry);
       deployer.link(Uint8Lib, RinghashRegistry);
-      return deployer.deploy(RinghashRegistry, 500000);
+      return deployer.deploy(RinghashRegistry, 100);
     }).then(() => {
       return deployer.deploy(TokenTransferDelegate);
     });

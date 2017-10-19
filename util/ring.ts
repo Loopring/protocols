@@ -46,7 +46,7 @@ export class Ring {
     this.s = ethUtil.bufferToHex(s);
   }
 
-  private getRingHash() {
+  public getRingHash() {
     const size = this.orders.length;
     let vList: number[] = [];
     let rList: string[] = [];
@@ -66,6 +66,12 @@ export class Ring {
     ]);
 
     return ringHash;
+  }
+
+  public getRingHashHex() {
+    const ringHash = this.getRingHash();
+    const ringHashHex = ethUtil.bufferToHex(ringHash);
+    return ringHashHex;
   }
 
   private xorReduce(numberArr: number[]) {

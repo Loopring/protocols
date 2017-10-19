@@ -302,12 +302,12 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       await eos.setBalance(order1Owner, web3.toWei(80000), {from: owner});
       await neo.setBalance(order2Owner, web3.toWei(234),  {from: owner});
-      await lrc.setBalance(order2Owner, web3.toWei(20),  {from: owner});
+      await lrc.setBalance(order2Owner, web3.toWei(5),  {from: owner}); // insuffcient lrc balance.
       await qtum.setBalance(order3Owner, web3.toWei(6780),  {from: owner});
 
       const feeAndBalanceExpected = ringFactory.caculateRingFeesAndBalances(ring, feeSelectionList);
 
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, false);
 
       const ethOfOwnerBefore = await getEthBalanceAsync(owner);
 
