@@ -1,4 +1,5 @@
 import * as _ from 'lodash';
+import { BigNumber } from 'bignumber.js';
 import { Artifacts } from '../util/artifacts';
 
 const {
@@ -20,6 +21,12 @@ contract('TokenTransferDelegate', (accounts: string[])=>{
   let lrc: any;
   let lrcAddress: string;
   let delegateAddr: string;
+
+  const getTokenBalanceAsync = async (token: any, addr: string) => {
+    const tokenBalanceStr = await token.balanceOf(addr);
+    const balance = new BigNumber(tokenBalanceStr);
+    return balance;
+  }
 
   before(async () => {
     [tokenRegistry, tokenTransferDelegate] = await Promise.all([
@@ -66,6 +73,25 @@ contract('TokenTransferDelegate', (accounts: string[])=>{
       await lrc.approve(delegateAddr, web3.toWei(15), {from: trader1});
       const spendable2 = await tokenTransferDelegate.getSpendable(lrcAddress, trader1, {from: loopringProtocolV1});
       assert(spendable2.toNumber(), 10e18, "get wrong spendable amount");
+    });
+
+    it('should be able to transfer ERC20 token if properly approved.', async () => {
+      const transferTx = await tokenTransferDelegate.transferToken(lrcAddress, trader1, trader2, web3.toWei(2.1), {from: loopringProtocolV1});
+
+      const balanceOfTrader1 = await getTokenBalanceAsync(lrc, trader1);
+      const balanceOfTrader2 = await getTokenBalanceAsync(lrc, trader2);
+      assert(balanceOfTrader1.toNumber(), 29e17, "transfer wrong number of tokens");
+      assert(balanceOfTrader2.toNumber(), 21e17, "transfer wrong number of tokens");
+
+    });
+
+    it('should not be able to transfer ERC20 token if msg.sender not versioned.', async () => {
+      try {
+        await tokenTransferDelegate.transferToken(lrcAddress, trader1, trader2, web3.toWei(1.1), {from: loopringProtocolV2});
+      } catch (err) {
+        const errMsg = `${err}`;
+        assert(_.includes(errMsg, 'invalid opcode'), `Expected contract to throw, got: ${err}`);
+      }
     });
 
   });
