@@ -1,3 +1,4 @@
+import * as _ from 'lodash';
 import { Artifacts } from '../util/artifacts';
 import { Ring } from '../util/ring';
 import { RingFactory } from '../util/ring_factory';
@@ -24,6 +25,7 @@ contract('RinghashRegistry', (accounts: string[])=>{
   let lrcAddress: string;
   let qtumAddress: string;
   let ringFactory: RingFactory;
+  let blocksToLive: number;
 
   before(async () => {
     [loopringProtocolImpl, tokenRegistry, ringhashRegistry] = await Promise.all([
@@ -46,11 +48,14 @@ contract('RinghashRegistry', (accounts: string[])=>{
                                   lrcAddress,
                                   qtumAddress,
                                   currBlockTimeStamp);
+    const blocksToLiveBN = await ringhashRegistry.blocksToLive();
+    blocksToLive = blocksToLiveBN.toNumber();
+    //console.log("blocksToLive:", blocksToLive);
   });
 
   describe('submitRinghash', () => {
 
-    it('should be able to submit a ring hash', async () => {
+    it('should be able to submit a ring hash.', async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient, true);
 
@@ -61,11 +66,40 @@ contract('RinghashRegistry', (accounts: string[])=>{
                                                        p.sList);
 
       const ringHash = ring.getRingHashHex();
-      const canSubmit = await ringhashRegistry.canSubmit(ringHash, ringOwner, {from: owner});
-      assert(canSubmit, false, "can submit again after summitted.");
-
       const ringhashFound = await ringhashRegistry.ringhashFound(ringHash);
-      assert(ringhashFound, true, "ring hash not found after summitted.");
+      assert.equal(ringhashFound, true, "ring hash not found after summitted.");
+    });
+
+    it('should be able to submit the same ring hash again by same ringminer.', async () => {
+      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const ringHash = ring.getRingHashHex();
+      const canSubmit1 = await ringhashRegistry.canSubmit(ringHash, ringOwner, {from: owner});
+      assert.equal(canSubmit1, true, "can not submit again after summitted by same address.");
+    });
+
+    it('should not be able to submit the same ring hash again by another address.', async () => {
+      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const ringHash = ring.getRingHashHex();
+      const canSubmit2 = await ringhashRegistry.canSubmit(ringHash, order1Owner, {from: owner});
+      assert.equal(canSubmit2, false, "can submit again after summitted by another address.");
+    });
+
+
+    it('should not be able to submit a ring hash by a different ringminer if the same hash has submmitted within 100 blocks.', async () => {
+      try {
+        const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+        const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient, true);
+
+        const tx = await ringhashRegistry.submitRinghash(2,
+                                                         ringOwner,
+                                                         p.vList,
+                                                         p.rList,
+                                                         p.sList);
+      } catch (err) {
+        const errMsg = `${err}`;
+        assert(_.includes(errMsg, 'invalid opcode'), `Expected contract to throw, got: ${err}`);
+      }
+
     });
 
   });

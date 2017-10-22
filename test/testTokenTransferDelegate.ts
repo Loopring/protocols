@@ -67,21 +67,25 @@ contract('TokenTransferDelegate', (accounts: string[])=>{
       await lrc.approve(delegateAddr, web3.toWei(5), {from: trader1});
 
       const spendable = await tokenTransferDelegate.getSpendable(lrcAddress, trader1, {from: loopringProtocolV1});
-      assert(spendable.toNumber(), 5e18, "get wrong spendable amount");
+      assert.equal(spendable.toNumber(), 5e18, "get wrong spendable amount");
 
       await lrc.approve(delegateAddr, 0, {from: trader1});
       await lrc.approve(delegateAddr, web3.toWei(15), {from: trader1});
       const spendable2 = await tokenTransferDelegate.getSpendable(lrcAddress, trader1, {from: loopringProtocolV1});
-      assert(spendable2.toNumber(), 10e18, "get wrong spendable amount");
+      assert.equal(spendable2.toNumber(), 10e18, "get wrong spendable amount");
     });
 
     it('should be able to transfer ERC20 token if properly approved.', async () => {
+      await lrc.setBalance(trader1, web3.toWei(5), {from: owner});
+      await lrc.approve(delegateAddr, web3.toWei(0), {from: trader1});
+      await lrc.approve(delegateAddr, web3.toWei(5), {from: trader1});
+
       const transferTx = await tokenTransferDelegate.transferToken(lrcAddress, trader1, trader2, web3.toWei(2.1), {from: loopringProtocolV1});
 
       const balanceOfTrader1 = await getTokenBalanceAsync(lrc, trader1);
       const balanceOfTrader2 = await getTokenBalanceAsync(lrc, trader2);
-      assert(balanceOfTrader1.toNumber(), 29e17, "transfer wrong number of tokens");
-      assert(balanceOfTrader2.toNumber(), 21e17, "transfer wrong number of tokens");
+      assert.equal(balanceOfTrader1.toNumber(), 29e17, "transfer wrong number of tokens");
+      assert.equal(balanceOfTrader2.toNumber(), 21e17, "transfer wrong number of tokens");
 
     });
 

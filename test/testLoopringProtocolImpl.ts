@@ -55,7 +55,10 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   };
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, precision: number = 8) => {
-    return assert(n1.toPrecision(precision), n2.toPrecision(precision));
+    const numStr1 = (n1/1e18).toFixed(precision);
+    const numStr2 = (n2/1e18).toFixed(precision);
+
+    return assert.equal(Number(numStr1), Number(numStr2));
   }
 
   const clear = async (tokens: any[], addresses: string[]) => {
@@ -222,11 +225,13 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       // console.log("eosBalance21:", eosBalance21, "neoBalance21:", neoBalance21);
       // console.log("eosBalance22:", eosBalance22, "neoBalance22:", neoBalance22);
       // console.log("eosBalance23:", eosBalance23, "neoBalance23:", neoBalance23);
+      // console.log("feeAndBalanceExpected:", feeAndBalanceExpected);
 
       assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
       assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+      assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+
       assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[0].feeSTotal);
       assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
 
@@ -275,17 +280,12 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const neoBalance23 = await getTokenBalanceAsync(neo, feeRecepient);
       const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      // console.log("eosBalance21:", eosBalance21, "neoBalance21:", neoBalance21);
-      // console.log("eosBalance22:", eosBalance22, "neoBalance22:", neoBalance22);
-      // console.log("eosBalance23:", eosBalance23, "neoBalance23:", neoBalance23);
-
       assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
       assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+      assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
       assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[0].feeSTotal);
       assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
-
       assertNumberEqualsWithPrecision(lrcBalance23.toNumber(), feeAndBalanceExpected.fees[1].feeLrc);
 
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
@@ -294,9 +294,9 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     it('should be able to fill ring with 3 orders.', async () => {
       const ring = await ringFactory.generateSize3Ring01(order1Owner, order2Owner, order3Owner, ringOwner);
 
-      assert(ring.orders[0].isValidSignature(), true, "invalid signature");
-      assert(ring.orders[1].isValidSignature(), true, "invalid signature");
-      assert(ring.orders[2].isValidSignature(), true, "invalid signature");
+      assert(ring.orders[0].isValidSignature(), "invalid signature");
+      assert(ring.orders[1].isValidSignature(), "invalid signature");
+      assert(ring.orders[2].isValidSignature(), "invalid signature");
 
       const feeSelectionList = [1, 0, 1];
 
@@ -342,6 +342,19 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
       const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
       const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+      console.log("feeAndBalanceExpected", feeAndBalanceExpected);
+
+      console.log("eosBalance21:", eosBalance21);
+      console.log("neoBalance21:", neoBalance21);
+      console.log("neoBalance22:", neoBalance22);
+      console.log("qtumBalance22:", qtumBalance22);
+      console.log("qtumBalance23:", qtumBalance23);
+      console.log("eosBalance23:", eosBalance23);
+      console.log("eosBalance24:", eosBalance24);
+      console.log("neoBalance24:", neoBalance24);
+      console.log("qtumBalance24:", qtumBalance24);
+      console.log("lrcBalance24:", lrcBalance24);
 
       assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
       assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
