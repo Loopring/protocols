@@ -30,3 +30,15 @@ export interface LoopringSubmitParams {
   feeRecepient: string;
   throwIfLRCIsInsuffcient: boolean;
 }
+
+export interface FeeItem {
+  fillAmountS: number;
+  feeLrc: number;
+  feeS: number;
+  feeB: number;
+}
+
+export interface BalanceItem {
+  balanceS: number;
+  balanceB: number;
+}

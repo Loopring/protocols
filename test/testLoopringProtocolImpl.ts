@@ -5,6 +5,7 @@ import { OrderParams } from '../util/types';
 import { Order } from '../util/order';
 import { Ring } from '../util/ring';
 import { RingFactory } from '../util/ring_factory';
+import { ProtocolSimulator } from '../util/protocol_simulator';
 import promisify = require('es6-promisify');
 
 const {
@@ -191,7 +192,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
       await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
 
-      const feeAndBalanceExpected = ringFactory.caculateRingFeesAndBalances(ring, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
 
       const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
 
@@ -225,15 +227,14 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       // console.log("eosBalance21:", eosBalance21, "neoBalance21:", neoBalance21);
       // console.log("eosBalance22:", eosBalance22, "neoBalance22:", neoBalance22);
       // console.log("eosBalance23:", eosBalance23, "neoBalance23:", neoBalance23);
-      // console.log("feeAndBalanceExpected:", feeAndBalanceExpected);
 
       assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
       assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
       assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
       assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
 
-      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[0].feeSTotal);
-      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
+      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
 
       await clear([eos, neo], [order1Owner, order2Owner, feeRecepient]);
     });
@@ -247,7 +248,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
       await lrc.setBalance(order2Owner, web3.toWei(20),  {from: owner});
 
-      const feeAndBalanceExpected = ringFactory.caculateRingFeesAndBalances(ring, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
 
       const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
 
@@ -284,9 +286,9 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
       assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
       assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
-      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[0].feeSTotal);
-      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
-      assertNumberEqualsWithPrecision(lrcBalance23.toNumber(), feeAndBalanceExpected.fees[1].feeLrc);
+      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+      assertNumberEqualsWithPrecision(lrcBalance23.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
 
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
@@ -305,7 +307,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await lrc.setBalance(order2Owner, web3.toWei(5),  {from: owner}); // insuffcient lrc balance.
       await qtum.setBalance(order3Owner, web3.toWei(6780),  {from: owner});
 
-      const feeAndBalanceExpected = ringFactory.caculateRingFeesAndBalances(ring, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
 
       const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, false);
 
@@ -343,20 +346,20 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
       const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      console.log("feeAndBalanceExpected", feeAndBalanceExpected);
+      // console.log("feeAndBalanceExpected", feeAndBalanceExpected);
 
-      console.log("eosBalance21:", eosBalance21);
-      console.log("neoBalance21:", neoBalance21);
-      console.log("neoBalance22:", neoBalance22);
-      console.log("qtumBalance22:", qtumBalance22);
-      console.log("qtumBalance23:", qtumBalance23);
-      console.log("eosBalance23:", eosBalance23);
-      console.log("eosBalance24:", eosBalance24);
-      console.log("neoBalance24:", neoBalance24);
-      console.log("qtumBalance24:", qtumBalance24);
-      console.log("lrcBalance24:", lrcBalance24);
+      // console.log("eosBalance21:", eosBalance21);
+      // console.log("neoBalance21:", neoBalance21);
+      // console.log("neoBalance22:", neoBalance22);
+      // console.log("qtumBalance22:", qtumBalance22);
+      // console.log("qtumBalance23:", qtumBalance23);
+      // console.log("eosBalance23:", eosBalance23);
+      // console.log("eosBalance24:", eosBalance24);
+      // console.log("neoBalance24:", neoBalance24);
+      // console.log("qtumBalance24:", qtumBalance24);
+      // console.log("lrcBalance24:", lrcBalance24);
 
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
+      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
       assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
       assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
       assertNumberEqualsWithPrecision(qtumBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
@@ -364,11 +367,11 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       assertNumberEqualsWithPrecision(qtumBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
       assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
 
-      assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.balances[0].feeSTotal);
-      assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.balances[1].feeSTotal);
-      assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.balances[2].feeSTotal);
+      assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+      assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+      assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.totalFees[qtumAddress]);
 
-      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.fees[1].feeLrc);
+      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), 5e18);
 
       await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
