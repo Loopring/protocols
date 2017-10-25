@@ -67,7 +67,6 @@ contract RinghashRegistry {
         public
     {
         bytes32 ringhash = calculateRinghash(
-            ringminer,
             ringSize,
             vList,
             rList,
@@ -110,7 +109,6 @@ contract RinghashRegistry {
 
     /// @dev Calculate the hash of a ring.
     function calculateRinghash(
-        address     ringminer,
         uint        ringSize,
         uint8[]     vList,
         bytes32[]   rList,
@@ -127,7 +125,6 @@ contract RinghashRegistry {
         );
 
         return keccak256(
-            ringminer,
             vList.xorReduce(ringSize),
             rList.xorReduce(ringSize),
             sList.xorReduce(ringSize)

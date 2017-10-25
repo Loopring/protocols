@@ -6,6 +6,12 @@ module.exports = {
       network_id: '1', // main-net
       gasPrice: 15000000000
     },
+    testnet: {
+      host: "localhost",
+      port: 8545,
+      network_id: '2', // main-net
+      gasPrice: 21000000000
+    },
     priv: {
       host: "localhost",
       port: 8546,
