@@ -1019,14 +1019,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    /// @return The signer's address.
+    /// @dev Verify signer's signature.
     function verifySignature(
         address signer,
         bytes32 hash,
         uint8   v,
         bytes32 r,
         bytes32 s)
-        public
+        internal
         constant
     {
         address addr = ecrecover(
@@ -1039,19 +1039,4 @@ contract LoopringProtocolImpl is LoopringProtocol {
         ErrorLib.check(signer == addr, "invalid signature");
     }
 
-    function getOrderFilled(bytes32 orderHash)
-        public
-        constant
-        returns (uint)
-    {
-        return filled[orderHash];
-    }
-
-    function getOrderCancelled(bytes32 orderHash)
-        public
-        constant
-        returns (uint)
-    {
-        return cancelled[orderHash];
-    }
 }
