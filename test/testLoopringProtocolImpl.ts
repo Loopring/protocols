@@ -130,8 +130,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await lrc.setBalance(feeRecepient, 0, {from: owner});
 
       const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient, true);
-      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
-
       try {
         const tx1 =  await loopringProtocolImpl.submitRing(p.addressList,
                                                            p.uintArgsList,
@@ -151,6 +149,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       }
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
       const tx2 = await loopringProtocolImpl.submitRing(p.addressList,
                                                         p.uintArgsList,
                                                         p.uint8ArgsList,
@@ -167,7 +166,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
-      //console.log("all gas cost(ether):", allGas);
+      console.log("all gas cost for 2 orders 01(ether):", allGas);
 
       const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
@@ -202,7 +201,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
 
       const ethOfOwnerBefore = await getEthBalanceAsync(owner);
-
       const tx = await loopringProtocolImpl.submitRing(p.addressList,
                                                        p.uintArgsList,
                                                        p.uint8ArgsList,
@@ -217,7 +215,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
-      //console.log("all gas cost(ether):", allGas);
+      console.log("all gas cost for 2 orders 02(ether):", allGas);
 
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
       const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
@@ -334,7 +332,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
-      //console.log("all gas cost(ether):", allGas);
+      console.log("all gas cost for 3 orders(ether):", allGas);
 
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
       const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
@@ -366,7 +364,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
       const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
 
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
+      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
       assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
       assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
       assertNumberEqualsWithPrecision(qtumBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);

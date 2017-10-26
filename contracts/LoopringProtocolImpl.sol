@@ -19,7 +19,6 @@ pragma solidity 0.4.15;
 
 import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
-import "zeppelin-solidity/contracts/token/ERC20.sol";
 
 import "./lib/UintLib.sol";
 import "./LoopringProtocol.sol";

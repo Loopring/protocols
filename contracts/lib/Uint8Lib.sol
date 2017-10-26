@@ -26,7 +26,7 @@ library Uint8Lib {
         uint8[] arr,
         uint    len
         )
-        public
+        internal
         constant
         returns (uint8 res)
     {

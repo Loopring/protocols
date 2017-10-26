@@ -26,7 +26,7 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 library UintLib {
     using SafeMath  for uint;
 
-    function tolerantSub(uint x, uint y) constant returns (uint z) {
+    function tolerantSub(uint x, uint y) internal constant returns (uint z) {
         if (x >= y)
             z = x - y;
         else

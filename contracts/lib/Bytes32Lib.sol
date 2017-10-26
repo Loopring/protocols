@@ -27,7 +27,7 @@ library Bytes32Lib {
         bytes32[]   arr,
         uint        len
         )
-        public
+        internal
         constant
         returns (bytes32 res)
     {
@@ -41,7 +41,7 @@ library Bytes32Lib {
         bytes32 bs1,
         bytes32 bs2
         )
-        public
+        internal
         constant
         returns (bytes32 res)
     {

@@ -25,13 +25,13 @@ library ErrorLib {
     event Error(string message);
 
     /// @dev Check if condition hold, if not, log an exception and revert.
-    function check(bool condition, string message) public constant {
+    function check(bool condition, string message) internal constant {
         if (!condition) {
             error(message);
         }
     }
 
-    function error(string message) public constant {
+    function error(string message) internal constant {
         Error(message);
         revert();
     }
