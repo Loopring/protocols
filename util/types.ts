@@ -12,6 +12,8 @@ export interface OrderParams {
   lrcFee: BigNumber;
   buyNoMoreThanAmountB: boolean;
   marginSplitPercentage: number;
+  scaledAmountS?: number;
+  scaledAmountB?: number;
   orderHashHex?: string;
   v?: number;
   r?: string;
