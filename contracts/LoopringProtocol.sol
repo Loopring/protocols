@@ -41,7 +41,7 @@ contract LoopringProtocol {
     /// @param tokenB       Token to buy.
     /// @param amountS      Maximum amount of tokenS to sell.
     /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
-    /// @param timestamp    Indicating whtn this order is created/signed.
+    /// @param timestamp    Indicating when this order is created/signed.
     /// @param ttl          Indicating after how many seconds from `timestamp`
     ///                     this order will expire.
     /// @param salt         A random number to make this order's hash unique.
