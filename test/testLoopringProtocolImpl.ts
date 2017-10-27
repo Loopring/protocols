@@ -166,7 +166,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
-      console.log("all gas cost for 2 orders 01(ether):", allGas);
+      //console.log("all gas cost for 2 orders 01(ether):", allGas);
 
       const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
@@ -215,7 +215,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
-      console.log("all gas cost for 2 orders 02(ether):", allGas);
+      //console.log("all gas cost for 2 orders 02(ether):", allGas);
 
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
       const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
@@ -332,7 +332,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
-      console.log("all gas cost for 3 orders(ether):", allGas);
+      //console.log("all gas cost for 3 orders(ether):", allGas);
 
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
       const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
@@ -472,6 +472,73 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
 
+  });
+
+
+  describe('cancelOrder', () => {
+    it('should be able to set order cancelled amount by order owner.', async () => {
+      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const order = ring.orders[0];
+      const cancelAmount = new BigNumber(100e18);
+
+      const addresses = [order.owner, order.params.tokenS, order.params.tokenB];
+      const orderValues = [order.params.amountS,
+                           order.params.amountB,
+                           order.params.timestamp,
+                           order.params.ttl,
+                           order.params.salt,
+                           order.params.lrcFee,
+                           cancelAmount];
+
+      const tx = await loopringProtocolImpl.cancelOrder(addresses,
+                                                        orderValues,
+                                                        order.params.buyNoMoreThanAmountB,
+                                                        order.params.marginSplitPercentage,
+                                                        order.params.v,
+                                                        order.params.r,
+                                                        order.params.s,
+                                                        {from: order.owner});
+
+      const cancelledAmount = await loopringProtocolImpl.cancelled(order.params.orderHashHex);
+      assert.equal(cancelledAmount.toNumber(), cancelAmount.toNumber(), "cancelled amount not match");
+    });
+
+    it('should not be able to cancell order by other address.', async () => {
+      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const order = ring.orders[0];
+      const cancelAmount = new BigNumber(100e18);
+
+      const addresses = [order.owner, order.params.tokenS, order.params.tokenB];
+      const orderValues = [order.params.amountS,
+                           order.params.amountB,
+                           order.params.timestamp,
+                           order.params.ttl,
+                           order.params.salt,
+                           order.params.lrcFee,
+                           cancelAmount];
+      try {
+        const tx = await loopringProtocolImpl.cancelOrder(addresses,
+                                                          orderValues,
+                                                          order.params.buyNoMoreThanAmountB,
+                                                          order.params.marginSplitPercentage,
+                                                          order.params.v,
+                                                          order.params.r,
+                                                          order.params.s,
+                                                          {from: order2Owner});
+      } catch (err) {
+        const errMsg = `${err}`;
+        assert(_.includes(errMsg, 'invalid opcode'), `Expected contract to throw, got: ${err}`);
+      }
+    });
+  });
+
+
+  describe('setCutoff', () => {
+    it('should be able to set cutoff timestamp for msg sender.', async () => {
+      await loopringProtocolImpl.setCutoff(new BigNumber(1508566125), {from: order1Owner});
+      let cutoff = await loopringProtocolImpl.cutoffs(order1Owner);
+      assert.equal(cutoff.toNumber(), 1508566125, "cutoff not set correctly");
+    });
   });
 
 })

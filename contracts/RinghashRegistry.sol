@@ -17,14 +17,14 @@
 */
 pragma solidity 0.4.15;
 
-/// @title Ring Hash Registry Contract
-/// @author Kongliang Zhong - <kongliang@loopring.org>,
-/// @author Daniel Wang - <daniel@loopring.org>.
 import "./lib/Bytes32Lib.sol";
 import "./lib/ErrorLib.sol";
 import "./lib/Uint8Lib.sol";
 
 
+/// @title Ring Hash Registry Contract
+/// @author Kongliang Zhong - <kongliang@loopring.org>,
+/// @author Daniel Wang - <daniel@loopring.org>.
 contract RinghashRegistry {
     using Bytes32Lib    for bytes32[];
     using ErrorLib      for bool;

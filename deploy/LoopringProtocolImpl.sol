@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity ^0.4.15;
+pragma solidity 0.4.15;
 
 /**
  * @title SafeMath
@@ -137,9 +137,11 @@ contract Ownable {
 library UintLib {
     using SafeMath  for uint;
 
-    function tolerantSub(uint x, uint y) constant returns (uint z) {
-        if (x >= y) z = x - y;
-        else z = 0;
+    function tolerantSub(uint x, uint y) internal constant returns (uint z) {
+        if (x >= y)
+            z = x - y;
+        else
+            z = 0;
     }
 
     function next(uint i, uint size) internal constant returns (uint) {
@@ -154,12 +156,11 @@ library UintLib {
     /// https://en.wikipedia.org/wiki/Coefficient_of_variation
     function cvsquare(
         uint[] arr,
-        uint scale
-        )
+        uint scale)
         internal
         constant
-        returns (uint) {
-
+        returns (uint)
+    {
         uint len = arr.length;
         require(len > 1);
         require(scale > 0);
@@ -185,12 +186,8 @@ library UintLib {
             }
             cvs += sub.mul(sub);
         }
-        return cvs
-            .mul(scale)
-            .div(avg)
-            .mul(scale)
-            .div(avg)
-            .div(len - 1);
+
+        return cvs.mul(scale).div(avg).mul(scale).div(avg).div(len - 1);
     }
 }
 
@@ -202,13 +199,13 @@ library Uint8Lib {
         uint8[] arr,
         uint    len
         )
-        public
+        internal
         constant
-        returns (uint8 res) {
-
+        returns (uint8 res)
+    {
         res = arr[0];
         for (uint i = 1; i < len; i++) {
-           res ^= arr[i];
+            res ^= arr[i];
         }
     }
 }
@@ -220,13 +217,13 @@ library ErrorLib {
     event Error(string message);
 
     /// @dev Check if condition hold, if not, log an exception and revert.
-    function check(bool condition, string message) public constant {
+    function check(bool condition, string message) internal constant {
         if (!condition) {
             error(message);
         }
     }
 
-    function error(string message) public constant {
+    function error(string message) internal constant {
         Error(message);
         revert();
     }
@@ -241,7 +238,7 @@ library Bytes32Lib {
         bytes32[]   arr,
         uint        len
         )
-        public
+        internal
         constant
         returns (bytes32 res)
     {
@@ -255,7 +252,7 @@ library Bytes32Lib {
         bytes32 bs1,
         bytes32 bs2
         )
-        public
+        internal
         constant
         returns (bytes32 res)
     {
@@ -402,6 +399,7 @@ contract TokenTransferDelegate is Ownable {
         onlyOwner
         isVersioned(addr)
     {
+        require(versioned[addr] > 0);
         uint version = versioned[addr];
         delete versioned[addr];
 
@@ -468,6 +466,9 @@ contract TokenTransferDelegate is Ownable {
     }
 }
 
+/// @title Ring Hash Registry Contract
+/// @author Kongliang Zhong - <kongliang@loopring.org>,
+/// @author Daniel Wang - <daniel@loopring.org>.
 contract RinghashRegistry {
     using Bytes32Lib    for bytes32[];
     using ErrorLib      for bool;
@@ -510,7 +511,6 @@ contract RinghashRegistry {
         public
     {
         bytes32 ringhash = calculateRinghash(
-            ringminer,
             ringSize,
             vList,
             rList,
@@ -553,7 +553,6 @@ contract RinghashRegistry {
 
     /// @dev Calculate the hash of a ring.
     function calculateRinghash(
-        address     ringminer,
         uint        ringSize,
         uint8[]     vList,
         bytes32[]   rList,
@@ -570,7 +569,6 @@ contract RinghashRegistry {
         );
 
         return keccak256(
-            ringminer,
             vList.xorReduce(ringSize),
             rList.xorReduce(ringSize),
             sList.xorReduce(ringSize)
@@ -944,7 +942,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         var ringhashRegistry = RinghashRegistry(ringhashRegistryAddress);
 
         bytes32 ringhash = ringhashRegistry.calculateRinghash(
-            ringminer,
             ringSize,
             vList,
             rList,
@@ -1036,7 +1033,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
+        ErrorLib.check(msg.sender == order.owner, "cancelOrder not submitted by order owner");
+
         bytes32 orderHash = calculateOrderHash(order);
+
+        verifySignature(
+            order.owner,
+            orderHash,
+            order.v,
+            order.r,
+            order.s
+        );
+
         cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
 
         OrderCancelled(
@@ -1700,14 +1708,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    /// @return The signer's address.
+    /// @dev Verify signer's signature.
     function verifySignature(
         address signer,
         bytes32 hash,
         uint8   v,
         bytes32 r,
         bytes32 s)
-        public
+        internal
         constant
     {
         address addr = ecrecover(
@@ -1720,19 +1728,4 @@ contract LoopringProtocolImpl is LoopringProtocol {
         ErrorLib.check(signer == addr, "invalid signature");
     }
 
-    function getOrderFilled(bytes32 orderHash)
-        public
-        constant
-        returns (uint)
-    {
-        return filled[orderHash];
-    }
-
-    function getOrderCancelled(bytes32 orderHash)
-        public
-        constant
-        returns (uint)
-    {
-        return cancelled[orderHash];
-    }
 }
