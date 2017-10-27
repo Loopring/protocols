@@ -33,7 +33,7 @@ contract TokenTransferDelegate is Ownable {
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
 
-    uint lastVersion = 0;
+    uint public lastVersion = 0;
     address[] public versions;
     mapping (address => uint) public versioned;
 
@@ -75,6 +75,7 @@ contract TokenTransferDelegate is Ownable {
     function addVersion(address addr)
         onlyOwner
         notVersioned(addr)
+        public
     {
         versioned[addr] = ++lastVersion;
         versions.push(addr);
@@ -86,6 +87,7 @@ contract TokenTransferDelegate is Ownable {
     function removeVersion(address addr)
         onlyOwner
         isVersioned(addr)
+        public
     {
         require(versioned[addr] > 0);
         uint version = versioned[addr];
@@ -110,6 +112,7 @@ contract TokenTransferDelegate is Ownable {
         address _owner
         )
         isVersioned(msg.sender)
+        public
         constant
         returns (uint)
     {
@@ -135,6 +138,7 @@ contract TokenTransferDelegate is Ownable {
         address to,
         uint value)
         isVersioned(msg.sender)
+        public
         returns (bool)
     {
         if (from == to) {
@@ -147,6 +151,7 @@ contract TokenTransferDelegate is Ownable {
     /// @dev Gets all versioned addresses.
     /// @return Array of versioned addresses.
     function getVersions()
+        public
         constant
         returns (address[])
     {
