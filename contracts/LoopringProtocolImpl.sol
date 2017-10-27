@@ -355,7 +355,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
+        ErrorLib.check(msg.sender == order.owner, "cancelOrder not submitted by order owner");
+
         bytes32 orderHash = calculateOrderHash(order);
+
+        verifySignature(
+            order.owner,
+            orderHash,
+            order.v,
+            order.r,
+            order.s
+        );
+
         cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
 
         OrderCancelled(
