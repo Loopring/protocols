@@ -35,6 +35,6 @@ library Bytes32Lib {
         for (uint i = 1; i < len; i++) {
             v ^= int(arr[i]);
         }
-        return byte32(v);
+        return bytes32(v);
     }
 }
