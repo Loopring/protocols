@@ -4,9 +4,9 @@ We'll be collecting optimization bounty submissions and their responses here. Pl
 
 ## #01
 
-From:Brecht Devos <brechtp.devos@gmail.com>
-
-Time: 11:22 29/10/2017 Beijing Time
+- From:Brecht Devos <brechtp.devos@gmail.com>
+- Time: 11:22 29/10/2017 Beijing Time
+- PR: https://github.com/Loopring/protocol/pull/35
 
 Hey,
  
