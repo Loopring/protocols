@@ -2,11 +2,12 @@
 
 We'll be collecting optimization bounty submissions and their responses here. Please be sure to take a look before making a submission. Thank you!
 
-## #01
+## #01 [merged]
 
-- From:Brecht Devos <brechtp.devos@gmail.com>
+- From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 11:22 29/10/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/35
+- Result: This PR simplies the code but doesn't reduce gas usage. We encourage Brecht to confirm our findings.
 
 Hey,
  
