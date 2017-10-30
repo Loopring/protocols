@@ -29,29 +29,12 @@ library Bytes32Lib {
         )
         internal
         constant
-        returns (bytes32 res)
+        returns (bytes32)
     {
-        res = arr[0];
+        var v = int(arr[0]);
         for (uint i = 1; i < len; i++) {
-            res = xorOp(res, arr[i]);
+            v ^= int(arr[i]);
         }
-    }
-
-    function xorOp(
-        bytes32 bs1,
-        bytes32 bs2
-        )
-        internal
-        constant
-        returns (bytes32 res)
-    {
-        bytes memory temp = new bytes(32);
-        for (uint i = 0; i < 32; i++) {
-            temp[i] = bs1[i] ^ bs2[i];
-        }
-        string memory str = string(temp);
-        assembly {
-            res := mload(add(str, 32))
-        }
+        return bytes32(v);
     }
 }
