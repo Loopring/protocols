@@ -29,12 +29,11 @@ library Bytes32Lib {
         )
         internal
         constant
-        returns (bytes32)
+        returns (bytes32 res)
     {
-        var v = int(arr[0]);
+        res = arr[0];
         for (uint i = 1; i < len; i++) {
-            v ^= int(arr[i]);
+            res ^= arr[i];
         }
-        return bytes32(v);
     }
 }
