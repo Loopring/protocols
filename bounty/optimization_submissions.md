@@ -223,8 +223,19 @@ contract TokenRegistry is Ownable {
 
 ## #04 [TBD]
 
+- From: Akash Bansal <akash.bansal2504@gmail.com>
+- Time: 21:58 01/11/2017 Beijing Time
+- PR: https://github.com/Loopring/protocol/pull/38
+
+Description : Adding and removing loopring protocol Address in TokenTransferDelegate.sol in O(1)
+I think this will reduce gas significantly.
+
+Thanks.
+
+## #05 [TBD]
+
 - From: Brecht Devos <brechtp.devos@gmail.com>
-- Time: 11:22 29/10/2017 Beijing Time
+- Time: 23:00 01/11/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/39
 
 Hi,
