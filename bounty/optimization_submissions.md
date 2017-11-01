@@ -219,4 +219,17 @@ contract TokenRegistry is Ownable {
     {
         return tokenSymbolMap[symbol];
     }
-}
+ }
+
+## #04 [TBD]
+
+- From: Brecht Devos <brechtp.devos@gmail.com>
+- Time: 11:22 29/10/2017 Beijing Time
+- PR: https://github.com/Loopring/protocol/pull/39
+
+Hi,
+ 
+Shouldn’t the return value of delegate.transferToken() be checked in settleRing()? Even if you’ve done some checks before, it still seems like a good idea to check the return value of the function because it seems like it could fail for multiple reasons. It’s also a very critical part of the codebase.
+I haven’t thought that much yet if or how it could be abused, though I don’t see any reason not to check the return value.
+ 
+Brecht Devos
