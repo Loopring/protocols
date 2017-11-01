@@ -142,3 +142,81 @@ Let me know what you think of this optimization. For completeness’ sake I past
 I had to put the calculateRinghash inside its own function to save on local variables inside submitRing(). Otherwise it’s some very small changes in a couple of places.
  
 Brecht Devos
+
+## #03 [TBD]
+
+- From: Brecht Devos <brechtp.devos@gmail.com>
+- Time: 04:35 01/11/2017 Beijing Time
+- PR: TBD
+- Result: TBD
+
+Hi,
+ 
+I’ve done a pretty straight forward optimization (and code simplification) in TokenRegistry. I’ve changed the tokens array to a mapping like this: mapping (address => bool) tokenAddressMap.
+This makes isTokenRegistered() faster because the tokens array doesn’t need to be searched for the matching address
+This simplifies the code in unregisterToken() and  isTokenRegistered()
+ 
+This makes the verifyTokensRegistered() function that calls isTokenRegistered() a couple of times quite a bit faster. In total this change reduces the gas usage about 2%.
+ 
+I’ve pasted the complete updated code for the TokenRegistry contract below.
+ 
+Let me know if you’ve got any questions/thoughts about this.
+ 
+Brecht Devos
+ 
+ 
+TokenRegistry.sol:
+ 
+/// @title Token Register Contract
+/// @author Kongliang Zhong - <kongliang@loopring.org>,
+/// @author Daniel Wang - <daniel@loopring.org>.
+contract TokenRegistry is Ownable {
+ 
+    mapping (string => address) tokenSymbolMap;
+    mapping (address => bool) tokenAddressMap;
+ 
+    function registerToken(address _token, string _symbol)
+        public
+        onlyOwner
+    {
+        require(_token != address(0));
+        require(!isTokenRegisteredBySymbol(_symbol));
+        require(!isTokenRegistered(_token));
+        tokenSymbolMap[_symbol] = _token;
+        tokenAddressMap[_token] = true;
+    }
+ 
+    function unregisterToken(address _token, string _symbol)
+        public
+        onlyOwner
+    {
+        require(tokenSymbolMap[_symbol] == _token);
+        require(tokenAddressMap[_token] == true);
+        delete tokenSymbolMap[_symbol];
+        delete tokenAddressMap[_token];
+    }
+ 
+    function isTokenRegisteredBySymbol(string symbol)
+        public
+        constant
+        returns (bool)
+    {
+        return tokenSymbolMap[symbol] != address(0);
+    }
+ 
+    function isTokenRegistered(address _token)
+        public
+        constant
+        returns (bool)
+    {
+       return tokenAddressMap[_token];
+    }
+ 
+    function getAddressBySymbol(string symbol)
+        public
+        constant
+        returns (address)
+    {
+        return tokenSymbolMap[symbol];
+    }
+}
