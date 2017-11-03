@@ -248,14 +248,7 @@ I haven’t thought that much yet if or how it could be abused, though I don’t
 Brecht Devos
 
 
-## #07 [TBD]
-
-- From: Akash Bansal <akash.bansal2504@gmail.com>
-- Time: 01:57 03/11/2017 Beijing Time
-- PR: https://github.com/Loopring/protocol/pull/41
-
-
-## #08 [Merged]
+## #07 [Merged]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 10:01 03/11/2017 Beijing Time
