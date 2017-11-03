@@ -130,7 +130,6 @@ contract TokenTransferDelegate is Ownable {
     /// @param from Address to transfer token from.
     /// @param to Address to transfer token to.
     /// @param value Amount of token to transfer.
-    /// @return Tansfer result.
     function transferToken(
         address token,
         address from,
@@ -138,12 +137,9 @@ contract TokenTransferDelegate is Ownable {
         uint value)
         isVersioned(msg.sender)
         public
-        returns (bool)
     {
-        if (from == to) {
-            return false;
-        } else {
-            return ERC20(token).transferFrom(from, to, value);
+        if (from != to && value > 0) {
+            assert(ERC20(token).transferFrom(from, to, value));
         }
     }
 
