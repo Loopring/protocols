@@ -2,7 +2,7 @@
 
 We'll be collecting optimization bounty submissions and their responses here. Please be sure to take a look before making a submission. Thank you!
 
-## #01 [merged]
+## #01 [Merged]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 11:22 29/10/2017 Beijing Time
@@ -35,12 +35,12 @@ If there any issues or additional questions please let me know.
 Brecht Devos
 
 
-## #02 [TBD]
+## #02 [Merged]
 
 - From: Kecheng Yue <yuekec@gmail.com>
 - Time: 00:46 01/11/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/37
-- Result: TBD
+- Result: reduced gas usage from 462621 to 447740 (=14881), a 2.91% reduction of 511465.
 
 Hi,  
 
