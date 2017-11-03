@@ -329,6 +329,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                        {from: owner});
 
       //console.log(tx.receipt.logs);
+      console.log("cumulativeGasUsed for a ring of 3 orders: " + tx.receipt.cumulativeGasUsed);
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
@@ -418,8 +419,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                        p.feeRecepient,
                                                        p.throwIfLRCIsInsuffcient,
                                                        {from: owner});
-
-      //console.log(tx.receipt.logs);
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
