@@ -25,11 +25,9 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenRegistry is Ownable {
 
-    address[] public tokens;
-
-    mapping (address => bool) tokenMap;
-
     mapping (string => address) tokenSymbolMap;
+
+    mapping (address => bool) tokenAddressMap;
 
     function registerToken(address _token, string _symbol)
         public
@@ -38,9 +36,8 @@ contract TokenRegistry is Ownable {
         require(_token != address(0));
         require(!isTokenRegisteredBySymbol(_symbol));
         require(!isTokenRegistered(_token));
-        tokens.push(_token);
-        tokenMap[_token] = true;
         tokenSymbolMap[_symbol] = _token;
+        tokenAddressMap[_token] = true;
     }
 
     function unregisterToken(address _token, string _symbol)
@@ -48,15 +45,9 @@ contract TokenRegistry is Ownable {
         onlyOwner
     {
         require(tokenSymbolMap[_symbol] == _token);
+        require(tokenAddressMap[_token] == true);
         delete tokenSymbolMap[_symbol];
-        delete tokenMap[_token];
-        for (uint i = 0; i < tokens.length; i++) {
-            if (tokens[i] == _token) {
-                tokens[i] == tokens[tokens.length - 1];
-                tokens.length --;
-                break;
-            }
-        }
+        delete tokenAddressMap[_token];
     }
 
     function isTokenRegisteredBySymbol(string symbol)
@@ -72,7 +63,7 @@ contract TokenRegistry is Ownable {
         constant
         returns (bool)
     {
-        return tokenMap[_token];
+        return tokenAddressMap[_token];
     }
 
     function getAddressBySymbol(string symbol)
