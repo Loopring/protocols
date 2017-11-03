@@ -147,8 +147,8 @@ Brecht Devos
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 04:35 01/11/2017 Beijing Time
-- PR: TBD
-- Result: TBD
+- PR: https://github.com/Loopring/protocol/pull/45
+- Result: This change is nice but didn't really reduce gas usage. Probably because of optimization #2. 
 
 Hi,
  
