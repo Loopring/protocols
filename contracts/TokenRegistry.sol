@@ -27,6 +27,8 @@ contract TokenRegistry is Ownable {
 
     address[] public tokens;
 
+    mapping (address => bool) tokenMap;
+
     mapping (string => address) tokenSymbolMap;
 
     function registerToken(address _token, string _symbol)
@@ -37,6 +39,7 @@ contract TokenRegistry is Ownable {
         require(!isTokenRegisteredBySymbol(_symbol));
         require(!isTokenRegistered(_token));
         tokens.push(_token);
+        tokenMap[_token] = true;
         tokenSymbolMap[_symbol] = _token;
     }
 
@@ -46,6 +49,7 @@ contract TokenRegistry is Ownable {
     {
         require(tokenSymbolMap[_symbol] == _token);
         delete tokenSymbolMap[_symbol];
+        delete tokenMap[_token];
         for (uint i = 0; i < tokens.length; i++) {
             if (tokens[i] == _token) {
                 tokens[i] == tokens[tokens.length - 1];
@@ -68,13 +72,7 @@ contract TokenRegistry is Ownable {
         constant
         returns (bool)
     {
-
-        for (uint i = 0; i < tokens.length; i++) {
-            if (tokens[i] == _token) {
-                return true;
-            }
-        }
-        return false;
+        return tokenMap[_token];
     }
 
     function getAddressBySymbol(string symbol)

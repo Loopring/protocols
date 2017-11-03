@@ -238,15 +238,17 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public
     {
-        ErrorLib.check(!entered, "attempted to re-ent submitRing function");
+        if (entered) {
+            ErrorLib.error("attempted to re-ent submitRing function");
+        }
+
         entered = true;
 
         //Check ring size
         uint ringSize = addressList.length;
-        ErrorLib.check(
-            ringSize > 1 && ringSize <= maxRingSize,
-            "invalid ring size"
-        );
+        if (ringSize <= 1 || ringSize > maxRingSize) {
+            ErrorLib.error("invalid ring size");
+        }
 
         verifyInputDataIntegrity(
             ringSize,
@@ -270,10 +272,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList
         );
 
-        ErrorLib.check(
-            ringhashRegistry.canSubmit(ringhash, feeRecepient),
-            "Ring claimed by others"
-        );
+        if (!ringhashRegistry.canSubmit(ringhash, feeRecepient)) {
+            ErrorLib.error("Ring claimed by others");
+        }
 
         verifySignature(
             ringminer,
@@ -336,7 +337,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         public
     {
         uint cancelAmount = orderValues[6];
-        ErrorLib.check(cancelAmount > 0, "amount to cancel is zero");
+
+        if (cancelAmount == 0) {
+            ErrorLib.error("amount to cancel is zero");
+        } 
 
         var order = Order(
             addresses[0],
@@ -355,7 +359,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
-        ErrorLib.check(msg.sender == order.owner, "cancelOrder not submitted by order owner");
+        if (msg.sender != order.owner) {
+            ErrorLib.error("cancelOrder not submitted by order owner");
+        }
 
         bytes32 orderHash = calculateOrderHash(order);
 
@@ -390,10 +396,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             t = block.timestamp;
         }
 
-        ErrorLib.check(
-            cutoffs[msg.sender] < t,
-            "attempted to set cutoff to a smaller value"
-        );
+        if (cutoffs[msg.sender] >= t) {
+            ErrorLib.error("attempted to set cutoff to a smaller value");
+        }
 
         cutoffs[msg.sender] = t;
 
@@ -419,10 +424,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize - 1; i++) {
             address tokenS = ring.orders[i].order.tokenS;
             for (uint j = i + 1; j < ringSize; j++) {
-                ErrorLib.check(
-                    tokenS != ring.orders[j].order.tokenS,
-                    "found sub-ring"
-                );
+                if (tokenS == ring.orders[j].order.tokenS) {
+                    ErrorLib.error("found sub-ring");
+                }
             }
         }
     }
@@ -433,10 +437,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         var registryContract = TokenRegistry(tokenRegistryAddress);
         for (uint i = 0; i < addressList.length; i++) {
-            ErrorLib.check(
-                registryContract.isTokenRegistered(addressList[i][1]),
-                "token not registered"
-            );
+            if (!registryContract.isTokenRegistered(addressList[i][1])) {
+                ErrorLib.error("token not registered");
+            }
         }
     }
 
@@ -579,21 +582,19 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize; i++) {
             uint s1b0 = orders[i].rate.amountS.mul(orders[i].order.amountB);
             uint s0b1 = orders[i].order.amountS.mul(orders[i].rate.amountB);
-
-            ErrorLib.check(
-                s1b0 <= s0b1,
-                "miner supplied exchange rate provides invalid discount"
-            );
+            
+            if (s1b0 > s0b1) {
+                ErrorLib.error("miner supplied exchange rate provides invalid discount");
+            }
 
             rateRatios[i] = RATE_RATIO_SCALE.mul(s1b0).div(s0b1);
         }
 
         uint cvs = UintLib.cvsquare(rateRatios, RATE_RATIO_SCALE);
 
-        ErrorLib.check(
-            cvs <= rateRatioCVSThreshold,
-            "miner supplied exchange rate is not evenly discounted"
-        );
+        if (cvs > rateRatioCVSThreshold) {
+            ErrorLib.error("miner supplied exchange rate is not evenly discounted");
+        }
     }
 
     function calculateRingFees(Ring ring)
@@ -612,10 +613,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uint lrcSpendable = getLRCSpendable(state.order.owner);
 
                 if (lrcSpendable < state.lrcFee) {
-                    ErrorLib.check(
-                        !ring.throwIfLRCIsInsuffcient,
-                        "order LRC balance insuffcient"
-                    );
+                    if (ring.throwIfLRCIsInsuffcient) {
+                        ErrorLib.error("order LRC balance insuffcient");
+                    }
 
                     state.lrcFee = lrcSpendable;
                     minerLrcSpendable += lrcSpendable;
@@ -779,8 +779,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order.amountS = amountS;
             }
 
-            ErrorLib.check(order.amountS > 0, "amountS is zero");
-            ErrorLib.check(order.amountB > 0, "amountB is zero");
+            if (order.amountS == 0) {
+                ErrorLib.error("amountS is zero");
+            }
+            if (order.amountB == 0) {
+                ErrorLib.error("amountB is zero");
+            }
 
             state.fillAmountS = order.amountS.min256(state.availableAmountS);
         }
@@ -826,52 +830,48 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
     {
-        ErrorLib.check(
-            ringSize == addressList.length,
-            "ring data is inconsistent - addressList"
-        );
+        if (ringSize != addressList.length) {
+            ErrorLib.error("ring data is inconsistent - addressList");
+        }    
 
-        ErrorLib.check(
-            ringSize == uintArgsList.length,
-            "ring data is inconsistent - uintArgsList"
-        );
+        if (ringSize != uintArgsList.length) {
+            ErrorLib.error("ring data is inconsistent - uintArgsList");
+        }
+        
+        if (ringSize != uint8ArgsList.length) {
+            ErrorLib.error("ring data is inconsistent - uint8ArgsList");
+        }
+        
 
-        ErrorLib.check(
-            ringSize == uint8ArgsList.length,
-            "ring data is inconsistent - uint8ArgsList"
-        );
+        if (ringSize != buyNoMoreThanAmountBList.length) {
+            ErrorLib.error("ring data is inconsistent - buyNoMoreThanAmountBList");
+        }
+        
 
-        ErrorLib.check(
-            ringSize == buyNoMoreThanAmountBList.length,
-            "ring data is inconsistent - buyNoMoreThanAmountBList"
-        );
+        if (ringSize + 1 != vList.length) {
+            ErrorLib.error("ring data is inconsistent - vList");
+        }
+        
 
-        ErrorLib.check(
-            ringSize + 1 == vList.length,
-            "ring data is inconsistent - vList"
-        );
+        if (ringSize + 1 != rList.length) {
+            ErrorLib.error("ring data is inconsistent - rList");
+        }
+        
 
-        ErrorLib.check(
-            ringSize + 1 == rList.length,
-            "ring data is inconsistent - rList"
-        );
-
-        ErrorLib.check(
-            ringSize + 1 == sList.length,
-            "ring data is inconsistent - sList"
-        );
+        if (ringSize + 1 != sList.length) {
+            ErrorLib.error("ring data is inconsistent - sList");
+        }
+        
 
         // Validate ring-mining related arguments.
         for (uint i = 0; i < ringSize; i++) {
-            ErrorLib.check(
-                uintArgsList[i][6] > 0,
-                "order rateAmountS is zero"
-            );
-
-            ErrorLib.check(
-                uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE,
-                "invalid order fee selection"
-            );
+            if (uintArgsList[i][6] == 0) {
+                ErrorLib.error("order rateAmountS is zero");
+            }
+            
+            if (uint8ArgsList[i][1] > FEE_SELECT_MAX_VALUE) {
+                ErrorLib.error("invalid order fee selection");
+            }
         }
     }
 
@@ -938,10 +938,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0    // splitB
             );
 
-            ErrorLib.check(
-                orders[i].availableAmountS > 0,
-                "order spendable amountS is zero"
-            );
+            if (orders[i].availableAmountS == 0) {
+                ErrorLib.error("order spendable amountS is zero");
+            }
         }
 
         return orders;
@@ -952,60 +951,49 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
     {
-        ErrorLib.check(
-            order.owner != address(0),
-            "invalid order owner"
-        );
+        if (order.owner == address(0)) {
+            ErrorLib.error("invalid order owner");
+        }
 
-        ErrorLib.check(
-            order.tokenS != address(0),
-            "invalid order tokenS"
-        );
+        if (order.tokenS == address(0)) {
+            ErrorLib.error("invalid order tokenS");
+        }
 
-        ErrorLib.check(
-            order.tokenB != address(0),
-            "invalid order tokenB"
-        );
+        if (order.tokenB == address(0)) {
+            ErrorLib.error("invalid order tokenB");
+        }
 
-        ErrorLib.check(
-            order.amountS > 0,
-            "invalid order amountS"
-        );
+        if (order.amountS == 0) {
+            ErrorLib.error("invalid order amountS");
+        }
 
-        ErrorLib.check(
-            order.amountB > 0,
-            "invalid order amountB"
-        );
+        if (order.amountB == 0) {
+            ErrorLib.error("invalid order amountB");
+        }
 
-        ErrorLib.check(
-            order.timestamp <= block.timestamp,
-            "order is too early to match"
-        );
+        if (order.timestamp > block.timestamp) {
+            ErrorLib.error("order is too early to match");
+        }
 
-        ErrorLib.check(
-            order.timestamp > cutoffs[order.owner],
-            "order is cut off"
-        );
+        if (order.timestamp <= cutoffs[order.owner]) {
+            ErrorLib.error("order is cut off");
+        }
 
-        ErrorLib.check(
-            order.ttl > 0,
-            "order ttl is 0"
-        );
+        if (order.ttl == 0) {
+            ErrorLib.error("order ttl is 0");
+        }
 
-        ErrorLib.check(
-            order.timestamp + order.ttl > block.timestamp,
-            "order is expired"
-        );
+        if (order.timestamp + order.ttl <= block.timestamp) {
+            ErrorLib.error("order is expired");
+        }
 
-        ErrorLib.check(
-            order.salt > 0,
-            "invalid order salt"
-        );
+        if (order.salt == 0) {
+            ErrorLib.error("invalid order salt");
+        }
 
-        ErrorLib.check(
-            order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE,
-            "invalid order marginSplitPercentage"
-        );
+        if (order.marginSplitPercentage > MARGIN_SPLIT_PERCENTAGE_BASE) {
+            ErrorLib.error("invalid order marginSplitPercentage");
+        }
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
@@ -1047,7 +1035,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
-        ErrorLib.check(signer == addr, "invalid signature");
+        if (signer != addr) {
+            ErrorLib.error("invalid signature");
+        }
     }
 
 }

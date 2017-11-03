@@ -73,10 +73,9 @@ contract RinghashRegistry {
             sList
         );
 
-        ErrorLib.check(
-            canSubmit(ringhash, ringminer),
-            "Ringhash submitted"
-        );
+        if (!canSubmit(ringhash, ringminer)) {
+            ErrorLib.error("Ringhash submitted");
+        }
 
         submissions[ringhash] = Submission(ringminer, block.number);
         RinghashSubmitted(ringminer, ringhash);
@@ -117,12 +116,11 @@ contract RinghashRegistry {
         constant
         returns (bytes32)
     {
-        ErrorLib.check(
-            ringSize == vList.length - 1 && (
-            ringSize == rList.length - 1) && (
-            ringSize == sList.length - 1),
-            "invalid ring data"
-        );
+        if (ringSize != vList.length - 1 || (
+            ringSize != rList.length - 1) || (
+            ringSize != sList.length - 1)) {
+            ErrorLib.error("invalid ring data");
+        }
 
         return keccak256(
             vList.xorReduce(ringSize),
