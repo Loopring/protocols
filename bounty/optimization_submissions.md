@@ -143,12 +143,12 @@ I had to put the calculateRinghash inside its own function to save on local vari
  
 Brecht Devos
 
-## #04 [TBD]
+## #04 [Rejected]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 04:35 01/11/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/45
-- Result: This change is nice but didn't really reduce gas usage. Probably because of optimization #2. 
+- Result: We need to keep an list of tokens so they can be browsered by normal user using Geth. Maps are not enumeratable.
 
 Hi,
  
@@ -221,11 +221,12 @@ contract TokenRegistry is Ownable {
     }
  }
 
-## #05 [TBD]
+## #05 [Rejected]
 
 - From: Akash Bansal <akash.bansal2504@gmail.com>
 - Time: 21:58 01/11/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/38
+- Our test shows that this change actually increased gas usage. This is probably because 1) our test is not written to test TokenTransferDelegate and 2) we prefer less storage on-chain over less computation.
 
 Description : Adding and removing loopring protocol Address in TokenTransferDelegate.sol in O(1)
 I think this will reduce gas significantly.
