@@ -121,7 +121,8 @@ Hi,
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 00:55 01/11/2017 Beijing Time
-
+- PR: https://github.com/Loopring/protocol/pull/44
+- Result: reduced gas usage from 446542 to 426942 (=14881), a 3.83% reduction of 511465.
 
 Hi,
  
