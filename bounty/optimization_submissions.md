@@ -244,3 +244,32 @@ Shouldn’t the return value of delegate.transferToken() be checked in settleRin
 I haven’t thought that much yet if or how it could be abused, though I don’t see any reason not to check the return value.
  
 Brecht Devos
+
+
+## #06 [TBD]
+
+- From: Akash Bansal <akash.bansal2504@gmail.com>
+- Time: 01:57 03/11/2017 Beijing Time
+- PR: https://github.com/Loopring/protocol/pull/41
+
+
+## #07 [TBD]
+
+- From: Brecht Devos <brechtp.devos@gmail.com>
+- Time: 10:01 03/11/2017 Beijing Time
+- PR: 
+
+Hi,
+ 
+Currently there are 2 storage fields for filled and cancelled separately. The code as is it works now does not need to have separate lists for both because they are only used added together like this:
+uint amountB = order.amountB.sub(filled[state.orderHash]).tolerantSub(cancelled[state.orderHash]);
+ 
+If the amount cancelled is simply added to filled the code would simply become:
+uint amountB = order.amountB. tolerantSub (filled[state.orderHash]);
+ 
+Of course this is only possible when future features don’t depend on having these separate.
+ 
+In the 3 order test case this saves 3 SLOADs, which is currently about 0.25% in gas, which is pretty minor. Though it can also reduce future expensive SSTOREs (zero to non-zero) when either the filled or cancelled amount is already non-zero
+(e.g. when the filled amount is already non-zero but the cancelled amount is still zero, cancelling an order would not bring about an expensive SSTORE to bring the cancelled amount to non-zero -> this would save 15000 gas).
+ 
+Brecht Devos
