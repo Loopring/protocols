@@ -233,11 +233,12 @@ I think this will reduce gas significantly.
 
 Thanks.
 
-## #06 [TBD]
+## #06 [Merged]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 23:00 01/11/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/39
+- Result: reduced gas usage from 426942 to 426590 (=14881), a 0.07% reduction of 511465.
 
 Hi,
  
