@@ -61,10 +61,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
 
-    // The following two maps are used to keep trace of order fill and
-    // cancellation history.
-    mapping (bytes32 => uint) public filled;
-    mapping (bytes32 => uint) public cancelled;
+    // The following map is used to keep trace of order fill and cancellation
+    // history.
+    mapping (bytes32 => uint) public cancelledOrFilled;
 
     // A map from address to its cutoff timestamp.
     mapping (address => uint) public cutoffs;
@@ -373,7 +372,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.s
         );
 
-        cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
+        cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelAmount);
 
         OrderCancelled(
             block.timestamp,
@@ -549,9 +548,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // Update fill records
             if (state.order.buyNoMoreThanAmountB) {
-                filled[state.orderHash] += next.fillAmountS;
+                cancelledOrFilled[state.orderHash] += next.fillAmountS;
             } else {
-                filled[state.orderHash] += state.fillAmountS;
+                cancelledOrFilled[state.orderHash] += state.fillAmountS;
             }
 
             OrderFilled(
@@ -756,10 +755,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var order = state.order;
 
             if (order.buyNoMoreThanAmountB) {
-                uint amountB = order.amountB.sub(
-                    filled[state.orderHash]
-                ).tolerantSub(
-                    cancelled[state.orderHash]
+                uint amountB = order.amountB.tolerantSub(
+                    cancelledOrFilled[state.orderHash]
                 );
 
                 order.amountS = amountB.mul(order.amountS).div(order.amountB);
@@ -767,10 +764,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
                 order.amountB = amountB;
             } else {
-                uint amountS = order.amountS.sub(
-                    filled[state.orderHash]
-                ).tolerantSub(
-                    cancelled[state.orderHash]
+                uint amountS = order.amountS.tolerantSub(
+                    cancelledOrFilled[state.orderHash]
                 );
 
                 order.amountB = amountS.mul(order.amountB).div(order.amountS);

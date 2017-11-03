@@ -489,6 +489,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                            order.params.lrcFee,
                            cancelAmount];
 
+      const cancelledOrFilledAmount0 = await loopringProtocolImpl.cancelledOrFilled(order.params.orderHashHex);                       
       const tx = await loopringProtocolImpl.cancelOrder(addresses,
                                                         orderValues,
                                                         order.params.buyNoMoreThanAmountB,
@@ -498,8 +499,9 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                         order.params.s,
                                                         {from: order.owner});
 
-      const cancelledAmount = await loopringProtocolImpl.cancelled(order.params.orderHashHex);
-      assert.equal(cancelledAmount.toNumber(), cancelAmount.toNumber(), "cancelled amount not match");
+      const cancelledOrFilledAmount1 = await loopringProtocolImpl.cancelledOrFilled(order.params.orderHashHex);
+      assert.equal(cancelledOrFilledAmount1.minus(cancelledOrFilledAmount0).toNumber(), 
+        cancelAmount.toNumber(), "cancelled amount not match");
     });
 
     it('should not be able to cancell order by other address.', async () => {

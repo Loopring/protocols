@@ -9,6 +9,7 @@ We'll be collecting optimization bounty submissions and their responses here. Pl
 - PR: https://github.com/Loopring/protocol/pull/35
 - Result: reduced gas usage from 508406 to 462621 (=45785), a 8.95% reduction of 511465.
 
+
 Hey,
  
 I think I significantly reduced gas usage by optimizing the xorOp function in Bytes32Lib. This function is used in calculateRinghash. This is how I updated the function:
@@ -115,12 +116,12 @@ Hi,
 
 2 对多处使用到ErrorLib.check的地方做了优化。其实就是将其inline化。即：ErrorLib.check(condition, message) => If (!condition) {ErrorLib.error(message)}。之所以这么做是因为考虑到ErrorLib.check出现在了很多关键操作中，并且无论condition为何值，都会引起一个函数调用，将其inline化可以避免函数调用所引起的额外消耗。当然，这样的inline化通常是交给编译器来进行的，不过就目前为止，inline function 并未被支持（但已在计划中）。此项优化大约减少了1.5%左右的gas消耗。考虑到以后inline function可能会被官方支持，并且此优化所带来的改进较小，是否需要如此优化值得商榷。
 
+
 ## #03 [TBD]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 00:55 01/11/2017 Beijing Time
-- PR: TBD
-- Result: TBD
+
 
 Hi,
  
@@ -141,7 +142,7 @@ I had to put the calculateRinghash inside its own function to save on local vari
  
 Brecht Devos
 
-## #03 [TBD]
+## #04 [TBD]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 04:35 01/11/2017 Beijing Time
@@ -219,7 +220,7 @@ contract TokenRegistry is Ownable {
     }
  }
 
-## #04 [TBD]
+## #05 [TBD]
 
 - From: Akash Bansal <akash.bansal2504@gmail.com>
 - Time: 21:58 01/11/2017 Beijing Time
@@ -230,7 +231,7 @@ I think this will reduce gas significantly.
 
 Thanks.
 
-## #05 [TBD]
+## #06 [TBD]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 23:00 01/11/2017 Beijing Time
@@ -244,18 +245,19 @@ I haven’t thought that much yet if or how it could be abused, though I don’t
 Brecht Devos
 
 
-## #06 [TBD]
+## #07 [TBD]
 
 - From: Akash Bansal <akash.bansal2504@gmail.com>
 - Time: 01:57 03/11/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/41
 
 
-## #07 [TBD]
+## #08 [Merged]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 10:01 03/11/2017 Beijing Time
-- PR: 
+- PR: https://github.com/Loopring/protocol/pull/43
+- Result: reduced gas usage from 447740 to 446542 (=14881), a 0.23% reduction of 511465.
 
 Hi,
  
