@@ -46,7 +46,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     uint    public  maxRingSize                 = 0;
     uint    public  ringIndex                   = 0;
-    bool    private entered                     = false;
 
     // Exchange rate (rate) is the amount to sell or sold divided by the amount
     // to buy or bought.
@@ -60,6 +59,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     uint    public  rateRatioCVSThreshold       = 0;
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
+
+    uint    public constant ENTERED_MASK = 1 << 255;
 
     // The following map is used to keep trace of order fill and cancellation
     // history.
@@ -237,11 +238,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public
     {
-        if (entered) {
+        // Check if the highest bit of ringIndex is '1'.
+        if (ringIndex & ENTERED_MASK == ENTERED_MASK) {
             ErrorLib.error("attempted to re-ent submitRing function");
         }
 
-        entered = true;
+        // Set the highest bit of ringIndex to '1'.
+        ringIndex |= ENTERED_MASK;
 
         //Check ring size
         uint ringSize = addressList.length;
@@ -307,7 +310,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             throwIfLRCIsInsuffcient
         );
 
-        entered = false;
+        ringIndex = ringIndex ^ ENTERED_MASK + 1;
     }
 
     /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be
@@ -487,7 +490,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         settleRing(ring);
 
         RingMined(
-            ringIndex++,
+            ringIndex ^ ENTERED_MASK,
             block.timestamp,
             block.number,
             ring.ringhash,
@@ -554,7 +557,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             }
 
             OrderFilled(
-                ringIndex,
+                ringIndex ^ ENTERED_MASK,
                 block.timestamp,
                 block.number,
                 ring.ringhash,
