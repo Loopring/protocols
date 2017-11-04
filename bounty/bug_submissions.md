@@ -9,10 +9,11 @@ We'll be collecting bug bounty submissions and their responses here. Please be s
 - PR: https://github.com/Loopring/protocol/pull/41
 - Resoluton: Will not implemented. See https://blog.coinfabrik.com/smart-contract-short-address-attack-mitigation-failure/
 
-## #02 [TBD]
+## #02 [Merged]
 
 - From: Akash Bansal<akash.bansal2504@gmail.com>
 - Time: 22:30 04/11/2017 Beijing Time
+- PR: https://github.com/Loopring/protocol/pull/50
 
 Description : According to ERC-20 token standards, 
 Transfers of 0 values MUST be treated as normal transfers and fire the Transfer event.
