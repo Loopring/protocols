@@ -1,4 +1,3 @@
-var ErrorLib                = artifacts.require("./lib/ErrorLib");
 var UintLib                 = artifacts.require("./lib/UintLib");
 var TokenRegistry           = artifacts.require("./TokenRegistry");
 var RinghashRegistry        = artifacts.require("./RinghashRegistry");
@@ -10,7 +9,6 @@ module.exports = function(deployer, network, accounts) {
   if (network == 'live') {
     deployer.then(() => {
       return Promise.all([
-        ErrorLib.deployed(),
         UintLib.deployed(),
         TokenRegistry.deployed(),
         RinghashRegistry.deployed(),
@@ -18,7 +16,6 @@ module.exports = function(deployer, network, accounts) {
       ]);
     }).then((contracts) => {
       var lrcAddr = "0xEF68e7C694F40c8202821eDF525dE3782458639f";
-      deployer.link(ErrorLib, LoopringProtocolImpl);
       deployer.link(UintLib, LoopringProtocolImpl);
       return deployer.deploy(
         LoopringProtocolImpl,
@@ -32,17 +29,15 @@ module.exports = function(deployer, network, accounts) {
   } else {
     deployer.then(() => {
       return Promise.all([
-        ErrorLib.deployed(),
         UintLib.deployed(),
         TokenRegistry.deployed(),
         RinghashRegistry.deployed(),
         TokenTransferDelegate.deployed(),
       ]);
     }).then((contracts) => {
-      var [errLib, uintLib, tokenRegistry] = contracts;
+      var [uintLib, tokenRegistry] = contracts;
       return tokenRegistry.getAddressBySymbol("LRC");
     }).then(lrcAddr => {
-      deployer.link(ErrorLib, LoopringProtocolImpl);
       deployer.link(UintLib, LoopringProtocolImpl);
       return deployer.deploy(
         LoopringProtocolImpl,

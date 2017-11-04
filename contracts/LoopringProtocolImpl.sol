@@ -238,18 +238,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
         public
     {
         // Check if the highest bit of ringIndex is '1'.
-        if (ringIndex & ENTERED_MASK == ENTERED_MASK) {
-            ErrorLib.error("attempted to re-ent submitRing function");
-        }
+        require(ringIndex & ENTERED_MASK != ENTERED_MASK); //, "attempted to re-ent submitRing function");
 
         // Set the highest bit of ringIndex to '1'.
         ringIndex |= ENTERED_MASK;
 
         //Check ring size
         uint ringSize = addressList.length;
-        if (ringSize <= 1 || ringSize > maxRingSize) {
-            ErrorLib.error("invalid ring size");
-        }
+        require(ringSize > 1 && ringSize <= maxRingSize); //, "invalid ring size");
 
         verifyInputDataIntegrity(
             ringSize,
@@ -273,9 +269,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList
         );
 
-        if (!ringhashRegistry.canSubmit(ringhash, feeRecepient)) {
-            ErrorLib.error("Ring claimed by others");
-        }
+        require(ringhashRegistry.canSubmit(ringhash, feeRecepient)); //, "Ring claimed by others");
 
         verifySignature(
             ringminer,
@@ -340,9 +334,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         uint cancelAmount = orderValues[6];
 
-        if (cancelAmount == 0) {
-            ErrorLib.error("amount to cancel is zero");
-        } 
+        require(cancelAmount > 0); //, "amount to cancel is zero");
 
         var order = Order(
             addresses[0],
@@ -361,9 +353,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
-        if (msg.sender != order.owner) {
-            ErrorLib.error("cancelOrder not submitted by order owner");
-        }
+        require(msg.sender == order.owner); //, "cancelOrder not submitted by order owner");
 
         bytes32 orderHash = calculateOrderHash(order);
 
@@ -398,9 +388,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             t = block.timestamp;
         }
 
-        if (cutoffs[msg.sender] >= t) {
-            ErrorLib.error("attempted to set cutoff to a smaller value");
-        }
+        require(cutoffs[msg.sender] < t); //, "attempted to set cutoff to a smaller value");
 
         cutoffs[msg.sender] = t;
 
@@ -426,9 +414,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize - 1; i++) {
             address tokenS = ring.orders[i].order.tokenS;
             for (uint j = i + 1; j < ringSize; j++) {
-                if (tokenS == ring.orders[j].order.tokenS) {
-                    ErrorLib.error("found sub-ring");
-                }
+                require(tokenS != ring.orders[j].order.tokenS); //, "found sub-ring");
             }
         }
     }
@@ -444,9 +430,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         // Test all token addresses at once
-        if (!TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens)) {
-            ErrorLib.error("token not registered");
-        }
+        require(TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens)); //, "token not registered");
     }
 
     function handleRing(
@@ -485,7 +469,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // then find the smallest order of the ring, then calculate each order's
         // `fillAmountS`.
         calculateRingFillAmount(ring);
-
 
         var delegate = TokenTransferDelegate(delegateAddress);
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
@@ -592,18 +575,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint s1b0 = orders[i].rate.amountS.mul(orders[i].order.amountB);
             uint s0b1 = orders[i].order.amountS.mul(orders[i].rate.amountB);
             
-            if (s1b0 > s0b1) {
-                ErrorLib.error("miner supplied exchange rate provides invalid discount");
-            }
+            require(s1b0 <= s0b1); //, "miner supplied exchange rate provides invalid discount");
 
             rateRatios[i] = RATE_RATIO_SCALE.mul(s1b0).div(s0b1);
         }
 
         uint cvs = UintLib.cvsquare(rateRatios, RATE_RATIO_SCALE);
 
-        if (cvs > rateRatioCVSThreshold) {
-            ErrorLib.error("miner supplied exchange rate is not evenly discounted");
-        }
+        require(cvs <= rateRatioCVSThreshold); //, "miner supplied exchange rate is not evenly discounted");
     }
 
     function calculateRingFees(TokenTransferDelegate delegate, Ring ring)
@@ -622,9 +601,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uint lrcSpendable = delegate.getSpendable(lrcTokenAddress, state.order.owner);
 
                 if (lrcSpendable < state.lrcFee) {
-                    if (ring.throwIfLRCIsInsuffcient) {
-                        ErrorLib.error("order LRC balance insuffcient");
-                    }
+                    require(!ring.throwIfLRCIsInsuffcient); //, "order LRC balance insuffcient");
 
                     state.lrcFee = lrcSpendable;
                     minerLrcSpendable += lrcSpendable;
@@ -669,7 +646,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     state.lrcFee = 0;
                 }
             } else {
-                ErrorLib.error("unsupported fee selection value");
+                revert(); //, "unsupported fee selection value");
             }
         }
 
@@ -784,12 +761,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order.amountS = amountS;
             }
 
-            if (order.amountS == 0) {
-                ErrorLib.error("amountS is zero");
-            }
-            if (order.amountB == 0) {
-                ErrorLib.error("amountB is zero");
-            }
+            require(order.amountS > 0); //, "amountS is zero");
+            require(order.amountB > 0); //, "amountB is zero");
 
             state.fillAmountS = order.amountS.min256(state.availableAmountS);
         }
@@ -809,43 +782,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
     {
-        if (ringSize != addressList.length) {
-            ErrorLib.error("ring data is inconsistent - addressList");
-        }    
-
-        if (ringSize != uintArgsList.length) {
-            ErrorLib.error("ring data is inconsistent - uintArgsList");
-        }
-        
-        if (ringSize != uint8ArgsList.length) {
-            ErrorLib.error("ring data is inconsistent - uint8ArgsList");
-        }
-        
-        if (ringSize != buyNoMoreThanAmountBList.length) {
-            ErrorLib.error("ring data is inconsistent - buyNoMoreThanAmountBList");
-        }
-
-        if (ringSize + 1 != vList.length) {
-            ErrorLib.error("ring data is inconsistent - vList");
-        }
-
-        if (ringSize + 1 != rList.length) {
-            ErrorLib.error("ring data is inconsistent - rList");
-        }
-
-        if (ringSize + 1 != sList.length) {
-            ErrorLib.error("ring data is inconsistent - sList");
-        }
+        require(ringSize == addressList.length); //, "ring data is inconsistent - addressList");
+        require(ringSize == uintArgsList.length); //, "ring data is inconsistent - uintArgsList");
+        require(ringSize == uint8ArgsList.length); //, "ring data is inconsistent - uint8ArgsList");
+        require(ringSize == buyNoMoreThanAmountBList.length); //, "ring data is inconsistent - buyNoMoreThanAmountBList");
+        require(ringSize + 1 == vList.length); //, "ring data is inconsistent - vList");
+        require(ringSize + 1 == rList.length); //, "ring data is inconsistent - rList");
+        require(ringSize + 1 == sList.length); //, "ring data is inconsistent - sList");
 
         // Validate ring-mining related arguments.
         for (uint i = 0; i < ringSize; i++) {
-            if (uintArgsList[i][6] == 0) {
-                ErrorLib.error("order rateAmountS is zero");
-            }
-            
-            if (uint8ArgsList[i][1] > FEE_SELECT_MAX_VALUE) {
-                ErrorLib.error("invalid order fee selection");
-            }
+            require(uintArgsList[i][6] > 0); //, "order rateAmountS is zero");
+            require(uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE); //, "invalid order fee selection");
         }
     }
 
@@ -912,9 +860,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0    // splitB
             );
 
-            if (orders[i].availableAmountS == 0) {
-                ErrorLib.error("order spendable amountS is zero");
-            }
+            require(orders[i].availableAmountS > 0); //, "order spendable amountS is zero");
         }
 
         return orders;
@@ -925,49 +871,17 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
     {
-        if (order.owner == address(0)) {
-            ErrorLib.error("invalid order owner");
-        }
-
-        if (order.tokenS == address(0)) {
-            ErrorLib.error("invalid order tokenS");
-        }
-
-        if (order.tokenB == address(0)) {
-            ErrorLib.error("invalid order tokenB");
-        }
-
-        if (order.amountS == 0) {
-            ErrorLib.error("invalid order amountS");
-        }
-
-        if (order.amountB == 0) {
-            ErrorLib.error("invalid order amountB");
-        }
-
-        if (order.timestamp > block.timestamp) {
-            ErrorLib.error("order is too early to match");
-        }
-
-        if (order.timestamp <= cutoffs[order.owner]) {
-            ErrorLib.error("order is cut off");
-        }
-
-        if (order.ttl == 0) {
-            ErrorLib.error("order ttl is 0");
-        }
-
-        if (order.timestamp + order.ttl <= block.timestamp) {
-            ErrorLib.error("order is expired");
-        }
-
-        if (order.salt == 0) {
-            ErrorLib.error("invalid order salt");
-        }
-
-        if (order.marginSplitPercentage > MARGIN_SPLIT_PERCENTAGE_BASE) {
-            ErrorLib.error("invalid order marginSplitPercentage");
-        }
+        require(order.owner != address(0)); //, "invalid order owner");
+        require(order.tokenS != address(0)); //, "invalid order tokenS");
+        require(order.tokenB != address(0)); //, "invalid order tokenB");
+        require(order.amountS != 0); //, "invalid order amountS");
+        require(order.amountB != 0); //, "invalid order amountB");
+        require(order.timestamp <= block.timestamp); //, "order is too early to match");
+        require(order.timestamp > cutoffs[order.owner]); //, "order is cut off");
+        require(order.ttl != 0); //, "order ttl is 0");
+        require(order.timestamp + order.ttl > block.timestamp); //, "order is expired");
+        require(order.salt != 0); //, "invalid order salt");
+        require(order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE); //, "invalid order marginSplitPercentage");
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
@@ -1009,9 +923,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
-        if (signer != addr) {
-            ErrorLib.error("invalid signature");
-        }
+        require(signer == addr); //, "invalid signature");
     }
 
 }

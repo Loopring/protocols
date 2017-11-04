@@ -18,7 +18,6 @@
 pragma solidity 0.4.15;
 
 import "./lib/Bytes32Lib.sol";
-import "./lib/ErrorLib.sol";
 import "./lib/Uint8Lib.sol";
 
 
@@ -27,7 +26,6 @@ import "./lib/Uint8Lib.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract RinghashRegistry {
     using Bytes32Lib    for bytes32[];
-    using ErrorLib      for bool;
     using Uint8Lib      for uint8[];
 
     uint public blocksToLive;
@@ -73,9 +71,7 @@ contract RinghashRegistry {
             sList
         );
 
-        if (!canSubmit(ringhash, ringminer)) {
-            ErrorLib.error("Ringhash submitted");
-        }
+        require(canSubmit(ringhash, ringminer)); //, "Ringhash submitted");
 
         submissions[ringhash] = Submission(ringminer, block.number);
         RinghashSubmitted(ringminer, ringhash);
@@ -116,11 +112,10 @@ contract RinghashRegistry {
         constant
         returns (bytes32)
     {
-        if (ringSize != vList.length - 1 || (
-            ringSize != rList.length - 1) || (
-            ringSize != sList.length - 1)) {
-            ErrorLib.error("invalid ring data");
-        }
+        require(
+            (ringSize == vList.length - 1)&&
+            (ringSize == rList.length - 1)&&
+            (ringSize == sList.length - 1)); //, "invalid ring data");
 
         return keccak256(
             vList.xorReduce(ringSize),
