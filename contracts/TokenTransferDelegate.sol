@@ -138,7 +138,7 @@ contract TokenTransferDelegate is Ownable {
         isVersioned(msg.sender)
         public
     {
-        if (from != to && value > 0) {
+        if (from != to) {
             assert(ERC20(token).transferFrom(from, to, value));
         }
     }
