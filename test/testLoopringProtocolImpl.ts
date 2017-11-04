@@ -329,7 +329,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                        {from: owner});
 
       //console.log(tx.receipt.logs);
-      console.log("cumulativeGasUsed for a ring of 3 orders: " + tx.receipt.cumulativeGasUsed);
+      console.log("cumulativeGasUsed for a ring of 3 orders: " + tx.receipt.gasUsed);
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;

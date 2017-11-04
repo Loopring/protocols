@@ -810,15 +810,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    /// @return Amount of LRC token that can be spent by this contract.
-    function getLRCSpendable(address tokenOwner)
-        internal
-        constant
-        returns (uint)
-    {
-        return getSpendable(lrcTokenAddress, tokenOwner);
-    }
-
     /// @dev verify input data's basic integrity.
     function verifyInputDataIntegrity(
         uint ringSize,

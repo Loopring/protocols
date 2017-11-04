@@ -319,7 +319,7 @@ Brecht Devos.
 Name : Akash Bansal
 email : akash.bansal2504@gmail.com
 PR : https://github.com/Loopring/protocol/pull/47
-
+Result: reduced gas usage from 423909 to 423412 (=497), a 0.09% reduction of 511465.
 
 Description : In the function calculateRingFees, call to getSpendable is made which is everytime creating new object of TokenTransferDelegate. It can be avoided.
 Gas reduced from 427548 to 426923 which is more than 1%
