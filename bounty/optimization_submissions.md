@@ -269,3 +269,48 @@ In the 3 order test case this saves 3 SLOADs, which is currently about 0.25% in 
 (e.g. when the filled amount is already non-zero but the cancelled amount is still zero, cancelling an order would not bring about an expensive SSTORE to bring the cancelled amount to non-zero -> this would save 15000 gas).
  
 Brecht Devos
+
+## #07 [TBD]
+
+- From: Brecht Devos <brechtp.devos@gmail.com>
+- Time: 02:38 04/11/2017 Beijing Time
+- PR: 
+- Result: 
+
+Hi,
+ 
+Small but straightforward optimization in the verifyTokensRegistered function: All token addresses can be checked in a single function call in the TokenRegistry contact like this:
+ 
+function verifyTokensRegistered(address[2][] addressList)
+        internal
+        constant
+    {
+        // Extract the token addresses
+        address[] memory tokens = new address[](addressList.length);
+        for (uint i = 0; i < addressList.length; i++) {
+            tokens[i] = addressList[i][1];
+        }
+ 
+        // Test all token addresses at once
+        if (!TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens)) {
+            ErrorLib.error("token not registered");
+        }
+    }
+ 
+The new function in the TokenRegistry contract looks like this:
+ 
+function areAllTokensRegistered(address[] tokenList)
+        public
+        constant
+        returns (bool)
+    {
+        bool allFound = true;
+        for (uint i = 0; i < tokenList.length; i++) {
+            allFound = allFound && tokenMap[tokenList[i]];
+        }
+        return allFound;
+    }
+ 
+This reduces gas usage by about 0.5%.
+ 
+Brecht Devos.
