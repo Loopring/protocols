@@ -607,7 +607,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
     {
-        uint minerLrcSpendable = getLRCSpendable(ring.feeRecepient);
+        TokenTransferDelegate tokenTransferDelegate = TokenTransferDelegate(delegateAddress);
+        uint minerLrcSpendable = tokenTransferDelegate.getSpendable(lrcTokenAddress, ring.feeRecepient);
         uint ringSize = ring.orders.length;
 
         for (uint i = 0; i < ringSize; i++) {
@@ -616,7 +617,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             if (state.feeSelection == FEE_SELECT_LRC) {
 
-                uint lrcSpendable = getLRCSpendable(state.order.owner);
+                uint lrcSpendable = tokenTransferDelegate.getSpendable(lrcTokenAddress, state.order.owner);
 
                 if (lrcSpendable < state.lrcFee) {
                     if (ring.throwIfLRCIsInsuffcient) {
