@@ -270,7 +270,7 @@ In the 3 order test case this saves 3 SLOADs, which is currently about 0.25% in 
  
 Brecht Devos
 
-## #07 [TBD]
+## #08 [TBD]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 02:38 04/11/2017 Beijing Time
@@ -281,7 +281,7 @@ Hi,
  
 Small but straightforward optimization in the verifyTokensRegistered function: All token addresses can be checked in a single function call in the TokenRegistry contact like this:
  
-function verifyTokensRegistered(address[2][] addressList)
+    function verifyTokensRegistered(address[2][] addressList)
         internal
         constant
     {
@@ -299,7 +299,7 @@ function verifyTokensRegistered(address[2][] addressList)
  
 The new function in the TokenRegistry contract looks like this:
  
-function areAllTokensRegistered(address[] tokenList)
+    function areAllTokensRegistered(address[] tokenList)
         public
         constant
         returns (bool)
