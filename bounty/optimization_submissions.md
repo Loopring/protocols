@@ -314,3 +314,16 @@ The new function in the TokenRegistry contract looks like this:
 This reduces gas usage by about 0.5%.
  
 Brecht Devos.
+
+## #09 [TBD]
+Name : Akash Bansal
+email : akash.bansal2504@gmail.com
+PR : https://github.com/Loopring/protocol/pull/47
+
+
+Description : In the function calculateRingFees, call to getSpendable is made which is everytime creating new object of TokenTransferDelegate. It can be avoided.
+Gas reduced from 427548 to 426923 which is more than 1%
+
+Ethereum Address : 0x8130cdea28278a14b42aaa49abf0415607cdbfee
+
+Let me know in case of issues.
