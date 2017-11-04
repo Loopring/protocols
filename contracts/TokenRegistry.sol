@@ -75,6 +75,19 @@ contract TokenRegistry is Ownable {
         return tokenMap[_token];
     }
 
+    function areAllTokensRegistered(address[] tokenList)
+        public
+        constant
+        returns (bool)
+    {
+        for (uint i = 0; i < tokenList.length; i++) {
+            if (!tokenMap[tokenList[i]]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     function getAddressBySymbol(string symbol)
         public
         constant

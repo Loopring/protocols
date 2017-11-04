@@ -437,11 +437,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
     {
-        var registryContract = TokenRegistry(tokenRegistryAddress);
+        // Extract the token addresses
+        address[] memory tokens = new address[](addressList.length);
         for (uint i = 0; i < addressList.length; i++) {
-            if (!registryContract.isTokenRegistered(addressList[i][1])) {
-                ErrorLib.error("token not registered");
-            }
+            tokens[i] = addressList[i][1];
+        }
+
+        // Test all token addresses at once
+        if (!TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens)) {
+            ErrorLib.error("token not registered");
         }
     }
 

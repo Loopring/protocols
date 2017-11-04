@@ -270,12 +270,12 @@ In the 3 order test case this saves 3 SLOADs, which is currently about 0.25% in 
  
 Brecht Devos
 
-## #08 [TBD]
+## #08 [Merged]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 02:38 04/11/2017 Beijing Time
-- PR: 
-- Result: 
+- PR: https://github.com/Loopring/protocol/pull/48
+- Result: reduced gas usage from 426718 to 423909 (=2809), a 0.55% reduction of 511465.
 
 Hi,
  
