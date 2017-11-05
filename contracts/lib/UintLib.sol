@@ -27,18 +27,11 @@ library UintLib {
     using SafeMath  for uint;
 
     function tolerantSub(uint x, uint y) internal constant returns (uint z) {
-        if (x >= y)
+        if (x >= y) {
             z = x - y;
-        else
+        } else {
             z = 0;
-    }
-
-    function next(uint i, uint size) internal constant returns (uint) {
-        return (i + 1) % size;
-    }
-
-    function prev(uint i, uint size) internal constant returns (uint) {
-        return (i + size - 1) % size;
+        }
     }
 
     /// @dev calculate the square of Coefficient of Variation (CV)
