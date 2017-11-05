@@ -327,3 +327,16 @@ Gas reduced from 427548 to 426923 which is more than 1%
 Ethereum Address : 0x8130cdea28278a14b42aaa49abf0415607cdbfee
 
 Let me know in case of issues.
+
+
+## #10 [Merged]
+Name : Akash Bansal
+email : akash.bansal2504@gmail.com
+PR : https://github.com/Loopring/protocol/pull/53
+Result: reduced gas usage from 421991 to 420823 (=1168), a 0.22% reduction of 511465.
+
+
+In addition to the above :
+https://github.com/Loopring/protocol/pull/52
+
+This further reduces some gas.
