@@ -81,11 +81,14 @@ contract LoopringProtocol {
     /// @param addressList  List of each order's owner and tokenS. Note that next
     ///                     order's `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS, AmountB, rateAmountS, timestamp, ttl, salt,
-    ///                     and lrcFee.
+    ///                     amountS, amountB, timestamp, ttl, salt, lrcFee,
+    ///                     rateAmountS.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     marginSplitPercentageList, feeSelectionList.
+    /// @param buyNoMoreThanAmountBList -
+    ///                     This indicates when a order should be considered
+    ///                     as 'completely filled'.
     /// @param vList        List of v for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     v value of the ring signature.
@@ -124,8 +127,11 @@ contract LoopringProtocol {
     /// @param addresses          owner, tokenS, tokenB
     /// @param orderValues        amountS, amountB, timestamp, ttl, salt, lrcFee,
     ///                           cancelAmountS, and cancelAmountB.
-    /// @param marginSplitPercentage -
     /// @param buyNoMoreThanAmountB -
+    ///                           This indicates when a order should be considered
+    ///                           as 'completely filled'.
+    /// @param marginSplitPercentage -
+    ///                           Percentage of margin split to share with miner.
     /// @param v                  Order ECDSA signature parameter v.
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.

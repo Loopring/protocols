@@ -203,6 +203,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     marginSplitPercentageList,feeSelectionList.
+    /// @param buyNoMoreThanAmountBList -
+    ///                     This indicates when a order should be considered
+    ///                     as 'completely filled'.
     /// @param vList        List of v for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     v value of the ring signature.
@@ -238,14 +241,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
         public
     {
         // Check if the highest bit of ringIndex is '1'.
-        require(ringIndex & ENTERED_MASK != ENTERED_MASK); //, "attempted to re-ent submitRing function");
+        require(ringIndex & ENTERED_MASK != ENTERED_MASK); // "attempted to re-ent submitRing function");
 
         // Set the highest bit of ringIndex to '1'.
         ringIndex |= ENTERED_MASK;
 
         //Check ring size
         uint ringSize = addressList.length;
-        require(ringSize > 1 && ringSize <= maxRingSize); //, "invalid ring size");
+        require(ringSize > 1 && ringSize <= maxRingSize); // "invalid ring size");
 
         verifyInputDataIntegrity(
             ringSize,
@@ -269,7 +272,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList
         );
 
-        require(ringhashRegistry.canSubmit(ringhash, feeRecepient)); //, "Ring claimed by others");
+        require(ringhashRegistry.canSubmit(ringhash, feeRecepient)); // "Ring claimed by others");
 
         verifySignature(
             ringminer,
@@ -306,20 +309,19 @@ contract LoopringProtocolImpl is LoopringProtocol {
         ringIndex = ringIndex ^ ENTERED_MASK + 1;
     }
 
-    /// @dev Cancel a order. Amount (amountS or amountB) to cancel can be
-    ///                           specified using orderValues.
+    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
+    ///      in orderValues.
     /// @param addresses          owner, tokenS, tokenB
-    /// @param orderValues        amountS, amountB, timestamp, ttl, salt,
-    ///                           lrcFee, and cancelAmount
+    /// @param orderValues        amountS, amountB, timestamp, ttl, salt, lrcFee,
+    ///                           cancelAmountS, and cancelAmountB.
     /// @param buyNoMoreThanAmountB -
-    ///                           If true, this order does not accept buying
-    ///                           more than `amountB`.
+    ///                           This indicates when a order should be considered
+    ///                           as 'completely filled'.
     /// @param marginSplitPercentage -
-    ///                           The percentage of margin paid to miner.
+    ///                           Percentage of margin split to share with miner.
     /// @param v                  Order ECDSA signature parameter v.
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
-
     function cancelOrder(
         address[3] addresses,
         uint[7]    orderValues,
@@ -333,7 +335,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         uint cancelAmount = orderValues[6];
 
-        require(cancelAmount > 0); //, "amount to cancel is zero");
+        require(cancelAmount > 0); // "amount to cancel is zero");
 
         var order = Order(
             addresses[0],
@@ -352,7 +354,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
-        require(msg.sender == order.owner); //, "cancelOrder not submitted by order owner");
+        require(msg.sender == order.owner); // "cancelOrder not submitted by order owner");
 
         bytes32 orderHash = calculateOrderHash(order);
 
@@ -387,7 +389,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             t = block.timestamp;
         }
 
-        require(cutoffs[msg.sender] < t); //, "attempted to set cutoff to a smaller value");
+        require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value");
 
         cutoffs[msg.sender] = t;
 
@@ -413,7 +415,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize - 1; i++) {
             address tokenS = ring.orders[i].order.tokenS;
             for (uint j = i + 1; j < ringSize; j++) {
-                require(tokenS != ring.orders[j].order.tokenS); //, "found sub-ring");
+                require(tokenS != ring.orders[j].order.tokenS); // "found sub-ring");
             }
         }
     }
@@ -429,7 +431,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         // Test all token addresses at once
-        require(TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens)); //, "token not registered");
+        require(
+            TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens)
+        ); // "token not registered");
     }
 
     function handleRing(
@@ -486,7 +490,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ring.ringhash,
             ring.miner,
             ring.feeRecepient,
-            ringhashRegistry.ringhashFound(ring.ringhash)
+            ringhashRegistry.ringhashFound(ring.ringhash, ring.miner)
         );
     }
 
@@ -574,14 +578,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint s1b0 = orders[i].rate.amountS.mul(orders[i].order.amountB);
             uint s0b1 = orders[i].order.amountS.mul(orders[i].rate.amountB);
             
-            require(s1b0 <= s0b1); //, "miner supplied exchange rate provides invalid discount");
+            require(s1b0 <= s0b1); // "miner supplied exchange rate provides invalid discount");
 
             rateRatios[i] = RATE_RATIO_SCALE.mul(s1b0).div(s0b1);
         }
 
         uint cvs = UintLib.cvsquare(rateRatios, RATE_RATIO_SCALE);
 
-        require(cvs <= rateRatioCVSThreshold); //, "miner supplied exchange rate is not evenly discounted");
+        require(cvs <= rateRatioCVSThreshold); // "miner supplied exchange rate is not evenly discounted");
     }
 
     function calculateRingFees(TokenTransferDelegate delegate, Ring ring)
@@ -600,7 +604,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uint lrcSpendable = delegate.getSpendable(lrcTokenAddress, state.order.owner);
 
                 if (lrcSpendable < state.lrcFee) {
-                    require(!ring.throwIfLRCIsInsuffcient); //, "order LRC balance insuffcient");
+                    require(!ring.throwIfLRCIsInsuffcient); // "order LRC balance insuffcient");
 
                     state.lrcFee = lrcSpendable;
                     minerLrcSpendable += lrcSpendable;
@@ -645,7 +649,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     state.lrcFee = 0;
                 }
             } else {
-                revert(); //, "unsupported fee selection value");
+                revert(); // "unsupported fee selection value");
             }
         }
 
@@ -760,8 +764,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order.amountS = amountS;
             }
 
-            require(order.amountS > 0); //, "amountS is zero");
-            require(order.amountB > 0); //, "amountB is zero");
+            require(order.amountS > 0); // "amountS is zero");
+            require(order.amountB > 0); // "amountB is zero");
 
             state.fillAmountS = order.amountS.min256(state.availableAmountS);
         }
@@ -781,18 +785,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
     {
-        require(ringSize == addressList.length); //, "ring data is inconsistent - addressList");
-        require(ringSize == uintArgsList.length); //, "ring data is inconsistent - uintArgsList");
-        require(ringSize == uint8ArgsList.length); //, "ring data is inconsistent - uint8ArgsList");
-        require(ringSize == buyNoMoreThanAmountBList.length); //, "ring data is inconsistent - buyNoMoreThanAmountBList");
-        require(ringSize + 1 == vList.length); //, "ring data is inconsistent - vList");
-        require(ringSize + 1 == rList.length); //, "ring data is inconsistent - rList");
-        require(ringSize + 1 == sList.length); //, "ring data is inconsistent - sList");
+        require(ringSize == addressList.length); // "ring data is inconsistent - addressList");
+        require(ringSize == uintArgsList.length); // "ring data is inconsistent - uintArgsList");
+        require(ringSize == uint8ArgsList.length); // "ring data is inconsistent - uint8ArgsList");
+        require(ringSize == buyNoMoreThanAmountBList.length); // "ring data is inconsistent - buyNoMoreThanAmountBList");
+        require(ringSize + 1 == vList.length); // "ring data is inconsistent - vList");
+        require(ringSize + 1 == rList.length); // "ring data is inconsistent - rList");
+        require(ringSize + 1 == sList.length); // "ring data is inconsistent - sList");
 
         // Validate ring-mining related arguments.
         for (uint i = 0; i < ringSize; i++) {
-            require(uintArgsList[i][6] > 0); //, "order rateAmountS is zero");
-            require(uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE); //, "invalid order fee selection");
+            require(uintArgsList[i][6] > 0); // "order rateAmountS is zero");
+            require(uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE); // "invalid order fee selection");
         }
     }
 
@@ -857,7 +861,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0    // splitB
             );
 
-            require(orders[i].availableAmountS > 0); //, "order spendable amountS is zero");
+            require(orders[i].availableAmountS > 0); // "order spendable amountS is zero");
         }
 
         return orders;
@@ -868,17 +872,17 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
     {
-        require(order.owner != address(0)); //, "invalid order owner");
-        require(order.tokenS != address(0)); //, "invalid order tokenS");
-        require(order.tokenB != address(0)); //, "invalid order tokenB");
-        require(order.amountS != 0); //, "invalid order amountS");
-        require(order.amountB != 0); //, "invalid order amountB");
-        require(order.timestamp <= block.timestamp); //, "order is too early to match");
-        require(order.timestamp > cutoffs[order.owner]); //, "order is cut off");
-        require(order.ttl != 0); //, "order ttl is 0");
-        require(order.timestamp + order.ttl > block.timestamp); //, "order is expired");
-        require(order.salt != 0); //, "invalid order salt");
-        require(order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE); //, "invalid order marginSplitPercentage");
+        require(order.owner != address(0)); // "invalid order owner");
+        require(order.tokenS != address(0)); // "invalid order tokenS");
+        require(order.tokenB != address(0)); // "invalid order tokenB");
+        require(order.amountS != 0); // "invalid order amountS");
+        require(order.amountB != 0); // "invalid order amountB");
+        require(order.timestamp <= block.timestamp); // "order is too early to match");
+        require(order.timestamp > cutoffs[order.owner]); // "order is cut off");
+        require(order.ttl != 0); // "order ttl is 0");
+        require(order.timestamp + order.ttl > block.timestamp); // "order is expired");
+        require(order.salt != 0); // "invalid order salt");
+        require(order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE); // "invalid order marginSplitPercentage");
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
@@ -913,12 +917,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         constant
     {
-        require(signer == ecrecover(
-            keccak256("\x19Ethereum Signed Message:\n32", hash),
-            v,
-            r,
-            s
-        )); //, "invalid signature");
+        require(
+            signer == ecrecover(
+                keccak256("\x19Ethereum Signed Message:\n32", hash),
+                v,
+                r,
+                s
+            )
+        ); // "invalid signature");
     }
 
 }

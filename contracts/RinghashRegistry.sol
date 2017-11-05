@@ -87,19 +87,24 @@ contract RinghashRegistry {
         var submission = submissions[ringhash];
         return (
             submission.ringminer == address(0) || (
-            submission.block + blocksToLive < block.number) || (
-            submission.ringminer == ringminer)
+            submission.block + blocksToLive < block.number || (
+            submission.ringminer == ringminer))
         );
     }
 
     /// @return True if a ring's hash has ever been submitted; false otherwise.
-    function ringhashFound(bytes32 ringhash)
+    function ringhashFound(
+        bytes32 ringhash,
+        address ringminer)
         public
         constant
         returns (bool)
     {
-
-        return submissions[ringhash].ringminer != address(0);
+        var submission = submissions[ringhash];
+        return (
+            submission.block + blocksToLive >= block.number && (
+            submission.ringminer == ringminer)
+        );
     }
 
     /// @dev Calculate the hash of a ring.
@@ -113,9 +118,10 @@ contract RinghashRegistry {
         returns (bytes32)
     {
         require(
-            (ringSize == vList.length - 1)&&
-            (ringSize == rList.length - 1)&&
-            (ringSize == sList.length - 1)); //, "invalid ring data");
+            ringSize == vList.length - 1 && (
+            ringSize == rList.length - 1 && (
+            ringSize == sList.length - 1))
+        ); //, "invalid ring data");
 
         return keccak256(
             vList.xorReduce(ringSize),

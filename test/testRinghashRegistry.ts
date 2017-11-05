@@ -66,7 +66,7 @@ contract('RinghashRegistry', (accounts: string[])=>{
                                                        p.sList);
 
       const ringHash = ring.getRingHashHex();
-      const ringhashFound = await ringhashRegistry.ringhashFound(ringHash);
+      const ringhashFound = await ringhashRegistry.ringhashFound(ringHash, ringOwner);
       assert.equal(ringhashFound, true, "ring hash not found after summitted.");
     });
 
