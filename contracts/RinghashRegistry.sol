@@ -93,7 +93,7 @@ contract RinghashRegistry {
     }
 
     /// @return True if a ring's hash has ever been submitted; false otherwise.
-    function ringhashFound(
+    function isRinghashFound(
         bytes32 ringhash,
         address ringminer)
         public

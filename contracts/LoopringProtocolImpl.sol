@@ -126,7 +126,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32     indexed _ringhash,
         address     indexed _miner,
         address     indexed _feeRecepient,
-        bool                _ringhashFound);
+        bool                _isRinghashFound);
 
     event OrderFilled(
         uint                _ringIndex,
@@ -490,7 +490,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ring.ringhash,
             ring.miner,
             ring.feeRecepient,
-            ringhashRegistry.ringhashFound(ring.ringhash, ring.miner)
+            ringhashRegistry.isRinghashFound(ring.ringhash, ring.miner)
         );
     }
 

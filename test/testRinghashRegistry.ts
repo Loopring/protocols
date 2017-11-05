@@ -66,8 +66,8 @@ contract('RinghashRegistry', (accounts: string[])=>{
                                                        p.sList);
 
       const ringHash = ring.getRingHashHex();
-      const ringhashFound = await ringhashRegistry.ringhashFound(ringHash, ringOwner);
-      assert.equal(ringhashFound, true, "ring hash not found after summitted.");
+      const isRinghashFound = await ringhashRegistry.isRinghashFound(ringHash, ringOwner);
+      assert.equal(isRinghashFound, true, "ring hash not found after summitted.");
     });
 
     it('should be able to submit the same ring hash again by same ringminer.', async () => {
