@@ -10,7 +10,7 @@ module.exports = {
       host: "localhost",
       port: 8546,
       network_id: '1', // main-net
-      gasPrice: 15000000000
+      gasPrice: 5000000000
     },
     testnet: {
       host: "localhost",
@@ -20,7 +20,7 @@ module.exports = {
     },
     priv: {
       host: "localhost",
-      port: 8546,
+      port: 8545,
       network_id: '50', // main-net
       gasPrice: 5000000000
     },
