@@ -24,6 +24,8 @@
     "copyfiles": "^1.2.0",
     "dirty-chai": "^2.0.0",
     "solc": "0.4.15",
+    "truffle": "3.4.11",
+    "ethereumjs-testrpc": "4.1.0",
     "web3-typescript-typings": "0.0.3",
     "zeppelin-solidity": "^1.2.0"
   },
