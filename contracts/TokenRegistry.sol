@@ -52,7 +52,7 @@ contract TokenRegistry is Ownable {
         delete tokenMap[_token];
         for (uint i = 0; i < tokens.length; i++) {
             if (tokens[i] == _token) {
-                tokens[i] == tokens[tokens.length - 1];
+                tokens[i] = tokens[tokens.length - 1];
                 tokens.length --;
                 break;
             }
