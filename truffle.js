@@ -28,8 +28,8 @@ module.exports = {
       host: "localhost",
       port: 8545,
       network_id: "*", // Match any network id
-      gasPrice: 21000000000
-      //gas: 4500000
+      gasPrice: 21000000000,
+      gas: 4500000
     }
   },
   test_directory: 'transpiled/test',

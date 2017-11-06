@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.15;
+pragma solidity 0.4.18;
 
 import "./lib/Bytes32Lib.sol";
 import "./lib/Uint8Lib.sol";

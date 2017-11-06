@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.15;
+pragma solidity 0.4.18;
 
 import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
@@ -477,7 +477,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
         // of `fillAmountS` shall be paid to matching order or miner as margin
         // split.
-        
+
         calculateRingFees(delegate, ring);
 
         /// Make payments.
@@ -577,7 +577,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize; i++) {
             uint s1b0 = orders[i].rate.amountS.mul(orders[i].order.amountB);
             uint s0b1 = orders[i].order.amountS.mul(orders[i].rate.amountB);
-            
+
             require(s1b0 <= s0b1); // "miner supplied exchange rate provides invalid discount");
 
             rateRatios[i] = RATE_RATIO_SCALE.mul(s1b0).div(s0b1);
