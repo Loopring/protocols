@@ -372,7 +372,7 @@ Hi Team
 I have noticed that, in below code there is one nested loop, which should be avoided always.
 The cost for nested loop will be O(n*n).
 The performance will be bad, along with the growing up of ringSize.
-------------------------------------
+
     function verifyRingHasNoSubRing(Ring ring)
         internal
         constant
@@ -389,7 +389,8 @@ The performance will be bad, along with the growing up of ringSize.
             }
         }
     }
-------------------------------------
+
+
 By below idea, we can reduce the cost to O(n).
 1. Add one mapping member to Ring stuct.
     struct Ring {
