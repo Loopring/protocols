@@ -359,3 +359,65 @@ I also made a pull request for this one: https://github.com/Loopring/protocol/pu
 - PR: https://github.com/Loopring/protocol/pull/56 and https://github.com/Loopring/protocol/pull/75
 - Result: reduced gas usage from 416380 to 405588 (=10792), a 2.11% reduction of 511465.
 
+
+
+## #13 [TBD]
+
+- From: 裴林波 <398202646@qq.com>
+- Time: 00:00 07/11/2017 Beijing Time
+- PR: 
+
+Hi Team
+
+I have noticed that, in below code there is one nested loop, which should be avoided always.
+The cost for nested loop will be O(n*n).
+The performance will be bad, along with the growing up of ringSize.
+------------------------------------
+    function verifyRingHasNoSubRing(Ring ring)
+        internal
+        constant
+    {
+        uint ringSize = ring.orders.length;
+        // Check the ring has no sub-ring.
+        for (uint i = 0; i < ringSize - 1; i++) {
+            address tokenS = ring.orders[i].order.tokenS;
+            for (uint j = i + 1; j < ringSize; j++) {
+                ErrorLib.check(
+                    tokenS != ring.orders[j].order.tokenS,
+                    "found sub-ring"
+                );
+            }
+        }
+    }
+------------------------------------
+By below idea, we can reduce the cost to O(n).
+1. Add one mapping member to Ring stuct.
+    struct Ring {
+        bytes32      ringhash;
+        OrderState[] orders;
+        address      miner;
+        address      feeRecepient;
+        bool         throwIfLRCIsInsuffcient;
+	mapping 	(address => bool) tokenSExist;
+    }
+2. Change the verifyRingHasNoSubRing as below.
+    function verifyRingHasNoSubRing(Ring ring)
+        internal
+        constant
+    {
+        uint ringSize = ring.orders.length;
+        // Check the ring has no sub-ring.
+        for (uint i = 0; i < ringSize; i++) {
+			address tokenS = ring.orders[i].order.tokenS;
+			ErrorLib.check(ring.tokenSExist[tokenS], "found sub-ring");			
+			ring.tokenSExist[tokenS] = true;
+        }
+    }
+
+Hope this can help. Thanks.
+
+My Ether Wallet address:
+0x4CEB79e11BdFBBFFB5ac902d7b50D00B3339875B
+
+ShangHai China
+5 November 2017
