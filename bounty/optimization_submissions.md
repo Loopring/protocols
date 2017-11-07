@@ -430,3 +430,12 @@ ShangHai China
 - Time: 00:00 07/11/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/57 and https://github.com/Loopring/protocol/pull/78
 - Result: reduced gas usage from 400512 to 400278 (=234), a 0.04% reduction of 511465.
+
+
+## #15 [Merged]
+
+- From: Benjamin John Price <ben@benprice.ca>
+- Time: as of PR 59
+- PR: https://github.com/Loopring/protocol/pull/59 and  https://github.com/Loopring/protocol/pull/79
+- Result: reduced gas usage from 400411 to 400376 (=35), a 0.00% reduction of 511465.
+
