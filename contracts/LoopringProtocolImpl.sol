@@ -472,10 +472,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         calculateRingFillAmount(ring);
 
         var delegate = TokenTransferDelegate(delegateAddress);
+
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
         // of `fillAmountS` shall be paid to matching order or miner as margin
         // split.
-
         calculateRingFees(delegate, ring);
 
         /// Make payments.
@@ -614,9 +614,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.lrcFee = lrcSpendable;
             }
 
-            if (state.feeSelection == FEE_SELECT_LRC) {
-                minerLrcSpendable += state.lrcFee;
-            } else if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
+            // When an order's LRC fee is 0 or smaller than the specified fee,
+            // we help miner automatically select margin-split.
+            if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT || state.lrcFee == 0) {
                 if (minerLrcSpendable >= state.lrcFee) {
                     if (state.order.buyNoMoreThanAmountB) {
                         uint splitS = next.fillAmountS.mul(
@@ -654,6 +654,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     }
                     state.lrcFee = 0;
                 }
+            } else if (state.feeSelection == FEE_SELECT_LRC) {
+                minerLrcSpendable += state.lrcFee;
             } else {
                 revert(); // "unsupported fee selection value");
             }
