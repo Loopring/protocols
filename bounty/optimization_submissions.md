@@ -2,6 +2,8 @@
 
 We'll be collecting optimization bounty submissions and their responses here. Please be sure to take a look before making a submission. Thank you!
 
+**If you think our gas calculation is incorrect, please note that each PC may have a different development environment (solc version, truffle version, typescript version), so please prepare a script for us to re-run the gas calculation test before and after PL in question, we will review your script and verify the result. We simply don't have time to do it.**
+
 ## #01 [Merged]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
