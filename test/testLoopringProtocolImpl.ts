@@ -120,7 +120,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   });
 
   describe('submitRing', () => {
-    it('should be able to fill ring with 2 orders.', async () => {
+    it('should be able to fill ring with 2 orders', async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
 
       await lrc.setBalance(order1Owner, web3.toWei(1),   {from: owner});
@@ -178,20 +178,20 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      assert.equal(lrcBalance21.toNumber(), 90e18, "lrc balance not match for order1Owner.");
-      assert.equal(eosBalance21.toNumber(), 9000e18, "eos balance not match for order1Owner.");
-      assert.equal(neoBalance21.toNumber(), 100e18, "neo balance not match for order1Owner.");
+      assert.equal(lrcBalance21.toNumber(), 90e18, "lrc balance not match for order1Owner");
+      assert.equal(eosBalance21.toNumber(), 9000e18, "eos balance not match for order1Owner");
+      assert.equal(neoBalance21.toNumber(), 100e18, "neo balance not match for order1Owner");
 
-      assert.equal(lrcBalance22.toNumber(), 95e18, "lrc balance not match for order2Owner.");
-      assert.equal(eosBalance22.toNumber(), 1000e18, "eos balance not match for order2Owner.");
-      assert.equal(neoBalance22.toNumber(), 900e18, "neo balance not match for order2Owner.");
+      assert.equal(lrcBalance22.toNumber(), 95e18, "lrc balance not match for order2Owner");
+      assert.equal(eosBalance22.toNumber(), 1000e18, "eos balance not match for order2Owner");
+      assert.equal(neoBalance22.toNumber(), 900e18, "neo balance not match for order2Owner");
 
-      assert.equal(lrcBalance23.toNumber(), 15e18, "lrc balance not match for feeRecepient.");
+      assert.equal(lrcBalance23.toNumber(), 15e18, "lrc balance not match for feeRecepient");
 
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
 
-    it('should be able to fill ring with 2 orders where fee selection type is margin split.', async () => {
+    it('should be able to fill ring with 2 orders where fee selection type is margin split', async () => {
       const ring = await ringFactory.generateSize2Ring02(order1Owner, order2Owner, ringOwner);
       const feeSelectionList = [1, 1];
 
@@ -244,7 +244,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo], [order1Owner, order2Owner, feeRecepient]);
     });
 
-    it('should be able to fill orders where fee selection type is margin split and lrc.', async () => {
+    it('should be able to fill orders where fee selection type is margin split and lrc', async () => {
       const ring = await ringFactory.generateSize2Ring03(order1Owner, order2Owner, ringOwner);
 
       const feeSelectionList = [1, 0];
@@ -298,7 +298,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
 
-    it('should be able to fill ring with 3 orders.', async () => {
+    it('should be able to fill ring with 3 orders', async () => {
       const ring = await ringFactory.generateSize3Ring01(order1Owner, order2Owner, order3Owner, ringOwner);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
@@ -381,7 +381,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
 
-    it('should be able to partial fill ring with 3 orders.', async () => {
+    it('should be able to partial fill ring with 3 orders', async () => {
       const ring = await ringFactory.generateSize3Ring02(order1Owner, order2Owner, order3Owner, ringOwner);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
@@ -475,7 +475,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
 
   describe('cancelOrder', () => {
-    it('should be able to set order cancelled amount by order owner.', async () => {
+    it('should be able to set order cancelled amount by order owner', async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(100e18);
@@ -504,7 +504,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
         cancelAmount.toNumber(), "cancelled amount not match");
     });
 
-    it('should not be able to cancell order by other address.', async () => {
+    it('should not be able to cancell order by other address', async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(100e18);
@@ -535,7 +535,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
 
   describe('setCutoff', () => {
-    it('should be able to set cutoff timestamp for msg sender.', async () => {
+    it('should be able to set cutoff timestamp for msg sender', async () => {
       await loopringProtocolImpl.setCutoff(new BigNumber(1508566125), {from: order1Owner});
       let cutoff = await loopringProtocolImpl.cutoffs(order1Owner);
       assert.equal(cutoff.toNumber(), 1508566125, "cutoff not set correctly");

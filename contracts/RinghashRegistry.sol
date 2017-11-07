@@ -78,38 +78,6 @@ contract RinghashRegistry {
         RinghashSubmitted(ringminer, ringhash);
     }
 
-    function canSubmit(
-        bytes32 ringhash,
-        address ringminer
-        )
-        public
-        view
-        returns (bool)
-    {
-        var submission = submissions[ringhash];
-        return (
-            submission.ringminer == address(0) || (
-            submission.block + blocksToLive < block.number || (
-            submission.ringminer == ringminer))
-        );
-    }
-
-    /// @return True if a ring's hash has ever been submitted; false otherwise.
-    function isRinghashFound(
-        bytes32 ringhash,
-        address ringminer
-        )
-        public
-        view
-        returns (bool)
-    {
-        var submission = submissions[ringhash];
-        return (
-            submission.block + blocksToLive >= block.number && (
-            submission.ringminer == ringminer)
-        );
-    }
-
     /// @dev Calculate the hash of a ring.
     function calculateRinghash(
         uint        ringSize,
@@ -131,6 +99,63 @@ contract RinghashRegistry {
             vList.xorReduce(ringSize),
             rList.xorReduce(ringSize),
             sList.xorReduce(ringSize)
+        );
+    }
+
+     /// return value attributes[2] contains the following values in this order:
+     /// canSubmit, isReserved.
+    function computeAndGetRinghashInfo(
+        uint        ringSize,
+        address     ringminer,
+        uint8[]     vList,
+        bytes32[]   rList,
+        bytes32[]   sList
+        )
+        public
+        view
+        returns (bytes32 ringhash, bool[2] memory attributes)
+    {
+        ringhash = calculateRinghash(
+            ringSize,
+            vList,
+            rList,
+            sList
+        );
+
+        attributes[0] = canSubmit(ringhash, ringminer);
+        attributes[1] = isReserved(ringhash, ringminer);
+    }
+
+    /// @return true if a ring's hash can be submitted;
+    /// false otherwise.
+    function canSubmit(
+        bytes32 ringhash,
+        address ringminer)
+        public
+        view
+        returns (bool)
+    {
+        var submission = submissions[ringhash];
+        return (
+            submission.ringminer == address(0) || (
+            submission.block + blocksToLive < block.number) || (
+            submission.ringminer == ringminer)
+        );
+    }
+
+    /// @return true if a ring's hash was submitted and still valid;
+    /// false otherwise.
+    function isReserved(
+        bytes32 ringhash,
+        address ringminer)
+        public
+        view
+        returns (bool)
+    {
+        var submission = submissions[ringhash];
+        return (
+            submission.block + blocksToLive >= block.number && (
+            submission.ringminer == ringminer)
         );
     }
 }

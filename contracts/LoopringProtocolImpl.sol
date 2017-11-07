@@ -126,7 +126,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32     indexed _ringhash,
         address     indexed _miner,
         address     indexed _feeRecepient,
-        bool                _isRinghashFound);
+        bool                _isRinghashReserved);
 
     event OrderFilled(
         uint                _ringIndex,
@@ -264,16 +264,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(addressList);
 
-        var ringhashRegistry = RinghashRegistry(ringhashRegistryAddress);
-
-        bytes32 ringhash = ringhashRegistry.calculateRinghash(
+        var (ringhash, ringhashAttributes) = RinghashRegistry(
+            ringhashRegistryAddress
+        ).computeAndGetRinghashInfo(
             ringSize,
+            ringminer,
             vList,
             rList,
             sList
         );
 
-        require(ringhashRegistry.canSubmit(ringhash, feeRecepient)); // "Ring claimed by others");
+        //Check if we can submit this ringhash.
+        require(ringhashAttributes[0]); // "Ring claimed by others");
 
         verifySignature(
             ringminer,
@@ -299,12 +301,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         handleRing(
-            ringhashRegistry,
             ringhash,
             orders,
             ringminer,
             feeRecepient,
-            throwIfLRCIsInsuffcient
+            throwIfLRCIsInsuffcient,
+            ringhashAttributes[1]
         );
 
         ringIndex = ringIndex ^ ENTERED_MASK + 1;
@@ -438,12 +440,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function handleRing(
-        RinghashRegistry ringhashRegistry,
         bytes32 ringhash,
         OrderState[] orders,
         address miner,
         address feeRecepient,
-        bool throwIfLRCIsInsuffcient
+        bool throwIfLRCIsInsuffcient,
+        bool isRinghashReserved
         )
         internal
     {
@@ -491,7 +493,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ring.ringhash,
             ring.miner,
             ring.feeRecepient,
-            ringhashRegistry.isRinghashFound(ring.ringhash, ring.miner)
+            isRinghashReserved
         );
     }
 
