@@ -84,7 +84,7 @@ async function size3Ring01() {
     amountB: new BigNumber(60e18),
     timestamp: new BigNumber(1510035291),
     ttl: new BigNumber(36000),
-    salt: new BigNumber(1111),
+    salt: new BigNumber(1113),
     lrcFee: new BigNumber(2e18),
     buyNoMoreThanAmountB: true,
     marginSplitPercentage: 55,
@@ -98,7 +98,7 @@ async function size3Ring01() {
     amountB: new BigNumber(10e18),
     timestamp: new BigNumber(1510035291),
     ttl: new BigNumber(360000),
-    salt: new BigNumber(2222),
+    salt: new BigNumber(2223),
     lrcFee: new BigNumber(15e17),
     buyNoMoreThanAmountB: false,
     marginSplitPercentage: 0,
@@ -110,9 +110,9 @@ async function size3Ring01() {
     tokenB: mainnetEosAddr,
     amountS: new BigNumber(10e18),
     amountB: new BigNumber(15e18),
-    timestamp: new BigNumber(1509160551),
+    timestamp: new BigNumber(1510035291),
     ttl: new BigNumber(360000),
-    salt: new BigNumber(3333),
+    salt: new BigNumber(3334),
     lrcFee: new BigNumber(25e17),
     buyNoMoreThanAmountB: false,
     marginSplitPercentage: 60,
@@ -155,13 +155,13 @@ async function submit(p: LoopringSubmitParams) {
 }
 
 async function main() {
-  const ring = await size2Ring01();
-  const feeSelectionList = [0, 0];
-  const throwIfLRCIsInsuffcient = false;
+  // const ring = await size2Ring01();
+  // const feeSelectionList = [0, 0];
+  // const throwIfLRCIsInsuffcient = false;
 
-  // const ring = await size3Ring01();
-  // const feeSelectionList = [1, 0, 1];
-  // const throwIfLRCIsInsuffcient = true;
+  const ring = await size3Ring01();
+  const feeSelectionList = [0, 0, 0];
+  const throwIfLRCIsInsuffcient = true;
 
   const ringFactory = new RingFactory("", "", "", "", "", 0);
   const params = ringFactory.ringToSubmitableParams(ring,
