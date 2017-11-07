@@ -1,10 +1,10 @@
 module.exports = {
-  // solc: {
-  //   optimizer: {
-  //     enabled: true,
-  //     runs: 10000
-  //   }
-  // },
+  solc: {
+    optimizer: {
+      enabled: true,
+      runs: 10000
+    }
+  },
   networks: {
     live: {
       host: "localhost",
