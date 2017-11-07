@@ -97,7 +97,7 @@ contract('RinghashRegistry', (accounts: string[])=>{
                                                          p.sList);
       } catch (err) {
         const errMsg = `${err}`;
-        assert(_.includes(errMsg, 'invalid opcode'), `Expected contract to throw, got: ${err}`);
+        assert(_.includes(errMsg, 'Error: VM Exception while processing transaction: revert'), `Expected contract to throw, got: ${err}`);
       }
 
     });

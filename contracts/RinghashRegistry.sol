@@ -61,7 +61,8 @@ contract RinghashRegistry {
         address     ringminer,
         uint8[]     vList,
         bytes32[]   rList,
-        bytes32[]   sList)
+        bytes32[]   sList
+        )
         public
     {
         bytes32 ringhash = calculateRinghash(
@@ -79,9 +80,10 @@ contract RinghashRegistry {
 
     function canSubmit(
         bytes32 ringhash,
-        address ringminer)
+        address ringminer
+        )
         public
-        constant
+        view
         returns (bool)
     {
         var submission = submissions[ringhash];
@@ -95,9 +97,10 @@ contract RinghashRegistry {
     /// @return True if a ring's hash has ever been submitted; false otherwise.
     function isRinghashFound(
         bytes32 ringhash,
-        address ringminer)
+        address ringminer
+        )
         public
-        constant
+        view
         returns (bool)
     {
         var submission = submissions[ringhash];
@@ -112,9 +115,10 @@ contract RinghashRegistry {
         uint        ringSize,
         uint8[]     vList,
         bytes32[]   rList,
-        bytes32[]   sList)
+        bytes32[]   sList
+        )
         public
-        constant
+        pure
         returns (bytes32)
     {
         require(

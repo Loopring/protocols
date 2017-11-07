@@ -145,7 +145,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       } catch (err) {
         const errMsg = `${err}`;
         //console.log("errMsg:", errMsg);
-        assert(_.includes(errMsg, 'invalid opcode'), `Expected contract to throw, got: ${err}`);
+        assert(_.includes(errMsg, 'Error: VM Exception while processing transaction: revert'), `Expected contract to throw, got: ${err}`);
       }
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
@@ -528,7 +528,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                           {from: order2Owner});
       } catch (err) {
         const errMsg = `${err}`;
-        assert(_.includes(errMsg, 'invalid opcode'), `Expected contract to throw, got: ${err}`);
+        assert(_.includes(errMsg, 'Error: VM Exception while processing transaction: revert'), `Expected contract to throw, got: ${err}`);
       }
     });
   });

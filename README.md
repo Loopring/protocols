@@ -20,7 +20,7 @@ Then run the following commands from project's root directory:
 ```
 npm install -g truffle@4.0.1
 npm install -g ethereumjs-testrpc@6.0.1
-npm install -g typescript
+npm install -g typescript@2.4.2
 npm install
 npm run compile
 ```

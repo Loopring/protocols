@@ -26,7 +26,14 @@ import "zeppelin-solidity/contracts/math/SafeMath.sol";
 library UintLib {
     using SafeMath  for uint;
 
-    function tolerantSub(uint x, uint y) internal constant returns (uint z) {
+    function tolerantSub(
+        uint x,
+        uint y
+        ) 
+        internal
+        pure
+        returns (uint z)
+    {
         if (x >= y) {
             z = x - y;
         } else {
@@ -38,9 +45,10 @@ library UintLib {
     /// https://en.wikipedia.org/wiki/Coefficient_of_variation
     function cvsquare(
         uint[] arr,
-        uint scale)
+        uint scale
+        )
         internal
-        constant
+        view
         returns (uint)
     {
         uint len = arr.length;

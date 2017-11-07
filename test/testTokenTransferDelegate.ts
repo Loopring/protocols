@@ -94,7 +94,7 @@ contract('TokenTransferDelegate', (accounts: string[])=>{
         await tokenTransferDelegate.transferToken(lrcAddress, trader1, trader2, web3.toWei(1.1), {from: loopringProtocolV2});
       } catch (err) {
         const errMsg = `${err}`;
-        assert(_.includes(errMsg, 'invalid opcode'), `Expected contract to throw, got: ${err}`);
+        assert(_.includes(errMsg, 'Error: VM Exception while processing transaction: revert'), `Expected contract to throw, got: ${err}`);
       }
     });
 

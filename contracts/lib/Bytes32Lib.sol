@@ -28,7 +28,7 @@ library Bytes32Lib {
         uint        len
         )
         internal
-        constant
+        pure
         returns (bytes32 res)
     {
         res = arr[0];

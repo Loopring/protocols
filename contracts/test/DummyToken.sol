@@ -12,7 +12,10 @@ contract DummyToken is MintableToken {
         string _name,
         string _symbol,
         uint _decimals,
-        uint _totalSupply) {
+        uint _totalSupply
+        )
+        public
+    {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
@@ -20,9 +23,12 @@ contract DummyToken is MintableToken {
         balances[msg.sender] = _totalSupply;
     }
 
-    function setBalance(address _target, uint _value)
-        public
+    function setBalance(
+        address _target,
+        uint _value
+        )
         onlyOwner
+        public
     {
         uint currBalance = balanceOf(_target);
         if (_value < currBalance) {

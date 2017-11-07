@@ -190,6 +190,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Disable default function.
     function ()
         payable
+        public
     {
         revert();
     }
@@ -408,7 +409,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Validate a ring.
     function verifyRingHasNoSubRing(Ring ring)
         internal
-        constant
+        pure
     {
         uint ringSize = ring.orders.length;
         // Check the ring has no sub-ring.
@@ -422,7 +423,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     function verifyTokensRegistered(address[2][] addressList)
         internal
-        constant
+        view
     {
         // Extract the token addresses
         address[] memory tokens = new address[](addressList.length);
@@ -494,7 +495,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    function settleRing(TokenTransferDelegate delegate, Ring ring)
+    function settleRing(
+        TokenTransferDelegate delegate,
+        Ring ring
+        )
         internal
     {
         uint ringSize = ring.orders.length;
@@ -568,7 +572,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     function verifyMinerSuppliedFillRates(Ring ring)
         internal
-        constant
+        view
     {
         var orders = ring.orders;
         uint ringSize = orders.length;
@@ -590,7 +594,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     function calculateRingFees(TokenTransferDelegate delegate, Ring ring)
         internal
-        constant
+        view
     {
         uint minerLrcSpendable = delegate.getSpendable(lrcTokenAddress, ring.feeRecepient);
         uint ringSize = ring.orders.length;
@@ -657,7 +661,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     function calculateRingFillAmount(Ring ring)
         internal
-        constant
+        view
     {
         uint ringSize = ring.orders.length;
         uint smallestIdx = 0;
@@ -696,7 +700,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         OrderState next
         )
         internal
-        constant
+        view
         returns (uint whichIsSmaller)
     {
         uint fillAmountB = state.fillAmountS.mul(
@@ -736,7 +740,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///      stats but key the order's original exchange rate.
     function scaleRingBasedOnHistoricalRecords(Ring ring)
         internal
-        constant
+        view
     {
         uint ringSize = ring.orders.length;
 
@@ -783,7 +787,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32[]       sList
         )
         internal
-        constant
+        pure
     {
         require(ringSize == addressList.length); // "ring data is inconsistent - addressList");
         require(ringSize == uintArgsList.length); // "ring data is inconsistent - uintArgsList");
@@ -812,7 +816,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32[]       sList
         )
         internal
-        constant
+        view
         returns (OrderState[])
     {
         var orders = new OrderState[](addressList.length);
@@ -870,7 +874,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev validate order's parameters are OK.
     function validateOrder(Order order)
         internal
-        constant
+        view 
     {
         require(order.owner != address(0)); // "invalid order owner");
         require(order.tokenS != address(0)); // "invalid order tokenS");
@@ -888,7 +892,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Get the Keccak-256 hash of order with specified parameters.
     function calculateOrderHash(Order order)
         internal
-        constant
+        view
         returns (bytes32)
     {
         return keccak256(
@@ -915,7 +919,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32 r,
         bytes32 s)
         internal
-        constant
+        pure
     {
         require(
             signer == ecrecover(

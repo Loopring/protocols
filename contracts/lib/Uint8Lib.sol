@@ -27,7 +27,7 @@ library Uint8Lib {
         uint    len
         )
         internal
-        constant
+        pure
         returns (uint8 res)
     {
         res = arr[0];
