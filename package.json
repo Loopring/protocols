@@ -12,8 +12,12 @@
   "bugs": "https://github.com/loopring/loopring.js/issues",
   "homepage": "https://github.com/loopring/loopring.js#readme",
   "devDependencies": {
+    "browserify": "^14.5.0",
     "eslint": "^3.19.0",
-    "eslint-plugin-jest": "^21.2.0"
+    "eslint-plugin-jest": "^21.2.0",
+    "gulp": "^3.9.1",
+    "gulp-tap": "^1.0.1",
+    "gulp-util": "^3.0.8"
   },
   "dependencies": {
     "ethereumjs-abi": "^0.6.4",
@@ -26,6 +30,6 @@
     "lodash": "^4.17.4",
     "bn.js": "^4.11.8",
     "joi": "13.0.1",
-    "node-fetch":"2.0.0-alpha.9"
+    "node-fetch": "2.0.0-alpha.9"
   }
 }
