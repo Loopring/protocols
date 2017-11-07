@@ -26,16 +26,16 @@ declare module 'ethereumjs-util' {
   function isValidAddress(address: string): boolean;
 
   export = {
-            bufferToHex,
-            ecrecover,
-            fromRpcSig,
-            hashPersonalMessage,
-            isHexString,
-            pubToAddress,
-            setLength,
-            setLengthLeft,
-            sha3,
-            toBuffer,
-            isValidAddress,
-          };
+    bufferToHex,
+    ecrecover,
+    fromRpcSig,
+    hashPersonalMessage,
+    isHexString,
+    pubToAddress,
+    setLength,
+    setLengthLeft,
+    sha3,
+    toBuffer,
+    isValidAddress,
+  };
 }

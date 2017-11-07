@@ -6,15 +6,23 @@ import { crypto } from './crypto';
 import { OrderParams } from './types';
 import * as BigNumber from 'bignumber.js';
 
-const web3Instance: Web3 = web3;
-
 export class Order {
   public owner: string;
   public params: OrderParams;
 
+  public web3Instance: Web3;
+
   constructor(owner: string, params: OrderParams) {
     this.owner = owner;
     this.params = params;
+
+    try {
+      if (web3) {
+        this.web3Instance = web3;
+      }
+    } catch (err) {
+      // ignore.
+    }
   }
 
   public isValidSignature() {
@@ -40,7 +48,7 @@ export class Order {
     // console.log("order owner:", this.owner);
     // console.log("order hash:", ethUtil.bufferToHex(orderHash));
 
-    const signature = await promisify(web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(orderHash));
+    const signature = await promisify(this.web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(orderHash));
     const { v, r, s } = ethUtil.fromRpcSig(signature);
     this.params = _.assign(this.params, {
       orderHashHex: ethUtil.bufferToHex(orderHash),
