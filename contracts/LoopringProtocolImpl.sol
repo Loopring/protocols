@@ -512,7 +512,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // Pay tokenS to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
-
             delegate.transferToken(
                 state.order.tokenS,
                 state.order.owner,
@@ -520,12 +519,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.fillAmountS - prev.splitB
             );
 
-            if (prev.splitB + state.splitS > 0) {
+            uint splitSum = prev.splitB + state.splitS;
+            if (splitSum > 0) {
                 delegate.transferToken(
                     state.order.tokenS,
                     state.order.owner,
                     ring.feeRecepient,
-                    prev.splitB + state.splitS
+                    splitSum
                 );
             }
 
