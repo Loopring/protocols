@@ -30,7 +30,7 @@ contract LoopringProtocol {
     uint    public constant FEE_SELECT_MARGIN_SPLIT      = 1;
     uint    public constant FEE_SELECT_MAX_VALUE         = 1;
 
-    uint    public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
+    uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -99,10 +99,6 @@ contract LoopringProtocol {
     ///                     LRC need to be paid back to order owner as the result
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
-    /// @param throwIfLRCIsInsuffcient -
-    ///                     If true, throw exception if any order's spendable
-    ///                     LRC amount is smaller than requried; if false, ring-
-    ///                     minor will give up collection the LRC fee.
     function submitRing(
         address[2][]    addressList,
         uint[7][]       uintArgsList,
@@ -112,8 +108,7 @@ contract LoopringProtocol {
         bytes32[]       rList,
         bytes32[]       sList,
         address         ringminer,
-        address         feeRecepient,
-        bool            throwIfLRCIsInsuffcient
+        address         feeRecepient
         ) public;
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified

@@ -60,7 +60,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
 
-    uint64  public constant ENTERED_MASK = 1 << 63;
+    uint64  public constant ENTERED_MASK        = 1 << 63;
 
     // The following map is used to keep trace of order fill and cancellation
     // history.
@@ -112,7 +112,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         OrderState[] orders;
         address      miner;
         address      feeRecepient;
-        bool         throwIfLRCIsInsuffcient;
     }
 
 
@@ -224,10 +223,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     LRC need to be paid back to order owner as the result
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
-    /// @param throwIfLRCIsInsuffcient -
-    ///                     If true, throw exception if any order's spendable
-    ///                     LRC amount is smaller than requried; if false, ring-
-    ///                     minor will give up collection the LRC fee.
     function submitRing(
         address[2][]    addressList,
         uint[7][]       uintArgsList,
@@ -237,8 +232,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32[]       rList,
         bytes32[]       sList,
         address         ringminer,
-        address         feeRecepient,
-        bool            throwIfLRCIsInsuffcient
+        address         feeRecepient
         )
         public
     {
@@ -306,7 +300,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orders,
             ringminer,
             feeRecepient,
-            throwIfLRCIsInsuffcient,
             ringhashAttributes[1]
         );
 
@@ -447,7 +440,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         OrderState[] orders,
         address miner,
         address feeRecepient,
-        bool throwIfLRCIsInsuffcient,
         bool isRinghashReserved
         )
         internal
@@ -457,8 +449,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ringhash,
             orders,
             miner,
-            feeRecepient,
-            throwIfLRCIsInsuffcient
+            feeRecepient
         );
 
         // Do the hard work.
@@ -609,20 +600,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var state = ring.orders[i];
             var next = ring.orders[(i + 1) % ring.size];
 
+            uint lrcSpendable = delegate.getSpendable(
+                lrcTokenAddress,
+                state.order.owner
+            );
+       
+            // If order doesn't have enough LRC, set margin split to 100%.
+            if (state.lrcFee == 0 || minerLrcSpendable < state.lrcFee) {
+                state.order.marginSplitPercentage = MARGIN_SPLIT_PERCENTAGE_BASE;
+            }
+
+            if (lrcSpendable < state.lrcFee) {
+                state.lrcFee = lrcSpendable;
+            }
+
             if (state.feeSelection == FEE_SELECT_LRC) {
-
-                uint lrcSpendable = delegate.getSpendable(
-                    lrcTokenAddress,
-                    state.order.owner
-                );
-
-                if (lrcSpendable < state.lrcFee) {
-                    require(!ring.throwIfLRCIsInsuffcient); // "order LRC balance insuffcient");
-
-                    state.lrcFee = lrcSpendable;
-                    minerLrcSpendable += lrcSpendable;
-                }
-
+                minerLrcSpendable += state.lrcFee;
             } else if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
                 if (minerLrcSpendable >= state.lrcFee) {
                     if (state.order.buyNoMoreThanAmountB) {

@@ -129,7 +129,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
       await lrc.setBalance(feeRecepient, 0, {from: owner});
 
-      const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient, true);
+      const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
+      // const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient, true);
       try {
         const tx1 =  await loopringProtocolImpl.submitRing(p.addressList,
                                                            p.uintArgsList,
@@ -140,7 +141,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                            p.sList,
                                                            p.ringOwner,
                                                            p.feeRecepient,
-                                                           p.throwIfLRCIsInsuffcient,
                                                            {from: owner});
       } catch (err) {
         const errMsg = `${err}`;
@@ -159,7 +159,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                         p.sList,
                                                         p.ringOwner,
                                                         p.feeRecepient,
-                                                        p.throwIfLRCIsInsuffcient,
                                                         {from: owner});
       //console.log("tx:", tx2);
       //console.log(tx2.receipt.logs);
@@ -198,7 +197,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
       await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
 
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+      // const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
 
       const ethOfOwnerBefore = await getEthBalanceAsync(owner);
       const tx = await loopringProtocolImpl.submitRing(p.addressList,
@@ -210,7 +210,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                        p.sList,
                                                        p.ringOwner,
                                                        p.feeRecepient,
-                                                       p.throwIfLRCIsInsuffcient,
                                                        {from: owner});
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
@@ -253,7 +252,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
       await lrc.setBalance(order2Owner, web3.toWei(20),  {from: owner});
 
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+      // const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, true);
 
       const ethOfOwnerBefore = await getEthBalanceAsync(owner);
 
@@ -266,7 +266,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                        p.sList,
                                                        p.ringOwner,
                                                        p.feeRecepient,
-                                                       p.throwIfLRCIsInsuffcient,
                                                        {from: owner});
       //console.log(tx.receipt.logs);
 
@@ -312,7 +311,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await lrc.setBalance(order2Owner, web3.toWei(5),  {from: owner}); // insuffcient lrc balance.
       await qtum.setBalance(order3Owner, web3.toWei(6780),  {from: owner});
 
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, false);
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+      // const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, false);
 
       const ethOfOwnerBefore = await getEthBalanceAsync(owner);
 
@@ -325,7 +325,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                        p.sList,
                                                        p.ringOwner,
                                                        p.feeRecepient,
-                                                       p.throwIfLRCIsInsuffcient,
                                                        {from: owner});
 
       //console.log(tx.receipt.logs);
@@ -404,7 +403,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
       await approve([eos, neo, qtum], [order1Owner, order2Owner, order3Owner], availableAmountSList);
 
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, false);
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+      // const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient, false);
 
       const ethOfOwnerBefore = await getEthBalanceAsync(owner);
 
@@ -417,7 +417,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                        p.sList,
                                                        p.ringOwner,
                                                        p.feeRecepient,
-                                                       p.throwIfLRCIsInsuffcient,
                                                        {from: owner});
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
