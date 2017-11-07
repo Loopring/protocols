@@ -344,27 +344,27 @@ contract LoopringProtocolImpl is LoopringProtocol {
             addresses[2],
             orderValues[0],
             orderValues[1],
-            orderValues[2],
-            orderValues[3],
-            orderValues[4],
             orderValues[5],
             buyNoMoreThanAmountB,
-            marginSplitPercentage,
-            v,
-            r,
-            s
+            marginSplitPercentage
         );
 
         require(msg.sender == order.owner); // "cancelOrder not submitted by order owner");
 
-        bytes32 orderHash = calculateOrderHash(order);
+        bytes32 orderHash = calculateOrderHash(
+            order,
+            orderValues[2], // timestamp
+            orderValues[3], // ttl
+            orderValues[4]  // salt
+        );
+
 
         verifySignature(
             order.owner,
             orderHash,
-            order.v,
-            order.r,
-            order.s
+            v,
+            r,
+            s
         );
 
         cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelAmount);
@@ -596,7 +596,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         view
     {
-        uint minerLrcSpendable = delegate.getSpendable(lrcTokenAddress, ring.feeRecepient);
+        uint minerLrcSpendable = delegate.getSpendable(
+            lrcTokenAddress,
+            ring.feeRecepient
+        );
+
         uint ringSize = ring.orders.length;
 
         for (uint i = 0; i < ringSize; i++) {
@@ -605,7 +609,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             if (state.feeSelection == FEE_SELECT_LRC) {
 
-                uint lrcSpendable = delegate.getSpendable(lrcTokenAddress, state.order.owner);
+                uint lrcSpendable = delegate.getSpendable(
+                    lrcTokenAddress,
+                    state.order.owner
+                );
 
                 if (lrcSpendable < state.lrcFee) {
                     require(!ring.throwIfLRCIsInsuffcient); // "order LRC balance insuffcient");
@@ -829,28 +836,32 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 addressList[(i + 1) % addressList.length][1],
                 uintArgsList[i][0],
                 uintArgsList[i][1],
-                uintArgsList[i][2],
-                uintArgsList[i][3],
-                uintArgsList[i][4],
                 uintArgsList[i][5],
                 buyNoMoreThanAmountBList[i],
-                uint8ArgsList[i][0],
+                uint8ArgsList[i][0]
+            );
+
+            bytes32 orderHash = calculateOrderHash(
+                order,
+                uintArgsList[i][2], // timestamp
+                uintArgsList[i][3], // ttl
+                uintArgsList[i][4]  // salt
+            );
+
+            verifySignature(
+                order.owner,
+                orderHash,
                 vList[i],
                 rList[i],
                 sList[i]
             );
 
-            bytes32 orderHash = calculateOrderHash(order);
-
-            verifySignature(
-                order.owner,
-                orderHash,
-                order.v,
-                order.r,
-                order.s
+            validateOrder(
+                order,
+                uintArgsList[i][2], // timestamp
+                uintArgsList[i][3], // ttl
+                uintArgsList[i][4]  // salt
             );
-
-            validateOrder(order);
 
             orders[i] = OrderState(
                 order,
@@ -872,7 +883,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev validate order's parameters are OK.
-    function validateOrder(Order order)
+    function validateOrder(
+        Order order,
+        uint timestamp,
+        uint ttl,
+        uint salt
+    )
         internal
         view 
     {
@@ -881,16 +897,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(order.tokenB != address(0)); // "invalid order tokenB");
         require(order.amountS != 0); // "invalid order amountS");
         require(order.amountB != 0); // "invalid order amountB");
-        require(order.timestamp <= block.timestamp); // "order is too early to match");
-        require(order.timestamp > cutoffs[order.owner]); // "order is cut off");
-        require(order.ttl != 0); // "order ttl is 0");
-        require(order.timestamp + order.ttl > block.timestamp); // "order is expired");
-        require(order.salt != 0); // "invalid order salt");
+        require(timestamp <= block.timestamp); // "order is too early to match");
+        require(timestamp > cutoffs[order.owner]); // "order is cut off");
+        require(ttl != 0); // "order ttl is 0");
+        require(timestamp + ttl > block.timestamp); // "order is expired");
+        require(salt != 0); // "invalid order salt");
         require(order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE); // "invalid order marginSplitPercentage");
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
-    function calculateOrderHash(Order order)
+    function calculateOrderHash(
+        Order order,
+        uint timestamp,
+        uint ttl,
+        uint salt
+    )
         internal
         view
         returns (bytes32)
@@ -902,9 +923,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.tokenB,
             order.amountS,
             order.amountB,
-            order.timestamp,
-            order.ttl,
-            order.salt,
+            timestamp,
+            ttl,
+            salt,
             order.lrcFee,
             order.buyNoMoreThanAmountB,
             order.marginSplitPercentage

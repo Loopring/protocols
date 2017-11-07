@@ -61,15 +61,9 @@ contract LoopringProtocol {
         address tokenB;
         uint    amountS;
         uint    amountB;
-        uint    timestamp;
-        uint    ttl;
-        uint    salt;
         uint    lrcFee;
         bool    buyNoMoreThanAmountB;
         uint8   marginSplitPercentage;
-        uint8   v;
-        bytes32 r;
-        bytes32 s;
     }
 
 
