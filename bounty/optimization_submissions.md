@@ -357,6 +357,5 @@ I also made a pull request for this one: https://github.com/Loopring/protocol/pu
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 02:52 06/11/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/56 and https://github.com/Loopring/protocol/pull/75
-- Result: reduced gas usage from 405588 to 400286 405588 (=5302), a 1.04% reduction of 511465.
 - Result: reduced gas usage from 416380 to 405588 (=10792), a 2.11% reduction of 511465.
 
