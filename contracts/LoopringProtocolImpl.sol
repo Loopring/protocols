@@ -107,6 +107,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     struct Ring {
+        uint         size;
         bytes32      ringhash;
         OrderState[] orders;
         address      miner;
@@ -262,7 +263,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList
         );
 
-        verifyTokensRegistered(addressList);
+        verifyTokensRegistered(addressList, ringSize);
 
         var (ringhash, ringhashAttributes) = RinghashRegistry(
             ringhashRegistryAddress
@@ -413,23 +414,25 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         pure
     {
-        uint ringSize = ring.orders.length;
         // Check the ring has no sub-ring.
-        for (uint i = 0; i < ringSize - 1; i++) {
+        for (uint i = 0; i < ring.size - 1; i++) {
             address tokenS = ring.orders[i].order.tokenS;
-            for (uint j = i + 1; j < ringSize; j++) {
+            for (uint j = i + 1; j < ring.size; j++) {
                 require(tokenS != ring.orders[j].order.tokenS); // "found sub-ring");
             }
         }
     }
 
-    function verifyTokensRegistered(address[2][] addressList)
+    function verifyTokensRegistered(
+        address[2][] addressList,
+        uint ringSize
+        )
         internal
         view
     {
         // Extract the token addresses
-        address[] memory tokens = new address[](addressList.length);
-        for (uint i = 0; i < addressList.length; i++) {
+        address[] memory tokens = new address[](ringSize);
+        for (uint i = 0; i < ringSize; i++) {
             tokens[i] = addressList[i][1];
         }
 
@@ -450,6 +453,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
     {
         var ring = Ring(
+            orders.length,
             ringhash,
             orders,
             miner,
@@ -503,12 +507,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         internal
     {
-        uint ringSize = ring.orders.length;
-
-        for (uint i = 0; i < ringSize; i++) {
+        for (uint i = 0; i < ring.size; i++) {
             var state = ring.orders[i];
-            var prev = ring.orders[(i + ringSize - 1) % ringSize];
-            var next = ring.orders[(i + 1) % ringSize];
+            var prev = ring.orders[(i + ring.size - 1) % ring.size];
+            var next = ring.orders[(i + 1) % ring.size];
 
             // Pay tokenS to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
@@ -603,11 +605,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ring.feeRecepient
         );
 
-        uint ringSize = ring.orders.length;
-
-        for (uint i = 0; i < ringSize; i++) {
+        for (uint i = 0; i < ring.size; i++) {
             var state = ring.orders[i];
-            var next = ring.orders[(i + 1) % ringSize];
+            var next = ring.orders[(i + 1) % ring.size];
 
             if (state.feeSelection == FEE_SELECT_LRC) {
 
@@ -672,13 +672,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         view
     {
-        uint ringSize = ring.orders.length;
         uint smallestIdx = 0;
         uint i;
         uint j;
 
-        for (i = 0; i < ringSize; i++) {
-            j = (i + 1) % ringSize;
+        for (i = 0; i < ring.size; i++) {
+            j = (i + 1) % ring.size;
 
             uint res = calculateOrderFillAmount(
                 ring.orders[i],
@@ -693,7 +692,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         for (i = 0; i < smallestIdx; i++) {
-            j = (i + 1) % ringSize;
+            j = (i + 1) % ring.size;
             calculateOrderFillAmount(
                 ring.orders[i],
                 ring.orders[j]
@@ -751,9 +750,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         view
     {
-        uint ringSize = ring.orders.length;
-
-        for (uint i = 0; i < ringSize; i++) {
+        for (uint i = 0; i < ring.size; i++) {
             var state = ring.orders[i];
             var order = state.order;
 
