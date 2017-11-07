@@ -422,3 +422,11 @@ My Ether Wallet address:
 
 ShangHai China
 5 November 2017
+
+
+## #14 [Merged]
+
+- From: Benjamin John Price <ben@benprice.ca>
+- Time: 00:00 07/11/2017 Beijing Time
+- PR: https://github.com/Loopring/protocol/pull/57 and https://github.com/Loopring/protocol/pull/78
+- Result: reduced gas usage from 400512 to 400278 (=234), a 0.04% reduction of 511465.
