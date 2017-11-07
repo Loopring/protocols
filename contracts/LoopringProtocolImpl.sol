@@ -625,8 +625,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             } else if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
                 if (minerLrcSpendable >= state.lrcFee) {
+                    uint split;
                     if (state.order.buyNoMoreThanAmountB) {
-                        uint splitS = next.fillAmountS.mul(
+                        split = next.fillAmountS.mul(
                             state.order.amountS
                         ).div(
                             state.order.amountB
@@ -634,18 +635,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
                             state.fillAmountS
                         );
 
-                        state.splitS = splitS.mul(
+                        state.splitS = split.mul(
                             state.order.marginSplitPercentage
                         ).div(
                             MARGIN_SPLIT_PERCENTAGE_BASE
                         );
                     } else {
-                        uint splitB = next.fillAmountS.sub(state.fillAmountS
+                        split = next.fillAmountS.sub(state.fillAmountS
                             .mul(state.order.amountB)
                             .div(state.order.amountS)
                         );
 
-                        state.splitB = splitB.mul(
+                        state.splitB = split.mul(
                             state.order.marginSplitPercentage
                         ).div(
                             MARGIN_SPLIT_PERCENTAGE_BASE
@@ -753,25 +754,26 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ring.size; i++) {
             var state = ring.orders[i];
             var order = state.order;
+            uint amount;
 
             if (order.buyNoMoreThanAmountB) {
-                uint amountB = order.amountB.tolerantSub(
+                amount = order.amountB.tolerantSub(
                     cancelledOrFilled[state.orderHash]
                 );
 
-                order.amountS = amountB.mul(order.amountS).div(order.amountB);
-                order.lrcFee = amountB.mul(order.lrcFee).div(order.amountB);
+                order.amountS = amount.mul(order.amountS).div(order.amountB);
+                order.lrcFee = amount.mul(order.lrcFee).div(order.amountB);
 
-                order.amountB = amountB;
+                order.amountB = amount;
             } else {
-                uint amountS = order.amountS.tolerantSub(
+                amount = order.amountS.tolerantSub(
                     cancelledOrFilled[state.orderHash]
                 );
 
-                order.amountB = amountS.mul(order.amountB).div(order.amountS);
-                order.lrcFee = amountS.mul(order.lrcFee).div(order.amountS);
+                order.amountB = amount.mul(order.amountB).div(order.amountS);
+                order.lrcFee = amount.mul(order.lrcFee).div(order.amountS);
 
-                order.amountS = amountS;
+                order.amountS = amount;
             }
 
             require(order.amountS > 0); // "amountS is zero");
