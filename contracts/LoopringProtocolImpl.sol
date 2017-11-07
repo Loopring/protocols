@@ -45,7 +45,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  delegateAddress             = address(0);
 
     uint    public  maxRingSize                 = 0;
-    uint    public  ringIndex                   = 0;
+    uint64  public  ringIndex                   = 0;
 
     // Exchange rate (rate) is the amount to sell or sold divided by the amount
     // to buy or bought.
@@ -60,7 +60,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
 
-    uint    public constant ENTERED_MASK = 1 << 255;
+    uint64  public constant ENTERED_MASK = 1 << 63;
 
     // The following map is used to keep trace of order fill and cancellation
     // history.
