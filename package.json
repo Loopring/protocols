@@ -2,16 +2,6 @@
   "name": "loopring.js",
   "version": "0.0.0",
   "description": "Loopring javascript library",
-  "main": "lib/src/index.js",
-  "types": "lib/src/index.d.ts",
-  "scripts": {
-    "build:commonjs": "rm -rf lib/;tsc",
-    "build:umd": "rm -rf dist;webpack",
-    "test": "rm -rf lib/test;tsc;mocha lib/test/**/*_test.js --timeout 5000 --bail --exit",
-    "lint": "tslint -p tsconfig.json -c tslint.json 'src/**/*.ts'",
-    "precommit": "npm run lint",
-    "commitmsg": "validate-commit-msg"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/loopring/loopring.js.git"
@@ -24,23 +14,8 @@
   },
   "homepage": "https://github.com/loopring/loopring.js#readme",
   "devDependencies": {
-    "@types/chai": "^4.0.4",
-    "@types/jasmine": "^2.6.0",
-    "chai": "^4.1.2",
-    "husky": "^0.14.3",
-    "jasmine-core": "^2.8.0",
-    "json-loader": "^0.5.7",
-    "karma": "^1.7.1",
-    "karma-chrome-launcher": "^2.2.0",
-    "karma-jasmine": "^1.1.0",
-    "karma-webpack": "^2.0.4",
-    "mocha": "^4.0.1",
-    "ts-loader": "^2.3.7",
-    "tslint": "^5.7.0",
-    "typescript": "^2.5.3",
-    "validate-commit-msg": "^2.14.0",
-    "webpack": "^3.6.0",
-    "webpack-dev-server": "^2.9.1"
+    "eslint": "^3.19.0",
+    "eslint-plugin-jest": "^21.2.0"
   },
   "dependencies": {}
 }
