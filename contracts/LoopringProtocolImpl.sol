@@ -620,7 +620,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var next = orders[(i + 1) % ringSize];
 
             uint lrcSpendable = delegate.getSpendable(
-                lrcTokenAddress,
+                _lrcTokenAddress,
                 state.order.owner
             );
 
