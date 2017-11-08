@@ -485,11 +485,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
         // of `fillAmountS` shall be paid to matching order or miner as margin
         // split.
-
-        calculateRingFees(delegate, ring);
+        address _lrcTokenAddress = lrcTokenAddress;
+        
+        calculateRingFees(delegate, ring, _lrcTokenAddress);
 
         /// Make payments.
-        settleRing(delegate, ring);
+        settleRing(delegate, ring, _lrcTokenAddress);
 
         RingMined(
             ringIndex ^ ENTERED_MASK,
@@ -504,7 +505,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     function settleRing(
         TokenTransferDelegate delegate,
-        Ring ring
+        Ring ring,
+        address _lrcTokenAddress
         )
         internal
     {
@@ -535,7 +537,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             // Pay LRC
             if (state.lrcReward > 0) {
                 delegate.transferToken(
-                    lrcTokenAddress,
+                    _lrcTokenAddress,
                     ring.feeRecepient,
                     state.order.owner,
                     state.lrcReward
@@ -544,7 +546,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             if (state.lrcFee > 0) {
                 delegate.transferToken(
-                    lrcTokenAddress,
+                    _lrcTokenAddress,
                     state.order.owner,
                     ring.feeRecepient,
                     state.lrcFee
@@ -572,7 +574,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.lrcFee
             );
         }
-
     }
 
     function verifyMinerSuppliedFillRates(Ring ring)
@@ -597,12 +598,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(cvs <= rateRatioCVSThreshold); // "miner supplied exchange rate is not evenly discounted");
     }
 
-    function calculateRingFees(TokenTransferDelegate delegate, Ring ring)
+    function calculateRingFees(TokenTransferDelegate delegate, Ring ring, address _lrcTokenAddress)
         internal
         view
     {
         uint minerLrcSpendable = delegate.getSpendable(
-            lrcTokenAddress,
+            _lrcTokenAddress,
             ring.feeRecepient
         );
 
@@ -613,7 +614,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             if (state.feeSelection == FEE_SELECT_LRC) {
 
                 uint lrcSpendable = delegate.getSpendable(
-                    lrcTokenAddress,
+                    _lrcTokenAddress,
                     state.order.owner
                 );
 
