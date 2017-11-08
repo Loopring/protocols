@@ -454,3 +454,10 @@ ShangHai China
 - Time: as of PR 84
 - PR:  https://github.com/Loopring/protocol/pull/87 and https://github.com/Loopring/protocol/pull/84
 - Result: wait for PL 83 to be submitted.
+
+## #18 [Merged]
+
+- From: Brecht Devos <brechtp.devos@gmail.com>
+- Time: as of PR 85
+- PR: https://github.com/Loopring/protocol/pull/85
+- Result: reduced gas usage from 399956 to 399712 (=244), a 0.05% reduction of 511465.
