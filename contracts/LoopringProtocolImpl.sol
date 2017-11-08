@@ -639,7 +639,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
                 // Only calculate split when miner has enough LRC;
-                // otherwise all splits are 0.  
+                // otherwise all splits are 0.
                 if (minerLrcSpendable >= state.lrcFee) {
                     uint split;
                     if (state.order.buyNoMoreThanAmountB) {
@@ -654,7 +654,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         split = next.fillAmountS.sub(state.fillAmountS
                             .mul(state.order.amountB)
                             .div(state.order.amountS)
-                        );  
+                        );
                     }
 
                     if (state.order.marginSplitPercentage != MARGIN_SPLIT_PERCENTAGE_BASE) {
@@ -664,7 +664,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                             MARGIN_SPLIT_PERCENTAGE_BASE
                         );
                     }
-               
+
                     if (state.order.buyNoMoreThanAmountB) {
                         state.splitS = split;
                     } else {
