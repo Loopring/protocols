@@ -703,7 +703,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             _lrcTokenAddress,
             feeRecepient
         );
-        uint8 _marginSplitPercentageBase = MARGIN_SPLIT_PERCENTAGE_BASE;
 
         for (uint i = 0; i < ringSize; i++) {
             var state = orders[i];
@@ -718,14 +717,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
             // If order doesn't have enough LRC, set margin split to 100%.
             if (lrcSpendable < state.lrcFee) {
                 state.lrcFee = lrcSpendable;
-                state.order.marginSplitPercentage = _marginSplitPercentageBase;
+                state.order.marginSplitPercentage = MARGIN_SPLIT_PERCENTAGE_BASE;
             }
 
             // When an order's LRC fee is 0 or smaller than the specified fee,
             // we help miner automatically select margin-split.
             if (state.lrcFee == 0) {
                 state.feeSelection == FEE_SELECT_MARGIN_SPLIT;
-                state.order.marginSplitPercentage = _marginSplitPercentageBase;
+                state.order.marginSplitPercentage = MARGIN_SPLIT_PERCENTAGE_BASE;
             }
 
             if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
@@ -748,11 +747,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         );
                     }
 
-                    if (state.order.marginSplitPercentage != _marginSplitPercentageBase) {
+                    if (state.order.marginSplitPercentage != MARGIN_SPLIT_PERCENTAGE_BASE) {
                         split = split.mul(
                             state.order.marginSplitPercentage
                         ).div(
-                            _marginSplitPercentageBase
+                            MARGIN_SPLIT_PERCENTAGE_BASE
                         );
                     }
 
