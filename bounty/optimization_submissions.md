@@ -2,6 +2,8 @@
 
 We'll be collecting optimization bounty submissions and their responses here. Please be sure to take a look before making a submission. Thank you!
 
+**If you think our gas calculation is incorrect, please note that each PC may have a different development environment (solc version, truffle version, typescript version), so please prepare a script for us to re-run the gas calculation test before and after PL in question, we will review your script and verify the result. We simply don't have time to do it.**
+
 ## #01 [Merged]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
@@ -439,3 +441,23 @@ ShangHai China
 - PR: https://github.com/Loopring/protocol/pull/59 and  https://github.com/Loopring/protocol/pull/79
 - Result: reduced gas usage from 400411 to 400376 (=35), a 0.00% reduction of 511465.
 
+## #16 [Merged]
+
+- From: Benjamin John Price <ben@benprice.ca>
+- Time: as of PR 65
+- PR: https://github.com/Loopring/protocol/pull/65
+- Result: reduced gas usage from 400427 to 400084 (=343), a 0.07% reduction of 511465.
+
+## #17 [TBD]
+
+- From: Brecht Devos <brechtp.devos@gmail.com>
+- Time: as of PR 84
+- PR:  https://github.com/Loopring/protocol/pull/87 and https://github.com/Loopring/protocol/pull/84
+- Result: wait for PL 83 to be submitted.
+
+## #18 [Merged]
+
+- From: Brecht Devos <brechtp.devos@gmail.com>
+- Time: as of PR 85
+- PR: https://github.com/Loopring/protocol/pull/85
+- Result: reduced gas usage from 399956 to 399712 (=244), a 0.05% reduction of 511465.

@@ -20,11 +20,11 @@ Transfers of 0 values MUST be treated as normal transfers and fire the Transfer 
 (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md)
 But in your method "transferToken" TokenTransferDelegate you have put a check against it. Either it should be allowed or a note should be added.
 
-## #03 [TBD]
+## #03 [Merged]
 
 - From: Paul <pauliax6@gmail.com>
 - Time: 23:41 04/11/2017 Beijing Time
-- PR: 
+- PR: Kongliang's PR
 
 Hello,
 
@@ -62,3 +62,8 @@ In calculateRingFees there’s (minerLrcSpendable += lrcSpendable). Again, proba
  
  
 Brecht Devos
+
+## #05 [TBD]
+
+- From: jonasshen
+- Resolution: https://github.com/Loopring/protocol/issues/70

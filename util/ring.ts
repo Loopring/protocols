@@ -5,8 +5,6 @@ import Web3 = require('web3');
 import { crypto } from './crypto';
 import { Order } from './order';
 
-const web3Instance: Web3 = web3;
-
 export class Ring {
   public owner: string;
   public orders: Order[];
@@ -14,9 +12,19 @@ export class Ring {
   public r: string;
   public s: string;
 
+  public web3Instance: Web3;
+
   constructor(owner: string, orders: Order[]) {
     this.owner = owner;
     this.orders = orders;
+
+    try {
+      if (web3) {
+        this.web3Instance = web3;
+      }
+    } catch (err) {
+      // ignore.
+    }
   }
 
   public isValidSignature() {
@@ -39,7 +47,7 @@ export class Ring {
   public async signAsync() {
     const ringHash = this.getRingHash();
     //console.log("ring hash: ", ethUtil.bufferToHex(ringHash));
-    const signature = await promisify(web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(ringHash));
+    const signature = await promisify(this.web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(ringHash));
     const { v, r, s } = ethUtil.fromRpcSig(signature);
     this.v = v;
     this.r = ethUtil.bufferToHex(r);

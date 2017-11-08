@@ -170,6 +170,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         require(address(0) != _lrcTokenAddress);
         require(address(0) != _tokenRegistryAddress);
+        require(address(0) != _ringhashRegistryAddress);
         require(address(0) != _delegateAddress);
 
         require(_maxRingSize > 1);
@@ -476,10 +477,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
         // of `fillAmountS` shall be paid to matching order or miner as margin
         // split.
-        calculateRingFees(delegate, ring);
+        address _lrcTokenAddress = lrcTokenAddress;
+
+        calculateRingFees(delegate, ring, _lrcTokenAddress);
 
         /// Make payments.
-        settleRing(delegate, ring);
+        settleRing(delegate, ring, _lrcTokenAddress);
 
         RingMined(
             ringIndex ^ ENTERED_MASK,
@@ -494,7 +497,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     function settleRing(
         TokenTransferDelegate delegate,
-        Ring ring
+        Ring ring,
+        address _lrcTokenAddress
         )
         internal
     {
@@ -525,7 +529,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             // Pay LRC
             if (state.lrcReward > 0) {
                 delegate.transferToken(
-                    lrcTokenAddress,
+                    _lrcTokenAddress,
                     ring.feeRecepient,
                     state.order.owner,
                     state.lrcReward
@@ -534,7 +538,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             if (state.lrcFee > 0) {
                 delegate.transferToken(
-                    lrcTokenAddress,
+                    _lrcTokenAddress,
                     state.order.owner,
                     ring.feeRecepient,
                     state.lrcFee
@@ -562,7 +566,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.lrcFee
             );
         }
-
     }
 
     function verifyMinerSuppliedFillRates(Ring ring)
@@ -587,12 +590,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(cvs <= rateRatioCVSThreshold); // "miner supplied exchange rate is not evenly discounted");
     }
 
-    function calculateRingFees(TokenTransferDelegate delegate, Ring ring)
+    function calculateRingFees(TokenTransferDelegate delegate, Ring ring, address _lrcTokenAddress)
         internal
         view
     {
         uint minerLrcSpendable = delegate.getSpendable(
-            lrcTokenAddress,
+            _lrcTokenAddress,
             ring.feeRecepient
         );
 
@@ -620,8 +623,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
                 if (minerLrcSpendable >= state.lrcFee) {
+                    uint split;
                     if (state.order.buyNoMoreThanAmountB) {
-                        uint splitS = next.fillAmountS.mul(
+                        split = next.fillAmountS.mul(
                             state.order.amountS
                         ).div(
                             state.order.amountB
@@ -629,18 +633,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
                             state.fillAmountS
                         );
 
-                        state.splitS = splitS.mul(
+                        state.splitS = split.mul(
                             state.order.marginSplitPercentage
                         ).div(
                             MARGIN_SPLIT_PERCENTAGE_BASE
                         );
                     } else {
-                        uint splitB = next.fillAmountS.sub(state.fillAmountS
+                        split = next.fillAmountS.sub(state.fillAmountS
                             .mul(state.order.amountB)
                             .div(state.order.amountS)
                         );
 
-                        state.splitB = splitB.mul(
+                        state.splitB = split.mul(
                             state.order.marginSplitPercentage
                         ).div(
                             MARGIN_SPLIT_PERCENTAGE_BASE
@@ -675,24 +679,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         for (i = 0; i < ring.size; i++) {
             j = (i + 1) % ring.size;
-
-            uint res = calculateOrderFillAmount(
+            smallestIdx = calculateOrderFillAmount(
                 ring.orders[i],
-                ring.orders[j]
+                ring.orders[j],
+                i,
+                j,
+                smallestIdx
             );
-
-            if (res == 1) {
-                smallestIdx = i;
-            } else if (res == 2) {
-                smallestIdx = j;
-            }
         }
 
         for (i = 0; i < smallestIdx; i++) {
-            j = (i + 1) % ring.size;
             calculateOrderFillAmount(
                 ring.orders[i],
-                ring.orders[j]
+                ring.orders[(i + 1) % ring.size],
+                0,               // Not needed
+                0,               // Not needed
+                0                // Not needed
             );
         }
     }
@@ -702,12 +704,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///         2 if 'next' is the smallest order.
     function calculateOrderFillAmount(
         OrderState state,
-        OrderState next
+        OrderState next,
+        uint i,
+        uint j,
+        uint smallestIdx
         )
         internal
         view
-        returns (uint whichIsSmaller)
+        returns (uint newSmallestIdx)
     {
+        // Default to the same smallest index
+        newSmallestIdx = smallestIdx;
+
         uint fillAmountB = state.fillAmountS.mul(
             state.rate.amountB
         ).div(
@@ -724,7 +732,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     state.rate.amountB
                 );
 
-                whichIsSmaller = 1;
+                newSmallestIdx = i;
             }
         }
 
@@ -737,7 +745,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         if (fillAmountB <= next.fillAmountS) {
             next.fillAmountS = fillAmountB;
         } else {
-            whichIsSmaller = 2;
+            newSmallestIdx = j;
         }
     }
 
@@ -750,25 +758,26 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ring.size; i++) {
             var state = ring.orders[i];
             var order = state.order;
+            uint amount;
 
             if (order.buyNoMoreThanAmountB) {
-                uint amountB = order.amountB.tolerantSub(
+                amount = order.amountB.tolerantSub(
                     cancelledOrFilled[state.orderHash]
                 );
 
-                order.amountS = amountB.mul(order.amountS).div(order.amountB);
-                order.lrcFee = amountB.mul(order.lrcFee).div(order.amountB);
+                order.amountS = amount.mul(order.amountS).div(order.amountB);
+                order.lrcFee = amount.mul(order.lrcFee).div(order.amountB);
 
-                order.amountB = amountB;
+                order.amountB = amount;
             } else {
-                uint amountS = order.amountS.tolerantSub(
+                amount = order.amountS.tolerantSub(
                     cancelledOrFilled[state.orderHash]
                 );
 
-                order.amountB = amountS.mul(order.amountB).div(order.amountS);
-                order.lrcFee = amountS.mul(order.lrcFee).div(order.amountS);
+                order.amountB = amount.mul(order.amountB).div(order.amountS);
+                order.lrcFee = amount.mul(order.lrcFee).div(order.amountS);
 
-                order.amountS = amountS;
+                order.amountS = amount;
             }
 
             require(order.amountS > 0); // "amountS is zero");
