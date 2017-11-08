@@ -448,3 +448,9 @@ ShangHai China
 - PR: https://github.com/Loopring/protocol/pull/65
 - Result: reduced gas usage from 400427 to 400084 (=343), a 0.07% reduction of 511465.
 
+## #17 [TBD]
+
+- From: Brecht Devos <brechtp.devos@gmail.com>
+- Time: as of PR 84
+- PR:  https://github.com/Loopring/protocol/pull/87 and https://github.com/Loopring/protocol/pull/84
+- Result: wait for PL 83 to be submitted.
