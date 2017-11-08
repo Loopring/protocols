@@ -638,6 +638,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             }
 
             if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
+                // Only calculate split when miner has enough LRC;
+                // otherwise all splits are 0.  
                 if (minerLrcSpendable >= state.lrcFee) {
                     uint split;
                     if (state.order.buyNoMoreThanAmountB) {
@@ -648,29 +650,31 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         ).sub(
                             state.fillAmountS
                         );
-
-                        state.splitS = split.mul(
-                            state.order.marginSplitPercentage
-                        ).div(
-                            MARGIN_SPLIT_PERCENTAGE_BASE
-                        );
                     } else {
                         split = next.fillAmountS.sub(state.fillAmountS
                             .mul(state.order.amountB)
                             .div(state.order.amountS)
-                        );
+                        );  
+                    }
 
-                        state.splitB = split.mul(
+                    if (state.order.marginSplitPercentage != MARGIN_SPLIT_PERCENTAGE_BASE) {
+                        split = split.mul(
                             state.order.marginSplitPercentage
                         ).div(
                             MARGIN_SPLIT_PERCENTAGE_BASE
                         );
                     }
+               
+                    if (state.order.buyNoMoreThanAmountB) {
+                        state.splitS = split;
+                    } else {
+                        state.splitB = split;
+                    }
 
                     // This implicits order with smaller index in the ring will
                     // be paid LRC reward first, so the orders in the ring does
                     // mater.
-                    if (state.splitS > 0 || state.splitB > 0) {
+                    if (split > 0) {
                         minerLrcSpendable = minerLrcSpendable.sub(state.lrcFee);
                         state.lrcReward = state.lrcFee;
                     }
@@ -682,7 +686,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 revert(); // "unsupported fee selection value");
             }
         }
-
     }
 
     /// @dev Calculate each order's fill amount.
