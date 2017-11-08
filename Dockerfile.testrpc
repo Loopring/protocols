@@ -1,0 +1,11 @@
+FROM mhart/alpine-node:8
+
+RUN npm install -g ethereumjs-testrpc@6.0.1
+
+ADD testrpc.sh testrpc.sh
+
+RUN chmod +x testrpc.sh
+
+EXPOSE 8545
+
+CMD sh testrpc.sh
