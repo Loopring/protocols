@@ -32,7 +32,7 @@ npm run compile
 
 ## Run Unit Tests inside Docker
 
-If you prefer to use docker, you can insteall docker first, then run the following:
+If you prefer to use docker, you can install docker first, then run the following:
 
 ```
 npm run docker
