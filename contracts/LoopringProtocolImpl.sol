@@ -604,19 +604,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 lrcTokenAddress,
                 state.order.owner
             );
-       
-            // If order doesn't have enough LRC, set margin split to 100%.
-            if (state.lrcFee == 0 || minerLrcSpendable < state.lrcFee) {
-                state.order.marginSplitPercentage = MARGIN_SPLIT_PERCENTAGE_BASE;
-            }
-
-            if (lrcSpendable < state.lrcFee) {
-                state.lrcFee = lrcSpendable;
-            }
 
             // When an order's LRC fee is 0 or smaller than the specified fee,
             // we help miner automatically select margin-split.
-            if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT || state.lrcFee == 0) {
+            if (state.lrcFee == 0) {
+                state.feeSelection == FEE_SELECT_MARGIN_SPLIT;
+                state.order.marginSplitPercentage = MARGIN_SPLIT_PERCENTAGE_BASE;
+            }
+
+            // If order doesn't have enough LRC, set margin split to 100%.
+            if (lrcSpendable < state.lrcFee) {
+                state.lrcFee = lrcSpendable;
+                state.order.marginSplitPercentage = MARGIN_SPLIT_PERCENTAGE_BASE;
+            }
+
+            if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
                 if (minerLrcSpendable >= state.lrcFee) {
                     if (state.order.buyNoMoreThanAmountB) {
                         uint splitS = next.fillAmountS.mul(
@@ -884,7 +886,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint salt
     )
         internal
-        view 
+        view
     {
         require(order.owner != address(0)); // "invalid order owner");
         require(order.tokenS != address(0)); // "invalid order tokenS");

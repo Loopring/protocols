@@ -205,9 +205,16 @@ export class ProtocolSimulator {
         feeB: 0,
       };
 
+      if (order.params.lrcFee.toNumber() == 0) {
+        this.feeSelectionList[i] = 1;
+        order.params.marginSplitPercentage = 100;
+      }
+
       if (0 == this.feeSelectionList[i]) {
         feeItem.feeLrc = order.params.lrcFee.toNumber();
       } else if (1 == this.feeSelectionList[i]) {
+
+
         if (order.params.buyNoMoreThanAmountB) {
           feeItem.feeS = fillAmountSList[i] * order.params.scaledAmountS / rateAmountSList[i] - fillAmountSList[i];
           feeItem.feeS = feeItem.feeS * order.params.marginSplitPercentage / 100;
