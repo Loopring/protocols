@@ -149,7 +149,6 @@ async function submit(p: LoopringSubmitParams) {
                                                p.sList,
                                                p.ringOwner,
                                                p.feeRecepient,
-                                               p.throwIfLRCIsInsuffcient,
                                                {from: p.ringOwner, gas: 900000, gasPrice: 5000000000});
   console.log("tx: ", tx);
 }
@@ -166,8 +165,7 @@ async function main() {
   const ringFactory = new RingFactory("", "", "", "", "", 0);
   const params = ringFactory.ringToSubmitableParams(ring,
                                                     feeSelectionList,
-                                                    ring.owner,
-                                                    throwIfLRCIsInsuffcient);
+                                                    ring.owner);
 
   const json = JSON.stringify(params);
   const outFile = "/tmp/ring.json";
