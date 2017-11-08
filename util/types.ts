@@ -30,7 +30,6 @@ export interface LoopringSubmitParams {
   sList: string[];
   ringOwner: string;
   feeRecepient: string;
-  throwIfLRCIsInsuffcient: boolean;
 }
 
 export interface FeeItem {

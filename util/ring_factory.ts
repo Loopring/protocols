@@ -292,8 +292,7 @@ export class RingFactory {
 
   public ringToSubmitableParams(ring: Ring,
                                 feeSelectionList: number[],
-                                feeRecepient: string,
-                                throwIfLRCIsInsuffcient: boolean) {
+                                feeRecepient: string) {
     const ringSize = ring.orders.length;
     let addressList: string[][] = [];
     let uintArgsList: BigNumber[][] = [];
@@ -347,8 +346,7 @@ export class RingFactory {
       rList: rList,
       sList: sList,
       ringOwner: ring.owner,
-      feeRecepient: feeRecepient,
-      throwIfLRCIsInsuffcient: throwIfLRCIsInsuffcient
+      feeRecepient: feeRecepient
     }
 
     return submitParams;

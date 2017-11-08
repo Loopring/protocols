@@ -57,7 +57,7 @@ contract('RinghashRegistry', (accounts: string[])=>{
 
     it('should be able to submit a ring hash', async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
-      const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient, true);
+      const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
 
       const tx = await ringhashRegistry.submitRinghash(2,
                                                        ringOwner,
@@ -87,7 +87,7 @@ contract('RinghashRegistry', (accounts: string[])=>{
     it('should not be able to submit a ring hash by a different ringminer if the same hash has submmitted within 100 blocks', async () => {
       try {
         const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
-        const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient, true);
+        const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
 
         const tx = await ringhashRegistry.submitRinghash(2,
                                                          ringOwner,
