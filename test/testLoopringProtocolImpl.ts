@@ -90,7 +90,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     qtumAddress = await tokenRegistry.getAddressBySymbol("QTUM");
     delegateAddr = TokenTransferDelegate.address;
 
-    tokenTransferDelegate.addVersion(LoopringProtocolImpl.address);
+    tokenTransferDelegate.authorizeAddress(LoopringProtocolImpl.address);
 
     [lrc, eos, neo, qtum] = await Promise.all([
       DummyToken.at(lrcAddress),

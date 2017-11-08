@@ -23,7 +23,7 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
 /// @title TokenTransferDelegate - Acts as a middle man to transfer ERC20 tokens
-/// on behalf of different versioned of Loopring protocol to avoid ERC20
+/// on behalf of different versions of Loopring protocol to avoid ERC20
 /// re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenTransferDelegate is Ownable {
@@ -33,24 +33,28 @@ contract TokenTransferDelegate is Ownable {
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
 
-    uint public lastVersion = 0;
-    address[] public versions;
-    mapping (address => uint) public versioned;
+    mapping(address => AddressInfo) private addressInfos;
+
+    address public latestAddress;
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Structs                                                              ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    struct AddressInfo {
+        address previous;
+        uint32  index;
+        bool    authorized;
+    }
 
 
     ////////////////////////////////////////////////////////////////////////////
     /// Modifiers                                                            ///
     ////////////////////////////////////////////////////////////////////////////
 
-    modifier isVersioned(address addr) {
-        if (versioned[addr] == 0) {
-            revert();
-        }
-        _;
-    }
-
-    modifier notVersioned(address addr) {
-        if (versioned[addr] > 0) {
+    modifier onlyAuthorized() {
+        if (isAddressAuthorized(msg.sender) == false) {
             revert();
         }
         _;
@@ -61,9 +65,9 @@ contract TokenTransferDelegate is Ownable {
     /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
 
-    event VersionAdded(address indexed addr, uint version);
+    event AddressAuthorized(address indexed addr, uint32 number);
 
-    event VersionRemoved(address indexed addr, uint version);
+    event AddressDeauthorized(address indexed addr, uint32 number);
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -72,57 +76,72 @@ contract TokenTransferDelegate is Ownable {
 
     /// @dev Add a Loopring protocol address.
     /// @param addr A loopring protocol address.
-    function addVersion(address addr)
+    function authorizeAddress(address addr)
         onlyOwner
-        notVersioned(addr)
         public
     {
-        versioned[addr] = ++lastVersion;
-        versions.push(addr);
-        VersionAdded(addr, lastVersion);
+        AddressInfo storage addrInfo = addressInfos[addr];
+
+        if (addrInfo.index != 0) { // existing
+            if (addrInfo.authorized == false) { // re-authorize
+                addrInfo.authorized = true;
+                AddressAuthorized(addr, addrInfo.index);
+            }
+        } else {
+            address prev = latestAddress;
+            if (prev == address(0)) {
+                addrInfo.index = 1;
+                addrInfo.authorized = true;
+            } else {
+                addrInfo.previous = prev;
+                addrInfo.index = addressInfos[prev].index + 1;
+
+            }
+            addrInfo.authorized = true;
+            latestAddress = addr;
+            AddressAuthorized(addr, addrInfo.index);
+        }
     }
 
     /// @dev Remove a Loopring protocol address.
     /// @param addr A loopring protocol address.
-    function removeVersion(address addr)
+    function deauthorizeAddress(address addr)
         onlyOwner
-        isVersioned(addr)
         public
     {
-        uint version = versioned[addr];
-        delete versioned[addr];
-
-        uint length = versions.length;
-        for (uint i = 0; i < length; i++) {
-            if (versions[i] == addr) {
-                versions[i] = versions[length - 1];
-                versions.length -= 1;
-                break;
-            }
+        AddressInfo storage addrInfo = addressInfos[addr];
+        if (addrInfo.index != 0) {
+            addrInfo.authorized = false;
+            AddressDeauthorized(addr, addrInfo.index);
         }
-        VersionRemoved(addr, version);
     }
 
-    /// @return Amount of ERC20 token that can be spent by this contract.
-    /// @param tokenAddress Address of token to transfer.
-    /// @param _owner Address of the token owner.
-    function getSpendable(
-        address tokenAddress,
-        address _owner
-        )
-        isVersioned(msg.sender)
+    function isAddressAuthorized(address addr)
         public
-        constant
-        returns (uint)
+        view
+        returns (bool)
     {
+        return addressInfos[addr].authorized;
+    }
 
-        var token = ERC20(tokenAddress);
-        return token.allowance(
-            _owner,
-            address(this)
-        ).min256(
-            token.balanceOf(_owner)
-        );
+    function getLatestAuthorizedAddresses(uint max)
+        public
+        view
+        returns (address[] memory addresses)
+    {
+        addresses = new address[](max);
+        address addr = latestAddress;
+        AddressInfo memory addrInfo;
+        uint count = 0;
+
+        while (addr != address(0) && max < count) {
+            addrInfo = addressInfos[addr];
+            if (addrInfo.index == 0) {
+                break;
+            }
+            addresses[count++] = addr;
+            addr = addrInfo.previous;
+        }
     }
 
     /// @dev Invoke ERC20 transferFrom method.
@@ -134,24 +153,32 @@ contract TokenTransferDelegate is Ownable {
         address token,
         address from,
         address to,
-        uint value)
-        isVersioned(msg.sender)
+        uint    value)
+        onlyAuthorized
         public
     {
-        if (from != to) {
+        if (from != to && value > 0) {
             require(
                 ERC20(token).transferFrom(from, to, value)
             );
         }
     }
 
-    /// @dev Gets all versioned addresses.
-    /// @return Array of versioned addresses.
-    function getVersions()
+    function batchTransferToken(bytes32[] batch)
+        onlyAuthorized
         public
-        constant
-        returns (address[])
     {
-        return versions;
+        uint len = batch.length;
+        for (uint i = 0; i < len; i += 4) {
+            address from = address(batch[i + 1]);
+            address to = address(batch[i + 2]);
+            uint value = uint(batch[i + 3]);
+
+            if (value > 0 && from != to) {
+                require(
+                    ERC20(address(batch[i])).transferFrom(from, to, value)
+                );
+            }
+        }
     }
 }

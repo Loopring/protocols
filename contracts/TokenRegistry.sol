@@ -95,5 +95,4 @@ contract TokenRegistry is Ownable {
     {
         return tokenSymbolMap[symbol];
     }
-
 }

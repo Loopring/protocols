@@ -19,6 +19,7 @@ pragma solidity 0.4.18;
 
 import "zeppelin-solidity/contracts/math/Math.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
+import "zeppelin-solidity/contracts/token/ERC20.sol";
 
 import "./lib/UintLib.sol";
 import "./LoopringProtocol.sol";
@@ -117,7 +118,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32     indexed _ringhash,
         address     indexed _miner,
         address     indexed _feeRecepient,
-        bool                _isRinghashReserved);
+        bool                _isRinghashReserved
+    );
 
     event OrderFilled(
         uint                _ringIndex,
@@ -130,19 +132,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint                _amountS,
         uint                _amountB,
         uint                _lrcReward,
-        uint                _lrcFee);
+        uint                _lrcFee
+    );
 
     event OrderCancelled(
         uint                _time,
         uint                _blocknumber,
         bytes32     indexed _orderHash,
-        uint                _amountCancelled);
+        uint                _amountCancelled
+    );
 
     event CutoffTimestampChanged(
         uint                _time,
         uint                _blocknumber,
         address     indexed _address,
-        uint                _cutoff);
+        uint                _cutoff
+    );
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -249,7 +254,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList
         );
 
-        verifyTokensRegistered(addressList, ringSize);
+        verifyTokensRegistered(ringSize, addressList);
 
         var (ringhash, ringhashAttributes) = RinghashRegistry(
             ringhashRegistryAddress
@@ -417,8 +422,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function verifyTokensRegistered(
-        address[2][] addressList,
-        uint ringSize
+        uint            ringSize,
+        address[2][]    addressList
         )
         internal
         view
@@ -466,7 +471,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         calculateRingFillAmount(ringSize, orders);
 
         address _lrcTokenAddress = lrcTokenAddress;
-        // var delegate = TokenTransferDelegate(delegateAddress);
+        
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
         // of `fillAmountS` shall be paid to matching order or miner as margin
         // split.
@@ -499,58 +504,134 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    function settleRing(
-        TokenTransferDelegate delegate,
-        uint            ringSize,
-        OrderState[]    orders,
-        bytes32         ringhash,
-        address         feeRecepient,
-        address         _lrcTokenAddress
+    function calculateTransferBatchSize(
+        uint         ringSize,
+        OrderState[] orders
         )
-        internal
+        private
+        pure
+        returns (uint batchSize)
     {
+        batchSize = ringSize;
         for (uint i = 0; i < ringSize; i++) {
             var state = orders[i];
             var prev = orders[(i + ringSize - 1) % ringSize];
-            var next = orders[(i + 1) % ringSize];
+
+            if (prev.splitB + state.splitS > 0) {
+                batchSize++;
+            }
+            if (state.lrcReward > 0) {
+                batchSize++;
+            }
+            if (state.lrcFee > 0) {
+                batchSize++;
+            }
+        }
+    }
+
+    function fillTransferBatchItem(
+        bytes32[]   memory batch,
+        uint        position,
+        address     token,
+        address     from,
+        address     to,
+        uint        value
+        )
+        private
+        pure
+    {
+        batch[position] = bytes32(token);
+        batch[position + 1] = bytes32(from);
+        batch[position + 2] = bytes32(to);
+        batch[position + 3] = bytes32(value);
+    }
+
+    function createTransferBatch(
+        address         _lrcTokenAddress,
+        uint            ringSize,
+        OrderState[]    orders,
+        address         feeRecepient
+        )
+        private
+        pure
+        returns (bytes32[])
+    {
+        uint batchSize = calculateTransferBatchSize(ringSize, orders);
+        bytes32[] memory batch = new bytes32[](batchSize * 4); // ringSize * (token + from + to + value)
+        uint position = 0;
+
+        for (uint i = 0; i < ringSize; i++) {
+            var state = orders[i];
+            var prev = orders[(i + ringSize - 1) % ringSize];
 
             // Pay tokenS to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
-            delegate.transferToken(
+            fillTransferBatchItem(
+                batch,
+                position,
                 state.order.tokenS,
                 state.order.owner,
                 prev.order.owner,
                 state.fillAmountS - prev.splitB
             );
+            position += 4;
 
             uint splitSum = prev.splitB + state.splitS;
             if (splitSum > 0) {
-                delegate.transferToken(
+                fillTransferBatchItem(
+                    batch,
+                    position,
                     state.order.tokenS,
                     state.order.owner,
                     feeRecepient,
                     splitSum
                 );
+                position += 4;
             }
 
             // Pay LRC
             if (state.lrcReward > 0) {
-                delegate.transferToken(
+                fillTransferBatchItem(
+                    batch,
+                    position,
                     _lrcTokenAddress,
                     feeRecepient,
                     state.order.owner,
                     state.lrcReward
                 );
+                position += 4;
             }
 
             if (state.lrcFee > 0) {
-                delegate.transferToken(
+                fillTransferBatchItem(
+                    batch,
+                    position,
                     _lrcTokenAddress,
                     state.order.owner,
                     feeRecepient,
                     state.lrcFee
                 );
+                position += 4;
             }
+        }
+
+        return batch;
+    }
+
+    function settleRing(
+        TokenTransferDelegate delegate,
+        uint          ringSize,
+        OrderState[]  orders,
+        bytes32       ringhash,
+        address       feeRecepient,
+        address       _lrcTokenAddress
+        )
+        private
+    {
+        for (uint i = 0; i < ringSize; i++) {
+            var state = orders[i];
+            var prev = orders[(i + ringSize - 1) % ringSize];
+            var next = orders[(i + 1) % ringSize];
 
             // Update fill records
             if (state.order.buyNoMoreThanAmountB) {
@@ -573,6 +654,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.lrcFee
             );
         }
+      
+        delegate.batchTransferToken(
+            createTransferBatch(
+                _lrcTokenAddress,
+                ringSize,
+                orders,
+                feeRecepient
+            )
+        );
     }
 
     /// @dev Verify miner has calculte the rates correctly.
@@ -610,7 +700,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         internal
         view
     {
-        uint minerLrcSpendable = delegate.getSpendable(
+        uint minerLrcSpendable = getSpendable(
             _lrcTokenAddress,
             feeRecepient
         );
@@ -619,7 +709,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var state = orders[i];
             var next = orders[(i + 1) % ringSize];
 
-            uint lrcSpendable = delegate.getSpendable(
+            uint lrcSpendable = getSpendable(
                 _lrcTokenAddress,
                 state.order.owner
             );
@@ -811,6 +901,24 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
     }
 
+    /// @return Amount of ERC20 token that can be spent by this contract.
+    function getSpendable(
+        address tokenAddress,
+        address tokenOwner
+        )
+        internal
+        view
+        returns (uint)
+    {
+        var token = ERC20(tokenAddress);
+        return token.allowance(
+            tokenOwner,
+            delegateAddress
+        ).min256(
+            token.balanceOf(tokenOwner)
+        );
+    }
+
     /// @dev verify input data's basic integrity.
     function verifyInputDataIntegrity(
         uint            ringSize,
@@ -898,7 +1006,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 orderHash,
                 uint8ArgsList[i][1],  // feeSelection
                 Rate(uintArgsList[i][6], order.amountB),
-                delegate.getSpendable(order.tokenS, order.owner),
+                getSpendable(order.tokenS, order.owner),
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
