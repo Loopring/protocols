@@ -17,9 +17,9 @@
 */
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/math/Math.sol";
-import "zeppelin-solidity/contracts/token/ERC20.sol";
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
+import "./lib/ERC20.sol";
+import "./lib/MathUint.sol";
+import "./lib/Ownable.sol";
 
 
 /// @title TokenTransferDelegate - Acts as a middle man to transfer ERC20 tokens
@@ -27,7 +27,7 @@ import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 /// re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenTransferDelegate is Ownable {
-    using Math for uint;
+    using MathUint for uint;
 
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///

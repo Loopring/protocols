@@ -17,7 +17,7 @@
 */
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
+import "./lib/Ownable.sol";
 
 
 /// @title Token Register Contract

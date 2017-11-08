@@ -17,16 +17,16 @@
 */
 pragma solidity 0.4.18;
 
-import "./lib/Bytes32Lib.sol";
-import "./lib/Uint8Lib.sol";
+import "./lib/MathBytes32.sol";
+import "./lib/MathUint8.sol";
 
 
 /// @title Ring Hash Registry Contract
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract RinghashRegistry {
-    using Bytes32Lib    for bytes32[];
-    using Uint8Lib      for uint8[];
+    using MathBytes32   for bytes32[];
+    using MathUint8     for uint8[];
 
     uint public blocksToLive;
 

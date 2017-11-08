@@ -17,11 +17,8 @@
 */
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/math/Math.sol";
-import "zeppelin-solidity/contracts/math/SafeMath.sol";
-import "zeppelin-solidity/contracts/token/ERC20.sol";
-
-import "./lib/UintLib.sol";
+import "./lib/ERC20.sol";
+import "./lib/MathUint.sol";
 import "./LoopringProtocol.sol";
 import "./RinghashRegistry.sol";
 import "./TokenRegistry.sol";
@@ -32,9 +29,7 @@ import "./TokenTransferDelegate.sol";
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocolImpl is LoopringProtocol {
-    using Math      for uint;
-    using SafeMath  for uint;
-    using UintLib   for uint;
+    using MathUint for uint;
 
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///
@@ -682,7 +677,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             rateRatios[i] = RATE_RATIO_SCALE.mul(s1b0).div(s0b1);
         }
 
-        uint cvs = UintLib.cvsquare(rateRatios, RATE_RATIO_SCALE);
+        uint cvs = MathUint.cvsquare(rateRatios, RATE_RATIO_SCALE);
 
         require(cvs <= rateRatioCVSThreshold); // "miner supplied exchange rate is not evenly discounted");
     }
@@ -897,7 +892,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             require(order.amountS > 0); // "amountS is zero");
             require(order.amountB > 0); // "amountB is zero");
 
-            state.fillAmountS = order.amountS.min256(state.availableAmountS);
+            state.fillAmountS = order.amountS.min(state.availableAmountS);
         }
     }
 
@@ -915,7 +910,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         return token.allowance(
             tokenOwner,
             _delegateAddress
-        ).min256(
+        ).min(
             token.balanceOf(tokenOwner)
         );
     }

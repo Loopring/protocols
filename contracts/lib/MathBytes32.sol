@@ -21,7 +21,7 @@ pragma solidity 0.4.18;
 /// @title Token Register Contract
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
-library Bytes32Lib {
+library MathBytes32 {
 
     function xorReduce(
         bytes32[]   arr,
