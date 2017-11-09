@@ -743,7 +743,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         OrderState[]  orders
         )
         private
-        view
+        pure 
     {
         uint smallestIdx = 0;
         uint i;

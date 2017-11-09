@@ -38,19 +38,8 @@ library MathUint {
         require(c >= a);
     }
 
-    function tolerantSub(
-        uint x,
-        uint y
-        ) 
-        internal
-        pure
-        returns (uint z)
-    {
-        if (x >= y) {
-            z = x - y;
-        } else {
-            z = 0;
-        }
+    function tolerantSub(uint a, uint b) internal pure returns (uint c) {
+        return (a >= b) ? a - b : 0;
     }
 
     /// @dev calculate the square of Coefficient of Variation (CV)
@@ -60,7 +49,7 @@ library MathUint {
         uint scale
         )
         internal
-        view
+        pure
         returns (uint)
     {
         uint len = arr.length;
