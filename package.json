@@ -7,15 +7,15 @@
     "test": "test"
   },
   "scripts": {
-    "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled; tsc",
-    "pretest": "solium --dir contracts",
-    "test": "npm run transpile; truffle test",
+    "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled; ./node_modules/.bin/tsc",
+    "pretest": "./node_modules/.bin/solium --dir contracts",
+    "test": "npm run transpile; ./node_modules/.bin/truffle test",
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
-    "testdocker": "npm run transpile; truffle test --network docker",
-    "compile": "rm -rf build/contracts; truffle compile",
-    "migrate": "npm run transpile; truffle migrate",
+    "testdocker": "npm run transpile; ./node_modules/.bin/truffle test --network docker",
+    "compile": "rm -rf build/contracts; ./node_modules/.bin/truffle compile",
+    "migrate": "npm run transpile; ./node_modules/.bin/truffle migrate",
     "deploy": "npm run migrate --network kovan",
-    "testrpc": "./testrpc.sh"
+    "testrpc": "./node_modules/.bin/testrpc"
   },
   "license": "ISC",
   "devDependencies": {
@@ -27,9 +27,9 @@
     "copyfiles": "^1.2.0",
     "dirty-chai": "^2.0.0",
     "ethereumjs-testrpc": "6.0.1",
+    "truffle": "4.0.1",
     "solc": "0.4.18",
     "solium": "^1.0.3",
-    "truffle": "^4.0.1",
     "typescript": "2.4.2",
     "web3-typescript-typings": "0.0.3",
     "zeppelin-solidity": "^1.2.0"
