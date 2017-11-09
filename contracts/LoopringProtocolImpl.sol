@@ -511,8 +511,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize; i++) {
             OrderState memory state = orders[i];
             OrderState memory prev = orders[(i + ringSize - 1) % ringSize];
-            // solium prevents me from splitting this line :-(
-            batchSize += (prev.splitB + state.splitS != 0 ? 1 : 0) + (state.lrcReward != 0 ? 1 : 0) + (state.lrcFee != 0 ? 1 : 0);
+
+            batchSize += (
+                prev.splitB + state.splitS != 0 ? 1 : 0 + (
+                state.lrcReward != 0 ? 1 : 0 ) + (
+                state.lrcFee != 0 ? 1 : 0)
+            );
         }
     }
 
@@ -690,13 +694,23 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 if (minerLrcSpendable >= state.lrcFee) {
                     uint split;
                     if (state.order.buyNoMoreThanAmountB) {
-                        split = (next.fillAmountS.mul(state.order.amountS) / state.order.amountB).sub(state.fillAmountS);
+                        split = (next.fillAmountS.mul(
+                            state.order.amountS
+                        ) / state.order.amountB).sub(
+                            state.fillAmountS
+                        );
                     } else {
-                        split = next.fillAmountS.sub(state.fillAmountS.mul(state.order.amountB) / state.order.amountS);
+                        split = next.fillAmountS.sub(
+                            state.fillAmountS.mul(
+                                state.order.amountB
+                            ) / state.order.amountS
+                        );
                     }
 
                     if (state.order.marginSplitPercentage != MARGIN_SPLIT_PERCENTAGE_BASE) {
-                        split = split.mul(state.order.marginSplitPercentage) / MARGIN_SPLIT_PERCENTAGE_BASE;
+                        split = split.mul(
+                            state.order.marginSplitPercentage
+                        ) / MARGIN_SPLIT_PERCENTAGE_BASE;
                     }
 
                     if (state.order.buyNoMoreThanAmountB) {
@@ -771,13 +785,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Default to the same smallest index
         newSmallestIdx = smallestIdx;
 
-        uint fillAmountB = state.fillAmountS.mul(state.rate.amountB) / state.rate.amountS;
+        uint fillAmountB = state.fillAmountS.mul(
+                state.rate.amountB
+            ) / state.rate.amountS;
 
         if (state.order.buyNoMoreThanAmountB) {
             if (fillAmountB > state.order.amountB) {
                 fillAmountB = state.order.amountB;
 
-                state.fillAmountS = fillAmountB.mul(state.rate.amountS) / state.rate.amountB;
+                state.fillAmountS = fillAmountB.mul(
+                        state.rate.amountS
+                    ) / state.rate.amountB;
+                
                 newSmallestIdx = i;
             }
         }

@@ -26,9 +26,9 @@ contract ERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
-    function balanceOf(address who) view returns (uint256);
-    function allowance(address owner, address spender) view returns (uint256);
-    function transfer(address to, uint256 value) returns (bool);
-    function transferFrom(address from, address to, uint256 value) returns (bool);
-    function approve(address spender, uint256 value) returns (bool);
+    function balanceOf(address who) view public returns (uint256);
+    function allowance(address owner, address spender) view public returns (uint256);
+    function transfer(address to, uint256 value) public returns (bool);
+    function transferFrom(address from, address to, uint256 value) public returns (bool);
+    function approve(address spender, uint256 value) public returns (bool);
 }
