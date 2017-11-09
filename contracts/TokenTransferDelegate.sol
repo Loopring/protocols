@@ -109,10 +109,10 @@ contract TokenTransferDelegate is Ownable {
         onlyOwner
         external
     {
-        AddressInfo storage addrInfo = addressInfos[addr];
-        if (addrInfo.index != 0) {
-            addrInfo.authorized = false;
-            AddressDeauthorized(addr, addrInfo.index);
+        uint index = addressInfos[addr].index;
+        if (index != 0) {
+            addressInfos[addr].authorized = false;
+            AddressDeauthorized(addr, index);
         }
     }
 
