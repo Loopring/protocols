@@ -1,0 +1,29 @@
+{
+    "extends": ["eslint:recommended"],
+    "parserOptions":
+    {
+        "ecmaVersion": 6
+    },
+    "env":
+    {
+        "node": true,
+        "jest": true
+    },
+    "plugins": [
+        "jest"
+    ],
+    "rules":
+    {
+        "brace-style": "off",
+        "new-cap": ["error",
+        {
+            "capIsNewExceptions": ["Polymer"]
+        }],
+        "no-var": "off",
+        "require-jsdoc": "off"
+    },
+    "globals":
+    {
+        "Polymer": true
+    }
+}
