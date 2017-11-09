@@ -23,10 +23,6 @@ pragma solidity 0.4.18;
 /// @dev uint utility functions
 library MathUint {
 
-    function min(uint a, uint b) internal pure returns (uint) {
-        return a < b ? a : b;
-    }
-
     function mul(uint a, uint b) internal pure returns (uint c) {
         c = a * b;
         require(a == 0 || c / a == b);
@@ -83,14 +79,10 @@ library MathUint {
         }
 
         uint cvs = 0;
+        uint s = 0;
         for (i = 0; i < len; i++) {
-            uint sub = 0;
-            if (arr[i] > avg) {
-                sub = arr[i] - avg;
-            } else {
-                sub = avg - arr[i];
-            }
-            cvs += mul(sub, sub);
+            s = arr[i] > avg ? arr[i] - avg : avg - arr[i];
+            cvs += mul(s, s);
         }
 
         return (mul(mul(cvs, scale) / avg, scale) / avg) / (len - 1);
