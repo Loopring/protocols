@@ -216,15 +216,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
     function submitRing(
-        address[2][]    addressList,
-        uint[7][]       uintArgsList,
-        uint8[2][]      uint8ArgsList,
-        bool[]          buyNoMoreThanAmountBList,
-        uint8[]         vList,
-        bytes32[]       rList,
-        bytes32[]       sList,
-        address         ringminer,
-        address         feeRecipient
+        address[2][]  addressList,
+        uint[7][]     uintArgsList,
+        uint8[2][]    uint8ArgsList,
+        bool[]        buyNoMoreThanAmountBList,
+        uint8[]       vList,
+        bytes32[]     rList,
+        bytes32[]     sList,
+        address       ringminer,
+        address       feeRecipient
         )
         public
     {
@@ -272,17 +272,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList[ringSize]
         );
 
+        address _delegateAddress = delegateAddress;
 
-       
         //Assemble input data into structs so we can pass them to other functions.
-        var orders = assembleOrders(
+        OrderState[] memory orders = assembleOrders(
             addressList,
             uintArgsList,
             uint8ArgsList,
             buyNoMoreThanAmountBList,
             vList,
             rList,
-            sList
+            sList,
+            _delegateAddress
         );
 
         if (feeRecipient == address(0)) {
@@ -295,7 +296,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orders,
             ringminer,
             feeRecipient,
-            ringhashAttributes[1]
+            ringhashAttributes[1],
+            _delegateAddress
         );
 
         ringIndex = ringIndex ^ ENTERED_MASK + 1;
@@ -329,7 +331,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         require(cancelAmount > 0); // "amount to cancel is zero");
 
-        var order = Order(
+        Order memory order = Order(
             addresses[0],
             addresses[1],
             addresses[2],
@@ -399,10 +401,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev Validate a ring.
     function verifyRingHasNoSubRing(
-        uint            ringSize,
-        OrderState[]    orders
+        uint          ringSize,
+        OrderState[]  orders
         )
-        internal
+        private
         pure
     {
         // Check the ring has no sub-ring.
@@ -415,10 +417,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function verifyTokensRegistered(
-        uint            ringSize,
-        address[2][]    addressList
+        uint          ringSize,
+        address[2][]  addressList
         )
-        internal
+        private
         view
     {
         // Extract the token addresses
@@ -434,14 +436,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function handleRing(
-        uint            ringSize,
-        bytes32         ringhash,
-        OrderState[]    orders,
-        address         miner,
-        address         feeRecipient,
-        bool            isRinghashReserved
+        uint          ringSize,
+        bytes32       ringhash,
+        OrderState[]  orders,
+        address       miner,
+        address       feeRecipient,
+        bool          isRinghashReserved,
+        address       _delegateAddress
         )
-        internal
+        private
     {
         // Do the hard work.
         verifyRingHasNoSubRing(ringSize, orders);
@@ -462,9 +465,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // `fillAmountS`.
         calculateRingFillAmount(ringSize, orders);
 
-        address _delegateAddress = delegateAddress;
         address _lrcTokenAddress = lrcTokenAddress;
-        
+
         // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
         // of `fillAmountS` shall be paid to matching order or miner as margin
         // split.
@@ -498,8 +500,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function calculateTransferBatchSize(
-        uint         ringSize,
-        OrderState[] orders
+        uint          ringSize,
+        OrderState[]  orders
         )
         private
         pure
@@ -507,104 +509,64 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         batchSize = ringSize;
         for (uint i = 0; i < ringSize; i++) {
-            var state = orders[i];
-            var prev = orders[(i + ringSize - 1) % ringSize];
-
-            if (prev.splitB + state.splitS > 0) {
-                batchSize++;
-            }
-            if (state.lrcReward > 0) {
-                batchSize++;
-            }
-            if (state.lrcFee > 0) {
-                batchSize++;
-            }
+            OrderState memory state = orders[i];
+            OrderState memory prev = orders[(i + ringSize - 1) % ringSize];
+            // solium prevents me from splitting this line :-(
+            batchSize += (prev.splitB + state.splitS != 0 ? 1 : 0) + (state.lrcReward != 0 ? 1 : 0) + (state.lrcFee != 0 ? 1 : 0);
         }
     }
 
-    function fillTransferBatchItem(
-        bytes32[]   memory batch,
-        uint        position,
-        address     token,
-        address     from,
-        address     to,
-        uint        value
-        )
-        private
-        pure
-    {
-        batch[position] = bytes32(token);
-        batch[position + 1] = bytes32(from);
-        batch[position + 2] = bytes32(to);
-        batch[position + 3] = bytes32(value);
-    }
-
     function createTransferBatch(
-        address         _lrcTokenAddress,
-        uint            ringSize,
-        OrderState[]    orders,
-        address         feeRecipient
+        uint          ringSize,
+        OrderState[]  orders,
+        address       feeRecipient,
+        address       _lrcTokenAddress
         )
         private
         pure
-        returns (bytes32[])
+        returns (bytes32[] memory batch)
     {
         uint batchSize = calculateTransferBatchSize(ringSize, orders);
-        bytes32[] memory batch = new bytes32[](batchSize * 4); // ringSize * (token + from + to + value)
-        uint position = 0;
+        batch = new bytes32[](batchSize * 4); // ringSize * (token + from + to + value)
+        uint p = 0;
 
         for (uint i = 0; i < ringSize; i++) {
-            var state = orders[i];
-            var prev = orders[(i + ringSize - 1) % ringSize];
+            OrderState memory state = orders[i];
+            OrderState memory prev = orders[(i + ringSize - 1) % ringSize];
 
             // Pay tokenS to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
-            fillTransferBatchItem(
-                batch,
-                position,
-                state.order.tokenS,
-                state.order.owner,
-                prev.order.owner,
-                state.fillAmountS - prev.splitB
-            );
-            position += 4;
+            batch[p] = bytes32(state.order.tokenS);
+            batch[p + 1] = bytes32(state.order.owner);
+            batch[p + 2] = bytes32(prev.order.owner);
+            batch[p + 3] = bytes32(state.fillAmountS - prev.splitB);
+            p += 4;
 
             uint splitSum = prev.splitB + state.splitS;
-            if (splitSum > 0) {
-                fillTransferBatchItem(
-                    batch,
-                    position,
-                    state.order.tokenS,
-                    state.order.owner,
-                    feeRecipient,
-                    splitSum
-                );
-                position += 4;
+
+            if (splitSum != 0) {
+                batch[p] = bytes32(state.order.tokenS);
+                batch[p + 1] = bytes32(state.order.owner);
+                batch[p + 2] = bytes32(feeRecipient);
+                batch[p + 3] = bytes32(splitSum);
+                p += 4;
             }
 
             // Pay LRC
-            if (state.lrcReward > 0) {
-                fillTransferBatchItem(
-                    batch,
-                    position,
-                    _lrcTokenAddress,
-                    feeRecipient,
-                    state.order.owner,
-                    state.lrcReward
-                );
-                position += 4;
+            if (state.lrcReward != 0) {
+                batch[p] = bytes32(_lrcTokenAddress);
+                batch[p + 1] = bytes32(feeRecipient);
+                batch[p + 2] = bytes32(state.order.owner);
+                batch[p + 3] = bytes32(state.lrcReward);
+                p += 4;
             }
 
-            if (state.lrcFee > 0) {
-                fillTransferBatchItem(
-                    batch,
-                    position,
-                    _lrcTokenAddress,
-                    state.order.owner,
-                    feeRecipient,
-                    state.lrcFee
-                );
-                position += 4;
+            if (state.lrcFee != 0) {
+                batch[p] = bytes32(_lrcTokenAddress);
+                batch[p + 1] = bytes32(state.order.owner);
+                batch[p + 2] = bytes32(feeRecipient);
+                batch[p + 3] = bytes32(state.lrcFee);
+                p += 4;
             }
         }
 
@@ -622,9 +584,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
     {
         for (uint i = 0; i < ringSize; i++) {
-            var state = orders[i];
-            var prev = orders[(i + ringSize - 1) % ringSize];
-            var next = orders[(i + 1) % ringSize];
+            OrderState memory state = orders[i];
+            OrderState memory prev = orders[(i + ringSize - 1) % ringSize];
+            OrderState memory next = orders[(i + 1) % ringSize];
 
             // Update fill records
             if (state.order.buyNoMoreThanAmountB) {
@@ -647,23 +609,23 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.lrcFee
             );
         }
-      
+
         TokenTransferDelegate(_delegateAddress).batchTransferToken(
             createTransferBatch(
-                _lrcTokenAddress,
                 ringSize,
                 orders,
-                feeRecipient
+                feeRecipient,
+                _lrcTokenAddress
             )
         );
     }
 
     /// @dev Verify miner has calculte the rates correctly.
     function verifyMinerSuppliedFillRates(
-        uint            ringSize,
-        OrderState[]    orders
+        uint          ringSize,
+        OrderState[]  orders
         )
-        internal
+        private
         view
     {
         uint[] memory rateRatios = new uint[](ringSize);
@@ -684,13 +646,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev Calculate each order's fee or LRC reward.
     function calculateRingFees(
-        uint            ringSize,
-        OrderState[]    orders,
-        address         feeRecipient,
-        address         _delegateAddress,
-        address         _lrcTokenAddress
+        uint          ringSize,
+        OrderState[]  orders,
+        address       feeRecipient,
+        address       _delegateAddress,
+        address       _lrcTokenAddress
         )
-        internal
+        private
         view
     {
         uint minerLrcSpendable = getSpendable(
@@ -700,8 +662,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
 
         for (uint i = 0; i < ringSize; i++) {
-            var state = orders[i];
-            var next = orders[(i + 1) % ringSize];
+            OrderState memory state = orders[i];
+            OrderState memory next = orders[(i + 1) % ringSize];
 
             uint lrcSpendable = getSpendable(
                 _delegateAddress,
@@ -762,10 +724,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev Calculate each order's fill amount.
     function calculateRingFillAmount(
-        uint            ringSize,
-        OrderState[]    orders
+        uint          ringSize,
+        OrderState[]  orders
         )
-        internal
+        private
         view
     {
         uint smallestIdx = 0;
@@ -796,14 +758,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @return The smallest order's index.
     function calculateOrderFillAmount(
-        OrderState  state,
-        OrderState  next,
-        uint        i,
-        uint        j,
-        uint        smallestIdx
+        OrderState        state,
+        OrderState        next,
+        uint              i,
+        uint              j,
+        uint              smallestIdx
         )
-        internal
-        view
+        private
+        pure
         returns (uint newSmallestIdx)
     {
         // Default to the same smallest index
@@ -832,15 +794,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Scale down all orders based on historical fill or cancellation
     ///      stats but key the order's original exchange rate.
     function scaleRingBasedOnHistoricalRecords(
-        uint            ringSize,
-        OrderState[]    orders
+        uint          ringSize,
+        OrderState[]  orders
         )
-        internal
+        private
         view
     {
         for (uint i = 0; i < ringSize; i++) {
-            var state = orders[i];
-            var order = state.order;
+            OrderState memory state = orders[i];
+            Order memory order = state.order;
             uint amount;
 
             if (order.buyNoMoreThanAmountB) {
@@ -876,7 +838,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address tokenAddress,
         address tokenOwner
         )
-        internal
+        private
         view
         returns (uint)
     {
@@ -891,16 +853,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev verify input data's basic integrity.
     function verifyInputDataIntegrity(
-        uint            ringSize,
-        address[2][]    addressList,
-        uint[7][]       uintArgsList,
-        uint8[2][]      uint8ArgsList,
-        bool[]          buyNoMoreThanAmountBList,
-        uint8[]         vList,
-        bytes32[]       rList,
-        bytes32[]       sList
+        uint          ringSize,
+        address[2][]  addressList,
+        uint[7][]     uintArgsList,
+        uint8[2][]    uint8ArgsList,
+        bool[]        buyNoMoreThanAmountBList,
+        uint8[]       vList,
+        bytes32[]     rList,
+        bytes32[]     sList
         )
-        internal
+        private
         pure
     {
         require(ringSize == addressList.length); // "ring data is inconsistent - addressList");
@@ -921,21 +883,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev        assmble order parameters into Order struct.
     /// @return     A list of orders.
     function assembleOrders(
-        address[2][]    addressList,
-        uint[7][]       uintArgsList,
-        uint8[2][]      uint8ArgsList,
-        bool[]          buyNoMoreThanAmountBList,
-        uint8[]         vList,
-        bytes32[]       rList,
-        bytes32[]       sList
+        address[2][]  addressList,
+        uint[7][]     uintArgsList,
+        uint8[2][]    uint8ArgsList,
+        bool[]        buyNoMoreThanAmountBList,
+        uint8[]       vList,
+        bytes32[]     rList,
+        bytes32[]     sList,
+        address       _delegateAddress
         )
-        internal
+        private
         view
-        returns (OrderState[])
+        returns (OrderState[] memory orders)
     {
-        var ringSize = addressList.length;
-        var orders = new OrderState[](ringSize);
-        // address _delegateAddress = delegateAddress;
+        uint ringSize = addressList.length;
+        orders = new OrderState[](ringSize);
         Order memory order;
         bytes32 orderHash;
 
@@ -979,7 +941,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 orderHash,
                 uint8ArgsList[i][1],  // feeSelection
                 Rate(uintArgsList[i][6], order.amountB),
-                getSpendable(delegateAddress, order.tokenS, order.owner), 
+                getSpendable(_delegateAddress, order.tokenS, order.owner),
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
@@ -995,12 +957,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev validate order's parameters are OK.
     function validateOrder(
-        Order   order,
-        uint    timestamp,
-        uint    ttl,
-        uint    salt
+        Order        order,
+        uint         timestamp,
+        uint         ttl,
+        uint         salt
         )
-        internal
+        private
         view
     {
         require(order.owner != address(0)); // "invalid order owner");
@@ -1018,12 +980,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
     function calculateOrderHash(
-        Order   order,
-        uint    timestamp,
-        uint    ttl,
-        uint    salt
+        Order        order,
+        uint         timestamp,
+        uint         ttl,
+        uint         salt
         )
-        internal
+        private
         view
         returns (bytes32)
     {
@@ -1051,7 +1013,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32 r,
         bytes32 s
         )
-        internal
+        private
         pure
     {
         require(

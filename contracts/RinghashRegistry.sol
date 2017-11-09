@@ -111,7 +111,7 @@ contract RinghashRegistry {
         bytes32[]   rList,
         bytes32[]   sList
         )
-        public
+        external
         view
         returns (bytes32 ringhash, bool[2] memory attributes)
     {

@@ -32,7 +32,7 @@ contract TokenRegistry is Ownable {
     mapping (string => address) tokenSymbolMap;
 
     function registerToken(address _token, string _symbol)
-        public
+        external
         onlyOwner
     {
         require(_token != address(0));
@@ -44,7 +44,7 @@ contract TokenRegistry is Ownable {
     }
 
     function unregisterToken(address _token, string _symbol)
-        public
+        external
         onlyOwner
     {
         require(tokenSymbolMap[_symbol] == _token);
@@ -61,7 +61,7 @@ contract TokenRegistry is Ownable {
 
     function isTokenRegisteredBySymbol(string symbol)
         public
-        constant
+        view
         returns (bool)
     {
         return tokenSymbolMap[symbol] != address(0);
@@ -69,7 +69,7 @@ contract TokenRegistry is Ownable {
 
     function isTokenRegistered(address _token)
         public
-        constant
+        view
         returns (bool)
     {
         return tokenMap[_token];
@@ -77,7 +77,7 @@ contract TokenRegistry is Ownable {
 
     function areAllTokensRegistered(address[] tokenList)
         public
-        constant
+        view
         returns (bool)
     {
         for (uint i = 0; i < tokenList.length; i++) {

@@ -78,7 +78,7 @@ contract TokenTransferDelegate is Ownable {
     /// @param addr A loopring protocol address.
     function authorizeAddress(address addr)
         onlyOwner
-        public
+        external
     {
         AddressInfo storage addrInfo = addressInfos[addr];
 
@@ -107,7 +107,7 @@ contract TokenTransferDelegate is Ownable {
     /// @param addr A loopring protocol address.
     function deauthorizeAddress(address addr)
         onlyOwner
-        public
+        external
     {
         AddressInfo storage addrInfo = addressInfos[addr];
         if (addrInfo.index != 0) {
@@ -125,7 +125,7 @@ contract TokenTransferDelegate is Ownable {
     }
 
     function getLatestAuthorizedAddresses(uint max)
-        public
+        external
         view
         returns (address[] memory addresses)
     {
@@ -155,7 +155,7 @@ contract TokenTransferDelegate is Ownable {
         address to,
         uint    value)
         onlyAuthorized
-        public
+        external
     {
         if (value > 0 && from != to) {
             require(
@@ -166,21 +166,26 @@ contract TokenTransferDelegate is Ownable {
 
     function batchTransferToken(bytes32[] batch)
         onlyAuthorized
-        public
+        external
     {
-        for (uint i = 0; i < batch.length; i += 4) {
-            bytes32 from = batch[i + 1];
-            bytes32 to = batch[i + 2];
-            uint value = uint(batch[i + 3]);
+        bytes32 from;
+        bytes32 to;
+        uint value;
 
-            if (value > 0 && from != to) {
-                require(
-                    ERC20(address(batch[i])).transferFrom(
-                        address(from),
-                        address(to),
-                        value
-                    )
-                );
+        for (uint i = 0; i < batch.length; i += 4) {
+            from = batch[i + 1];
+            to = batch[i + 2];
+            if (from != to) {
+                value = uint(batch[i + 3]);
+                if (value != 0) {
+                    require(
+                        ERC20(address(batch[i])).transferFrom(
+                            address(from),
+                            address(to),
+                            value
+                        )
+                    );
+                }
             }
         }
     }
