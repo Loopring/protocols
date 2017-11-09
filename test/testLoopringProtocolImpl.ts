@@ -1,12 +1,12 @@
-import * as _ from 'lodash';
-import { BigNumber } from 'bignumber.js';
-import { Artifacts } from '../util/artifacts';
-import { OrderParams } from '../util/types';
-import { Order } from '../util/order';
-import { Ring } from '../util/ring';
-import { RingFactory } from '../util/ring_factory';
-import { ProtocolSimulator } from '../util/protocol_simulator';
-import promisify = require('es6-promisify');
+import { BigNumber } from "bignumber.js";
+import promisify = require("es6-promisify");
+import * as _ from "lodash";
+import { Artifacts } from "../util/artifacts";
+import { Order } from "../util/order";
+import { ProtocolSimulator } from "../util/protocol_simulator";
+import { Ring } from "../util/ring";
+import { RingFactory } from "../util/ring_factory";
+import { OrderParams } from "../util/types";
 
 const {
   LoopringProtocolImpl,
@@ -15,7 +15,7 @@ const {
   DummyToken,
 } = new Artifacts(artifacts);
 
-contract('LoopringProtocolImpl', (accounts: string[])=>{
+contract("LoopringProtocolImpl", (accounts: string[]) => {
   const owner = accounts[0];
   const order1Owner = accounts[1];
   const order2Owner = accounts[2];
@@ -27,9 +27,6 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   let loopringProtocolImpl: any;
   let tokenRegistry: any;
   let tokenTransferDelegate: any;
-  let order1: Order;
-  let order2: Order;
-  let ring: Ring;
   let lrcAddress: string;
   let eosAddress: string;
   let neoAddress: string;
@@ -47,7 +44,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     const tokenBalanceStr = await token.balanceOf(addr);
     const balance = new BigNumber(tokenBalanceStr);
     return balance;
-  }
+  };
 
   const getEthBalanceAsync = async (addr: string) => {
     const balanceStr = await promisify(web3.eth.getBalance)(addr);
@@ -56,26 +53,26 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
   };
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, precision: number = 8) => {
-    const numStr1 = (n1/1e18).toFixed(precision);
-    const numStr2 = (n2/1e18).toFixed(precision);
+    const numStr1 = (n1 / 1e18).toFixed(precision);
+    const numStr2 = (n2 / 1e18).toFixed(precision);
 
     return assert.equal(Number(numStr1), Number(numStr2));
-  }
+  };
 
   const clear = async (tokens: any[], addresses: string[]) => {
-    for (let i = 0; i < tokens.length; i ++) {
-      for (let j = 0; j < addresses.length; j++) {
-        await tokens[i].setBalance(addresses[j], 0, {from: owner});
+    for (const token of tokens) {
+      for (const address of addresses) {
+        await token.setBalance(address, 0, {from: owner});
       }
     }
-  }
+  };
 
   const approve = async (tokens: any[], addresses: string[], amounts: number[]) => {
     for (let i = 0; i < tokens.length; i++) {
       await tokens[i].approve(delegateAddr, 0, {from: addresses[i]});
       await tokens[i].approve(delegateAddr, amounts[i], {from: addresses[i]});
     }
-  }
+  };
 
   before( async () => {
     [loopringProtocolImpl, tokenRegistry, tokenTransferDelegate] = await Promise.all([
@@ -112,15 +109,15 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
     // approve only once for all test cases.
     const allTokens = [lrc, eos, neo, qtum];
     const allAddresses = [order1Owner, order2Owner, order3Owner, feeRecepient];
-    for (let i = 0; i < allTokens.length; i++) {
-      for (let j = 0; j < allAddresses.length; j++) {
-        await allTokens[i].approve(delegateAddr, web3.toWei(1000000), {from: allAddresses[j]});
+    for (const token of allTokens) {
+      for (const address of allAddresses) {
+        await token.approve(delegateAddr, web3.toWei(1000000), {from: address});
       }
     }
   });
 
-  describe('submitRing', () => {
-    it('should be able to fill ring with 2 orders', async () => {
+  describe("submitRing", () => {
+    it("should be able to fill ring with 2 orders", async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
@@ -144,8 +141,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                         {from: owner});
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
-      const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber())/1e18;
-      //console.log("all gas cost for 2 orders 01(ether):", allGas);
+      const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber()) / 1e18;
+      // console.log("all gas cost for 2 orders 01(ether):", allGas);
 
       const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
@@ -170,7 +167,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
 
-    it('should be able to fill ring with 2 orders where fee selection type is margin split', async () => {
+    it("should be able to fill ring with 2 orders where fee selection type is margin split", async () => {
       const ring = await ringFactory.generateSize2Ring02(order1Owner, order2Owner, ringOwner);
       const feeSelectionList = [1, 1];
 
@@ -218,7 +215,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo], [order1Owner, order2Owner, feeRecepient]);
     });
 
-    it('should be able to fill orders where fee selection type is margin split and lrc', async () => {
+    it("should be able to fill orders where fee selection type is margin split and lrc", async () => {
       const ring = await ringFactory.generateSize2Ring03(order1Owner, order2Owner, ringOwner);
 
       const feeSelectionList = [1, 0];
@@ -266,7 +263,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
 
-    it('should be able to fill ring with 3 orders', async () => {
+    it("should be able to fill ring with 3 orders", async () => {
       const ring = await ringFactory.generateSize3Ring01(order1Owner, order2Owner, order3Owner, ringOwner);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
@@ -341,7 +338,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
 
-    it('should be able to partial fill ring with 3 orders', async () => {
+    it("should be able to partial fill ring with 3 orders", async () => {
       const ring = await ringFactory.generateSize3Ring02(order1Owner, order2Owner, order3Owner, ringOwner, 100);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
@@ -375,7 +372,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                        p.feeRecepient,
                                                        {from: owner});
 
-      //console.log("tx.receipt.logs: ", tx.receipt.logs);
+      // console.log("tx.receipt.logs: ", tx.receipt.logs);
 
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
       const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
@@ -424,7 +421,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
       await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
 
-    it('should be able to switch fee selection to margin-split(100%) when lrcFee is 0', async () => {
+    it("should be able to switch fee selection to margin-split(100%) when lrcFee is 0", async () => {
       const ring = await ringFactory.generateSize3Ring02(order1Owner, order2Owner, order3Owner, ringOwner, 200);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
@@ -460,7 +457,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                        p.feeRecepient,
                                                        {from: owner});
 
-      //console.log("tx.receipt.logs: ", tx.receipt.logs);
+      // console.log("tx.receipt.logs: ", tx.receipt.logs);
 
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
       const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
@@ -511,9 +508,8 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
 
   });
 
-
-  describe('cancelOrder', () => {
-    it('should be able to set order cancelled amount by order owner', async () => {
+  describe("cancelOrder", () => {
+    it("should be able to set order cancelled amount by order owner", async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(100e18);
@@ -542,7 +538,7 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
         cancelAmount.toNumber(), "cancelled amount not match");
     });
 
-    it('should not be able to cancell order by other address', async () => {
+    it("should not be able to cancell order by other address", async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(100e18);
@@ -566,18 +562,18 @@ contract('LoopringProtocolImpl', (accounts: string[])=>{
                                                           {from: order2Owner});
       } catch (err) {
         const errMsg = `${err}`;
-        assert(_.includes(errMsg, 'Error: VM Exception while processing transaction: revert'), `Expected contract to throw, got: ${err}`);
+        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+               `Expected contract to throw, got: ${err}`);
       }
     });
   });
 
-
-  describe('setCutoff', () => {
-    it('should be able to set cutoff timestamp for msg sender', async () => {
+  describe("setCutoff", () => {
+    it("should be able to set cutoff timestamp for msg sender", async () => {
       await loopringProtocolImpl.setCutoff(new BigNumber(1508566125), {from: order1Owner});
-      let cutoff = await loopringProtocolImpl.cutoffs(order1Owner);
+      const cutoff = await loopringProtocolImpl.cutoffs(order1Owner);
       assert.equal(cutoff.toNumber(), 1508566125, "cutoff not set correctly");
     });
   });
 
-})
+});

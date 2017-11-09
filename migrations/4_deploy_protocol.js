@@ -5,7 +5,7 @@ var LoopringProtocolImpl    = artifacts.require("./LoopringProtocolImpl");
 
 module.exports = function(deployer, network, accounts) {
 
-  if (network == 'live') {
+  if (network === "live") {
     deployer.then(() => {
       return Promise.all([
         TokenRegistry.deployed(),

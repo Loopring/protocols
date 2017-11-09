@@ -1,7 +1,7 @@
-import * as _ from 'lodash';
-import { Artifacts } from '../util/artifacts';
-import { Ring } from '../util/ring';
-import { RingFactory } from '../util/ring_factory';
+import * as _ from "lodash";
+import { Artifacts } from "../util/artifacts";
+import { Ring } from "../util/ring";
+import { RingFactory } from "../util/ring_factory";
 
 const {
   LoopringProtocolImpl,
@@ -10,7 +10,7 @@ const {
   DummyToken,
 } = new Artifacts(artifacts);
 
-contract('RinghashRegistry', (accounts: string[])=>{
+contract("RinghashRegistry", (accounts: string[]) => {
   const owner = accounts[0];
   const ringOwner = accounts[0];
   const order1Owner = accounts[1];
@@ -50,12 +50,12 @@ contract('RinghashRegistry', (accounts: string[])=>{
                                   currBlockTimeStamp);
     const blocksToLiveBN = await ringhashRegistry.blocksToLive();
     blocksToLive = blocksToLiveBN.toNumber();
-    //console.log("blocksToLive:", blocksToLive);
+    // console.log("blocksToLive:", blocksToLive);
   });
 
-  describe('submitRinghash', () => {
+  describe("submitRinghash", () => {
 
-    it('should be able to submit a ring hash', async () => {
+    it("should be able to submit a ring hash", async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
 
@@ -70,21 +70,22 @@ contract('RinghashRegistry', (accounts: string[])=>{
       assert.equal(isReserved, true, "ring hash not found after summitted");
     });
 
-    it('should be able to submit the same ring hash again by same ringminer', async () => {
+    it("should be able to submit the same ring hash again by same ringminer", async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const ringHash = ring.getRingHashHex();
       const canSubmit1 = await ringhashRegistry.canSubmit(ringHash, ringOwner, {from: owner});
       assert.equal(canSubmit1, true, "can not submit again after summitted by same address");
     });
 
-    it('should not be able to submit the same ring hash again by another address', async () => {
+    it("should not be able to submit the same ring hash again by another address", async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const ringHash = ring.getRingHashHex();
       const canSubmit2 = await ringhashRegistry.canSubmit(ringHash, order1Owner, {from: owner});
       assert.equal(canSubmit2, false, "can submit again after summitted by another address");
     });
 
-    it('should not be able to submit a ring hash by a different ringminer if the same hash has submmitted within 100 blocks', async () => {
+    it(`should not be able to submit a ring hash by a different ringminer
+        if the same hash has submmitted within 100 blocks`, async () => {
       try {
         const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
         const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
@@ -96,7 +97,8 @@ contract('RinghashRegistry', (accounts: string[])=>{
                                                          p.sList);
       } catch (err) {
         const errMsg = `${err}`;
-        assert(_.includes(errMsg, 'Error: VM Exception while processing transaction: revert'), `Expected contract to throw, got: ${err}`);
+        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+               `Expected contract to throw, got: ${err}`);
       }
 
     });

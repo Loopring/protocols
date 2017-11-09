@@ -1,7 +1,7 @@
-import { BigNumber } from 'bignumber.js';
-import { OrderParams, LoopringSubmitParams } from '../util/types';
-import { Order } from './order';
-import { Ring } from './ring';
+import { BigNumber } from "bignumber.js";
+import { LoopringSubmitParams, OrderParams } from "../util/types";
+import { Order } from "./order";
+import { Ring } from "./ring";
 
 export class RingFactory {
   public loopringProtocolAddr: string;
@@ -112,7 +112,7 @@ export class RingFactory {
   public async generateSize2Ring03(order1Owner: string,
                                    order2Owner: string,
                                    ringOwner: string) {
-    const orderPrams1 = {
+    const orderPrams1: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.eosAddress,
       tokenB: this.neoAddress,
@@ -126,7 +126,7 @@ export class RingFactory {
       marginSplitPercentage: 65,
     };
 
-    const orderPrams2 = {
+    const orderPrams2: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.neoAddress,
       tokenB: this.eosAddress,
@@ -155,7 +155,7 @@ export class RingFactory {
                                    order2Owner: string,
                                    order3Owner: string,
                                    ringOwner: string) {
-    const orderPrams1 = {
+    const orderPrams1: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.eosAddress,
       tokenB: this.neoAddress,
@@ -169,7 +169,7 @@ export class RingFactory {
       marginSplitPercentage: 55,
     };
 
-    const orderPrams2 = {
+    const orderPrams2: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.neoAddress,
       tokenB: this.qtumAddress,
@@ -183,7 +183,7 @@ export class RingFactory {
       marginSplitPercentage: 0,
     };
 
-    const orderPrams3 = {
+    const orderPrams3: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.qtumAddress,
       tokenB: this.eosAddress,
@@ -215,7 +215,7 @@ export class RingFactory {
                                    order3Owner: string,
                                    ringOwner: string,
                                    salt: number) {
-    const orderPrams1 = {
+    const orderPrams1: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.eosAddress,
       tokenB: this.neoAddress,
@@ -229,7 +229,7 @@ export class RingFactory {
       marginSplitPercentage: 55,
     };
 
-    const orderPrams2 = {
+    const orderPrams2: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.neoAddress,
       tokenB: this.qtumAddress,
@@ -243,7 +243,7 @@ export class RingFactory {
       marginSplitPercentage: 0,
     };
 
-    const orderPrams3 = {
+    const orderPrams3: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.qtumAddress,
       tokenB: this.eosAddress,
@@ -272,14 +272,14 @@ export class RingFactory {
 
   public caculateRateAmountS(ring: Ring) {
     let rate: number = 1;
-    let result: BigNumber[] = [];
+    const result: BigNumber[] = [];
     const size = ring.orders.length;
     for (let i = 0; i < size; i++) {
       const order = ring.orders[i];
       rate = rate * order.params.amountS.toNumber() / order.params.amountB.toNumber();
     }
 
-    rate = Math.pow(rate, -1/size)
+    rate = Math.pow(rate, -1 / size);
 
     for (let i = 0; i < size; i ++) {
       const order = ring.orders[i];
@@ -295,16 +295,16 @@ export class RingFactory {
                                 feeSelectionList: number[],
                                 feeRecepient: string) {
     const ringSize = ring.orders.length;
-    let addressList: string[][] = [];
-    let uintArgsList: BigNumber[][] = [];
-    let uint8ArgsList: number[][] = [];
-    let buyNoMoreThanAmountBList: boolean[] = [];
-    let vList: number[] = [];
-    let rList: string[] = [];
-    let sList: string[] = [];
+    const addressList: string[][] = [];
+    const uintArgsList: BigNumber[][] = [];
+    const uint8ArgsList: number[][] = [];
+    const buyNoMoreThanAmountBList: boolean[] = [];
+    const vList: number[] = [];
+    const rList: string[] = [];
+    const sList: string[] = [];
 
     const rateAmountSList = this.caculateRateAmountS(ring);
-    //console.log("rateAmountSList", rateAmountSList);
+    // console.log("rateAmountSList", rateAmountSList);
 
     for (let i = 0; i < ringSize; i++) {
       const order = ring.orders[i];
@@ -318,12 +318,12 @@ export class RingFactory {
         order.params.ttl,
         order.params.salt,
         order.params.lrcFee,
-        rateAmountSList[i]
+        rateAmountSList[i],
       ];
       uintArgsList.push(uintArgsListItem);
 
       const uint8ArgsListItem = [order.params.marginSplitPercentage, feeSelectionList[i]];
-      //console.log("uint8ArgsListItem", uint8ArgsListItem);
+      // console.log("uint8ArgsListItem", uint8ArgsListItem);
 
       uint8ArgsList.push(uint8ArgsListItem);
 
@@ -339,18 +339,18 @@ export class RingFactory {
     sList.push(ring.s);
 
     const submitParams = {
-      addressList: addressList,
-      uintArgsList: uintArgsList,
-      uint8ArgsList: uint8ArgsList,
-      buyNoMoreThanAmountBList: buyNoMoreThanAmountBList,
-      vList: vList,
-      rList: rList,
-      sList: sList,
+      addressList,
+      uintArgsList,
+      uint8ArgsList,
+      buyNoMoreThanAmountBList,
+      vList,
+      rList,
+      sList,
       ringOwner: ring.owner,
-      feeRecepient: feeRecepient
-    }
+      feeRecepient,
+    };
 
     return submitParams;
   }
 
-};
+}

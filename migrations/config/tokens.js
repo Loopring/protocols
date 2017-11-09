@@ -2,31 +2,31 @@
 module.exports = {
   development: [
     {
-      name: 'Loopring Coin',
-      symbol: 'LRC',
       decimals: 18,
+      name: "Loopring Coin",
+      symbol: "LRC",
     },
     {
-      name: 'EOS',
-      symbol: 'EOS',
       decimals: 18,
+      name: "EOS",
+      symbol: "EOS",
     },
     {
-      name: 'Augur Reputation Token',
-      symbol: 'REP',
       decimals: 18,
+      name: "Augur Reputation Token",
+      symbol: "REP",
     },
     {
-      name: 'NEO',
-      symbol: 'NEO',
       decimals: 18,
+      name: "NEO",
+      symbol: "NEO",
     },
     {
-      name: 'QTUM',
-      symbol: 'QTUM',
       decimals: 18,
+      name: "QTUM",
+      symbol: "QTUM",
     },
   ],
 
   live: [ ],
-}
+};

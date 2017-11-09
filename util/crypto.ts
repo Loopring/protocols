@@ -1,8 +1,8 @@
-import * as _ from 'lodash';
-import BN = require('bn.js');
-import ethUtil = require('ethereumjs-util');
-import ABI = require('ethereumjs-abi');
-import { BigNumber } from 'bignumber.js';
+import { BigNumber } from "bignumber.js";
+import BN = require("bn.js");
+import ABI = require("ethereumjs-abi");
+import ethUtil = require("ethereumjs-util");
+import * as _ from "lodash";
 
 export const crypto = {
   /*
@@ -18,18 +18,18 @@ export const crypto = {
     _.each(args, (arg, i) => {
       const isNumber = _.isFinite(arg);
       if (isNumber) {
-        argTypes.push('uint8');
+        argTypes.push("uint8");
       } else if ((arg as BigNumber.BigNumber).isBigNumber) {
-        argTypes.push('uint256');
+        argTypes.push("uint256");
         args[i] = new BN(arg.toString(10), 10);
       } else if (ethUtil.isValidAddress(arg)) {
-        argTypes.push('address');
+        argTypes.push("address");
       } else if (_.isBuffer(arg)) {
-        argTypes.push('bytes');
+        argTypes.push("bytes");
       } else if (_.isString(arg)) {
-        argTypes.push('string');
+        argTypes.push("string");
       } else if  (_.isBoolean(arg)) {
-        argTypes.push('bool');
+        argTypes.push("bool");
       } else {
         throw new Error(`Unable to guess arg type: ${arg}`);
       }

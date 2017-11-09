@@ -1,0 +1,19 @@
+{
+  "defaultSeverity": "error",
+  "extends": [
+    "tslint:recommended"
+  ],
+  "cliOptions": {
+    "exclude": [
+      "./util/submit_rings.ts"
+    ]
+  },
+  "jsRules": {},
+  "rules": {
+    "no-console": false,
+    "no-bitwise": false,
+    "object-literal-sort-keys": false,
+    "interface-name": false
+  },
+  "rulesDirectory": []
+}

@@ -1,13 +1,12 @@
-var tokenInfo               = require('./config/tokens.js');
-var Bluebird                = require('bluebird');
-var _                       = require('lodash');
+var tokenInfo               = require("./config/tokens.js");
+var Bluebird                = require("bluebird");
+var _                       = require("lodash");
 var DummyToken              = artifacts.require("./test/DummyToken");
 var TokenRegistry           = artifacts.require("./TokenRegistry");
 
 module.exports = function(deployer, network, accounts) {
-
-  if (network == 'live') {
-
+  if (network === "live") {
+    // ignore
   } else {
     var devTokenInfos = tokenInfo.development;
     var totalSupply = 1e+26;
@@ -28,4 +27,5 @@ module.exports = function(deployer, network, accounts) {
 
     });
   }
-}
+
+};

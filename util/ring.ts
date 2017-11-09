@@ -1,9 +1,9 @@
-import * as _ from 'lodash';
-import ethUtil = require('ethereumjs-util');
-import promisify = require('es6-promisify');
-import Web3 = require('web3');
-import { crypto } from './crypto';
-import { Order } from './order';
+import promisify = require("es6-promisify");
+import ethUtil = require("ethereumjs-util");
+import * as _ from "lodash";
+import Web3 = require("web3");
+import { crypto } from "./crypto";
+import { Order } from "./order";
 
 export class Ring {
   public owner: string;
@@ -29,7 +29,7 @@ export class Ring {
 
   public isValidSignature() {
     if (_.isUndefined(this.v) || _.isUndefined(this.r) || _.isUndefined(this.s)) {
-      throw new Error('Cannot call isValidSignature on unsigned order');
+      throw new Error("Cannot call isValidSignature on unsigned order");
     }
     const ringHash = this.getRingHash();
     const msgHash = ethUtil.hashPersonalMessage(ringHash);
@@ -46,7 +46,7 @@ export class Ring {
 
   public async signAsync() {
     const ringHash = this.getRingHash();
-    //console.log("ring hash: ", ethUtil.bufferToHex(ringHash));
+    // console.log("ring hash: ", ethUtil.bufferToHex(ringHash));
     const signature = await promisify(this.web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(ringHash));
     const { v, r, s } = ethUtil.fromRpcSig(signature);
     this.v = v;
@@ -56,9 +56,9 @@ export class Ring {
 
   public getRingHash() {
     const size = this.orders.length;
-    let vList: number[] = [];
-    let rList: string[] = [];
-    let sList: string[] = [];
+    const vList: number[] = [];
+    const rList: string[] = [];
+    const sList: string[] = [];
 
     for (let i = 0; i < size; i++) {
       vList[i] = this.orders[i].params.v;
@@ -94,7 +94,7 @@ export class Ring {
     const strXor = (s1: string, s2: string) => {
       const buf1 = Buffer.from(s1.slice(2), "hex");
       const buf2 = Buffer.from(s2.slice(2), "hex");
-      let res = Buffer.alloc(32);
+      const res = Buffer.alloc(32);
       for (let i = 0; i < 32; i++) {
         res[i] = buf1[i] ^ buf2[i];
       }

@@ -1,7 +1,7 @@
-import { BigNumber } from 'bignumber.js';
-import { FeeItem, BalanceItem } from '../util/types';
-import { Order } from './order';
-import { Ring } from './ring';
+import { BigNumber } from "bignumber.js";
+import { BalanceItem, FeeItem } from "../util/types";
+import { Order } from "./order";
+import { Ring } from "./ring";
 
 export class ProtocolSimulator {
   public ring: Ring;
@@ -22,14 +22,14 @@ export class ProtocolSimulator {
 
   public caculateRateAmountS() {
     let rate: number = 1;
-    let result: number[] = [];
+    const result: number[] = [];
     const size = this.ring.orders.length;
     for (let i = 0; i < size; i++) {
       const order = this.ring.orders[i];
       rate = rate * order.params.amountS.toNumber() / order.params.amountB.toNumber();
     }
 
-    rate = Math.pow(rate, -1/size)
+    rate = Math.pow(rate, -1 / size);
 
     for (let i = 0; i < size; i ++) {
       const order = this.ring.orders[i];
@@ -49,7 +49,7 @@ export class ProtocolSimulator {
     const balances = this.caculateTraderTokenBalances(fees, fillAmountSList);
     const totalFees = this.sumFees(fees);
 
-    let result: any = {};
+    const result: any = {};
     result.fees = fees;
     result.balances = balances;
     result.totalFees = totalFees;
@@ -64,7 +64,7 @@ export class ProtocolSimulator {
       const order = this.ring.orders[i];
       const amountS = order.params.amountS.toNumber();
       const amountB = order.params.amountB.toNumber();
-      let lrcFee = order.params.lrcFee.toNumber();
+      const lrcFee = order.params.lrcFee.toNumber();
       let availableAmountS = amountS;
       let availableAmountB = amountB;
 
@@ -149,7 +149,7 @@ export class ProtocolSimulator {
                                   nextOrder: Order,
                                   nextRateAmountS: number) {
 
-    let currentFillAmountB = currentFillAmountS * currentOrder.params.scaledAmountB / currentRateAmountS;
+    const currentFillAmountB = currentFillAmountS * currentOrder.params.scaledAmountB / currentRateAmountS;
 
     let nextFillAmountS = nextRateAmountS;
     if (!nextOrder.params.buyNoMoreThanAmountB) {
@@ -165,7 +165,7 @@ export class ProtocolSimulator {
 
   private sumFees(fees: FeeItem[]) {
     const size = this.ring.orders.length;
-    let feeTotals: any = {};
+    const feeTotals: any = {};
     for (let i = 0; i < size; i++) {
       const order = this.ring.orders[i];
       const feeItem = fees[i];
@@ -190,35 +190,35 @@ export class ProtocolSimulator {
 
   private caculateOrderFees(fillAmountSList: number[], rateAmountSList: number[]) {
     const size = this.ring.orders.length;
-    let fees: FeeItem[] = [];
+    const fees: FeeItem[] = [];
 
     // caculate fees for each order. and assemble result.
     for (let i = 0; i < size; i++) {
-      const nextInd = (i+1) % size;
+      const nextInd = (i + 1) % size;
       const order = this.ring.orders[i];
 
-      let feeItem: FeeItem = {
-        fillAmountS: fillAmountSList[i],
+      const feeItem: FeeItem = {
+        feeB: 0,
         feeLrc: 0,
         feeS: 0,
-        feeB: 0,
+        fillAmountS: fillAmountSList[i],
       };
 
-      if (order.params.lrcFee.toNumber() == 0) {
+      if (order.params.lrcFee.toNumber() === 0) {
         this.feeSelectionList[i] = 1;
         order.params.marginSplitPercentage = 100;
       }
 
-      if (0 == this.feeSelectionList[i]) {
+      if (0 === this.feeSelectionList[i]) {
         feeItem.feeLrc = order.params.lrcFee.toNumber() * fillAmountSList[i] / order.params.amountS.toNumber();
-      } else if (1 == this.feeSelectionList[i]) {
-
-
+      } else if (1 === this.feeSelectionList[i]) {
         if (order.params.buyNoMoreThanAmountB) {
-          feeItem.feeS = fillAmountSList[i] * order.params.scaledAmountS / rateAmountSList[i] - fillAmountSList[i];
+          feeItem.feeS = fillAmountSList[i] * order.params.scaledAmountS / rateAmountSList[i] -
+            fillAmountSList[i];
           feeItem.feeS = feeItem.feeS * order.params.marginSplitPercentage / 100;
         } else {
-          feeItem.feeB = fillAmountSList[nextInd] - fillAmountSList[i] * order.params.amountB.toNumber() / order.params.amountS.toNumber();
+          feeItem.feeB = fillAmountSList[nextInd] -
+            fillAmountSList[i] * order.params.amountB.toNumber() / order.params.amountS.toNumber();
           feeItem.feeB = feeItem.feeB * order.params.marginSplitPercentage / 100;
         }
       } else {
@@ -234,14 +234,14 @@ export class ProtocolSimulator {
   // assume that the balance of tokenS of this.ring.orders[i].owner == this.ring.orders[i].params.amountS
   private caculateTraderTokenBalances(fees: FeeItem[], fillAmountSList: number[]) {
     const size = this.ring.orders.length;
-    let balances: BalanceItem[] = [];
+    const balances: BalanceItem[] = [];
     for (let i = 0; i < size; i++) {
       const order = this.ring.orders[i];
       const nextInd = (i + 1) % size;
 
       const balanceItem: BalanceItem = {
-        balanceS: order.params.amountS.toNumber() - fillAmountSList[i] - fees[i].feeS,
         balanceB: fillAmountSList[nextInd] - fees[i].feeB,
+        balanceS: order.params.amountS.toNumber() - fillAmountSList[i] - fees[i].feeS,
       };
 
       balances.push(balanceItem);
