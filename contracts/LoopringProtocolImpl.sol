@@ -273,6 +273,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
 
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
+
         //Assemble input data into structs so we can pass them to other functions.
         OrderState[] memory orders = assembleOrders(
             delegate,
@@ -685,11 +686,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             // When an order's LRC fee is 0 or smaller than the specified fee,
             // we help miner automatically select margin-split.
             if (state.lrcFee == 0) {
-                state.feeSelection == FEE_SELECT_MARGIN_SPLIT;
                 state.order.marginSplitPercentage = _marginSplitPercentageBase;
             }
 
-            if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
+            if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT || state.lrcFee == 0) {
                 // Only calculate split when miner has enough LRC;
                 // otherwise all splits are 0.
                 if (minerLrcSpendable >= state.lrcFee) {
@@ -797,7 +797,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.fillAmountS = fillAmountB.mul(
                         state.rate.amountS
                     ) / state.rate.amountB;
-                
+
                 newSmallestIdx = i;
             }
         }
@@ -849,7 +849,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             require(order.amountB > 0); // "amountB is zero");
 
             state.fillAmountS = (
-                order.amountS < state.availableAmountS ? 
+                order.amountS < state.availableAmountS ?
                 order.amountS : state.availableAmountS
             );
         }
@@ -963,7 +963,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 orderHash,
                 uint8ArgsList[i][1],  // feeSelection
                 Rate(uintArgsList[i][6], order.amountB),
-                getSpendable(delegate, order.tokenS, order.owner), 
+                getSpendable(delegate, order.tokenS, order.owner),
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
