@@ -15,7 +15,7 @@ function relay(host) {
         gasLimit: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
         to: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
         value: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-        data: Joi.string().regex(/^0x[0-9a-fA-F]{8}([0-9a-fA-F]{64})*$/i,
+        data: Joi.string().regex(/^0x[0-9a-fA-F]{8}([0-9a-fA-F]{64})*$/i),
         chainId: Joi.number().integer().min(1)
     }).with('gasPrice', 'gasLimit', 'to', 'value', 'data').without('nonce', 'chainId');
 
