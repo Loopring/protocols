@@ -33,10 +33,6 @@ library MathUint {
         return c;
     }
 
-    function div(uint a, uint b) internal pure returns (uint) {
-        return  a / b;
-    }
-
     function sub(uint a, uint b) internal pure returns (uint) {
         require(b <= a);
         return a - b;

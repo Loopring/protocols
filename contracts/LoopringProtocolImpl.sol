@@ -674,7 +674,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             require(s1b0 <= s0b1); // "miner supplied exchange rate provides invalid discount");
 
-            rateRatios[i] = RATE_RATIO_SCALE.mul(s1b0).div(s0b1);
+            rateRatios[i] = RATE_RATIO_SCALE.mul(s1b0) / s0b1;
         }
 
         uint cvs = MathUint.cvsquare(rateRatios, RATE_RATIO_SCALE);
@@ -728,26 +728,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 if (minerLrcSpendable >= state.lrcFee) {
                     uint split;
                     if (state.order.buyNoMoreThanAmountB) {
-                        split = next.fillAmountS.mul(
-                            state.order.amountS
-                        ).div(
-                            state.order.amountB
-                        ).sub(
-                            state.fillAmountS
-                        );
+                        split = (next.fillAmountS.mul(state.order.amountS) / state.order.amountB).sub(state.fillAmountS);
                     } else {
-                        split = next.fillAmountS.sub(state.fillAmountS
-                            .mul(state.order.amountB)
-                            .div(state.order.amountS)
-                        );
+                        split = next.fillAmountS.sub(state.fillAmountS.mul(state.order.amountB) / state.order.amountS);
                     }
 
                     if (state.order.marginSplitPercentage != MARGIN_SPLIT_PERCENTAGE_BASE) {
-                        split = split.mul(
-                            state.order.marginSplitPercentage
-                        ).div(
-                            MARGIN_SPLIT_PERCENTAGE_BASE
-                        );
+                        split = split.mul(state.order.marginSplitPercentage) / MARGIN_SPLIT_PERCENTAGE_BASE;
                     }
 
                     if (state.order.buyNoMoreThanAmountB) {
@@ -822,31 +809,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Default to the same smallest index
         newSmallestIdx = smallestIdx;
 
-        uint fillAmountB = state.fillAmountS.mul(
-            state.rate.amountB
-        ).div(
-            state.rate.amountS
-        );
+        uint fillAmountB = state.fillAmountS.mul(state.rate.amountB) / state.rate.amountS;
 
         if (state.order.buyNoMoreThanAmountB) {
             if (fillAmountB > state.order.amountB) {
                 fillAmountB = state.order.amountB;
 
-                state.fillAmountS = fillAmountB.mul(
-                    state.rate.amountS
-                ).div(
-                    state.rate.amountB
-                );
-
+                state.fillAmountS = fillAmountB.mul(state.rate.amountS) / state.rate.amountB;
                 newSmallestIdx = i;
             }
         }
 
-        state.lrcFee = state.order.lrcFee.mul(
-            state.fillAmountS
-        ).div(
-            state.order.amountS
-        );
+        state.lrcFee = state.order.lrcFee.mul(state.fillAmountS) / state.order.amountS;
 
         if (fillAmountB <= next.fillAmountS) {
             next.fillAmountS = fillAmountB;
@@ -874,8 +848,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     cancelledOrFilled[state.orderHash]
                 );
 
-                order.amountS = amount.mul(order.amountS).div(order.amountB);
-                order.lrcFee = amount.mul(order.lrcFee).div(order.amountB);
+                order.amountS = amount.mul(order.amountS) / order.amountB;
+                order.lrcFee = amount.mul(order.lrcFee) / order.amountB;
 
                 order.amountB = amount;
             } else {
@@ -883,8 +857,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     cancelledOrFilled[state.orderHash]
                 );
 
-                order.amountB = amount.mul(order.amountB).div(order.amountS);
-                order.lrcFee = amount.mul(order.lrcFee).div(order.amountS);
+                order.amountB = amount.mul(order.amountB) / order.amountS;
+                order.lrcFee = amount.mul(order.lrcFee) / order.amountS;
 
                 order.amountS = amount;
             }
