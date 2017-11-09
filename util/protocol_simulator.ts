@@ -96,7 +96,6 @@ export class ProtocolSimulator {
         throw new Error("order amountS or amountB is zero");
       }
 
-      lrcFee = availableAmountB * lrcFee / amountB;
       order.params.scaledAmountS = availableAmountS;
       order.params.scaledAmountB =  availableAmountB;
       order.params.lrcFee = new BigNumber(lrcFee.toPrecision(15));
@@ -211,7 +210,7 @@ export class ProtocolSimulator {
       }
 
       if (0 == this.feeSelectionList[i]) {
-        feeItem.feeLrc = order.params.lrcFee.toNumber();
+        feeItem.feeLrc = order.params.lrcFee.toNumber() * fillAmountSList[i] / order.params.amountS.toNumber();
       } else if (1 == this.feeSelectionList[i]) {
 
 
