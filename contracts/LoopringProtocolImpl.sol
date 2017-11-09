@@ -936,9 +936,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         var ringSize = addressList.length;
         var orders = new OrderState[](ringSize);
         // address _delegateAddress = delegateAddress;
+        Order memory order;
+        bytes32 orderHash;
 
         for (uint i = 0; i < ringSize; i++) {
-            var order = Order(
+            order = Order(
                 addressList[i][0],
                 addressList[i][1],
                 addressList[(i + 1) % ringSize][1],
@@ -949,7 +951,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uint8ArgsList[i][0]
             );
 
-            bytes32 orderHash = calculateOrderHash(
+            orderHash = calculateOrderHash(
                 order,
                 uintArgsList[i][2], // timestamp
                 uintArgsList[i][3], // ttl
