@@ -40660,6 +40660,8 @@ internals.Topo.prototype._sort = function () {
 };
 
 },{"hoek":47}],103:[function(require,module,exports){
+"use strict";
+
 const abi = require('ethereumjs-abi');
 const _ = require('lodash');
 const Joi = require('joi');
@@ -40676,20 +40678,24 @@ const txSchema = Joi.object().keys({
     chainId: Joi.number().integer().min(1)
 }).with('nonce', 'gasPrice', 'gasLimit', 'to', 'value', 'data', 'chainId');
 
-exports.solSHA3 = function (types, data) {
+exports.solSHA3 = (types, data) =>
+{
     const hash = abi.soliditySHA3(types, data);
     return hash;
 };
 
-exports.signEthTx = function (tx, privateKey) {
+exports.signEthTx = (tx, privateKey) =>
+{
 
     const result = Joi.validate(tx, txSchema);
-    if (result.error) {
+    if (result.error)
+    {
         return new Error(JSON.stringify(result.error.details));
     }
 
     const ethTx = new Transaction(tx);
-    if (_.isString(privateKey)) {
+    if (_.isString(privateKey))
+    {
         privateKey = ethUtil.toBuffer(privateKey);
     }
     ethTx.sign(privateKey);
@@ -40697,13 +40703,15 @@ exports.signEthTx = function (tx, privateKey) {
 };
 
 
-exports.generateCancelOrderData = function (order) {
+exports.generateCancelOrderData = (order) =>
+{
 
     const data = abi.rawEncode(['address[3]', 'uint[7]', 'bool', 'uint8', 'uint8', 'bytes32', 'bytes32'], [order.addresses, order.orderValues, order.buyNoMoreThanAmountB, order.marginSplitPercentage, order.v, order.r, order.s]).toString('hex');
     const method = abi.methodID('cancelOrder', ['address[3]', 'uint[7]', 'bool', 'uint8', 'uint8', 'bytes32', 'bytes32']).toString('hex');
 
     return '0x' + method + data;
 };
+
 },{"ethereumjs-abi":26,"ethereumjs-tx":29,"ethereumjs-util":30,"joi":53,"lodash":81}],104:[function(require,module,exports){
 
 },{}],105:[function(require,module,exports){
@@ -54599,30 +54607,32 @@ exports.createContext = Script.createContext = function (context) {
 };
 
 },{"indexof":205}],"order":[function(require,module,exports){
+"use strict";
+
 const signer = require('./signer.js');
 const ethUtil = require('ethereumjs-util');
 const _ = require('lodash');
 const BN = require('bn.js');
 const Joi = require('joi');
 
-function Order(data) {
+function Order(data)
+{
+    const protocol = data.protocol;
+    const owner = data.owner;
+    const tokenS = data.tokenS;
+    const tokenB = data.tokenB;
+    const amountS = data.amountS;
+    const amountB = data.amountB;
+    const timestamp = data.timestamp;
+    const ttl = data.ttl;
+    const salt = data.salt;
+    const lrcFee = data.lrcFee;
+    const buyNoMoreThanAmountB = data.buyNoMoreThanAmountB;
+    const marginSplitPercentage = data.marginSplitPercentage;
 
-    var protocol = data.protocol;
-    var owner = data.owner;
-    var tokenS = data.tokenS;
-    var tokenB = data.tokenB;
-    var amountS = data.amountS;
-    var amountB = data.amountB;
-    var timestamp = data.timestamp;
-    var ttl = data.ttl;
-    var salt = data.salt;
-    var lrcFee = data.lrcFee;
-    var buyNoMoreThanAmountB = data.buyNoMoreThanAmountB;
-    var marginSplitPercentage = data.marginSplitPercentage;
-
-    var v = data.v;
-    var r = data.r;
-    var s = data.s;
+    let v = data.v;
+    let r = data.r;
+    let s = data.s;
 
     const orderSchema = Joi.object().keys({
         protocol: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
@@ -54638,11 +54648,12 @@ function Order(data) {
 
     const orderTypes = ['address', 'address', 'address', 'address', 'uint', 'uint', 'uint', 'uint', 'uint', 'uint', 'bool', 'uint8'];
 
-    this.sign = function (privateKey) {
-
+    this.sign = function (privateKey)
+    {
         const validation = Joi.validate(data, orderSchema);
 
-        if (!validation) {
+        if (!validation)
+        {
             throw new Error('Invalid Loopring Order');
         }
 
@@ -54658,7 +54669,8 @@ function Order(data) {
 
         const finalHash = ethUtil.hashPersonalMessage(hash);
 
-        if (_.isString(privateKey)) {
+        if (_.isString(privateKey))
+        {
             privateKey = ethUtil.toBuffer(privateKey);
         }
 
@@ -54684,13 +54696,13 @@ function Order(data) {
             v,
             r,
             s
-        }
+        };
     };
 
-    this.cancel = function (amount, privateKey) {
-
-        if (!r || !v || !s) {
-
+    this.cancel = function (amount, privateKey)
+    {
+        if (!r || !v || !s)
+        {
             this.sign(privateKey);
         }
 
@@ -54705,8 +54717,9 @@ function Order(data) {
         };
 
         return signer.generateCancelOrderData(order);
-    }
+    };
 }
 
 module.exports = Order;
+
 },{"./signer.js":103,"bn.js":2,"ethereumjs-util":30,"joi":53,"lodash":81}]},{},[]);

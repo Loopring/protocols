@@ -2735,15 +2735,18 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 })(this);
 
 },{}],"hex-utils":[function(require,module,exports){
-const BigNumber = require('bignumber.js')
+"use strict";
 
-exports.stripHex= function (address) {
+const BigNumber = require('bignumber.js');
+
+exports.stripHex = (address) =>
+{
     return address.replace('0x', '').toLowerCase();
-
 };
 
-exports.valueToHex = function(value){
-    var big = new BigNumber(value);
+exports.valueToHex = (value) =>
+{
+    const big = new BigNumber(value);
     return '0x' + big.toString(16);
 };
 
