@@ -499,81 +499,33 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    function calculateTransferBatchSize(
+    function createTransferBatch(
         uint          ringSize,
         OrderState[]  orders
         )
         private
         pure
-        returns (uint batchSize)
-    {
-        batchSize = ringSize;
-        for (uint i = 0; i < ringSize; i++) {
-            OrderState memory state = orders[i];
-            OrderState memory prev = orders[(i + ringSize - 1) % ringSize];
-
-            batchSize += (
-                prev.splitB + state.splitS != 0 ? 1 : 0 + (
-                state.lrcReward != 0 ? 1 : 0 ) + (
-                state.lrcFee != 0 ? 1 : 0)
-            );
-        }
-    }
-
-    function createTransferBatch(
-        uint          ringSize,
-        OrderState[]  orders,
-        address       feeRecipient,
-        address       _lrcTokenAddress
-        )
-        private
-        pure
         returns (bytes32[] memory batch)
     {
-        uint batchSize = calculateTransferBatchSize(ringSize, orders);
-        batch = new bytes32[](batchSize * 4); // ringSize * (token + from + to + value)
-        uint p = 0;
-
+        batch = new bytes32[](ringSize * 6); // ringSize * (tokenS + owner) + ringSize * 4 amounts
+        
+        uint p = ringSize * 2;
         for (uint i = 0; i < ringSize; i++) {
             OrderState memory state = orders[i];
             OrderState memory prev = orders[(i + ringSize - 1) % ringSize];
+			
+            // Store tokenS and owner of every order
+            batch[i] = bytes32(state.order.tokenS);
+            batch[ringSize + i] = bytes32(state.order.owner);
+		    
+            // Store all amounts
+            batch[p] = bytes32(state.fillAmountS - prev.splitB);
+            batch[p+1] = bytes32(prev.splitB + state.splitS);
+            batch[p+2] = bytes32(state.lrcReward);
+            batch[p+3] = bytes32(state.lrcFee);
 
-            // Pay tokenS to previous order, or to miner as previous order's
-            // margin split or/and this order's margin split.
-            batch[p] = bytes32(state.order.tokenS);
-            batch[p + 1] = bytes32(state.order.owner);
-            batch[p + 2] = bytes32(prev.order.owner);
-            batch[p + 3] = bytes32(state.fillAmountS - prev.splitB);
             p += 4;
-
-            uint splitSum = prev.splitB + state.splitS;
-
-            if (splitSum != 0) {
-                batch[p] = bytes32(state.order.tokenS);
-                batch[p + 1] = bytes32(state.order.owner);
-                batch[p + 2] = bytes32(feeRecipient);
-                batch[p + 3] = bytes32(splitSum);
-                p += 4;
-            }
-
-            // Pay LRC
-            if (state.lrcReward != 0) {
-                batch[p] = bytes32(_lrcTokenAddress);
-                batch[p + 1] = bytes32(feeRecipient);
-                batch[p + 2] = bytes32(state.order.owner);
-                batch[p + 3] = bytes32(state.lrcReward);
-                p += 4;
-            }
-
-            if (state.lrcFee != 0) {
-                batch[p] = bytes32(_lrcTokenAddress);
-                batch[p + 1] = bytes32(state.order.owner);
-                batch[p + 2] = bytes32(feeRecipient);
-                batch[p + 3] = bytes32(state.lrcFee);
-                p += 4;
-            }
         }
-
         return batch;
     }
 
@@ -614,12 +566,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             );
         }
 
-        delegate.batchTransferToken(
+        delegate.batchTransferToken(ringSize, _lrcTokenAddress, feeRecipient,
             createTransferBatch(
                 ringSize,
-                orders,
-                feeRecipient,
-                _lrcTokenAddress
+                orders
             )
         );
     }
