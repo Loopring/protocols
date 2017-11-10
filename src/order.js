@@ -1,27 +1,29 @@
+"use strict";
+
 const signer = require('./signer.js');
 const ethUtil = require('ethereumjs-util');
 const _ = require('lodash');
 const BN = require('bn.js');
 const Joi = require('joi');
 
-function Order(data) {
+function Order(data)
+{
+    const protocol = data.protocol;
+    const owner = data.owner;
+    const tokenS = data.tokenS;
+    const tokenB = data.tokenB;
+    const amountS = data.amountS;
+    const amountB = data.amountB;
+    const timestamp = data.timestamp;
+    const ttl = data.ttl;
+    const salt = data.salt;
+    const lrcFee = data.lrcFee;
+    const buyNoMoreThanAmountB = data.buyNoMoreThanAmountB;
+    const marginSplitPercentage = data.marginSplitPercentage;
 
-    var protocol = data.protocol;
-    var owner = data.owner;
-    var tokenS = data.tokenS;
-    var tokenB = data.tokenB;
-    var amountS = data.amountS;
-    var amountB = data.amountB;
-    var timestamp = data.timestamp;
-    var ttl = data.ttl;
-    var salt = data.salt;
-    var lrcFee = data.lrcFee;
-    var buyNoMoreThanAmountB = data.buyNoMoreThanAmountB;
-    var marginSplitPercentage = data.marginSplitPercentage;
-
-    var v = data.v;
-    var r = data.r;
-    var s = data.s;
+    let v = data.v;
+    let r = data.r;
+    let s = data.s;
 
     const orderSchema = Joi.object().keys({
         protocol: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
@@ -37,11 +39,12 @@ function Order(data) {
 
     const orderTypes = ['address', 'address', 'address', 'address', 'uint', 'uint', 'uint', 'uint', 'uint', 'uint', 'bool', 'uint8'];
 
-    this.sign = function (privateKey) {
-
+    this.sign = function (privateKey)
+    {
         const validation = Joi.validate(data, orderSchema);
 
-        if (!validation) {
+        if (!validation)
+        {
             throw new Error('Invalid Loopring Order');
         }
 
@@ -57,7 +60,8 @@ function Order(data) {
 
         const finalHash = ethUtil.hashPersonalMessage(hash);
 
-        if (_.isString(privateKey)) {
+        if (_.isString(privateKey))
+        {
             privateKey = ethUtil.toBuffer(privateKey);
         }
 
@@ -83,13 +87,13 @@ function Order(data) {
             v,
             r,
             s
-        }
+        };
     };
 
-    this.cancel = function (amount, privateKey) {
-
-        if (!r || !v || !s) {
-
+    this.cancel = function (amount, privateKey)
+    {
+        if (!r || !v || !s)
+        {
             this.sign(privateKey);
         }
 
@@ -104,7 +108,7 @@ function Order(data) {
         };
 
         return signer.generateCancelOrderData(order);
-    }
+    };
 }
 
 module.exports = Order;
