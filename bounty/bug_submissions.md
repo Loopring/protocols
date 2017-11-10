@@ -76,11 +76,15 @@ Brecht Devos
 Hi Team
 
 In the unregister function, we have below check on whether the token/symbol is already registerred or not.
-require(tokenSymbolMap[_symbol] == _token);
+
+    require(tokenSymbolMap[_symbol] == _token);
+
 Only for registerred symbol/token, the check will give one pass and then the unregister codes will be executed.
-However, for the case when _token is gave one value of address(0),
+However, for the case when `_token` is gave one value of address(0),
 the check will also give one pass even if the symbol is not registerred.
-We'd better add the check "require(_token != address(0));". This will make our contract stronger.
+We'd better add the check `require(_token != address(0));`. This will make our contract stronger.
+
+```
 -----------------------------------------------------------
 function unregisterToken(address _token, string _symbol)
     external
@@ -98,3 +102,4 @@ function unregisterToken(address _token, string _symbol)
     }
 }
 -----------------------------------------------------------
+```

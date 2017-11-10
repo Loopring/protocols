@@ -47,6 +47,7 @@ contract TokenRegistry is Ownable {
         external
         onlyOwner
     {
+        require(_token != address(0));
         require(tokenSymbolMap[_symbol] == _token);
         delete tokenSymbolMap[_symbol];
         delete tokenMap[_token];
