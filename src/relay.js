@@ -1,3 +1,5 @@
+"use strict";
+
 const fetch = require('node-fetch');
 const crypto = require('crypto');
 const Validator = require('./validator.js');
@@ -8,7 +10,8 @@ const Joi = require('joi');
 const BigNumber = require('bignumber.js');
 const _ = require('lodash');
 
-function relay(host) {
+function relay(host)
+{
     const txSchema = Joi.object().keys({
         nonce: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
         gasPrice: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
@@ -23,16 +26,20 @@ function relay(host) {
 
     const validataor = new Validator();
 
-    this.getTransactionCount = async function (add, tag) {
+    this.getTransactionCount = async (add, tag) =>
+    {
 
-        if (!validataor.isValidETHAddress(add)) {
+        if (!validataor.isValidETHAddress(add))
+        {
             throw new Error('invalid ETH address');
         }
 
-        if (!tag) {
+        if (!tag)
+        {
             tag = 'latest';
         }
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
+        {
             throw new Error('invalid  tag:' + tag);
         }
 
@@ -47,23 +54,29 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(res => res.json()).then(res => {
-            if (res.error) {
+        }).then(res => res.json()).then(res =>
+            {
+            if (res.error)
+            {
                 throw new Error(res.error.message);
             }
             return res.result;
         });
     };
 
-    this.getAccountBalance = async function (add, tag) {
-        if (!validataor.isValidETHAddress(add)) {
+    this.getAccountBalance = async (add, tag) =>
+    {
+        if (!validataor.isValidETHAddress(add))
+        {
             throw new Error('invalid ETH address');
         }
 
-        if (!tag) {
+        if (!tag)
+        {
             tag = 'latest';
         }
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
+        {
             throw new Error('invalid  tag:' + tag);
         }
 
@@ -78,20 +91,25 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(res => res.json()).then(res => {
-            if (res.error) {
+        }).then(res => res.json()).then(res =>
+        {
+            if (res.error)
+            {
                 throw new Error(res.error.message);
             }
             return new BigNumber(Number(validHex(res.result)));
         });
     };
 
-    this.call = async function (data, tag) {
+    this.call = async (data, tag) =>
+    {
 
-        if (!tag) {
+        if (!tag)
+        {
             tag = 'latest';
         }
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
+        {
             throw new Error('invalid  tag:' + tag);
         }
 
@@ -105,8 +123,10 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(res => res.json()).then(res => {
-            if (res.error) {
+        }).then(res => res.json()).then(res =>
+        {
+            if (res.error)
+            {
                 throw new Error(res.error.message);
             }
             return validHex(res.result);
@@ -114,26 +134,30 @@ function relay(host) {
 
     };
 
-    this.generateTx = async function (rawTx, privateKey) {
+    this.generateTx = async (rawTx, privateKey) =>
+    {
 
         const wallet = new PrivateKey();
         wallet.setPrivateKey(ethUtil.toBuffer(privateKey));
 
         const valid_result = Joi.validate(rawTx, txSchema);
 
-        if (valid_result.error) {
+        if (valid_result.error)
+        {
             throw new Error('invalid Tx data ');
         }
 
         const gasLimit = new BigNumber(Number(rawTx.gasLimit));
 
-        if (gasLimit.lessThan(21000)) {
+        if (gasLimit.lessThan(21000))
+        {
 
-            throw  new Error('gasLimit must be greater than 21000');
+            throw new Error('gasLimit must be greater than 21000');
         }
 
-        if (gasLimit.greaterThan(5000000)) {
-            throw  new Error('gasLimit is too big');
+        if (gasLimit.greaterThan(5000000))
+        {
+            throw new Error('gasLimit is too big');
         }
 
         // const balance = await this.getAccountBalance(wallet.getAddress());
@@ -154,11 +178,12 @@ function relay(host) {
         return {
             tx: rawTx,
             signedTx: signed
-        }
+        };
 
     };
 
-    this.sendSignedTx = async function (tx) {
+    this.sendSignedTx = async (tx) =>
+    {
 
         request.id = id();
         request.method = "eth_sendRawTransaction";
@@ -170,8 +195,10 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(res => res.json()).then(res => {
-            if (res.error) {
+        }).then(res => res.json()).then(res =>
+        {
+            if (res.error)
+            {
                 throw new Error(res.error.message);
             }
             return res.result;
@@ -179,13 +206,16 @@ function relay(host) {
 
     };
 
-    this.getTokenBalance = async function (token, add, tag) {
+    this.getTokenBalance = async (token, add, tag) =>
+    {
 
-        if (!validataor.isValidETHAddress(add)) {
+        if (!validataor.isValidETHAddress(add))
+        {
             throw new Error('invalid ETH address' + add);
         }
 
-        if (!validataor.isValidETHAddress(token)) {
+        if (!validataor.isValidETHAddress(token))
+        {
 
             throw new Error('invalid token contract Address ' + token);
         }
@@ -198,28 +228,34 @@ function relay(host) {
             data
         };
 
-        if (!tag) {
+        if (!tag)
+        {
             tag = 'latest';
         }
 
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
+        {
             throw new Error('invalid  tag:' + tag);
         }
         return new BigNumber(Number(await this.call(params, tag)));
 
     };
 
-    this.getTokenAllowance = async function (token, owner, spender, tag) {
+    this.getTokenAllowance = async (token, owner, spender, tag) =>
+    {
 
-        if (!validataor.isValidETHAddress(owner)) {
+        if (!validataor.isValidETHAddress(owner))
+        {
             throw new Error('invalid owner address');
         }
 
-        if (!validataor.isValidETHAddress(spender)) {
+        if (!validataor.isValidETHAddress(spender))
+        {
             throw new Error('invalid spender address');
         }
 
-        if (!validataor.isValidETHAddress(token)) {
+        if (!validataor.isValidETHAddress(token))
+        {
 
             throw new Error('invalid token Contract Address');
         }
@@ -234,11 +270,13 @@ function relay(host) {
             data
         };
 
-        if (!tag) {
+        if (!tag)
+        {
             tag = 'latest';
         }
 
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
+        {
             throw new Error('invalid  tag:' + tag);
         }
 
@@ -246,18 +284,24 @@ function relay(host) {
 
     };
 
-    this.setTokenAllowance = async function (token, spender, value, privateKey, gasLimit, gasPrice) {
+    this.setTokenAllowance = async (
+        token, spender, value, privateKey, gasLimit, gasPrice
+    ) =>
+    {
 
-        if (!validataor.isValidETHAddress(spender)) {
+        if (!validataor.isValidETHAddress(spender))
+        {
             throw new Error('invalid spender address');
         }
 
-        if (!validataor.isValidETHAddress(token)) {
+        if (!validataor.isValidETHAddress(token))
+        {
 
             throw new Error('invalid token Contract Address');
         }
 
-        if (_.isNumber(value)) {
+        if (_.isNumber(value))
+        {
 
             value = '0x' + value.toString(16);
         }
@@ -267,11 +311,13 @@ function relay(host) {
 
         const data = method + param;
 
-        if (_.isNumber(gasPrice)) {
+        if (_.isNumber(gasPrice))
+        {
             gasPrice = '0x' + gasPrice.toString(16);
         }
 
-        if (_.isNumber(gasLimit)) {
+        if (_.isNumber(gasLimit))
+        {
             gasLimit = '0x' + gasLimit.toString(16);
         }
 
@@ -289,18 +335,24 @@ function relay(host) {
         await this.sendSignedTx(rawtx.signedTx);
     };
 
-    this.transferToken = async function (privateKey, to, token, value, gasLimit, gasPrice) {
+    this.transferToken = async (
+        privateKey, to, token, value, gasLimit, gasPrice
+    ) =>
+    {
 
-        if (!validataor.isValidETHAddress(to)) {
+        if (!validataor.isValidETHAddress(to))
+        {
             throw new Error('invalid spender address');
         }
 
-        if (!validataor.isValidETHAddress(token)) {
+        if (!validataor.isValidETHAddress(token))
+        {
 
             throw new Error('invalid token Contract Address');
         }
 
-        if (_.isNumber(value)) {
+        if (_.isNumber(value))
+        {
 
             value = '0x' + value.toString(16);
         }
@@ -310,11 +362,13 @@ function relay(host) {
 
         const data = method + params;
 
-        if (_.isNumber(gasPrice)) {
+        if (_.isNumber(gasPrice))
+        {
             gasPrice = '0x' + gasPrice.toString(16);
         }
 
-        if (_.isNumber(gasLimit)) {
+        if (_.isNumber(gasLimit))
+        {
             gasLimit = '0x' + gasLimit.toString(16);
         }
 
@@ -328,11 +382,12 @@ function relay(host) {
 
         const tx = await this.generateTx(rawtx, privateKey);
 
-        await  this.sendSignedTx(tx.signedTx)
+        await this.sendSignedTx(tx.signedTx);
 
     };
 
-    this.submitLoopringOrder = async function (order) {
+    this.submitLoopringOrder = async (order) =>
+    {
 
         request.method = 'submitOrder';
         request.params = order;
@@ -344,18 +399,23 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res => {
+        }).then(r => r.json()).then(res =>
+        {
             return res;
         });
 
     };
 
-    this.cancelLoopringOrder = async function (rawTX, privateKey) {
+    this.cancelLoopringOrder = async (rawTX, privateKey) =>
+    {
         const tx = await this.generateTx(rawTX, privateKey);
         return await this.sendSignedTx(tx.signedTx);
     };
 
-    this.getOrders = async function (market, address, status, pageIndex, pageSize, contractVersion) {
+    this.getOrders = async (
+        market, address, status, pageIndex, pageSize, contractVersion
+    ) =>
+    {
 
         request.method = 'getOrders';
         request.params = {market, address, status,contractVersion, pageIndex, pageSize};
@@ -367,13 +427,17 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res => {
+        }).then(r => r.json()).then(res =>
+        {
             return res;
         });
 
     };
 
-    this.getDepth = async function (market, pageIndex, pageSize, contractVersion) {
+    this.getDepth = async (
+        market, pageIndex, pageSize, contractVersion
+    ) =>
+    {
         request.method = 'getDepth';
         request.params = {market, pageIndex, pageSize,contractVersion};
         request.id = id();
@@ -384,13 +448,15 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res => {
+        }).then(r => r.json()).then(res =>
+        {
             return res;
         });
     };
 
 
-    this.getTicker = async function (market) {
+    this.getTicker = async (market) =>
+    {
 
         request.method = 'getTicker';
         request.params = {market};
@@ -402,13 +468,17 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res => {
+        }).then(r => r.json()).then(res =>
+        {
             return res;
         });
     };
 
 
-    this.getFills = async function (market, address, pageIndex, pageSize,contractVersion) {
+    this.getFills = async (
+        market, address, pageIndex, pageSize,contractVersion
+    ) =>
+    {
 
         request.method = 'getFills';
         request.params = {market, address, pageIndex, pageSize,contractVersion};
@@ -420,13 +490,15 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res => {
+        }).then(r => r.json()).then(res =>
+        {
             return res;
         });
 
     };
 
-    this.getCandleTicks = async function (market, interval, size) {
+    this.getCandleTicks = async (market, interval, size) =>
+    {
 
         request.method = 'getCandleTicks';
         request.params = {market, interval, size};
@@ -438,13 +510,17 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res => {
+        }).then(r => r.json()).then(res =>
+        {
             return res;
         });
 
     };
 
-    this.getRingMined = async function (ringHash, orderHash, miner, pageIndex, pageSize,contractVersion) {
+    this.getRingMined = async (
+        ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
+    ) =>
+    {
 
         request.method = 'getRingMined';
         request.params = {ringHash, orderHash, miner, pageIndex, pageSize,contractVersion};
@@ -456,14 +532,16 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res => {
+        }).then(r => r.json()).then(res =>
+        {
             return res;
         });
 
     };
 
 
-    this.getBalances = async function (address) {
+    this.getBalances = async (address) =>
+    {
 
         request.method = 'getBalances';
         request.params = {address};
@@ -475,23 +553,27 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res => {
+        }).then(r => r.json()).then(res =>
+        {
             return res;
         });
     };
 
-    function id() {
+    const id = () =>
+    {
         return crypto.randomBytes(16).toString('hex');
-    }
+    };
 
-    function validHex(data) {
+    const validHex = (data) =>
+    {
 
-        if (data === '0x') {
+        if (data === '0x')
+        {
             data = '0x0';
         }
 
         return data;
-    }
+    };
 }
 
 module.exports = relay;
