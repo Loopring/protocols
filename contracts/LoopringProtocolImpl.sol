@@ -417,8 +417,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function verifyTokensRegistered(
-        uint                 ringSize,
-        address[2][] memory  addressList
+        uint          ringSize,
+        address[2][]  addressList
         )
         private
         view
@@ -743,7 +743,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         OrderState[]  orders
         )
         private
-        pure
+        pure 
     {
         uint smallestIdx = 0;
         uint i;
@@ -787,24 +787,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
         newSmallestIdx = smallestIdx;
 
         uint fillAmountB = state.fillAmountS.mul(
-            state.rate.amountB
-        ) / state.rate.amountS;
+                state.rate.amountB
+            ) / state.rate.amountS;
 
         if (state.order.buyNoMoreThanAmountB) {
             if (fillAmountB > state.order.amountB) {
                 fillAmountB = state.order.amountB;
 
                 state.fillAmountS = fillAmountB.mul(
-                    state.rate.amountS
-                ) / state.rate.amountB;
+                        state.rate.amountS
+                    ) / state.rate.amountB;
 
                 newSmallestIdx = i;
             }
         }
 
-        state.lrcFee = state.order.lrcFee.mul(
-            state.fillAmountS
-        ) / state.order.amountS;
+        state.lrcFee = state.order.lrcFee.mul(state.fillAmountS) / state.order.amountS;
 
         if (fillAmountB <= next.fillAmountS) {
             next.fillAmountS = fillAmountB;
@@ -878,14 +876,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev verify input data's basic integrity.
     function verifyInputDataIntegrity(
-        uint                 ringSize,
-        address[2][] memory  addressList,
-        uint[7][]    memory  uintArgsList,
-        uint8[2][]   memory  uint8ArgsList,
-        bool[]       memory  buyNoMoreThanAmountBList,
-        uint8[]      memory  vList,
-        bytes32[]    memory  rList,
-        bytes32[]    memory  sList
+        uint          ringSize,
+        address[2][]  addressList,
+        uint[7][]     uintArgsList,
+        uint8[2][]    uint8ArgsList,
+        bool[]        buyNoMoreThanAmountBList,
+        uint8[]       vList,
+        bytes32[]     rList,
+        bytes32[]     sList
         )
         private
         pure
@@ -909,13 +907,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @return     A list of orders.
     function assembleOrders(
         TokenTransferDelegate delegate,
-        address[2][] memory   addressList,
-        uint[7][]    memory   uintArgsList,
-        uint8[2][]   memory   uint8ArgsList,
-        bool[]       memory   buyNoMoreThanAmountBList,
-        uint8[]      memory   vList,
-        bytes32[]    memory   rList,
-        bytes32[]    memory   sList
+        address[2][]    addressList,
+        uint[7][]       uintArgsList,
+        uint8[2][]      uint8ArgsList,
+        bool[]          buyNoMoreThanAmountBList,
+        uint8[]         vList,
+        bytes32[]       rList,
+        bytes32[]       sList
         )
         private
         view
