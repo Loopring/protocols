@@ -58,14 +58,10 @@ contract("RinghashRegistry", (accounts: string[]) => {
     it("should be able to submit a ring hash", async () => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
-
-      const tx = await ringhashRegistry.submitRinghash(2,
-                                                       ringOwner,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList);
-
       const ringHash = ring.getRingHashHex();
+
+      const tx = await ringhashRegistry.submitRinghash(ringOwner, ringHash);
+
       const isReserved = await ringhashRegistry.isReserved(ringHash, ringOwner);
       assert.equal(isReserved, true, "ring hash not found after summitted");
     });
@@ -84,17 +80,25 @@ contract("RinghashRegistry", (accounts: string[]) => {
       assert.equal(canSubmit2, false, "can submit again after summitted by another address");
     });
 
+    it("should be able to submit ringhashs in batch", async () => {
+      const ringminerList = [accounts[0], accounts[2], accounts[3]];
+      const ringhashList = ["0xabc", "0x12ab", "0xcb4d3"]; // mock ringhashList.
+      const tx = await ringhashRegistry.batchSubmitRinghash(ringminerList, ringhashList);
+
+      for (let i = 0; i < ringminerList.length; i++) {
+        const isReserved = await ringhashRegistry.isReserved(ringhashList[i], ringminerList[i]);
+        assert.equal(isReserved, true, "ring hash not found after summitted");
+      }
+    });
+
     it(`should not be able to submit a ring hash by a different ringminer
         if the same hash has submmitted within 100 blocks`, async () => {
       try {
         const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
         const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
+        const ringHash = ring.getRingHashHex();
 
-        const tx = await ringhashRegistry.submitRinghash(2,
-                                                         ringOwner,
-                                                         p.vList,
-                                                         p.rList,
-                                                         p.sList);
+        const tx = await ringhashRegistry.submitRinghash(ringOwner, ringHash);
       } catch (err) {
         const errMsg = `${err}`;
         assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),

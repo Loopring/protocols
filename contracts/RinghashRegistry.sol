@@ -63,25 +63,30 @@ contract RinghashRegistry {
     ////////////////////////////////////////////////////////////////////////////
 
     function submitRinghash(
-        uint        ringSize,
         address     ringminer,
-        uint8[]     vList,
-        bytes32[]   rList,
-        bytes32[]   sList
+        bytes32     ringhash
         )
         public
     {
-        bytes32 ringhash = calculateRinghash(
-            ringSize,
-            vList,
-            rList,
-            sList
-        );
-
         require(canSubmit(ringhash, ringminer)); //, "Ringhash submitted");
 
         submissions[ringhash] = Submission(ringminer, block.number);
         RinghashSubmitted(ringminer, ringhash);
+    }
+
+    function batchSubmitRinghash(
+        address[]     ringminerList,
+        bytes32[]     ringhashList
+        )
+        public
+    {
+        uint size = ringminerList.length;
+        require(size > 0);
+        require(size == ringhashList.length);
+
+        for (uint i = 0; i < size; i++) {
+            submitRinghash(ringminerList[i], ringhashList[i]);
+        }
     }
 
     /// @dev Calculate the hash of a ring.
