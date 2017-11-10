@@ -67,3 +67,34 @@ Brecht Devos
 
 - From: jonasshen
 - Resolution: https://github.com/Loopring/protocol/issues/70
+
+
+## #06 [TBD]
+
+- From: p-lb <p-lb@qq.com>
+
+Hi Team
+
+In the unregister function, we have below check on whether the token/symbol is already registerred or not.
+require(tokenSymbolMap[_symbol] == _token);
+Only for registerred symbol/token, the check will give one pass and then the unregister codes will be executed.
+However, for the case when _token is gave one value of address(0),
+the check will also give one pass even if the symbol is not registerred.
+We'd better add the check "require(_token != address(0));". This will make our contract stronger.
+-----------------------------------------------------------
+function unregisterToken(address _token, string _symbol)
+    external
+    onlyOwner
+{
+    require(tokenSymbolMap[_symbol] == _token);
+    delete tokenSymbolMap[_symbol];
+    delete tokenMap[_token];
+    for (uint i = 0; i < tokens.length; i++) {
+        if (tokens[i] == _token) {
+            tokens[i] = tokens[tokens.length - 1];
+            tokens.length --;
+            break;
+        }
+    }
+}
+-----------------------------------------------------------
