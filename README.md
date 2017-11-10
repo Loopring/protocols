@@ -7,7 +7,7 @@
 Then run the following commands from project's root directory:
  
 ```
-npm install -g browserify
+npm install -g browserify uglifyify
 npm install
 ```
 
