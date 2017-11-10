@@ -13,7 +13,8 @@
   "homepage": "https://github.com/loopring/loopring.js#readme",
   "devDependencies": {
     "eslint": "^3.19.0",
-    "eslint-plugin-jest": "^21.2.0"
+    "eslint-plugin-jest": "^21.2.0",
+    "uglifyify": "^4.0.4"
   },
   "dependencies": {
     "ethereumjs-abi": "^0.6.4",
