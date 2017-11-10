@@ -119,7 +119,7 @@ contract RinghashRegistry {
         )
         external
         view
-        returns (bytes32 ringhash, bool[2] memory attributes)
+        returns (bytes32 ringhash, bool[2] attributes)
     {
         ringhash = calculateRinghash(
             ringSize,

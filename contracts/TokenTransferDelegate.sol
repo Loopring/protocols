@@ -127,7 +127,7 @@ contract TokenTransferDelegate is Ownable {
     function getLatestAuthorizedAddresses(uint max)
         external
         view
-        returns (address[] memory addresses)
+        returns (address[] addresses)
     {
         addresses = new address[](max);
         address addr = latestAddress;
