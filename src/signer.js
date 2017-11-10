@@ -1,3 +1,5 @@
+"use strict";
+
 const abi = require('ethereumjs-abi');
 const _ = require('lodash');
 const Joi = require('joi');
@@ -14,20 +16,24 @@ const txSchema = Joi.object().keys({
     chainId: Joi.number().integer().min(1)
 }).with('nonce', 'gasPrice', 'gasLimit', 'to', 'value', 'data', 'chainId');
 
-exports.solSHA3 = function (types, data) {
+exports.solSHA3 = (types, data) =>
+{
     const hash = abi.soliditySHA3(types, data);
     return hash;
 };
 
-exports.signEthTx = function (tx, privateKey) {
+exports.signEthTx = (tx, privateKey) =>
+{
 
     const result = Joi.validate(tx, txSchema);
-    if (result.error) {
+    if (result.error)
+    {
         return new Error(JSON.stringify(result.error.details));
     }
 
     const ethTx = new Transaction(tx);
-    if (_.isString(privateKey)) {
+    if (_.isString(privateKey))
+    {
         privateKey = ethUtil.toBuffer(privateKey);
     }
     ethTx.sign(privateKey);
@@ -35,7 +41,8 @@ exports.signEthTx = function (tx, privateKey) {
 };
 
 
-exports.generateCancelOrderData = function (order) {
+exports.generateCancelOrderData = (order) =>
+{
 
     const data = abi.rawEncode(['address[3]', 'uint[7]', 'bool', 'uint8', 'uint8', 'bytes32', 'bytes32'], [order.addresses, order.orderValues, order.buyNoMoreThanAmountB, order.marginSplitPercentage, order.v, order.r, order.s]).toString('hex');
     const method = abi.methodID('cancelOrder', ['address[3]', 'uint[7]', 'bool', 'uint8', 'uint8', 'bytes32', 'bytes32']).toString('hex');
