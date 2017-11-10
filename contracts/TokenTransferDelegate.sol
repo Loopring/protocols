@@ -175,6 +175,8 @@ contract TokenTransferDelegate is Ownable {
         require(batch.length == ringSize * 6);
 
         uint p = ringSize * 2;
+        var lrc = ERC20(lrcTokenAddress);
+
         for (uint i = 0; i < ringSize; i++) {
             uint prev = ((i + ringSize - 1) % ringSize);
             address tokenS = address(batch[i]);
@@ -183,44 +185,36 @@ contract TokenTransferDelegate is Ownable {
             
             // Pay tokenS to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
+
+            ERC20 _tokenS;
+            // Try to create ERC20 instances only once per token.
+            if (owner != prevOwner || owner != feeRecipient && batch[p+1] != 0) {
+                _tokenS = ERC20(tokenS);
+            }
+
+            // Here batch[p] has been checked not to be 0.
             if (owner != prevOwner) {
                 require(
-                    ERC20(tokenS).transferFrom(
-                        owner,
-                        prevOwner,
-                        uint(batch[p])
-                    )
+                    _tokenS.transferFrom(owner, prevOwner, uint(batch[p]))
                 );
             }
 
             if (owner != feeRecipient) {
                 if (batch[p+1] != 0) {
                     require(
-                        ERC20(tokenS).transferFrom(
-                            owner,
-                            feeRecipient,
-                            uint(batch[p+1])
-                        )
+                        _tokenS.transferFrom(owner, feeRecipient, uint(batch[p+1]))
                     );
                 } 
 
                 if (batch[p+2] != 0) {
                     require(
-                        ERC20(lrcTokenAddress).transferFrom(
-                            feeRecipient,
-                            owner,
-                            uint(batch[p+2])
-                        )
+                        lrc.transferFrom(feeRecipient, owner, uint(batch[p+2]))
                     );
                 }
 
                 if (batch[p+3] != 0) {
                     require(
-                        ERC20(lrcTokenAddress).transferFrom(
-                            owner,
-                            feeRecipient,
-                            uint(batch[p+3])
-                        )
+                        lrc.transferFrom(owner, feeRecipient, uint(batch[p+3]))
                     );
                 }
             }

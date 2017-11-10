@@ -141,7 +141,7 @@ contract RinghashRegistry {
         view
         returns (bool)
     {
-        Submission submission = submissions[ringhash];
+        var submission = submissions[ringhash];
         return (
             submission.ringminer == address(0) || (
             submission.block + blocksToLive < block.number) || (
@@ -158,7 +158,7 @@ contract RinghashRegistry {
         view
         returns (bool)
     {
-        Submission submission = submissions[ringhash];
+        var submission = submissions[ringhash];
         return (
             submission.block + blocksToLive >= block.number && (
             submission.ringminer == ringminer)
