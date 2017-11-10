@@ -38,14 +38,18 @@ contract RinghashRegistry {
     mapping (bytes32 => Submission) submissions;
 
 
-    /// Events
+    ////////////////////////////////////////////////////////////////////////////
+    /// Events                                                               ///
+    ////////////////////////////////////////////////////////////////////////////
 
     event RinghashSubmitted(
         address indexed _ringminer,
         bytes32 indexed _ringhash
     );
 
-    /// Constructor
+    ////////////////////////////////////////////////////////////////////////////
+    /// Constructor                                                          ///
+    ////////////////////////////////////////////////////////////////////////////
 
     function RinghashRegistry(uint _blocksToLive)
         public
@@ -54,7 +58,9 @@ contract RinghashRegistry {
         blocksToLive = _blocksToLive;
     }
 
-    /// Public Functions
+    ////////////////////////////////////////////////////////////////////////////
+    /// Public Functions                                                     ///
+    ////////////////////////////////////////////////////////////////////////////
 
     function submitRinghash(
         uint        ringSize,
@@ -135,7 +141,7 @@ contract RinghashRegistry {
         view
         returns (bool)
     {
-        var submission = submissions[ringhash];
+        Submission submission = submissions[ringhash];
         return (
             submission.ringminer == address(0) || (
             submission.block + blocksToLive < block.number) || (
@@ -152,7 +158,7 @@ contract RinghashRegistry {
         view
         returns (bool)
     {
-        var submission = submissions[ringhash];
+        Submission submission = submissions[ringhash];
         return (
             submission.block + blocksToLive >= block.number && (
             submission.ringminer == ringminer)
