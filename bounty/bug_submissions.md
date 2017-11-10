@@ -9,7 +9,7 @@ We'll be collecting bug bounty submissions and their responses here. Please be s
 - PR: https://github.com/Loopring/protocol/pull/41
 - Resoluton: Will not implemented. See https://blog.coinfabrik.com/smart-contract-short-address-attack-mitigation-failure/
 
-## #02 [Merged]
+## #02 [Merged] LOW
 
 - From: Akash Bansal<akash.bansal2504@gmail.com>
 - Time: 22:30 04/11/2017 Beijing Time
@@ -20,7 +20,10 @@ Transfers of 0 values MUST be treated as normal transfers and fire the Transfer 
 (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md)
 But in your method "transferToken" TokenTransferDelegate you have put a check against it. Either it should be allowed or a note should be added.
 
-## #03 [Merged]
+### Remark:
+This really isn't a bug. In our protocol, if the value to be transfered is 0, we don't call the transfer method at all. 
+
+## #03 [Merged] LOW
 
 - From: Paul <pauliax6@gmail.com>
 - Time: 23:41 04/11/2017 Beijing Time
@@ -47,6 +50,9 @@ Please make sure that "assert" is used intentionally, as if it fails, all the ga
 That’s all for now. Please, let me know if you find any of these relevant. Good luck with your project!
 Regards,
 
+### Remark:
+The unregistraton function will be called very rarely; "not use assert" is a known optimization for the team.
+
 ## #04 [Rejected]
 
 - From: Brecht Devos <brechtp.devos@gmail.com>
@@ -63,13 +69,16 @@ In calculateRingFees there’s (minerLrcSpendable += lrcSpendable). Again, proba
  
 Brecht Devos
 
-## #05 [TBD]
+## #05 [MERGED] - LOW
 
 - From: jonasshen
 - Resolution: https://github.com/Loopring/protocol/issues/70
 
+### Remark:
+This is more of a incomplete feature rather than a bug. But we decided to reward this report.
 
-## #06 [TBD]
+
+## #06 [MERGED] - LOW
 
 - From: p-lb <p-lb@qq.com>
 
@@ -103,3 +112,6 @@ function unregisterToken(address _token, string _symbol)
 }
 -----------------------------------------------------------
 ```
+
+### Remark:
+The point is valid. But even without a fix, the unregisterToken still works but it will cost more gas.
