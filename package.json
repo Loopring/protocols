@@ -12,12 +12,8 @@
   "bugs": "https://github.com/loopring/loopring.js/issues",
   "homepage": "https://github.com/loopring/loopring.js#readme",
   "devDependencies": {
-    "browserify": "^14.5.0",
     "eslint": "^3.19.0",
-    "eslint-plugin-jest": "^21.2.0",
-    "gulp": "^3.9.1",
-    "gulp-tap": "^1.0.1",
-    "gulp-util": "^3.0.8"
+    "eslint-plugin-jest": "^21.2.0"
   },
   "dependencies": {
     "ethereumjs-abi": "^0.6.4",
