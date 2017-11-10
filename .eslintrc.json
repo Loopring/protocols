@@ -1,7 +1,7 @@
 {
     "parserOptions":
     {
-        "ecmaVersion": 6
+        "ecmaVersion": 2017
     },
     "plugins": [
         "jest"
@@ -31,8 +31,8 @@
         "spaced-comment": 2
     },
     "env": {
-        "node": true,
         "es6": true,
+        "node": true,
         "jest": true
     },
     "ecmaFeatures": {
