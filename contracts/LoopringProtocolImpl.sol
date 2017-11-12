@@ -513,22 +513,23 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         private
     {
-        bytes32[] memory batch = new bytes32[](ringSize * 6); // ringSize * (tokenS + owner) + ringSize * 4 amounts
-        uint p = ringSize * 2;
+        bytes32[] memory batch = new bytes32[](ringSize * 6); // ringSize * (owner + tokenS + 4 amounts)
+        uint p = 0;
         for (uint i = 0; i < ringSize; i++) {
             var state = orders[i];
             var prev = orders[(i + ringSize - 1) % ringSize];
             var next = orders[(i + 1) % ringSize];
 
-            // Store tokenS and owner of every order
-            batch[i] = bytes32(state.order.tokenS);
-            batch[ringSize + i] = bytes32(state.order.owner);    
+            // Store owner and tokenS of every order
+            batch[p] = bytes32(state.order.owner);  
+            batch[p+1] = bytes32(state.order.tokenS);
+              
             // Store all amounts
-            batch[p] = bytes32(state.fillAmountS - prev.splitB);
-            batch[p+1] = bytes32(prev.splitB + state.splitS);
-            batch[p+2] = bytes32(state.lrcReward);
-            batch[p+3] = bytes32(state.lrcFee);
-            p += 4;
+            batch[p+2] = bytes32(state.fillAmountS - prev.splitB);
+            batch[p+3] = bytes32(prev.splitB + state.splitS);
+            batch[p+4] = bytes32(state.lrcReward);
+            batch[p+5] = bytes32(state.lrcFee);
+            p += 6;
 
             // Update fill records
             if (state.order.buyNoMoreThanAmountB) {
@@ -553,12 +554,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         // Do all transactions
-        delegate.batchTransferToken(
-            ringSize,
-            _lrcTokenAddress, 
-            feeRecipient,
-            batch
-        );
+        delegate.batchTransferToken(_lrcTokenAddress, feeRecipient, batch);
     }
 
     /// @dev Verify miner has calculte the rates correctly.
