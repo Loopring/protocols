@@ -134,7 +134,7 @@ contract TokenTransferDelegate is Ownable {
         AddressInfo memory addrInfo;
         uint count = 0;
 
-        while (addr != address(0) && max < count) {
+        while (addr != address(0) && count < max) {
             addrInfo = addressInfos[addr];
             if (addrInfo.index == 0) {
                 break;
