@@ -613,11 +613,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     state.lrcFee = lrcSpendable;
                     state.order.marginSplitPercentage = _marginSplitPercentageBase;
                 }
-            }
-
-            // When an order's LRC fee is 0 or smaller than the specified fee,
-            // we help miner automatically select margin-split.
-            if (state.lrcFee == 0) {
+            } else {
+                // When an order's LRC fee is 0 or smaller than the specified fee,
+                // we help miner automatically select margin-split.
                 state.order.marginSplitPercentage = _marginSplitPercentageBase;
             }
 
@@ -625,8 +623,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < state.lrcFee) {
-                    minerLrcSpendable += getSpendable(delegate, _lrcTokenAddress, feeRecipient);
                     checkedMinerLrcSpendable = true;
+                    minerLrcSpendable += getSpendable(delegate, _lrcTokenAddress, feeRecipient);
                 }
 
                 // Only calculate split when miner has enough LRC;
@@ -663,7 +661,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     // be paid LRC reward first, so the orders in the ring does
                     // mater.
                     if (split > 0) {
-                        // minerLrcSpendable >= state.lrcFee
                         minerLrcSpendable -= state.lrcFee;
                         state.lrcReward = state.lrcFee;
                     }
