@@ -26,9 +26,9 @@ contract LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
     /// Constants                                                            ///
     ////////////////////////////////////////////////////////////////////////////
-    uint    public constant FEE_SELECT_LRC               = 0;
-    uint    public constant FEE_SELECT_MARGIN_SPLIT      = 1;
-    uint    public constant FEE_SELECT_MAX_VALUE         = 1;
+    uint8   public constant FEE_SELECT_LRC               = 0;
+    uint8   public constant FEE_SELECT_MARGIN_SPLIT      = 1;
+    uint8   public constant FEE_SELECT_MAX_VALUE         = 1;
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
 
     /// @dev Submit a order-ring for validation and settlement.
