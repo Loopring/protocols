@@ -31,45 +31,6 @@ contract LoopringProtocol {
     uint    public constant FEE_SELECT_MAX_VALUE         = 1;
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
 
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Structs                                                              ///
-    ////////////////////////////////////////////////////////////////////////////
-
-    /// @param tokenS       Token to sell.
-    /// @param tokenB       Token to buy.
-    /// @param amountS      Maximum amount of tokenS to sell.
-    /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
-    /// @param timestamp    Indicating when this order is created/signed.
-    /// @param ttl          Indicating after how many seconds from `timestamp`
-    ///                     this order will expire.
-    /// @param salt         A random number to make this order's hash unique.
-    /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
-    ///                     to pay is proportional to fill amount.
-    /// @param buyNoMoreThanAmountB -
-    ///                     If true, this order does not accept buying more
-    ///                     than `amountB`.
-    /// @param marginSplitPercentage -
-    ///                     The percentage of margin paid to miner.
-    /// @param v            ECDSA signature parameter v.
-    /// @param r            ECDSA signature parameters r.
-    /// @param s            ECDSA signature parameters s.
-    struct Order {
-        address owner;
-        address tokenS;
-        address tokenB;
-        uint    amountS;
-        uint    amountB;
-        uint    lrcFee;
-        bool    buyNoMoreThanAmountB;
-        uint8   marginSplitPercentage;
-    }
-
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Public Functions                                                     ///
-    ////////////////////////////////////////////////////////////////////////////
-
     /// @dev Submit a order-ring for validation and settlement.
     /// @param addressList  List of each order's owner and tokenS. Note that next
     ///                     order's `tokenS` equals this order's `tokenB`.

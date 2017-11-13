@@ -74,6 +74,35 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint amountB;
     }
 
+    /// @param tokenS       Token to sell.
+    /// @param tokenB       Token to buy.
+    /// @param amountS      Maximum amount of tokenS to sell.
+    /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
+    /// @param timestamp    Indicating when this order is created/signed.
+    /// @param ttl          Indicating after how many seconds from `timestamp`
+    ///                     this order will expire.
+    /// @param salt         A random number to make this order's hash unique.
+    /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
+    ///                     to pay is proportional to fill amount.
+    /// @param buyNoMoreThanAmountB -
+    ///                     If true, this order does not accept buying more
+    ///                     than `amountB`.
+    /// @param marginSplitPercentage -
+    ///                     The percentage of margin paid to miner.
+    /// @param v            ECDSA signature parameter v.
+    /// @param r            ECDSA signature parameters r.
+    /// @param s            ECDSA signature parameters s.
+    struct Order {
+        address owner;
+        address tokenS;
+        address tokenB;
+        uint    amountS;
+        uint    amountB;
+        uint    lrcFee;
+        bool    buyNoMoreThanAmountB;
+        uint8   marginSplitPercentage;
+    }
+
     /// @param order        The original order
     /// @param orderHash    The order's hash
     /// @param feeSelection -
