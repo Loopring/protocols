@@ -12,10 +12,18 @@ contract("TokenRegistry", (accounts: string[]) => {
 
   let tokenRegistry: any;
   let testTokenAddr: string;
+  let lrcAddress: string;
+  let eosAddress: string;
+  let neoAddress: string;
+  let qtumAddress: string;
 
   before(async () => {
     tokenRegistry = await TokenRegistry.deployed();
     testTokenAddr = "0x8d01f9bcca92e63a1b2752b22d16e1962aa3c920";
+    lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
+    eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
+    neoAddress = await tokenRegistry.getAddressBySymbol("NEO");
+    qtumAddress = await tokenRegistry.getAddressBySymbol("QTUM");
   });
 
   describe("owner", () => {
@@ -37,6 +45,16 @@ contract("TokenRegistry", (accounts: string[]) => {
       isRegisteredBySymbol = await tokenRegistry.isTokenRegisteredBySymbol("TEST");
       assert.equal(isRegistered, false, "token should be unregistered");
       assert.equal(isRegisteredBySymbol, false, "token should be unregistered");
+    });
+
+    it("should be able to check all tokens registered in array", async () => {
+      const tokenList = [lrcAddress, neoAddress, eosAddress, qtumAddress];
+      const allRegistered = await tokenRegistry.areAllTokensRegistered(tokenList);
+      assert.equal(allRegistered, true, "all token registered in migration script.");
+
+      tokenList.push(testTokenAddr);
+      const allRegistered2 = await tokenRegistry.areAllTokensRegistered(tokenList);
+      assert.equal(allRegistered2, false, "not all token registered");
     });
 
   });
