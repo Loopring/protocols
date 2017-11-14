@@ -27,6 +27,12 @@ contract("RinghashRegistry", (accounts: string[]) => {
   let ringFactory: RingFactory;
   let blocksToLive: number;
 
+  const advanceBlocks = async (count: number) => {
+    for (let i = 0; i < count; i++) {
+      await web3.eth.sendTransaction({from: owner, to: feeRecepient, value: 1, gas: 30000});
+    }
+  };
+
   before(async () => {
     [loopringProtocolImpl, tokenRegistry, ringhashRegistry] = await Promise.all([
       LoopringProtocolImpl.deployed(),
@@ -59,7 +65,6 @@ contract("RinghashRegistry", (accounts: string[]) => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
       const ringHash = ring.getRingHashHex();
-
       const tx = await ringhashRegistry.submitRinghash(ringOwner, ringHash);
 
       const isReserved = await ringhashRegistry.isReserved(ringHash, ringOwner);
@@ -78,6 +83,19 @@ contract("RinghashRegistry", (accounts: string[]) => {
       const ringHash = ring.getRingHashHex();
       const canSubmit2 = await ringhashRegistry.canSubmit(ringHash, order1Owner, {from: owner});
       assert.equal(canSubmit2, false, "can submit again after summitted by another address");
+    });
+
+    it("should be able to submit ringhash again by others after 100 blocks.", async () => {
+      await advanceBlocks(blocksToLive + 1);
+
+      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const ringHash = ring.getRingHashHex();
+      const canSubmit2 = await ringhashRegistry.canSubmit(ringHash, order1Owner, {from: owner});
+      assert.equal(canSubmit2, true, "can submit again by another address after N blocks.");
+
+      await ringhashRegistry.submitRinghash(order1Owner, ringHash);
+      const isReserved = await ringhashRegistry.isReserved(ringHash, order1Owner);
+      assert.equal(isReserved, true, "ring hash not found after summitted");
     });
 
     it("should be able to submit ringhashs in batch", async () => {
