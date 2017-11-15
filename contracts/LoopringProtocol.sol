@@ -31,6 +31,52 @@ contract LoopringProtocol {
     uint8   public constant FEE_SELECT_MAX_VALUE         = 1;
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
 
+    ////////////////////////////////////////////////////////////////////////////
+    /// Events                                                               ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    event RingMined(
+        uint                _ringIndex,
+        uint                _time,
+        uint                _blocknumber,
+        bytes32     indexed _ringhash,
+        address     indexed _miner,
+        address     indexed _feeRecipient,
+        bool                _isRinghashReserved
+    );
+
+    event OrderFilled(
+        uint                _ringIndex,
+        uint                _time,
+        uint                _blocknumber,
+        bytes32     indexed _ringhash,
+        bytes32             _prevOrderHash,
+        bytes32     indexed _orderHash,
+        bytes32              _nextOrderHash,
+        uint                _amountS,
+        uint                _amountB,
+        uint                _lrcReward,
+        uint                _lrcFee
+    );
+
+    event OrderCancelled(
+        uint                _time,
+        uint                _blocknumber,
+        bytes32     indexed _orderHash,
+        uint                _amountCancelled
+    );
+
+    event CutoffTimestampChanged(
+        uint                _time,
+        uint                _blocknumber,
+        address     indexed _address,
+        uint                _cutoff
+    );
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// Functions                                                            ///
+    ////////////////////////////////////////////////////////////////////////////
+
     /// @dev Submit a order-ring for validation and settlement.
     /// @param addressList  List of each order's owner and tokenS. Note that next
     ///                     order's `tokenS` equals this order's `tokenB`.
