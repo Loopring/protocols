@@ -127,6 +127,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    fillAmountS;
         uint    lrcReward;
         uint    lrcFee;
+        uint    lrcReceiableForFee;
         uint    splitS;
         uint    splitB;
     }
@@ -630,30 +631,57 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var state = orders[i];
             var next = orders[(i + 1) % ringSize];
 
-            if (state.lrcFee > 0) {
+            if (state.lrcFee == 0) {
+                // When an order's LRC fee is 0 or smaller than the specified fee,
+                // we help miner automatically select margin-split.
+                state.feeSelection == FEE_SELECT_MARGIN_SPLIT;
+                state.order.marginSplitPercentage = _marginSplitPercentageBase;
+            } else {
                 uint lrcSpendable = getSpendable(
                     delegate,
                     _lrcTokenAddress,
                     state.order.owner
                 );
 
-                // If order doesn't have enough LRC, set margin split to 100%.
-                if (lrcSpendable < state.lrcFee) {
-                    state.lrcFee = lrcSpendable;
-                    state.order.marginSplitPercentage = _marginSplitPercentageBase;
+                // If the order is selling LRC, we need to calculate how much LRC
+                // is left that can be used as fee.
+                if (state.order.tokenS == _lrcTokenAddress) {
+                    lrcSpendable -= state.fillAmountS;
                 }
-            } else {
-                // When an order's LRC fee is 0 or smaller than the specified fee,
-                // we help miner automatically select margin-split.
-                state.order.marginSplitPercentage = _marginSplitPercentageBase;
-            }
 
-            if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT || state.lrcFee == 0) {
+                // If the order is buyign LRC, it will has more to pay as fee.
+                state.lrcReceiableForFee = (state.order.tokenB == _lrcTokenAddress) ?
+                    next.fillAmountS : 0;
+
+                uint totalLrcAvailableForFee = lrcSpendable + state.lrcReceiableForFee;
+
+                // If order doesn't have enough LRC, set margin split to 100%.
+                if (totalLrcAvailableForFee < state.lrcFee) {
+                    state.lrcFee = totalLrcAvailableForFee;
+                    state.order.marginSplitPercentage = _marginSplitPercentageBase;
+                } 
+
+                if (state.lrcFee == 0) {
+                    state.feeSelection == FEE_SELECT_MARGIN_SPLIT;
+                } 
+            }  
+
+            if (state.feeSelection == FEE_SELECT_LRC) {
+                if (state.lrcReceiableForFee > 0) {
+                    if (state.lrcReceiableForFee >= state.lrcFee) {
+                        state.splitB = state.lrcFee;
+                        state.lrcFee = 0;
+                    } else {
+                        state.splitB = state.lrcReceiableForFee;
+                        state.lrcFee -= state.lrcReceiableForFee;
+                    }
+                }
+            } else if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
 
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < state.lrcFee) {
                     checkedMinerLrcSpendable = true;
-                    minerLrcSpendable += getSpendable(delegate, _lrcTokenAddress, feeRecipient);
+                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, feeRecipient);
                 }
 
                 // Only calculate split when miner has enough LRC;
@@ -695,8 +723,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     }
                     state.lrcFee = 0;
                 }
-            } else if (state.feeSelection == FEE_SELECT_LRC) {
-                minerLrcSpendable += state.lrcFee;
             } else {
                 revert(); // "unsupported fee selection value");
             }
@@ -933,6 +959,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
+                0,   // lrcReceiableForFee
                 0,   // splitS
                 0    // splitB
             );
