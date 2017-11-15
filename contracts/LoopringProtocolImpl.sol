@@ -127,7 +127,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    fillAmountS;
         uint    lrcReward;
         uint    lrcFee;
-        uint    lrcReceiableForFee;
         uint    splitS;
         uint    splitB;
     }
@@ -630,6 +629,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize; i++) {
             var state = orders[i];
             var next = orders[(i + 1) % ringSize];
+            uint lrcReceiable = 0;
 
             if (state.lrcFee == 0) {
                 // When an order's LRC fee is 0 or smaller than the specified fee,
@@ -650,14 +650,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 }
 
                 // If the order is buyign LRC, it will has more to pay as fee.
-                state.lrcReceiableForFee = (state.order.tokenB == _lrcTokenAddress) ?
-                    next.fillAmountS : 0;
+                if (state.order.tokenB == _lrcTokenAddress) {
+                    lrcReceiable = next.fillAmountS;
+                }
 
-                uint totalLrcAvailableForFee = lrcSpendable + state.lrcReceiableForFee;
+                uint lrcTotal = lrcSpendable + lrcReceiable;
 
                 // If order doesn't have enough LRC, set margin split to 100%.
-                if (totalLrcAvailableForFee < state.lrcFee) {
-                    state.lrcFee = totalLrcAvailableForFee;
+                if (lrcTotal < state.lrcFee) {
+                    state.lrcFee = lrcTotal;
                     state.order.marginSplitPercentage = _marginSplitPercentageBase;
                 }
 
@@ -667,13 +668,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
             }
 
             if (state.feeSelection == FEE_SELECT_LRC) {
-                if (state.lrcReceiableForFee > 0) {
-                    if (state.lrcReceiableForFee >= state.lrcFee) {
+                if (lrcReceiable > 0) {
+                    if (lrcReceiable >= state.lrcFee) {
                         state.splitB = state.lrcFee;
                         state.lrcFee = 0;
                     } else {
-                        state.splitB = state.lrcReceiableForFee;
-                        state.lrcFee -= state.lrcReceiableForFee;
+                        state.splitB = lrcReceiable;
+                        state.lrcFee -= lrcReceiable;
                     }
                 }
             } else if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
@@ -959,7 +960,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
-                0,   // lrcReceiableForFee
                 0,   // splitS
                 0    // splitB
             );
