@@ -80,7 +80,7 @@ contract TokenTransferDelegate is Ownable {
         onlyOwner
         external
     {
-        AddressInfo storage addrInfo = addressInfos[addr];
+        var addrInfo = addressInfos[addr];
 
         if (addrInfo.index != 0) { // existing
             if (addrInfo.authorized == false) { // re-authorize
@@ -171,7 +171,7 @@ contract TokenTransferDelegate is Ownable {
         onlyAuthorized
         external
     {
-        var len = batch.length;
+        uint len = batch.length;
         require(len % 6 == 0);
 
         var lrc = ERC20(lrcTokenAddress);
@@ -183,7 +183,7 @@ contract TokenTransferDelegate is Ownable {
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
 
-            ERC20 token = ERC20(address(batch[i+1]));
+            var token = ERC20(address(batch[i+1]));
 
             // Here batch[i+2] has been checked not to be 0.
             if (owner != prevOwner) {
