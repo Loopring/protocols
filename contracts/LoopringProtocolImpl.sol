@@ -551,9 +551,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             var next = orders[(i + 1) % ringSize];
 
             // Store owner and tokenS of every order
-            batch[p] = bytes32(state.order.owner);  
+            batch[p] = bytes32(state.order.owner);
             batch[p+1] = bytes32(state.order.tokenS);
-              
+
             // Store all amounts
             batch[p+2] = bytes32(state.fillAmountS - prev.splitB);
             batch[p+3] = bytes32(prev.splitB + state.splitS);
@@ -634,7 +634,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             if (state.lrcFee == 0) {
                 // When an order's LRC fee is 0 or smaller than the specified fee,
                 // we help miner automatically select margin-split.
-                state.feeSelection == FEE_SELECT_MARGIN_SPLIT;
+                state.feeSelection = FEE_SELECT_MARGIN_SPLIT;
                 state.order.marginSplitPercentage = _marginSplitPercentageBase;
             } else {
                 uint lrcSpendable = getSpendable(
@@ -659,12 +659,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 if (totalLrcAvailableForFee < state.lrcFee) {
                     state.lrcFee = totalLrcAvailableForFee;
                     state.order.marginSplitPercentage = _marginSplitPercentageBase;
-                } 
+                }
 
                 if (state.lrcFee == 0) {
-                    state.feeSelection == FEE_SELECT_MARGIN_SPLIT;
-                } 
-            }  
+                    state.feeSelection = FEE_SELECT_MARGIN_SPLIT;
+                }
+            }
 
             if (state.feeSelection == FEE_SELECT_LRC) {
                 if (state.lrcReceiableForFee > 0) {
@@ -735,7 +735,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         OrderState[]  orders
         )
         private
-        pure 
+        pure
     {
         uint smallestIdx = 0;
         uint i;
