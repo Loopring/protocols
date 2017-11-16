@@ -462,8 +462,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ringSize,
             orders,
             feeRecipient,
-            _lrcTokenAddress,
-            _ringIndex
+            _lrcTokenAddress
         );
 
         RingMined(
@@ -481,14 +480,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint          ringSize,
         OrderState[]  orders,
         address       feeRecipient,
-        address       _lrcTokenAddress,
-        uint64        _ringIndex
+        address       _lrcTokenAddress
         )
         private
-        returns (OrderFilled[] memory fills)
+        returns (Fill[] memory fills)
     {
         bytes32[] memory batch = new bytes32[](ringSize * 6); // ringSize * (owner + tokenS + 4 amounts)
-        fills = new OrderFilled[](ringSize);
+        fills = new Fill[](ringSize);
 
         uint p = 0;
         for (uint i = 0; i < ringSize; i++) {
@@ -514,7 +512,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 cancelledOrFilled[state.orderHash] += state.fillAmountS;
             }
 
-            fills[i] = OrderFilled(
+            fills[i] = Fill(
                 state.orderHash,
                 next.orderHash,
                 state.fillAmountS + state.splitS,

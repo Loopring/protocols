@@ -35,7 +35,7 @@ contract LoopringProtocol {
     /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
 
-    struct OrderFilled {
+    struct Fill {
         bytes32 _orderHash;
         bytes32 _nextOrderHash;
         uint    _amountS;
@@ -50,7 +50,7 @@ contract LoopringProtocol {
         address     indexed _miner,
         address     indexed _feeRecipient,
         bool                _isRinghashReserved,
-        OrderFilled[]       _fills
+        Fill[]              _fills
     );
 
     event OrderCancelled(
