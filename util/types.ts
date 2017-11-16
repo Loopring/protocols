@@ -37,6 +37,7 @@ export interface FeeItem {
   feeLrc: number;
   feeS: number;
   feeB: number;
+  lrcReward: number;
 }
 
 export interface BalanceItem {

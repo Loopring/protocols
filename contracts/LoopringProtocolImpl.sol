@@ -679,8 +679,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         minerLrcSpendable -= state.lrcFee;
                         state.lrcReward = state.lrcFee;
                     }
-                    state.lrcFee = 0;
                 }
+
+                state.lrcFee = 0;
             } else {
                 revert(); // "unsupported fee selection value");
             }

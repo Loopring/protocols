@@ -270,6 +270,66 @@ export class RingFactory {
     return ring;
   }
 
+  public async generateSize3Ring03(order1Owner: string,
+                                   order2Owner: string,
+                                   order3Owner: string,
+                                   ringOwner: string,
+                                   salt: number) {
+    const orderPrams1: OrderParams = {
+      loopringProtocol: this.loopringProtocolAddr,
+      tokenS: this.eosAddress,
+      tokenB: this.lrcAddress,
+      amountS: new BigNumber(1000e18),
+      amountB: new BigNumber(8000e18),
+      timestamp: new BigNumber(this.currBlockTimeStamp),
+      ttl: new BigNumber(36000),
+      salt: new BigNumber(salt + 1),
+      lrcFee: new BigNumber(10e18),
+      buyNoMoreThanAmountB: true,
+      marginSplitPercentage: 55,
+    };
+
+    const orderPrams2: OrderParams = {
+      loopringProtocol: this.loopringProtocolAddr,
+      tokenS: this.lrcAddress,
+      tokenB: this.neoAddress,
+      amountS: new BigNumber(2000e18),
+      amountB: new BigNumber(10e18),
+      timestamp: new BigNumber(this.currBlockTimeStamp),
+      ttl: new BigNumber(360000),
+      salt: new BigNumber(salt + 2),
+      lrcFee: new BigNumber(6e18),
+      buyNoMoreThanAmountB: false,
+      marginSplitPercentage: 0,
+    };
+
+    const orderPrams3: OrderParams = {
+      loopringProtocol: this.loopringProtocolAddr,
+      tokenS: this.neoAddress,
+      tokenB: this.eosAddress,
+      amountS: new BigNumber(20e18),
+      amountB: new BigNumber(450e18),
+      timestamp: new BigNumber(this.currBlockTimeStamp),
+      ttl: new BigNumber(360000),
+      salt: new BigNumber(salt + 3),
+      lrcFee: new BigNumber(1e18),
+      buyNoMoreThanAmountB: false,
+      marginSplitPercentage: 60,
+    };
+
+    const order1 = new Order(order1Owner, orderPrams1);
+    const order2 = new Order(order2Owner, orderPrams2);
+    const order3 = new Order(order3Owner, orderPrams3);
+    await order1.signAsync();
+    await order2.signAsync();
+    await order3.signAsync();
+
+    const ring = new Ring(ringOwner, [order1, order2, order3]);
+    await ring.signAsync();
+
+    return ring;
+  }
+
   public caculateRateAmountS(ring: Ring) {
     let rate: number = 1;
     const result: BigNumber[] = [];
