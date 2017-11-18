@@ -348,12 +348,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelAmount);
 
-        OrderCancelled(
-            block.timestamp,
-            block.number,
-            orderHash,
-            cancelAmount
-        );
+        OrderCancelled(orderHash, cancelAmount);
     }
 
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
@@ -373,12 +368,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         cutoffs[msg.sender] = t;
 
-        CutoffTimestampChanged(
-            block.timestamp,
-            block.number,
-            msg.sender,
-            t
-        );
+        CutoffTimestampChanged(msg.sender, t);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -467,24 +457,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint64 _ringIndex = ringIndex ^ ENTERED_MASK;
 
         /// Make payments.
-        settleRing(
+        var fills = settleRing(
             delegate,
             ringSize,
             orders,
-            ringhash,
             feeRecipient,
-            _lrcTokenAddress,
-            _ringIndex
+            _lrcTokenAddress
         );
 
         RingMined(
             _ringIndex,
-            block.timestamp,
-            block.number,
             ringhash,
             miner,
             feeRecipient,
-            isRinghashReserved
+            isRinghashReserved,
+            fills
         );
     }
 
@@ -492,14 +479,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
         TokenTransferDelegate delegate,
         uint          ringSize,
         OrderState[]  orders,
-        bytes32       ringhash,
         address       feeRecipient,
-        address       _lrcTokenAddress,
-        uint64        _ringIndex
+        address       _lrcTokenAddress
         )
         private
+        returns (Fill[] memory fills)
     {
         bytes32[] memory batch = new bytes32[](ringSize * 6); // ringSize * (owner + tokenS + 4 amounts)
+        fills = new Fill[](ringSize);
+
         uint p = 0;
         for (uint i = 0; i < ringSize; i++) {
             var state = orders[i];
@@ -524,12 +512,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 cancelledOrFilled[state.orderHash] += state.fillAmountS;
             }
 
-            OrderFilled(
-                _ringIndex,
-                block.timestamp,
-                block.number,
-                ringhash,
-                prev.orderHash,
+            fills[i] = Fill(
                 state.orderHash,
                 next.orderHash,
                 state.fillAmountS + state.splitS,

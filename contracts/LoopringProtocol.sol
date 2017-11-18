@@ -35,40 +35,30 @@ contract LoopringProtocol {
     /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
 
+    struct Fill {
+        bytes32 _orderHash;
+        bytes32 _nextOrderHash;
+        uint    _amountS;
+        uint    _amountB;
+        uint    _lrcReward;
+        uint    _lrcFee;
+    }
+
     event RingMined(
         uint                _ringIndex,
-        uint                _time,
-        uint                _blocknumber,
         bytes32     indexed _ringhash,
         address     indexed _miner,
         address     indexed _feeRecipient,
-        bool                _isRinghashReserved
-    );
-
-    event OrderFilled(
-        uint                _ringIndex,
-        uint                _time,
-        uint                _blocknumber,
-        bytes32     indexed _ringhash,
-        bytes32             _prevOrderHash,
-        bytes32     indexed _orderHash,
-        bytes32              _nextOrderHash,
-        uint                _amountS,
-        uint                _amountB,
-        uint                _lrcReward,
-        uint                _lrcFee
+        bool                _isRinghashReserved,
+        Fill[]              _fills
     );
 
     event OrderCancelled(
-        uint                _time,
-        uint                _blocknumber,
         bytes32     indexed _orderHash,
         uint                _amountCancelled
     );
 
     event CutoffTimestampChanged(
-        uint                _time,
-        uint                _blocknumber,
         address     indexed _address,
         uint                _cutoff
     );
