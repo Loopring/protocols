@@ -363,11 +363,10 @@ I also made a pull request for this one: https://github.com/Loopring/protocol/pu
 
 
 
-## #13 [TBD]
+## #13 [REJECTED]
 
 - From: 裴林波 <398202646@qq.com>
 - Time: 00:00 07/11/2017 Beijing Time
-- PR: 
 
 Hi Team
 
