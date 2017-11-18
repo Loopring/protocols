@@ -9,7 +9,7 @@ We'll be collecting optimization bounty submissions and their responses here. Pl
 - From: Brecht Devos <brechtp.devos@gmail.com>
 - Time: 11:22 29/10/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/35
-- Result: reduced gas usage from 508406 to 462621 (=45785), a 8.95% reduction of 511465.
+- Result: reduced gas usage from 508406 to 465790 (=42616), a 8.33% reduction of 511465.
 
 
 Hey,
@@ -43,7 +43,7 @@ Brecht Devos
 - From: Kecheng Yue <yuekec@gmail.com>
 - Time: 00:46 01/11/2017 Beijing Time
 - PR: https://github.com/Loopring/protocol/pull/37
-- Result: reduced gas usage from 462621 to 447740 (=14881), a 2.91% reduction of 511465.
+- Result: reduced gas usage from 465790 to 447740 (=18050), a 3.53% reduction of 511465.
 
 Hi,  
 
