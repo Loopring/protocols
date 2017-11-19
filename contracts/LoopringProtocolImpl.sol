@@ -734,11 +734,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
                 newSmallestIdx = i;
             }
+            state.lrcFee = state.order.lrcFee.mul(
+                fillAmountB
+            ) / state.order.amountB;               
+        } else {
+            state.lrcFee = state.order.lrcFee.mul(
+                state.fillAmountS
+            ) / state.order.amountS;
         }
-
-        state.lrcFee = state.order.lrcFee.mul(
-            state.fillAmountS
-        ) / state.order.amountS;
 
         if (fillAmountB <= next.fillAmountS) {
             next.fillAmountS = fillAmountB;
