@@ -22,9 +22,9 @@ import "./lib/MathUint.sol";
 import "./lib/Ownable.sol";
 
 
-/// @title TokenTransferDelegate - Acts as a middle man to transfer ERC20 tokens
-/// on behalf of different versions of Loopring protocol to avoid ERC20
-/// re-authorization.
+/// @title TokenTransferDelegate
+/// @dev Acts as a middle man to transfer ERC20 tokens on behalf of different
+/// versions of Loopring protocol to avoid ERC20 re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenTransferDelegate is Ownable {
     using MathUint for uint;

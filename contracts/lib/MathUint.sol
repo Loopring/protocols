@@ -18,9 +18,8 @@
 pragma solidity 0.4.18;
 
 
-/// @title UintUtil
+/// @title Utility Functions for uint
 /// @author Daniel Wang - <daniel@loopring.org>
-/// @dev uint utility functions
 library MathUint {
 
     function mul(uint a, uint b) internal pure returns (uint c) {

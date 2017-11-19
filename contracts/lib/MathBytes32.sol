@@ -18,7 +18,7 @@
 pragma solidity 0.4.18;
 
 
-/// @title Token Register Contract
+/// @title Utility Functions for byte32
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 library MathBytes32 {

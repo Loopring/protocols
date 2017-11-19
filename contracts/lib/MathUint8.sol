@@ -18,7 +18,7 @@
 pragma solidity 0.4.18;
 
 
-/// @title Token Register Contract
+/// @title Utility Functions for uint8
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 library MathUint8 {

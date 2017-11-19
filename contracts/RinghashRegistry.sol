@@ -22,6 +22,7 @@ import "./lib/MathUint8.sol";
 
 
 /// @title Ring Hash Registry Contract
+/// @dev This contracts help reserve ringhashes for miners.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract RinghashRegistry {
