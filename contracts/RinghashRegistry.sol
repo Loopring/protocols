@@ -78,7 +78,7 @@ contract RinghashRegistry {
         address[]     ringminerList,
         bytes32[]     ringhashList
         )
-        public
+        external
     {
         uint size = ringminerList.length;
         require(size > 0);

@@ -77,7 +77,7 @@ contract TokenRegistry is Ownable {
     }
 
     function areAllTokensRegistered(address[] tokenList)
-        public
+        external
         view
         returns (bool)
     {

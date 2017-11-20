@@ -212,7 +212,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address       ringminer,
         address       feeRecipient
         )
-        public
+        external
     {
         // Check if the highest bit of ringIndex is '1'.
         require(ringIndex & ENTERED_MASK != ENTERED_MASK); // "attempted to re-ent submitRing function");
@@ -311,7 +311,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32    r,
         bytes32    s
         )
-        public
+        external
     {
         uint cancelAmount = orderValues[6];
 
@@ -357,7 +357,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
     function setCutoff(uint cutoff)
-        public
+        external
     {
         uint t = cutoff;
         if (t == 0) {
