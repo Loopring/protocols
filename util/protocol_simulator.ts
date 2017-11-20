@@ -35,6 +35,8 @@ export class ProtocolSimulator {
     for (let i = 0; i < size; i ++) {
       const order = this.ring.orders[i];
       const rateAmountS = order.params.scaledAmountS * rate;
+      order.params.rateAmountS = rateAmountS;
+      order.params.rateAmountB = order.params.scaledAmountB;
       result.push(rateAmountS);
     }
 
@@ -228,8 +230,15 @@ export class ProtocolSimulator {
         order.params.marginSplitPercentage = 100;
       }
 
-      let feeLrcToPay = order.params.lrcFee.toNumber() * fillAmountSList[i] /
+      let feeLrcToPay = 0;
+      if (order.params.buyNoMoreThanAmountB) {
+        const fillAmountB = fillAmountSList[i] * order.params.rateAmountB / order.params.rateAmountS;
+        feeLrcToPay = order.params.lrcFee.toNumber() * fillAmountB / order.params.amountB.toNumber();
+      } else {
+        feeLrcToPay = order.params.lrcFee.toNumber() * fillAmountSList[i] /
         order.params.amountS.toNumber();
+      }
+
       if (this.spendableLrcFeeList[i] < feeLrcToPay) {
         feeLrcToPay = this.spendableLrcFeeList[i];
         order.params.marginSplitPercentage = 100;
@@ -266,7 +275,7 @@ export class ProtocolSimulator {
     return fees;
   }
 
-  // assume that the balance of tokenS of this.ring.orders[i].owner == this.ring.orders[i].params.amountS
+  // The balance of tokenS of this.ring.orders[i].owner is this.availableAmountSList[i].
   private caculateTraderTokenBalances(fees: FeeItem[], fillAmountSList: number[]) {
     const size = this.ring.orders.length;
     const balances: BalanceItem[] = [];

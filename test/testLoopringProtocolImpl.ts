@@ -600,7 +600,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
 
-    it("should not be able to get margin split fee if miner's spendable lrc is less than order's lrcFee.", async () => {
+    it("should not be able to get margin split fee if miner's spendable lrc is less than order's lrcFee.",
+    async () => {
       const ring = await ringFactory.generateSize3Ring03(order1Owner, order2Owner, order3Owner, ringOwner, 300);
       const feeSelectionList = [1, 1, 1];
       const availableAmountSList = [1000e18, 2006e18, 20e18];
