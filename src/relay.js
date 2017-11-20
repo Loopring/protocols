@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const crypto = require('crypto');
 const Validator = require('./validator.js');
-const PrivateKey = require('./privateKey.js');
+const Wallet = require('./wallet.js');
 const ethUtil = require('ethereumjs-util');
 const signer = require('./signer.js');
 const Joi = require('joi');
@@ -116,7 +116,7 @@ function relay(host) {
 
     this.generateTx = async function (rawTx, privateKey) {
 
-        const wallet = new PrivateKey();
+        const wallet = new Wallet();
         wallet.setPrivateKey(ethUtil.toBuffer(privateKey));
 
         const valid_result = Joi.validate(rawTx, txSchema);
@@ -389,7 +389,6 @@ function relay(host) {
         });
     };
 
-
     this.getTicker = async function (market) {
 
         request.method = 'getTicker';
@@ -406,7 +405,6 @@ function relay(host) {
             return res;
         });
     };
-
 
     this.getFills = async function (market, address, pageIndex, pageSize,contractVersion) {
 
@@ -461,7 +459,6 @@ function relay(host) {
         });
 
     };
-
 
     this.getBalances = async function (address) {
 
