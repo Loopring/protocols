@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const ethereumUtil = require('ethereumjs-util');
 const keystore = require('./keystore.js');
 
-function privateKey() {
+function Wallet() {
     var privateKey;
     var publicKey;
     var address;
@@ -30,4 +30,4 @@ function privateKey() {
 
 }
 
-module.exports = privateKey;
+module.exports = Wallet;
