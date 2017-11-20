@@ -54,7 +54,7 @@ contract TokenTransferDelegate is Ownable {
     ////////////////////////////////////////////////////////////////////////////
 
     modifier onlyAuthorized() {
-        if (isAddressAuthorized(msg.sender) == false) {
+        if (!isAddressAuthorized(msg.sender)) {
             revert();
         }
         _;

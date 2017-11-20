@@ -6,13 +6,13 @@ import "zeppelin-solidity/contracts/token/MintableToken.sol";
 contract DummyToken is MintableToken {
     string public name;
     string public symbol;
-    uint public decimals;
+    uint8  public decimals;
 
     function DummyToken(
         string _name,
         string _symbol,
-        uint _decimals,
-        uint _totalSupply
+        uint8  _decimals,
+        uint   _totalSupply
         )
         public
     {
