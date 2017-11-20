@@ -32,6 +32,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   let neoAddress: string;
   let qtumAddress: string;
   let delegateAddr: string;
+  let currBlockTimeStamp: number;
 
   let lrc: any;
   let eos: any;
@@ -97,7 +98,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     ]);
 
     const currBlockNumber = web3.eth.blockNumber;
-    const currBlockTimeStamp = web3.eth.getBlock(currBlockNumber).timestamp;
+    currBlockTimeStamp = web3.eth.getBlock(currBlockNumber).timestamp;
 
     ringFactory = new RingFactory(LoopringProtocolImpl.address,
                                   eosAddress,
@@ -672,6 +673,94 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
 
+    it("should not fill orders which are fully cancelled.", async () => {
+      const ring = await ringFactory.generateSize3Ring03(order1Owner, order2Owner, order3Owner, ringOwner, 400);
+      const feeSelectionList = [1, 1, 1];
+      const availableAmountSList = [1000e18, 2006e18, 20e18];
+      const spendableLrcFeeList = [0, 6e18, 1e18, 0];
+
+      await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
+      await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
+      await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
+      await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
+      await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
+
+      const order = ring.orders[0];
+      const cancelAmount = new BigNumber(1000e18);
+      const addresses = [order.owner, order.params.tokenS, order.params.tokenB];
+      const orderValues = [order.params.amountS,
+                           order.params.amountB,
+                           order.params.timestamp,
+                           order.params.ttl,
+                           order.params.salt,
+                           order.params.lrcFee,
+                           cancelAmount];
+
+      await loopringProtocolImpl.cancelOrder(addresses,
+                                             orderValues,
+                                             order.params.buyNoMoreThanAmountB,
+                                             order.params.marginSplitPercentage,
+                                             order.params.v,
+                                             order.params.r,
+                                             order.params.s,
+                                             {from: order.owner});
+
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+      try {
+        await loopringProtocolImpl.submitRing(p.addressList,
+                                              p.uintArgsList,
+                                              p.uint8ArgsList,
+                                              p.buyNoMoreThanAmountBList,
+                                              p.vList,
+                                              p.rList,
+                                              p.sList,
+                                              p.ringOwner,
+                                              p.feeRecepient,
+                                              {from: owner});
+      } catch (err) {
+        const errMsg = `${err}`;
+        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+               `Expected contract to throw, got: ${err}`);
+      }
+
+      await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    });
+
+    it("should not fill orders which are cancelled by setCutoff.", async () => {
+      const ring = await ringFactory.generateSize3Ring03(order1Owner, order2Owner, order3Owner, ringOwner, 500);
+      const feeSelectionList = [1, 1, 1];
+      const availableAmountSList = [1000e18, 2006e18, 20e18];
+      const spendableLrcFeeList = [0, 6e18, 1e18, 0];
+
+      await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
+      await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
+      await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
+      await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
+      await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
+
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+      await loopringProtocolImpl.setCutoff(new BigNumber(currBlockTimeStamp), {from: order1Owner});
+      try {
+        await loopringProtocolImpl.submitRing(p.addressList,
+                                              p.uintArgsList,
+                                              p.uint8ArgsList,
+                                              p.buyNoMoreThanAmountBList,
+                                              p.vList,
+                                              p.rList,
+                                              p.sList,
+                                              p.ringOwner,
+                                              p.feeRecepient,
+                                              {from: owner});
+      } catch (err) {
+        const errMsg = `${err}`;
+        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+               `Expected contract to throw, got: ${err}`);
+      }
+
+      await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    });
+
   });
 
   describe("cancelOrder", () => {
@@ -736,8 +825,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
   describe("setCutoff", () => {
     it("should be able to set cutoff timestamp for msg sender", async () => {
-      await loopringProtocolImpl.setCutoff(new BigNumber(1508566125), {from: order1Owner});
-      const cutoff = await loopringProtocolImpl.cutoffs(order1Owner);
+      await loopringProtocolImpl.setCutoff(new BigNumber(1508566125), {from: order2Owner});
+      const cutoff = await loopringProtocolImpl.cutoffs(order2Owner);
       assert.equal(cutoff.toNumber(), 1508566125, "cutoff not set correctly");
     });
   });
