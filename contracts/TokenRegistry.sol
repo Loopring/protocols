@@ -77,7 +77,7 @@ contract TokenRegistry is Ownable {
     }
 
     function areAllTokensRegistered(address[] tokenList)
-        public
+        external
         view
         returns (bool)
     {
@@ -90,7 +90,7 @@ contract TokenRegistry is Ownable {
     }
 
     function getAddressBySymbol(string symbol)
-        public
+        external
         constant
         returns (address)
     {

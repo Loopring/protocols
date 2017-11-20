@@ -68,12 +68,14 @@ library MathUint {
         }
 
         uint cvs = 0;
-        uint s = 0;
+        uint s;
+        uint item;
         for (i = 0; i < len; i++) {
-            s = arr[i] > avg ? arr[i] - avg : avg - arr[i];
+            item = arr[i];
+            s = item > avg ? item - avg : avg - item;
             cvs += mul(s, s);
         }
 
-        return (mul(mul(cvs, scale) / avg, scale) / avg) / (len - 1);
+        return ((mul(mul(cvs, scale), scale) / avg) / avg) / (len - 1);
     }
 }

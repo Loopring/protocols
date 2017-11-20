@@ -78,7 +78,7 @@ contract RinghashRegistry {
         address[]     ringminerList,
         bytes32[]     ringhashList
         )
-        public
+        external
     {
         uint size = ringminerList.length;
         require(size > 0);
@@ -147,10 +147,11 @@ contract RinghashRegistry {
         returns (bool)
     {
         var submission = submissions[ringhash];
+        address miner = submission.ringminer;
         return (
-            submission.ringminer == address(0) || (
+            miner == address(0) || (
             submission.block + blocksToLive < block.number) || (
-            submission.ringminer == ringminer)
+            miner == ringminer)
         );
     }
 

@@ -128,12 +128,12 @@ contract LoopringProtocol {
         uint8      v,
         bytes32    r,
         bytes32    s
-        ) public;
+        ) external;
 
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
     ///        timestamp.
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
-    function setCutoff(uint cutoff) public;
+    function setCutoff(uint cutoff) external;
 }
