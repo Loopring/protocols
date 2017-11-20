@@ -21,6 +21,7 @@ import "./lib/Ownable.sol";
 
 
 /// @title Token Register Contract
+/// @dev This contract maintains a list of tokens the Protocol supports.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenRegistry is Ownable {

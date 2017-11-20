@@ -28,6 +28,12 @@ import "./TokenTransferDelegate.sol";
 /// @title Loopring Token Exchange Protocol Implementation Contract v1
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
+/// 
+/// Recognized contributing developers from the community:
+///     https://github.com/Brechtpd
+///     https://github.com/rainydio
+///     https://github.com/BenjaminPrice
+///     https://github.com/jonasshen
 contract LoopringProtocolImpl is LoopringProtocol {
     using MathUint for uint;
 

@@ -18,8 +18,9 @@
 pragma solidity 0.4.18;
 
 
-/// @title ERC20 interface
+/// @title ERC20 Token Interface
 /// @dev see https://github.com/ethereum/EIPs/issues/20
+/// @author Daniel Wang - <daniel@loopring.org>
 contract ERC20 {
     uint public totalSupply;
 	
