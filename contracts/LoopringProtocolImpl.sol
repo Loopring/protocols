@@ -212,7 +212,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address       ringminer,
         address       feeRecipient
         )
-        external
+        public
     {
         // Check if the highest bit of ringIndex is '1'.
         require(ringIndex & ENTERED_MASK != ENTERED_MASK); // "attempted to re-ent submitRing function");

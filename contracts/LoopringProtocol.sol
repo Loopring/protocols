@@ -105,7 +105,7 @@ contract LoopringProtocol {
         bytes32[]       sList,
         address         ringminer,
         address         feeRecepient
-        ) external;
+        ) public;
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in orderValues.
