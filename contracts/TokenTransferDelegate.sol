@@ -183,31 +183,34 @@ contract TokenTransferDelegate is Ownable {
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
 
-            var token = ERC20(address(batch[i+1]));
+            var token = ERC20(address(batch[i + 1]));
 
             // Here batch[i+2] has been checked not to be 0.
             if (owner != prevOwner) {
                 require(
-                    token.transferFrom(owner, prevOwner, uint(batch[i+2]))
+                    token.transferFrom(owner, prevOwner, uint(batch[i + 2]))
                 );
             }
 
             if (owner != feeRecipient) {
-                if (batch[i+3] != 0) {
+                bytes32 item = batch[i + 3];
+                if (item != 0) {
                     require(
-                        token.transferFrom(owner, feeRecipient, uint(batch[i+3]))
+                        token.transferFrom(owner, feeRecipient, uint(item))
                     );
                 } 
 
-                if (batch[i+4] != 0) {
+                item = batch[i + 4];
+                if (item != 0) {
                     require(
-                        lrc.transferFrom(feeRecipient, owner, uint(batch[i+4]))
+                        lrc.transferFrom(feeRecipient, owner, uint(item))
                     );
                 }
 
-                if (batch[i+5] != 0) {
+                item = batch[i + 5];
+                if (item != 0) {
                     require(
-                        lrc.transferFrom(owner, feeRecipient, uint(batch[i+5]))
+                        lrc.transferFrom(owner, feeRecipient, uint(item))
                     );
                 }
             }

@@ -90,7 +90,7 @@ contract TokenRegistry is Ownable {
     }
 
     function getAddressBySymbol(string symbol)
-        public
+        external
         constant
         returns (address)
     {
