@@ -43004,40 +43004,6 @@ exports.isKeystorePassRequired = function (keystore) {
 };
 }).call(this,require("buffer").Buffer)
 },{"./decrypt.js":106,"buffer":160,"crypto":169,"ethereumjs-util":"ethereumjs-util","scryptsy":86,"uuid/v4":105}],109:[function(require,module,exports){
-const crypto = require('crypto');
-const ethereumUtil = require('ethereumjs-util');
-const keystore = require('./keystore.js');
-
-function privateKey() {
-    var privateKey;
-    var publicKey;
-    var address;
-
-    this.generate = function () {
-        privateKey = crypto.randomBytes(32);
-        publicKey = ethereumUtil.privateToPublic(privateKey);
-        address = ethereumUtil.publicToAddress(publicKey);
-    };
-
-    this.setPrivateKey = function (key) {
-        privateKey = key;
-        publicKey = ethereumUtil.privateToPublic(privateKey);
-        address = ethereumUtil.publicToAddress(publicKey);
-    };
-
-    this.getAddress = function () {
-        return ethereumUtil.toChecksumAddress("0x" + address.toString('hex'));
-    };
-
-
-    this.toKeystore = function (password) {
-        return keystore.pkeyToKeystore(privateKey, this.getAddress(), password)
-    }
-
-}
-
-module.exports = privateKey;
-},{"./keystore.js":108,"crypto":169,"ethereumjs-util":"ethereumjs-util"}],110:[function(require,module,exports){
 const abi = require('ethereumjs-abi');
 const _ = require('lodash');
 const Joi = require('joi');
@@ -43050,10 +43016,9 @@ const txSchema = Joi.object().keys({
     gasLimit: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
     to: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
     value: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-    data: Joi.string().regex(/^0x[0-9a-fA-F]*$/i),
+    data: Joi.string().regex(/^0x([0-9a-fA-F]{8})*([0-9a-fA-F]{64})*$/i),
     chainId: Joi.number().integer().min(1)
 }).with('nonce', 'gasPrice', 'gasLimit', 'to', 'value', 'data', 'chainId');
-
 exports.solSHA3 = function (types, data) {
     const hash = abi.soliditySHA3(types, data);
     return hash;
@@ -43082,7 +43047,7 @@ exports.generateCancelOrderData = function (order) {
 
     return '0x' + method + data;
 };
-},{"ethereumjs-abi":26,"ethereumjs-tx":28,"ethereumjs-util":"ethereumjs-util","joi":53,"lodash":79}],111:[function(require,module,exports){
+},{"ethereumjs-abi":26,"ethereumjs-tx":28,"ethereumjs-util":"ethereumjs-util","joi":53,"lodash":79}],110:[function(require,module,exports){
 (function (Buffer){
 const ethereumUtil = require('ethereumjs-util');
 const ens = require('./ens');
@@ -43150,7 +43115,41 @@ function validator() {
 module.exports = validator;
 
 }).call(this,require("buffer").Buffer)
-},{"./ens":107,"buffer":160,"ethereumjs-util":"ethereumjs-util"}],112:[function(require,module,exports){
+},{"./ens":107,"buffer":160,"ethereumjs-util":"ethereumjs-util"}],111:[function(require,module,exports){
+const crypto = require('crypto');
+const ethereumUtil = require('ethereumjs-util');
+const keystore = require('./keystore.js');
+
+function Wallet() {
+    var privateKey;
+    var publicKey;
+    var address;
+
+    this.generate = function () {
+        privateKey = crypto.randomBytes(32);
+        publicKey = ethereumUtil.privateToPublic(privateKey);
+        address = ethereumUtil.publicToAddress(publicKey);
+    };
+
+    this.setPrivateKey = function (key) {
+        privateKey = key;
+        publicKey = ethereumUtil.privateToPublic(privateKey);
+        address = ethereumUtil.publicToAddress(publicKey);
+    };
+
+    this.getAddress = function () {
+        return ethereumUtil.toChecksumAddress("0x" + address.toString('hex'));
+    };
+
+
+    this.toKeystore = function (password) {
+        return keystore.pkeyToKeystore(privateKey, this.getAddress(), password)
+    }
+
+}
+
+module.exports = Wallet;
+},{"./keystore.js":108,"crypto":169,"ethereumjs-util":"ethereumjs-util"}],112:[function(require,module,exports){
 
 },{}],113:[function(require,module,exports){
 var asn1 = exports;
@@ -57604,7 +57603,7 @@ exports.defineProperties = function (self, fields, data) {
 const fetch = require('node-fetch');
 const crypto = require('crypto');
 const Validator = require('./validator.js');
-const PrivateKey = require('./privateKey.js');
+const Wallet = require('./wallet.js');
 const ethUtil = require('ethereumjs-util');
 const signer = require('./signer.js');
 const Joi = require('joi');
@@ -57719,7 +57718,7 @@ function relay(host) {
 
     this.generateTx = async function (rawTx, privateKey) {
 
-        const wallet = new PrivateKey();
+        const wallet = new Wallet();
         wallet.setPrivateKey(ethUtil.toBuffer(privateKey));
 
         const valid_result = Joi.validate(rawTx, txSchema);
@@ -57992,7 +57991,6 @@ function relay(host) {
         });
     };
 
-
     this.getTicker = async function (market) {
 
         request.method = 'getTicker';
@@ -58009,7 +58007,6 @@ function relay(host) {
             return res;
         });
     };
-
 
     this.getFills = async function (market, address, pageIndex, pageSize,contractVersion) {
 
@@ -58065,7 +58062,6 @@ function relay(host) {
 
     };
 
-
     this.getBalances = async function (address) {
 
         request.method = 'getBalances';
@@ -58098,4 +58094,4 @@ function relay(host) {
 }
 
 module.exports = relay;
-},{"./privateKey.js":109,"./signer.js":110,"./validator.js":111,"bignumber.js":1,"crypto":169,"ethereumjs-util":"ethereumjs-util","joi":53,"lodash":79,"node-fetch":82}]},{},[]);
+},{"./signer.js":109,"./validator.js":110,"./wallet.js":111,"bignumber.js":1,"crypto":169,"ethereumjs-util":"ethereumjs-util","joi":53,"lodash":79,"node-fetch":82}]},{},[]);
