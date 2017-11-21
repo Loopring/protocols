@@ -41,10 +41,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
 
-    address public  lrcTokenAddress             = address(0);
-    address public  tokenRegistryAddress        = address(0);
-    address public  ringhashRegistryAddress     = address(0);
-    address public  delegateAddress             = address(0);
+    address public  lrcTokenAddress             = 0x0;
+    address public  tokenRegistryAddress        = 0x0;
+    address public  ringhashRegistryAddress     = 0x0;
+    address public  delegateAddress             = 0x0;
 
     uint    public  maxRingSize                 = 0;
     uint64  public  ringIndex                   = 0;
@@ -151,10 +151,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public
     {
-        require(address(0) != _lrcTokenAddress);
-        require(address(0) != _tokenRegistryAddress);
-        require(address(0) != _ringhashRegistryAddress);
-        require(address(0) != _delegateAddress);
+        require(0x0 != _lrcTokenAddress);
+        require(0x0 != _tokenRegistryAddress);
+        require(0x0 != _ringhashRegistryAddress);
+        require(0x0 != _delegateAddress);
 
         require(_maxRingSize > 1);
         require(_rateRatioCVSThreshold > 0);
@@ -278,7 +278,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList
         );
 
-        if (feeRecipient == address(0)) {
+        if (feeRecipient == 0x0) {
             feeRecipient = ringminer;
         }
 
@@ -928,9 +928,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         view
     {
-        require(order.owner != address(0)); // "invalid order owner");
-        require(order.tokenS != address(0)); // "invalid order tokenS");
-        require(order.tokenB != address(0)); // "invalid order tokenB");
+        require(order.owner != 0x0); // "invalid order owner");
+        require(order.tokenS != 0x0); // "invalid order tokenS");
+        require(order.tokenB != 0x0); // "invalid order tokenB");
         require(order.amountS != 0); // "invalid order amountS");
         require(order.amountB != 0); // "invalid order amountB");
         require(timestamp <= block.timestamp); // "order is too early to match");

@@ -150,7 +150,7 @@ contract RinghashRegistry {
         var submission = submissions[ringhash];
         address miner = submission.ringminer;
         return (
-            miner == address(0) || (
+            miner == 0x0 || (
             submission.block + blocksToLive < block.number) || (
             miner == ringminer)
         );

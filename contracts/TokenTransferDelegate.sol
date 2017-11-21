@@ -89,7 +89,7 @@ contract TokenTransferDelegate is Claimable {
             }
         } else {
             address prev = latestAddress;
-            if (prev == address(0)) {
+            if (prev == 0x0) {
                 addrInfo.index = 1;
                 addrInfo.authorized = true;
             } else {
@@ -134,7 +134,7 @@ contract TokenTransferDelegate is Claimable {
         AddressInfo memory addrInfo;
         uint count = 0;
 
-        while (addr != address(0) && count < max) {
+        while (addr != 0x0 && count < max) {
             addrInfo = addressInfos[addr];
             if (addrInfo.index == 0) {
                 break;

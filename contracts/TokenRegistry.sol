@@ -36,7 +36,7 @@ contract TokenRegistry is Claimable {
         external
         onlyOwner
     {
-        require(_token != address(0));
+        require(_token != 0x0);
         require(!isTokenRegisteredBySymbol(_symbol));
         require(!isTokenRegistered(_token));
         tokens.push(_token);
@@ -48,7 +48,7 @@ contract TokenRegistry is Claimable {
         external
         onlyOwner
     {
-        require(_token != address(0));
+        require(_token != 0x0);
         require(tokenSymbolMap[_symbol] == _token);
         delete tokenSymbolMap[_symbol];
         delete tokenMap[_token];
@@ -66,7 +66,7 @@ contract TokenRegistry is Claimable {
         view
         returns (bool)
     {
-        return tokenSymbolMap[symbol] != address(0);
+        return tokenSymbolMap[symbol] != 0x0;
     }
 
     function isTokenRegistered(address _token)
