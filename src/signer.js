@@ -41,3 +41,26 @@ exports.generateCancelOrderData = function (order) {
 
     return '0x' + method + data;
 };
+
+
+exports.generateCutOffData = function (timestamp) {
+
+    const method = abi.methodID('setCutoff', ['uint']).toString('hex');
+    const data = abi.rawEncode(['uint'], [timestamp]).toString('hex');
+    return '0x' + method + data;
+};
+
+
+exports.generateApproveData = function (address, amount) {
+
+    const method = abi.methodID('approve',['address','uint']).toString('hex');
+    const data = abi.rawEncode(['address','uint'],[address,amount]).toString('hex');
+    return '0x' + method + data;
+};
+
+exports.generateWithdrawData = function (amount) {
+
+    const method = abi.methodID('withdraw',['uint']).toString('hex');
+    const data = abi.rawEncode(['uint'],[amount]).toString('hex');
+    return '0x' + method + data;
+};
