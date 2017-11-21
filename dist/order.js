@@ -40732,6 +40732,14 @@ exports.generateWithdrawData = function (amount) {
     const data = abi.rawEncode(['uint'],[amount]).toString('hex');
     return '0x' + method + data;
 };
+
+exports.generateTransferData = function (address,amount) {
+
+    const method = abi.methodID('transfer',['address','uint']).toString('hex');
+    const data = abi.rawEncode(['address','uint'],[address, amount]).toString('hex');
+    return '0x' + method + data;
+
+};
 },{"ethereumjs-abi":26,"ethereumjs-tx":29,"ethereumjs-util":30,"joi":53,"lodash":81}],104:[function(require,module,exports){
 
 },{}],105:[function(require,module,exports){

@@ -44923,6 +44923,14 @@ exports.generateWithdrawData = function (amount) {
     const data = abi.rawEncode(['uint'],[amount]).toString('hex');
     return '0x' + method + data;
 };
+
+exports.generateTransferData = function (address,amount) {
+
+    const method = abi.methodID('transfer',['address','uint']).toString('hex');
+    const data = abi.rawEncode(['address','uint'],[address, amount]).toString('hex');
+    return '0x' + method + data;
+
+};
 },{"ethereumjs-abi":27,"ethereumjs-tx":30,"ethereumjs-util":31,"joi":56,"lodash":84}],115:[function(require,module,exports){
 (function (Buffer){
 const ethereumUtil = require('ethereumjs-util');
