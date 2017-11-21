@@ -17,14 +17,14 @@
 */
 pragma solidity 0.4.18;
 
-import "./lib/Ownable.sol";
+import "./lib/Claimable.sol";
 
 
 /// @title Token Register Contract
 /// @dev This contract maintains a list of tokens the Protocol supports.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TokenRegistry is Ownable {
+contract TokenRegistry is Claimable {
 
     address[] public tokens;
 

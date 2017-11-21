@@ -19,14 +19,14 @@ pragma solidity 0.4.18;
 
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
-import "./lib/Ownable.sol";
+import "./lib/Claimable.sol";
 
 
 /// @title TokenTransferDelegate
 /// @dev Acts as a middle man to transfer ERC20 tokens on behalf of different
 /// versions of Loopring protocol to avoid ERC20 re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TokenTransferDelegate is Ownable {
+contract TokenTransferDelegate is Claimable {
     using MathUint for uint;
 
     ////////////////////////////////////////////////////////////////////////////
