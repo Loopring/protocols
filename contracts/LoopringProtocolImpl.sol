@@ -460,8 +460,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         uint64 _ringIndex = ringIndex ^ ENTERED_MASK;
 
-        /// Make payments.
-        var fills = settleRing(
+        /// Make transfers.
+        var (orderHashList, amountsList) = settleRing(
             delegate,
             ringSize,
             orders,
@@ -475,7 +475,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             miner,
             feeRecipient,
             isRinghashReserved,
-            fills
+            orderHashList,
+            amountsList
         );
     }
 
@@ -487,10 +488,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address       _lrcTokenAddress
         )
         private
-        returns (Fill[] memory fills)
+        returns(
+        bytes32[] memory orderHashList,
+        uint[4][] memory amountsList)
     {
         bytes32[] memory batch = new bytes32[](ringSize * 6); // ringSize * (owner + tokenS + 4 amounts)
-        fills = new Fill[](ringSize);
+        orderHashList = new bytes32[](ringSize);
+        amountsList = new uint[4][](ringSize);
 
         uint p = 0;
         for (uint i = 0; i < ringSize; i++) {
@@ -516,14 +520,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 cancelledOrFilled[state.orderHash] += state.fillAmountS;
             }
 
-            fills[i] = Fill(
-                state.orderHash,
-                next.orderHash,
-                state.fillAmountS + state.splitS,
-                next.fillAmountS - state.splitB,
-                state.lrcReward,
-                state.lrcFee
-            );
+            orderHashList[i] = state.orderHash;
+            amountsList[i][0] = state.fillAmountS + state.splitS;
+            amountsList[i][1] = next.fillAmountS - state.splitB;
+            amountsList[i][2] = state.lrcReward;
+            amountsList[i][3] = state.lrcFee;
         }
 
         // Do all transactions
