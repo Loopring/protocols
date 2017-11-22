@@ -72,3 +72,17 @@ exports.generateTransferData = function (address,amount) {
     return '0x' + method + data;
 
 };
+
+
+exports.generateBalanceOfData = function (address) {
+    const method = abi.methodID('balanceOf',['address']).toString('hex');
+    const data = abi.rawEncode(['address'],[address]).toString('hex');
+    return '0x' + method + data;
+};
+
+exports.generateAllowanceData = function (owner, spender) {
+
+    const method = abi.methodID('allowance',['address','address']).toString('hex');
+    const data = abi.rawEncode(['address','address'],[owner,spender]).toString('hex');
+    return '0x' + method + data;
+};
