@@ -28,7 +28,7 @@ import "./TokenTransferDelegate.sol";
 /// @title Loopring Token Exchange Protocol Implementation Contract v1
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-/// 
+///
 /// Recognized contributing developers from the community:
 ///     https://github.com/Brechtpd
 ///     https://github.com/rainydio
@@ -365,12 +365,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function setCutoff(uint cutoff)
         external
     {
-        uint t = cutoff;
-        if (t == 0) {
-            t = block.timestamp;
-        }
 
-        require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value");
+        uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
+
+        require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value"
 
         cutoffs[msg.sender] = t;
 
@@ -742,7 +740,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             }
             state.lrcFee = state.order.lrcFee.mul(
                 fillAmountB
-            ) / state.order.amountB;               
+            ) / state.order.amountB;
         } else {
             state.lrcFee = state.order.lrcFee.mul(
                 state.fillAmountS
