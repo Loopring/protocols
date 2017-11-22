@@ -25,6 +25,11 @@ pragma solidity 0.4.18;
 contract Ownable {
     address public owner;
 
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
+
     /// @dev The Ownable constructor sets the original `owner` of the contract
     ///      to the sender.
     function Ownable() public {
@@ -41,8 +46,8 @@ contract Ownable {
     ///      newOwner.
     /// @param newOwner The address to transfer ownership to.
     function transferOwnership(address newOwner) onlyOwner public {
-        if (newOwner != address(0)) {
-            owner = newOwner;
-        }
+        require(newOwner != 0x0);
+        OwnershipTransferred(owner, newOwner);
+        owner = newOwner;
     }
 }
