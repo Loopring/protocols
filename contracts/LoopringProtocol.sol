@@ -35,22 +35,18 @@ contract LoopringProtocol {
     /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
 
-    struct Fill {
-        bytes32 _orderHash;
-        bytes32 _nextOrderHash;
-        uint    _amountS;
-        uint    _amountB;
-        uint    _lrcReward;
-        uint    _lrcFee;
-    }
 
+    /// @dev Event to emit if a ring is successfully mined.
+    /// _amountsList is an array of:
+    /// [_amountSList, _amountBList, _lrcRewardList, _lrcFeeList].
     event RingMined(
         uint                _ringIndex,
         bytes32     indexed _ringhash,
-        address     indexed _miner,
-        address     indexed _feeRecipient,
+        address             _miner,
+        address             _feeRecipient,
         bool                _isRinghashReserved,
-        Fill[]              _fills
+        bytes32[]           _orderHashList,
+        uint[4][]           _amountsList
     );
 
     event OrderCancelled(
