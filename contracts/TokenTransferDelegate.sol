@@ -54,9 +54,7 @@ contract TokenTransferDelegate is Claimable {
     ////////////////////////////////////////////////////////////////////////////
 
     modifier onlyAuthorized() {
-        if (!isAddressAuthorized(msg.sender)) {
-            revert();
-        }
+        require(addressInfos[msg.sender].authorized);
         _;
     }
 

@@ -92,7 +92,7 @@ contract TokenRegistry is Claimable {
 
     function getAddressBySymbol(string symbol)
         external
-        constant
+        view
         returns (address)
     {
         return tokenSymbolMap[symbol];
