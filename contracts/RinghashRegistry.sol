@@ -97,7 +97,7 @@ contract RinghashRegistry {
         bytes32[]   rList,
         bytes32[]   sList
         )
-        public
+        private
         pure
         returns (bytes32)
     {
@@ -147,6 +147,7 @@ contract RinghashRegistry {
         view
         returns (bool)
     {
+        require(ringminer != 0x0);
         var submission = submissions[ringhash];
         address miner = submission.ringminer;
         return (

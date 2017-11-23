@@ -217,6 +217,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public
     {
+        require(ringminer != 0x0);
         // Check if the highest bit of ringIndex is '1'.
         require(ringIndex & ENTERED_MASK != ENTERED_MASK); // "attempted to re-ent submitRing function");
 
@@ -239,6 +240,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
 
         verifyTokensRegistered(ringSize, addressList);
+
+        if (feeRecipient == 0x0) {
+            feeRecipient = ringminer;
+        }
 
         var (ringhash, ringhashAttributes) = RinghashRegistry(
             ringhashRegistryAddress
@@ -271,10 +276,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             rList,
             sList
         );
-
-        if (feeRecipient == 0x0) {
-            feeRecipient = ringminer;
-        }
 
         handleRing(
             ringSize,
@@ -359,7 +360,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         external
     {
 
-        uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
+        uint t = (cutoff == 0 || cutoff >= block.timestamp) ?
+            block.timestamp : cutoff;
 
         require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value"
 
@@ -843,6 +845,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ringSize; i++) {
             require(uintArgsList[i][6] > 0); // "order rateAmountS is zero");
             require(uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE); // "invalid order fee selection");
+            require(addressList[i][0] != 0x0);
+            require(addressList[i][1] != 0x0);
         }
     }
 
