@@ -285,7 +285,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ringhashAttributes[1]
         );
 
-        ringIndex = ringIndex ^ ENTERED_MASK + 1;
+        ringIndex = (ringIndex ^ ENTERED_MASK) + 1;
     }
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
