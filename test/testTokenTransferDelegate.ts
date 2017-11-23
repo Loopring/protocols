@@ -149,6 +149,48 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       assert.equal(ownerLrcBalance.toNumber(), 10e18, "lrc fee amount incorrect");
     });
 
+    it("should not be able to transfer token in batch if msg.sender not authorized", async () => {
+      try {
+        await lrc.setBalance(owner, 0, {from: owner});
+        await lrc.setBalance(trader1, web3.toWei(5), {from: owner});
+        await lrc.setBalance(trader2, web3.toWei(5), {from: owner});
+        await lrc.approve(delegateAddr, web3.toWei(0), {from: trader1});
+        await lrc.approve(delegateAddr, web3.toWei(5), {from: trader1});
+        await lrc.approve(delegateAddr, web3.toWei(0), {from: trader2});
+        await lrc.approve(delegateAddr, web3.toWei(5), {from: trader2});
+
+        await eos.setBalance(trader1, web3.toWei(100), {from: owner});
+        await eos.approve(delegateAddr, web3.toWei(0), {from: trader1});
+        await eos.approve(delegateAddr, web3.toWei(100), {from: trader1});
+
+        await neo.setBalance(trader2, web3.toWei(10), {from: owner});
+        await neo.approve(delegateAddr, web3.toWei(0), {from: trader2});
+        await neo.approve(delegateAddr, web3.toWei(10), {from: trader2});
+
+        const batch: string[] = [];
+        batch.push(addressToBytes32Str(trader1));
+        batch.push(addressToBytes32Str(eosAddress));
+        batch.push(numberToBytes32Str(100e18));
+        batch.push(numberToBytes32Str(0));
+        batch.push(numberToBytes32Str(0));
+        batch.push(numberToBytes32Str(5e18));
+
+        batch.push(addressToBytes32Str(trader2));
+        batch.push(addressToBytes32Str(neoAddress));
+        batch.push(numberToBytes32Str(10e18));
+        batch.push(numberToBytes32Str(0));
+        batch.push(numberToBytes32Str(0));
+        batch.push(numberToBytes32Str(5e18));
+
+        const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, owner, batch,
+                                                                  {from: loopringProtocolV2});
+      } catch (err) {
+        const errMsg = `${err}`;
+        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+               `Expected contract to throw, got: ${err}`);
+      }
+    });
+
     it("should be able to get latest authorized addresses.", async () => {
       await tokenTransferDelegate.authorizeAddress(loopringProtocolV1, {from: owner});
       await tokenTransferDelegate.authorizeAddress(loopringProtocolV2, {from: owner});

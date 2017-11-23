@@ -91,7 +91,7 @@ contract("RinghashRegistry", (accounts: string[]) => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
       const ringHash = ring.getRingHashHex();
       const canSubmit2 = await ringhashRegistry.canSubmit(ringHash, order1Owner, {from: owner});
-      assert.equal(canSubmit2, true, "can submit again by another address after N blocks.");
+      assert.equal(canSubmit2, true, "can submit again by another address after 100 blocks.");
 
       await ringhashRegistry.submitRinghash(order1Owner, ringHash);
       const isReserved = await ringhashRegistry.isReserved(ringHash, order1Owner);
@@ -109,8 +109,8 @@ contract("RinghashRegistry", (accounts: string[]) => {
       }
     });
 
-    it(`should not be able to submit a ring hash by a different ringminer
-        if the same hash has submmitted within 100 blocks`, async () => {
+    it(`should not be able to submit by a different ringminer
+        if the same hash has been submmitted within 100 blocks`, async () => {
       try {
         const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
         const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
@@ -122,7 +122,20 @@ contract("RinghashRegistry", (accounts: string[]) => {
         assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
                `Expected contract to throw, got: ${err}`);
       }
+    });
 
+    it("should be able to compute and get ringhashInfo", async () => {
+      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const ringHash = ring.getRingHashHex();
+
+      const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
+      const [ringHashFromContract, attributes] =
+        await ringhashRegistry.computeAndGetRinghashInfo(2, ringOwner, p.vList, p.rList, p.sList);
+      assert.equal(ringHashFromContract, ringHash, "ringHash not match");
+      const canSubmit = attributes[0];
+      const isReserved = attributes[1];
+      assert.equal(canSubmit, false, "a submitted ring should not be able to submit by others.");
+      assert.equal(isReserved, false, "a submitted ring should not be reserved by others.");
     });
 
   });
