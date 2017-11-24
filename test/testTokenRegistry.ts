@@ -57,6 +57,18 @@ contract("TokenRegistry", (accounts: string[]) => {
       assert.equal(allRegistered2, false, "not all token registered");
     });
 
+    it("should be able to getTokens with start index and count", async () => {
+      const allTokens = await  tokenRegistry.getTokens(0, 1000); // token length < 1000.
+      // console.log("allTokens:", allTokens);
+
+      const size = allTokens.length;
+      const tokenSlice1 = await  tokenRegistry.getTokens(1, 2); // token length < 1000.
+      const tokenSlice2 = await  tokenRegistry.getTokens(2, 2); // token length < 1000.
+
+      assert.deepEqual(tokenSlice1, allTokens.slice(1, 3), "get tokens should return expected tokens");
+      assert.deepEqual(tokenSlice2, allTokens.slice(2, 4), "get tokens should return expected tokens");
+    });
+
   });
 
   describe("any user", () => {
