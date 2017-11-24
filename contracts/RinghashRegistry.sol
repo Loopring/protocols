@@ -38,7 +38,6 @@ contract RinghashRegistry {
 
     mapping (bytes32 => Submission) submissions;
 
-
     ////////////////////////////////////////////////////////////////////////////
     /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
@@ -62,6 +61,11 @@ contract RinghashRegistry {
     ////////////////////////////////////////////////////////////////////////////
     /// Public Functions                                                     ///
     ////////////////////////////////////////////////////////////////////////////
+
+    /// @dev Disable default function.
+    function () payable public {
+        revert();
+    }
 
     function submitRinghash(
         address     ringminer,

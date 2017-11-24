@@ -72,6 +72,11 @@ contract TokenTransferDelegate is Claimable {
     /// Public Functions                                                     ///
     ////////////////////////////////////////////////////////////////////////////
 
+    /// @dev Disable default function.
+    function () payable public {
+        revert();
+    }
+
     /// @dev Add a Loopring protocol address.
     /// @param addr A loopring protocol address.
     function authorizeAddress(address addr)
