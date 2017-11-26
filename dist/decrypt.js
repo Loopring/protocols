@@ -648,21 +648,43 @@ module.exports={doubles:{step:4,points:[["e60fce93b59e9ec53011aabc21c23e97b2a313
 
 },{"bn.js":16,"minimalistic-assert":107,"minimalistic-crypto-utils":108}],82:[function(require,module,exports){
 module.exports={
-  "_from": "elliptic@^6.0.0",
+  "_args": [
+    [
+      {
+        "raw": "elliptic@^6.0.0",
+        "scope": null,
+        "escapedName": "elliptic",
+        "name": "elliptic",
+        "rawSpec": "^6.0.0",
+        "spec": ">=6.0.0 <7.0.0",
+        "type": "range"
+      },
+      "/usr/local/lib/node_modules/browserify/node_modules/browserify-sign"
+    ]
+  ],
+  "_from": "elliptic@>=6.0.0 <7.0.0",
   "_id": "elliptic@6.4.0",
-  "_inBundle": false,
-  "_integrity": "sha1-ysmvh2LIWDYYcAPI3+GT5eLq5d8=",
+  "_inCache": true,
   "_location": "/browserify/elliptic",
+  "_nodeVersion": "7.0.0",
+  "_npmOperationalInternal": {
+    "host": "packages-18-east.internal.npmjs.com",
+    "tmp": "tmp/elliptic-6.4.0.tgz_1487798866428_0.30510620190761983"
+  },
+  "_npmUser": {
+    "name": "indutny",
+    "email": "fedor@indutny.com"
+  },
+  "_npmVersion": "3.10.8",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
-    "registry": true,
     "raw": "elliptic@^6.0.0",
-    "name": "elliptic",
+    "scope": null,
     "escapedName": "elliptic",
+    "name": "elliptic",
     "rawSpec": "^6.0.0",
-    "saveSpec": null,
-    "fetchSpec": "^6.0.0"
+    "spec": ">=6.0.0 <7.0.0",
+    "type": "range"
   },
   "_requiredBy": [
     "/browserify/browserify-sign",
@@ -670,8 +692,9 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.0.tgz",
   "_shasum": "cac9af8762c85836187003c8dfe193e5e2eae5df",
+  "_shrinkwrap": null,
   "_spec": "elliptic@^6.0.0",
-  "_where": "/usr/lib/node_modules/browserify/node_modules/browserify-sign",
+  "_where": "/usr/local/lib/node_modules/browserify/node_modules/browserify-sign",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -679,7 +702,6 @@ module.exports={
   "bugs": {
     "url": "https://github.com/indutny/elliptic/issues"
   },
-  "bundleDependencies": false,
   "dependencies": {
     "bn.js": "^4.4.0",
     "brorand": "^1.0.1",
@@ -689,7 +711,6 @@ module.exports={
     "minimalistic-assert": "^1.0.0",
     "minimalistic-crypto-utils": "^1.0.0"
   },
-  "deprecated": false,
   "description": "EC cryptography",
   "devDependencies": {
     "brfs": "^1.4.3",
@@ -707,9 +728,15 @@ module.exports={
     "jshint": "^2.6.0",
     "mocha": "^2.1.0"
   },
+  "directories": {},
+  "dist": {
+    "shasum": "cac9af8762c85836187003c8dfe193e5e2eae5df",
+    "tarball": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.0.tgz"
+  },
   "files": [
     "lib"
   ],
+  "gitHead": "6b0d2b76caae91471649c8e21f0b1d3ba0f96090",
   "homepage": "https://github.com/indutny/elliptic",
   "keywords": [
     "EC",
@@ -719,7 +746,15 @@ module.exports={
   ],
   "license": "MIT",
   "main": "lib/elliptic.js",
+  "maintainers": [
+    {
+      "name": "indutny",
+      "email": "fedor@indutny.com"
+    }
+  ],
   "name": "elliptic",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/indutny/elliptic.git"
@@ -1001,7 +1036,7 @@ function Context(){}var indexOf=require("indexof"),Object_keys=function(e){if(Ob
 
 },{"indexof":100}],"decrypt":[function(require,module,exports){
 (function (Buffer){
-"use strict";const crypto=require("crypto");exports.decryptPrivKey=((e,t)=>{let r=e.slice(0,128);r=crypto.decodeCryptojsSalt(r);const c=this.evp_kdf(new Buffer(t),r.salt,{keysize:32,ivsize:16}),s=crypto.createDecipheriv("aes-256-cbc",c.key,c.iv),i=this.decipherBuffer(s,new Buffer(r.ciphertext));return new Buffer(i.toString(),"hex")}),exports.decodeCryptojsSalt=(e=>{const t=new Buffer(e,"base64");return"Salted__"===t.slice(0,8).toString()?{salt:t.slice(8,16),ciphertext:t.slice(16)}:{ciphertext:t}}),exports.decipherBuffer=((e,t)=>Buffer.concat([e.update(t),e.final()])),exports.evp_kdf=((e,t,r)=>{const c=r.keysize||16,s=r.ivsize||16,i=[];let o=0;for(;Buffer.concat(i).length<c+s;)i[o]=function(c){let s=crypto.createHash(r.digest||"md5");s.update(c),s.update(e),s.update(t),c=s.digest();for(let e=1;e<(r.count||1);e++)(s=crypto.createHash(r.digest||"md5")).update(c),c=s.digest();return c}(0===o?new Buffer(0):i[o-1]),o++;const f=Buffer.concat(i);return{key:f.slice(0,c),iv:f.slice(c,c+s)}});
+"use strict";const crypto=require("crypto");exports.decryptPrivKey=((e,t)=>{let r=e.slice(0,128);r=crypto.decodeCryptojsSalt(r);const c=this.evp_kdf(new Buffer(t),r.salt,{keysize:32,ivsize:16}),s=crypto.createDecipheriv("aes-256-cbc",c.key,c.iv),i=this.decipherBuffer(s,new Buffer(r.ciphertext));return new Buffer(i.toString(),"hex")}),exports.decodeCryptojsSalt=(e=>{const t=new Buffer(e,"base64");return"Salted__"===t.slice(0,8).toString()?{salt:t.slice(8,16),ciphertext:t.slice(16)}:{ciphertext:t}}),exports.decipherBuffer=((e,t)=>Buffer.concat([e.update(t),e.final()])),exports.evp_kdf=((e,t,r)=>{function c(c){let s=crypto.createHash(r.digest||"md5");s.update(c),s.update(e),s.update(t),c=s.digest();for(let e=1;e<(r.count||1);e++)(s=crypto.createHash(r.digest||"md5")).update(c),c=s.digest();return c}const s=r.keysize||16,i=r.ivsize||16,o=[];let f=0;for(;Buffer.concat(o).length<s+i;)o[f]=c(0===f?new Buffer(0):o[f-1]),f++;const p=Buffer.concat(o);return{key:p.slice(0,s),iv:p.slice(s,s+i)}});
 
 }).call(this,require("buffer").Buffer)
 },{"buffer":47,"crypto":56}]},{},[]);
