@@ -3,7 +3,7 @@
 browserify -g uglifyify -t uglifyify -r ./src/ens.js:ens > ./dist/ens.js
 browserify -g uglifyify -t uglifyify -r ./src/hex-utils.js:hex-utils > ./dist/hex-utils.js
 browserify -g uglifyify -t uglifyify -r ./src/keystore.js:keystore > ./dist/keystore.js
-browserify -g uglifyify -t uglifyify -r ./src/privateKey.js:privateKey > ./dist/privateKey.js
+browserify -g uglifyify -t uglifyify -r ./src/wallet.js:wallet > ./dist/wallet.js
 browserify -g uglifyify -t uglifyify -r ./src/validator.js:validator > ./dist/validator.js
 browserify -g uglifyify -t uglifyify -r ./src/order.js:order > ./dist/order.js
 browserify -g uglifyify -t uglifyify -r ./src/signer.js:signer > ./dist/signer.js

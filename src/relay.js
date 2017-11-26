@@ -3,7 +3,7 @@
 const fetch = require('node-fetch');
 const crypto = require('crypto');
 const Validator = require('./validator.js');
-const PrivateKey = require('./privateKey.js');
+const Wallet = require('./wallet.js');
 const ethUtil = require('ethereumjs-util');
 const signer = require('./signer.js');
 const Joi = require('joi');
@@ -137,7 +137,7 @@ function relay(host)
     this.generateTx = async (rawTx, privateKey) =>
     {
 
-        const wallet = new PrivateKey();
+        const wallet = new Wallet();
         wallet.setPrivateKey(ethUtil.toBuffer(privateKey));
 
         const valid_result = Joi.validate(rawTx, txSchema);
@@ -219,9 +219,7 @@ function relay(host)
 
             throw new Error('invalid token contract Address ' + token);
         }
-        const method = '0x' + ethUtil.sha3('balanceOf(address)').toString('hex').slice(0, 8);
-        const value = ethUtil.setLengthLeft(ethUtil.toBuffer(add), 32).toString('hex');
-        const data = method + value;
+        const data = signer.generateBalanceOfData(add);
 
         const params = {
             to: token,
@@ -260,11 +258,7 @@ function relay(host)
             throw new Error('invalid token Contract Address');
         }
 
-        const method = '0x' + ethUtil.sha3('allowance(address,address)').toString('hex').slice(0, 8);
-
-        const value = ethUtil.setLengthLeft(ethUtil.toBuffer(owner), 32).toString('hex') + ethUtil.setLengthLeft(ethUtil.toBuffer(spender), 32).toString('hex');
-
-        const data = method + value;
+        const data = signer.generateAllowanceData(owner,spender);
         const params = {
             to: token,
             data
@@ -284,110 +278,7 @@ function relay(host)
 
     };
 
-    this.setTokenAllowance = async (
-        token, spender, value, privateKey, gasLimit, gasPrice
-    ) =>
-    {
-
-        if (!validataor.isValidETHAddress(spender))
-        {
-            throw new Error('invalid spender address');
-        }
-
-        if (!validataor.isValidETHAddress(token))
-        {
-
-            throw new Error('invalid token Contract Address');
-        }
-
-        if (_.isNumber(value))
-        {
-
-            value = '0x' + value.toString(16);
-        }
-
-        const method = '0x' + ethUtil.sha3('approve(address,uint)').toString('hex').slice(0, 8);
-        const param = ethUtil.setLengthLeft(ethUtil.toBuffer(spender), 32).toString('hex') + ethUtil.setLengthLeft(ethUtil.toBuffer(value), 32).toString('hex');
-
-        const data = method + param;
-
-        if (_.isNumber(gasPrice))
-        {
-            gasPrice = '0x' + gasPrice.toString(16);
-        }
-
-        if (_.isNumber(gasLimit))
-        {
-            gasLimit = '0x' + gasLimit.toString(16);
-        }
-
-
-        const tx = {
-            gasPrice,
-            gasLimit,
-            to: token,
-            value: '0x0',
-            data
-        };
-
-        const rawtx = await this.generateTx(tx, privateKey);
-
-        await this.sendSignedTx(rawtx.signedTx);
-    };
-
-    this.transferToken = async (
-        privateKey, to, token, value, gasLimit, gasPrice
-    ) =>
-    {
-
-        if (!validataor.isValidETHAddress(to))
-        {
-            throw new Error('invalid spender address');
-        }
-
-        if (!validataor.isValidETHAddress(token))
-        {
-
-            throw new Error('invalid token Contract Address');
-        }
-
-        if (_.isNumber(value))
-        {
-
-            value = '0x' + value.toString(16);
-        }
-
-        const method = '0x' + ethUtil.sha3('transfer(address,uint)').toString('hex').slice(0, 8);
-        const params = ethUtil.setLengthLeft(ethUtil.toBuffer(to), 32).toString('hex') + ethUtil.setLengthLeft(ethUtil.toBuffer(value), 32).toString('hex');
-
-        const data = method + params;
-
-        if (_.isNumber(gasPrice))
-        {
-            gasPrice = '0x' + gasPrice.toString(16);
-        }
-
-        if (_.isNumber(gasLimit))
-        {
-            gasLimit = '0x' + gasLimit.toString(16);
-        }
-
-        const rawtx = {
-            gasLimit,
-            gasPrice,
-            to: token,
-            value: '0x0',
-            data
-        };
-
-        const tx = await this.generateTx(rawtx, privateKey);
-
-        await this.sendSignedTx(tx.signedTx);
-
-    };
-
-    this.submitLoopringOrder = async (order) =>
-    {
+    this.submitLoopringOrder = async function (order) {
 
         request.method = 'submitOrder';
         request.params = order;
@@ -454,9 +345,7 @@ function relay(host)
         });
     };
 
-
-    this.getTicker = async (market) =>
-    {
+    this.getTicker = async function (market) {
 
         request.method = 'getTicker';
         request.params = {market};
@@ -474,11 +363,7 @@ function relay(host)
         });
     };
 
-
-    this.getFills = async (
-        market, address, pageIndex, pageSize,contractVersion
-    ) =>
-    {
+    this.getFills = async function (market, address, pageIndex, pageSize,contractVersion) {
 
         request.method = 'getFills';
         request.params = {market, address, pageIndex, pageSize,contractVersion};
@@ -539,9 +424,7 @@ function relay(host)
 
     };
 
-
-    this.getBalances = async (address) =>
-    {
+    this.getBalances = async function (address) {
 
         request.method = 'getBalances';
         request.params = {address};
