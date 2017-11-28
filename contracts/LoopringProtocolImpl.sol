@@ -418,7 +418,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint64 _ringIndex = ringIndex ^ ENTERED_MASK;
         address _lrcTokenAddress = lrcTokenAddress;
         var delegate = TokenTransferDelegate(delegateAddress);
-                
+
         // Do the hard work.
         verifyRingHasNoSubRing(ringSize, orders);
 
@@ -479,11 +479,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         returns(
         bytes32[] memory orderHashList,
-        uint[4][] memory amountsList)
+        uint[6][] memory amountsList)
     {
         bytes32[] memory batch = new bytes32[](ringSize * 6); // ringSize * (owner + tokenS + 4 amounts)
         orderHashList = new bytes32[](ringSize);
-        amountsList = new uint[4][](ringSize);
+        amountsList = new uint[6][](ringSize);
 
         uint p = 0;
         for (uint i = 0; i < ringSize; i++) {
@@ -515,6 +515,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             amountsList[i][1] = nextFillAmountS - state.splitB;
             amountsList[i][2] = state.lrcReward;
             amountsList[i][3] = state.lrcFee;
+            amountsList[i][4] = state.splitS;
+            amountsList[i][5] = state.splitB;
         }
 
         // Do all transactions
@@ -784,7 +786,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             require(order.amountS > 0); // "amountS is zero");
             require(order.amountB > 0); // "amountB is zero");
-            
+
             uint availableAmountS = getSpendable(delegate, order.tokenS, order.owner);
             require(availableAmountS > 0); // "order spendable amountS is zero");
 
@@ -863,7 +865,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         for (uint i = 0; i < ringSize; i++) {
             var uintArgs = uintArgsList[i];
-        
+
             var order = Order(
                 addressList[i][0],
                 addressList[i][1],

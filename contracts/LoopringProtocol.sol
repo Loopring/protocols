@@ -38,7 +38,7 @@ contract LoopringProtocol {
 
     /// @dev Event to emit if a ring is successfully mined.
     /// _amountsList is an array of:
-    /// [_amountSList, _amountBList, _lrcRewardList, _lrcFeeList].
+    /// [_amountS, _amountB, _lrcReward, _lrcFee, splitS, splitB].
     event RingMined(
         uint                _ringIndex,
         bytes32     indexed _ringhash,
@@ -46,7 +46,7 @@ contract LoopringProtocol {
         address             _feeRecipient,
         bool                _isRinghashReserved,
         bytes32[]           _orderHashList,
-        uint[4][]           _amountsList
+        uint[6][]           _amountsList
     );
 
     event OrderCancelled(
