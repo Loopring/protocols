@@ -242,8 +242,8 @@ function relay(host) {
 
     this.submitLoopringOrder = async function (order) {
 
-        request.method = 'submitOrder';
-        request.params = order;
+        request.method = 'loopring_submitOrder';
+        request.params = [order];
         request.id = id();
 
         return await fetch(host, {
@@ -265,8 +265,8 @@ function relay(host) {
 
     this.getOrders = async function (market, address, status, pageIndex, pageSize, contractVersion) {
 
-        request.method = 'getOrders';
-        request.params = {market, address, status,contractVersion, pageIndex, pageSize};
+        request.method = 'loopring_getOrders';
+        request.params = [{market, address, status,contractVersion, pageIndex, pageSize}];
         request.id = id();
 
         return await fetch(host, {
@@ -282,8 +282,8 @@ function relay(host) {
     };
 
     this.getDepth = async function (market, pageIndex, pageSize, contractVersion) {
-        request.method = 'getDepth';
-        request.params = {market, pageIndex, pageSize,contractVersion};
+        request.method = 'loopring_getDepth';
+        request.params = [{market, pageIndex, pageSize,contractVersion}];
         request.id = id();
 
         return await fetch(host, {
@@ -299,8 +299,8 @@ function relay(host) {
 
     this.getTicker = async function (market) {
 
-        request.method = 'getTicker';
-        request.params = {market};
+        request.method = 'loopring_getTicker';
+        request.params = [{market}];
         request.id = id();
 
         return await fetch(host, {
@@ -316,8 +316,8 @@ function relay(host) {
 
     this.getFills = async function (market, address, pageIndex, pageSize,contractVersion) {
 
-        request.method = 'getFills';
-        request.params = {market, address, pageIndex, pageSize,contractVersion};
+        request.method = 'loopring_getFills';
+        request.params = [{market, address, pageIndex, pageSize,contractVersion}];
         request.id = id();
 
         return await fetch(host, {
@@ -334,8 +334,8 @@ function relay(host) {
 
     this.getCandleTicks = async function (market, interval, size) {
 
-        request.method = 'getCandleTicks';
-        request.params = {market, interval, size};
+        request.method = 'loorping_getCandleTicks';
+        request.params = [{market, interval, size}];
         request.id = id();
 
         return await fetch(host, {
@@ -352,8 +352,8 @@ function relay(host) {
 
     this.getRingMined = async function (ringHash, orderHash, miner, pageIndex, pageSize,contractVersion) {
 
-        request.method = 'getRingMined';
-        request.params = {ringHash, orderHash, miner, pageIndex, pageSize,contractVersion};
+        request.method = 'loopring_getRingMined';
+        request.params = [{ringHash, orderHash, miner, pageIndex, pageSize,contractVersion}];
         request.id = id();
 
         return await fetch(host, {
@@ -370,8 +370,8 @@ function relay(host) {
 
     this.getBalances = async function (address) {
 
-        request.method = 'getBalances';
-        request.params = {address};
+        request.method = 'loopring_getBalances';
+        request.params = [{address}];
         request.id = id();
 
         return await fetch(host, {
