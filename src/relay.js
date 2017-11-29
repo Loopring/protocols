@@ -283,7 +283,7 @@ function relay(host) {
 
     this.getDepth = async function (market, pageIndex, pageSize, contractVersion) {
         request.method = 'loopring_getDepth';
-        request.params = [market, pageIndex, pageSize,contractVersion];
+        request.params = [{market, pageIndex, pageSize,contractVersion}];
         request.id = id();
 
         return await fetch(host, {
@@ -300,7 +300,7 @@ function relay(host) {
     this.getTicker = async function (market) {
 
         request.method = 'loopring_getTicker';
-        request.params = [market];
+        request.params = [{market}];
         request.id = id();
 
         return await fetch(host, {
