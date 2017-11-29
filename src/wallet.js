@@ -25,7 +25,7 @@ function Wallet() {
 
 
     this.toKeystore = function (password) {
-        return keystore.pkeyToKeystore(privateKey, this.getAddress(), password)
+        return keystore.pkeyToKeystore(privateKey, password)
     }
 
 }
