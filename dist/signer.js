@@ -58177,7 +58177,6 @@ exports.signEthTx = function (tx, privateKey) {
     return '0x' + ethTx.serialize().toString('hex');
 };
 
-
 exports.generateCancelOrderData = function (order) {
 
     const data = abi.rawEncode(['address[3]', 'uint[7]', 'bool', 'uint8', 'uint8', 'bytes32', 'bytes32'], [order.addresses, order.orderValues, order.buyNoMoreThanAmountB, order.marginSplitPercentage, order.v, order.r, order.s]).toString('hex');
@@ -58217,7 +58216,6 @@ exports.generateTransferData = function (address,amount) {
 
 };
 
-
 exports.generateBalanceOfData = function (address) {
     const method = abi.methodID('balanceOf',['address']).toString('hex');
     const data = abi.rawEncode(['address'],[address]).toString('hex');
@@ -58231,59 +58229,4 @@ exports.generateAllowanceData = function (owner, spender) {
     return '0x' + method + data;
 };
 
-exports.generateTx = function (rawTx, account) {
-
-    if (!rawTx) {
-        throw new Error(" Raw Tx is required")
-    }
-
-    const valid_result = Joi.validate(rawTx, txSchema);
-
-    if (valid_result.error) {
-        throw new Error('invalid Tx data ');
-    }
-
-    if (!account) {
-
-        throw new Error('Account is required')
-    }
-
-    if (!account.privateKey || !account.balance) {
-
-        throw new Error('privateKey or balance is missing');
-
-    }
-
-    if (!validator.isValidPrivateKey(account.privateKey)) {
-
-        throw new Error('invalid private key')
-    }
-
-    const gasLimit = new BigNumber(Number(rawTx.gasLimit));
-
-    if (gasLimit && gasLimit.lessThan(21000)) {
-        throw  new Error('gasLimit must be greater than 21000');
-    }
-
-    if (gasLimit && gasLimit.greaterThan(5000000)) {
-        throw  new Error('gasLimit is too big');
-    }
-
-    const balance = new BigNumber(Number(account.balance));
-    const needBalance = new BigNumber(Number(rawTx.value)) + gasLimit * new BigNumber(Number(rawTx.gasPrice));
-
-    if (balance && balance.lessThan(needBalance)) {
-
-        throw new Error('Balance  is not enough')
-    }
-
-    rawTx.chainId = rawTx.chainId || 1;
-
-    const signed = this.signEthTx(rawTx, account.privateKey);
-    return {
-        tx: rawTx,
-        signedTx: signed
-    }
-
-};
 },{"./validator":107,"bignumber.js":1,"ethereumjs-abi":27,"ethereumjs-tx":30,"ethereumjs-util":31,"joi":56,"lodash":84}]},{},[]);

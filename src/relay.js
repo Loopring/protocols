@@ -263,10 +263,10 @@ function relay(host) {
         return await this.sendSignedTx(tx.signedTx);
     };
 
-    this.getOrders = async function (market, address, status, pageIndex, pageSize, contractVersion) {
+    this.getOrders = async function (filter) {
 
         request.method = 'loopring_getOrders';
-        request.params = [{market, address, status,contractVersion, pageIndex, pageSize}];
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -281,9 +281,9 @@ function relay(host) {
 
     };
 
-    this.getDepth = async function (market, pageIndex, pageSize, contractVersion) {
+    this.getDepth = async function (filter) {
         request.method = 'loopring_getDepth';
-        request.params = [{market, pageIndex, pageSize,contractVersion}];
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -314,10 +314,11 @@ function relay(host) {
         });
     };
 
-    this.getFills = async function (market, address, pageIndex, pageSize,contractVersion) {
+    this.getFills = async function (filter) {
 
+        //filter:market, address, pageIndex, pageSize,contractVersion
         request.method = 'loopring_getFills';
-        request.params = [{market, address, pageIndex, pageSize,contractVersion}];
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -332,10 +333,11 @@ function relay(host) {
 
     };
 
-    this.getCandleTicks = async function (market, interval, size) {
+    this.getCandleTicks = async function (filter) {
 
+        //filter:market, interval, size
         request.method = 'loorping_getCandleTicks';
-        request.params = [{market, interval, size}];
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -350,10 +352,12 @@ function relay(host) {
 
     };
 
-    this.getRingMined = async function (ringHash, orderHash, miner, pageIndex, pageSize,contractVersion) {
+    this.getRingMined = async function (filter) {
 
+
+        //filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
         request.method = 'loopring_getRingMined';
-        request.params = [{ringHash, orderHash, miner, pageIndex, pageSize,contractVersion}];
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {

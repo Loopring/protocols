@@ -44642,219 +44642,7 @@ exports.normalise = function(name){
 }
 },{"idna-uts46":50}],113:[function(require,module,exports){
 (function (Buffer){
-const crypto = require('crypto');
-const scrypt= require('scryptsy');
-const ethereuUtil = require('ethereumjs-util');
-const uuid = require('uuid/v4');
-const decrypt = require('./decrypt.js');
-const kdf = 'scrypt';
-
-exports.decryptKeystoreToPkey = function(keystore, password) {
-
-    var wallet;
-    const parsed = JSON.parse(keystore);
-    switch (this.determineKeystoreType(keystore)) {
-        case 'presale':
-            wallet = this.decryptPresaleToPrivKey(keystore, password);
-            break;
-        case 'v1-unencrypted':
-            wallet = Buffer.from(parsed.private, 'hex');
-            break;
-        case 'v1-encrypted':
-            wallet = this.decryptMewV1ToPrivKey(keystore, password);
-            break;
-        case 'v2-unencrypted':
-            wallet = Buffer.from(parsed.privKey, 'hex');
-            break;
-        case 'v2-v3-utc':
-            wallet = this.decryptUtcKeystoreToPkey(keystore, password);
-            break;
-        default:
-            return new Error("unrecognized type of keystore");
-    }
-    return wallet;
-};
-
-exports.pkeyToKeystore = function (privateKey, address, password) {
-
-    const salt = crypto.randomBytes(32);
-    const iv = crypto.randomBytes(16);
-    var derivedKey;
-    const kdfparams = {
-            dklen: 32,
-            salt: salt.toString('hex')
-        }
-    ;
-    kdfparams.n = 1024;
-    kdfparams.r = 8;
-    kdfparams.p = 1;
-    derivedKey = scrypt(
-        new Buffer(password),
-        salt,
-        kdfparams.n,
-        kdfparams.r,
-        kdfparams.p,
-        kdfparams.dklen
-    );
-    const cipher = crypto.createCipheriv('aes-128-ctr', derivedKey.slice(0, 16), iv);
-    if (!cipher) {
-        throw new Error('Unsupported cipher');
-    }
-    const ciphertext = Buffer.concat([cipher.update(privateKey), cipher.final()]);
-    const mac = ethereuUtil.sha3(
-        Buffer.concat([derivedKey.slice(16, 32), new Buffer(ciphertext, 'hex')])
-    );
-    return {
-        version: 3,
-        id: uuid({
-            random: crypto.randomBytes(16)
-        }),
-        address,
-        Crypto: {
-            ciphertext: ciphertext.toString('hex'),
-            cipherparams: {
-                iv: iv.toString('hex')
-            },
-            cipher: 'aes-128-ctr',
-            kdf,
-            kdfparams,
-            mac: mac.toString('hex')
-        }
-    };
-};
-
-exports.decryptUtcKeystoreToPkey = function (keystore, password) {
-    const kstore = JSON.parse(keystore.toLowerCase());
-    if (kstore.version !== 3) {
-        throw new Error('Not a V3 wallet');
-    }
-    var derivedKey, kdfparams;
-
-    if (kstore.crypto.kdf === 'scrypt') {
-        kdfparams = kstore.crypto.kdfparams;
-        derivedKey = scrypt(
-            new Buffer(password),
-            new Buffer(kdfparams.salt, 'hex'),
-            kdfparams.n,
-            kdfparams.r,
-            kdfparams.p,
-            kdfparams.dklen
-        );
-    } else if (kstore.crypto.kdf === 'pbkdf2') {
-        kdfparams = kstore.crypto.kdfparams;
-        if (kdfparams.prf !== 'hmac-sha256') {
-            throw new Error('Unsupported parameters to PBKDF2');
-        }
-        derivedKey = crypto.pbkdf2Sync(
-            new Buffer(password),
-            new Buffer(kdfparams.salt, 'hex'),
-            kdfparams.c,
-            kdfparams.dklen,
-            'sha256'
-        );
-    } else {
-        throw new Error('Unsupported key derivation scheme');
-    }
-    const ciphertext = new Buffer(kstore.crypto.ciphertext, 'hex');
-    const mac = ethereuUtil.sha3(Buffer.concat([derivedKey.slice(16, 32), ciphertext]));
-    if (mac.toString('hex') !== kstore.crypto.mac) {
-        throw new Error('Key derivation failed - possibly wrong passphrase');
-    }
-    let decipher = crypto.createDecipheriv(
-        kstore.crypto.cipher,
-        derivedKey.slice(0, 16),
-        new Buffer(kstore.crypto.cipherparams.iv, 'hex')
-    );
-    let seed = decrypt.decipherBuffer(decipher, ciphertext);
-    while (seed.length < 32) {
-        let nullBuff = new Buffer([0x00]);
-        seed = Buffer.concat([nullBuff, seed]);
-    }
-    return seed;
-};
-
-exports.determineKeystoreType = function (keystore) {
-
-    const parsed = JSON.parse(keystore);
-    if (parsed.encseed) return 'presale';
-    else if (parsed.Crypto || parsed.crypto) return 'v2-v3-utc';
-    else if (parsed.hash && parsed.locked === true) return 'v1-encrypted';
-    else if (parsed.hash && parsed.locked === false) return 'v1-unencrypted';
-    else if (parsed.publisher === 'MyEtherWallet') return 'v2-unencrypted';
-    else throw new Error('Invalid keystore');
-
-};
-
-exports.decryptPresaleToPrivKey = function(keystore,password) {
-    const json = JSON.parse(keystore);
-    const encseed = new Buffer(json.encseed, 'hex');
-    const derivedKey = crypto.pbkdf2Sync(
-        new Buffer(password),
-        new Buffer(password),
-        2000,
-        32,
-        'sha256'
-    ).slice(0, 16);
-    const decipher = crypto.createDecipheriv(
-        'aes-128-cbc',
-        derivedKey,
-        encseed.slice(0, 16)
-    );
-    const seed = decrypt.decipherBuffer(decipher, encseed.slice(16));
-    const privkey = ethereuUtil.sha3(seed);
-    const address = ethereuUtil.privateToAddress(privkey);
-
-    if (address.toString('hex') !== json.ethaddr) {
-        throw new Error('Decoded key mismatch - possibly wrong passphrase');
-    }
-    return privkey;
-}
-
-exports.decryptMewV1ToPrivKey = function (keystore,password) {
-
-    const json = JSON.parse(keystore);
-    var privkey, address;
-
-    if (typeof password !== 'string') {
-        throw new Error('Password required');
-    }
-    if (password.length < 9) {
-        throw new Error('Password must be at least 9 characters');
-    }
-    var cipher = json.encrypted ? json.private.slice(0, 128) : json.private;
-    cipher = decrypt.decodeCryptojsSalt(cipher);
-    let evp = decrypt.evp_kdf(new Buffer(password), cipher.salt, {
-        keysize: 32,
-        ivsize: 16
-    });
-    const decipher = crypto.createDecipheriv('aes-256-cbc', evp.key, evp.iv);
-    privkey = decrypt.decipherBuffer(decipher, new Buffer(cipher.ciphertext));
-    privkey = new Buffer(privkey.toString(), 'hex');
-    address = '0x' + ethereuUtil.privateToAddress(privkey).toString('hex');
-
-    if (address !== json.address) {
-        throw new Error('Invalid private key or address');
-    }
-    return privkey;
-
-}
-
-exports.isKeystorePassRequired = function (keystore) {
-    switch (this.determineKeystoreType(keystore)) {
-        case 'presale':
-            return true;
-        case 'v1-unencrypted':
-            return false;
-        case 'v1-encrypted':
-            return true;
-        case 'v2-unencrypted':
-            return false;
-        case 'v2-v3-utc':
-            return true;
-        default:
-            return false;
-    }
-};
+const crypto = require('crypto');const scrypt= require('scryptsy');const ethereumUtil = require('ethereumjs-util');const uuid = require('uuid/v4');const decrypt = require('./decrypt.js');const kdf = 'scrypt';exports.decryptKeystoreToPkey = function(keystore, password) {    var wallet;    const parsed = JSON.parse(keystore);    switch (this.determineKeystoreType(keystore)) {        case 'presale':            wallet = this.decryptPresaleToPrivKey(keystore, password);            break;        case 'v1-unencrypted':            wallet = Buffer.from(parsed.private, 'hex');            break;        case 'v1-encrypted':            wallet = this.decryptMewV1ToPrivKey(keystore, password);            break;        case 'v2-unencrypted':            wallet = Buffer.from(parsed.privKey, 'hex');            break;        case 'v2-v3-utc':            wallet = this.decryptUtcKeystoreToPkey(keystore, password);            break;        default:            return new Error("unrecognized type of keystore");    }    return wallet;};exports.pkeyToKeystore = function (privateKey, password) {    const salt = crypto.randomBytes(32);    const iv = crypto.randomBytes(16);    var derivedKey;    const kdfparams = {            dklen: 32,            salt: salt.toString('hex')        }    ;    kdfparams.n = 1024;    kdfparams.r = 8;    kdfparams.p = 1;    derivedKey = scrypt(        new Buffer(password),        salt,        kdfparams.n,        kdfparams.r,        kdfparams.p,        kdfparams.dklen    );    const cipher = crypto.createCipheriv('aes-128-ctr', derivedKey.slice(0, 16), iv);    if (!cipher) {        throw new Error('Unsupported cipher');    }    const ciphertext = Buffer.concat([cipher.update(privateKey), cipher.final()]);    const mac = ethereumUtil.sha3(        Buffer.concat([derivedKey.slice(16, 32), new Buffer(ciphertext, 'hex')])    );    const publicKey = ethereumUtil.privateToPublic(privateKey);    const address = '0x'+ ethereumUtil.publicToAddress(publicKey).toString('hex');    return {        version: 3,        id: uuid({            random: crypto.randomBytes(16)        }),        address,        Crypto: {            ciphertext: ciphertext.toString('hex'),            cipherparams: {                iv: iv.toString('hex')            },            cipher: 'aes-128-ctr',            kdf,            kdfparams,            mac: mac.toString('hex')        }    };};exports.decryptUtcKeystoreToPkey = function (keystore, password) {    const kstore = JSON.parse(keystore.toLowerCase());    if (kstore.version !== 3) {        throw new Error('Not a V3 wallet');    }    var derivedKey, kdfparams;    if (kstore.crypto.kdf === 'scrypt') {        kdfparams = kstore.crypto.kdfparams;        derivedKey = scrypt(            new Buffer(password),            new Buffer(kdfparams.salt, 'hex'),            kdfparams.n,            kdfparams.r,            kdfparams.p,            kdfparams.dklen        );    } else if (kstore.crypto.kdf === 'pbkdf2') {        kdfparams = kstore.crypto.kdfparams;        if (kdfparams.prf !== 'hmac-sha256') {            throw new Error('Unsupported parameters to PBKDF2');        }        derivedKey = crypto.pbkdf2Sync(            new Buffer(password),            new Buffer(kdfparams.salt, 'hex'),            kdfparams.c,            kdfparams.dklen,            'sha256'        );    } else {        throw new Error('Unsupported key derivation scheme');    }    const ciphertext = new Buffer(kstore.crypto.ciphertext, 'hex');    const mac = ethereumUtil.sha3(Buffer.concat([derivedKey.slice(16, 32), ciphertext]));    if (mac.toString('hex') !== kstore.crypto.mac) {        throw new Error('Key derivation failed - possibly wrong passphrase');    }    let decipher = crypto.createDecipheriv(        kstore.crypto.cipher,        derivedKey.slice(0, 16),        new Buffer(kstore.crypto.cipherparams.iv, 'hex')    );    let seed = decrypt.decipherBuffer(decipher, ciphertext);    while (seed.length < 32) {        let nullBuff = new Buffer([0x00]);        seed = Buffer.concat([nullBuff, seed]);    }    return seed;};exports.determineKeystoreType = function (keystore) {    const parsed = JSON.parse(keystore);    if (parsed.encseed) return 'presale';    else if (parsed.Crypto || parsed.crypto) return 'v2-v3-utc';    else if (parsed.hash && parsed.locked === true) return 'v1-encrypted';    else if (parsed.hash && parsed.locked === false) return 'v1-unencrypted';    else if (parsed.publisher === 'MyEtherWallet') return 'v2-unencrypted';    else throw new Error('Invalid keystore');};exports.decryptPresaleToPrivKey = function(keystore,password) {    const json = JSON.parse(keystore);    const encseed = new Buffer(json.encseed, 'hex');    const derivedKey = crypto.pbkdf2Sync(        new Buffer(password),        new Buffer(password),        2000,        32,        'sha256'    ).slice(0, 16);    const decipher = crypto.createDecipheriv(        'aes-128-cbc',        derivedKey,        encseed.slice(0, 16)    );    const seed = decrypt.decipherBuffer(decipher, encseed.slice(16));    const privkey = ethereumUtil.sha3(seed);    const address = ethereumUtil.privateToAddress(privkey);    if (address.toString('hex') !== json.ethaddr) {        throw new Error('Decoded key mismatch - possibly wrong passphrase');    }    return privkey;}exports.decryptMewV1ToPrivKey = function (keystore,password) {    const json = JSON.parse(keystore);    var privkey, address;    if (typeof password !== 'string') {        throw new Error('Password required');    }    if (password.length < 9) {        throw new Error('Password must be at least 9 characters');    }    var cipher = json.encrypted ? json.private.slice(0, 128) : json.private;    cipher = decrypt.decodeCryptojsSalt(cipher);    let evp = decrypt.evp_kdf(new Buffer(password), cipher.salt, {        keysize: 32,        ivsize: 16    });    const decipher = crypto.createDecipheriv('aes-256-cbc', evp.key, evp.iv);    privkey = decrypt.decipherBuffer(decipher, new Buffer(cipher.ciphertext));    privkey = new Buffer(privkey.toString(), 'hex');    address = '0x' + ethereuUtil.privateToAddress(privkey).toString('hex');    if (address !== json.address) {        throw new Error('Invalid private key or address');    }    return privkey;}exports.isKeystorePassRequired = function (keystore) {    switch (this.determineKeystoreType(keystore)) {        case 'presale':            return true;        case 'v1-unencrypted':            return false;        case 'v1-encrypted':            return true;        case 'v2-unencrypted':            return false;        case 'v2-v3-utc':            return true;        default:            return false;    }};
 }).call(this,require("buffer").Buffer)
 },{"./decrypt.js":111,"buffer":165,"crypto":174,"ethereumjs-util":31,"scryptsy":91,"uuid/v4":110}],114:[function(require,module,exports){
 const abi = require('ethereumjs-abi');
@@ -44897,7 +44685,6 @@ exports.signEthTx = function (tx, privateKey) {
     return '0x' + ethTx.serialize().toString('hex');
 };
 
-
 exports.generateCancelOrderData = function (order) {
 
     const data = abi.rawEncode(['address[3]', 'uint[7]', 'bool', 'uint8', 'uint8', 'bytes32', 'bytes32'], [order.addresses, order.orderValues, order.buyNoMoreThanAmountB, order.marginSplitPercentage, order.v, order.r, order.s]).toString('hex');
@@ -44937,7 +44724,6 @@ exports.generateTransferData = function (address,amount) {
 
 };
 
-
 exports.generateBalanceOfData = function (address) {
     const method = abi.methodID('balanceOf',['address']).toString('hex');
     const data = abi.rawEncode(['address'],[address]).toString('hex');
@@ -44951,61 +44737,6 @@ exports.generateAllowanceData = function (owner, spender) {
     return '0x' + method + data;
 };
 
-exports.generateTx = function (rawTx, account) {
-
-    if (!rawTx) {
-        throw new Error(" Raw Tx is required")
-    }
-
-    const valid_result = Joi.validate(rawTx, txSchema);
-
-    if (valid_result.error) {
-        throw new Error('invalid Tx data ');
-    }
-
-    if (!account) {
-
-        throw new Error('Account is required')
-    }
-
-    if (!account.privateKey || !account.balance) {
-
-        throw new Error('privateKey or balance is missing');
-
-    }
-
-    if (!validator.isValidPrivateKey(account.privateKey)) {
-
-        throw new Error('invalid private key')
-    }
-
-    const gasLimit = new BigNumber(Number(rawTx.gasLimit));
-
-    if (gasLimit && gasLimit.lessThan(21000)) {
-        throw  new Error('gasLimit must be greater than 21000');
-    }
-
-    if (gasLimit && gasLimit.greaterThan(5000000)) {
-        throw  new Error('gasLimit is too big');
-    }
-
-    const balance = new BigNumber(Number(account.balance));
-    const needBalance = new BigNumber(Number(rawTx.value)) + gasLimit * new BigNumber(Number(rawTx.gasPrice));
-
-    if (balance && balance.lessThan(needBalance)) {
-
-        throw new Error('Balance  is not enough')
-    }
-
-    rawTx.chainId = rawTx.chainId || 1;
-
-    const signed = this.signEthTx(rawTx, account.privateKey);
-    return {
-        tx: rawTx,
-        signedTx: signed
-    }
-
-};
 },{"./validator":115,"bignumber.js":1,"ethereumjs-abi":27,"ethereumjs-tx":30,"ethereumjs-util":31,"joi":56,"lodash":84}],115:[function(require,module,exports){
 (function (Buffer){
 const ethereumUtil = require('ethereumjs-util');
@@ -45091,6 +44822,10 @@ function Wallet() {
     };
 
     this.setPrivateKey = function (key) {
+
+        if (typeof key === 'string') {
+            key = ethereumUtil.toBuffer(key)
+        }
         privateKey = key;
         publicKey = ethereumUtil.privateToPublic(privateKey);
         address = ethereumUtil.publicToAddress(publicKey);
@@ -45102,7 +44837,7 @@ function Wallet() {
 
 
     this.toKeystore = function (password) {
-        return keystore.pkeyToKeystore(privateKey, this.getAddress(), password)
+        return keystore.pkeyToKeystore(privateKey, password)
     }
 
 }
@@ -59132,8 +58867,8 @@ function relay(host) {
 
     this.submitLoopringOrder = async function (order) {
 
-        request.method = 'submitOrder';
-        request.params = order;
+        request.method = 'loopring_submitOrder';
+        request.params = [order];
         request.id = id();
 
         return await fetch(host, {
@@ -59153,10 +58888,10 @@ function relay(host) {
         return await this.sendSignedTx(tx.signedTx);
     };
 
-    this.getOrders = async function (market, address, status, pageIndex, pageSize, contractVersion) {
+    this.getOrders = async function (filter) {
 
-        request.method = 'getOrders';
-        request.params = {market, address, status,contractVersion, pageIndex, pageSize};
+        request.method = 'loopring_getOrders';
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -59171,9 +58906,9 @@ function relay(host) {
 
     };
 
-    this.getDepth = async function (market, pageIndex, pageSize, contractVersion) {
-        request.method = 'getDepth';
-        request.params = {market, pageIndex, pageSize,contractVersion};
+    this.getDepth = async function (filter) {
+        request.method = 'loopring_getDepth';
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -59189,8 +58924,8 @@ function relay(host) {
 
     this.getTicker = async function (market) {
 
-        request.method = 'getTicker';
-        request.params = {market};
+        request.method = 'loopring_getTicker';
+        request.params = [{market}];
         request.id = id();
 
         return await fetch(host, {
@@ -59204,28 +58939,11 @@ function relay(host) {
         });
     };
 
-    this.getFills = async function (market, address, pageIndex, pageSize,contractVersion) {
+    this.getFills = async function (filter) {
 
-        request.method = 'getFills';
-        request.params = {market, address, pageIndex, pageSize,contractVersion};
-        request.id = id();
-
-        return await fetch(host, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res => {
-            return res;
-        });
-
-    };
-
-    this.getCandleTicks = async function (market, interval, size) {
-
-        request.method = 'getCandleTicks';
-        request.params = {market, interval, size};
+        //filter:market, address, pageIndex, pageSize,contractVersion
+        request.method = 'loopring_getFills';
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -59240,10 +58958,31 @@ function relay(host) {
 
     };
 
-    this.getRingMined = async function (ringHash, orderHash, miner, pageIndex, pageSize,contractVersion) {
+    this.getCandleTicks = async function (filter) {
 
-        request.method = 'getRingMined';
-        request.params = {ringHash, orderHash, miner, pageIndex, pageSize,contractVersion};
+        //filter:market, interval, size
+        request.method = 'loorping_getCandleTicks';
+        request.params = [{filter}];
+        request.id = id();
+
+        return await fetch(host, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(request)
+        }).then(r => r.json()).then(res => {
+            return res;
+        });
+
+    };
+
+    this.getRingMined = async function (filter) {
+
+
+        //filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
+        request.method = 'loopring_getRingMined';
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -59260,8 +58999,8 @@ function relay(host) {
 
     this.getBalances = async function (address) {
 
-        request.method = 'getBalances';
-        request.params = {address};
+        request.method = 'loopring_getBalances';
+        request.params = [{address}];
         request.id = id();
 
         return await fetch(host, {
