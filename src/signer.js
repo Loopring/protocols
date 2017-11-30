@@ -38,7 +38,6 @@ exports.signEthTx = function (tx, privateKey) {
     return '0x' + ethTx.serialize().toString('hex');
 };
 
-
 exports.generateCancelOrderData = function (order) {
 
     const data = abi.rawEncode(['address[3]', 'uint[7]', 'bool', 'uint8', 'uint8', 'bytes32', 'bytes32'], [order.addresses, order.orderValues, order.buyNoMoreThanAmountB, order.marginSplitPercentage, order.v, order.r, order.s]).toString('hex');
@@ -77,7 +76,6 @@ exports.generateTransferData = function (address,amount) {
     return '0x' + method + data;
 
 };
-
 
 exports.generateBalanceOfData = function (address) {
     const method = abi.methodID('balanceOf',['address']).toString('hex');
