@@ -37,8 +37,6 @@ import "./TokenTransferDelegate.sol";
 contract LoopringProtocolImpl is LoopringProtocol {
     using MathUint for uint;
 
-    string public constant version = "1.0.0";
-
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////

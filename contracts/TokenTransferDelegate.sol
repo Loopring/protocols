@@ -29,8 +29,6 @@ import "./lib/Claimable.sol";
 contract TokenTransferDelegate is Claimable {
     using MathUint for uint;
 
-    string public constant version = "1.0.0";
-
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
