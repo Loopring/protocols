@@ -19,7 +19,6 @@ pragma solidity 0.4.18;
 
 
 /// @title Transferable Multisignature Contract
-/// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TransferableMultsig {
 
