@@ -29,6 +29,8 @@ contract RinghashRegistry {
     using MathBytes32   for bytes32[];
     using MathUint8     for uint8[];
 
+    string public constant version = "1.0.0";
+
     uint public blocksToLive;
 
     struct Submission {

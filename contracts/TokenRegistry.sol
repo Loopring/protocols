@@ -26,6 +26,8 @@ import "./lib/Claimable.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenRegistry is Claimable {
 
+    string public constant version = "1.0.0";
+
     address[] public addresses;
     mapping (address => TokenInfo) addressMap;
     mapping (string => address) symbolMap;
