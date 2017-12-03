@@ -70,10 +70,10 @@ contract TransferableMultsig {
             byte(0x19),
             byte(0),
             this,
+            nonce++,
             destination,
             value,
-            data,
-            nonce++
+            data
         );
 
         verifySignatures(sigV, sigR, sigS, txHash);
@@ -96,9 +96,9 @@ contract TransferableMultsig {
             byte(0x19),
             byte(0),
             this,
+            nonce++,
             _threshold,
-            _owners,
-            nonce++
+            _owners
         );
 
         verifySignatures(sigV, sigR, sigS, txHash);
