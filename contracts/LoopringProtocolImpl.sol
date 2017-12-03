@@ -259,7 +259,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
 
         //Assemble input data into structs so we can pass them to other functions.
-        var orders = assembleOrders(
+        OrderState[] memory orders = assembleOrders(
             addressList,
             uintArgsList,
             uint8ArgsList,
@@ -313,7 +313,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         require(cancelAmount > 0); // "amount to cancel is zero");
 
-        var order = Order(
+        Order memory order = Order(
             addresses[0],
             addresses[1],
             addresses[2],
@@ -394,7 +394,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         view
     {
         // Extract the token addresses
-        var tokens = new address[](ringSize);
+        address[] memory tokens = new address[](ringSize);
         for (uint i = 0; i < ringSize; i++) {
             tokens[i] = addressList[i][1];
         }
@@ -417,7 +417,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         uint64 _ringIndex = ringIndex ^ ENTERED_MASK;
         address _lrcTokenAddress = lrcTokenAddress;
-        var delegate = TokenTransferDelegate(delegateAddress);
+        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
 
         // Do the hard work.
         verifyRingHasNoSubRing(ringSize, orders);
@@ -487,8 +487,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         uint p = 0;
         for (uint i = 0; i < ringSize; i++) {
-            var state = orders[i];
-            var order = state.order;
+            OrderState memory state = orders[i];
+            Order memory order = state.order;
             uint prevSplitB = orders[(i + ringSize - 1) % ringSize].splitB;
             uint nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
 
@@ -531,7 +531,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         view
     {
-        var rateRatios = new uint[](ringSize);
+        uint[] memory rateRatios = new uint[](ringSize);
         uint _rateRatioScale = RATE_RATIO_SCALE;
 
         for (uint i = 0; i < ringSize; i++) {
@@ -565,7 +565,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint nextFillAmountS;
 
         for (uint i = 0; i < ringSize; i++) {
-            var state = orders[i];
+            OrderState memory state = orders[i];
             uint lrcReceiable = 0;
 
             if (state.lrcFee == 0) {
@@ -760,8 +760,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         view
     {
         for (uint i = 0; i < ringSize; i++) {
-            var state = orders[i];
-            var order = state.order;
+            OrderState memory state = orders[i];
+            Order memory order = state.order;
             uint amount;
 
             if (order.buyNoMoreThanAmountB) {
@@ -807,7 +807,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         view
         returns (uint)
     {
-        var token = ERC20(tokenAddress);
+        ERC20 token = ERC20(tokenAddress);
         uint allowance = token.allowance(
             tokenOwner,
             address(delegate)
@@ -858,15 +858,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         private
         view
-        returns (OrderState[] orders)
+        returns (OrderState[] memory orders)
     {
         uint ringSize = addressList.length;
         orders = new OrderState[](ringSize);
 
         for (uint i = 0; i < ringSize; i++) {
-            var uintArgs = uintArgsList[i];
+            uint[7] memory uintArgs = uintArgsList[i];
 
-            var order = Order(
+            Order memory order = Order(
                 addressList[i][0],
                 addressList[i][1],
                 addressList[(i + 1) % ringSize][1],

@@ -83,7 +83,7 @@ contract TokenTransferDelegate is Claimable {
         onlyOwner
         external
     {
-        var addrInfo = addressInfos[addr];
+        AddressInfo memory addrInfo = addressInfos[addr];
 
         if (addrInfo.index != 0) { // existing
             if (addrInfo.authorized == false) { // re-authorize
@@ -177,7 +177,7 @@ contract TokenTransferDelegate is Claimable {
         uint len = batch.length;
         require(len % 6 == 0);
 
-        var lrc = ERC20(lrcTokenAddress);
+        ERC20 lrc = ERC20(lrcTokenAddress);
 
         for (uint i = 0; i < len; i += 6) {
             address owner = address(batch[i]);
@@ -186,7 +186,7 @@ contract TokenTransferDelegate is Claimable {
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
 
-            var token = ERC20(address(batch[i + 1]));
+            ERC20 token = ERC20(address(batch[i + 1]));
 
             // Here batch[i+2] has been checked not to be 0.
             if (owner != prevOwner) {
