@@ -152,7 +152,7 @@ contract RinghashRegistry {
         returns (bool)
     {
         require(ringminer != 0x0);
-        var submission = submissions[ringhash];
+        Submission memory submission = submissions[ringhash];
         address miner = submission.ringminer;
         return (
             miner == 0x0 || (
@@ -170,7 +170,7 @@ contract RinghashRegistry {
         view
         returns (bool)
     {
-        var submission = submissions[ringhash];
+        Submission memory submission = submissions[ringhash];
         return (
             submission.block + blocksToLive >= block.number && (
             submission.ringminer == ringminer)

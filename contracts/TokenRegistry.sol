@@ -155,7 +155,7 @@ contract TokenRegistry is Claimable {
         view
         returns (uint8)
     {
-        var info = addressMap[addr];
+        TokenInfo memory info = addressMap[addr];
         require(info.pos != 0);
         return info.standard;
     }
