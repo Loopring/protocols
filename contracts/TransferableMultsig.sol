@@ -31,7 +31,6 @@ contract TransferableMultsig {
     mapping (address => bool) ownerMap; // immutable state
     address[] public owners;            // immutable state
 
-
     ////////////////////////////////////////////////////////////////////////////
     /// Constructor                                                          ///
     ////////////////////////////////////////////////////////////////////////////
@@ -44,7 +43,6 @@ contract TransferableMultsig {
     {
         updateOwners(_threshold, _owners);
     }
-    
 
     ////////////////////////////////////////////////////////////////////////////
     /// Public Functions                                                     ///
@@ -76,7 +74,13 @@ contract TransferableMultsig {
             data
         );
 
-        verifySignatures(sigV, sigR, sigS, txHash);
+        verifySignatures(
+            sigV,
+            sigR,
+            sigS,
+            txHash
+        );
+
         require(destination.call.value(value)(data));
     }
 
@@ -101,10 +105,14 @@ contract TransferableMultsig {
             _owners
         );
 
-        verifySignatures(sigV, sigR, sigS, txHash);
+        verifySignatures(
+            sigV,
+            sigR,
+            sigS,
+            txHash
+        );
         updateOwners(_threshold, _owners);
     }
-
 
     ////////////////////////////////////////////////////////////////////////////
     /// Internal Functions                                                   ///
@@ -117,7 +125,7 @@ contract TransferableMultsig {
         bytes32   txHash
         )
         view
-        internal 
+        internal
     {
         uint _threshold = threshold;
         require(_threshold == sigR.length);
@@ -126,7 +134,13 @@ contract TransferableMultsig {
 
         address lastAddr = 0x0; // cannot have 0x0 as an owner
         for (uint i = 0; i < threshold; i++) {
-            address recovered = ecrecover(txHash, sigV[i], sigR[i], sigS[i]);
+            address recovered = ecrecover(
+                txHash,
+                sigV[i],
+                sigR[i],
+                sigS[i]
+            );
+
             require(recovered > lastAddr && ownerMap[recovered]);
             lastAddr = recovered;
         }
@@ -148,7 +162,7 @@ contract TransferableMultsig {
             ownerMap[currentOwners[i]] = false;
         }
 
-        address lastAddr = 0x0; 
+        address lastAddr = 0x0;
         for (i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
             require(owner > lastAddr);

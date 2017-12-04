@@ -83,7 +83,7 @@ contract TokenTransferDelegate is Claimable {
         onlyOwner
         external
     {
-        AddressInfo memory addrInfo = addressInfos[addr];
+        AddressInfo storage addrInfo = addressInfos[addr];
 
         if (addrInfo.index != 0) { // existing
             if (addrInfo.authorized == false) { // re-authorize
@@ -182,7 +182,7 @@ contract TokenTransferDelegate is Claimable {
         for (uint i = 0; i < len; i += 6) {
             address owner = address(batch[i]);
             address prevOwner = address(batch[(i + len - 6) % len]);
-            
+
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
 
@@ -201,7 +201,7 @@ contract TokenTransferDelegate is Claimable {
                     require(
                         token.transferFrom(owner, feeRecipient, uint(item))
                     );
-                } 
+                }
 
                 item = batch[i + 4];
                 if (item != 0) {
