@@ -14,7 +14,8 @@
   "devDependencies": {
     "eslint": "^3.19.0",
     "eslint-plugin-jest": "^21.2.0",
-    "uglifyify": "^4.0.4"
+    "uglifyify": "^4.0.4",
+    "webpack": "^3.10.0"
   },
   "dependencies": {
     "ajv": "^5.5.1",
