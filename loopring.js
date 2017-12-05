@@ -1,1 +1,1 @@
-require('./dist/loopring.js');
+require('./dist/loopring.min.js');
