@@ -1,6 +1,6 @@
 "use strict";
 
-const fetch = require('node-fetch');
+const axios = require('axios');
 const crypto = require('crypto');
 const Validator = require('./validator.js');
 const Wallet = require('./wallet.js');
@@ -74,7 +74,8 @@ function relay(host)
         request.method = "eth_getTransactionCount";
         request.params = params;
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -111,7 +112,8 @@ function relay(host)
         request.method = "eth_getBalance";
         request.params = params;
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -143,7 +145,8 @@ function relay(host)
         request.params = [data, tag];
         request.id = id();
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -215,7 +218,8 @@ function relay(host)
         request.method = "eth_sendRawTransaction";
         request.params = [tx];
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -310,7 +314,8 @@ function relay(host)
         request.params = [order];
         request.id = id();
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -335,7 +340,8 @@ function relay(host)
         request.params = [{filter}];
         request.id = id();
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -353,7 +359,8 @@ function relay(host)
         request.params = [{filter}];
         request.id = id();
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -371,7 +378,8 @@ function relay(host)
         request.params = [{market}];
         request.id = id();
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -390,7 +398,8 @@ function relay(host)
         request.params = [{filter}];
         request.id = id();
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -410,7 +419,8 @@ function relay(host)
         request.params = [{filter}];
         request.id = id();
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -431,7 +441,8 @@ function relay(host)
         request.params = [{filter}];
         request.id = id();
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -450,7 +461,8 @@ function relay(host)
         request.params = [{address}];
         request.id = id();
 
-        return await fetch(host, {
+        return await axios({
+            url: host,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
