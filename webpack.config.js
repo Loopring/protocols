@@ -21,6 +21,7 @@ module.exports = {
     externals: [
         "ajv",
         "bignumber.js",
-        "lodash"
+        "lodash",
+        "axios"
     ]
 };
