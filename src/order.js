@@ -4,7 +4,7 @@ const signer = require('./signer.js');
 const ethUtil = require('ethereumjs-util');
 const _ = require('lodash');
 const BigNumber = require('bignumber.js');
-const Joi = require('joi');
+const ajv = require('ajv');
 
 function Order(data)
 {
@@ -25,23 +25,55 @@ function Order(data)
     let r = data.r;
     let s = data.s;
 
-    const orderSchema = Joi.object().keys({
-        protocol: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
-        owner: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
-        tokenS: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
-        tokenB: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
-        buyNoMoreThanAmountB: Joi.boolean(),
-        marginSplitPercentage: Joi.number().integer().min(0).max(100),
-        r: Joi.number().integer().min(0),
-        s: Joi.string().regex(/^0x[0-9a-fA-F]{64}$/i),
-        v: Joi.string().regex(/^0x[0-9a-fA-F]{64}$/i),
-    }).with('protocol', 'owner', 'tokenS', 'tokenB', 'buyNoMoreThanAmountB', 'marginSplitPercentage').without('r', 's', 'v');
+    const orderSchema = {
+        "title": "Order",
+        "type": "object",
+        "properties": {
+            "protocol": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            "owner": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            "tokenS": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            "tokenB": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+            },
+            "buyNoMoreThanAmountB": {
+                "type": "boolean"
+            },
+            "marginSplitPercentage": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+            },
+            "r": {
+                "type": "integer",
+                "minimum": 0
+            },
+            "s": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{64}$"
+            },
+            "v": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{64}$"
+            }
+        },
+        "required": ["protocol", "owner", "tokenS", "tokenB", "buyNoMoreThanAmountB", "marginSplitPercentage"]
+    };
 
     const orderTypes = ['address', 'address', 'address', 'address', 'uint', 'uint', 'uint', 'uint', 'uint', 'uint', 'bool', 'uint8'];
 
     this.sign = function (privateKey)
     {
-        const validation = Joi.validate(data, orderSchema);
+        const validation = ajv.validate(orderSchema, data);
 
         if (!validation)
         {

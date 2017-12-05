@@ -2,21 +2,47 @@
 
 const abi = require('ethereumjs-abi');
 const _ = require('lodash');
-const Joi = require('joi');
+const ajv = require('ajv');
 const Transaction = require('ethereumjs-tx');
 const ethUtil = require('ethereumjs-util');
 const Validator = require('./validator');
 const BigNumber = require('bignumber.js');
 
-const txSchema = Joi.object().keys({
-    nonce: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-    gasPrice: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-    gasLimit: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-    to: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
-    value: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-    data: Joi.string().regex(/^0x([0-9a-fA-F]{8})*([0-9a-fA-F]{64})*$/i),
-    chainId: Joi.number().integer().min(1)
-}).with('nonce', 'gasPrice', 'gasLimit', 'to', 'value', 'data', 'chainId');
+const transactionSchema = {
+    "title": "Transaction",
+    "type": "object",
+    "properties": {
+        "nonce": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{1,64}$"
+        },
+        "gasPrice": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{1,64}$"
+        },
+        "gasLimit": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{1,64}$"
+        },
+        "to": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{1,64}$"
+        },
+        "value": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{1,64}$"
+        },
+        "data": {
+            "type": "string",
+            "pattern": "^0x([0-9a-fA-F]{8})*([0-9a-fA-F]{64})*$"
+        },
+        "chainId": {
+            "type": "integer",
+            "minimum": 1
+        }
+    },
+    "required": ["gasPrice", "gasLimit", "to", "value", "data"]
+};
 
 const validator = new Validator();
 
@@ -28,7 +54,7 @@ exports.solSHA3 = function (types, data) {
 exports.signEthTx = (tx, privateKey) =>
 {
 
-    const result = Joi.validate(tx, txSchema);
+    const result = ajv.validate(transactionSchema, tx);
     if (result.error)
     {
         return new Error(JSON.stringify(result.error.details));

@@ -6,21 +6,47 @@ const Validator = require('./validator.js');
 const Wallet = require('./wallet.js');
 const ethUtil = require('ethereumjs-util');
 const signer = require('./signer.js');
-const Joi = require('joi');
+const ajv = require('ajv');
 const BigNumber = require('bignumber.js');
 const _ = require('lodash');
 
 function relay(host)
 {
-    const txSchema = Joi.object().keys({
-        nonce: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-        gasPrice: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-        gasLimit: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-        to: Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),
-        value: Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),
-        data: Joi.string().regex(/^0x([0-9a-fA-F]{8})*([0-9a-fA-F]{64})*$/i),
-        chainId: Joi.number().integer().min(1)
-    }).with('gasPrice', 'gasLimit', 'to', 'value', 'data').without('nonce', 'chainId');
+    const transactionSchema = {
+        "title": "Transaction",
+        "type": "object",
+        "properties": {
+            "nonce": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{1,64}$"
+            },
+            "gasPrice": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{1,64}$"
+            },
+            "gasLimit": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{1,64}$"
+            },
+            "to": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{1,64}$"
+            },
+            "value": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{1,64}$"
+            },
+            "data": {
+                "type": "string",
+                "pattern": "^0x([0-9a-fA-F]{8})*([0-9a-fA-F]{64})*$"
+            },
+            "chainId": {
+                "type": "integer",
+                "minimum": 1
+            }
+        },
+        "required": ["gasPrice", "gasLimit", "to", "value", "data"]
+    };
 
     const request = {"jsonrpc": "2.0"};
 
@@ -140,7 +166,7 @@ function relay(host)
         const wallet = new Wallet();
         wallet.setPrivateKey(ethUtil.toBuffer(privateKey));
 
-        const valid_result = Joi.validate(rawTx, txSchema);
+        const valid_result = ajv.validate(transactionSchema, rawTx);
 
         if (valid_result.error)
         {
