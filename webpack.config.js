@@ -19,7 +19,6 @@ module.exports = {
         })
     ],
     externals: [
-        "ajv",
         "bignumber.js",
         "lodash",
         "axios"
