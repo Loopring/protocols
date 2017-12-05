@@ -3,7 +3,7 @@
 const signer = require('./signer.js');
 const ethUtil = require('ethereumjs-util');
 const _ = require('lodash');
-const BN = require('bn.js');
+const BigNumber = require('bignumber.js');
 const Joi = require('joi');
 
 function Order(data)
@@ -49,12 +49,12 @@ function Order(data)
         }
 
         const hash = signer.solSHA3(orderTypes, [protocol, owner, tokenS, tokenB,
-            new BN(Number(amountS).toString(10), 10),
-            new BN(Number(amountB).toString(10), 10),
-            new BN(Number(timestamp).toString(10), 10),
-            new BN(Number(ttl).toString(10), 10),
-            new BN(Number(salt).toString(10), 10),
-            new BN(Number(lrcFee).toString(10), 10),
+            new BigNumber(Number(amountS).toString(10), 10),
+            new BigNumber(Number(amountB).toString(10), 10),
+            new BigNumber(Number(timestamp).toString(10), 10),
+            new BigNumber(Number(ttl).toString(10), 10),
+            new BigNumber(Number(salt).toString(10), 10),
+            new BigNumber(Number(lrcFee).toString(10), 10),
             buyNoMoreThanAmountB,
             marginSplitPercentage]);
 

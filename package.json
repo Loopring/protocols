@@ -17,16 +17,15 @@
     "uglifyify": "^4.0.4"
   },
   "dependencies": {
-    "ethereumjs-abi": "^0.6.4",
     "bignumber.js": "^4.0.2",
+    "ethereumjs-abi": "^0.6.4",
     "ethereumjs-tx": "^1.3.3",
-    "idna-uts46": "^1.1.0",
     "ethereumjs-util": "^5.1.2",
-    "scryptsy": "^2.0.0",
-    "uuid": "^3.1.0",
-    "lodash": "^4.17.4",
-    "bn.js": "^4.11.8",
+    "idna-uts46": "^1.1.0",
     "joi": "13.0.1",
-    "node-fetch": "2.0.0-alpha.9"
+    "lodash": "^4.17.4",
+    "node-fetch": "2.0.0-alpha.9",
+    "scryptsy": "^2.0.0",
+    "uuid": "^3.1.0"
   }
 }
