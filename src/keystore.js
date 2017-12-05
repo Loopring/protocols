@@ -2,7 +2,7 @@
 
 const crypto = require('crypto');
 const scrypt= require('scryptsy');
-const ethereuUtil = require('ethereumjs-util');
+const ethereumUtil = require('ethereumjs-util');
 const uuid = require('uuid/v4');
 const decrypt = require('./decrypt.js');
 const kdf = 'scrypt';
@@ -34,8 +34,8 @@ exports.decryptKeystoreToPkey = (keystore, password) =>
     return wallet;
 };
 
-exports.pkeyToKeystore = (privateKey, address, password) =>
-{
+exports.pkeyToKeystore = function (privateKey, password) {
+
     const salt = crypto.randomBytes(32);
     const iv = crypto.randomBytes(16);
     const kdfparams = {
@@ -59,9 +59,13 @@ exports.pkeyToKeystore = (privateKey, address, password) =>
         throw new Error('Unsupported cipher');
     }
     const ciphertext = Buffer.concat([cipher.update(privateKey), cipher.final()]);
-    const mac = ethereuUtil.sha3(
+    const mac = ethereumUtil.sha3(
         Buffer.concat([derivedKey.slice(16, 32), new Buffer(ciphertext, 'hex')])
     );
+
+    const publicKey = ethereumUtil.privateToPublic(privateKey);
+    const address = '0x'+ ethereumUtil.publicToAddress(publicKey).toString('hex');
+
     return {
         version: 3,
         id: uuid({
@@ -122,9 +126,8 @@ exports.decryptUtcKeystoreToPkey = (keystore, password) =>
         throw new Error('Unsupported key derivation scheme');
     }
     const ciphertext = new Buffer(kstore.crypto.ciphertext, 'hex');
-    const mac = ethereuUtil.sha3(Buffer.concat([derivedKey.slice(16, 32), ciphertext]));
-    if (mac.toString('hex') !== kstore.crypto.mac)
-    {
+    const mac = ethereumUtil.sha3(Buffer.concat([derivedKey.slice(16, 32), ciphertext]));
+    if (mac.toString('hex') !== kstore.crypto.mac) {
         throw new Error('Key derivation failed - possibly wrong passphrase');
     }
     const decipher = crypto.createDecipheriv(
@@ -187,8 +190,8 @@ exports.decryptPresaleToPrivKey = (keystore,password) =>
         encseed.slice(0, 16)
     );
     const seed = decrypt.decipherBuffer(decipher, encseed.slice(16));
-    const privkey = ethereuUtil.sha3(seed);
-    const address = ethereuUtil.privateToAddress(privkey);
+    const privkey = ethereumUtil.sha3(seed);
+    const address = ethereumUtil.privateToAddress(privkey);
 
     if (address.toString('hex') !== json.ethaddr)
     {

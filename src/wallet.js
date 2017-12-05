@@ -14,6 +14,10 @@ function Wallet() {
     };
 
     this.setPrivateKey = function (key) {
+
+        if (typeof key === 'string') {
+            key = ethereumUtil.toBuffer(key)
+        }
         privateKey = key;
         publicKey = ethereumUtil.privateToPublic(privateKey);
         address = ethereumUtil.publicToAddress(publicKey);
@@ -25,7 +29,7 @@ function Wallet() {
 
 
     this.toKeystore = function (password) {
-        return keystore.pkeyToKeystore(privateKey, this.getAddress(), password)
+        return keystore.pkeyToKeystore(privateKey, password)
     }
 
 }

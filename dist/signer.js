@@ -1800,6 +1800,7 @@ exports.publicEncrypt=require("./publicEncrypt"),exports.privateDecrypt=require(
 (function (Buffer){
 function i2ops(e){var r=new Buffer(4);return r.writeUInt32BE(e,0),r}var createHash=require("create-hash");module.exports=function(e,r){for(var t,a=new Buffer(""),n=0;a.length<r;)t=i2ops(n++),a=Buffer.concat([a,createHash("sha1").update(e).update(t).digest()]);return a.slice(0,r)};
 
+<<<<<<< HEAD
 }).call(this,require("buffer").Buffer)
 },{"buffer":156,"create-hash":160}],233:[function(require,module,exports){
 (function (Buffer){
@@ -1809,6 +1810,9 @@ function oaep(r,e){r.modulus;var n=r.modulus.byteLength(),t=(e.length,createHash
 },{"./mgf":232,"./withPublic":235,"./xor":236,"bn.js":125,"browserify-rsa":148,"buffer":156,"create-hash":160,"parse-asn1":222}],234:[function(require,module,exports){
 (function (Buffer){
 function oaep(e,r){var n=e.modulus.byteLength(),o=r.length,t=createHash("sha1").update(new Buffer("")).digest(),f=t.length,u=2*f;if(o>n-u-2)throw new Error("message too long");var a=new Buffer(n-o-u-2);a.fill(0);var s=n-f-1,i=randomBytes(f),w=xor(Buffer.concat([t,a,new Buffer([1]),r],s),mgf(i,s)),c=xor(i,mgf(w,f));return new bn(Buffer.concat([new Buffer([0]),c,w],n))}function pkcs1(e,r,n){var o=r.length,t=e.modulus.byteLength();if(o>t-11)throw new Error("message too long");var f;return n?(f=new Buffer(t-o-3)).fill(255):f=nonZero(t-o-3),new bn(Buffer.concat([new Buffer([0,n?1:2]),f,new Buffer([0]),r],t))}function nonZero(e,r){for(var n,o=new Buffer(e),t=0,f=randomBytes(2*e),u=0;t<e;)u===f.length&&(f=randomBytes(2*e),u=0),(n=f[u++])&&(o[t++]=n);return o}var parseKeys=require("parse-asn1"),randomBytes=require("randombytes"),createHash=require("create-hash"),mgf=require("./mgf"),xor=require("./xor"),bn=require("bn.js"),withPublic=require("./withPublic"),crt=require("browserify-rsa"),constants={RSA_PKCS1_OAEP_PADDING:4,RSA_PKCS1_PADDIN:1,RSA_NO_PADDING:3};module.exports=function(e,r,n){var o;o=e.padding?e.padding:n?1:4;var t,f=parseKeys(e);if(4===o)t=oaep(f,r);else if(1===o)t=pkcs1(f,r,n);else{if(3!==o)throw new Error("unknown padding");if((t=new bn(r)).cmp(f.modulus)>=0)throw new Error("data too long for modulus")}return n?crt(t,f):withPublic(t,f)};
+=======
+exports.generateCancelOrderData = function (order) {
+>>>>>>> master
 
 }).call(this,require("buffer").Buffer)
 },{"./mgf":232,"./withPublic":235,"./xor":236,"bn.js":125,"browserify-rsa":148,"buffer":156,"create-hash":160,"parse-asn1":222,"randombytes":238}],235:[function(require,module,exports){
@@ -1862,11 +1866,19 @@ module.exports=require("./lib/_stream_duplex.js");
 },{"safe-buffer":254}],247:[function(require,module,exports){
 "use strict";function destroy(t,e){var r=this,i=this._readableState&&this._readableState.destroyed,a=this._writableState&&this._writableState.destroyed;i||a?e?e(t):!t||this._writableState&&this._writableState.errorEmitted||processNextTick(emitErrorNT,this,t):(this._readableState&&(this._readableState.destroyed=!0),this._writableState&&(this._writableState.destroyed=!0),this._destroy(t||null,function(t){!e&&t?(processNextTick(emitErrorNT,r,t),r._writableState&&(r._writableState.errorEmitted=!0)):e&&e(t)}))}function undestroy(){this._readableState&&(this._readableState.destroyed=!1,this._readableState.reading=!1,this._readableState.ended=!1,this._readableState.endEmitted=!1),this._writableState&&(this._writableState.destroyed=!1,this._writableState.ended=!1,this._writableState.ending=!1,this._writableState.finished=!1,this._writableState.errorEmitted=!1)}function emitErrorNT(t,e){t.emit("error",e)}var processNextTick=require("process-nextick-args");module.exports={destroy:destroy,undestroy:undestroy};
 
+<<<<<<< HEAD
 },{"process-nextick-args":229}],248:[function(require,module,exports){
 module.exports=require("events").EventEmitter;
 
 },{"events":192}],249:[function(require,module,exports){
 module.exports=require("./readable").PassThrough;
+=======
+exports.generateBalanceOfData = function (address) {
+    const method = abi.methodID('balanceOf',['address']).toString('hex');
+    const data = abi.rawEncode(['address'],[address]).toString('hex');
+    return '0x' + method + data;
+};
+>>>>>>> master
 
 },{"./readable":250}],250:[function(require,module,exports){
 exports=module.exports=require("./lib/_stream_readable.js"),exports.Stream=exports,exports.Readable=exports,exports.Writable=require("./lib/_stream_writable.js"),exports.Duplex=require("./lib/_stream_duplex.js"),exports.Transform=require("./lib/_stream_transform.js"),exports.PassThrough=require("./lib/_stream_passthrough.js");
@@ -1874,6 +1886,7 @@ exports=module.exports=require("./lib/_stream_readable.js"),exports.Stream=expor
 },{"./lib/_stream_duplex.js":241,"./lib/_stream_passthrough.js":242,"./lib/_stream_readable.js":243,"./lib/_stream_transform.js":244,"./lib/_stream_writable.js":245}],251:[function(require,module,exports){
 module.exports=require("./readable").Transform;
 
+<<<<<<< HEAD
 },{"./readable":250}],252:[function(require,module,exports){
 module.exports=require("./lib/_stream_writable.js");
 
@@ -1937,4 +1950,6 @@ function Context(){}var indexOf=require("indexof"),Object_keys=function(e){if(Ob
 },{"indexof":209}],"signer":[function(require,module,exports){
 "use strict";const abi=require("ethereumjs-abi"),_=require("lodash"),Joi=require("joi"),Transaction=require("ethereumjs-tx"),ethUtil=require("ethereumjs-util"),Validator=require("./validator"),BigNumber=require("bignumber.js"),txSchema=Joi.object().keys({nonce:Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),gasPrice:Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),gasLimit:Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),to:Joi.string().regex(/^0x[0-9a-fA-F]{40}$/i),value:Joi.string().regex(/^0x[0-9a-fA-F]{1,64}$/i),data:Joi.string().regex(/^0x([0-9a-fA-F]{8})*([0-9a-fA-F]{64})*$/i),chainId:Joi.number().integer().min(1)}).with("nonce","gasPrice","gasLimit","to","value","data","chainId"),validator=new Validator;exports.solSHA3=function(e,r){return abi.soliditySHA3(e,r)},exports.signEthTx=((e,r)=>{const t=Joi.validate(e,txSchema);if(t.error)return new Error(JSON.stringify(t.error.details));const i=new Transaction(e);return _.isString(r)&&(r=ethUtil.toBuffer(r)),i.sign(r),"0x"+i.serialize().toString("hex")}),exports.generateCancelOrderData=(e=>{const r=abi.rawEncode(["address[3]","uint[7]","bool","uint8","uint8","bytes32","bytes32"],[e.addresses,e.orderValues,e.buyNoMoreThanAmountB,e.marginSplitPercentage,e.v,e.r,e.s]).toString("hex");return"0x"+abi.methodID("cancelOrder",["address[3]","uint[7]","bool","uint8","uint8","bytes32","bytes32"]).toString("hex")+r}),exports.generateCutOffData=function(e){return"0x"+abi.methodID("setCutoff",["uint"]).toString("hex")+abi.rawEncode(["uint"],[e]).toString("hex")},exports.generateApproveData=function(e,r){return"0x"+abi.methodID("approve",["address","uint"]).toString("hex")+abi.rawEncode(["address","uint"],[e,r]).toString("hex")},exports.generateWithdrawData=function(e){return"0x"+abi.methodID("withdraw",["uint"]).toString("hex")+abi.rawEncode(["uint"],[e]).toString("hex")},exports.generateTransferData=function(e,r){return"0x"+abi.methodID("transfer",["address","uint"]).toString("hex")+abi.rawEncode(["address","uint"],[e,r]).toString("hex")},exports.generateBalanceOfData=function(e){return"0x"+abi.methodID("balanceOf",["address"]).toString("hex")+abi.rawEncode(["address"],[e]).toString("hex")},exports.generateAllowanceData=function(e,r){return"0x"+abi.methodID("allowance",["address","address"]).toString("hex")+abi.rawEncode(["address","address"],[e,r]).toString("hex")},exports.generateTx=function(e,r){if(!e)throw new Error(" Raw Tx is required");if(Joi.validate(e,txSchema).error)throw new Error("invalid Tx data ");if(!r)throw new Error("Account is required");if(!r.privateKey||!r.balance)throw new Error("privateKey or balance is missing");if(!validator.isValidPrivateKey(r.privateKey))throw new Error("invalid private key");const t=new BigNumber(Number(e.gasLimit));if(t&&t.lessThan(21e3))throw new Error("gasLimit must be greater than 21000");if(t&&t.greaterThan(5e6))throw new Error("gasLimit is too big");const i=new BigNumber(Number(r.balance)),a=new BigNumber(Number(e.value))+t*new BigNumber(Number(e.gasPrice));if(i&&i.lessThan(a))throw new Error("Balance  is not enough");return e.chainId=e.chainId||1,{tx:e,signedTx:this.signEthTx(e,r.privateKey)}};
 
+=======
+>>>>>>> master
 },{"./validator":107,"bignumber.js":1,"ethereumjs-abi":27,"ethereumjs-tx":30,"ethereumjs-util":31,"joi":56,"lodash":84}]},{},[]);

@@ -280,8 +280,8 @@ function relay(host)
 
     this.submitLoopringOrder = async function (order) {
 
-        request.method = 'submitOrder';
-        request.params = order;
+        request.method = 'loopring_submitOrder';
+        request.params = [order];
         request.id = id();
 
         return await fetch(host, {
@@ -303,13 +303,10 @@ function relay(host)
         return await this.sendSignedTx(tx.signedTx);
     };
 
-    this.getOrders = async (
-        market, address, status, pageIndex, pageSize, contractVersion
-    ) =>
-    {
+    this.getOrders = async function (filter) {
 
-        request.method = 'getOrders';
-        request.params = {market, address, status,contractVersion, pageIndex, pageSize};
+        request.method = 'loopring_getOrders';
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -325,12 +322,9 @@ function relay(host)
 
     };
 
-    this.getDepth = async (
-        market, pageIndex, pageSize, contractVersion
-    ) =>
-    {
-        request.method = 'getDepth';
-        request.params = {market, pageIndex, pageSize,contractVersion};
+    this.getDepth = async function (filter) {
+        request.method = 'loopring_getDepth';
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -347,8 +341,8 @@ function relay(host)
 
     this.getTicker = async function (market) {
 
-        request.method = 'getTicker';
-        request.params = {market};
+        request.method = 'loopring_getTicker';
+        request.params = [{market}];
         request.id = id();
 
         return await fetch(host, {
@@ -363,30 +357,11 @@ function relay(host)
         });
     };
 
-    this.getFills = async function (market, address, pageIndex, pageSize,contractVersion) {
+    this.getFills = async function (filter) {
 
-        request.method = 'getFills';
-        request.params = {market, address, pageIndex, pageSize,contractVersion};
-        request.id = id();
-
-        return await fetch(host, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
-        {
-            return res;
-        });
-
-    };
-
-    this.getCandleTicks = async (market, interval, size) =>
-    {
-
-        request.method = 'getCandleTicks';
-        request.params = {market, interval, size};
+        //filter:market, address, pageIndex, pageSize,contractVersion
+        request.method = 'loopring_getFills';
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -402,13 +377,32 @@ function relay(host)
 
     };
 
-    this.getRingMined = async (
-        ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
-    ) =>
-    {
+    this.getCandleTicks = async function (filter) {
 
-        request.method = 'getRingMined';
-        request.params = {ringHash, orderHash, miner, pageIndex, pageSize,contractVersion};
+        //filter:market, interval, size
+        request.method = 'loorping_getCandleTicks';
+        request.params = [{filter}];
+        request.id = id();
+
+        return await fetch(host, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(request)
+        }).then(r => r.json()).then(res =>
+        {
+            return res;
+        });
+
+    };
+
+    this.getRingMined = async function (filter) {
+
+
+        //filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
+        request.method = 'loopring_getRingMined';
+        request.params = [{filter}];
         request.id = id();
 
         return await fetch(host, {
@@ -426,8 +420,8 @@ function relay(host)
 
     this.getBalances = async function (address) {
 
-        request.method = 'getBalances';
-        request.params = {address};
+        request.method = 'loopring_getBalances';
+        request.params = [{address}];
         request.id = id();
 
         return await fetch(host, {
