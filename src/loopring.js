@@ -1,9 +1,12 @@
-require('./decrypt');
-require('./ens');
-require('./hex-utils');
-require('./keystore');
-require('./order');
-require('./relay');
-require('./signer');
-require('./validator');
-require('./wallet');
+module.exports = {
+    decrypt: require('./decrypt'),
+    ens: require('./ens'),
+    hexUtils: require('./hex-utils'),
+    keystore: require('./keystore'),
+    order: require('./order'),
+    relay: require('./relay'),
+    signer: require('./signer'),
+    validator: require('./validator'),
+    wallet: require('./wallet')
+};
+
