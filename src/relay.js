@@ -80,8 +80,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
+            data: request
+        }).then(res => res.data).then(res =>
             {
             if (res.error)
             {
@@ -118,8 +118,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
+            data: request
+        }).then(res => res.data).then(res =>
         {
             if (res.error)
             {
@@ -151,8 +151,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
+            data:request
+        }).then(res => res.data).then(res =>
         {
             if (res.error)
             {
@@ -224,8 +224,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
+            data: request
+        }).then(res => res.data).then(res =>
         {
             if (res.error)
             {
@@ -320,8 +320,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
+            data: request
+        }).then(r => r.data).then(res =>
         {
             return res;
         });
@@ -346,8 +346,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
+            data: request
+        }).then(r => r.data).then(res =>
         {
             return res;
         });
@@ -365,8 +365,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
+            data: request
+        }).then(r => r.data).then(res =>
         {
             return res;
         });
@@ -384,8 +384,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
+            data: request
+        }).then(r => r.data).then(res =>
         {
             return res;
         });
@@ -404,8 +404,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
+            data: request
+        }).then(r => r.data).then(res =>
         {
             return res;
         });
@@ -425,8 +425,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
+            data: request
+        }).then(r => r.data).then(res =>
         {
             return res;
         });
@@ -436,7 +436,7 @@ function relay(host)
     this.getRingMined = async function (filter) {
 
 
-        //filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
+        // filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
         request.method = 'loopring_getRingMined';
         request.params = [{filter}];
         request.id = id();
@@ -447,8 +447,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
+            data: request
+        }).then(r => r.data).then(res =>
         {
             return res;
         });
@@ -467,8 +467,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
+            data: request
+        }).then(r => r.data).then(res =>
         {
             return res;
         });
