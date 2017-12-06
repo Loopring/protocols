@@ -16,6 +16,6 @@
 
 */
 
-'use strict';
+'use strict'
 
-require('./dist/loopring.min.js');
+require('./dist/loopring.min.js')

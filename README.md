@@ -47,3 +47,11 @@ const Signer = this.signer;
 const Relay = this.relay;
 const Order = this.order;
 ```
+
+## Developers
+
+Before commit your changes or submit a pull request, please lint your code by running:
+
+```
+./node_modules/.bin/eslint . --fix
+```

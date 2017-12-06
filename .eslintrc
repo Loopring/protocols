@@ -1,28 +1,4 @@
 {
-    // "parser": "babel-eslint",
-    "extends": "eslint:recommended",
-    "plugins": [
-        // "jest"
-    ],
-    "rules":
-    {
-        "quotes": [2, "single", "avoid-escape"],
-        "eqeqeq": 0,
-        "brace-style": [2, "stroustrup"],
-        "eol-last": 0,
-        "no-nested-ternary": 1,
-        "padded-blocks": [1, "never"],
-        "space-before-function-paren": [1, "never"],
-        "space-before-blocks": [1, "always"],
-    },
-    "env":
-    {
-        "es6": true,
-        "node": true,
-        "jest": true
-    },
-    "globals":
-    {
-        "Polymer": true
-    }
+  "extends": ["standard"],
+  "parser": "babel-eslint"
 }
