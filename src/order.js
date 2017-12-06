@@ -1,13 +1,30 @@
-"use strict";
+/*
+
+  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
+
+  Licensed under the Apache License, Version 2.0 (the 'License');
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an 'AS IS' BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+*/
+
+'use strict';
 
 const signer = require('./signer.js');
 const ethUtil = require('ethereumjs-util');
-const _ = require('lodash');
 const BigNumber = require('bignumber.js');
 const ajv = require('ajv');
+const _ = require('lodash');
 
-function Order(data)
-{
+function Order(data) {
     const protocol = data.protocol;
     const owner = data.owner;
     const tokenS = data.tokenS;
@@ -26,57 +43,75 @@ function Order(data)
     let s = data.s;
 
     const orderSchema = {
-        "title": "Order",
-        "type": "object",
-        "properties": {
-            "protocol": {
-                "type": "string",
-                "pattern": "^0x[0-9a-fA-F]{40}$"
+        'title': 'Order',
+        'type': 'object',
+        'properties': {
+            'protocol': {
+                'type': 'string',
+                'pattern': '^0x[0-9a-fA-F]{40}$'
             },
-            "owner": {
-                "type": "string",
-                "pattern": "^0x[0-9a-fA-F]{40}$"
+            'owner': {
+                'type': 'string',
+                'pattern': '^0x[0-9a-fA-F]{40}$'
             },
-            "tokenS": {
-                "type": "string",
-                "pattern": "^0x[0-9a-fA-F]{40}$"
+            'tokenS': {
+                'type': 'string',
+                'pattern': '^0x[0-9a-fA-F]{40}$'
             },
-            "tokenB": {
-                "type": "string",
-                "pattern": "^0x[0-9a-fA-F]{40}$"
+            'tokenB': {
+                'type': 'string',
+                'pattern': '^0x[0-9a-fA-F]{40}$'
             },
-            "buyNoMoreThanAmountB": {
-                "type": "boolean"
+            'buyNoMoreThanAmountB': {
+                'type': 'boolean'
             },
-            "marginSplitPercentage": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100
+            'marginSplitPercentage': {
+                'type': 'integer',
+                'minimum': 0,
+                'maximum': 100
             },
-            "r": {
-                "type": "integer",
-                "minimum": 0
+            'r': {
+                'type': 'integer',
+                'minimum': 0
             },
-            "s": {
-                "type": "string",
-                "pattern": "^0x[0-9a-fA-F]{64}$"
+            's': {
+                'type': 'string',
+                'pattern': '^0x[0-9a-fA-F]{64}$'
             },
-            "v": {
-                "type": "string",
-                "pattern": "^0x[0-9a-fA-F]{64}$"
+            'v': {
+                'type': 'string',
+                'pattern': '^0x[0-9a-fA-F]{64}$'
             }
         },
-        "required": ["protocol", "owner", "tokenS", "tokenB", "buyNoMoreThanAmountB", "marginSplitPercentage"]
+        'required': [
+            'protocol',
+            'owner',
+            'tokenS',
+            'tokenB',
+            'buyNoMoreThanAmountB',
+            'marginSplitPercentage'
+        ]
     };
 
-    const orderTypes = ['address', 'address', 'address', 'address', 'uint', 'uint', 'uint', 'uint', 'uint', 'uint', 'bool', 'uint8'];
+    const orderTypes = [
+        'address',
+        'address',
+        'address',
+        'address',
+        'uint',
+        'uint',
+        'uint',
+        'uint',
+        'uint',
+        'uint',
+        'bool',
+        'uint8'
+    ];
 
-    this.sign = function (privateKey)
-    {
+    this.sign = function(privateKey) {
         const validation = ajv.validate(orderSchema, data);
 
-        if (!validation)
-        {
+        if (!validation) {
             throw new Error('Invalid Loopring Order');
         }
 
@@ -88,12 +123,12 @@ function Order(data)
             new BigNumber(Number(salt).toString(10), 10),
             new BigNumber(Number(lrcFee).toString(10), 10),
             buyNoMoreThanAmountB,
-            marginSplitPercentage]);
+            marginSplitPercentage
+        ]);
 
         const finalHash = ethUtil.hashPersonalMessage(hash);
 
-        if (_.isString(privateKey))
-        {
+        if (_.isString(privateKey)) {
             privateKey = ethUtil.toBuffer(privateKey);
         }
 
@@ -122,10 +157,8 @@ function Order(data)
         };
     };
 
-    this.cancel = function (amount, privateKey)
-    {
-        if (!r || !v || !s)
-        {
+    this.cancel = function(amount, privateKey) {
+        if (!r || !v || !s) {
             this.sign(privateKey);
         }
 

@@ -1,3 +1,21 @@
+/*
+
+  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+*/
+
 "use strict";
 
 const axios = require('axios');
@@ -10,8 +28,7 @@ const ajv = require('ajv');
 const BigNumber = require('bignumber.js');
 const _ = require('lodash');
 
-function relay(host)
-{
+function relay(host) {
     const transactionSchema = {
         "title": "Transaction",
         "type": "object",
@@ -48,24 +65,19 @@ function relay(host)
         "required": ["gasPrice", "gasLimit", "to", "value", "data"]
     };
 
-    const request = {"jsonrpc": "2.0"};
-
+    const request = { "jsonrpc": "2.0" };
     const validataor = new Validator();
 
-    this.getTransactionCount = async (add, tag) =>
-    {
-
-        if (!validataor.isValidETHAddress(add))
-        {
+    this.getTransactionCount = async(add, tag) => {
+        if (!validataor.isValidETHAddress(add)) {
             throw new Error('invalid ETH address');
         }
 
-        if (!tag)
-        {
+        if (!tag) {
             tag = 'latest';
         }
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
-        {
+
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
             throw new Error('invalid  tag:' + tag);
         }
 
@@ -81,29 +93,23 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
-            {
-            if (res.error)
-            {
+        }).then(res => res.json()).then(res => {
+            if (res.error) {
                 throw new Error(res.error.message);
             }
             return res.result;
         });
     };
 
-    this.getAccountBalance = async (add, tag) =>
-    {
-        if (!validataor.isValidETHAddress(add))
-        {
+    this.getAccountBalance = async(add, tag) => {
+        if (!validataor.isValidETHAddress(add)) {
             throw new Error('invalid ETH address');
         }
 
-        if (!tag)
-        {
+        if (!tag) {
             tag = 'latest';
         }
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
-        {
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
             throw new Error('invalid  tag:' + tag);
         }
 
@@ -119,25 +125,19 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
-        {
-            if (res.error)
-            {
+        }).then(res => res.json()).then(res => {
+            if (res.error) {
                 throw new Error(res.error.message);
             }
             return new BigNumber(Number(validHex(res.result)));
         });
     };
 
-    this.call = async (data, tag) =>
-    {
-
-        if (!tag)
-        {
+    this.call = async(data, tag) => {
+        if (!tag) {
             tag = 'latest';
         }
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
-        {
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
             throw new Error('invalid  tag:' + tag);
         }
 
@@ -152,10 +152,8 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
-        {
-            if (res.error)
-            {
+        }).then(res => res.json()).then(res => {
+            if (res.error) {
                 throw new Error(res.error.message);
             }
             return validHex(res.result);
@@ -163,29 +161,24 @@ function relay(host)
 
     };
 
-    this.generateTx = async (rawTx, privateKey) =>
-    {
-
+    this.generateTx = async(rawTx, privateKey) => {
         const wallet = new Wallet();
         wallet.setPrivateKey(ethUtil.toBuffer(privateKey));
 
         const valid_result = ajv.validate(transactionSchema, rawTx);
 
-        if (valid_result.error)
-        {
+        if (valid_result.error) {
             throw new Error('invalid Tx data ');
         }
 
         const gasLimit = new BigNumber(Number(rawTx.gasLimit));
 
-        if (gasLimit.lessThan(21000))
-        {
+        if (gasLimit.lessThan(21000)) {
 
             throw new Error('gasLimit must be greater than 21000');
         }
 
-        if (gasLimit.greaterThan(5000000))
-        {
+        if (gasLimit.greaterThan(5000000)) {
             throw new Error('gasLimit is too big');
         }
 
@@ -208,12 +201,9 @@ function relay(host)
             tx: rawTx,
             signedTx: signed
         };
-
     };
 
-    this.sendSignedTx = async (tx) =>
-    {
-
+    this.sendSignedTx = async(tx) => {
         request.id = id();
         request.method = "eth_sendRawTransaction";
         request.params = [tx];
@@ -225,10 +215,8 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
-        {
-            if (res.error)
-            {
+        }).then(res => res.json()).then(res => {
+            if (res.error) {
                 throw new Error(res.error.message);
             }
             return res.result;
@@ -236,16 +224,12 @@ function relay(host)
 
     };
 
-    this.getTokenBalance = async (token, add, tag) =>
-    {
-
-        if (!validataor.isValidETHAddress(add))
-        {
+    this.getTokenBalance = async(token, add, tag) => {
+        if (!validataor.isValidETHAddress(add)) {
             throw new Error('invalid ETH address' + add);
         }
 
-        if (!validataor.isValidETHAddress(token))
-        {
+        if (!validataor.isValidETHAddress(token)) {
 
             throw new Error('invalid token contract Address ' + token);
         }
@@ -256,60 +240,50 @@ function relay(host)
             data
         };
 
-        if (!tag)
-        {
+        if (!tag) {
             tag = 'latest';
         }
 
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
-        {
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
             throw new Error('invalid  tag:' + tag);
         }
         return new BigNumber(Number(await this.call(params, tag)));
 
     };
 
-    this.getTokenAllowance = async (token, owner, spender, tag) =>
-    {
+    this.getTokenAllowance = async(token, owner, spender, tag) => {
 
-        if (!validataor.isValidETHAddress(owner))
-        {
+        if (!validataor.isValidETHAddress(owner)) {
             throw new Error('invalid owner address');
         }
 
-        if (!validataor.isValidETHAddress(spender))
-        {
+        if (!validataor.isValidETHAddress(spender)) {
             throw new Error('invalid spender address');
         }
 
-        if (!validataor.isValidETHAddress(token))
-        {
+        if (!validataor.isValidETHAddress(token)) {
 
             throw new Error('invalid token Contract Address');
         }
 
-        const data = signer.generateAllowanceData(owner,spender);
+        const data = signer.generateAllowanceData(owner, spender);
         const params = {
             to: token,
             data
         };
 
-        if (!tag)
-        {
+        if (!tag) {
             tag = 'latest';
         }
 
-        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
-        {
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending') {
             throw new Error('invalid  tag:' + tag);
         }
 
         return new BigNumber(Number(await this.call(params, tag)));
-
     };
 
-    this.submitLoopringOrder = async function (order) {
-
+    this.submitLoopringOrder = async function(order) {
         request.method = 'loopring_submitOrder';
         request.params = [order];
         request.id = id();
@@ -321,23 +295,20 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
-        {
+        }).then(r => r.json()).then(res => {
             return res;
         });
 
     };
 
-    this.cancelLoopringOrder = async (rawTX, privateKey) =>
-    {
+    this.cancelLoopringOrder = async(rawTX, privateKey) => {
         const tx = await this.generateTx(rawTX, privateKey);
         return await this.sendSignedTx(tx.signedTx);
     };
 
-    this.getOrders = async function (filter) {
-
+    this.getOrders = async function(filter) {
         request.method = 'loopring_getOrders';
-        request.params = [{filter}];
+        request.params = [{ filter }];
         request.id = id();
 
         return await axios({
@@ -347,16 +318,15 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
-        {
+        }).then(r => r.json()).then(res => {
             return res;
         });
 
     };
 
-    this.getDepth = async function (filter) {
+    this.getDepth = async function(filter) {
         request.method = 'loopring_getDepth';
-        request.params = [{filter}];
+        request.params = [{ filter }];
         request.id = id();
 
         return await axios({
@@ -366,16 +336,14 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
-        {
+        }).then(r => r.json()).then(res => {
             return res;
         });
     };
 
-    this.getTicker = async function (market) {
-
+    this.getTicker = async function(market) {
         request.method = 'loopring_getTicker';
-        request.params = [{market}];
+        request.params = [{ market }];
         request.id = id();
 
         return await axios({
@@ -385,17 +353,15 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
-        {
+        }).then(r => r.json()).then(res => {
             return res;
         });
     };
 
-    this.getFills = async function (filter) {
-
+    this.getFills = async function(filter) {
         //filter:market, address, pageIndex, pageSize,contractVersion
         request.method = 'loopring_getFills';
-        request.params = [{filter}];
+        request.params = [{ filter }];
         request.id = id();
 
         return await axios({
@@ -405,18 +371,16 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
-        {
+        }).then(r => r.json()).then(res => {
             return res;
         });
 
     };
 
-    this.getCandleTicks = async function (filter) {
-
+    this.getCandleTicks = async function(filter) {
         //filter:market, interval, size
         request.method = 'loorping_getCandleTicks';
-        request.params = [{filter}];
+        request.params = [{ filter }];
         request.id = id();
 
         return await axios({
@@ -426,19 +390,16 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
-        {
+        }).then(r => r.json()).then(res => {
             return res;
         });
 
     };
 
-    this.getRingMined = async function (filter) {
-
-
+    this.getRingMined = async function(filter) {
         //filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
         request.method = 'loopring_getRingMined';
-        request.params = [{filter}];
+        request.params = [{ filter }];
         request.id = id();
 
         return await axios({
@@ -448,17 +409,15 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
-        {
+        }).then(r => r.json()).then(res => {
             return res;
         });
 
     };
 
-    this.getBalances = async function (address) {
-
+    this.getBalances = async function(address) {
         request.method = 'loopring_getBalances';
-        request.params = [{address}];
+        request.params = [{ address }];
         request.id = id();
 
         return await axios({
@@ -468,25 +427,19 @@ function relay(host)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(request)
-        }).then(r => r.json()).then(res =>
-        {
+        }).then(r => r.json()).then(res => {
             return res;
         });
     };
 
-    const id = () =>
-    {
+    const id = () => {
         return crypto.randomBytes(16).toString('hex');
     };
 
-    const validHex = (data) =>
-    {
-
-        if (data === '0x')
-        {
+    const validHex = (data) => {
+        if (data === '0x') {
             data = '0x0';
         }
-
         return data;
     };
 }
