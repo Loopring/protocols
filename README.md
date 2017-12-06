@@ -37,13 +37,13 @@ Include the following script tags in your HTML:
 <script src="../bower_components/loopring.js/dist/loopring.min.js"></script>
 ```
 
-To use the library, include each component like so:
+To use the library in your JavaSrcipt code, get each component like so:
 
 ```
-const keystore = this.keystore;
-const privateKeyWallet = this.wallet;
+const Keystore = this.keystore;
+const PrivateKeyWallet = this.wallet;
 const Validator = this.validator;
-const signer = this.signer;
+const Signer = this.signer;
 const Relay = this.relay;
 const Order = this.order;
 ```
