@@ -80,8 +80,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
+            data: request
+        }).then(res => res.data).then(res =>
             {
             if (res.error)
             {
@@ -118,8 +118,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
+            data: request
+        }).then(res => res.data).then(res =>
         {
             if (res.error)
             {
@@ -151,8 +151,8 @@ function relay(host)
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(request)
-        }).then(res => res.json()).then(res =>
+            data:request
+        }).then(res => res.data).then(res =>
         {
             if (res.error)
             {
