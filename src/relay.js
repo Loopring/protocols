@@ -93,10 +93,8 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             data: request
-        }).then(res => res.data).then(res =>
-            {
-            if (res.error)
-            {
+        }).then(res => res.data).then(res => {
+            if (res.error) {
                 throw new Error(res.error.message);
             }
             return res.result;
@@ -127,10 +125,8 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             data: request
-        }).then(res => res.data).then(res =>
-        {
-            if (res.error)
-            {
+        }).then(res => res.data).then(res => {
+            if (res.error) {
                 throw new Error(res.error.message);
             }
             return new BigNumber(Number(validHex(res.result)));
@@ -155,11 +151,9 @@ function relay(host) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            data:request
-        }).then(res => res.data).then(res =>
-        {
-            if (res.error)
-            {
+            data: request
+        }).then(res => res.data).then(res => {
+            if (res.error) {
                 throw new Error(res.error.message);
             }
             return validHex(res.result);
@@ -222,10 +216,8 @@ function relay(host) {
             },
 
             data: request
-        }).then(res => res.data).then(res =>
-        {
-            if (res.error)
-            {
+        }).then(res => res.data).then(res => {
+            if (res.error) {
                 throw new Error(res.error.message);
             }
             return res.result;
@@ -304,8 +296,7 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             data: request
-        }).then(r => r.data).then(res =>
-        {
+        }).then(r => r.data).then(res => {
             return res;
         });
 
@@ -328,8 +319,7 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             data: request
-        }).then(r => r.data).then(res =>
-        {
+        }).then(r => r.data).then(res => {
             return res;
         });
 
@@ -347,8 +337,7 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             data: request
-        }).then(r => r.data).then(res =>
-        {
+        }).then(r => r.data).then(res => {
             return res;
         });
     };
@@ -365,8 +354,7 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             data: request
-        }).then(r => r.data).then(res =>
-        {
+        }).then(r => r.data).then(res => {
             return res;
         });
     };
@@ -384,8 +372,7 @@ function relay(host) {
                 'Content-Type': 'application/json'
             },
             data: request
-        }).then(r => r.data).then(res =>
-        {
+        }).then(r => r.data).then(res => {
             return res;
         });
 
@@ -408,56 +395,54 @@ function relay(host) {
             return res;
         });
 
-    };
+};
 
-    this.getRingMined = async function (filter) {
-        // filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
-        request.method = 'loopring_getRingMined';
-        request.params = [{ filter }];
-        request.id = id();
+this.getRingMined = async function(filter) {
+    // filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
+    request.method = 'loopring_getRingMined';
+    request.params = [{ filter }];
+    request.id = id();
 
-        return await axios({
-            url: host,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            data: request
-        }).then(r => r.data).then(res =>
-        {
-            return res;
-        });
+    return await axios({
+        url: host,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        data: request
+    }).then(r => r.data).then(res => {
+        return res;
+    });
 
-    };
+};
 
-    this.getBalances = async function(address) {
-        request.method = 'loopring_getBalances';
-        request.params = [{ address }];
-        request.id = id();
+this.getBalances = async function(address) {
+    request.method = 'loopring_getBalances';
+    request.params = [{ address }];
+    request.id = id();
 
-        return await axios({
-            url: host,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            data: request
-        }).then(r => r.data).then(res =>
-        {
-            return res;
-        });
-    };
+    return await axios({
+        url: host,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        data: request
+    }).then(r => r.data).then(res => {
+        return res;
+    });
+};
 
-    const id = () => {
-        return crypto.randomBytes(16).toString('hex');
-    };
+const id = () => {
+    return crypto.randomBytes(16).toString('hex');
+};
 
-    const validHex = (data) => {
-        if (data === '0x') {
-            data = '0x0';
-        }
-        return data;
-    };
+const validHex = (data) => {
+    if (data === '0x') {
+        data = '0x0';
+    }
+    return data;
+};
 }
 
 module.exports = relay;
