@@ -7,12 +7,43 @@
 Then run the following commands from project's root directory:
  
 ```
-npm install -g browserify
-npm install
+yarn install
 ```
 
 To build the dist directory from the src director run the following:
 
 ```
-gen.sh
+webpack
+```
+
+## Browser Usage
+
+To save on space in the library, and allow for dependencies to be concurrently loaded by a browser, we have removed the following libraries (they will need to be installed via bower):
+
+```
+async
+axios
+bignumber.js
+lodash
+```
+
+Include the following script tags in your HTML:
+
+```
+<script src="../bower_components/async/dist/async.js"></script>
+<script src="../bower_components/lodash/dist/lodash.min.js"></script>
+<script src="../bower_components/bignumber.js/bignumber.min.js"></script>
+<script src="../bower_components/axios/dist/axios.min.js"></script>
+<script src="../bower_components/loopring.js/dist/loopring.min.js"></script>
+```
+
+To use the library, include each component like so:
+
+```
+const keystore = this.keystore;
+const privateKeyWallet = this.wallet;
+const Validator = this.validator;
+const signer = this.signer;
+const Relay = this.relay;
+const Order = this.order;
 ```
