@@ -50,7 +50,7 @@ exports.decryptKeystoreToPkey = (keystore, password) =>
     return wallet;
 };
 
-exports.pkeyToKeystore = function (privateKey, password)
+exports.pkeyToKeystore = (privateKey, password) =>
 {
     const salt = crypto.randomBytes(32);
     const iv = crypto.randomBytes(16);

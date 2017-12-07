@@ -59,7 +59,7 @@ const transactionSchema = {
 };
 
 const ajv = new Ajv();
-exports.solSHA3 = function (types, data)
+exports.solSHA3 = (types, data) =>
 {
     const hash = abi.soliditySHA3(types, data);
     return hash;
@@ -82,7 +82,7 @@ exports.signEthTx = (tx, privateKey) =>
     return '0x' + ethTx.serialize().toString('hex');
 };
 
-exports.generateCancelOrderData = function (order)
+exports.generateCancelOrderData = (order) =>
 {
     const data = abi.rawEncode([
         'address[3]',
@@ -114,42 +114,42 @@ exports.generateCancelOrderData = function (order)
     return '0x' + method + data;
 };
 
-exports.generateCutOffData = function (timestamp)
+exports.generateCutOffData = (timestamp) =>
 {
     const method = abi.methodID('setCutoff', ['uint']).toString('hex');
     const data = abi.rawEncode(['uint'], [timestamp]).toString('hex');
     return '0x' + method + data;
 };
 
-exports.generateApproveData = function (address, amount)
+exports.generateApproveData = (address, amount) =>
 {
     const method = abi.methodID('approve', ['address', 'uint']).toString('hex');
     const data = abi.rawEncode(['address', 'uint'], [address, amount]).toString('hex');
     return '0x' + method + data;
 };
 
-exports.generateWithdrawData = function (amount)
+exports.generateWithdrawData = (amount) =>
 {
     const method = abi.methodID('withdraw', ['uint']).toString('hex');
     const data = abi.rawEncode(['uint'], [amount]).toString('hex');
     return '0x' + method + data;
 };
 
-exports.generateTransferData = function (address, amount)
+exports.generateTransferData = (address, amount) =>
 {
     const method = abi.methodID('transfer', ['address', 'uint']).toString('hex');
     const data = abi.rawEncode(['address', 'uint'], [address, amount]).toString('hex');
     return '0x' + method + data;
 };
 
-exports.generateBalanceOfData = function (address)
+exports.generateBalanceOfData = (address) =>
 {
     const method = abi.methodID('balanceOf', ['address']).toString('hex');
     const data = abi.rawEncode(['address'], [address]).toString('hex');
     return '0x' + method + data;
 };
 
-exports.generateAllowanceData = function (owner, spender)
+exports.generateAllowanceData = (owner, spender) =>
 {
     const method = abi.methodID('allowance', ['address', 'address']).toString('hex');
     const data = abi.rawEncode(['address', 'address'], [owner, spender]).toString('hex');

@@ -337,7 +337,7 @@ function relay (host)
         return new BigNumber(Number(await this.call(params, tag)));
     };
 
-    this.submitLoopringOrder = async function (order)
+    this.submitLoopringOrder = async (order) =>
     {
         request.method = 'loopring_submitOrder';
         request.params = [order];
@@ -362,7 +362,7 @@ function relay (host)
         return this.sendSignedTx(tx.signedTx);
     };
 
-    this.getOrders = async function (filter)
+    this.getOrders = async (filter) =>
     {
         request.method = 'loopring_getOrders';
         request.params = [filter];
@@ -381,7 +381,7 @@ function relay (host)
         });
     };
 
-    this.getDepth = async function (filter)
+    this.getDepth = async (filter) =>
     {
         request.method = 'loopring_getDepth';
         request.params = [ filter ];
@@ -400,7 +400,7 @@ function relay (host)
         });
     };
 
-    this.getTicker = async function (market)
+    this.getTicker = async (market) =>
     {
         request.method = 'loopring_getTicker';
         request.params = [market];
@@ -419,7 +419,7 @@ function relay (host)
         });
     };
 
-    this.getFills = async function (filter)
+    this.getFills = async (filter) =>
     {
         // filter:market, address, pageIndex, pageSize,contractVersion
         request.method = 'loopring_getFills';
@@ -439,7 +439,7 @@ function relay (host)
         });
     };
 
-    this.getTrend = async function (market)
+    this.getTrend = async (market) =>
     {
         // filter:market
         request.method = 'loopring_getTrend';
@@ -459,7 +459,7 @@ function relay (host)
         });
     };
 
-    this.getRingMined = async function (filter)
+    this.getRingMined = async (filter) =>
     {
         // filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
         request.method = 'loopring_getRingMined';
@@ -479,7 +479,7 @@ function relay (host)
         });
     };
 
-    this.getBalances = async function (address)
+    this.getBalances = async (address) =>
     {
         request.method = 'loopring_getBalance';
         request.params = [{ address }];
