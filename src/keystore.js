@@ -28,7 +28,7 @@ exports.decryptKeystoreToPkey = (keystore, password) =>
     let wallet;
     const parsed = JSON.parse(keystore);
     switch (this.determineKeystoreType(keystore))
-{
+    {
         case 'presale':
             wallet = this.decryptPresaleToPrivKey(keystore, password);
             break;
@@ -72,7 +72,7 @@ exports.pkeyToKeystore = function (privateKey, password)
     const cipher = crypto.createCipheriv('aes-128-ctr', derivedKey.slice(0, 16), iv);
 
     if (!cipher)
-{
+    {
         throw new Error('Unsupported cipher');
     }
     const ciphertext = Buffer.concat([cipher.update(privateKey), cipher.final()]);
@@ -106,13 +106,13 @@ exports.decryptUtcKeystoreToPkey = (keystore, password) =>
 {
     const kstore = JSON.parse(keystore.toLowerCase());
     if (kstore.version !== 3)
-{
+    {
         throw new Error('Not a V3 wallet');
     }
     let derivedKey, kdfparams;
 
     if (kstore.crypto.kdf === 'scrypt')
-{
+    {
         kdfparams = kstore.crypto.kdfparams;
         derivedKey = scrypt(
             Buffer.from(password),
@@ -124,10 +124,10 @@ exports.decryptUtcKeystoreToPkey = (keystore, password) =>
         );
     }
     else if (kstore.crypto.kdf === 'pbkdf2')
-{
+    {
         kdfparams = kstore.crypto.kdfparams;
         if (kdfparams.prf !== 'hmac-sha256')
-{
+        {
             throw new Error('Unsupported parameters to PBKDF2');
         }
         derivedKey = crypto.pbkdf2Sync(
@@ -139,13 +139,13 @@ exports.decryptUtcKeystoreToPkey = (keystore, password) =>
         );
     }
     else
-{
+    {
         throw new Error('Unsupported key derivation scheme');
     }
     const ciphertext = Buffer.from(kstore.crypto.ciphertext, 'hex');
     const mac = ethereumUtil.sha3(Buffer.concat([derivedKey.slice(16, 32), ciphertext]));
     if (mac.toString('hex') !== kstore.crypto.mac)
-{
+    {
         throw new Error('Key derivation failed - possibly wrong passphrase');
     }
     const decipher = crypto.createDecipheriv(
@@ -155,7 +155,7 @@ exports.decryptUtcKeystoreToPkey = (keystore, password) =>
     );
     let seed = decrypt.decipherBuffer(decipher, ciphertext);
     while (seed.length < 32)
-{
+    {
         const nullBuff = Buffer.from([0x00]);
         seed = Buffer.concat([nullBuff, seed]);
     }
@@ -166,27 +166,27 @@ exports.determineKeystoreType = (keystore) =>
 {
     const parsed = JSON.parse(keystore);
     if (parsed.encseed)
-{
+    {
         return 'presale';
     }
     else if (parsed.Crypto || parsed.crypto)
-{
+    {
         return 'v2-v3-utc';
     }
     else if (parsed.hash && parsed.locked === true)
-{
+    {
         return 'v1-encrypted';
     }
     else if (parsed.hash && parsed.locked === false)
-{
+    {
         return 'v1-unencrypted';
     }
     else if (parsed.publisher === 'MyEtherWallet')
-{
+    {
         return 'v2-unencrypted';
     }
     else
-{
+    {
         throw new Error('Invalid keystore');
     }
 };
@@ -212,7 +212,7 @@ exports.decryptPresaleToPrivKey = (keystore, password) =>
     const address = ethereumUtil.privateToAddress(privkey);
 
     if (address.toString('hex') !== json.ethaddr)
-{
+    {
         throw new Error('Decoded key mismatch - possibly wrong passphrase');
     }
     return privkey;
@@ -224,11 +224,11 @@ exports.decryptMewV1ToPrivKey = (keystore, password) =>
     let privkey;
 
     if (typeof password !== 'string')
-{
+    {
         throw new Error('Password required');
     }
     if (password.length < 9)
-{
+    {
         throw new Error('Password must be at least 9 characters');
     }
     let cipher = json.encrypted ? json.private.slice(0, 128) : json.private;
@@ -243,7 +243,7 @@ exports.decryptMewV1ToPrivKey = (keystore, password) =>
     const address = '0x' + ethereumUtil.privateToAddress(privkey).toString('hex');
 
     if (address !== json.address)
-{
+    {
         throw new Error('Invalid private key or address');
     }
     return privkey;
@@ -252,7 +252,7 @@ exports.decryptMewV1ToPrivKey = (keystore, password) =>
 exports.isKeystorePassRequired = (keystore) =>
 {
     switch (this.determineKeystoreType(keystore))
-{
+    {
         case 'presale':
             return true;
         case 'v1-unencrypted':

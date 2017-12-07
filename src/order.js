@@ -22,7 +22,7 @@ const BN = require('bn.js');
 const Ajv = require('ajv');
 const _ = require('lodash');
 
-function Order(data)
+function Order (data)
 {
     const protocol = data.protocol;
     const owner = data.owner;
@@ -110,11 +110,11 @@ function Order(data)
     ];
 
     this.sign = function (privateKey)
-{
+    {
         const validation = ajv.validate(orderSchema, data);
 
         if (!validation)
-{
+        {
             throw new Error('Invalid Loopring Order');
         }
 
@@ -132,7 +132,7 @@ function Order(data)
         const finalHash = ethUtil.hashPersonalMessage(hash);
 
         if (_.isString(privateKey))
-{
+        {
             privateKey = ethUtil.toBuffer(privateKey);
         }
 
@@ -162,9 +162,9 @@ function Order(data)
     };
 
     this.cancel = function (amount, privateKey)
-{
+    {
         if (!r || !v || !s)
-{
+        {
             this.sign(privateKey);
         }
 

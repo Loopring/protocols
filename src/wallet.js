@@ -20,23 +20,23 @@ const crypto = require('crypto');
 const ethereumUtil = require('ethereumjs-util');
 const keystore = require('./keystore.js');
 
-function Wallet()
+function Wallet ()
 {
     let privateKey;
     let publicKey;
     let address;
 
     this.generate = function ()
-{
+    {
         privateKey = crypto.randomBytes(32);
         publicKey = ethereumUtil.privateToPublic(privateKey);
         address = ethereumUtil.publicToAddress(publicKey);
     };
 
     this.setPrivateKey = function (key)
-{
+    {
         if (typeof key === 'string')
-{
+        {
             key = ethereumUtil.toBuffer(key);
         }
         privateKey = key;
@@ -45,12 +45,12 @@ function Wallet()
     };
 
     this.getAddress = function ()
-{
+    {
         return ethereumUtil.toChecksumAddress('0x' + address.toString('hex'));
     };
 
     this.toKeystore = function (password)
-{
+    {
         return keystore.pkeyToKeystore(privateKey, password);
     };
 }

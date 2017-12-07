@@ -69,13 +69,13 @@ exports.signEthTx = (tx, privateKey) =>
 {
     const result = ajv.validate(transactionSchema, tx);
     if (result.error)
-{
+    {
         return new Error(JSON.stringify(result.error.details));
     }
 
     const ethTx = new Transaction(tx);
     if (_.isString(privateKey))
-{
+    {
         privateKey = ethUtil.toBuffer(privateKey);
     }
     ethTx.sign(privateKey);
