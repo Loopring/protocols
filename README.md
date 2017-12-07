@@ -28,7 +28,7 @@ To save on space in the library, and allow for dependencies to be concurrently l
 async
 axios
 bignumber.js
-bn.js?
+bn.js
 lodash
 ```
 
