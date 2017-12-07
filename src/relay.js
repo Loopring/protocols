@@ -22,7 +22,7 @@ const Validator = require('./validator.js');
 const Wallet = require('./wallet.js');
 const ethUtil = require('ethereumjs-util');
 const signer = require('./signer.js');
-const ajv = require('ajv');
+const Ajv = require('ajv');
 const BigNumber = require('bignumber.js');
 
 function relay(host)
@@ -53,7 +53,7 @@ function relay(host)
             },
             'data': {
                 'type': 'string',
-                'pattern': '^0x([0-9a-fA-F]{8})*([0-9a-fA-F]{64})*$'
+                'pattern': '^0x[0-9a-fA-F]{8}([0-9a-fA-F]{64})*$|^0x$'
             },
             'chainId': {
                 'type': 'integer',
@@ -65,7 +65,7 @@ function relay(host)
 
     const request = { 'jsonrpc': '2.0' };
     const validataor = new Validator();
-
+    const ajv = new Ajv();
     this.getTransactionCount = async(add, tag) =>
 {
         if (!validataor.isValidETHAddress(add))

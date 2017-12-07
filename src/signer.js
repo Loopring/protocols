@@ -18,7 +18,7 @@
 
 const abi = require('ethereumjs-abi');
 const _ = require('lodash');
-const ajv = require('ajv');
+const Ajv = require('ajv');
 const Transaction = require('ethereumjs-tx');
 const ethUtil = require('ethereumjs-util');
 
@@ -48,7 +48,7 @@ const transactionSchema = {
         },
         'data': {
             'type': 'string',
-            'pattern': '^0x([0-9a-fA-F]{8})*([0-9a-fA-F]{64})*$'
+            'pattern': '^0x[0-9a-fA-F]{8}([0-9a-fA-F]{64})*$ |^0x$'
         },
         'chainId': {
             'type': 'integer',
@@ -58,6 +58,7 @@ const transactionSchema = {
     'required': ['gasPrice', 'gasLimit', 'to', 'value', 'data']
 };
 
+const ajv = new Ajv();
 exports.solSHA3 = function (types, data)
 {
     const hash = abi.soliditySHA3(types, data);
