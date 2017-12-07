@@ -16,8 +16,8 @@
 
 */
 
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
-const Path = require('path');
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin')
+const Path = require('path')
 
 module.exports = {
     entry: './src/loopring.js',
@@ -51,4 +51,4 @@ module.exports = {
         'lodash',
         'axios'
     ]
-};
+}
