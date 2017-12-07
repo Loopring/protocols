@@ -274,6 +274,33 @@ function relay(host)
         return new BigNumber(Number(await this.call(params, tag)));
     };
 
+    this.getCutOff = async(add, contractVersion, tag) =>
+    {
+        if (!validataor.isValidETHAddress(add))
+        {
+            throw new Error('invalid ETH address' + add);
+        }
+        tag = tag || 'latest';
+        if (tag !== 'latest' && tag !== 'earliest' && tag !== 'pending')
+        {
+            throw new Error('invalid  tag:' + tag);
+        }
+        request.id = id();
+        request.method = 'loopring_getCutoff';
+        request.params = [add, contractVersion];
+
+        return axios({
+            url: host,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: request
+        }).then(r => r.data).then(res =>
+    {
+            return res;
+        });
+    };
     this.getTokenAllowance = async(token, owner, spender, tag) =>
 {
         if (!validataor.isValidETHAddress(owner))
@@ -338,7 +365,7 @@ function relay(host)
     this.getOrders = async function (filter)
 {
         request.method = 'loopring_getOrders';
-        request.params = [{ filter }];
+        request.params = [filter];
         request.id = id();
 
         return axios({
@@ -357,7 +384,7 @@ function relay(host)
     this.getDepth = async function (filter)
 {
         request.method = 'loopring_getDepth';
-        request.params = [{ filter }];
+        request.params = [ filter ];
         request.id = id();
 
         return axios({
@@ -376,7 +403,7 @@ function relay(host)
     this.getTicker = async function (market)
 {
         request.method = 'loopring_getTicker';
-        request.params = [{ market }];
+        request.params = [market];
         request.id = id();
 
         return axios({
@@ -396,7 +423,7 @@ function relay(host)
 {
         // filter:market, address, pageIndex, pageSize,contractVersion
         request.method = 'loopring_getFills';
-        request.params = [{ filter }];
+        request.params = [filter];
         request.id = id();
 
         return axios({
@@ -412,11 +439,11 @@ function relay(host)
         });
     };
 
-    this.getCandleTicks = async function (filter)
+    this.getTrend = async function (market)
 {
-        // filter:market, interval, size
-        request.method = 'loorping_getCandleTicks';
-        request.params = [{ filter }];
+        // filter:market
+        request.method = 'loopring_getTrend';
+        request.params = [market];
         request.id = id();
 
         return axios({
@@ -436,7 +463,7 @@ function relay(host)
 {
         // filter:ringHash, orderHash, miner, pageIndex, pageSize,contractVersion
         request.method = 'loopring_getRingMined';
-        request.params = [{ filter }];
+        request.params = [filter];
         request.id = id();
 
         return axios({
@@ -454,7 +481,7 @@ function relay(host)
 
     this.getBalances = async function (address)
 {
-        request.method = 'loopring_getBalances';
+        request.method = 'loopring_getBalance';
         request.params = [{ address }];
         request.id = id();
 
