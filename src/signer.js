@@ -2,7 +2,7 @@
 
 const abi = require('ethereumjs-abi');
 const _ = require('lodash');
-const ajv = require('ajv');
+const Ajv = require('ajv');
 const Transaction = require('ethereumjs-tx');
 const ethUtil = require('ethereumjs-util');
 const Validator = require('./validator');
@@ -45,7 +45,7 @@ const transactionSchema = {
 };
 
 const validator = new Validator();
-
+const ajv = new Ajv();
 exports.solSHA3 = function (types, data) {
     const hash = abi.soliditySHA3(types, data);
     return hash;

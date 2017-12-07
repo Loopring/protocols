@@ -6,7 +6,7 @@ const Validator = require('./validator.js');
 const Wallet = require('./wallet.js');
 const ethUtil = require('ethereumjs-util');
 const signer = require('./signer.js');
-const ajv = require('ajv');
+const Ajv = require('ajv');
 const BigNumber = require('bignumber.js');
 const _ = require('lodash');
 
@@ -49,7 +49,7 @@ function relay(host)
     };
 
     const request = {"jsonrpc": "2.0"};
-
+    const ajv = new Ajv();
     const validataor = new Validator();
 
     this.getTransactionCount = async (add, tag) =>
