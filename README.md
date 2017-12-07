@@ -54,4 +54,5 @@ Before commit your changes or submit a pull request, please lint your code by ru
 
 ```
 ./node_modules/.bin/eslint . --fix
+webpack
 ```
