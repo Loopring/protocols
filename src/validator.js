@@ -16,8 +16,8 @@
 
 */
 
-const ethereumUtil = require('ethereumjs-util')
-const ens = require('./ens')
+const ethereumUtil = require('ethereumjs-util');
+const ens = require('./ens');
 
 function validator ()
 {
@@ -25,72 +25,72 @@ function validator ()
     {
         if (typeof privateKey === 'string')
         {
-            return privateKey.length === 64
+            return privateKey.length === 64;
         }
         else if (privateKey instanceof Buffer)
         {
-            return privateKey.length === 32
+            return privateKey.length === 32;
         }
         else
         {
-            return false
+            return false;
         }
-    }
+    };
 
     this.isValidETHAddress = (address) =>
     {
         if (!address)
         {
-            return false
+            return false;
         }
-        return ethereumUtil.isValidAddress(address)
-    }
+        return ethereumUtil.isValidAddress(address);
+    };
 
     this.isValidHex = (str) =>
     {
         if (typeof str !== 'string')
         {
-            return false
+            return false;
         }
         if (str === '')
         {
-            return true
+            return true;
         }
         str = str.substring(0, 2) === '0x'
             ? str.substring(2).toUpperCase()
-            : str.toUpperCase()
+            : str.toUpperCase();
 
-        const re = /^[0-9A-F]+$/g
-        return re.test(str)
-    }
+        const re = /^[0-9A-F]+$/g;
+        return re.test(str);
+    };
 
     this.isValidENSorEtherAddress = (address) =>
     {
-        return this.isValidETHAddress(address) || this.isValidENSAddress(address)
-    }
+        return this.isValidETHAddress(address) || this.isValidENSAddress(address);
+    };
 
     this.isValidENSAddress = (address) =>
     {
         try
         {
-            const normalized = ens.normalise(address)
-            const tld = normalized.substr(normalized.lastIndexOf('.') + 1)
+            const normalized = ens.normalise(address);
+            const tld = normalized.substr(normalized.lastIndexOf('.') + 1);
             const validTLDs = {
                 eth: true,
                 test: true,
                 reverse: true
-            }
+            };
             if (validTLDs[tld])
             {
-                return true
+                return true;
             }
         }
         catch (e)
         {
-            return false
+            return false;
         }
-        return false
-    }
+        return false;
+    };
 
     this.isValidENSName = (str) =>
     {
@@ -98,13 +98,13 @@ function validator ()
         {
             return (
                 str.length > 6 && ens.normalise(str) !== '' && str.substring(0, 2) !== '0x'
-            )
+            );
         }
         catch (e)
         {
-            return false
+            return false;
         }
-    }
+    };
 }
 
-module.exports = validator
+module.exports = validator;

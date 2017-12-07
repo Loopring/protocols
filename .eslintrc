@@ -3,6 +3,8 @@
     "rules":
     {
         "brace-style": ["error", "allman", {"allowSingleLine": true }],
-        "indent": ["error", 4, {"SwitchCase": 1 }]
+        "indent": ["error", 4, {"SwitchCase": 1 }],
+        "no-const-assign": 2,
+        "semi": [2, "always"]
     }
 }

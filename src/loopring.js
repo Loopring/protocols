@@ -26,4 +26,4 @@ module.exports = {
     signer: require('./signer'),
     validator: require('./validator'),
     wallet: require('./wallet')
-}
+};
