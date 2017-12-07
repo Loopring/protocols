@@ -47,8 +47,9 @@ module.exports = {
     ],
     externals: [
         'async',
+        'axios',
         'bignumber.js',
-        'lodash',
-        'axios'
+        'bn.js',
+        'lodash'
     ]
 };
