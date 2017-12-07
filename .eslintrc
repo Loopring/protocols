@@ -1,6 +1,13 @@
 {
     "extends": ["standard"],
     "parser": "babel-eslint",
+    "parserOptions":
+    {
+        "ecmaVersion": 2017
+    },
+    "plugins": [
+        "jest"
+    ],
     "rules":
     {
         "brace-style": [2, "allman"],
@@ -35,5 +42,17 @@
         }],
         "space-unary-ops": 2,
         "spaced-comment": 2
+    },
+    "env":
+    {
+        "es6": true,
+        "node": true,
+        "jest": true
+    },
+    "ecmaFeatures":
+    {
+        "blockBindings": true,
+        "forOf": true,
+        "templateStrings": true
     }
 }
