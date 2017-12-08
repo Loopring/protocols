@@ -45,11 +45,10 @@ module.exports = {
             }
         })
     ],
-    externals: [
-        'async',
-        'axios',
-        'bignumber.js',
-        'bn.js',
-        'lodash'
-    ]
+    externals: {
+        axios: 'axios',
+        'bignumber.js': 'BigNumber',
+        'bn.js': 'BN',
+        lodash: '_'
+    }
 };
