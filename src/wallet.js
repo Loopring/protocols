@@ -26,14 +26,14 @@ function Wallet ()
     let publicKey;
     let address;
 
-    this.generate = function ()
+    this.generate = () =>
     {
         privateKey = crypto.randomBytes(32);
         publicKey = ethereumUtil.privateToPublic(privateKey);
         address = ethereumUtil.publicToAddress(publicKey);
     };
 
-    this.setPrivateKey = function (key)
+    this.setPrivateKey = (key) =>
     {
         if (typeof key === 'string')
         {
@@ -44,12 +44,12 @@ function Wallet ()
         address = ethereumUtil.publicToAddress(publicKey);
     };
 
-    this.getAddress = function ()
+    this.getAddress = () =>
     {
         return ethereumUtil.toChecksumAddress('0x' + address.toString('hex'));
     };
 
-    this.toKeystore = function (password)
+    this.toKeystore = (password) =>
     {
         return keystore.pkeyToKeystore(privateKey, password);
     };

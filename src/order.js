@@ -109,7 +109,7 @@ function Order (data)
         'uint8'
     ];
 
-    this.sign = function (privateKey)
+    this.sign = (privateKey) =>
     {
         const validation = ajv.validate(orderSchema, data);
 
@@ -161,7 +161,7 @@ function Order (data)
         };
     };
 
-    this.cancel = function (amount, privateKey)
+    this.cancel = (amount, privateKey) =>
     {
         if (!r || !v || !s)
         {

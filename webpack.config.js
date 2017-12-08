@@ -39,7 +39,7 @@ module.exports = {
             parallel: true,
             uglifyOptions: {
                 beautify: false,
-                ecma: 5,
+                ecma: 6,
                 compress: true,
                 comments: false
             }
