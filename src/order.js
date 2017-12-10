@@ -19,6 +19,7 @@
 const signer = require('./signer.js');
 const ethUtil = require('ethereumjs-util');
 const BN = require('bn.js');
+const BigNumber = require('bignumber.js');
 const Ajv = require('ajv');
 const _ = require('lodash');
 
@@ -119,12 +120,12 @@ function Order (data)
         }
 
         const hash = signer.solSHA3(orderTypes, [protocol, owner, tokenS, tokenB,
-            new BN(Number(amountS).toString(10), 10),
-            new BN(Number(amountB).toString(10), 10),
-            new BN(Number(timestamp).toString(10), 10),
-            new BN(Number(ttl).toString(10), 10),
-            new BN(Number(salt).toString(10), 10),
-            new BN(Number(lrcFee).toString(10), 10),
+            new BN(new BigNumber(amountS).toString(10), 10),
+            new BN(new BigNumber(amountB).toString(10), 10),
+            new BN(new BigNumber(timestamp).toString(10), 10),
+            new BN(new BigNumber(ttl).toString(10), 10),
+            new BN(new BigNumber(salt).toString(10), 10),
+            new BN(new BigNumber(lrcFee).toString(10), 10),
             buyNoMoreThanAmountB,
             marginSplitPercentage
         ]);

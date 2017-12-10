@@ -139,7 +139,7 @@ function relay (host)
             {
                 throw new Error(res.error.message);
             }
-            return new BigNumber(Number(validHex(res.result)));
+            return new BigNumber(validHex(res.result));
         });
     };
 
@@ -199,14 +199,14 @@ function relay (host)
             throw new Error('gasLimit is too big');
         }
 
-        // const balance = await this.getAccountBalance(wallet.getAddress());
-        //
-        // const needBalance = new BigNumber(Number(rawTx.value)) + gasLimit * new BigNumber(Number(rawTx.gasPrice));
-        //
-        // if (balance.lessThan(needBalance)) {
-        //
-        //     throw new Error('Balance  is not enough')
-        // }
+        const balance = await this.getAccountBalance(wallet.getAddress());
+
+        const needBalance = new BigNumber(rawTx.value).add(gasLimit * new BigNumber(rawTx.gasPrice));
+
+        if (balance.lessThan(needBalance))
+        {
+            throw new Error('Balance  is not enough');
+        }
 
         const nonce = await this.getTransactionCount(wallet.getAddress());
 
@@ -271,7 +271,7 @@ function relay (host)
         {
             throw new Error('invalid  tag:' + tag);
         }
-        return new BigNumber(Number(await this.call(params, tag)));
+        return new BigNumber(await this.call(params, tag));
     };
 
     this.getCutOff = async (add, contractVersion, tag) =>
@@ -334,7 +334,7 @@ function relay (host)
             throw new Error('invalid  tag:' + tag);
         }
 
-        return new BigNumber(Number(await this.call(params, tag)));
+        return new BigNumber(await this.call(params, tag));
     };
 
     this.submitLoopringOrder = async (order) =>
