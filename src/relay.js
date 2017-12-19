@@ -517,9 +517,9 @@ function relay (host)
         });
     };
 
-    this.getFrozenAmount = async (owner, token) =>
+    this.getEstimatedAllocatedAllowance = async (owner, token) =>
     {
-        request.method = 'loopring_getFrozenAmount';
+        request.method = 'loopring_getEstimatedAllocatedAllowance';
         request.params = [owner, token];
         request.id = id();
 
