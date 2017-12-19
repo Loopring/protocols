@@ -517,6 +517,24 @@ function relay (host)
         });
     };
 
+    this.getFrozenAmount = async (owner, token) =>
+    {
+        request.method = 'loopring_getFrozenAmount';
+        request.params = [owner, token];
+        request.id = id();
+
+        return axios({
+            url: host,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: request
+        }).then(r => r.data).then(res =>
+        {
+            return res;
+        });
+    };
     const id = () =>
     {
         return crypto.randomBytes(16).toString('hex');
