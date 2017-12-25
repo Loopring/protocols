@@ -40,7 +40,7 @@ const transactionSchema = {
         },
         'to': {
             'type': 'string',
-            'pattern': '^0x[0-9a-fA-F]{1,64}$'
+            'pattern': '^0x[0-9a-fA-F]{40}$'
         },
         'value': {
             'type': 'string',
