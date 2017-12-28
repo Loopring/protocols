@@ -87,7 +87,7 @@ contract EcoPartnerRegistry {
         addressMap[msg.sender] = id;
     }
 
-    /// @dev Registery a partner.
+    /// @dev Add an address.
     /// @param addr the address to be added.
     function addAddress(address addr)
         external
@@ -104,6 +104,38 @@ contract EcoPartnerRegistry {
         }
 
         addrs[size + 1] = addr;
+        partner.addresses = addrs;
+        partners[id] = partner;
+    }
+
+    /// @dev Remove an address.
+    /// @param addr the address to be added.
+    function removeAddress(address addr)
+        external
+    {
+        uint id = addressMap[msg.sender];
+        require(id != 0);
+
+        EcoPartner storage partner = partners[id];
+        address[] storage addrs = partner.addresses;
+        uint size = addrs.length;
+
+        uint pos = 0;
+
+        for (uint i = 0; i < size; i++) {
+            if (addr == addrs[i]) {
+                pos = i;
+                break;
+            }
+        }
+
+        require(pos > 0);
+
+        if (pos != size - 1) {
+            addrs[pos] = addrs[size - 1];
+        }
+        addrs.length -= 1;
+
         partner.addresses = addrs;
         partners[id] = partner;
     }
