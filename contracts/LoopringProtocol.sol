@@ -20,6 +20,7 @@ pragma solidity 0.4.18;
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./LoopringProtocol.sol";
+import "./PartnerRegistry.sol";
 import "./RinghashRegistry.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
@@ -40,6 +41,8 @@ contract LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
     /// Constants                                                            ///
     ////////////////////////////////////////////////////////////////////////////
+    string  public constant VERSION                      = "1.1.0";
+
     uint8   public constant FEE_SELECT_LRC               = 0;
     uint8   public constant FEE_SELECT_MARGIN_SPLIT      = 1;
     uint8   public constant FEE_SELECT_MAX_VALUE         = 1;
@@ -170,8 +173,8 @@ contract LoopringProtocol {
     }
 
     struct MinerInfo {
-        address signer;
-        address feeRecipient;
+        address signingAddr;
+        address receivingAddr;
         uint64  partnerId;
     }
 
@@ -236,7 +239,7 @@ contract LoopringProtocol {
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
     /// @param ringminer    The address that signed this tx.
-    /// @param feeRecipient The Recipient address for fee collection. If this is
+    /// @param receivingAddr The Recipient address for fee collection. If this is
     ///                     '0x0', all fees will be paid to the address who had
     ///                     signed this transaction, not `msg.sender`. Noted if
     ///                     LRC need to be paid back to order owner as the result
@@ -251,7 +254,7 @@ contract LoopringProtocol {
         bytes32[]     rList,
         bytes32[]     sList,
         address       ringminer,
-        address       feeRecipient
+        address       receivingAddr
         )
         public
     {
@@ -294,7 +297,7 @@ contract LoopringProtocol {
         require(ringhashAttributes[0]); // "Ring claimed by others");
 
         verifySignature(
-            miner.signer,
+            miner.signingAddr,
             ringhash,
             vList[ringSize],
             rList[ringSize],
@@ -455,7 +458,7 @@ contract LoopringProtocol {
         uint          ringSize,
         bytes32       ringhash,
         OrderState[]  orders,
-        MinerInfo     miner,
+        MinerInfo   miner,
         bool          isRinghashReserved
         )
         private
@@ -490,7 +493,7 @@ contract LoopringProtocol {
             delegate,
             ringSize,
             orders,
-            miner.feeRecipient,
+            miner.receivingAddr,
             _lrcTokenAddress
         );
 
@@ -499,7 +502,7 @@ contract LoopringProtocol {
             delegate,
             ringSize,
             orders,
-            miner.feeRecipient,
+            miner.receivingAddr,
             _lrcTokenAddress
         );
 
@@ -517,7 +520,7 @@ contract LoopringProtocol {
         TokenTransferDelegate delegate,
         uint          ringSize,
         OrderState[]  orders,
-        address       feeRecipient,
+        address       receivingAddr,
         address       _lrcTokenAddress
         )
         private
@@ -564,7 +567,7 @@ contract LoopringProtocol {
         }
 
         // Do all transactions
-        delegate.batchTransferToken(_lrcTokenAddress, feeRecipient, batch);
+        delegate.batchTransferToken(_lrcTokenAddress, receivingAddr, batch);
     }
 
     /// @dev Verify miner has calculte the rates correctly.
@@ -597,7 +600,7 @@ contract LoopringProtocol {
         TokenTransferDelegate delegate,
         uint            ringSize,
         OrderState[]    orders,
-        address         feeRecipient,
+        address         receivingAddr,
         address         _lrcTokenAddress
         )
         private
@@ -664,7 +667,7 @@ contract LoopringProtocol {
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < state.lrcFee) {
                     checkedMinerLrcSpendable = true;
-                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, feeRecipient);
+                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, receivingAddr);
                 }
 
                 // Only calculate split when miner has enough LRC;
@@ -1007,9 +1010,9 @@ contract LoopringProtocol {
         );
     }
 
-    /// @dev Verify signer's signature.
+    /// @dev Verify signingAddr's signature.
     function verifySignature(
-        address signer,
+        address signingAddr,
         bytes32 hash,
         uint8   v,
         bytes32 r,
@@ -1019,7 +1022,7 @@ contract LoopringProtocol {
         pure
     {
         require(
-            signer == ecrecover(
+            signingAddr == ecrecover(
                 keccak256("\x19Ethereum Signed Message:\n32", hash),
                 v,
                 r,
