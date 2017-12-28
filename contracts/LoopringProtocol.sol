@@ -45,10 +45,10 @@ contract LoopringProtocol {
     uint8   public constant FEE_SELECT_MAX_VALUE         = 1;
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
 
+
     ////////////////////////////////////////////////////////////////////////////
     /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
-
 
     /// @dev Event to emit if a ring is successfully mined.
     /// _amountsList is an array of:
@@ -56,8 +56,7 @@ contract LoopringProtocol {
     event RingMined(
         uint                _ringIndex,
         bytes32     indexed _ringhash,
-        address             _miner,
-        address             _feeRecipient,
+        uint64              _partnerId,
         bool                _isRinghashReserved,
         bytes32[]           _orderHashList,
         uint[6][]           _amountsList
@@ -170,6 +169,12 @@ contract LoopringProtocol {
         uint    splitB;
     }
 
+    struct MinerInfo {
+        address signer;
+        address feeRecipient;
+        uint64  partnerId;
+    }
+
     ////////////////////////////////////////////////////////////////////////////
     /// Constructor                                                          ///
     ////////////////////////////////////////////////////////////////////////////
@@ -256,67 +261,64 @@ contract LoopringProtocol {
         // Set the highest bit of ringIndex to '1'.
         ringIndex |= ENTERED_MASK;
 
-        // //Check ring size
-        // uint ringSize = addressList.length;
-        // require(ringSize > 1 && ringSize <= maxRingSize); // "invalid ring size");
+        //Check ring size
+        uint ringSize = addressList.length;
+        require(ringSize > 1 && ringSize <= maxRingSize); // "invalid ring size");
 
-        // verifyInputDataIntegrity(
-        //     ringSize,
-        //     addressList,
-        //     uintArgsList,
-        //     uint8ArgsList,
-        //     buyNoMoreThanAmountBList,
-        //     vList,
-        //     rList,
-        //     sList
-        // );
+        verifyInputDataIntegrity(
+            ringSize,
+            addressList,
+            uintArgsList,
+            uint8ArgsList,
+            buyNoMoreThanAmountBList,
+            vList,
+            rList,
+            sList
+        );
 
-        // verifyTokensRegistered(ringSize, addressList);
+        verifyTokensRegistered(ringSize, addressList);
 
-        // var (ringhash, ringhashAttributes) = RinghashRegistry(
-        //     ringhashRegistryAddress
-        // ).computeAndGetRinghashInfo(
-        //     ringSize,
-        //     ringminer,
-        //     vList,
-        //     rList,
-        //     sList
-        // );
+        var miner = getMinerInfo();
 
-        // //Check if we can submit this ringhash.
-        // require(ringhashAttributes[0]); // "Ring claimed by others");
+        var (ringhash, ringhashAttributes) = RinghashRegistry(
+            ringhashRegistryAddress
+        ).computeAndGetRinghashInfo(
+            ringSize,
+            miner.partnerId,
+            vList,
+            rList,
+            sList
+        );
 
-        // verifySignature(
-        //     ringminer,
-        //     ringhash,
-        //     vList[ringSize],
-        //     rList[ringSize],
-        //     sList[ringSize]
-        // );
+        //Check if we can submit this ringhash.
+        require(ringhashAttributes[0]); // "Ring claimed by others");
 
-        // //Assemble input data into structs so we can pass them to other functions.
-        // OrderState[] memory orders = assembleOrders(
-        //     addressList,
-        //     uintArgsList,
-        //     uint8ArgsList,
-        //     buyNoMoreThanAmountBList,
-        //     vList,
-        //     rList,
-        //     sList
-        // );
+        verifySignature(
+            miner.signer,
+            ringhash,
+            vList[ringSize],
+            rList[ringSize],
+            sList[ringSize]
+        );
 
-        // if (feeRecipient == 0x0) {
-        //     feeRecipient = ringminer;
-        // }
+        //Assemble input data into structs so we can pass them to other functions.
+        OrderState[] memory orders = assembleOrders(
+            addressList,
+            uintArgsList,
+            uint8ArgsList,
+            buyNoMoreThanAmountBList,
+            vList,
+            rList,
+            sList
+        );
 
-        // handleRing(
-        //     ringSize,
-        //     ringhash,
-        //     orders,
-        //     ringminer,
-        //     feeRecipient,
-        //     ringhashAttributes[1]
-        // );
+        handleRing(
+            ringSize,
+            ringhash,
+            orders,
+            miner,
+            ringhashAttributes[1]
+        );
 
         ringIndex = (ringIndex ^ ENTERED_MASK) + 1;
     }
@@ -405,6 +407,14 @@ contract LoopringProtocol {
     /// Internal & Private Functions                                         ///
     ////////////////////////////////////////////////////////////////////////////
 
+    function getMinerInfo(
+        )
+        private
+        view
+        returns (MinerInfo) {
+        return MinerInfo(0x0, 0x0, 1);
+    }
+
     /// @dev Validate a ring.
     function verifyRingHasNoSubRing(
         uint          ringSize,
@@ -445,8 +455,7 @@ contract LoopringProtocol {
         uint          ringSize,
         bytes32       ringhash,
         OrderState[]  orders,
-        address       miner,
-        address       feeRecipient,
+        MinerInfo     miner,
         bool          isRinghashReserved
         )
         private
@@ -481,7 +490,7 @@ contract LoopringProtocol {
             delegate,
             ringSize,
             orders,
-            feeRecipient,
+            miner.feeRecipient,
             _lrcTokenAddress
         );
 
@@ -490,15 +499,14 @@ contract LoopringProtocol {
             delegate,
             ringSize,
             orders,
-            feeRecipient,
+            miner.feeRecipient,
             _lrcTokenAddress
         );
 
         RingMined(
             _ringIndex,
             ringhash,
-            miner,
-            feeRecipient,
+            miner.partnerId,
             isRinghashReserved,
             orderHashList,
             amountsList
