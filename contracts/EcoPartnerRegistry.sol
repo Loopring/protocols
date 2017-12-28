@@ -30,7 +30,7 @@ contract EcoPartnerRegistry {
     ////////////////////////////////////////////////////////////////////////////
     struct EcoPartner {
         bytes16     name;
-        address[]   addresses;
+        address[]   addresses; // The first address is the owner.
     }
 
 
@@ -57,7 +57,7 @@ contract EcoPartnerRegistry {
     /// @param addrRef an encoding of the partner's id and an address index. 
     ///        The bits[0-8] are used for address index, bits[9-63] are used
     ///        for partner id. 
-    function getEcoPartnerAddress(uint64 addrRef)
+    function getAddress(uint64 addrRef)
         external
         view
         returns (address)
@@ -68,20 +68,43 @@ contract EcoPartnerRegistry {
         return partners[partnerId].addresses[addrIdx];
     }
 
+    /// @dev Registery a partner.
+    /// @param name the unique name of the partner.
     function register(bytes16 name)
         external
         returns (uint id)
     {
-        require(nameMap[name] == 0);
-        require(addressMap[msg.sender] == 0);
+        require(nameMap[name] == 0);  // Name already taken.
+        require(addressMap[msg.sender] == 0);  // Owning address registered.
 
         id = partners.length + 1;
 
-        var addrs = new address[](1);
+        address[] memory addrs = new address[](1);
         addrs[0] = msg.sender;
         partners[id] = EcoPartner(name, addrs);
 
         nameMap[name] = id;
         addressMap[msg.sender] = id;
+    }
+
+    /// @dev Registery a partner.
+    /// @param addr the address to be added.
+    function addAddress(address addr)
+        external
+    {
+        uint id = addressMap[msg.sender];
+        require(id != 0);
+
+        EcoPartner storage partner = partners[id];
+        address[] storage addrs = partner.addresses;
+        uint size = addrs.length;
+
+        for (uint i = 0; i < size; i++) {
+            require(addr != addrs[i]);
+        }
+
+        addrs[size + 1] = addr;
+        partner.addresses = addrs;
+        partners[id] = partner;
     }
 }
