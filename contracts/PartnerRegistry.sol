@@ -24,11 +24,11 @@ pragma solidity 0.4.18;
 ///      When an order is created, the wallet's index is used instead of its
 ///      addresses in order to reduce order byte-size.
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract EcoPartnerRegistry {
+contract PartnerRegistry {
     ////////////////////////////////////////////////////////////////////////////
     /// Structures                                                           ///
     ////////////////////////////////////////////////////////////////////////////
-    struct EcoPartner {
+    struct Partner {
         bytes16     name;
         address[]   addresses; // The first address is the owner.
     }
@@ -38,7 +38,7 @@ contract EcoPartnerRegistry {
     /// Variables                                                            ///
     ////////////////////////////////////////////////////////////////////////////
 
-    EcoPartner[] public partners;
+    Partner[] public partners;
 
     mapping(bytes16  => uint) public nameMap;
     mapping(address  => uint) public addressMap;
@@ -81,7 +81,7 @@ contract EcoPartnerRegistry {
 
         address[] memory addrs = new address[](1);
         addrs[0] = msg.sender;
-        partners[id] = EcoPartner(name, addrs);
+        partners[id] = Partner(name, addrs);
 
         nameMap[name] = id;
         addressMap[msg.sender] = id;
@@ -95,7 +95,7 @@ contract EcoPartnerRegistry {
         uint id = addressMap[msg.sender];
         require(id != 0);
 
-        EcoPartner storage partner = partners[id];
+        Partner storage partner = partners[id];
         address[] storage addrs = partner.addresses;
         uint size = addrs.length;
 
@@ -116,7 +116,7 @@ contract EcoPartnerRegistry {
         uint id = addressMap[msg.sender];
         require(id != 0);
 
-        EcoPartner storage partner = partners[id];
+        Partner storage partner = partners[id];
         address[] storage addrs = partner.addresses;
         uint size = addrs.length;
 
