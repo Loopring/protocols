@@ -20,7 +20,6 @@ pragma solidity 0.4.18;
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./LoopringProtocol.sol";
-import "./PartnerRegistry.sol";
 import "./RinghashRegistry.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
@@ -35,45 +34,8 @@ import "./TokenTransferDelegate.sol";
 ///     https://github.com/rainydio
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
-contract LoopringProtocol {
+contract LoopringProtocolImpl is LoopringProtocol {
     using MathUint for uint;
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Constants                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
-    string  public constant VERSION                      = "1.1.0";
-
-    uint8   public constant FEE_SELECT_LRC               = 0;
-    uint8   public constant FEE_SELECT_MARGIN_SPLIT      = 1;
-    uint8   public constant FEE_SELECT_MAX_VALUE         = 1;
-    uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
-
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Events                                                               ///
-    ////////////////////////////////////////////////////////////////////////////
-
-    /// @dev Event to emit if a ring is successfully mined.
-    /// _amountsList is an array of:
-    /// [_amountS, _amountB, _lrcReward, _lrcFee, splitS, splitB].
-    event RingMined(
-        uint                _ringIndex,
-        bytes32     indexed _ringhash,
-        uint64              _partnerId,
-        bool                _isRinghashReserved,
-        bytes32[]           _orderHashList,
-        uint[6][]           _amountsList
-    );
-
-    event OrderCancelled(
-        bytes32     indexed _orderHash,
-        uint                _amountCancelled
-    );
-
-    event CutoffTimestampChanged(
-        address     indexed _address,
-        uint                _cutoff
-    );
 
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///
@@ -172,12 +134,6 @@ contract LoopringProtocol {
         uint    splitB;
     }
 
-    struct MinerInfo {
-        address signingAddr;
-        address receivingAddr;
-        uint64  partnerId;
-    }
-
     ////////////////////////////////////////////////////////////////////////////
     /// Constructor                                                          ///
     ////////////////////////////////////////////////////////////////////////////
@@ -239,7 +195,7 @@ contract LoopringProtocol {
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
     /// @param ringminer    The address that signed this tx.
-    /// @param receivingAddr The Recipient address for fee collection. If this is
+    /// @param feeRecipient The Recipient address for fee collection. If this is
     ///                     '0x0', all fees will be paid to the address who had
     ///                     signed this transaction, not `msg.sender`. Noted if
     ///                     LRC need to be paid back to order owner as the result
@@ -254,7 +210,7 @@ contract LoopringProtocol {
         bytes32[]     rList,
         bytes32[]     sList,
         address       ringminer,
-        address       receivingAddr
+        address       feeRecipient
         )
         public
     {
@@ -281,13 +237,11 @@ contract LoopringProtocol {
 
         verifyTokensRegistered(ringSize, addressList);
 
-        var miner = getMinerInfo();
-
         var (ringhash, ringhashAttributes) = RinghashRegistry(
             ringhashRegistryAddress
         ).computeAndGetRinghashInfo(
             ringSize,
-            miner.partnerId,
+            ringminer,
             vList,
             rList,
             sList
@@ -297,7 +251,7 @@ contract LoopringProtocol {
         require(ringhashAttributes[0]); // "Ring claimed by others");
 
         verifySignature(
-            miner.signingAddr,
+            ringminer,
             ringhash,
             vList[ringSize],
             rList[ringSize],
@@ -315,11 +269,16 @@ contract LoopringProtocol {
             sList
         );
 
+        if (feeRecipient == 0x0) {
+            feeRecipient = ringminer;
+        }
+
         handleRing(
             ringSize,
             ringhash,
             orders,
-            miner,
+            ringminer,
+            feeRecipient,
             ringhashAttributes[1]
         );
 
@@ -410,14 +369,6 @@ contract LoopringProtocol {
     /// Internal & Private Functions                                         ///
     ////////////////////////////////////////////////////////////////////////////
 
-    function getMinerInfo(
-        )
-        private
-        view
-        returns (MinerInfo) {
-        return MinerInfo(0x0, 0x0, 1);
-    }
-
     /// @dev Validate a ring.
     function verifyRingHasNoSubRing(
         uint          ringSize,
@@ -458,7 +409,8 @@ contract LoopringProtocol {
         uint          ringSize,
         bytes32       ringhash,
         OrderState[]  orders,
-        MinerInfo   miner,
+        address       miner,
+        address       feeRecipient,
         bool          isRinghashReserved
         )
         private
@@ -493,7 +445,7 @@ contract LoopringProtocol {
             delegate,
             ringSize,
             orders,
-            miner.receivingAddr,
+            feeRecipient,
             _lrcTokenAddress
         );
 
@@ -502,14 +454,15 @@ contract LoopringProtocol {
             delegate,
             ringSize,
             orders,
-            miner.receivingAddr,
+            feeRecipient,
             _lrcTokenAddress
         );
 
         RingMined(
             _ringIndex,
             ringhash,
-            miner.partnerId,
+            miner,
+            feeRecipient,
             isRinghashReserved,
             orderHashList,
             amountsList
@@ -520,7 +473,7 @@ contract LoopringProtocol {
         TokenTransferDelegate delegate,
         uint          ringSize,
         OrderState[]  orders,
-        address       receivingAddr,
+        address       feeRecipient,
         address       _lrcTokenAddress
         )
         private
@@ -567,7 +520,7 @@ contract LoopringProtocol {
         }
 
         // Do all transactions
-        delegate.batchTransferToken(_lrcTokenAddress, receivingAddr, batch);
+        delegate.batchTransferToken(_lrcTokenAddress, feeRecipient, batch);
     }
 
     /// @dev Verify miner has calculte the rates correctly.
@@ -600,7 +553,7 @@ contract LoopringProtocol {
         TokenTransferDelegate delegate,
         uint            ringSize,
         OrderState[]    orders,
-        address         receivingAddr,
+        address         feeRecipient,
         address         _lrcTokenAddress
         )
         private
@@ -667,7 +620,7 @@ contract LoopringProtocol {
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < state.lrcFee) {
                     checkedMinerLrcSpendable = true;
-                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, receivingAddr);
+                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, feeRecipient);
                 }
 
                 // Only calculate split when miner has enough LRC;
@@ -1010,9 +963,9 @@ contract LoopringProtocol {
         );
     }
 
-    /// @dev Verify signingAddr's signature.
+    /// @dev Verify signer's signature.
     function verifySignature(
-        address signingAddr,
+        address signer,
         bytes32 hash,
         uint8   v,
         bytes32 r,
@@ -1022,7 +975,7 @@ contract LoopringProtocol {
         pure
     {
         require(
-            signingAddr == ecrecover(
+            signer == ecrecover(
                 keccak256("\x19Ethereum Signed Message:\n32", hash),
                 v,
                 r,

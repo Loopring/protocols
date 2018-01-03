@@ -29,31 +29,23 @@ contract RinghashRegistry {
     using MathBytes32   for bytes32[];
     using MathUint8     for uint8[];
 
-    ////////////////////////////////////////////////////////////////////////////
-    /// Structs                                                              ///
-    ////////////////////////////////////////////////////////////////////////////
-    struct Submission {
-        uint64  partnerId;
-        uint    block;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Variables                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
     uint public blocksToLive;
 
-    mapping (bytes32 => Submission) submissions;
+    struct Submission {
+        address ringminer;
+        uint block;
+    }
 
+    mapping (bytes32 => Submission) submissions;
 
     ////////////////////////////////////////////////////////////////////////////
     /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
 
     event RinghashSubmitted(
-        uint64  indexed _parterId,
+        address indexed _ringminer,
         bytes32 indexed _ringhash
     );
-
 
     ////////////////////////////////////////////////////////////////////////////
     /// Constructor                                                          ///
@@ -66,7 +58,6 @@ contract RinghashRegistry {
         blocksToLive = _blocksToLive;
     }
 
-
     ////////////////////////////////////////////////////////////////////////////
     /// Public Functions                                                     ///
     ////////////////////////////////////////////////////////////////////////////
@@ -77,29 +68,29 @@ contract RinghashRegistry {
     }
 
     function submitRinghash(
-        uint64      partnerId,
+        address     ringminer,
         bytes32     ringhash
         )
         public
     {
-        require(canSubmit(ringhash, partnerId)); //, "Ringhash submitted");
+        require(canSubmit(ringhash, ringminer)); //, "Ringhash submitted");
 
-        submissions[ringhash] = Submission(partnerId, block.number);
-        RinghashSubmitted(partnerId, ringhash);
+        submissions[ringhash] = Submission(ringminer, block.number);
+        RinghashSubmitted(ringminer, ringhash);
     }
 
     function batchSubmitRinghash(
-        uint64[]      partnerIdList,
+        address[]     ringminerList,
         bytes32[]     ringhashList
         )
         external
     {
-        uint size = partnerIdList.length;
+        uint size = ringminerList.length;
         require(size > 0);
         require(size == ringhashList.length);
 
         for (uint i = 0; i < size; i++) {
-            submitRinghash(partnerIdList[i], ringhashList[i]);
+            submitRinghash(ringminerList[i], ringhashList[i]);
         }
     }
 
@@ -131,7 +122,7 @@ contract RinghashRegistry {
      /// canSubmit, isReserved.
     function computeAndGetRinghashInfo(
         uint        ringSize,
-        uint64      partnerId,
+        address     ringminer,
         uint8[]     vList,
         bytes32[]   rList,
         bytes32[]   sList
@@ -147,26 +138,26 @@ contract RinghashRegistry {
             sList
         );
 
-        attributes[0] = canSubmit(ringhash, partnerId);
-        attributes[1] = isReserved(ringhash, partnerId);
+        attributes[0] = canSubmit(ringhash, ringminer);
+        attributes[1] = isReserved(ringhash, ringminer);
     }
 
     /// @return true if a ring's hash can be submitted;
     /// false otherwise.
     function canSubmit(
         bytes32 ringhash,
-        uint64  partnerId)
+        address ringminer)
         public
         view
         returns (bool)
     {
-        require(partnerId != 0);
+        require(ringminer != 0x0);
         Submission memory submission = submissions[ringhash];
-        uint64 partner = submission.partnerId;
+        address miner = submission.ringminer;
         return (
-            partner == 0 || (
+            miner == 0x0 || (
             submission.block + blocksToLive < block.number) || (
-            partner == partnerId)
+            miner == ringminer)
         );
     }
 
@@ -174,7 +165,7 @@ contract RinghashRegistry {
     /// false otherwise.
     function isReserved(
         bytes32 ringhash,
-        uint64  partnerId)
+        address ringminer)
         public
         view
         returns (bool)
@@ -182,7 +173,7 @@ contract RinghashRegistry {
         Submission memory submission = submissions[ringhash];
         return (
             submission.block + blocksToLive >= block.number && (
-            submission.partnerId == partnerId)
+            submission.ringminer == ringminer)
         );
     }
 }
