@@ -535,6 +535,26 @@ function relay (host)
             return res;
         });
     };
+
+    this.getSupportedMarket = async () =>
+    {
+    request.method = 'loopring_getSupportedMarket';
+    request.params = [];
+    request.id = id();
+
+    return axios({
+        url: host,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        data: request
+    }).then(r => r.data).then(res =>
+    {
+        return res;
+    });
+    };
+
     const id = () =>
     {
         return crypto.randomBytes(16).toString('hex');
