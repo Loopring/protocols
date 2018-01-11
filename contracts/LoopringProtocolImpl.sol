@@ -68,6 +68,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     // history.
     mapping (bytes32 => uint) public cancelledOrFilled;
 
+    // This map is used to keep trace of order's cancellation history.
+    mapping (bytes32 => uint) public cancelled;
+
     // A map from address to its cutoff timestamp.
     mapping (address => uint) public cutoffs;
 
@@ -342,6 +345,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
+        cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
         cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelAmount);
 
         OrderCancelled(orderHash, cancelAmount);
