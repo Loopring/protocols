@@ -974,6 +974,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(timestamp + ttl > block.timestamp); // "order is expired");
         require(salt != 0); // "invalid order salt");
         require(order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE); // "invalid order marginSplitPercentage");
+        require(timestamp > tradingPairCutoffs[order.owner][getTradingPairId(order.tokenS, order.tokenB)]);
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
