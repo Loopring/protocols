@@ -15,7 +15,7 @@
     "compile": "rm -rf build/contracts; ./node_modules/.bin/truffle compile",
     "migrate": "npm run transpile; ./node_modules/.bin/truffle migrate",
     "deploy": "npm run migrate --network kovan",
-    "testrpc": "./node_modules/.bin/testrpc"
+    "testrpc": "./node_modules/.bin/ganache-cli"
   },
   "license": "ISC",
   "devDependencies": {
@@ -26,10 +26,11 @@
     "@types/request-promise-native": "^1.0.2",
     "copyfiles": "^1.2.0",
     "dirty-chai": "^2.0.0",
-    "ethereumjs-testrpc": "6.0.1",
+    "chai": "^2.2.1",
+    "ganache-cli": "^6.0.3",
     "truffle": "4.0.1",
     "solc": "0.4.18",
-    "solium": "^1.0.3",
+    "solium": "^1.0.4",
     "typescript": "2.4.2",
     "tslint": "5.8.0",
     "web3-typescript-typings": "0.0.3",

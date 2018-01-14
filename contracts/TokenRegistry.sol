@@ -105,22 +105,6 @@ contract TokenRegistry is Claimable {
         TokenUnregistered(addr, symbol);
     }
 
-    function isTokenRegisteredBySymbol(string symbol)
-        public
-        view
-        returns (bool)
-    {
-        return symbolMap[symbol] != 0x0;
-    }
-
-    function isTokenRegistered(address addr)
-        public
-        view
-        returns (bool)
-    {
-        return addressMap[addr].pos != 0;
-    }
-
     function areAllTokensRegistered(address[] addressList)
         external
         view
@@ -140,6 +124,22 @@ contract TokenRegistry is Claimable {
         returns (address)
     {
         return symbolMap[symbol];
+    }
+
+    function isTokenRegisteredBySymbol(string symbol)
+        public
+        view
+        returns (bool)
+    {
+        return symbolMap[symbol] != 0x0;
+    }
+
+    function isTokenRegistered(address addr)
+        public
+        view
+        returns (bool)
+    {
+        return addressMap[addr].pos != 0;
     }
 
     function getTokens(

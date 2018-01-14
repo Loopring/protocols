@@ -176,6 +176,87 @@ contract LoopringProtocolImpl is LoopringProtocol {
         revert();
     }
 
+    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
+    ///      in orderValues.
+    /// @param addresses          owner, tokenS, tokenB
+    /// @param orderValues        amountS, amountB, timestamp, ttl, salt, lrcFee,
+    ///                           cancelAmountS, and cancelAmountB.
+    /// @param buyNoMoreThanAmountB -
+    ///                           This indicates when a order should be considered
+    ///                           as 'completely filled'.
+    /// @param marginSplitPercentage -
+    ///                           Percentage of margin split to share with miner.
+    /// @param v                  Order ECDSA signature parameter v.
+    /// @param r                  Order ECDSA signature parameters r.
+    /// @param s                  Order ECDSA signature parameters s.
+    function cancelOrder(
+        address[3] addresses,
+        uint[7]    orderValues,
+        bool       buyNoMoreThanAmountB,
+        uint8      marginSplitPercentage,
+        uint8      v,
+        bytes32    r,
+        bytes32    s
+        )
+        external
+    {
+        uint cancelAmount = orderValues[6];
+
+        require(cancelAmount > 0); // "amount to cancel is zero");
+
+        Order memory order = Order(
+            addresses[0],
+            addresses[1],
+            addresses[2],
+            orderValues[0],
+            orderValues[1],
+            orderValues[5],
+            buyNoMoreThanAmountB,
+            marginSplitPercentage
+        );
+
+        require(msg.sender == order.owner); // "cancelOrder not submitted by order owner");
+
+        bytes32 orderHash = calculateOrderHash(
+            order,
+            orderValues[2], // timestamp
+            orderValues[3], // ttl
+            orderValues[4]  // salt
+        );
+
+
+        verifySignature(
+            order.owner,
+            orderHash,
+            v,
+            r,
+            s
+        );
+
+        cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
+        cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelAmount);
+
+        OrderCancelled(orderHash, cancelAmount);
+    }
+
+    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
+    ///        is smaller than or equal to the new value of the address's cutoff
+    ///        timestamp.
+    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
+    ///        if it is 0.
+    function setCutoff(uint cutoff)
+        external
+    {
+
+        uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
+
+        require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value"
+
+        cutoffs[msg.sender] = t;
+
+        CutoffTimestampChanged(msg.sender, t);
+    }
+
     /// @dev Submit a order-ring for validation and settlement.
     /// @param addressList  List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
@@ -286,87 +367,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
 
         ringIndex = (ringIndex ^ ENTERED_MASK) + 1;
-    }
-
-    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
-    ///      in orderValues.
-    /// @param addresses          owner, tokenS, tokenB
-    /// @param orderValues        amountS, amountB, timestamp, ttl, salt, lrcFee,
-    ///                           cancelAmountS, and cancelAmountB.
-    /// @param buyNoMoreThanAmountB -
-    ///                           This indicates when a order should be considered
-    ///                           as 'completely filled'.
-    /// @param marginSplitPercentage -
-    ///                           Percentage of margin split to share with miner.
-    /// @param v                  Order ECDSA signature parameter v.
-    /// @param r                  Order ECDSA signature parameters r.
-    /// @param s                  Order ECDSA signature parameters s.
-    function cancelOrder(
-        address[3] addresses,
-        uint[7]    orderValues,
-        bool       buyNoMoreThanAmountB,
-        uint8      marginSplitPercentage,
-        uint8      v,
-        bytes32    r,
-        bytes32    s
-        )
-        external
-    {
-        uint cancelAmount = orderValues[6];
-
-        require(cancelAmount > 0); // "amount to cancel is zero");
-
-        Order memory order = Order(
-            addresses[0],
-            addresses[1],
-            addresses[2],
-            orderValues[0],
-            orderValues[1],
-            orderValues[5],
-            buyNoMoreThanAmountB,
-            marginSplitPercentage
-        );
-
-        require(msg.sender == order.owner); // "cancelOrder not submitted by order owner");
-
-        bytes32 orderHash = calculateOrderHash(
-            order,
-            orderValues[2], // timestamp
-            orderValues[3], // ttl
-            orderValues[4]  // salt
-        );
-
-
-        verifySignature(
-            order.owner,
-            orderHash,
-            v,
-            r,
-            s
-        );
-
-        cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
-        cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelAmount);
-
-        OrderCancelled(orderHash, cancelAmount);
-    }
-
-    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
-    ///        is smaller than or equal to the new value of the address's cutoff
-    ///        timestamp.
-    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
-    ///        if it is 0.
-    function setCutoff(uint cutoff)
-        external
-    {
-
-        uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
-
-        require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value"
-
-        cutoffs[msg.sender] = t;
-
-        CutoffTimestampChanged(msg.sender, t);
     }
 
     ////////////////////////////////////////////////////////////////////////////
