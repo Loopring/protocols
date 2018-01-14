@@ -970,6 +970,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(order.amountB != 0); // "invalid order amountB");
         require(timestamp <= block.timestamp); // "order is too early to match");
         require(timestamp > cutoffs[order.owner]); // "order is cut off");
+        require(timestamp > tradingPairCutoffs[order.owner][getTradingPairId(order.tokenS, order.tokenB)]); // "order trading pair is cut off");
         require(ttl != 0); // "order ttl is 0");
         require(timestamp + ttl > block.timestamp); // "order is expired");
         require(salt != 0); // "invalid order salt");
