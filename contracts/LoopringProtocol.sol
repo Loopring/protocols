@@ -59,6 +59,13 @@ contract LoopringProtocol {
         uint                _cutoff
     );
 
+    event TradingPairCutoffTimestampChanged(
+        address     indexed _address,
+        address             _token1,
+        address             _token2,
+        uint                _cutoff
+    );
+
     ////////////////////////////////////////////////////////////////////////////
     /// Functions                                                            ///
     ////////////////////////////////////////////////////////////////////////////
