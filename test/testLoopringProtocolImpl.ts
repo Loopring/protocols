@@ -9,6 +9,9 @@ import { Ring } from "../util/ring";
 import { RingFactory } from "../util/ring_factory";
 import { OrderParams } from "../util/types";
 
+var keccak256 = require('js-sha3').keccak256;
+var xor = require('bitwise-xor');
+
 const {
   LoopringProtocolImpl,
   TokenRegistry,
@@ -761,8 +764,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
       await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
-
-  });
 
   describe("cancelOrder", () => {
     it("should be able to set order cancelled amount by order owner", async () => {

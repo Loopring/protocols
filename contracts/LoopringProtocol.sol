@@ -138,7 +138,7 @@ contract LoopringProtocol {
     ///        timestamp, for a specific trading pair.
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
-    function cancelAllOrdersForTradingPair(
+    function cancelAllOrdersByTradingPair(
         address token1,
         address token2,
         uint cutoff) external;
