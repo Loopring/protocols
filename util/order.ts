@@ -59,10 +59,6 @@ export class Order {
     });
   }
 
-  public getTradingPairId(token1: string, token2: string) {
-    return (xor(new Buffer(token1, "hex"), new Buffer(token2, "hex"))).toString("hex");
-  }
-
   private getOrderHash() {
     const orderHash = crypto.solSHA3([
       this.params.loopringProtocol,

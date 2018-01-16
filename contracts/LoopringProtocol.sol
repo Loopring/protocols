@@ -135,8 +135,18 @@ contract LoopringProtocol {
 
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
+    ///        timestamp, for a specific trading pair.
+    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
+    ///        if it is 0.
+    function cancelAllOrdersForTradingPair(
+        address token1,
+        address token2,
+        uint cutoff) external;
+
+    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
+    ///        is smaller than or equal to the new value of the address's cutoff
     ///        timestamp.
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
-    function setCutoff(uint cutoff) external;
+    function cancelAllOrders(uint cutoff) external;
 }

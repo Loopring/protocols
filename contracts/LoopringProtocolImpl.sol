@@ -354,37 +354,23 @@ contract LoopringProtocolImpl is LoopringProtocol {
         OrderCancelled(orderHash, cancelAmount);
     }
 
-    function getTradingPairId(
-        address token1,
-        address token2
-        )
-        internal
-        pure
-        returns (bytes20)
-    {
-        // convert from address to byteArray to reduce gas used for computation
-        return bytes20(token1) ^ bytes20(token2);
-    }
-
-  /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
+    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
-    ///        timestamp.
+    ///        timestamp, for a specific trading pair.
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
-    function setTradingPairCutoff(
+    function cancelAllOrdersForTradingPair(
         address token1,
         address token2,
         uint cutoff)
         external
     {
-
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
 
-        bytes20 tokenPairId = getTradingPairId(token1, token2);
-        require(tradingPairCutoffs[msg.sender][tokenPairId] < t); // "attempted to set cutoff to a smaller value"
+        bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
+        require(tradingPairCutoffs[msg.sender][tokenPair] < t); // "attempted to set cutoff to a smaller value"
 
-        tradingPairCutoffs[msg.sender][tokenPairId] = t;
-
+        tradingPairCutoffs[msg.sender][tokenPair] = t;
         TradingPairCutoffTimestampChanged(msg.sender, token1, token2, t);
     }
 
@@ -393,16 +379,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///        timestamp.
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
-    function setCutoff(uint cutoff)
+    function cancelAllOrders(uint cutoff)
         external
     {
-
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
 
         require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value"
 
         cutoffs[msg.sender] = t;
-
         CutoffTimestampChanged(msg.sender, t);
     }
 
@@ -970,13 +954,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(order.amountS != 0); // "invalid order amountS");
         require(order.amountB != 0); // "invalid order amountB");
         require(timestamp <= block.timestamp); // "order is too early to match");
-        require(timestamp > cutoffs[order.owner]); // "order is cut off");
-        require(timestamp > tradingPairCutoffs[order.owner][getTradingPairId(order.tokenS, order.tokenB)]); // "order trading pair is cut off");
+       
         require(ttl != 0); // "order ttl is 0");
         require(timestamp + ttl > block.timestamp); // "order is expired");
         require(salt != 0); // "invalid order salt");
         require(order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE); // "invalid order marginSplitPercentage");
-        require(timestamp > tradingPairCutoffs[order.owner][getTradingPairId(order.tokenS, order.tokenB)]);
+
+        bytes20 tradingPair = bytes20(order.tokenS) ^ bytes20(order.tokenB);
+        require(timestamp > tradingPairCutoffs[order.owner][tradingPair]); // "order trading pair is cut off");
+        require(timestamp > cutoffs[order.owner]); // "order is cut off");
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
