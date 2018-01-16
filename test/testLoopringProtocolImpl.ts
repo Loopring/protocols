@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import xor = require("bitwise-xor");
 import promisify = require("es6-promisify");
 import * as _ from "lodash";
 import { Artifacts } from "../util/artifacts";
@@ -821,6 +822,23 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                `Expected contract to throw, got: ${err}`);
       }
     });
+  });
+
+  it("should combine two hashes correctly", async () => {
+    const ring = await ringFactory.generateSize3Ring01(order1Owner, order2Owner, order3Owner, ringOwner);
+
+    const expected = (xor(new Buffer(lrcAddress, "hex"), new Buffer(eosAddress, "hex"))).toString("hex");
+
+    try {
+      const combined = ring.orders[0].getTradingPairId(lrcAddress, eosAddress);
+      assert.equal(combined, expected, "combined hash does not match expected Keccak-256 hash");
+    } catch (err) {
+      const errMsg = `${err}`;
+      assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+             `Expected contract to throw, got: ${err}`);
+    }
+
+    await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
   });
 
   describe("setCutoff", () => {

@@ -75,7 +75,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     mapping (address => uint) public cutoffs;
 
     // A map from address to its trading-pair cutoff timestamp.
-    mapping (address => mapping (bytes32 => uint)) public tradingPairCutoffs;
+    mapping (address => mapping (bytes20 => uint)) public tradingPairCutoffs;
 
     ////////////////////////////////////////////////////////////////////////////
     /// Structs                                                              ///
@@ -360,9 +360,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         internal
         pure
-        returns (bytes32 id)
+        returns (bytes20)
     {
-        id = keccak256(token1) ^ keccak256(token2);
+        // convert from address to byteArray to reduce gas used for computation
+        return bytes20(token1) ^ bytes20(token2);
     }
 
   /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
@@ -379,7 +380,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
 
-        bytes32 tokenPairId = getTradingPairId(token1, token2);
+        bytes20 tokenPairId = getTradingPairId(token1, token2);
         require(tradingPairCutoffs[msg.sender][tokenPairId] < t); // "attempted to set cutoff to a smaller value"
 
         tradingPairCutoffs[msg.sender][tokenPairId] = t;
