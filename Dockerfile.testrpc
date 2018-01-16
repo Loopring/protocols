@@ -1,11 +1,11 @@
 FROM mhart/alpine-node:8
 
-RUN npm install -g ethereumjs-testrpc@6.0.1
+RUN npm install -g ganache-cli@6.0.3
 
-ADD testrpc.sh testrpc.sh
+ADD ganache.sh ganache.sh
 
-RUN chmod +x testrpc.sh
+RUN chmod +x ganache.sh
 
 EXPOSE 8545
 
-CMD sh testrpc.sh
+CMD sh ganache.sh
