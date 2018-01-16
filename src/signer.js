@@ -155,3 +155,26 @@ exports.generateAllowanceData = (owner, spender) =>
     const data = abi.rawEncode(['address', 'address'], [owner, spender]).toString('hex');
     return '0x' + method + data;
 };
+
+exports.sign = (message, privateKey) => {
+
+    const hash = ethUtil.sha3(message);
+    const sig = ethUtil.ecsign(hash, ethUtil.toBuffer(privateKey));
+    const v = Number(sig.v.toString());
+    const r = '0x' + sig.r.toString('hex');
+    const s = '0x' + sig.s.toString('hex');
+
+    return {
+        v,
+        r,
+        s
+    }
+};
+
+exports.isValidSig = (message, sig, address) => {
+    const hash = ethUtil.sha3(message);
+    const pubKey = ethUtil.ecrecover(hash, sig.v, ethUtil.toBuffer(sig.r), ethUtil.toBuffer(sig.s));
+    const recoveredAddress = ethUtil.bufferToHex(ethUtil.pubToAddress(pubKey));
+    return ethUtil.addHexPrefix(recoveredAddress) === address.toLowerCase();
+}
+
