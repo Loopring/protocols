@@ -67,18 +67,6 @@ contract RinghashRegistry {
         revert();
     }
 
-    function submitRinghash(
-        address     ringminer,
-        bytes32     ringhash
-        )
-        public
-    {
-        require(canSubmit(ringhash, ringminer)); //, "Ringhash submitted");
-
-        submissions[ringhash] = Submission(ringminer, block.number);
-        RinghashSubmitted(ringminer, ringhash);
-    }
-
     function batchSubmitRinghash(
         address[]     ringminerList,
         bytes32[]     ringhashList
@@ -94,32 +82,8 @@ contract RinghashRegistry {
         }
     }
 
-    /// @dev Calculate the hash of a ring.
-    function calculateRinghash(
-        uint        ringSize,
-        uint8[]     vList,
-        bytes32[]   rList,
-        bytes32[]   sList
-        )
-        private
-        pure
-        returns (bytes32)
-    {
-        require(
-            ringSize == vList.length - 1 && (
-            ringSize == rList.length - 1 && (
-            ringSize == sList.length - 1))
-        ); //, "invalid ring data");
-
-        return keccak256(
-            vList.xorReduce(ringSize),
-            rList.xorReduce(ringSize),
-            sList.xorReduce(ringSize)
-        );
-    }
-
-     /// return value attributes[2] contains the following values in this order:
-     /// canSubmit, isReserved.
+    /// return value attributes[2] contains the following values in this order:
+    /// canSubmit, isReserved.
     function computeAndGetRinghashInfo(
         uint        ringSize,
         address     ringminer,
@@ -140,6 +104,18 @@ contract RinghashRegistry {
 
         attributes[0] = canSubmit(ringhash, ringminer);
         attributes[1] = isReserved(ringhash, ringminer);
+    }
+
+    function submitRinghash(
+        address     ringminer,
+        bytes32     ringhash
+        )
+        public
+    {
+        require(canSubmit(ringhash, ringminer)); //, "Ringhash submitted");
+
+        submissions[ringhash] = Submission(ringminer, block.number);
+        RinghashSubmitted(ringminer, ringhash);
     }
 
     /// @return true if a ring's hash can be submitted;
@@ -174,6 +150,30 @@ contract RinghashRegistry {
         return (
             submission.block + blocksToLive >= block.number && (
             submission.ringminer == ringminer)
+        );
+    }
+
+    /// @dev Calculate the hash of a ring.
+    function calculateRinghash(
+        uint        ringSize,
+        uint8[]     vList,
+        bytes32[]   rList,
+        bytes32[]   sList
+        )
+        private
+        pure
+        returns (bytes32)
+    {
+        require(
+            ringSize == vList.length - 1 && (
+            ringSize == rList.length - 1 && (
+            ringSize == sList.length - 1))
+        ); //, "invalid ring data");
+
+        return keccak256(
+            vList.xorReduce(ringSize),
+            rList.xorReduce(ringSize),
+            sList.xorReduce(ringSize)
         );
     }
 }

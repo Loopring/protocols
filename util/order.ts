@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import xor = require("bitwise-xor");
 import promisify = require("es6-promisify");
 import ethUtil = require("ethereumjs-util");
 import * as _ from "lodash";

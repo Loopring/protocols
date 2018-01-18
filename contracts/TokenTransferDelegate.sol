@@ -119,14 +119,6 @@ contract TokenTransferDelegate is Claimable {
         }
     }
 
-    function isAddressAuthorized(address addr)
-        public
-        view
-        returns (bool)
-    {
-        return addressInfos[addr].authorized;
-    }
-
     function getLatestAuthorizedAddresses(uint max)
         external
         view
@@ -218,5 +210,13 @@ contract TokenTransferDelegate is Claimable {
                 }
             }
         }
+    }
+
+    function isAddressAuthorized(address addr)
+        public
+        view
+        returns (bool)
+    {
+        return addressInfos[addr].authorized;
     }
 }
