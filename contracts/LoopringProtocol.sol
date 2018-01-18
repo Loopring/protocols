@@ -59,6 +59,13 @@ contract LoopringProtocol {
         uint                _cutoff
     );
 
+    event TradingPairCutoffTimestampChanged(
+        address     indexed _address,
+        address             _token1,
+        address             _token2,
+        uint                _cutoff
+    );
+
     ////////////////////////////////////////////////////////////////////////////
     /// Functions                                                            ///
     ////////////////////////////////////////////////////////////////////////////
@@ -88,10 +95,21 @@ contract LoopringProtocol {
 
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
+    ///        timestamp, for a specific trading pair.
+    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
+    ///        if it is 0.
+    function cancelAllOrdersByTradingPair(
+        address token1,
+        address token2,
+        uint cutoff
+        ) external;
+
+    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
+    ///        is smaller than or equal to the new value of the address's cutoff
     ///        timestamp.
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
-    function setCutoff(uint cutoff) external;
+    function cancelAllOrders(uint cutoff) external;
 
     /// @dev Submit a order-ring for validation and settlement.
     /// @param addressList  List of each order's owner and tokenS. Note that next
