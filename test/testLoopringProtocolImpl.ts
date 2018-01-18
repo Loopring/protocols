@@ -824,11 +824,47 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   });
 
   describe("cancelAllOrders", () => {
-    it("should be able to cancel all orders", async () => {
+    it("should be able to set cutoffs", async () => {
       await loopringProtocolImpl.cancelAllOrders(new BigNumber(1508566125), {from: order2Owner});
       const cutoff = await loopringProtocolImpl.cutoffs(order2Owner);
       assert.equal(cutoff.toNumber(), 1508566125, "cutoff not set correctly");
     });
+
+    it("should be able to prevent orders from being traded by cutoffs.", async () => {
+      await loopringProtocolImpl.cancelAllOrders(new BigNumber(currBlockTimeStamp),
+                                                 {from: order2Owner});
+
+      const ring = await ringFactory.generateRingForCancel(order1Owner, order2Owner, ringOwner);
+
+      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+      await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
+      await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
+      await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
+      await lrc.setBalance(feeRecepient, 0, {from: owner});
+
+      const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
+
+      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
+
+      try {
+        await loopringProtocolImpl.submitRing(p.addressList,
+                                              p.uintArgsList,
+                                              p.uint8ArgsList,
+                                              p.buyNoMoreThanAmountBList,
+                                              p.vList,
+                                              p.rList,
+                                              p.sList,
+                                              p.ringOwner,
+                                              p.feeRecepient,
+                                              {from: owner});
+      } catch (err) {
+        const errMsg = `${err}`;
+        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+               `Expected contract to throw, got: ${err}`);
+      }
+
+    });
+
   });
 
   describe("cancelAllOrdersByTradingPair", () => {
@@ -846,11 +882,11 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should be able to prevent orders from being traded by tradingPairCutoffs", async () => {
-      await loopringProtocolImpl.cancelAllOrdersByTradingPair(eosAddress,
-                                                              neoAddress,
+      await loopringProtocolImpl.cancelAllOrdersByTradingPair(neoAddress,
+                                                              eosAddress,
                                                               new BigNumber(currBlockTimeStamp),
                                                               {from: order2Owner});
-      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const ring = await ringFactory.generateRingForCancel(order1Owner, order2Owner, ringOwner);
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
       await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});

@@ -25,9 +25,9 @@ export class RingFactory {
     this.currBlockTimeStamp = currBlockTimeStamp;
   }
 
-  public async generateTradingPairRing(order1Owner: string,
-                                       order2Owner: string,
-                                       ringOwner: string) {
+  public async generateRingForCancel(order1Owner: string,
+                                     order2Owner: string,
+                                     ringOwner: string) {
     const orderPrams1 = {
       loopringProtocol: this.loopringProtocolAddr,
       tokenS: this.eosAddress,
