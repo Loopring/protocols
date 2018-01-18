@@ -25,6 +25,48 @@ export class RingFactory {
     this.currBlockTimeStamp = currBlockTimeStamp;
   }
 
+  public async generateTradingPairRing(order1Owner: string,
+                                       order2Owner: string,
+                                       ringOwner: string) {
+    const orderPrams1 = {
+      loopringProtocol: this.loopringProtocolAddr,
+      tokenS: this.eosAddress,
+      tokenB: this.neoAddress,
+      amountS: new BigNumber(1000e18),
+      amountB: new BigNumber(100e18),
+      timestamp: new BigNumber(this.currBlockTimeStamp),
+      ttl: new BigNumber(360000),
+      salt: new BigNumber(110),
+      lrcFee: new BigNumber(1e18),
+      buyNoMoreThanAmountB: false,
+      marginSplitPercentage: 0,
+    };
+
+    const orderPrams2 = {
+      loopringProtocol: this.loopringProtocolAddr,
+      tokenS: this.neoAddress,
+      tokenB: this.eosAddress,
+      amountS: new BigNumber(100e18),
+      amountB: new BigNumber(1000e18),
+      timestamp: new BigNumber(this.currBlockTimeStamp),
+      ttl: new BigNumber(360000),
+      salt: new BigNumber(100),
+      lrcFee: new BigNumber(1e18),
+      buyNoMoreThanAmountB: false,
+      marginSplitPercentage: 0,
+    };
+
+    const order1 = new Order(order1Owner, orderPrams1);
+    const order2 = new Order(order2Owner, orderPrams2);
+    await order1.signAsync();
+    await order2.signAsync();
+
+    const ring = new Ring(ringOwner, [order1, order2]);
+    await ring.signAsync();
+
+    return ring;
+  }
+
   public async generateSize2Ring01(order1Owner: string,
                                    order2Owner: string,
                                    ringOwner: string) {
