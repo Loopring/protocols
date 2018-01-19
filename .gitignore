@@ -3,3 +3,4 @@ build/
 transpiled/    
 .DS_Store
 .node-*
+*.log

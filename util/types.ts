@@ -6,9 +6,8 @@ export interface OrderParams {
   tokenB: string;
   amountS: BigNumber;
   amountB: BigNumber;
-  timestamp: BigNumber;
-  ttl: BigNumber;
-  salt: BigNumber;
+  validSince: BigNumber;
+  validUntil: BigNumber;
   lrcFee: BigNumber;
   buyNoMoreThanAmountB: boolean;
   marginSplitPercentage: number;
