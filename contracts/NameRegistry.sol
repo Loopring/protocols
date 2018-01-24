@@ -17,74 +17,92 @@
 */
 pragma solidity 0.4.18;
 
+
 /// @title Ethereum Address Register Contract
 /// @dev This contract maintains a name service for addresses and miner.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 contract NameRegistry {
-    uint32 id = 0;
+    uint64 nextId = 1;
 
-    mapping (uint32 => AddressSet) public addressSetMap;
-    mapping (address => NameInfo)  public nameInfoMap;
-    mapping (bytes12 => address)   public nameMap;
-    mapping (address => uint32)    public feeRecipientMap;
+    mapping (uint64  => Participant) public participantMap;
+    mapping (address => NamedGroup)  public namedGroupMap;
+    mapping (bytes12 => address)     public nameMap;
+    mapping (address => uint64)      public feeRecipientMap;
 
-    struct NameInfo {
+    struct NamedGroup {
         bytes12 name;
-        uint32  rootId;
+        uint64  rootId;
     }
 
-    struct AddressSet {
-        address signer;
+    struct Participant {
         address feeRecipient;
-        uint32  nextId;
+        address signer;
+        uint64  nextId;
     }
 
-    event NameRegistered(string name, address addr);
-    event AddressSetRegistered(
+    event NamedGroupRegistered (
+        string            name,
+        address   indexed addr
+    );
+
+    event ParticipantRegistered (
         bytes12           name,
         address   indexed owner,
-        uint32    indexed addressSetId,
+        uint64    indexed addressSetId,
         address           singer,
         address           feeRecipient
     );
 
-    function registerName(string name) external {
-        require(isValidName(name));
-        require(nameMap[stringToBytes12(name)] == 0x0);
-        require(nameInfoMap[msg.sender].name.length == 0);
+    function registerName(string name)
+        external
+    {
+        require(isNameValid(name));
 
-        NameInfo memory nameInfo = NameInfo(stringToBytes12(name), 0);
-        nameInfoMap[msg.sender] = nameInfo;
-        nameMap[stringToBytes12(name)] = msg.sender;
-        NameRegistered(name, msg.sender);
+        bytes12 nameBytes = stringToBytes12(name);
+
+        require(nameMap[nameBytes] == 0x0);
+        require(namedGroupMap[msg.sender].name.length == 0);
+
+        nameMap[nameBytes] = msg.sender;
+        namedGroupMap[msg.sender] = NamedGroup(nameBytes, 0);
+
+        NamedGroupRegistered(name, msg.sender);
     }
 
-    function addAddressSet(address feeRecipient) external {
-        addAddressSet(0x0, feeRecipient);
+    function addParticipant(address feeRecipient)
+        external
+    {
+        addParticipant(feeRecipient, feeRecipient);
     }
 
-    function addAddressSet(address singer, address feeRecipient) public {
-        require(nameInfoMap[msg.sender].name.length > 0);
-        require(feeRecipient != 0x0);
+    function addParticipant(
+        address feeRecipient,
+        address singer
+        )
+        public
+    {
+        require(feeRecipient != 0x0 && singer != 0x0);
+        require(namedGroupMap[msg.sender].name.length > 0);
 
-        uint32 addrSetId = ++id;
-        AddressSet memory addrSet = AddressSet(singer, feeRecipient, 0);
+        uint64 addrSetId = nextId++;
+        Participant memory addrSet = Participant(feeRecipient, singer, 0);
 
-        var _nameInfo = nameInfoMap[msg.sender];
-        if (_nameInfo.rootId == 0) {
-            _nameInfo.rootId = addrSetId;
+        NamedGroup storage group = namedGroupMap[msg.sender];
+
+        if (group.rootId == 0) {
+            group.rootId = addrSetId;
         } else {
-            var _addrSet = addressSetMap[_nameInfo.rootId];
+            var _addrSet = participantMap[group.rootId];
             while (_addrSet.nextId != 0) {
-                _addrSet = addressSetMap[_addrSet.nextId];
+                _addrSet = participantMap[_addrSet.nextId];
             }
             _addrSet.nextId == addrSetId;
         }
 
-        addressSetMap[addrSetId] = addrSet;
+        participantMap[addrSetId] = addrSet;
 
-        AddressSetRegistered(
-            _nameInfo.name,
+        ParticipantRegistered(
+            group.name,
             msg.sender,
             addrSetId,
             singer,
@@ -92,27 +110,33 @@ contract NameRegistry {
         );
     }
 
-    function getAddressesById(uint32 addrSetId) external view returns (address[2]) {
-        var _addressSet = addressSetMap[addrSetId];
+    function getParticipantById(uint64 id)
+        external
+        view
+        returns (address feeRecipient, address signer)
+    {
+        Participant storage addressSet = participantMap[id];
 
-        return [_addressSet.signer, _addressSet.feeRecipient];
+        feeRecipient = addressSet.feeRecipient;
+        signer = addressSet.signer;
     }
 
-    function isValidName(string name) internal pure returns (bool) {
-        bytes memory tempBs = bytes(name);
-
-        // name's length should be greater than 0 and less than 13.
-        return tempBs.length > 0 && tempBs.length < 13;
+    function isNameValid(string name)
+        internal
+        pure
+        returns (bool)
+    {
+        bytes memory temp = bytes(name);
+        return temp.length >= 6 && temp.length <= 12;
     }
 
-    function stringToBytes12(string source) internal pure returns (bytes12 result) {
-        bytes memory tempBs = bytes(source);
-        if (tempBs.length == 0) {
-            return 0x0;
-        }
-
+    function stringToBytes12(string str)
+        internal
+        pure
+        returns (bytes12 result)
+    {
         assembly {
-            result := mload(add(source, 12))
+            result := mload(add(str, 12))
         }
     }
 

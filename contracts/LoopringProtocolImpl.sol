@@ -313,7 +313,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param sList        List of s for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
-    /// @param minerAddrSetId  The address set that miner registered in NameRegistry.
+    /// @param minerId      The address set that miner registered in NameRegistry.
     ///                        The address set contains a signer address and a fee
     ///                        recipient address.
     ///                        The signer address is used for sign this tx.
@@ -331,7 +331,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint8[]       vList,
         bytes32[]     rList,
         bytes32[]     sList,
-        uint32        minerAddrSetId
+        uint32        minerId
         )
         public
     {
@@ -358,9 +358,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(ringSize, addressList);
 
-        address[2] memory minerAddrs = NameRegistry(nameRegistryAddress).getAddressesById(minerAddrSetId);
-        address ringminer = minerAddrs[0];
-        address feeRecipient = minerAddrs[1];
+        var (feeRecipient, ringminer) = NameRegistry(nameRegistryAddress)
+            .getParticipantById(minerId);
 
         var (ringhash, ringhashAttributes) = RinghashRegistry(
             ringhashRegistryAddress
