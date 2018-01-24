@@ -23,6 +23,7 @@ import "./LoopringProtocol.sol";
 import "./RinghashRegistry.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
+import "./NameRegistry.sol";
 
 
 /// @title Loopring Token Exchange Protocol Implementation Contract v1
@@ -45,9 +46,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  tokenRegistryAddress        = 0x0;
     address public  ringhashRegistryAddress     = 0x0;
     address public  delegateAddress             = 0x0;
+    address public  nameRegistryAddress         = 0x0;
 
     uint    public  maxRingSize                 = 0;
     uint64  public  ringIndex                   = 0;
+    uint8   public  walletSplitPercentage       = 0;
 
     // Exchange rate (rate) is the amount to sell or sold divided by the amount
     // to buy or bought.
@@ -149,8 +152,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address _tokenRegistryAddress,
         address _ringhashRegistryAddress,
         address _delegateAddress,
+        address _nameRegistryAddress,
         uint    _maxRingSize,
-        uint    _rateRatioCVSThreshold
+        uint    _rateRatioCVSThreshold,
+        uint8   _walletSplitPercentage
         )
         public
     {
@@ -158,16 +163,20 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(0x0 != _tokenRegistryAddress);
         require(0x0 != _ringhashRegistryAddress);
         require(0x0 != _delegateAddress);
+        require(0x0 != _nameRegistryAddress);
 
         require(_maxRingSize > 1);
         require(_rateRatioCVSThreshold > 0);
+        require(_walletSplitPercentage > 0);
 
         lrcTokenAddress = _lrcTokenAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         ringhashRegistryAddress = _ringhashRegistryAddress;
         delegateAddress = _delegateAddress;
+        nameRegistryAddress = _nameRegistryAddress;
         maxRingSize = _maxRingSize;
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
+        walletSplitPercentage = _walletSplitPercentage;
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -304,13 +313,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param sList        List of s for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
-    /// @param ringminer    The address that signed this tx.
-    /// @param feeRecipient The Recipient address for fee collection. If this is
-    ///                     '0x0', all fees will be paid to the address who had
-    ///                     signed this transaction, not `msg.sender`. Noted if
-    ///                     LRC need to be paid back to order owner as the result
-    ///                     of fee selection model, LRC will also be sent from
-    ///                     this address.
+    /// @param minerAddrSetId  The address set that miner registered in NameRegistry.
+    ///                        The address set contains a signer address and a fee
+    ///                        recipient address.
+    ///                        The signer address is used for sign this tx.
+    ///                        The Recipient address for fee collection. If this is
+    ///                        '0x0', all fees will be paid to the address who had
+    ///                        signed this transaction, not `msg.sender`. Noted if
+    ///                        LRC need to be paid back to order owner as the result
+    ///                        of fee selection model, LRC will also be sent from
+    ///                        this address.
     function submitRing(
         address[2][]  addressList,
         uint[7][]     uintArgsList,
@@ -319,8 +331,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint8[]       vList,
         bytes32[]     rList,
         bytes32[]     sList,
-        address       ringminer,
-        address       feeRecipient
+        uint32        minerAddrSetId
         )
         public
     {
@@ -346,6 +357,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
 
         verifyTokensRegistered(ringSize, addressList);
+
+        address[2] memory minerAddrs = NameRegistry(nameRegistryAddress).getAddressesById(minerAddrSetId);
+        address ringminer = minerAddrs[0];
+        address feeRecipient = minerAddrs[1];
 
         var (ringhash, ringhashAttributes) = RinghashRegistry(
             ringhashRegistryAddress

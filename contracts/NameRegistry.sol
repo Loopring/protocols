@@ -92,13 +92,10 @@ contract NameRegistry {
         );
     }
 
-    function getAddressesById(uint32 addrSetId) external view returns (address[]) {
+    function getAddressesById(uint32 addrSetId) external view returns (address[2]) {
         var _addressSet = addressSetMap[addrSetId];
 
-        var addrs = new address[](2);
-        addrs[0] = _addressSet.signer;
-        addrs[1] = _addressSet.feeRecipient;
-        return addrs;
+        return [_addressSet.signer, _addressSet.feeRecipient];
     }
 
     function isValidName(string name) internal pure returns (bool) {
