@@ -21,6 +21,7 @@ pragma solidity 0.4.18;
 /// @title Ethereum Address Register Contract
 /// @dev This contract maintains a name service for addresses and miner.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
+/// @author Daniel Wang - <daniel@loopring.org>,
 contract NameRegistry {
 
     uint64 public nextId = 0;
@@ -28,7 +29,6 @@ contract NameRegistry {
     mapping (uint64  => Participant) public participantMap;
     mapping (address => NameInfo)    public nameInfoMap;
     mapping (bytes12 => address)     public ownerMap;
-    //mapping (address => uint64[])    public participantIdMap;
 
     struct NameInfo {
         bytes12  name;
@@ -51,6 +51,12 @@ contract NameRegistry {
         string             name,
         address    indexed addr
      );
+
+    event OwnershipTransfered (
+        bytes12            name,
+        address            oldOwner,
+        address            newOwner
+    );
 
     event ParticipantRegistered (
         bytes12           name,
@@ -97,6 +103,26 @@ contract NameRegistry {
         delete ownerMap[nameBytes];
 
         NameUnregistered(name, msg.sender);
+    }
+
+    function transferOwnership(address newOwner)
+        external
+    {
+        require(newOwner != 0x0);
+        require(nameInfoMap[newOwner].name.length == 0);
+
+        NameInfo storage nameInfo = nameInfoMap[msg.sender];
+        uint64[] memory participantIds = nameInfo.participantIds;
+
+        for (uint i = 0; i < participantIds.length; i ++) {
+            Participant storage p = participantMap[participantIds[i]];
+            p.owner = newOwner;
+        }
+
+        nameInfoMap[newOwner] = nameInfo;
+        delete nameInfoMap[msg.sender];
+
+        OwnershipTransfered(nameInfo.name, msg.sender, newOwner);
     }
 
     function addParticipant(address feeRecipient)
