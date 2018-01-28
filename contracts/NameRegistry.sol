@@ -22,35 +22,47 @@ pragma solidity 0.4.18;
 /// @dev This contract maintains a name service for addresses and miner.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 contract NameRegistry {
-    uint64 nextId = 1;
+
+    uint64 public nextId = 0;
 
     mapping (uint64  => Participant) public participantMap;
-    mapping (address => NamedGroup)  public namedGroupMap;
-    mapping (bytes12 => address)     public nameMap;
-    mapping (address => uint64)      public feeRecipientMap;
+    mapping (address => NameInfo)    public nameInfoMap;
+    mapping (bytes12 => address)     public ownerMap;
+    //mapping (address => uint64[])    public participantIdMap;
 
-    struct NamedGroup {
-        bytes12 name;
-        uint64  rootId;
+    struct NameInfo {
+        bytes12  name;
+        uint64[] participantIds;
     }
 
     struct Participant {
         address feeRecipient;
         address signer;
-        uint64  nextId;
+        bytes12 name;
+        address owner;
     }
 
-    event NamedGroupRegistered (
+    event NameRegistered (
         string            name,
         address   indexed addr
     );
 
+    event NameUnregistered (
+        string             name,
+        address    indexed addr
+     );
+
     event ParticipantRegistered (
         bytes12           name,
         address   indexed owner,
-        uint64    indexed addressSetId,
+        uint64    indexed participantId,
         address           singer,
         address           feeRecipient
+    );
+
+    event ParticipantUnregistered (
+        uint64  participantId,
+        address owner
     );
 
     function registerName(string name)
@@ -60,13 +72,31 @@ contract NameRegistry {
 
         bytes12 nameBytes = stringToBytes12(name);
 
-        require(nameMap[nameBytes] == 0x0);
-        require(namedGroupMap[msg.sender].name.length == 0);
+        require(ownerMap[nameBytes] == 0x0);
+        require(nameInfoMap[msg.sender].name.length == 0);
 
-        nameMap[nameBytes] = msg.sender;
-        namedGroupMap[msg.sender] = NamedGroup(nameBytes, 0);
+        nameInfoMap[msg.sender] = NameInfo(nameBytes, new uint64[](0));
+        ownerMap[nameBytes] = msg.sender;
 
-        NamedGroupRegistered(name, msg.sender);
+        NameUnregistered(name, msg.sender);
+    }
+
+    function unregisterName(string name)
+        external
+    {
+        var nameInfo = nameInfoMap[msg.sender];
+        var participantIds = nameInfo.participantIds;
+        bytes12 nameBytes = stringToBytes12(name);
+        require(nameInfo.name == nameBytes);
+
+        for (uint i = 0; i < participantIds.length; i ++) {
+            delete participantMap[participantIds[i]];
+        }
+
+        delete nameInfoMap[msg.sender];
+        delete ownerMap[nameBytes];
+
+        NameUnregistered(name, msg.sender);
     }
 
     function addParticipant(address feeRecipient)
@@ -82,32 +112,46 @@ contract NameRegistry {
         public
     {
         require(feeRecipient != 0x0 && singer != 0x0);
-        require(namedGroupMap[msg.sender].name.length > 0);
 
-        uint64 addrSetId = nextId++;
-        Participant memory addrSet = Participant(feeRecipient, singer, 0);
+        NameInfo storage nameInfo = nameInfoMap[msg.sender];
+        bytes12 name = nameInfo.name;
 
-        NamedGroup storage group = namedGroupMap[msg.sender];
+        require(name.length > 0);
 
-        if (group.rootId == 0) {
-            group.rootId = addrSetId;
-        } else {
-            var _addrSet = participantMap[group.rootId];
-            while (_addrSet.nextId != 0) {
-                _addrSet = participantMap[_addrSet.nextId];
-            }
-            _addrSet.nextId == addrSetId;
-        }
+        Participant memory participant = Participant(feeRecipient, singer, name, msg.sender);
 
-        participantMap[addrSetId] = addrSet;
+        uint64 participantId = nextId++;
+        participantMap[participantId] = participant;
+        nameInfo.participantIds.push(participantId);
 
         ParticipantRegistered(
-            group.name,
+            name,
             msg.sender,
-            addrSetId,
+            participantId,
             singer,
             feeRecipient
         );
+    }
+
+    function removeParticipant(uint64 participantId)
+        external
+    {
+        require(msg.sender == participantMap[participantId].owner);
+
+        NameInfo storage nameInfo = nameInfoMap[msg.sender];
+        uint64[] storage participantIds = nameInfo.participantIds;
+
+        delete participantMap[participantId];
+
+        uint len = participantIds.length;
+        for (uint i = 0; i < len; i ++) {
+            if (participantId == participantIds[i]) {
+                participantIds[i] = participantIds[len - 1];
+                participantIds.length --;
+            }
+        }
+
+        ParticipantUnregistered(participantId, msg.sender);
     }
 
     function getParticipantById(uint64 id)
