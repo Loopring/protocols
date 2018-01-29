@@ -50,7 +50,7 @@ contract NameRegistry {
     event NameUnregistered (
         string             name,
         address    indexed addr
-     );
+    );
 
     event OwnershipTransfered (
         bytes12            name,
@@ -144,7 +144,12 @@ contract NameRegistry {
 
         require(name.length > 0);
 
-        Participant memory participant = Participant(feeRecipient, singer, name, msg.sender);
+        Participant memory participant = Participant(
+            feeRecipient,
+            singer,
+            name,
+            msg.sender
+        );
 
         uint64 participantId = nextId++;
         participantMap[participantId] = participant;

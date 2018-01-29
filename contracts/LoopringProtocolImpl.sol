@@ -314,15 +314,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
     /// @param minerId      The address set that miner registered in NameRegistry.
-    ///                        The address set contains a signer address and a fee
-    ///                        recipient address.
-    ///                        The signer address is used for sign this tx.
-    ///                        The Recipient address for fee collection. If this is
-    ///                        '0x0', all fees will be paid to the address who had
-    ///                        signed this transaction, not `msg.sender`. Noted if
-    ///                        LRC need to be paid back to order owner as the result
-    ///                        of fee selection model, LRC will also be sent from
-    ///                        this address.
+    ///                     The address set contains a signer address and a fee
+    ///                     recipient address.
+    ///                     The signer address is used for sign this tx.
+    ///                     The Recipient address for fee collection. If this is
+    ///                     '0x0', all fees will be paid to the address who had
+    ///                     signed this transaction, not `msg.sender`. Noted if
+    ///                     LRC need to be paid back to order owner as the result
+    ///                     of fee selection model, LRC will also be sent from
+    ///                     this address.
     function submitRing(
         address[2][]  addressList,
         uint[7][]     uintArgsList,
