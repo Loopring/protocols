@@ -100,7 +100,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     await nameRegistry.addParticipant(feeRecepient, ringOwner, {from: owner});
     const pids = await nameRegistry.getParticipantIds("test001", 0, 1);
     participantId = pids[0];
-    console.log("participantId:", participantId);
+    // console.log("participantId:", participantId);
 
     tokenTransferDelegate.authorizeAddress(LoopringProtocolImpl.address);
 
@@ -145,15 +145,14 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
       const ethOfOwnerBefore = await getEthBalanceAsync(owner);
       const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                        p.uintArgsList,
-                                                        p.uint8ArgsList,
-                                                        p.buyNoMoreThanAmountBList,
-                                                        p.vList,
-                                                        p.rList,
-                                                        p.sList,
-                                                        p.ringOwner,
-                                                        p.feeRecepient,
-                                                        {from: owner});
+                                                       p.uintArgsList,
+                                                       p.uint8ArgsList,
+                                                       p.buyNoMoreThanAmountBList,
+                                                       p.vList,
+                                                       p.rList,
+                                                       p.sList,
+                                                       participantId,
+                                                       {from: owner});
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber()) / 1e18;
@@ -199,8 +198,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       p.ringOwner,
-                                                       p.feeRecepient,
+                                                       participantId,
                                                        {from: owner});
 
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
@@ -246,8 +244,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       p.ringOwner,
-                                                       p.feeRecepient,
+                                                       participantId,
                                                        {from: owner});
 
       console.log("cumulativeGasUsed for a ring of 2 orders: " + tx.receipt.gasUsed);
@@ -302,8 +299,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       p.ringOwner,
-                                                       p.feeRecepient,
+                                                       participantId,
                                                        {from: owner});
 
       console.log("cumulativeGasUsed for a ring of 3 orders: " + tx.receipt.gasUsed);
@@ -369,8 +365,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       p.ringOwner,
-                                                       p.feeRecepient,
+                                                       participantId,
                                                        {from: owner});
 
       // console.log("tx.receipt.logs: ", tx.receipt.logs);
@@ -440,8 +435,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       p.ringOwner,
-                                                       p.feeRecepient,
+                                                       participantId,
                                                        {from: owner});
 
       // console.log("tx.receipt.logs: ", tx.receipt.logs);
@@ -504,8 +498,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       p.ringOwner,
-                                                       p.feeRecepient,
+                                                       participantId,
                                                        {from: owner});
 
       // console.log("tx.receipt.logs: ", tx.receipt.logs);
@@ -576,8 +569,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       p.ringOwner,
-                                                       p.feeRecepient,
+                                                       participantId,
                                                        {from: owner});
 
       // console.log("tx.receipt.logs: ", tx.receipt.logs);
@@ -637,8 +629,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       p.ringOwner,
-                                                       p.feeRecepient,
+                                                       participantId,
                                                        {from: owner});
 
       // console.log("tx.receipt.logs: ", tx.receipt.logs);
@@ -729,8 +720,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                               p.vList,
                                               p.rList,
                                               p.sList,
-                                              p.ringOwner,
-                                              p.feeRecepient,
+                                              participantId,
                                               {from: owner});
       } catch (err) {
         const errMsg = `${err}`;
@@ -763,8 +753,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                               p.vList,
                                               p.rList,
                                               p.sList,
-                                              p.ringOwner,
-                                              p.feeRecepient,
+                                              participantId,
                                               {from: owner});
       } catch (err) {
         const errMsg = `${err}`;
@@ -867,8 +856,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                               p.vList,
                                               p.rList,
                                               p.sList,
-                                              p.ringOwner,
-                                              p.feeRecepient,
+                                              participantId,
                                               {from: owner});
       } catch (err) {
         const errMsg = `${err}`;
@@ -919,8 +907,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                               p.vList,
                                               p.rList,
                                               p.sList,
-                                              p.ringOwner,
-                                              p.feeRecepient,
+                                              participantId,
                                               {from: owner});
       } catch (err) {
         const errMsg = `${err}`;
