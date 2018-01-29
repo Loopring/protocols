@@ -127,8 +127,9 @@ contract NameRegistry {
 
     function addParticipant(address feeRecipient)
         external
+        returns (uint64)
     {
-        addParticipant(feeRecipient, feeRecipient);
+        return addParticipant(feeRecipient, feeRecipient);
     }
 
     function addParticipant(
@@ -136,6 +137,7 @@ contract NameRegistry {
         address singer
         )
         public
+        returns (uint64)
     {
         require(feeRecipient != 0x0 && singer != 0x0);
 
@@ -162,6 +164,8 @@ contract NameRegistry {
             singer,
             feeRecipient
         );
+
+        return participantId;
     }
 
     function removeParticipant(uint64 participantId)
@@ -194,6 +198,39 @@ contract NameRegistry {
 
         feeRecipient = addressSet.feeRecipient;
         signer = addressSet.signer;
+    }
+
+    function getParticipantIds(string name, uint start, uint count)
+        external
+        view
+        returns (uint64[] idList)
+    {
+        bytes12 nameBytes = stringToBytes12(name);
+        address owner = ownerMap[nameBytes];
+        require(owner != 0x0);
+
+        NameInfo storage nameInfo = nameInfoMap[owner];
+        uint64[] storage pIds = nameInfo.participantIds;
+
+        uint len = pIds.length;
+        if (start >= len) {
+            return;
+        }
+
+        uint end = start + count;
+        if (end > len) {
+            end = len;
+        }
+
+        if (start == end) {
+            return;
+        }
+
+        idList = new uint64[](end - start);
+
+        for (uint i = start; i < end; i ++) {
+            idList[i - start] = pIds[i];
+        }
     }
 
     function isNameValid(string name)
