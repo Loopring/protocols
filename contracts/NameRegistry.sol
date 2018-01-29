@@ -29,6 +29,7 @@ contract NameRegistry {
     mapping (uint64  => Participant) public participantMap;
     mapping (address => NameInfo)    public nameInfoMap;
     mapping (bytes12 => address)     public ownerMap;
+    mapping (address => string)      public nameMap;
 
     struct NameInfo {
         bytes12  name;
@@ -79,10 +80,11 @@ contract NameRegistry {
         bytes12 nameBytes = stringToBytes12(name);
 
         require(ownerMap[nameBytes] == 0x0);
-        require(nameInfoMap[msg.sender].name.length == 0);
+        require(stringToBytes12(nameMap[msg.sender]) == bytes12(0x0));
 
         nameInfoMap[msg.sender] = NameInfo(nameBytes, new uint64[](0));
         ownerMap[nameBytes] = msg.sender;
+        nameMap[msg.sender] = name;
 
         NameUnregistered(name, msg.sender);
     }
@@ -100,6 +102,7 @@ contract NameRegistry {
         }
 
         delete nameInfoMap[msg.sender];
+        delete nameMap[msg.sender];
         delete ownerMap[nameBytes];
 
         NameUnregistered(name, msg.sender);
@@ -120,7 +123,9 @@ contract NameRegistry {
         }
 
         nameInfoMap[newOwner] = nameInfo;
+        nameMap[newOwner] = nameMap[msg.sender];
         delete nameInfoMap[msg.sender];
+        delete nameMap[msg.sender];
 
         OwnershipTransfered(nameInfo.name, msg.sender, newOwner);
     }
@@ -231,6 +236,15 @@ contract NameRegistry {
         for (uint i = start; i < end; i ++) {
             idList[i - start] = pIds[i];
         }
+    }
+
+    function getOwner(string name)
+        external
+        view
+        returns (address)
+    {
+        bytes12 nameBytes = stringToBytes12(name);
+        return ownerMap[nameBytes];
     }
 
     function isNameValid(string name)
