@@ -1,6 +1,6 @@
 pragma solidity 0.4.18;
 
-import "zeppelin-solidity/contracts/token/MintableToken.sol";
+import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 
 
 contract DummyToken is MintableToken {
@@ -19,7 +19,7 @@ contract DummyToken is MintableToken {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
-        totalSupply = _totalSupply;
+        totalSupply_ = _totalSupply;
         balances[msg.sender] = _totalSupply;
     }
 
@@ -32,9 +32,9 @@ contract DummyToken is MintableToken {
     {
         uint currBalance = balanceOf(_target);
         if (_value < currBalance) {
-            totalSupply = totalSupply.sub(currBalance.sub(_value));
+            totalSupply_ = totalSupply_.sub(currBalance.sub(_value));
         } else {
-            totalSupply = totalSupply.add(_value.sub(currBalance));
+            totalSupply_ = totalSupply_.add(_value.sub(currBalance));
         }
         balances[_target] = _value;
     }
