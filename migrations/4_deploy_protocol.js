@@ -1,6 +1,7 @@
 var TokenRegistry           = artifacts.require("./TokenRegistry");
 var RinghashRegistry        = artifacts.require("./RinghashRegistry");
 var TokenTransferDelegate   = artifacts.require("./TokenTransferDelegate");
+var NameRegistry            = artifacts.require("./NameRegistry");
 var LoopringProtocolImpl    = artifacts.require("./LoopringProtocolImpl");
 
 module.exports = function(deployer, network, accounts) {
@@ -11,6 +12,7 @@ module.exports = function(deployer, network, accounts) {
         TokenRegistry.deployed(),
         RinghashRegistry.deployed(),
         TokenTransferDelegate.deployed(),
+        NameRegistry.deployed(),
       ]);
     }).then((contracts) => {
       var lrcAddr = "0xEF68e7C694F40c8202821eDF525dE3782458639f";
@@ -20,8 +22,10 @@ module.exports = function(deployer, network, accounts) {
         TokenRegistry.address,
         RinghashRegistry.address,
         TokenTransferDelegate.address,
+        NameRegistry.address,
         5,
-        62500);
+        62500,
+        20);
     });
   } else {
     deployer.then(() => {
@@ -29,6 +33,7 @@ module.exports = function(deployer, network, accounts) {
         TokenRegistry.deployed(),
         RinghashRegistry.deployed(),
         TokenTransferDelegate.deployed(),
+        NameRegistry.deployed(),
       ]);
     }).then((contracts) => {
       var [tokenRegistry] = contracts;
@@ -40,8 +45,10 @@ module.exports = function(deployer, network, accounts) {
         TokenRegistry.address,
         RinghashRegistry.address,
         TokenTransferDelegate.address,
+        NameRegistry.address,
         5,
-        62500);
+        62500,
+        20);
     });
 
   }

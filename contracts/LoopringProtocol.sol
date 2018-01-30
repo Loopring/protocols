@@ -132,8 +132,11 @@ contract LoopringProtocol {
     /// @param sList        List of s for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
-    /// @param ringminer    The address that signed this tx.
-    /// @param feeRecepient The recepient address for fee collection. If this is
+    /// @param minerId      The address set that miner registered in NameRegistry.
+    ///                     The address set contains a signer address and a fee
+    ///                     recipient address.
+    ///                     The signer address is used for sign this tx.
+    ///                     The Recipient address for fee collection. If this is
     ///                     '0x0', all fees will be paid to the address who had
     ///                     signed this transaction, not `msg.sender`. Noted if
     ///                     LRC need to be paid back to order owner as the result
@@ -147,7 +150,6 @@ contract LoopringProtocol {
         uint8[]         vList,
         bytes32[]       rList,
         bytes32[]       sList,
-        address         ringminer,
-        address         feeRecepient
+        uint32        minerId
         ) public;
 }
