@@ -313,8 +313,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param sList        List of s for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
-    /// @param minerId      The address set that miner registered in NameRegistry.
-    ///                     The address set contains a signer address and a fee
+    /// @param minerId      The address pair that miner registered in NameRegistry.
+    ///                     The address pair contains a signer address and a fee
     ///                     recipient address.
     ///                     The signer address is used for sign this tx.
     ///                     The Recipient address for fee collection. If this is
