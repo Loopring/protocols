@@ -24,16 +24,16 @@ pragma solidity 0.4.18;
 /// @author Daniel Wang - <daniel@loopring.org>,
 contract NameRegistry {
 
-    uint64 public nextId = 0;
+    uint32 public nextId = 0;
 
-    mapping (uint64  => Participant) public participantMap;
+    mapping (uint32  => Participant) public participantMap;
     mapping (address => NameInfo)    public nameInfoMap;
     mapping (bytes12 => address)     public ownerMap;
     mapping (address => string)      public nameMap;
 
     struct NameInfo {
         bytes12  name;
-        uint64[] participantIds;
+        uint32[] participantIds;
     }
 
     struct Participant {
@@ -45,12 +45,12 @@ contract NameRegistry {
 
     event NameRegistered (
         string            name,
-        address   indexed addr
+        address   indexed owner
     );
 
     event NameUnregistered (
         string             name,
-        address    indexed addr
+        address    indexed owner
     );
 
     event OwnershipTransfered (
@@ -62,13 +62,13 @@ contract NameRegistry {
     event ParticipantRegistered (
         bytes12           name,
         address   indexed owner,
-        uint64    indexed participantId,
+        uint32    indexed participantId,
         address           singer,
         address           feeRecipient
     );
 
     event ParticipantUnregistered (
-        uint64  participantId,
+        uint32  participantId,
         address owner
     );
 
@@ -82,7 +82,7 @@ contract NameRegistry {
         require(ownerMap[nameBytes] == 0x0);
         require(stringToBytes12(nameMap[msg.sender]) == bytes12(0x0));
 
-        nameInfoMap[msg.sender] = NameInfo(nameBytes, new uint64[](0));
+        nameInfoMap[msg.sender] = NameInfo(nameBytes, new uint32[](0));
         ownerMap[nameBytes] = msg.sender;
         nameMap[msg.sender] = name;
 
@@ -92,12 +92,12 @@ contract NameRegistry {
     function unregisterName(string name)
         external
     {
-        var nameInfo = nameInfoMap[msg.sender];
-        var participantIds = nameInfo.participantIds;
+        NameInfo storage nameInfo = nameInfoMap[msg.sender];
+        uint32[] storage participantIds = nameInfo.participantIds;
         bytes12 nameBytes = stringToBytes12(name);
         require(nameInfo.name == nameBytes);
 
-        for (uint i = 0; i < participantIds.length; i ++) {
+        for (uint i = participantIds.length - 1; i >= 0; i--) {
             delete participantMap[participantIds[i]];
         }
 
@@ -115,24 +115,26 @@ contract NameRegistry {
         require(nameInfoMap[newOwner].name.length == 0);
 
         NameInfo storage nameInfo = nameInfoMap[msg.sender];
-        uint64[] memory participantIds = nameInfo.participantIds;
+        string storage name = nameMap[msg.sender];
+        uint32[] memory participantIds = nameInfo.participantIds;
 
         for (uint i = 0; i < participantIds.length; i ++) {
             Participant storage p = participantMap[participantIds[i]];
             p.owner = newOwner;
         }
 
-        nameInfoMap[newOwner] = nameInfo;
-        nameMap[newOwner] = nameMap[msg.sender];
         delete nameInfoMap[msg.sender];
         delete nameMap[msg.sender];
+
+        nameInfoMap[newOwner] = nameInfo;
+        nameMap[newOwner] = name;
 
         OwnershipTransfered(nameInfo.name, msg.sender, newOwner);
     }
 
     function addParticipant(address feeRecipient)
         external
-        returns (uint64)
+        returns (uint32)
     {
         return addParticipant(feeRecipient, feeRecipient);
     }
@@ -142,7 +144,7 @@ contract NameRegistry {
         address singer
         )
         public
-        returns (uint64)
+        returns (uint32)
     {
         require(feeRecipient != 0x0 && singer != 0x0);
 
@@ -158,7 +160,7 @@ contract NameRegistry {
             msg.sender
         );
 
-        uint64 participantId = nextId++;
+        uint32 participantId = nextId++;
         participantMap[participantId] = participant;
         nameInfo.participantIds.push(participantId);
 
@@ -173,13 +175,13 @@ contract NameRegistry {
         return participantId;
     }
 
-    function removeParticipant(uint64 participantId)
+    function removeParticipant(uint32 participantId)
         external
     {
         require(msg.sender == participantMap[participantId].owner);
 
         NameInfo storage nameInfo = nameInfoMap[msg.sender];
-        uint64[] storage participantIds = nameInfo.participantIds;
+        uint32[] storage participantIds = nameInfo.participantIds;
 
         delete participantMap[participantId];
 
@@ -187,14 +189,14 @@ contract NameRegistry {
         for (uint i = 0; i < len; i ++) {
             if (participantId == participantIds[i]) {
                 participantIds[i] = participantIds[len - 1];
-                participantIds.length --;
+                participantIds.length -= 1;
             }
         }
 
         ParticipantUnregistered(participantId, msg.sender);
     }
 
-    function getParticipantById(uint64 id)
+    function getParticipantById(uint32 id)
         external
         view
         returns (address feeRecipient, address signer)
@@ -208,14 +210,14 @@ contract NameRegistry {
     function getParticipantIds(string name, uint start, uint count)
         external
         view
-        returns (uint64[] idList)
+        returns (uint32[] idList)
     {
         bytes12 nameBytes = stringToBytes12(name);
         address owner = ownerMap[nameBytes];
         require(owner != 0x0);
 
         NameInfo storage nameInfo = nameInfoMap[owner];
-        uint64[] storage pIds = nameInfo.participantIds;
+        uint32[] storage pIds = nameInfo.participantIds;
 
         uint len = pIds.length;
         if (start >= len) {
@@ -231,7 +233,7 @@ contract NameRegistry {
             return;
         }
 
-        idList = new uint64[](end - start);
+        idList = new uint32[](end - start);
 
         for (uint i = start; i < end; i ++) {
             idList[i - start] = pIds[i];
