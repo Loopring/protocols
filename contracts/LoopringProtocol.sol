@@ -73,8 +73,7 @@ contract LoopringProtocol {
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in orderValues.
     /// @param addresses          owner, tokenS, tokenB
-    /// @param orderValues        amountS, amountB, validSince (milliseconds),
-    ///                           validUntil (milliseconds), lrcFee,
+    /// @param orderValues        amountS, amountB, timestamp, ttl, salt, lrcFee,
     ///                           cancelAmountS, and cancelAmountB.
     /// @param buyNoMoreThanAmountB -
     ///                           This indicates when a order should be considered
@@ -86,7 +85,7 @@ contract LoopringProtocol {
     /// @param s                  Order ECDSA signature parameters s.
     function cancelOrder(
         address[3] addresses,
-        uint[6]    orderValues,
+        uint[7]    orderValues,
         bool       buyNoMoreThanAmountB,
         uint8      marginSplitPercentage,
         uint8      v,
@@ -116,8 +115,8 @@ contract LoopringProtocol {
     /// @param addressList  List of each order's owner and tokenS. Note that next
     ///                     order's `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS, amountB, validSince (milliseconds),
-    ///                     validUntil (milliseconds), lrcFee, and rateAmountS.
+    ///                     amountS, amountB, timestamp, ttl, salt, lrcFee,
+    ///                     rateAmountS.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     marginSplitPercentageList, feeSelectionList.
@@ -145,7 +144,7 @@ contract LoopringProtocol {
     ///                     this address.
     function submitRing(
         address[2][]    addressList,
-        uint[6][]       uintArgsList,
+        uint[7][]       uintArgsList,
         uint8[2][]      uint8ArgsList,
         bool[]          buyNoMoreThanAmountBList,
         uint8[]         vList,
