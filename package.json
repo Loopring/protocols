@@ -38,7 +38,7 @@
     "typescript": "2.4.2",
     "tslint": "5.8.0",
     "web3-typescript-typings": "0.0.3",
-    "zeppelin-solidity": "^1.2.0",
+    "zeppelin-solidity": "^1.6.0",
     "ajv": "^5.0.0"
   },
   "dependencies": {
