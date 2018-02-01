@@ -93,10 +93,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param tokenB       Token to buy.
     /// @param amountS      Maximum amount of tokenS to sell.
     /// @param amountB      Minimum amount of tokenB to buy if all amountS sold.
-    /// @param timestamp    Indicating when this order is created/signed.
-    /// @param ttl          Indicating after how many seconds from `timestamp`
-    ///                     this order will expire.
-    /// @param salt         A random number to make this order's hash unique.
+    /// @param validSince   Indicating when this order should be treated as
+    ///                     valid for trading, in milliseconds.
+    /// @param validUntil   Indicating when this order should be treated as
+    ///                     expired, milliseconds.
     /// @param lrcFee       Max amount of LRC to pay for miner. The real amount
     ///                     to pay is proportional to fill amount.
     /// @param buyNoMoreThanAmountB -
@@ -111,6 +111,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address owner;
         address tokenS;
         address tokenB;
+        uint    validSince;
+        uint    validUntil;
         uint    amountS;
         uint    amountB;
         uint    lrcFee;
@@ -191,7 +193,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in orderValues.
     /// @param addresses          owner, tokenS, tokenB
-    /// @param orderValues        amountS, amountB, timestamp, ttl, salt, lrcFee,
+    /// @param orderValues        amountS, amountB, validSince (milliseconds),
+    ///                           validUntil (milliseconds), lrcFee,
     ///                           cancelAmountS, and cancelAmountB.
     /// @param buyNoMoreThanAmountB -
     ///                           This indicates when a order should be considered
@@ -203,7 +206,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param s                  Order ECDSA signature parameters s.
     function cancelOrder(
         address[3] addresses,
-        uint[7]    orderValues,
+        uint[6]    orderValues,
         bool       buyNoMoreThanAmountB,
         uint8      marginSplitPercentage,
         uint8      v,
@@ -212,7 +215,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         external
     {
-        uint cancelAmount = orderValues[6];
+        uint cancelAmount = orderValues[5];
 
         require(cancelAmount > 0); // "amount to cancel is zero");
 
@@ -220,22 +223,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
             addresses[0],
             addresses[1],
             addresses[2],
+            orderValues[2],
+            orderValues[3],
             orderValues[0],
             orderValues[1],
-            orderValues[5],
+            orderValues[4],
             buyNoMoreThanAmountB,
             marginSplitPercentage
         );
 
         require(msg.sender == order.owner); // "cancelOrder not submitted by order owner");
 
-        bytes32 orderHash = calculateOrderHash(
-            order,
-            orderValues[2], // timestamp
-            orderValues[3], // ttl
-            orderValues[4]  // salt
-        );
-
+        bytes32 orderHash = calculateOrderHash(order);
 
         verifySignature(
             order.owner,
@@ -296,8 +295,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param addressList  List of each order's tokenS. Note that next order's
     ///                     `tokenS` equals this order's `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS, amountB, timestamp, ttl, salt, lrcFee,
-    ///                     rateAmountS.
+    ///                     amountS, amountB, validSince (milliseconds),
+    ///                     validUntil(milliseconds), lrcFee, rateAmountS.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     marginSplitPercentageList,feeSelectionList.
@@ -325,7 +324,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     this address.
     function submitRing(
         address[2][]  addressList,
-        uint[7][]     uintArgsList,
+        uint[6][]     uintArgsList,
         uint8[2][]    uint8ArgsList,
         bool[]        buyNoMoreThanAmountBList,
         uint8[]       vList,
@@ -864,7 +863,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function verifyInputDataIntegrity(
         uint          ringSize,
         address[2][]  addressList,
-        uint[7][]     uintArgsList,
+        uint[6][]     uintArgsList,
         uint8[2][]    uint8ArgsList,
         bool[]        buyNoMoreThanAmountBList,
         uint8[]       vList,
@@ -884,7 +883,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         // Validate ring-mining related arguments.
         for (uint i = 0; i < ringSize; i++) {
-            require(uintArgsList[i][6] > 0); // "order rateAmountS is zero");
+            require(uintArgsList[i][5] > 0); // "order rateAmountS is zero");
             require(uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE); // "invalid order fee selection");
         }
     }
@@ -893,7 +892,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @return     A list of orders.
     function assembleOrders(
         address[2][]    addressList,
-        uint[7][]       uintArgsList,
+        uint[6][]       uintArgsList,
         uint8[2][]      uint8ArgsList,
         bool[]          buyNoMoreThanAmountBList,
         uint8[]         vList,
@@ -908,25 +907,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
         orders = new OrderState[](ringSize);
 
         for (uint i = 0; i < ringSize; i++) {
-            uint[7] memory uintArgs = uintArgsList[i];
+            uint[6] memory uintArgs = uintArgsList[i];
 
             Order memory order = Order(
                 addressList[i][0],
                 addressList[i][1],
                 addressList[(i + 1) % ringSize][1],
+                uintArgs[2],
+                uintArgs[3],
                 uintArgs[0],
                 uintArgs[1],
-                uintArgs[5],
+                uintArgs[4],
                 buyNoMoreThanAmountBList[i],
                 uint8ArgsList[i][0]
             );
 
-            bytes32 orderHash = calculateOrderHash(
-                order,
-                uintArgs[2], // timestamp
-                uintArgs[3], // ttl
-                uintArgs[4]  // salt
-            );
+            bytes32 orderHash = calculateOrderHash(order);
 
             verifySignature(
                 order.owner,
@@ -936,18 +932,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 sList[i]
             );
 
-            validateOrder(
-                order,
-                uintArgs[2], // timestamp
-                uintArgs[3], // ttl
-                uintArgs[4]  // salt
-            );
+            validateOrder(order);
 
             orders[i] = OrderState(
                 order,
                 orderHash,
                 uint8ArgsList[i][1],  // feeSelection
-                Rate(uintArgs[6], order.amountB),
+                Rate(uintArgs[5], order.amountB),
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
@@ -958,39 +949,28 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev validate order's parameters are OK.
-    function validateOrder(
-        Order        order,
-        uint         timestamp,
-        uint         ttl,
-        uint         salt
-        )
+    function validateOrder(Order order)
         private
         view
     {
-        require(order.owner != 0x0); // "invalid order owner");
-        require(order.tokenS != 0x0); // "invalid order tokenS");
-        require(order.tokenB != 0x0); // "invalid order tokenB");
-        require(order.amountS != 0); // "invalid order amountS");
-        require(order.amountB != 0); // "invalid order amountB");
-        require(timestamp <= block.timestamp); // "order is too early to match");
+        require(order.owner != 0x0); // invalid order owner
+        require(order.tokenS != 0x0); // invalid order tokenS
+        require(order.tokenB != 0x0); // invalid order tokenB
+        require(order.amountS != 0); // invalid order amountS
+        require(order.amountB != 0); // invalid order amountB
+        require(order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE); // invalid order marginSplitPercentage
 
-        require(ttl != 0); // "order ttl is 0");
-        require(timestamp + ttl > block.timestamp); // "order is expired");
-        require(salt != 0); // "invalid order salt");
-        require(order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE); // "invalid order marginSplitPercentage");
+        uint validSinceSec = order.validSince / 1000;
+        require(validSinceSec <= block.timestamp); // order is too early to match
+        require(order.validUntil > block.timestamp * 1000); // order is expired
 
         bytes20 tradingPair = bytes20(order.tokenS) ^ bytes20(order.tokenB);
-        require(timestamp > tradingPairCutoffs[order.owner][tradingPair]); // "order trading pair is cut off");
-        require(timestamp > cutoffs[order.owner]); // "order is cut off");
+        require(validSinceSec > tradingPairCutoffs[order.owner][tradingPair]); // order trading pair is cut off
+        require(validSinceSec > cutoffs[order.owner]); // order is cut off
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
-    function calculateOrderHash(
-        Order        order,
-        uint         timestamp,
-        uint         ttl,
-        uint         salt
-        )
+    function calculateOrderHash(Order order)
         private
         view
         returns (bytes32)
@@ -1002,9 +982,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.tokenB,
             order.amountS,
             order.amountB,
-            timestamp,
-            ttl,
-            salt,
+            order.validSince,
+            order.validUntil,
             order.lrcFee,
             order.buyNoMoreThanAmountB,
             order.marginSplitPercentage
