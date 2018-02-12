@@ -152,7 +152,7 @@ contract TokenTransferDelegate is Claimable {
         onlyAuthorized
         external
     {
-        if (value > 0 && from != to) {
+        if (value > 0 && from != to && to != 0x0) {
             require(
                 ERC20(token).transferFrom(from, to, value)
             );
@@ -187,7 +187,7 @@ contract TokenTransferDelegate is Claimable {
                 );
             }
 
-            if (owner != feeRecipient) {
+            if (feeRecipient != 0x0 && owner != feeRecipient) {
                 bytes32 item = batch[i + 3];
                 if (item != 0) {
                     require(

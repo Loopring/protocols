@@ -1,5 +1,4 @@
 var TokenRegistry           = artifacts.require("./TokenRegistry");
-var RinghashRegistry        = artifacts.require("./RinghashRegistry");
 var TokenTransferDelegate   = artifacts.require("./TokenTransferDelegate");
 var NameRegistry            = artifacts.require("./NameRegistry");
 var LoopringProtocolImpl    = artifacts.require("./LoopringProtocolImpl");
@@ -10,7 +9,6 @@ module.exports = function(deployer, network, accounts) {
     deployer.then(() => {
       return Promise.all([
         TokenRegistry.deployed(),
-        RinghashRegistry.deployed(),
         TokenTransferDelegate.deployed(),
         NameRegistry.deployed(),
       ]);
@@ -20,7 +18,6 @@ module.exports = function(deployer, network, accounts) {
         LoopringProtocolImpl,
         lrcAddr,
         TokenRegistry.address,
-        RinghashRegistry.address,
         TokenTransferDelegate.address,
         NameRegistry.address,
         5,
@@ -31,7 +28,6 @@ module.exports = function(deployer, network, accounts) {
     deployer.then(() => {
       return Promise.all([
         TokenRegistry.deployed(),
-        RinghashRegistry.deployed(),
         TokenTransferDelegate.deployed(),
         NameRegistry.deployed(),
       ]);
@@ -43,7 +39,6 @@ module.exports = function(deployer, network, accounts) {
         LoopringProtocolImpl,
         lrcAddr,
         TokenRegistry.address,
-        RinghashRegistry.address,
         TokenTransferDelegate.address,
         NameRegistry.address,
         5,

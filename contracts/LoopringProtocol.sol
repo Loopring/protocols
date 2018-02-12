@@ -41,10 +41,9 @@ contract LoopringProtocol {
     /// [_amountS, _amountB, _lrcReward, _lrcFee, splitS, splitB].
     event RingMined(
         uint                _ringIndex,
-        bytes32     indexed _ringhash,
+        bytes20     indexed _ringHash,
         address             _miner,
         address             _feeRecipient,
-        bool                _isRinghashReserved,
         bytes32[]           _orderHashList,
         uint[6][]           _amountsList
     );
@@ -72,10 +71,10 @@ contract LoopringProtocol {
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in orderValues.
-    /// @param addresses          owner, tokenS, tokenB
-    /// @param orderValues        amountS, amountB, validSince (milliseconds),
-    ///                           validUntil (milliseconds), lrcFee
-    ///                           cancelAmountS, and cancelAmountB.
+    /// @param addresses          owner, tokenS, tokenB, authAddr
+    /// @param orderValues        amountS, amountB, validSince (second),
+    ///                           validUntil (second), lrcFee, walletId, and
+    ///                           cancelAmount.
     /// @param buyNoMoreThanAmountB -
     ///                           This indicates when a order should be considered
     ///                           as 'completely filled'.
@@ -85,8 +84,8 @@ contract LoopringProtocol {
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
     function cancelOrder(
-        address[3] addresses,
-        uint[6]    orderValues,
+        address[4] addresses,
+        uint[7]    orderValues,
         bool       buyNoMoreThanAmountB,
         uint8      marginSplitPercentage,
         uint8      v,
@@ -113,17 +112,17 @@ contract LoopringProtocol {
     function cancelAllOrders(uint cutoff) external;
 
     /// @dev Submit a order-ring for validation and settlement.
-    /// @param addressList  List of each order's owner and tokenS. Note that next
-    ///                     order's `tokenS` equals this order's `tokenB`.
+    /// @param addressList  List of each order's owner, tokenS, and authAddr.
+    ///                     Note that next order's `tokenS` equals this order's
+    ///                     `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS, amountB, validSince (milliseconds),
-    ///                     validUntil (milliseconds), lrcFee, and rateAmountS.
+    ///                     amountS, amountB, validSince (second),
+    ///                     validUntil (second), lrcFee, rateAmountS, and walletId.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     marginSplitPercentageList, feeSelectionList.
     /// @param buyNoMoreThanAmountBList -
     ///                     This indicates when a order should be considered
-    ///                     as 'completely filled'.
     /// @param vList        List of v for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     v value of the ring signature.
@@ -144,13 +143,13 @@ contract LoopringProtocol {
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
     function submitRing(
-        address[2][]    addressList,
-        uint[6][]       uintArgsList,
+        address[3][]    addressList,
+        uint[7][]       uintArgsList,
         uint8[2][]      uint8ArgsList,
         bool[]          buyNoMoreThanAmountBList,
         uint8[]         vList,
         bytes32[]       rList,
         bytes32[]       sList,
-        uint32        minerId
+        uint            minerId
         ) public;
 }

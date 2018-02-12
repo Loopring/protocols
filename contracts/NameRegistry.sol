@@ -24,16 +24,16 @@ pragma solidity 0.4.18;
 /// @author Daniel Wang - <daniel@loopring.org>,
 contract NameRegistry {
 
-    uint32 public nextId = 0;
+    uint public nextId = 0;
 
-    mapping (uint32  => Participant) public participantMap;
+    mapping (uint    => Participant) public participantMap;
     mapping (address => NameInfo)    public nameInfoMap;
     mapping (bytes12 => address)     public ownerMap;
     mapping (address => string)      public nameMap;
 
     struct NameInfo {
         bytes12  name;
-        uint32[] participantIds;
+        uint[]   participantIds;
     }
 
     struct Participant {
@@ -62,13 +62,13 @@ contract NameRegistry {
     event ParticipantRegistered (
         bytes12           name,
         address   indexed owner,
-        uint32    indexed participantId,
+        uint      indexed participantId,
         address           singer,
         address           feeRecipient
     );
 
     event ParticipantUnregistered (
-        uint32  participantId,
+        uint    participantId,
         address owner
     );
 
@@ -82,7 +82,7 @@ contract NameRegistry {
         require(ownerMap[nameBytes] == 0x0);
         require(stringToBytes12(nameMap[msg.sender]) == bytes12(0x0));
 
-        nameInfoMap[msg.sender] = NameInfo(nameBytes, new uint32[](0));
+        nameInfoMap[msg.sender] = NameInfo(nameBytes, new uint[](0));
         ownerMap[nameBytes] = msg.sender;
         nameMap[msg.sender] = name;
 
@@ -93,7 +93,7 @@ contract NameRegistry {
         external
     {
         NameInfo storage nameInfo = nameInfoMap[msg.sender];
-        uint32[] storage participantIds = nameInfo.participantIds;
+        uint[] storage participantIds = nameInfo.participantIds;
         bytes12 nameBytes = stringToBytes12(name);
         require(nameInfo.name == nameBytes);
 
@@ -116,7 +116,7 @@ contract NameRegistry {
 
         NameInfo storage nameInfo = nameInfoMap[msg.sender];
         string storage name = nameMap[msg.sender];
-        uint32[] memory participantIds = nameInfo.participantIds;
+        uint[] memory participantIds = nameInfo.participantIds;
 
         for (uint i = 0; i < participantIds.length; i ++) {
             Participant storage p = participantMap[participantIds[i]];
@@ -134,7 +134,7 @@ contract NameRegistry {
 
     function addParticipant(address feeRecipient)
         external
-        returns (uint32)
+        returns (uint)
     {
         return addParticipant(feeRecipient, feeRecipient);
     }
@@ -144,7 +144,7 @@ contract NameRegistry {
         address singer
         )
         public
-        returns (uint32)
+        returns (uint)
     {
         require(feeRecipient != 0x0 && singer != 0x0);
 
@@ -160,7 +160,7 @@ contract NameRegistry {
             msg.sender
         );
 
-        uint32 participantId = nextId++;
+        uint participantId = nextId++;
         participantMap[participantId] = participant;
         nameInfo.participantIds.push(participantId);
 
@@ -175,13 +175,13 @@ contract NameRegistry {
         return participantId;
     }
 
-    function removeParticipant(uint32 participantId)
+    function removeParticipant(uint participantId)
         external
     {
         require(msg.sender == participantMap[participantId].owner);
 
         NameInfo storage nameInfo = nameInfoMap[msg.sender];
-        uint32[] storage participantIds = nameInfo.participantIds;
+        uint[] storage participantIds = nameInfo.participantIds;
 
         delete participantMap[participantId];
 
@@ -196,7 +196,7 @@ contract NameRegistry {
         ParticipantUnregistered(participantId, msg.sender);
     }
 
-    function getParticipantById(uint32 id)
+    function getParticipantById(uint id)
         external
         view
         returns (address feeRecipient, address signer)
@@ -210,14 +210,14 @@ contract NameRegistry {
     function getParticipantIds(string name, uint start, uint count)
         external
         view
-        returns (uint32[] idList)
+        returns (uint[] idList)
     {
         bytes12 nameBytes = stringToBytes12(name);
         address owner = ownerMap[nameBytes];
         require(owner != 0x0);
 
         NameInfo storage nameInfo = nameInfoMap[owner];
-        uint32[] storage pIds = nameInfo.participantIds;
+        uint[] storage pIds = nameInfo.participantIds;
 
         uint len = pIds.length;
         if (start >= len) {
@@ -233,7 +233,7 @@ contract NameRegistry {
             return;
         }
 
-        idList = new uint32[](end - start);
+        idList = new uint[](end - start);
 
         for (uint i = start; i < end; i ++) {
             idList[i - start] = pIds[i];

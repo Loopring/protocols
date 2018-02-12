@@ -81,7 +81,9 @@ contract TransferableMultsig {
             txHash
         );
 
-        require(destination.call.value(value)(data));
+        require(
+            destination.call.value(value)(data)
+        );
     }
 
     // Note that address recovered from signatures must be strictly increasing.
