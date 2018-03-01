@@ -1,4 +1,4 @@
-/*
+me/*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
 
@@ -86,7 +86,7 @@ contract NameRegistry {
         ownerMap[nameBytes] = msg.sender;
         nameMap[msg.sender] = name;
 
-        NameUnregistered(name, msg.sender);
+        NameRegistered(name, msg.sender);
     }
 
     function unregisterName(string name)
