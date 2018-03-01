@@ -26,9 +26,6 @@ contract LoopringProtocol {
     ////////////////////////////////////////////////////////////////////////////
     /// Constants                                                            ///
     ////////////////////////////////////////////////////////////////////////////
-    uint8   public constant FEE_SELECT_LRC               = 0;
-    uint8   public constant FEE_SELECT_MARGIN_SPLIT      = 1;
-    uint8   public constant FEE_SELECT_MAX_VALUE         = 1;
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -120,7 +117,7 @@ contract LoopringProtocol {
     ///                     validUntil (second), lrcFee, rateAmountS, and walletId.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
-    ///                     marginSplitPercentageList, feeSelectionList.
+    ///                     marginSplitPercentageList.
     /// @param buyNoMoreThanAmountBList -
     ///                     This indicates when a order should be considered
     /// @param vList        List of v for each order. This list is 1-larger than
@@ -142,14 +139,18 @@ contract LoopringProtocol {
     ///                     LRC need to be paid back to order owner as the result
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
+    /// @param feeSelections -
+    ///                     Bits to indicate fee selections. `1` represent margin
+    ///                     split and `0` represent LRC as fee.
     function submitRing(
         address[3][]    addressList,
         uint[7][]       uintArgsList,
-        uint8[2][]      uint8ArgsList,
+        uint8[1][]      uint8ArgsList,
         bool[]          buyNoMoreThanAmountBList,
         uint8[]         vList,
         bytes32[]       rList,
         bytes32[]       sList,
-        uint            minerId
+        uint            minerId,
+        uint16          feeSelections
         ) public;
 }

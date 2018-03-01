@@ -143,7 +143,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     struct OrderState {
         Order   order;
         bytes32 orderHash;
-        uint8   feeSelection;
+        bool    marginSplitAsFee;
         Rate    rate;
         uint    fillAmountS;
         uint    lrcReward;
@@ -157,13 +157,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
     struct RingParams {
         address[3][]  addressList;
         uint[7][]     uintArgsList;
-        uint8[2][]    uint8ArgsList;
+        uint8[1][]    uint8ArgsList;
         bool[]        buyNoMoreThanAmountBList;
         uint8[]       vList;
         bytes32[]     rList;
         bytes32[]     sList;
         uint          minerId;
         uint          ringSize;         // computed
+        uint16        feeSelections;
         address       ringMiner;        // queried
         address       feeRecipient;     // queried
         bytes32       ringHash;         // computed
@@ -281,7 +282,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function cancelAllOrdersByTradingPair(
         address token1,
         address token2,
-        uint cutoff)
+        uint    cutoff
+        )
         external
     {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
@@ -323,7 +325,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     validUntil (second), lrcFee, rateAmountS, and walletId.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
-    ///                     marginSplitPercentageList, feeSelectionList.
+    ///                     marginSplitPercentageList.
     /// @param buyNoMoreThanAmountBList -
     ///                     This indicates when a order should be considered
     /// @param vList        List of v for each order. This list is 1-larger than
@@ -345,15 +347,19 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     LRC need to be paid back to order owner as the result
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
+    /// @param feeSelections -
+    ///                     Bits to indicate fee selections. `1` represent margin
+    ///                     split and `0` represent LRC as fee.
     function submitRing(
         address[3][]  addressList,
         uint[7][]     uintArgsList,
-        uint8[2][]    uint8ArgsList,
+        uint8[1][]    uint8ArgsList,
         bool[]        buyNoMoreThanAmountBList,
         uint8[]       vList,
         bytes32[]     rList,
         bytes32[]     sList,
-        uint          minerId
+        uint          minerId,
+        uint16        feeSelections
         )
         public
     {
@@ -373,9 +379,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList,
             minerId,
             addressList.length,
+            feeSelections,
             0x0,        // ringMiner
             0x0,        // feeRecipient
-            0x0         // ringHash
+            0x0         // ringHash,
         );
 
         updateFeeRecipient(params);
@@ -642,7 +649,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             if (state.lrcFee == 0) {
                 // When an order's LRC fee is 0 or smaller than the specified fee,
                 // we help miner automatically select margin-split.
-                state.feeSelection = FEE_SELECT_MARGIN_SPLIT;
+                state.marginSplitAsFee = true;
                 state.order.marginSplitPercentage = _marginSplitPercentageBase;
             } else {
                 uint lrcSpendable = getSpendable(
@@ -672,11 +679,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 }
 
                 if (state.lrcFee == 0) {
-                    state.feeSelection = FEE_SELECT_MARGIN_SPLIT;
+                    state.marginSplitAsFee = true;
                 }
             }
 
-            if (state.feeSelection == FEE_SELECT_LRC) {
+            if (!state.marginSplitAsFee) {
                 if (lrcReceiable > 0) {
                     if (lrcReceiable >= state.lrcFee) {
                         state.splitB = state.lrcFee;
@@ -686,7 +693,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         state.lrcFee -= lrcReceiable;
                     }
                 }
-            } else if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
+            } else {
 
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < state.lrcFee) {
@@ -735,9 +742,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 }
 
                 state.lrcFee = 0;
-            } else {
-                revert(); // "unsupported fee selection value");
-            }
+            } 
         }
     }
 
@@ -909,7 +914,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Validate ring-mining related arguments.
         for (uint i = 0; i < params.ringSize; i++) {
             require(params.uintArgsList[i][5] > 0); // "order rateAmountS is zero");
-            require(params.uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE); // "invalid order fee selection");
         }
 
         //Check ring size
@@ -957,7 +961,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orders[i] = OrderState(
                 order,
                 orderHash,
-                params.uint8ArgsList[i][1],  // feeSelection
+                (params.feeSelections & (uint16(1) << i)) > 0,
                 Rate(params.uintArgsList[i][5], order.amountB),
                 0,   // fillAmountS
                 0,   // lrcReward
@@ -969,15 +973,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             params.ringHash ^= orderHash;
         }
 
-        uint8 feeSelectionsXor = params.uint8ArgsList[0][1];
-        for (i = 1; i < params.ringSize; i++) {
-            feeSelectionsXor ^= params.uint8ArgsList[i][1];
-        }
-
         params.ringHash = keccak256(
             params.ringHash,
             params.minerId,
-            feeSelectionsXor
+            params.feeSelections
         );
     }
 
