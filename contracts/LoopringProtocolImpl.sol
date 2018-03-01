@@ -50,7 +50,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  delegateAddress             = 0x0;
     address public  nameRegistryAddress         = 0x0;
 
-    uint    public  maxRingSize                 = 0;
     uint64  public  ringIndex                   = 0;
     uint8   public  walletSplitPercentage       = 0;
 
@@ -63,7 +62,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     // To require all orders' rate ratios to have coefficient ofvariation (CV)
     // smaller than 2.5%, for an example , rateRatioCVSThreshold should be:
     //     `(0.025 * RATE_RATIO_SCALE)^2` or 62500.
-    uint    public  rateRatioCVSThreshold       = 0;
+    uint    public rateRatioCVSThreshold        = 0;
+
+    uint    public constant MAX_RING_SIZE       = 16;
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
 
@@ -179,7 +180,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address _tokenRegistryAddress,
         address _delegateAddress,
         address _nameRegistryAddress,
-        uint    _maxRingSize,
         uint    _rateRatioCVSThreshold,
         uint8   _walletSplitPercentage
         )
@@ -190,7 +190,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(0x0 != _delegateAddress);
         require(0x0 != _nameRegistryAddress);
 
-        require(_maxRingSize > 1);
         require(_rateRatioCVSThreshold > 0);
         require(_walletSplitPercentage > 0);
 
@@ -198,7 +197,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         tokenRegistryAddress = _tokenRegistryAddress;
         delegateAddress = _delegateAddress;
         nameRegistryAddress = _nameRegistryAddress;
-        maxRingSize = _maxRingSize;
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
         walletSplitPercentage = _walletSplitPercentage;
     }
@@ -895,7 +893,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev verify input data's basic integrity.
     function verifyInputDataIntegrity(RingParams params)
         private
-        view
+        pure
     {
         require(params.ringSize == params.addressList.length); // "ring data is inconsistent - addressList");
         require(params.ringSize == params.uintArgsList.length); // "ring data is inconsistent - uintArgsList");
@@ -917,7 +915,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         //Check ring size
-        require(params.ringSize > 1 && params.ringSize <= maxRingSize); // "invalid ring size");
+        require(params.ringSize > 1 && params.ringSize <= MAX_RING_SIZE); // "invalid ring size");
     }
 
     /// @dev        assmble order parameters into Order struct.
