@@ -11,6 +11,8 @@ export interface OrderParams {
   lrcFee: BigNumber;
   buyNoMoreThanAmountB: boolean;
   marginSplitPercentage: number;
+  authAddr: string;
+  walletId: BigNumber;
   scaledAmountS?: number;
   scaledAmountB?: number;
   rateAmountS?: number;
@@ -45,4 +47,10 @@ export interface FeeItem {
 export interface BalanceItem {
   balanceS: number;
   balanceB: number;
+}
+
+export interface SignResult {
+  v: number;
+  r: string;
+  s: string;
 }

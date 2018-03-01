@@ -41,7 +41,7 @@ contract LoopringProtocol {
     /// [_amountS, _amountB, _lrcReward, _lrcFee, splitS, splitB].
     event RingMined(
         uint                _ringIndex,
-        bytes20     indexed _ringHash,
+        bytes32     indexed _ringHash,
         address             _miner,
         address             _feeRecipient,
         bytes32[]           _orderHashList,

@@ -160,7 +160,7 @@ contract NameRegistry {
             msg.sender
         );
 
-        uint participantId = nextId++;
+        uint participantId = ++nextId;
         participantMap[participantId] = participant;
         nameInfo.participantIds.push(participantId);
 

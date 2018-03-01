@@ -1,5 +1,5 @@
 {
-  "extends": "solium:all",
+  "extends": "solium:recommended",
   "rules": {
     "imports-on-top": 0,
     "variable-declarations": 0,

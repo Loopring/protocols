@@ -18,8 +18,8 @@ contract("NameRegistry", (accounts: string[]) => {
       const name = "test002";
       await nameRegistry.registerName(name, {from: user});
       const nameOwner = await nameRegistry.getOwner(name);
-      console.log("nameOwner:", nameOwner);
-      // assert.equal(user, nameOwner);
+      // console.log("nameOwner:", nameOwner);
+      assert.equal(user, nameOwner);
 
       const nameRegistried = await nameRegistry.nameMap(user);
       assert.equal(name, nameRegistried);

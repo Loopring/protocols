@@ -24,6 +24,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   const order3Owner = accounts[3];
   const order4Owner = accounts[4];
   const order5Owner = accounts[5];
+  const orderAuthAddr = accounts[7]; // should generate each time in front-end. we just mock it here.
   const ringOwner = accounts[0];
   const feeRecepient = accounts[6];
 
@@ -99,8 +100,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     await nameRegistry.registerName("test001", {from: owner});
     await nameRegistry.addParticipant(feeRecepient, ringOwner, {from: owner});
     const pids = await nameRegistry.getParticipantIds("test001", 0, 1);
-    participantId = pids[0];
-    // console.log("participantId:", participantId);
+    participantId = pids[0].toNumber();
 
     tokenTransferDelegate.authorizeAddress(LoopringProtocolImpl.address);
 
@@ -119,6 +119,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                   neoAddress,
                                   lrcAddress,
                                   qtumAddress,
+                                  orderAuthAddr,
                                   currBlockTimeStamp);
 
     // approve only once for all test cases.
@@ -133,7 +134,12 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
   describe("submitRing", () => {
     it("should be able to fill ring with 2 orders", async () => {
-      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const feeSelections: number[] = [0, 0];
+      const ring = await ringFactory.generateSize2Ring01(order1Owner,
+                                                         order2Owner,
+                                                         ringOwner,
+                                                         new BigNumber(participantId),
+                                                         feeSelections);
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
       await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
@@ -141,7 +147,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
       await lrc.setBalance(feeRecepient, 0, {from: owner});
 
-      const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelections, feeRecepient);
 
       const ethOfOwnerBefore = await getEthBalanceAsync(owner);
       const tx = await loopringProtocolImpl.submitRing(p.addressList,
@@ -153,6 +159,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.sList,
                                                        participantId,
                                                        {from: owner});
+
+      // console.log("tx.receipt.logs: ", tx.receipt.logs);
 
       const ethOfOwnerAfter = await getEthBalanceAsync(owner);
       const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber()) / 1e18;
@@ -182,8 +190,12 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should be able to fill ring with 2 orders where fee selection type is margin split", async () => {
-      const ring = await ringFactory.generateSize2Ring02(order1Owner, order2Owner, ringOwner);
-      const feeSelectionList = [1, 1];
+      const feeSelectionList: number[] = [1, 1];
+      const ring = await ringFactory.generateSize2Ring02(order1Owner,
+                                                         order2Owner,
+                                                         ringOwner,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
 
       await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
       await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
@@ -200,6 +212,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.sList,
                                                        participantId,
                                                        {from: owner});
+      // console.log("tx.receipt.logs: ", tx.receipt.logs);
 
       const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
       const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
@@ -226,9 +239,12 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should be able to fill orders where fee selection type is margin split and lrc", async () => {
-      const ring = await ringFactory.generateSize2Ring03(order1Owner, order2Owner, ringOwner);
-
       const feeSelectionList = [1, 0];
+      const ring = await ringFactory.generateSize2Ring03(order1Owner,
+                                                         order2Owner,
+                                                         ringOwner,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
 
       await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
       await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
@@ -275,13 +291,18 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should be able to fill ring with 3 orders", async () => {
-      const ring = await ringFactory.generateSize3Ring01(order1Owner, order2Owner, order3Owner, ringOwner);
+      const feeSelectionList = [1, 0, 1];
+
+      const ring = await ringFactory.generateSize3Ring01(order1Owner,
+                                                         order2Owner,
+                                                         order3Owner,
+                                                         ringOwner,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
       assert(ring.orders[1].isValidSignature(), "invalid signature");
       assert(ring.orders[2].isValidSignature(), "invalid signature");
-
-      const feeSelectionList = [1, 0, 1];
 
       await eos.setBalance(order1Owner, web3.toWei(80000), {from: owner});
       await neo.setBalance(order2Owner, web3.toWei(234),  {from: owner});
@@ -339,13 +360,18 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should be able to partial fill ring with 3 orders", async () => {
-      const ring = await ringFactory.generateSize3Ring02(order1Owner, order2Owner, order3Owner, ringOwner, 100);
+      const feeSelectionList = [1, 0, 1];
+      const ring = await ringFactory.generateSize3Ring02(order1Owner,
+                                                         order2Owner,
+                                                         order3Owner,
+                                                         ringOwner,
+                                                         100,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
       assert(ring.orders[1].isValidSignature(), "invalid signature");
       assert(ring.orders[2].isValidSignature(), "invalid signature");
-
-      const feeSelectionList = [1, 0, 1];
 
       const availableAmountSList = [10000e18, 100e18, 10000e18];
       const spendableLrcFeeList = [0, 6e18, 0, 0];
@@ -406,13 +432,18 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should be able to switch fee selection to margin-split(100%) when lrcFee is 0", async () => {
-      const ring = await ringFactory.generateSize3Ring02(order1Owner, order2Owner, order3Owner, ringOwner, 200);
+      const feeSelectionList = [0, 1, 0];
+      const ring = await ringFactory.generateSize3Ring02(order1Owner,
+                                                         order2Owner,
+                                                         order3Owner,
+                                                         ringOwner,
+                                                         200,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
       assert(ring.orders[1].isValidSignature(), "invalid signature");
       assert(ring.orders[2].isValidSignature(), "invalid signature");
-
-      const feeSelectionList = [0, 1, 0];
 
       const availableAmountSList = [10000e18, 100e18, 10000e18];
       const spendableLrcFeeList = [0, 6e18, 0, 0];
@@ -476,9 +507,14 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should be able to pay lrc fee when receiving lrc as result of trading.", async () => {
-      const ring = await ringFactory.generateSize3Ring03(order1Owner, order2Owner, order3Owner, ringOwner, 100);
-
       const feeSelectionList = [0, 0, 1];
+      const ring = await ringFactory.generateSize3Ring03(order1Owner,
+                                                         order2Owner,
+                                                         order3Owner,
+                                                         ringOwner,
+                                                         100,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
 
       const availableAmountSList = [1000e18, 2006e18, 20e18];
       const spendableLrcFeeList = [0, 6e18, 1e18, 20e18];
@@ -549,8 +585,15 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should be able to choose margin split(100%) for fee when order owner's spendable lrc is 0.", async () => {
-      const ring = await ringFactory.generateSize3Ring03(order1Owner, order2Owner, order3Owner, ringOwner, 200);
       const feeSelectionList = [0, 0, 0];
+      const ring = await ringFactory.generateSize3Ring03(order1Owner,
+                                                         order2Owner,
+                                                         order3Owner,
+                                                         ringOwner,
+                                                         200,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
+
       const availableAmountSList = [1000e18, 2006e18, 20e18];
       const spendableLrcFeeList = [0, 6e18, 0, 20e18];
 
@@ -609,8 +652,15 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
     it("should not be able to get margin split fee if miner's spendable lrc is less than order's lrcFee.",
     async () => {
-      const ring = await ringFactory.generateSize3Ring03(order1Owner, order2Owner, order3Owner, ringOwner, 300);
       const feeSelectionList = [1, 1, 1];
+      const ring = await ringFactory.generateSize3Ring03(order1Owner,
+                                                         order2Owner,
+                                                         order3Owner,
+                                                         ringOwner,
+                                                         300,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
+
       const availableAmountSList = [1000e18, 2006e18, 20e18];
       const spendableLrcFeeList = [0, 6e18, 1e18, 0];
 
@@ -679,8 +729,15 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should not fill orders which are fully cancelled.", async () => {
-      const ring = await ringFactory.generateSize3Ring03(order1Owner, order2Owner, order3Owner, ringOwner, 400);
       const feeSelectionList = [1, 1, 1];
+      const ring = await ringFactory.generateSize3Ring03(order1Owner,
+                                                         order2Owner,
+                                                         order3Owner,
+                                                         ringOwner,
+                                                         400,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
+
       const availableAmountSList = [1000e18, 2006e18, 20e18];
       const spendableLrcFeeList = [0, 6e18, 1e18, 0];
 
@@ -692,12 +749,13 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(1000e18);
-      const addresses = [order.owner, order.params.tokenS, order.params.tokenB];
+      const addresses = [order.owner, order.params.tokenS, order.params.tokenB, order.params.authAddr];
       const orderValues = [order.params.amountS,
                            order.params.amountB,
                            order.params.validSince,
                            order.params.validUntil,
                            order.params.lrcFee,
+                           order.params.walletId,
                            cancelAmount];
 
       await loopringProtocolImpl.cancelOrder(addresses,
@@ -731,8 +789,15 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should not fill orders which are cancelled by cancelAllOrders.", async () => {
-      const ring = await ringFactory.generateSize3Ring03(order1Owner, order2Owner, order3Owner, ringOwner, 500);
       const feeSelectionList = [1, 1, 1];
+      const ring = await ringFactory.generateSize3Ring03(order1Owner,
+                                                         order2Owner,
+                                                         order3Owner,
+                                                         ringOwner,
+                                                         500,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
+
       const availableAmountSList = [1000e18, 2006e18, 20e18];
       const spendableLrcFeeList = [0, 6e18, 1e18, 0];
 
@@ -766,16 +831,23 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
   describe("cancelOrder", () => {
     it("should be able to set order cancelled amount by order owner", async () => {
-      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const feeSelectionList = [0, 0];
+      const ring = await ringFactory.generateSize2Ring01(order1Owner,
+                                                         order2Owner,
+                                                         ringOwner,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
+
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(100e18);
 
-      const addresses = [order.owner, order.params.tokenS, order.params.tokenB];
+      const addresses = [order.owner, order.params.tokenS, order.params.tokenB, order.params.authAddr];
       const orderValues = [order.params.amountS,
                            order.params.amountB,
                            order.params.validSince,
                            order.params.validUntil,
                            order.params.lrcFee,
+                           order.params.walletId,
                            cancelAmount];
 
       const cancelledOrFilledAmount0 = await loopringProtocolImpl.cancelledOrFilled(order.params.orderHashHex);
@@ -794,16 +866,23 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
 
     it("should not be able to cancell order by other address", async () => {
-      const ring = await ringFactory.generateSize2Ring01(order1Owner, order2Owner, ringOwner);
+      const feeSelectionList = [0, 0];
+      const ring = await ringFactory.generateSize2Ring01(order1Owner,
+                                                         order2Owner,
+                                                         ringOwner,
+                                                         new BigNumber(participantId),
+                                                         feeSelectionList);
+
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(100e18);
 
-      const addresses = [order.owner, order.params.tokenS, order.params.tokenB];
+      const addresses = [order.owner, order.params.tokenS, order.params.tokenB, order.params.authAddr];
       const orderValues = [order.params.amountS,
                            order.params.amountB,
                            order.params.validSince,
                            order.params.validUntil,
                            order.params.lrcFee,
+                           order.params.walletId,
                            cancelAmount];
       try {
         const tx = await loopringProtocolImpl.cancelOrder(addresses,
@@ -833,7 +912,11 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       await loopringProtocolImpl.cancelAllOrders(new BigNumber(currBlockTimeStamp),
                                                  {from: order2Owner});
 
-      const ring = await ringFactory.generateRingForCancel(order1Owner, order2Owner, ringOwner);
+      const ring = await ringFactory.generateRingForCancel(order1Owner,
+                                                           order2Owner,
+                                                           ringOwner,
+                                                           new BigNumber(participantId),
+                                                           [0, 0]);
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
       await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
@@ -884,7 +967,11 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                               eosAddress,
                                                               new BigNumber(currBlockTimeStamp),
                                                               {from: order2Owner});
-      const ring = await ringFactory.generateRingForCancel(order1Owner, order2Owner, ringOwner);
+      const ring = await ringFactory.generateRingForCancel(order1Owner,
+                                                           order2Owner,
+                                                           ringOwner,
+                                                           new BigNumber(participantId),
+                                                           [1, 1]);
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
       await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
