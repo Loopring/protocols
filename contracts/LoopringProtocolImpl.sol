@@ -348,8 +348,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
     /// @param feeSelections -
-    ///                     Bits to indicate fee selections. `1` represent margin
-    ///                     split and `0` represent LRC as fee.
+    ///                     Bits to indicate fee selections. `1` represents margin
+    ///                     split and `0` represents LRC as fee.
     function submitRing(
         address[3][]  addressList,
         uint[7][]     uintArgsList,
