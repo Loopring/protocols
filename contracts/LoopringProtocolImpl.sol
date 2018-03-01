@@ -380,7 +380,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             feeSelections,
             0x0,        // ringMiner
             0x0,        // feeRecipient
-            0x0         // ringHash,
+            0x0         // ringHash
         );
 
         updateFeeRecipient(params);
