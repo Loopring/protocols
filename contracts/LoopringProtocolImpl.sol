@@ -476,8 +476,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         if (params.minerId == 0) {
             params.feeRecipient = msg.sender;
         } else {
-            (params.feeRecipient, params.ringMiner) =
-                NameRegistry(nameRegistryAddress).getParticipantById(params.minerId);
+            (params.feeRecipient, params.ringMiner) = NameRegistry(
+                nameRegistryAddress
+            ).getParticipantById(
+                params.minerId
+            );
 
             if (params.feeRecipient == 0x0) {
                 params.feeRecipient = msg.sender;

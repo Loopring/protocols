@@ -32,7 +32,6 @@ contract LoopringProtocol {
     /// Events                                                               ///
     ////////////////////////////////////////////////////////////////////////////
 
-
     /// @dev Event to emit if a ring is successfully mined.
     /// _amountsList is an array of:
     /// [_amountS, _amountB, _lrcReward, _lrcFee, splitS, splitB].
