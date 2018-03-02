@@ -27,7 +27,7 @@ import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
 
 
-/// @title Loopring Token Exchange Protocol Implementation Contract v1
+/// @title Loopring Token Exchange Protocol Implementation Contract
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 ///
@@ -210,20 +210,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         revert();
     }
 
-    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
-    ///      in orderValues.
-    /// @param addresses          owner, tokenS, tokenB, authAddr
-    /// @param orderValues        amountS, amountB, validSince (second),
-    ///                           validUntil (second), lrcFee, walletId, and
-    ///                           cancelAmount.
-    /// @param buyNoMoreThanAmountB -
-    ///                           This indicates when a order should be considered
-    ///                           as 'completely filled'.
-    /// @param marginSplitPercentage -
-    ///                           Percentage of margin split to share with miner.
-    /// @param v                  Order ECDSA signature parameter v.
-    /// @param r                  Order ECDSA signature parameters r.
-    /// @param s                  Order ECDSA signature parameters s.
     function cancelOrder(
         address[4] addresses,
         uint[7]    orderValues,
@@ -272,11 +258,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         OrderCancelled(orderHash, cancelAmount);
     }
 
-    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
-    ///        is smaller than or equal to the new value of the address's cutoff
-    ///        timestamp, for a specific trading pair.
-    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
-    ///        if it is 0.
     function cancelAllOrdersByTradingPair(
         address token1,
         address token2,
@@ -298,11 +279,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
-    ///        is smaller than or equal to the new value of the address's cutoff
-    ///        timestamp.
-    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
-    ///        if it is 0.
     function cancelAllOrders(uint cutoff)
         external
     {
@@ -314,40 +290,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         CutoffTimestampChanged(msg.sender, t);
     }
 
-    /// @dev Submit a order-ring for validation and settlement.
-    /// @param addressList  List of each order's owner, tokenS, and authAddr.
-    ///                     Note that next order's `tokenS` equals this order's
-    ///                     `tokenB`.
-    /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS, amountB, validSince (second),
-    ///                     validUntil (second), lrcFee, rateAmountS, and walletId.
-    /// @param uint8ArgsList -
-    ///                     List of unit8-type arguments, in this order:
-    ///                     marginSplitPercentageList.
-    /// @param buyNoMoreThanAmountBList -
-    ///                     This indicates when a order should be considered
-    /// @param vList        List of v for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     v value of the ring signature.
-    /// @param rList        List of r for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     r value of the ring signature.
-    /// @param sList        List of s for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     s value of the ring signature.
-    /// @param minerId      The address pair that miner registered in NameRegistry.
-    ///                     The address pair contains a signer address and a fee
-    ///                     recipient address.
-    ///                     The signer address is used for sign this tx.
-    ///                     The Recipient address for fee collection. If this is
-    ///                     '0x0', all fees will be paid to the address who had
-    ///                     signed this transaction, not `msg.sender`. Noted if
-    ///                     LRC need to be paid back to order owner as the result
-    ///                     of fee selection model, LRC will also be sent from
-    ///                     this address.
-    /// @param feeSelections -
-    ///                     Bits to indicate fee selections. `1` represents margin
-    ///                     split and `0` represents LRC as fee.
     function submitRing(
         address[3][]  addressList,
         uint[7][]     uintArgsList,
