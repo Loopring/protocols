@@ -383,9 +383,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             0x0         // ringHash
         );
 
-        updateFeeRecipient(params);
-
         verifyInputDataIntegrity(params);
+
+        updateFeeRecipient(params);
 
         // Assemble input data into structs so we can pass them to other functions.
         // This method also calculates ringHash, therefore it must be called before
@@ -483,6 +483,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 params.feeRecipient = msg.sender;
             }
         }
+
+        uint sigSize = params.ringSize * 2;
+        if (params.ringMiner != 0x0) {
+            sigSize += 1;
+        }
+
+        require(sigSize == params.vList.length); // "ring data is inconsistent - vList");
+        require(sigSize == params.rList.length); // "ring data is inconsistent - rList");
+        require(sigSize == params.sList.length); // "ring data is inconsistent - sList");
     }
 
     function handleRing(
@@ -899,15 +908,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(params.ringSize == params.uintArgsList.length); // "ring data is inconsistent - uintArgsList");
         require(params.ringSize == params.uint8ArgsList.length); // "ring data is inconsistent - uint8ArgsList");
         require(params.ringSize == params.buyNoMoreThanAmountBList.length); // "ring data is inconsistent - buyNoMoreThanAmountBList");
-
-        uint sigSize = params.ringSize * 2;
-        if (params.ringMiner != 0x0) {
-            sigSize += 1;
-        }
-
-        require(sigSize == params.vList.length); // "ring data is inconsistent - vList");
-        require(sigSize == params.rList.length); // "ring data is inconsistent - rList");
-        require(sigSize == params.sList.length); // "ring data is inconsistent - sList");
 
         // Validate ring-mining related arguments.
         for (uint i = 0; i < params.ringSize; i++) {
