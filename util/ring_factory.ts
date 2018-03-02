@@ -459,7 +459,7 @@ export class RingFactory {
       ];
       uintArgsList.push(uintArgsListItem);
 
-      const uint8ArgsListItem = [order.params.marginSplitPercentage, feeSelectionList[i]];
+      const uint8ArgsListItem = [order.params.marginSplitPercentage];
       // console.log("uint8ArgsListItem", uint8ArgsListItem);
 
       uint8ArgsList.push(uint8ArgsListItem);
@@ -489,9 +489,19 @@ export class RingFactory {
       sList,
       ringOwner: ring.owner,
       feeRecepient,
+      feeSelections: this.feeSelectionListToNumber(feeSelectionList),
     };
 
     return submitParams;
+  }
+
+  public feeSelectionListToNumber(feeSelections: number[]) {
+    let res = 0;
+    for (let i = 0; i < feeSelections.length; i ++) {
+      res += feeSelections[i] << i;
+    }
+
+    return res;
   }
 
 }

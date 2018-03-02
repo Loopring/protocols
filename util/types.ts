@@ -34,6 +34,7 @@ export interface LoopringSubmitParams {
   sList: string[];
   ringOwner: string;
   feeRecepient: string;
+  feeSelections: number;
 }
 
 export interface FeeItem {

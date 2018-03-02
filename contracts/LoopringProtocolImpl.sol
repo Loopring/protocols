@@ -749,7 +749,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 }
 
                 state.lrcFee = 0;
-            } 
+            }
         }
     }
 
@@ -956,10 +956,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 params.sList[i]
             );
 
+            bool marginSplitAsFee = (params.feeSelections & (uint16(1) << i)) > 0;
             orders[i] = OrderState(
                 order,
                 orderHash,
-                (params.feeSelections & (uint16(1) << i)) > 0,
+                marginSplitAsFee,
                 Rate(params.uintArgsList[i][5], order.amountB),
                 0,   // fillAmountS
                 0,   // lrcReward

@@ -37,4 +37,10 @@ export const crypto = {
     const hash = ABI.soliditySHA3(argTypes, args);
     return hash;
   },
+
+  solSHA3WithType(args: any[], argTypes: string[]): Buffer {
+    const hash = ABI.soliditySHA3(argTypes, args);
+    return hash;
+  },
+
 };

@@ -20,7 +20,6 @@ module.exports = function(deployer, network, accounts) {
         TokenRegistry.address,
         TokenTransferDelegate.address,
         NameRegistry.address,
-        5,
         62500,
         20);
     });
@@ -41,7 +40,6 @@ module.exports = function(deployer, network, accounts) {
         TokenRegistry.address,
         TokenTransferDelegate.address,
         NameRegistry.address,
-        5,
         62500,
         20);
     });

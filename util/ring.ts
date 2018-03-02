@@ -87,13 +87,22 @@ export class Ring {
       orderHashList.push(ethUtil.bufferToHex(orderHash));
     }
 
-    const ringHash = crypto.solSHA3([
+    const ringHash = crypto.solSHA3WithType([
       this.xorReduceStr(orderHashList),
-      this.minerId,
-      this.xorReduce(this.feeSelections),
-    ]);
+      this.minerId.toNumber(),
+      this.feeSelectionListToNumber(this.feeSelections),
+    ], ["string", "uint256", "uint16"]);
 
     return ringHash;
+  }
+
+  public feeSelectionListToNumber(feeSelections: number[]) {
+    let res: number = 0;
+    for (let i = 0; i < feeSelections.length; i ++) {
+      res += feeSelections[i] << i;
+    }
+
+    return res;
   }
 
   public getRingHashHex() {
