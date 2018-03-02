@@ -50,7 +50,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  delegateAddress             = 0x0;
     address public  nameRegistryAddress         = 0x0;
 
-    uint    public  maxRingSize                 = 0;
     uint64  public  ringIndex                   = 0;
     uint8   public  walletSplitPercentage       = 0;
 
@@ -63,7 +62,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     // To require all orders' rate ratios to have coefficient ofvariation (CV)
     // smaller than 2.5%, for an example , rateRatioCVSThreshold should be:
     //     `(0.025 * RATE_RATIO_SCALE)^2` or 62500.
-    uint    public  rateRatioCVSThreshold       = 0;
+    uint    public rateRatioCVSThreshold        = 0;
+
+    uint    public constant MAX_RING_SIZE       = 16;
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
 
@@ -143,7 +144,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     struct OrderState {
         Order   order;
         bytes32 orderHash;
-        uint8   feeSelection;
+        bool    marginSplitAsFee;
         Rate    rate;
         uint    fillAmountS;
         uint    lrcReward;
@@ -157,13 +158,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
     struct RingParams {
         address[3][]  addressList;
         uint[7][]     uintArgsList;
-        uint8[2][]    uint8ArgsList;
+        uint8[1][]    uint8ArgsList;
         bool[]        buyNoMoreThanAmountBList;
         uint8[]       vList;
         bytes32[]     rList;
         bytes32[]     sList;
         uint          minerId;
         uint          ringSize;         // computed
+        uint16        feeSelections;
         address       ringMiner;        // queried
         address       feeRecipient;     // queried
         bytes32       ringHash;         // computed
@@ -178,7 +180,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address _tokenRegistryAddress,
         address _delegateAddress,
         address _nameRegistryAddress,
-        uint    _maxRingSize,
         uint    _rateRatioCVSThreshold,
         uint8   _walletSplitPercentage
         )
@@ -189,7 +190,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(0x0 != _delegateAddress);
         require(0x0 != _nameRegistryAddress);
 
-        require(_maxRingSize > 1);
         require(_rateRatioCVSThreshold > 0);
         require(_walletSplitPercentage > 0);
 
@@ -197,7 +197,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         tokenRegistryAddress = _tokenRegistryAddress;
         delegateAddress = _delegateAddress;
         nameRegistryAddress = _nameRegistryAddress;
-        maxRingSize = _maxRingSize;
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
         walletSplitPercentage = _walletSplitPercentage;
     }
@@ -281,7 +280,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function cancelAllOrdersByTradingPair(
         address token1,
         address token2,
-        uint cutoff)
+        uint    cutoff
+        )
         external
     {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
@@ -323,7 +323,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     validUntil (second), lrcFee, rateAmountS, and walletId.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
-    ///                     marginSplitPercentageList, feeSelectionList.
+    ///                     marginSplitPercentageList.
     /// @param buyNoMoreThanAmountBList -
     ///                     This indicates when a order should be considered
     /// @param vList        List of v for each order. This list is 1-larger than
@@ -345,15 +345,19 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     LRC need to be paid back to order owner as the result
     ///                     of fee selection model, LRC will also be sent from
     ///                     this address.
+    /// @param feeSelections -
+    ///                     Bits to indicate fee selections. `1` represents margin
+    ///                     split and `0` represents LRC as fee.
     function submitRing(
         address[3][]  addressList,
         uint[7][]     uintArgsList,
-        uint8[2][]    uint8ArgsList,
+        uint8[1][]    uint8ArgsList,
         bool[]        buyNoMoreThanAmountBList,
         uint8[]       vList,
         bytes32[]     rList,
         bytes32[]     sList,
-        uint          minerId
+        uint          minerId,
+        uint16        feeSelections
         )
         public
     {
@@ -373,14 +377,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
             sList,
             minerId,
             addressList.length,
+            feeSelections,
             0x0,        // ringMiner
             0x0,        // feeRecipient
             0x0         // ringHash
         );
 
-        updateFeeRecipient(params);
-
         verifyInputDataIntegrity(params);
+
+        updateFeeRecipient(params);
 
         // Assemble input data into structs so we can pass them to other functions.
         // This method also calculates ringHash, therefore it must be called before
@@ -478,6 +483,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 params.feeRecipient = msg.sender;
             }
         }
+
+        uint sigSize = params.ringSize * 2;
+        if (params.ringMiner != 0x0) {
+            sigSize += 1;
+        }
+
+        require(sigSize == params.vList.length); // "ring data is inconsistent - vList");
+        require(sigSize == params.rList.length); // "ring data is inconsistent - rList");
+        require(sigSize == params.sList.length); // "ring data is inconsistent - sList");
     }
 
     function handleRing(
@@ -642,7 +656,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             if (state.lrcFee == 0) {
                 // When an order's LRC fee is 0 or smaller than the specified fee,
                 // we help miner automatically select margin-split.
-                state.feeSelection = FEE_SELECT_MARGIN_SPLIT;
+                state.marginSplitAsFee = true;
                 state.order.marginSplitPercentage = _marginSplitPercentageBase;
             } else {
                 uint lrcSpendable = getSpendable(
@@ -672,11 +686,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 }
 
                 if (state.lrcFee == 0) {
-                    state.feeSelection = FEE_SELECT_MARGIN_SPLIT;
+                    state.marginSplitAsFee = true;
                 }
             }
 
-            if (state.feeSelection == FEE_SELECT_LRC) {
+            if (!state.marginSplitAsFee) {
                 if (lrcReceiable > 0) {
                     if (lrcReceiable >= state.lrcFee) {
                         state.splitB = state.lrcFee;
@@ -686,7 +700,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         state.lrcFee -= lrcReceiable;
                     }
                 }
-            } else if (state.feeSelection == FEE_SELECT_MARGIN_SPLIT) {
+            } else {
 
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < state.lrcFee) {
@@ -735,9 +749,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 }
 
                 state.lrcFee = 0;
-            } else {
-                revert(); // "unsupported fee selection value");
-            }
+            } 
         }
     }
 
@@ -890,30 +902,20 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev verify input data's basic integrity.
     function verifyInputDataIntegrity(RingParams params)
         private
-        view
+        pure
     {
         require(params.ringSize == params.addressList.length); // "ring data is inconsistent - addressList");
         require(params.ringSize == params.uintArgsList.length); // "ring data is inconsistent - uintArgsList");
         require(params.ringSize == params.uint8ArgsList.length); // "ring data is inconsistent - uint8ArgsList");
         require(params.ringSize == params.buyNoMoreThanAmountBList.length); // "ring data is inconsistent - buyNoMoreThanAmountBList");
 
-        uint sigSize = params.ringSize * 2;
-        if (params.ringMiner != 0x0) {
-            sigSize += 1;
-        }
-
-        require(sigSize == params.vList.length); // "ring data is inconsistent - vList");
-        require(sigSize == params.rList.length); // "ring data is inconsistent - rList");
-        require(sigSize == params.sList.length); // "ring data is inconsistent - sList");
-
         // Validate ring-mining related arguments.
         for (uint i = 0; i < params.ringSize; i++) {
             require(params.uintArgsList[i][5] > 0); // "order rateAmountS is zero");
-            require(params.uint8ArgsList[i][1] <= FEE_SELECT_MAX_VALUE); // "invalid order fee selection");
         }
 
         //Check ring size
-        require(params.ringSize > 1 && params.ringSize <= maxRingSize); // "invalid ring size");
+        require(params.ringSize > 1 && params.ringSize <= MAX_RING_SIZE); // "invalid ring size");
     }
 
     /// @dev        assmble order parameters into Order struct.
@@ -957,7 +959,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orders[i] = OrderState(
                 order,
                 orderHash,
-                params.uint8ArgsList[i][1],  // feeSelection
+                (params.feeSelections & (uint16(1) << i)) > 0,
                 Rate(params.uintArgsList[i][5], order.amountB),
                 0,   // fillAmountS
                 0,   // lrcReward
@@ -969,15 +971,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             params.ringHash ^= orderHash;
         }
 
-        uint8 feeSelectionsXor = params.uint8ArgsList[0][1];
-        for (i = 1; i < params.ringSize; i++) {
-            feeSelectionsXor ^= params.uint8ArgsList[i][1];
-        }
-
         params.ringHash = keccak256(
             params.ringHash,
             params.minerId,
-            feeSelectionsXor
+            params.feeSelections
         );
     }
 
