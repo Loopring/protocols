@@ -54,7 +54,7 @@ contract LoopringProtocol {
         uint                _cutoff
     );
 
-    event TradingPairOrdersCancelled(
+    event OrdersCancelled(
         address     indexed _address,
         address             _token1,
         address             _token2,

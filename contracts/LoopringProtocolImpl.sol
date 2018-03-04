@@ -271,7 +271,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(tradingPairCutoffs[msg.sender][tokenPair] < t); // "attempted to set cutoff to a smaller value"
 
         tradingPairCutoffs[msg.sender][tokenPair] = t;
-        TradingPairOrdersCancelled(
+        OrdersCancelled(
             msg.sender,
             token1,
             token2,
