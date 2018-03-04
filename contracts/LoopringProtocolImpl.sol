@@ -271,7 +271,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(tradingPairCutoffs[msg.sender][tokenPair] < t); // "attempted to set cutoff to a smaller value"
 
         tradingPairCutoffs[msg.sender][tokenPair] = t;
-        TradingPairCutoffTimestampChanged(
+        TradingPairOrdersCancelled(
             msg.sender,
             token1,
             token2,
@@ -287,7 +287,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value"
 
         cutoffs[msg.sender] = t;
-        CutoffTimestampChanged(msg.sender, t);
+        AllOrdersCancelled(msg.sender, t);
     }
 
     function submitRing(

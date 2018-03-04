@@ -49,12 +49,12 @@ contract LoopringProtocol {
         uint                _amountCancelled
     );
 
-    event CutoffTimestampChanged(
+    event AllOrdersCancelled(
         address     indexed _address,
         uint                _cutoff
     );
 
-    event TradingPairCutoffTimestampChanged(
+    event TradingPairOrdersCancelled(
         address     indexed _address,
         address             _token1,
         address             _token2,
