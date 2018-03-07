@@ -132,18 +132,18 @@ contract NameRegistry {
         OwnershipTransfered(nameInfo.name, msg.sender, newOwner);
     }
 
-    function addParticipant(address feeRecipient)
-        external
-        returns (uint)
-    {
-        return addParticipant(feeRecipient, feeRecipient);
-    }
+    /* function addParticipant(address feeRecipient) */
+    /*     external */
+    /*     returns (uint) */
+    /* { */
+    /*     return addParticipant(feeRecipient, feeRecipient); */
+    /* } */
 
     function addParticipant(
         address feeRecipient,
         address singer
         )
-        public
+        external
         returns (uint)
     {
         require(feeRecipient != 0x0 && singer != 0x0);
