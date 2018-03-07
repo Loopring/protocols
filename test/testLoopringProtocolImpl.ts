@@ -967,9 +967,9 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                               new BigNumber(1508566125),
                                                               {from: order2Owner});
 
-      const cutoff = await loopringProtocolImpl.getTradingPairCutoffs(eosAddress,
-                                                                      neoAddress,
-                                                                      {from: order2Owner});
+      const cutoff = await loopringProtocolImpl.getTradingPairCutoffs(order2Owner,
+                                                                      eosAddress,
+                                                                      neoAddress);
 
       assert.equal(cutoff.toNumber(), 1508566125, "trading pair cutoff not set correctly");
     });

@@ -988,12 +988,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         ); // "invalid signature");
     }
 
-    function getTradingPairCutoffs(address token1, address token2)
+    function getTradingPairCutoffs(address orderOwner, address token1, address token2)
         public
         view
         returns (uint)
     {
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-        return tradingPairCutoffs[msg.sender][tokenPair];
+        return tradingPairCutoffs[orderOwner][tokenPair];
     }
 }
