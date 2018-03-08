@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.18;
+pragma solidity 0.4.19;
 
 
 /// @title ERC20 Token Interface
@@ -23,7 +23,7 @@ pragma solidity 0.4.18;
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ERC20 {
     uint public totalSupply;
-	
+
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
