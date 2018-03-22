@@ -264,7 +264,7 @@ contract NameRegistry {
         returns (bytes12 result)
     {
         assembly {
-            result := mload(add(str, 12))
+            result := mload(add(str, 32))
         }
     }
 
