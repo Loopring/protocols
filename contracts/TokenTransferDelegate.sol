@@ -193,6 +193,7 @@ contract TokenTransferDelegate is Claimable {
                 );
             }
 
+            // Miner pays LRx fee to order owner
             uint lrcReward = uint(batch[i + 4]);
             if (lrcReward != 0 && minerFeeRecipient != owner) {
                 require(
@@ -204,6 +205,7 @@ contract TokenTransferDelegate is Claimable {
                 );
             }
 
+            // Split margin-split income between miner and wallet
             splitPayFee(
                 token,
                 uint(batch[i + 3]),
@@ -213,6 +215,7 @@ contract TokenTransferDelegate is Claimable {
                 walletSplitPercentage
             );
 
+            // Split LRx fee income between miner and wallet
             splitPayFee(
                 lrc,
                 uint(batch[i + 5]),
