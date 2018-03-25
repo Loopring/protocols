@@ -195,7 +195,6 @@ contract TokenTransferDelegate is Claimable {
 
             uint lrcReward = uint(batch[i + 4]);
             if (lrcReward != 0 && minerFeeRecipient != owner) {
-                require(minerFeeRecipient != 0x0);
                 require(
                     lrc.transferFrom(
                         minerFeeRecipient,
