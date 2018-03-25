@@ -191,7 +191,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(0x0 != _nameRegistryAddress);
 
         require(_rateRatioCVSThreshold > 0);
-        require(_walletSplitPercentage > 0);
+        require(_walletSplitPercentage > 0 && _walletSplitPercentage < 100);
 
         lrcTokenAddress = _lrcTokenAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
