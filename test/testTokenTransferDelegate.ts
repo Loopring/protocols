@@ -17,6 +17,8 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
   const loopringProtocolV3 = accounts[3];  // mock loopring protocol v3
   const trader1 = accounts[3];
   const trader2 = accounts[4];
+  const walletAddr1 = accounts[5];
+  const walletAddr2 = accounts[6];
 
   let tokenRegistry: any;
   let tokenTransferDelegate: any;
@@ -129,6 +131,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       batch.push(numberToBytes32Str(0));
       batch.push(numberToBytes32Str(0));
       batch.push(numberToBytes32Str(5e18));
+      batch.push(walletAddr1);
 
       batch.push(addressToBytes32Str(trader2));
       batch.push(addressToBytes32Str(neoAddress));
@@ -136,8 +139,9 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       batch.push(numberToBytes32Str(0));
       batch.push(numberToBytes32Str(0));
       batch.push(numberToBytes32Str(5e18));
+      batch.push(walletAddr2);
 
-      const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, owner, batch,
+      const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, owner, 20, batch,
                                                                 {from: loopringProtocolV1});
 
       const trader1NeoBalance = await getTokenBalanceAsync(neo, trader1);
@@ -146,7 +150,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
 
       assert.equal(trader1NeoBalance.toNumber(), 10e18, "trade amount incorrect");
       assert.equal(trader2EosBalance.toNumber(), 100e18, "trade amount incorrect");
-      assert.equal(ownerLrcBalance.toNumber(), 10e18, "lrc fee amount incorrect");
+      assert.equal(ownerLrcBalance.toNumber(), 8e18, "lrc fee amount incorrect");
     });
 
     it("should not be able to transfer token in batch if msg.sender not authorized", async () => {
@@ -174,6 +178,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
         batch.push(numberToBytes32Str(0));
         batch.push(numberToBytes32Str(0));
         batch.push(numberToBytes32Str(5e18));
+        batch.push(walletAddr1);
 
         batch.push(addressToBytes32Str(trader2));
         batch.push(addressToBytes32Str(neoAddress));
@@ -181,8 +186,9 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
         batch.push(numberToBytes32Str(0));
         batch.push(numberToBytes32Str(0));
         batch.push(numberToBytes32Str(5e18));
+        batch.push(walletAddr2);
 
-        const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, owner, batch,
+        const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, owner, 20, batch,
                                                                   {from: loopringProtocolV2});
       } catch (err) {
         const errMsg = `${err}`;

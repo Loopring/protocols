@@ -207,6 +207,16 @@ contract NameRegistry {
         signer = addressSet.signer;
     }
 
+    function getFeeRecipientById(uint id)
+        external
+        view
+        returns (address feeRecipient)
+    {
+        Participant storage addressSet = participantMap[id];
+
+        feeRecipient = addressSet.feeRecipient;
+    }
+
     function getParticipantIds(string name, uint start, uint count)
         external
         view

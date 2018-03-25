@@ -511,7 +511,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32[] memory orderHashList,
         uint[6][] memory amountsList)
     {
-        bytes32[] memory batch = new bytes32[](ringSize * 6); // ringSize * (owner + tokenS + 4 amounts)
+        bytes32[] memory batch = new bytes32[](ringSize * 7); // ringSize * (owner + tokenS + 4 amounts)
         orderHashList = new bytes32[](ringSize);
         amountsList = new uint[6][](ringSize);
 
@@ -531,7 +531,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p + 3] = bytes32(prevSplitB + state.splitS);
             batch[p + 4] = bytes32(state.lrcReward);
             batch[p + 5] = bytes32(state.lrcFee);
-            p += 6;
+            if (order.walletId != 0) {
+                batch[p + 6] = bytes32(NameRegistry(nameRegistryAddress).getFeeRecipientById(order.walletId));
+            } else {
+                batch[p + 6] = bytes32(0x0);
+            }
+            p += 7;
 
             // Update fill records
             if (order.buyNoMoreThanAmountB) {
@@ -550,7 +555,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         // Do all transactions
-        delegate.batchTransferToken(_lrcTokenAddress, feeRecipient, batch);
+        delegate.batchTransferToken(
+            _lrcTokenAddress,
+            feeRecipient,
+            walletSplitPercentage,
+            batch
+        );
     }
 
     /// @dev Verify miner has calculte the rates correctly.

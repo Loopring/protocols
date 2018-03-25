@@ -12,13 +12,16 @@ export class ProtocolSimulator {
   public spendableLrcFeeList: number[];
   public orderCancelled: number[];
   public orderFilled: number[];
+  public walletSplitPercentage: number;
 
   constructor(ring: Ring,
               lrcAddress: string,
-              feeSelectionList: number[]) {
+              feeSelectionList: number[],
+              walletSplitPercentage: number) {
     this.ring = ring;
     this.lrcAddress = lrcAddress;
     this.feeSelectionList = feeSelectionList;
+    this.walletSplitPercentage = walletSplitPercentage;
   }
 
   public caculateRateAmountS() {
@@ -175,6 +178,13 @@ export class ProtocolSimulator {
       const balanceItem = balances[i];
       const tokenS = order.params.tokenS;
       const tokenB = order.params.tokenB;
+      const walletId = order.params.walletId.toNumber();
+
+      if (walletId > 0) {
+        feeItem.feeLrc = feeItem.feeLrc * (100 - this.walletSplitPercentage) / 100;
+        feeItem.feeS = feeItem.feeS * (100 - this.walletSplitPercentage) / 100;
+        feeItem.feeB = feeItem.feeB * (100 - this.walletSplitPercentage) / 100;
+      }
 
       feeTotals[this.lrcAddress] = this.sumFeeItem(feeTotals, this.lrcAddress, feeItem.feeLrc);
       feeTotals[this.lrcAddress] = this.sumFeeItem(feeTotals,

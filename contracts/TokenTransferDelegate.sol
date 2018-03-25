@@ -161,19 +161,21 @@ contract TokenTransferDelegate is Claimable {
 
     function batchTransferToken(
         address lrcTokenAddress,
-        address feeRecipient,
+        address minerFeeRecipient,
+        uint8 walletSplitPercentage,
         bytes32[] batch)
         onlyAuthorized
         external
     {
         uint len = batch.length;
-        require(len % 6 == 0);
+        require(len % 7 == 0);
+        require(walletSplitPercentage >= 0 && walletSplitPercentage <= 100);
 
         ERC20 lrc = ERC20(lrcTokenAddress);
 
-        for (uint i = 0; i < len; i += 6) {
+        for (uint i = 0; i < len; i += 7) {
             address owner = address(batch[i]);
-            address prevOwner = address(batch[(i + len - 6) % len]);
+            address prevOwner = address(batch[(i + len - 7) % len]);
 
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
@@ -187,26 +189,57 @@ contract TokenTransferDelegate is Claimable {
                 );
             }
 
-            if (feeRecipient != 0x0 && owner != feeRecipient) {
+            if (minerFeeRecipient != 0x0 && owner != minerFeeRecipient) {
                 bytes32 item = batch[i + 3];
+                // address walletFeeRecipient = address(batch[i + 6]);
                 if (item != 0) {
-                    require(
-                        token.transferFrom(owner, feeRecipient, uint(item))
-                    );
+                    if (address(batch[i + 6]) != 0x0 && walletSplitPercentage > 0) {
+                        require(
+                            token.transferFrom(owner,
+                                               minerFeeRecipient,
+                                               uint(item).mul(100 - walletSplitPercentage) / 100
+                                               )
+                        );
+                        require(
+                            token.transferFrom(owner,
+                                               address(batch[i + 6]),
+                                               uint(item).mul(walletSplitPercentage) / 100
+                                               )
+                        );
+                    } else {
+                        require(
+                            token.transferFrom(owner, minerFeeRecipient, uint(item))
+                        );
+                    }
                 }
 
                 item = batch[i + 4];
                 if (item != 0) {
                     require(
-                        lrc.transferFrom(feeRecipient, owner, uint(item))
+                        lrc.transferFrom(minerFeeRecipient, owner, uint(item))
                     );
                 }
 
                 item = batch[i + 5];
                 if (item != 0) {
-                    require(
-                        lrc.transferFrom(owner, feeRecipient, uint(item))
-                    );
+                    if (address(batch[i + 6]) != 0x0 && walletSplitPercentage > 0) {
+                        require(
+                            lrc.transferFrom(owner,
+                                             minerFeeRecipient,
+                                             uint(item).mul(100 - walletSplitPercentage) / 100
+                                             )
+                        );
+                        require(
+                            lrc.transferFrom(owner,
+                                             address(batch[i + 6]),
+                                             uint(item).mul(walletSplitPercentage) / 100
+                                             )
+                        );
+                    } else {
+                        require(
+                            lrc.transferFrom(owner, minerFeeRecipient, uint(item))
+                        );
+                    }
                 }
             }
         }

@@ -27,6 +27,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   const orderAuthAddr = accounts[7]; // should generate each time in front-end. we just mock it here.
   const ringOwner = accounts[0];
   const feeRecepient = accounts[6];
+  const walletAddr = accounts[8];
 
   let loopringProtocolImpl: any;
   let tokenRegistry: any;
@@ -46,6 +47,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
   let participantId: number;
   let currBlockTimeStamp: number;
+  let walletSplitPercentage: number;
+  let walletId: BigNumber;
 
   let ringFactory: RingFactory;
 
@@ -102,6 +105,16 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     const pids = await nameRegistry.getParticipantIds("test001", 0, 1);
     participantId = pids[0].toNumber();
 
+    await nameRegistry.registerName("wallet03", {from: walletAddr});
+    await nameRegistry.addParticipant(walletAddr, walletAddr, {from: walletAddr});
+    const walletIds = await nameRegistry.getParticipantIds("wallet03", 0, 1);
+    walletId = walletIds[0];
+    // console.log("walletId", walletId);
+
+    const walletSplitPercentageBN = await loopringProtocolImpl.walletSplitPercentage();
+    walletSplitPercentage = walletSplitPercentageBN.toNumber();
+    // console.log("walletSplitPercentage:", walletSplitPercentage);
+
     tokenTransferDelegate.authorizeAddress(LoopringProtocolImpl.address);
 
     [lrc, eos, neo, qtum] = await Promise.all([
@@ -121,6 +134,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                   qtumAddress,
                                   orderAuthAddr,
                                   currBlockTimeStamp);
+    ringFactory.walletId = new BigNumber(walletId.toNumber());
 
     // approve only once for all test cases.
     const allTokens = [lrc, eos, neo, qtum];
@@ -185,7 +199,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       assert.equal(eosBalance22.toNumber(), 1000e18, "eos balance not match for order2Owner");
       assert.equal(neoBalance22.toNumber(), 900e18, "neo balance not match for order2Owner");
 
-      assert.equal(lrcBalance23.toNumber(), 15e18, "lrc balance not match for feeRecepient");
+      assert.equal(lrcBalance23.toNumber(), 12e18, "lrc balance not match for feeRecepient");
 
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
@@ -225,7 +239,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const eosBalance23 = await getTokenBalanceAsync(eos, feeRecepient);
       const neoBalance23 = await getTokenBalanceAsync(neo, feeRecepient);
 
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
       simulator.spendableLrcFeeList = spendableLrcFeeList;
       const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
 
@@ -278,7 +292,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const neoBalance23 = await getTokenBalanceAsync(neo, feeRecepient);
       const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
       simulator.spendableLrcFeeList = spendableLrcFeeList;
       const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
 
@@ -343,7 +357,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
       const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
       simulator.spendableLrcFeeList = spendableLrcFeeList;
       const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
 
@@ -358,7 +372,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
       assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
       assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.totalFees[qtumAddress]);
-      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), 5e18);
+      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), 4e18);
 
       await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
     });
@@ -415,7 +429,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
       const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
       simulator.availableAmountSList = availableAmountSList;
       simulator.spendableLrcFeeList = spendableLrcFeeList;
       const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
@@ -491,7 +505,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
       const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
       simulator.availableAmountSList = availableAmountSList;
       simulator.spendableLrcFeeList = spendableLrcFeeList;
       const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
@@ -559,7 +573,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
       const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
       simulator.availableAmountSList = availableAmountSList;
       simulator.spendableLrcFeeList = spendableLrcFeeList;
       const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
@@ -638,7 +652,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
       const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
       simulator.availableAmountSList = availableAmountSList;
       simulator.spendableLrcFeeList = spendableLrcFeeList;
       const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
@@ -706,7 +720,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
       const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
 
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList);
+      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
       simulator.availableAmountSList = availableAmountSList;
       simulator.spendableLrcFeeList = spendableLrcFeeList;
       const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
