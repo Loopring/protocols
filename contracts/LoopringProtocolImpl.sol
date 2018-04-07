@@ -15,8 +15,9 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
+import "./lib/AddressUtil.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathBytes32.sol";
 import "./lib/MathUint.sol";
@@ -37,6 +38,7 @@ import "./TokenTransferDelegate.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 contract LoopringProtocolImpl is LoopringProtocol {
+    using AddressUtil   for address;
     using MathBytes32   for bytes32[];
     using MathUint      for uint;
     using MathUint8     for uint8[];
@@ -185,10 +187,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public
     {
-        require(0x0 != _lrcTokenAddress);
-        require(0x0 != _tokenRegistryAddress);
-        require(0x0 != _delegateAddress);
-        require(0x0 != _nameRegistryAddress);
+        require(_lrcTokenAddress.isContract());
+        require(_tokenRegistryAddress.isContract());
+        require(_delegateAddress.isContract());
+        require(_nameRegistryAddress.isContract());
 
         require(_rateRatioCVSThreshold > 0);
         require(_walletSplitPercentage > 0 && _walletSplitPercentage < 100);
@@ -255,7 +257,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
         cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelAmount);
 
-        OrderCancelled(orderHash, cancelAmount);
+        emit OrderCancelled(orderHash, cancelAmount);
     }
 
     function cancelAllOrdersByTradingPair(
@@ -271,7 +273,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(tradingPairCutoffs[msg.sender][tokenPair] < t); // "attempted to set cutoff to a smaller value"
 
         tradingPairCutoffs[msg.sender][tokenPair] = t;
-        OrdersCancelled(
+        emit OrdersCancelled(
             msg.sender,
             token1,
             token2,
@@ -287,7 +289,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value"
 
         cutoffs[msg.sender] = t;
-        AllOrdersCancelled(msg.sender, t);
+        emit AllOrdersCancelled(msg.sender, t);
     }
 
     function submitRing(
@@ -481,7 +483,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
 
         /// Make transfers.
-        var (orderHashList, amountsList) = settleRing(
+        bytes32[] memory orderHashList;
+        uint[6][] memory amountsList;
+        (orderHashList, amountsList) = settleRing(
             delegate,
             params.ringSize,
             orders,
@@ -489,7 +493,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             _lrcTokenAddress
         );
 
-        RingMined(
+        emit RingMined(
             _ringIndex,
             params.ringHash,
             params.ringMiner,
@@ -507,7 +511,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address       _lrcTokenAddress
         )
         private
-        returns(
+        returns (
         bytes32[] memory orderHashList,
         uint[6][] memory amountsList)
     {

@@ -18,22 +18,20 @@
 pragma solidity 0.4.21;
 
 
-/// @title Utility Functions for byte32
-/// @author Kongliang Zhong - <kongliang@loopring.org>,
-/// @author Daniel Wang - <daniel@loopring.org>.
-library MathBytes32 {
-
-    function xorReduce(
-        bytes32[]   arr,
-        uint        len
-        )
+/// @title Utility Functions for address
+/// @author Daniel Wang - <daniel@loopring.org>
+library AddressUtil {
+    function isContract(address addr)
         internal
-        pure
-        returns (bytes32 res)
+        view
+        returns (bool)
     {
-        res = arr[0];
-        for (uint i = 1; i < len; i++) {
-            res ^= arr[i];
+        if (addr == 0x0) {
+            return false;
+        } else {
+            uint size;
+            assembly { size := extcodesize(addr) }
+            return size > 0;
         }
     }
 }

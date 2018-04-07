@@ -15,11 +15,11 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
+import "./lib/Claimable.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
-import "./lib/Claimable.sol";
 
 
 /// @title TokenTransferDelegate
@@ -88,7 +88,7 @@ contract TokenTransferDelegate is Claimable {
         if (addrInfo.index != 0) { // existing
             if (addrInfo.authorized == false) { // re-authorize
                 addrInfo.authorized = true;
-                AddressAuthorized(addr, addrInfo.index);
+                emit AddressAuthorized(addr, addrInfo.index);
             }
         } else {
             address prev = latestAddress;
@@ -102,7 +102,7 @@ contract TokenTransferDelegate is Claimable {
             }
             addrInfo.authorized = true;
             latestAddress = addr;
-            AddressAuthorized(addr, addrInfo.index);
+            emit AddressAuthorized(addr, addrInfo.index);
         }
     }
 
@@ -115,7 +115,7 @@ contract TokenTransferDelegate is Claimable {
         uint32 index = addressInfos[addr].index;
         if (index != 0) {
             addressInfos[addr].authorized = false;
-            AddressDeauthorized(addr, index);
+            emit AddressDeauthorized(addr, index);
         }
     }
 

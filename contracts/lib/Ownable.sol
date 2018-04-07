@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 
 /// @title Ownable
@@ -47,7 +47,7 @@ contract Ownable {
     /// @param newOwner The address to transfer ownership to.
     function transferOwnership(address newOwner) onlyOwner public {
         require(newOwner != 0x0);
-        OwnershipTransferred(owner, newOwner);
+        emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
     }
 }

@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 import "./Ownable.sol";
 
@@ -41,7 +41,7 @@ contract Claimable is Ownable {
 
     /// @dev Allows the pendingOwner address to finalize the transfer.
     function claimOwnership() onlyPendingOwner public {
-        OwnershipTransferred(owner, pendingOwner);
+        emit OwnershipTransferred(owner, pendingOwner);
         owner = pendingOwner;
         pendingOwner = 0x0;
     }

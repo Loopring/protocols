@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 
 /// @title Utility Functions for uint

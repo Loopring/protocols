@@ -15,8 +15,9 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
+import "./lib/AddressUtil.sol";
 import "./lib/Claimable.sol";
 
 
@@ -25,7 +26,9 @@ import "./lib/Claimable.sol";
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenRegistry is Claimable {
+    using AddressUtil for address;
 
+    address tokenMintAddr;
     address[] public addresses;
     mapping (address => TokenInfo) addressMap;
     mapping (string => address) symbolMap;
@@ -56,6 +59,12 @@ contract TokenRegistry is Claimable {
         revert();
     }
 
+    function TokenRegistry(address _tokenMintAddr) public
+    {
+        require(_tokenMintAddr.isContract());
+        tokenMintAddr = _tokenMintAddr;
+    }
+
     function registerToken(
         address addr,
         string  symbol
@@ -63,16 +72,17 @@ contract TokenRegistry is Claimable {
         external
         onlyOwner
     {
-        require(0x0 != addr);
-        require(bytes(symbol).length > 0);
-        require(0x0 == symbolMap[symbol]);
-        require(0 == addressMap[addr].pos);
+        registerTokenInternal(addr, symbol);
+    }
 
-        addresses.push(addr);
-        symbolMap[symbol] = addr;
-        addressMap[addr] = TokenInfo(addresses.length, symbol);
-
-        TokenRegistered(addr, symbol);
+    function registerMintedToken(
+        address addr,
+        string  symbol
+        )
+        external
+    {
+        require(msg.sender == tokenMintAddr);
+        registerTokenInternal(addr, symbol);
     }
 
     function unregisterToken(
@@ -102,7 +112,7 @@ contract TokenRegistry is Claimable {
         }
         addresses.length--;
 
-        TokenUnregistered(addr, symbol);
+        emit TokenUnregistered(addr, symbol);
     }
 
     function areAllTokensRegistered(address[] addressList)
@@ -169,5 +179,23 @@ contract TokenRegistry is Claimable {
         for (uint i = start; i < end; i++) {
             addressList[i - start] = addresses[i];
         }
+    }
+
+    function registerTokenInternal(
+        address addr,
+        string  symbol
+        )
+        internal
+    {
+        require(0x0 != addr);
+        require(bytes(symbol).length > 0);
+        require(0x0 == symbolMap[symbol]);
+        require(0 == addressMap[addr].pos);
+
+        addresses.push(addr);
+        symbolMap[symbol] = addr;
+        addressMap[addr] = TokenInfo(addresses.length, symbol);
+
+        emit TokenRegistered(addr, symbol);
     }
 }

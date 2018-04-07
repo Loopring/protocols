@@ -15,7 +15,7 @@
   limitations under the License.
 
 */
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 
 /// @title Ethereum Address Register Contract
@@ -86,7 +86,7 @@ contract NameRegistry {
         ownerMap[nameBytes] = msg.sender;
         nameMap[msg.sender] = name;
 
-        NameRegistered(name, msg.sender);
+        emit NameRegistered(name, msg.sender);
     }
 
     function unregisterName(string name)
@@ -105,7 +105,7 @@ contract NameRegistry {
         delete nameMap[msg.sender];
         delete ownerMap[nameBytes];
 
-        NameUnregistered(name, msg.sender);
+        emit NameUnregistered(name, msg.sender);
     }
 
     function transferOwnership(address newOwner)
@@ -129,7 +129,7 @@ contract NameRegistry {
         nameInfoMap[newOwner] = nameInfo;
         nameMap[newOwner] = name;
 
-        OwnershipTransfered(nameInfo.name, msg.sender, newOwner);
+        emit OwnershipTransfered(nameInfo.name, msg.sender, newOwner);
     }
 
     /* function addParticipant(address feeRecipient) */
@@ -164,7 +164,7 @@ contract NameRegistry {
         participantMap[participantId] = participant;
         nameInfo.participantIds.push(participantId);
 
-        ParticipantRegistered(
+        emit ParticipantRegistered(
             name,
             msg.sender,
             participantId,
@@ -193,7 +193,7 @@ contract NameRegistry {
             }
         }
 
-        ParticipantUnregistered(participantId, msg.sender);
+        emit ParticipantUnregistered(participantId, msg.sender);
     }
 
     function getParticipantById(uint id)
