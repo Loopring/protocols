@@ -27,14 +27,14 @@ import "./TokenRegistry.sol";
 ///      so the token can be traded with Loopring Protocol.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TokenMint {
+contract TokenCreator {
     using AddressUtil for address;
 
     address[] public tokens;
     address   public tokenRegistry;
     address   public tokenTransferDelegate;
 
-    event TokenMinted(
+    event TokenCreated(
         address indexed addr,
         string  name,
         string  symbol,
@@ -65,13 +65,13 @@ contract TokenMint {
         tokenTransferDelegate = _tokenTransferDelegate;
     }
 
-    /// @dev Deploy an ERC20 token contract, register it with TokenRegistry, 
+    /// @dev Deploy an ERC20 token contract, register it with TokenRegistry,
     ///      and returns the new token's address.
     /// @param name The name of the token
     /// @param symbol The symbol of the token.
     /// @param decimals The decimals of the token.
     /// @param totalSupply The total supply of the token.
-    function mintToken(
+    function createToken(
         string  name,
         string  symbol,
         uint8   decimals,
@@ -96,7 +96,7 @@ contract TokenMint {
         TokenRegistry(tokenRegistry).registerMintedToken(addr, symbol);
         tokens.push(addr);
 
-        emit TokenMinted(
+        emit TokenCreated(
             addr,
             name,
             symbol,
