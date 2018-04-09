@@ -97,7 +97,7 @@ contract NameRegistry {
         bytes12 nameBytes = stringToBytes12(name);
         require(nameInfo.name == nameBytes);
 
-        for (uint i = participantIds.length - 1; i >= 0; i--) {
+        for (uint i = 0; i < participantIds.length; i++) {
             delete participantMap[participantIds[i]];
         }
 

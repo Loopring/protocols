@@ -24,6 +24,7 @@ contract("NameRegistry", (accounts: string[]) => {
 
       const nameRegistried = await nameRegistry.nameMap(user);
       assert.equal(name, nameRegistried);
+
     });
 
     it("is able to register a different name", async () => {
@@ -49,6 +50,14 @@ contract("NameRegistry", (accounts: string[]) => {
       const pid2 = pids2[0].toNumber();
 
       assert.equal(pid1 + 1, pid2, "pid not increased correctly.");
+    });
+
+    it("is able to add a participant pair after name had been registeried", async () => {
+      const name = "test002";
+      const tx = await nameRegistry.unregisterName(name, {from: user});
+      const ownerName = await nameRegistry.getOwner(name);
+      // console.log("ownerName:", ownerName);
+      assert.equal("0x0000000000000000000000000000000000000000", ownerName);
     });
 
   });
