@@ -27,7 +27,7 @@ import "./TokenRegistry.sol";
 ///      so the token can be traded with Loopring Protocol.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TokenCreator {
+contract TokenFactory {
     using AddressUtil for address;
 
     address[] public tokens;
