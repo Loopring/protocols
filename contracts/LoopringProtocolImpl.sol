@@ -89,11 +89,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// Structs                                                              ///
     ////////////////////////////////////////////////////////////////////////////
 
-    struct Rate {
-        uint amountS;
-        uint amountB;
-    }
-
     /// @param tokenS       Token to sell.
     /// @param tokenB       Token to buy.
     /// @param amountS      Maximum amount of tokenS to sell.
@@ -136,7 +131,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     ///                     A miner-supplied value indicating if LRC (value = 0)
     ///                     or margin split is choosen by the miner (value = 1).
     ///                     We may support more fee model in the future.
-    /// @param rate         Exchange rate provided by miner.
+    /// @param rateS        Sell Exchange rate provided by miner.
+    /// @param rateB        Buy Exchange rate provided by miner.
     /// @param fillAmountS  Amount of tokenS to sell, calculated by protocol.
     /// @param lrcReward    The amount of LRC paid by miner to order owner in
     ///                     exchange for margin split.
@@ -147,7 +143,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         Order   order;
         bytes32 orderHash;
         bool    marginSplitAsFee;
-        Rate    rate;
+        uint    rateS;
+        uint    rateB;
         uint    fillAmountS;
         uint    lrcReward;
         uint    lrcFee;
@@ -579,8 +576,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint _rateRatioScale = RATE_RATIO_SCALE;
 
         for (uint i = 0; i < ringSize; i++) {
-            uint s1b0 = orders[i].rate.amountS.mul(orders[i].order.amountB);
-            uint s0b1 = orders[i].order.amountS.mul(orders[i].rate.amountB);
+            uint s1b0 = orders[i].rateS.mul(orders[i].order.amountB);
+            uint s0b1 = orders[i].order.amountS.mul(orders[i].rateB);
 
             require(s1b0 <= s0b1); // "miner supplied exchange rate provides invalid discount");
 
@@ -762,16 +759,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
         newSmallestIdx = smallestIdx;
 
         uint fillAmountB = state.fillAmountS.mul(
-            state.rate.amountB
-        ) / state.rate.amountS;
+            state.rateB
+        ) / state.rateS;
 
         if (state.order.buyNoMoreThanAmountB) {
             if (fillAmountB > state.order.amountB) {
                 fillAmountB = state.order.amountB;
 
                 state.fillAmountS = fillAmountB.mul(
-                    state.rate.amountS
-                ) / state.rate.amountB;
+                    state.rateS
+                ) / state.rateB;
 
                 newSmallestIdx = i;
             }
@@ -920,7 +917,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order,
                 orderHash,
                 marginSplitAsFee,
-                Rate(params.uintArgsList[i][5], order.amountB),
+                params.uintArgsList[i][5],
+                order.amountB,
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
