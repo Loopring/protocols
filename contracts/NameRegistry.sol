@@ -17,12 +17,14 @@
 */
 pragma solidity 0.4.21;
 
+import "./lib/StringUtil.sol";
 
 /// @title Ethereum Address Register Contract
 /// @dev This contract maintains a name service for addresses and miner.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>,
 contract NameRegistry {
+    using StringUtil for string;
 
     uint public nextId = 0;
 
@@ -77,10 +79,10 @@ contract NameRegistry {
     {
         require(isNameValid(name));
 
-        bytes12 nameBytes = stringToBytes12(name);
+        bytes12 nameBytes = name.stringToBytes12();
 
         require(ownerMap[nameBytes] == 0x0);
-        require(stringToBytes12(nameMap[msg.sender]) == bytes12(0x0));
+        require(nameMap[msg.sender].stringToBytes12() == bytes12(0x0));
 
         nameInfoMap[msg.sender] = NameInfo(nameBytes, new uint[](0));
         ownerMap[nameBytes] = msg.sender;
@@ -94,7 +96,7 @@ contract NameRegistry {
     {
         NameInfo storage nameInfo = nameInfoMap[msg.sender];
         uint[] storage participantIds = nameInfo.participantIds;
-        bytes12 nameBytes = stringToBytes12(name);
+        bytes12 nameBytes = name.stringToBytes12();
         require(nameInfo.name == nameBytes);
 
         for (uint i = 0; i < participantIds.length; i++) {
@@ -222,7 +224,7 @@ contract NameRegistry {
         view
         returns (uint[] idList)
     {
-        bytes12 nameBytes = stringToBytes12(name);
+        bytes12 nameBytes = name.stringToBytes12();
         address owner = ownerMap[nameBytes];
         require(owner != 0x0);
 
@@ -255,7 +257,7 @@ contract NameRegistry {
         view
         returns (address)
     {
-        bytes12 nameBytes = stringToBytes12(name);
+        bytes12 nameBytes = name.stringToBytes12();
         return ownerMap[nameBytes];
     }
 
@@ -266,16 +268,6 @@ contract NameRegistry {
     {
         bytes memory temp = bytes(name);
         return temp.length >= 6 && temp.length <= 12;
-    }
-
-    function stringToBytes12(string str)
-        internal
-        pure
-        returns (bytes12 result)
-    {
-        assembly {
-            result := mload(add(str, 32))
-        }
     }
 
 }
