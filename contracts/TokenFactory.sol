@@ -94,8 +94,7 @@ contract TokenFactory {
             symbol,
             decimals,
             totalSupply,
-            tx.origin,
-            tokenTransferDelegate
+            tx.origin
         );
 
         addr = address(token);

@@ -24,17 +24,14 @@ import "./MathUint.sol";
 
 /// @title ERC20 Token Implementation
 /// @dev see https://github.com/ethereum/EIPs/issues/20
-///      This ERC20 token will give the designated tokenTransferDelegate a max allowance.
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ERC20Token is ERC20 {
     using MathUint for uint;
-    using AddressUtil for address;
 
     string  public name;
     string  public symbol;
     uint8   public decimals;
     uint    public totalSupply_;
-    address public tokenTransferDelegate;
 
     mapping (address => uint256) balances;
     mapping (address => mapping (address => uint256)) internal allowed;
@@ -47,8 +44,7 @@ contract ERC20Token is ERC20 {
         string  _symbol,
         uint8   _decimals,
         uint    _totalSupply,
-        address _firstHolder,
-        address _tokenTransferDelegate
+        address _firstHolder
         )
         public
     {
@@ -56,13 +52,11 @@ contract ERC20Token is ERC20 {
         require(bytes(_symbol).length > 0);
         require(_totalSupply > 0);
         require(_firstHolder != 0x0);
-        require(_tokenTransferDelegate.isContract());
 
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
         totalSupply_ = _totalSupply;
-        tokenTransferDelegate = _tokenTransferDelegate;
 
         balances[_firstHolder] = totalSupply_;
     }
@@ -174,11 +168,7 @@ contract ERC20Token is ERC20 {
         view
         returns (uint256)
     {
-        if (_spender == tokenTransferDelegate) {
-            return totalSupply_;
-        } else {
-            return allowed[_owner][_spender];
-        }
+        return allowed[_owner][_spender];
     }
 
     /**
