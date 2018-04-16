@@ -77,7 +77,7 @@ contract NameRegistry {
     function registerName(string name)
         external
     {
-        require(isNameValid(name));
+        require(name.checkStringLength(6, 12));
 
         bytes12 nameBytes = name.stringToBytes12();
 
@@ -259,15 +259,6 @@ contract NameRegistry {
     {
         bytes12 nameBytes = name.stringToBytes12();
         return ownerMap[nameBytes];
-    }
-
-    function isNameValid(string name)
-        internal
-        pure
-        returns (bool)
-    {
-        bytes memory temp = bytes(name);
-        return temp.length >= 6 && temp.length <= 12;
     }
 
 }

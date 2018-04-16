@@ -18,6 +18,7 @@
 pragma solidity 0.4.21;
 
 import "./lib/AddressUtil.sol";
+import "./lib/StringUtil.sol";
 import "./lib/ERC20Token.sol";
 import "./TokenRegistry.sol";
 
@@ -29,8 +30,9 @@ import "./TokenRegistry.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenFactory {
     using AddressUtil for address;
+    using StringUtil for string;
 
-    address[] public tokens;
+    mapping(bytes10 => address) public tokens;
     address   public tokenRegistry;
     address   public tokenTransferDelegate;
 
@@ -82,6 +84,10 @@ contract TokenFactory {
     {
         require(tokenRegistry != 0x0);
         require(tokenTransferDelegate != 0x0);
+        require(symbol.checkStringLength(3, 10));
+
+        bytes10 symbolBytes = symbol.stringToBytes10();
+        require(tokens[symbolBytes] == 0x0);
 
         ERC20Token token = new ERC20Token(
             name,
@@ -94,7 +100,7 @@ contract TokenFactory {
 
         addr = address(token);
         TokenRegistry(tokenRegistry).registerMintedToken(addr, symbol);
-        tokens.push(addr);
+        tokens[symbolBytes] = addr;
 
         emit TokenCreated(
             addr,
