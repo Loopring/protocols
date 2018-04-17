@@ -60,18 +60,13 @@ contract NameRegistry {
     /// Functions                                                            ///
     ////////////////////////////////////////////////////////////////////////////
 
-
     function registerName(string name) external;
-
 
     function unregisterName(string name) external;
 
-
     function transferOwnership(address newOwner) external;
 
-
     function addAddress(address addr) external returns (uint addressId);
-
 
     function removeAddress(uint addressId) external;
 
