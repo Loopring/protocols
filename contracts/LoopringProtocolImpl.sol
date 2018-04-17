@@ -26,7 +26,7 @@ import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
 
 
-/// @title Loopring Token Exchange Protocol Implementation Contract
+/// @title Implementation of LoopringProtocol.
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 ///
@@ -38,10 +38,6 @@ import "./TokenTransferDelegate.sol";
 contract LoopringProtocolImpl is LoopringProtocol {
     using AddressUtil   for address;
     using MathUint      for uint;
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Variables                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
 
     address public  lrcTokenAddress             = 0x0;
     address public  tokenRegistryAddress        = 0x0;
@@ -80,10 +76,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     // A map from address to its trading-pair cutoff timestamp.
     mapping (address => mapping (bytes20 => uint)) public tradingPairCutoffs;
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Structs                                                              ///
-    ////////////////////////////////////////////////////////////////////////////
 
     struct Rate {
         uint amountS;
@@ -168,10 +160,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32       ringHash;         // computed
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    /// Constructor                                                          ///
-    ////////////////////////////////////////////////////////////////////////////
-
     function LoopringProtocolImpl(
         address _lrcTokenAddress,
         address _tokenRegistryAddress,
@@ -197,10 +185,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
         walletSplitPercentage = _walletSplitPercentage;
     }
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Public Functions                                                     ///
-    ////////////////////////////////////////////////////////////////////////////
 
     /// @dev Disable default function.
     function () payable public {

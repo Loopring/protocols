@@ -23,39 +23,24 @@ import "./lib/MathUint.sol";
 import "./TokenTransferDelegate.sol";
 
 
-/// @title TokenTransferDelegate
-/// @dev Acts as a middle man to transfer ERC20 tokens on behalf of different
-/// versions of Loopring protocol to avoid ERC20 re-authorization.
+/// @title Implementation of TokenTransferDelegate.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     using MathUint for uint;
 
-    ////////////////////////////////////////////////////////////////////////////
-    /// Structs                                                              ///
-    ////////////////////////////////////////////////////////////////////////////
     struct AddressInfo {
         address previous;
         uint32  index;
         bool    authorized;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    /// Variables                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
     mapping(address => AddressInfo) public addressInfos;
     address public latestAddress;
 
-    ////////////////////////////////////////////////////////////////////////////
-    /// Modifiers                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
     modifier onlyAuthorized() {
         require(addressInfos[msg.sender].authorized);
         _;
     }
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Public Functions                                                     ///
-    ////////////////////////////////////////////////////////////////////////////
 
     /// @dev Disable default function.
     function () payable public {

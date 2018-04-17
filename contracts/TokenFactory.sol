@@ -24,11 +24,6 @@ pragma solidity 0.4.21;
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenFactory {
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Events                                                               ///
-    ////////////////////////////////////////////////////////////////////////////
-
     event TokenCreated(
         address indexed addr,
         string  name,
@@ -37,10 +32,6 @@ contract TokenFactory {
         uint    totalSupply,
         address firstHolder
     );
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Functions                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
 
     /// @dev Initialize TokenRegistry address.
     ///      This method sjhall be called immediately upon deployment.

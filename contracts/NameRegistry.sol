@@ -23,11 +23,6 @@ pragma solidity 0.4.21;
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>,
 contract NameRegistry {
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Events                                                               ///
-    ////////////////////////////////////////////////////////////////////////////
-
     event NameRegistered (
         string            name,
         address   indexed owner
@@ -55,10 +50,6 @@ contract NameRegistry {
         uint    addressId,
         address owner
     );
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Functions                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
 
     function registerName(string name) external;
 

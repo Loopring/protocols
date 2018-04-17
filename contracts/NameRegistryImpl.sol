@@ -20,16 +20,11 @@ pragma solidity 0.4.21;
 import "./lib/StringUtil.sol";
 import "./NameRegistry.sol";
 
-/// @title Name Register Contract
-/// @dev This contract maintains a name service for addresses and miner.
+/// @title Implementation of NameRegister.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>,
 contract NameRegistryImpl is NameRegistry {
     using StringUtil for string;
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Structs                                                              ///
-    ////////////////////////////////////////////////////////////////////////////
 
     struct NameInfo {
         bytes12  name;
@@ -42,20 +37,12 @@ contract NameRegistryImpl is NameRegistry {
         address owner;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    /// Variables                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
-
     uint public nextId = 0;
 
     mapping (uint    => AddressInfo) public addressInfoMap;
     mapping (address => NameInfo)    public nameInfoMap;
     mapping (bytes12 => address)     public ownerMap;
     mapping (address => string)      public nameMap;
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Public Functions                                                     ///
-    ////////////////////////////////////////////////////////////////////////////
 
     function registerName(string name)
         external

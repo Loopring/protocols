@@ -23,15 +23,8 @@ pragma solidity 0.4.21;
 /// versions of Loopring protocol to avoid ERC20 re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenTransferDelegate {
-    ////////////////////////////////////////////////////////////////////////////
-    /// Events                                                               ///
-    ////////////////////////////////////////////////////////////////////////////
     event AddressAuthorized(address indexed addr, uint32 number);
     event AddressDeauthorized(address indexed addr, uint32 number);
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Public Functions                                                     ///
-    ////////////////////////////////////////////////////////////////////////////
 
     /// @dev Add a Loopring protocol address.
     /// @param addr A loopring protocol address.

@@ -22,18 +22,10 @@ pragma solidity 0.4.21;
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TransferableMultsig {
 
-    ////////////////////////////////////////////////////////////////////////////
-    /// Variables                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
-
     uint public nonce;                  // (only) mutable state
     uint public threshold;              // immutable state
     mapping (address => bool) ownerMap; // immutable state
     address[] public owners;            // immutable state
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Constructor                                                          ///
-    ////////////////////////////////////////////////////////////////////////////
 
     function TransferableMultsig(
         uint      _threshold,
@@ -43,10 +35,6 @@ contract TransferableMultsig {
     {
         updateOwners(_threshold, _owners);
     }
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Public Functions                                                     ///
-    ////////////////////////////////////////////////////////////////////////////
 
     // default function does nothing.
     function () payable public {}
@@ -115,10 +103,6 @@ contract TransferableMultsig {
         );
         updateOwners(_threshold, _owners);
     }
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Internal Functions                                                   ///
-    ////////////////////////////////////////////////////////////////////////////
 
     function verifySignatures(
         uint8[]   sigV,

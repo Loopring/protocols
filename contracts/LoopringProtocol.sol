@@ -22,15 +22,7 @@ pragma solidity 0.4.21;
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract LoopringProtocol {
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Constants                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Events                                                               ///
-    ////////////////////////////////////////////////////////////////////////////
 
     /// @dev Event to emit if a ring is successfully mined.
     /// _amountsList is an array of:
@@ -59,10 +51,6 @@ contract LoopringProtocol {
         address             _token2,
         uint                _cutoff
     );
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Functions                                                            ///
-    ////////////////////////////////////////////////////////////////////////////
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in orderValues.
