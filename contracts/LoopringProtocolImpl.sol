@@ -13,7 +13,6 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
 pragma solidity 0.4.21;
 
@@ -26,7 +25,7 @@ import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
 
 
-/// @title Implementation of LoopringProtocol.
+/// @title An Implementation of LoopringProtocol.
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 ///
@@ -387,12 +386,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         if (params.minerId == 0) {
             params.ringMiner = msg.sender;
         } else {
-            params.ringMiner = NameRegistry(
-                nameRegistryAddress
-            ).getAddressById(
-                params.minerId
-            );
-
+            params.ringMiner = NameRegistry(nameRegistryAddress).getAddress(params.minerId);
             if (params.ringMiner == 0x0) {
                 params.ringMiner = msg.sender;
             }
@@ -498,7 +492,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p + 4] = bytes32(state.lrcReward);
             batch[p + 5] = bytes32(state.lrcFee);
             if (order.walletId != 0) {
-                batch[p + 6] = bytes32(NameRegistry(nameRegistryAddress).getAddressById(order.walletId));
+                batch[p + 6] = bytes32(NameRegistry(nameRegistryAddress).getAddress(order.walletId));
             } else {
                 batch[p + 6] = bytes32(0x0);
             }

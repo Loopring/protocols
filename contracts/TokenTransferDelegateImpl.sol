@@ -13,7 +13,6 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
 pragma solidity 0.4.21;
 
@@ -23,7 +22,7 @@ import "./lib/MathUint.sol";
 import "./TokenTransferDelegate.sol";
 
 
-/// @title Implementation of TokenTransferDelegate.
+/// @title An Implementation of TokenTransferDelegate.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     using MathUint for uint;

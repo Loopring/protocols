@@ -13,14 +13,13 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
 pragma solidity 0.4.21;
 
 import "./lib/StringUtil.sol";
 import "./NameRegistry.sol";
 
-/// @title Implementation of NameRegister.
+/// @title An Implementation of NameRegister.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>,
 contract NameRegistryImpl is NameRegistry {
@@ -154,7 +153,7 @@ contract NameRegistryImpl is NameRegistry {
         emit AddressUnregistered(addressId, msg.sender);
     }
 
-    function getAddressById(uint id)
+    function getAddress(uint id)
         external
         view
         returns (address addr)

@@ -13,7 +13,6 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
 pragma solidity 0.4.21;
 
@@ -24,7 +23,7 @@ import "./TokenFactory.sol";
 import "./TokenRegistry.sol";
 
 
-/// @title Implementation of TokenFactory.
+/// @title An Implementation of TokenFactory.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenFactoryImpl is TokenFactory {
