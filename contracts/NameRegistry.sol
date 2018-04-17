@@ -17,32 +17,16 @@
 */
 pragma solidity 0.4.21;
 
-import "./lib/StringUtil.sol";
 
 /// @title Name Register Contract
 /// @dev This contract maintains a name service for addresses and miner.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>,
 contract NameRegistry {
-    using StringUtil for string;
 
-    uint public nextId = 0;
-
-    mapping (uint    => AddressInfo) public addressInfoMap;
-    mapping (address => NameInfo)    public nameInfoMap;
-    mapping (bytes12 => address)     public ownerMap;
-    mapping (address => string)      public nameMap;
-
-    struct NameInfo {
-        bytes12  name;
-        uint[]   addressIds;
-    }
-
-    struct AddressInfo {
-        address addr;
-        bytes12 name;
-        address owner;
-    }
+    ////////////////////////////////////////////////////////////////////////////
+    /// Events                                                               ///
+    ////////////////////////////////////////////////////////////////////////////
 
     event NameRegistered (
         string            name,
@@ -60,146 +44,39 @@ contract NameRegistry {
         address            newOwner
     );
 
-    event AddressInfoRegistered (
+    event AddressRegistered (
         bytes12           name,
         address   indexed owner,
         uint      indexed addressId,
         address           addr
     );
 
-    event AddressInfoUnregistered (
+    event AddressUnregistered (
         uint    addressId,
         address owner
     );
 
-    function registerName(string name)
-        external
-    {
-        require(name.checkStringLength(6, 12));
+    ////////////////////////////////////////////////////////////////////////////
+    /// Functions                                                            ///
+    ////////////////////////////////////////////////////////////////////////////
 
-        bytes12 nameBytes = name.stringToBytes12();
 
-        require(ownerMap[nameBytes] == 0x0);
-        require(nameMap[msg.sender].stringToBytes12() == bytes12(0x0));
+    function registerName(string name) external;
 
-        nameInfoMap[msg.sender] = NameInfo(nameBytes, new uint[](0));
-        ownerMap[nameBytes] = msg.sender;
-        nameMap[msg.sender] = name;
 
-        emit NameRegistered(name, msg.sender);
-    }
+    function unregisterName(string name) external;
 
-    function unregisterName(string name)
-        external
-    {
-        NameInfo storage nameInfo = nameInfoMap[msg.sender];
-        uint[] storage addressIds = nameInfo.addressIds;
-        bytes12 nameBytes = name.stringToBytes12();
-        require(nameInfo.name == nameBytes);
 
-        for (uint i = 0; i < addressIds.length; i++) {
-            delete addressInfoMap[addressIds[i]];
-        }
+    function transferOwnership(address newOwner) external;
 
-        delete nameInfoMap[msg.sender];
-        delete nameMap[msg.sender];
-        delete ownerMap[nameBytes];
 
-        emit NameUnregistered(name, msg.sender);
-    }
+    function addAddress(address addr) external returns (uint addressId);
 
-    function transferOwnership(address newOwner)
-        external
-    {
-        require(newOwner != 0x0);
-        require(nameInfoMap[newOwner].name.length == 0);
 
-        NameInfo storage nameInfo = nameInfoMap[msg.sender];
-        string storage name = nameMap[msg.sender];
-        uint[] memory addressIds = nameInfo.addressIds;
-
-        for (uint i = 0; i < addressIds.length; i ++) {
-            AddressInfo storage p = addressInfoMap[addressIds[i]];
-            p.owner = newOwner;
-        }
-
-        delete nameInfoMap[msg.sender];
-        delete nameMap[msg.sender];
-
-        nameInfoMap[newOwner] = nameInfo;
-        nameMap[newOwner] = name;
-
-        emit OwnershipTransfered(nameInfo.name, msg.sender, newOwner);
-    }
-
-    function addAddress(address addr)
-        external
-        returns (uint)
-    {
-        require(addr != 0x0);
-
-        NameInfo storage nameInfo = nameInfoMap[msg.sender];
-        bytes12 name = nameInfo.name;
-
-        require(name.length > 0);
-
-        AddressInfo memory addressInfo = AddressInfo(
-            addr,
-            name,
-            msg.sender
-        );
-
-        uint addressId = ++nextId;
-        addressInfoMap[addressId] = addressInfo;
-        nameInfo.addressIds.push(addressId);
-
-        emit AddressInfoRegistered(
-            name,
-            msg.sender,
-            addressId,
-            addr
-        );
-
-        return addressId;
-    }
-
-    function removeAddress(uint addressId)
-        external
-    {
-        require(msg.sender == addressInfoMap[addressId].owner);
-
-        NameInfo storage nameInfo = nameInfoMap[msg.sender];
-        uint[] storage addressIds = nameInfo.addressIds;
-
-        delete addressInfoMap[addressId];
-
-        uint len = addressIds.length;
-        for (uint i = 0; i < len; i ++) {
-            if (addressId == addressIds[i]) {
-                addressIds[i] = addressIds[len - 1];
-                addressIds.length -= 1;
-            }
-        }
-
-        emit AddressInfoUnregistered(addressId, msg.sender);
-    }
+    function removeAddress(uint addressId) external;
 
     function getAddressById(uint id)
         external
         view
-        returns (address addr)
-    {
-        AddressInfo storage addressSet = addressInfoMap[id];
-        addr = addressSet.addr;
-    }
-
-    function getOwner(string name)
-        external
-        view
-        returns (address)
-    {
-        bytes12 nameBytes = name.stringToBytes12();
-        return ownerMap[nameBytes];
-    }
-
+        returns (address addr);
 }
