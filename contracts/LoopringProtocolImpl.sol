@@ -164,7 +164,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint          minerId;
         uint          ringSize;         // computed
         uint16        feeSelections;
-        address       ringMiner;        // queried
         address       feeRecipient;     // queried
         bytes32       ringHash;         // computed
     }
@@ -318,7 +317,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             minerId,
             addressList.length,
             feeSelections,
-            0x0,        // ringMiner
             0x0,        // feeRecipient
             0x0         // ringHash
         );
@@ -380,17 +378,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 params.sList[j]
             );
         }
-
-        if (params.vList.length == j + 2) {
-            j++;
-            verifySignature(
-                params.ringMiner,
-                params.ringHash,
-                params.vList[j],
-                params.rList[j],
-                params.sList[j]
-            );
-        }
     }
 
     function verifyTokensRegistered(RingParams params)
@@ -416,7 +403,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         if (params.minerId == 0) {
             params.feeRecipient = msg.sender;
         } else {
-            (params.feeRecipient, params.ringMiner) = NameRegistry(
+            params.feeRecipient = NameRegistry(
                 nameRegistryAddress
             ).getParticipantById(
                 params.minerId
@@ -427,9 +414,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             }
         }
 
-        uint sigSize = params.vList.length;
-        uint doubleRingSize = params.ringSize << 1;
-        require(sigSize == doubleRingSize || sigSize == doubleRingSize + 1);
+        uint sigSize = params.ringSize << 1;
+        require(sigSize == params.vList.length);
         require(sigSize == params.rList.length);
         require(sigSize == params.sList.length);
     }
@@ -489,7 +475,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         emit RingMined(
             _ringIndex,
             params.ringHash,
-            params.ringMiner,
             params.feeRecipient,
             orderHashList,
             amountsList
@@ -529,7 +514,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p + 4] = bytes32(state.lrcReward);
             batch[p + 5] = bytes32(state.lrcFee);
             if (order.walletId != 0) {
-                batch[p + 6] = bytes32(NameRegistry(nameRegistryAddress).getFeeRecipientById(order.walletId));
+                batch[p + 6] = bytes32(NameRegistry(nameRegistryAddress).getParticipantById(order.walletId));
             } else {
                 batch[p + 6] = bytes32(0x0);
             }

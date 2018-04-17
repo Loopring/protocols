@@ -201,21 +201,9 @@ contract NameRegistry {
     function getParticipantById(uint id)
         external
         view
-        returns (address feeRecipient, address signer)
-    {
-        Participant storage addressSet = participantMap[id];
-
-        feeRecipient = addressSet.feeRecipient;
-        signer = addressSet.signer;
-    }
-
-    function getFeeRecipientById(uint id)
-        external
-        view
         returns (address feeRecipient)
     {
         Participant storage addressSet = participantMap[id];
-
         feeRecipient = addressSet.feeRecipient;
     }
 
