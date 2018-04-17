@@ -132,7 +132,7 @@ contract NameRegistry {
         emit OwnershipTransfered(nameInfo.name, msg.sender, newOwner);
     }
 
-    function addAddressInfo(address addr)
+    function addAddress(address addr)
         external
         returns (uint)
     {
@@ -163,7 +163,7 @@ contract NameRegistry {
         return addressId;
     }
 
-    function removeAddressInfo(uint addressId)
+    function removeAddress(uint addressId)
         external
     {
         require(msg.sender == addressInfoMap[addressId].owner);
@@ -191,39 +191,6 @@ contract NameRegistry {
     {
         AddressInfo storage addressSet = addressInfoMap[id];
         addr = addressSet.addr;
-    }
-
-    function getAddressesByIds(string name, uint start, uint count)
-        external
-        view
-        returns (uint[] idList)
-    {
-        bytes12 nameBytes = name.stringToBytes12();
-        address owner = ownerMap[nameBytes];
-        require(owner != 0x0);
-
-        NameInfo storage nameInfo = nameInfoMap[owner];
-        uint[] storage pIds = nameInfo.addressIds;
-
-        uint len = pIds.length;
-        if (start >= len) {
-            return;
-        }
-
-        uint end = start + count;
-        if (end > len) {
-            end = len;
-        }
-
-        if (start == end) {
-            return;
-        }
-
-        idList = new uint[](end - start);
-
-        for (uint i = start; i < end; i ++) {
-            idList[i - start] = pIds[i];
-        }
     }
 
     function getOwner(string name)

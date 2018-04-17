@@ -164,7 +164,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint          minerId;
         uint          ringSize;         // computed
         uint16        feeSelections;
-        address       feeRecipient;     // queried
+        address       ringMiner;     // queried
         bytes32       ringHash;         // computed
     }
 
@@ -317,7 +317,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             minerId,
             addressList.length,
             feeSelections,
-            0x0,        // feeRecipient
+            0x0,        // ringMiner
             0x0         // ringHash
         );
 
@@ -401,16 +401,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
         view
     {
         if (params.minerId == 0) {
-            params.feeRecipient = msg.sender;
+            params.ringMiner = msg.sender;
         } else {
-            params.feeRecipient = NameRegistry(
+            params.ringMiner = NameRegistry(
                 nameRegistryAddress
             ).getAddressById(
                 params.minerId
             );
 
-            if (params.feeRecipient == 0x0) {
-                params.feeRecipient = msg.sender;
+            if (params.ringMiner == 0x0) {
+                params.ringMiner = msg.sender;
             }
         }
 
@@ -457,7 +457,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             delegate,
             params.ringSize,
             orders,
-            params.feeRecipient,
+            params.ringMiner,
             _lrcTokenAddress
         );
 
@@ -468,14 +468,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
             delegate,
             params.ringSize,
             orders,
-            params.feeRecipient,
+            params.ringMiner,
             _lrcTokenAddress
         );
 
         emit RingMined(
             _ringIndex,
             params.ringHash,
-            params.feeRecipient,
+            params.ringMiner,
             orderHashList,
             amountsList
         );
@@ -485,7 +485,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         TokenTransferDelegate delegate,
         uint          ringSize,
         OrderState[]  orders,
-        address       feeRecipient,
+        address       ringMiner,
         address       _lrcTokenAddress
         )
         private
@@ -539,7 +539,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Do all transactions
         delegate.batchTransferToken(
             _lrcTokenAddress,
-            feeRecipient,
+            ringMiner,
             walletSplitPercentage,
             batch
         );
@@ -575,7 +575,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         TokenTransferDelegate delegate,
         uint            ringSize,
         OrderState[]    orders,
-        address         feeRecipient,
+        address         ringMiner,
         address         _lrcTokenAddress
         )
         private
@@ -642,7 +642,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < state.lrcFee) {
                     checkedMinerLrcSpendable = true;
-                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, feeRecipient);
+                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, ringMiner);
                 }
 
                 // Only calculate split when miner has enough LRC;
