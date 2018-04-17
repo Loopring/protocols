@@ -405,7 +405,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         } else {
             params.feeRecipient = NameRegistry(
                 nameRegistryAddress
-            ).getParticipantById(
+            ).getAddressById(
                 params.minerId
             );
 
@@ -514,7 +514,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p + 4] = bytes32(state.lrcReward);
             batch[p + 5] = bytes32(state.lrcFee);
             if (order.walletId != 0) {
-                batch[p + 6] = bytes32(NameRegistry(nameRegistryAddress).getParticipantById(order.walletId));
+                batch[p + 6] = bytes32(NameRegistry(nameRegistryAddress).getAddressById(order.walletId));
             } else {
                 batch[p + 6] = bytes32(0x0);
             }
