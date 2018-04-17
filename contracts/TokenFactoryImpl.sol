@@ -43,8 +43,6 @@ contract TokenFactoryImpl is TokenFactory {
         revert();
     }
 
-    /// @dev Initialize TokenRegistry address.
-    ///      This method sjhall be called immediately upon deployment.
     function initialize(
         address _tokenRegistry
         )
@@ -54,12 +52,6 @@ contract TokenFactoryImpl is TokenFactory {
         tokenRegistry = _tokenRegistry;
     }
 
-    /// @dev Deploy an ERC20 token contract, register it with TokenRegistry,
-    ///      and returns the new token's address.
-    /// @param name The name of the token
-    /// @param symbol The symbol of the token.
-    /// @param decimals The decimals of the token.
-    /// @param totalSupply The total supply of the token.
     function createToken(
         string  name,
         string  symbol,
