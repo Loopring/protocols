@@ -19,9 +19,7 @@ pragma solidity 0.4.21;
 
 import "./lib/AddressUtil.sol";
 import "./lib/ERC20.sol";
-import "./lib/MathBytes32.sol";
 import "./lib/MathUint.sol";
-import "./lib/MathUint8.sol";
 import "./LoopringProtocol.sol";
 import "./NameRegistry.sol";
 import "./TokenRegistry.sol";
@@ -39,9 +37,7 @@ import "./TokenTransferDelegate.sol";
 ///     https://github.com/jonasshen
 contract LoopringProtocolImpl is LoopringProtocol {
     using AddressUtil   for address;
-    using MathBytes32   for bytes32[];
     using MathUint      for uint;
-    using MathUint8     for uint8[];
 
     ////////////////////////////////////////////////////////////////////////////
     /// Variables                                                            ///
