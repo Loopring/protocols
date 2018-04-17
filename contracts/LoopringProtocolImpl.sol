@@ -381,7 +381,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             );
         }
 
-        if (params.ringMiner != 0x0) {
+        if (params.vList.length == j + 2) {
             j++;
             verifySignature(
                 params.ringMiner,
@@ -427,14 +427,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
             }
         }
 
-        uint sigSize = params.ringSize * 2;
-        if (params.ringMiner != 0x0) {
-            sigSize += 1;
-        }
-
-        require(sigSize == params.vList.length); // "ring data is inconsistent - vList");
-        require(sigSize == params.rList.length); // "ring data is inconsistent - rList");
-        require(sigSize == params.sList.length); // "ring data is inconsistent - sList");
+        uint sigSize = params.vList.length;
+        uint doubleRingSize = params.ringSize << 1;
+        require(sigSize == doubleRingSize || sigSize == doubleRingSize + 1);
+        require(sigSize == params.rList.length);
+        require(sigSize == params.sList.length);
     }
 
     function handleRing(
