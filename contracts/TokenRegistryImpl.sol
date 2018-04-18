@@ -27,7 +27,6 @@ import "./TokenRegistry.sol";
 contract TokenRegistryImpl is TokenRegistry, Claimable {
     using AddressUtil for address;
 
-    address tokenMintAddr;
     address[] public addresses;
     mapping (address => TokenInfo) addressMap;
     mapping (string => address) symbolMap;
@@ -41,12 +40,6 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
     /// @dev Disable default function.
     function () payable public {
         revert();
-    }
-
-    function TokenRegistryImpl(address _tokenMintAddr) public
-    {
-        require(_tokenMintAddr.isContract());
-        tokenMintAddr = _tokenMintAddr;
     }
 
     function registerToken(
@@ -65,7 +58,6 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
         )
         external
     {
-        require(msg.sender == tokenMintAddr);
         registerTokenInternal(addr, symbol);
     }
 

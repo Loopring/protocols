@@ -291,15 +291,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
             vList,
             rList,
             sList,
-            miner,
+            ((miner != 0x0) ? miner : msg.sender),
             feeSelections,
             addressList.length,
             0x0 // ringHash
         );
 
         verifyInputDataIntegrity(params);
-
-        updateFeeRecipient(params);
 
         // Assemble input data into structs so we can pass them to other functions.
         // This method also calculates ringHash, therefore it must be called before
@@ -370,20 +368,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(
             TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens)
         ); // "token not registered");
-    }
-
-    function updateFeeRecipient(RingParams params)
-        private
-        view
-    {
-        if (params.miner == 0x0) {
-            params.miner = msg.sender;
-        }
-
-        uint sigSize = params.ringSize << 1;
-        require(sigSize == params.vList.length);
-        require(sigSize == params.rList.length);
-        require(sigSize == params.sList.length);
     }
 
     function handleRing(
@@ -815,6 +799,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         //Check ring size
         require(params.ringSize > 1 && params.ringSize <= MAX_RING_SIZE); // "invalid ring size");
+
+        uint sigSize = params.ringSize << 1;
+        require(sigSize == params.vList.length);
+        require(sigSize == params.rList.length);
+        require(sigSize == params.sList.length);
     }
 
     /// @dev        assmble order parameters into Order struct.

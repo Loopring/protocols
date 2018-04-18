@@ -1,14 +1,11 @@
-var TokenRegistry           = artifacts.require("./TokenRegistry");
-var TokenTransferDelegate   = artifacts.require("./TokenTransferDelegate");
-var NameRegistry            = artifacts.require("./NameRegistry");
-var TokenFactory            = artifacts.require("./TokenFactory");
+var TokenRegistryImpl           = artifacts.require("./TokenRegistryImpl");
+var TokenTransferDelegateImpl   = artifacts.require("./TokenTransferDelegateImpl");
+var NameRegistryImpl            = artifacts.require("./NameRegistryImpl");
+var TokenFactoryImpl            = artifacts.require("./TokenFactoryImpl");
 
 module.exports = function(deployer, network, accounts) {
-  deployer.deploy(TokenTransferDelegate);
-  deployer.deploy(NameRegistry);
-
-  deployer.deploy(TokenFactory).then(function() {
-    return deployer.deploy(TokenRegistry, TokenFactory.address);
-  });
-
+  deployer.deploy(TokenTransferDelegateImpl);
+  deployer.deploy(NameRegistryImpl);
+  deployer.deploy(TokenRegistryImpl);
+  deployer.deploy(TokenFactoryImpl);
 };
