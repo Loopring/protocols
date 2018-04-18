@@ -318,10 +318,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         ringIndex = (ringIndex ^ ENTERED_MASK) + 1;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    /// Internal & Private Functions                                         ///
-    ////////////////////////////////////////////////////////////////////////////
-
     /// @dev Validate a ring.
     function verifyRingHasNoSubRing(
         uint          ringSize,
