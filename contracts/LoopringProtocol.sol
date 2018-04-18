@@ -66,8 +66,8 @@ contract LoopringProtocol {
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
     function cancelOrder(
-        address[4] addresses,
-        uint[7]    orderValues,
+        address[5] addresses,
+        uint[6]    orderValues,
         bool       buyNoMoreThanAmountB,
         uint8      marginSplitPercentage,
         uint8      v,
@@ -128,8 +128,8 @@ contract LoopringProtocol {
     ///                     Bits to indicate fee selections. `1` represents margin
     ///                     split and `0` represents LRC as fee.
     function submitRing(
-        address[3][]    addressList,
-        uint[7][]       uintArgsList,
+        address[4][]    addressList,
+        uint[6][]       uintArgsList,
         uint8[1][]      uint8ArgsList,
         bool[]          buyNoMoreThanAmountBList,
         uint8[]         vList,

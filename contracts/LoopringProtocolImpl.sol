@@ -20,7 +20,6 @@ import "./lib/AddressUtil.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./LoopringProtocol.sol";
-import "./NameRegistry.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
 
@@ -41,7 +40,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  lrcTokenAddress             = 0x0;
     address public  tokenRegistryAddress        = 0x0;
     address public  delegateAddress             = 0x0;
-    address public  nameRegistryAddress         = 0x0;
 
     uint64  public  ringIndex                   = 0;
     uint8   public  walletSplitPercentage       = 0;
@@ -96,7 +94,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param buyNoMoreThanAmountB -
     ///                     If true, this order does not accept buying more
     ///                     than `amountB`.
-    /// @param walletId     The id of the wallet that generated this order.
+    /// @param walletAddress The wallet address that generated this order.
     /// @param marginSplitPercentage -
     ///                     The percentage of margin paid to miner.
     /// @param v            ECDSA signature parameter v.
@@ -113,7 +111,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    amountB;
         uint    lrcFee;
         bool    buyNoMoreThanAmountB;
-        uint    walletId;
+        address walletAddress;
         uint8   marginSplitPercentage;
     }
 
@@ -145,14 +143,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev A struct to capture parameters passed to submitRing method and
     ///      various of other variables used across the submitRing core logics.
     struct RingParams {
-        address[3][]  addressList;
-        uint[7][]     uintArgsList;
+        address[4][]  addressList;
+        uint[6][]     uintArgsList;
         uint8[1][]    uint8ArgsList;
         bool[]        buyNoMoreThanAmountBList;
         uint8[]       vList;
         bytes32[]     rList;
         bytes32[]     sList;
-        uint          minerId;
         uint          ringSize;         // computed
         uint16        feeSelections;
         address       miner;     // queried
@@ -163,7 +160,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address _lrcTokenAddress,
         address _tokenRegistryAddress,
         address _delegateAddress,
-        address _nameRegistryAddress,
         uint    _rateRatioCVSThreshold,
         uint8   _walletSplitPercentage
         )
@@ -172,7 +168,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(_lrcTokenAddress.isContract());
         require(_tokenRegistryAddress.isContract());
         require(_delegateAddress.isContract());
-        require(_nameRegistryAddress.isContract());
 
         require(_rateRatioCVSThreshold > 0);
         require(_walletSplitPercentage > 0 && _walletSplitPercentage < 100);
@@ -180,7 +175,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         lrcTokenAddress = _lrcTokenAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         delegateAddress = _delegateAddress;
-        nameRegistryAddress = _nameRegistryAddress;
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
         walletSplitPercentage = _walletSplitPercentage;
     }
@@ -191,8 +185,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function cancelOrder(
-        address[4] addresses,
-        uint[7]    orderValues,
+        address[5] addresses,
+        uint[6]    orderValues,
         bool       buyNoMoreThanAmountB,
         uint8      marginSplitPercentage,
         uint8      v,
@@ -201,7 +195,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         external
     {
-        uint cancelAmount = orderValues[6];
+        uint cancelAmount = orderValues[5];
 
         require(cancelAmount > 0); // "amount to cancel is zero");
 
@@ -216,7 +210,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderValues[1],
             orderValues[4],
             buyNoMoreThanAmountB,
-            orderValues[5],
+            addresses[4],
             marginSplitPercentage
         );
 
@@ -271,14 +265,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function submitRing(
-        address[3][]  addressList,
-        uint[7][]     uintArgsList,
+        address[4][]  addressList,
+        uint[6][]     uintArgsList,
         uint8[1][]    uint8ArgsList,
         bool[]        buyNoMoreThanAmountBList,
         uint8[]       vList,
         bytes32[]     rList,
         bytes32[]     sList,
-        uint          minerId,
+        address       minerAddress,
         uint16        feeSelections
         )
         public
@@ -297,16 +291,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
             vList,
             rList,
             sList,
-            minerId,
             addressList.length,
             feeSelections,
-            0x0,        // miner
-            0x0         // ringHash
+            minerAddress,   // miner
+            0x0             // ringHash
         );
 
         verifyInputDataIntegrity(params);
-
-        updateFeeRecipient(params);
 
         // Assemble input data into structs so we can pass them to other functions.
         // This method also calculates ringHash, therefore it must be called before
@@ -377,25 +368,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(
             TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens)
         ); // "token not registered");
-    }
-
-    function updateFeeRecipient(RingParams params)
-        private
-        view
-    {
-        if (params.minerId == 0) {
-            params.miner = msg.sender;
-        } else {
-            params.miner = NameRegistry(nameRegistryAddress).getAddress(params.minerId);
-            if (params.miner == 0x0) {
-                params.miner = msg.sender;
-            }
-        }
-
-        uint sigSize = params.ringSize << 1;
-        require(sigSize == params.vList.length);
-        require(sigSize == params.rList.length);
-        require(sigSize == params.sList.length);
     }
 
     function handleRing(
@@ -491,11 +463,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p + 3] = bytes32(prevSplitB + state.splitS);
             batch[p + 4] = bytes32(state.lrcReward);
             batch[p + 5] = bytes32(state.lrcFee);
-            if (order.walletId != 0) {
-                batch[p + 6] = bytes32(NameRegistry(nameRegistryAddress).getAddress(order.walletId));
-            } else {
-                batch[p + 6] = bytes32(0x0);
-            }
+            batch[p + 6] = bytes32(order.walletAddress);
+
             p += 7;
 
             // Update fill records
@@ -831,6 +800,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         //Check ring size
         require(params.ringSize > 1 && params.ringSize <= MAX_RING_SIZE); // "invalid ring size");
+
+        uint sigSize = params.ringSize << 1;
+        require(sigSize == params.vList.length);
+        require(sigSize == params.rList.length);
+        require(sigSize == params.sList.length);
     }
 
     /// @dev        assmble order parameters into Order struct.
@@ -855,7 +829,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 params.uintArgsList[i][1],
                 params.uintArgsList[i][4],
                 params.buyNoMoreThanAmountBList[i],
-                params.uintArgsList[i][6],
+                params.addressList[i][3],
                 params.uint8ArgsList[i][0]
             );
 
@@ -889,7 +863,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         params.ringHash = keccak256(
             params.ringHash,
-            params.minerId,
+            params.miner,
             params.feeSelections
         );
     }
@@ -932,7 +906,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.validUntil,
             order.lrcFee,
             order.buyNoMoreThanAmountB,
-            order.walletId,
+            order.walletAddress,
             order.marginSplitPercentage
         );
     }
