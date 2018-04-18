@@ -94,7 +94,9 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
         emit TokenUnregistered(addr, symbol);
     }
 
-    function areAllTokensRegistered(address[] addressList)
+    function areAllTokensRegistered(
+        address[] addressList
+        )
         external
         view
         returns (bool)
@@ -107,7 +109,9 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
         return true;
     }
 
-    function getAddressBySymbol(string symbol)
+    function getAddressBySymbol(
+        string symbol
+        )
         external
         view
         returns (address)
@@ -115,7 +119,9 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
         return symbolMap[symbol];
     }
 
-    function isTokenRegisteredBySymbol(string symbol)
+    function isTokenRegisteredBySymbol(
+        string symbol
+        )
         public
         view
         returns (bool)
@@ -123,7 +129,9 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
         return symbolMap[symbol] != 0x0;
     }
 
-    function isTokenRegistered(address addr)
+    function isTokenRegistered(
+        address addr
+        )
         public
         view
         returns (bool)

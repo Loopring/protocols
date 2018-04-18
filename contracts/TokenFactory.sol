@@ -32,13 +32,6 @@ contract TokenFactory {
         address firstHolder
     );
 
-    /// @dev Initialize TokenRegistry address.
-    ///      This method sjhall be called immediately upon deployment.
-    function initialize(
-        address _tokenRegistry
-        )
-        external;
-
     /// @dev Deploy an ERC20 token contract, register it with TokenRegistry,
     ///      and returns the new token's address.
     /// @param name The name of the token

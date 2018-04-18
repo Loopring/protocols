@@ -27,13 +27,21 @@ contract TokenTransferDelegate {
 
     /// @dev Add a Loopring protocol address.
     /// @param addr A loopring protocol address.
-    function authorizeAddress(address addr) external;
+    function authorizeAddress(
+        address addr
+        )
+        external;
 
     /// @dev Remove a Loopring protocol address.
     /// @param addr A loopring protocol address.
-    function deauthorizeAddress(address addr) external;
+    function deauthorizeAddress(
+        address addr
+        )
+        external;
 
-    function getLatestAuthorizedAddresses(uint max)
+    function getLatestAuthorizedAddresses(
+        uint max
+        )
         external
         view
         returns (address[] addresses);
@@ -59,7 +67,9 @@ contract TokenTransferDelegate {
         )
         external;
 
-    function isAddressAuthorized(address addr)
+    function isAddressAuthorized(
+        address addr
+        )
         public
         view
         returns (bool);

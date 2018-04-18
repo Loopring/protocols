@@ -42,10 +42,10 @@ contract TokenFactoryImpl is TokenFactory {
         revert();
     }
 
-    function initialize(
+    function TokenFactoryImpl(
         address _tokenRegistry
         )
-        external
+        public
     {
         require(tokenRegistry == 0x0 && _tokenRegistry.isContract());
         tokenRegistry = _tokenRegistry;
