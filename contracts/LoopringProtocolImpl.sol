@@ -441,9 +441,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         amountsList = new uint[6][](ringSize);
 
         uint p = 0;
+        uint prevSplitB = orders[ringSize - 1].splitB;
         for (uint i = 0; i < ringSize; i++) {
             OrderState memory state = orders[i];
-            uint prevSplitB = orders[(i + ringSize - 1) % ringSize].splitB;
             uint nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
 
             // Store owner and tokenS of every order
@@ -466,12 +466,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
             }
 
             orderHashList[i] = state.orderHash;
-            amountsList[i][0] = state.fillAmountS + state.splitS;
-            amountsList[i][1] = nextFillAmountS - state.splitB;
-            amountsList[i][2] = state.lrcReward;
-            amountsList[i][3] = state.lrcFeeState;
-            amountsList[i][4] = state.splitS;
-            amountsList[i][5] = state.splitB;
+
+            uint[6] memory amounts = amountsList[i];
+            amounts[0] = state.fillAmountS + state.splitS;
+            amounts[1] = nextFillAmountS - state.splitB;
+            amounts[2] = state.lrcReward;
+            amounts[3] = state.lrcFeeState;
+            amounts[4] = state.splitS;
+            amounts[5] = state.splitB;
+
+            prevSplitB = state.splitB;
         }
 
         // Do all transactions
@@ -821,6 +825,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         orders = new OrderState[](params.ringSize);
 
         for (uint i = 0; i < params.ringSize; i++) {
+            uint[6] memory uintArgs = uintArgsList[i];
 
             bool marginSplitAsFee = (params.feeSelections & (uint16(1) << i)) > 0;
             orders[i] = OrderState(
@@ -829,17 +834,17 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 addressList[(i + 1) % params.ringSize][1],
                 addressList[i][2],
                 addressList[i][3],
-                uintArgsList[i][2],
-                uintArgsList[i][3],
-                uintArgsList[i][0],
-                uintArgsList[i][1],
-                uintArgsList[i][4],
+                uintArgs[2],
+                uintArgs[3],
+                uintArgs[0],
+                uintArgs[1],
+                uintArgs[4],
                 buyNoMoreThanAmountBList[i],
                 marginSplitAsFee,
                 bytes32(0),
                 uint8ArgsList[i][0],
-                uintArgsList[i][5],
-                uintArgsList[i][1],
+                uintArgs[5],
+                uintArgs[1],
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
