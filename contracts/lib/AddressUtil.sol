@@ -13,7 +13,6 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
 pragma solidity 0.4.21;
 
@@ -21,7 +20,9 @@ pragma solidity 0.4.21;
 /// @title Utility Functions for address
 /// @author Daniel Wang - <daniel@loopring.org>
 library AddressUtil {
-    function isContract(address addr)
+    function isContract(
+        address addr
+        )
         internal
         view
         returns (bool)

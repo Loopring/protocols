@@ -13,144 +13,63 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
 pragma solidity 0.4.21;
-
-import "./lib/AddressUtil.sol";
-import "./lib/Claimable.sol";
 
 
 /// @title Token Register Contract
 /// @dev This contract maintains a list of tokens the Protocol supports.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TokenRegistry is Claimable {
-    using AddressUtil for address;
-
-    address tokenMintAddr;
-    address[] public addresses;
-    mapping (address => TokenInfo) addressMap;
-    mapping (string => address) symbolMap;
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Structs                                                              ///
-    ////////////////////////////////////////////////////////////////////////////
-
-    struct TokenInfo {
-        uint   pos;      // 0 mens unregistered; if > 0, pos + 1 is the
-                         // token's position in `addresses`.
-        string symbol;   // Symbol of the token
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Events                                                               ///
-    ////////////////////////////////////////////////////////////////////////////
-
+contract TokenRegistry {
     event TokenRegistered(address addr, string symbol);
     event TokenUnregistered(address addr, string symbol);
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Public Functions                                                     ///
-    ////////////////////////////////////////////////////////////////////////////
-
-    /// @dev Disable default function.
-    function () payable public {
-        revert();
-    }
-
-    function TokenRegistry(address _tokenMintAddr) public
-    {
-        require(_tokenMintAddr.isContract());
-        tokenMintAddr = _tokenMintAddr;
-    }
 
     function registerToken(
         address addr,
         string  symbol
         )
-        external
-        onlyOwner
-    {
-        registerTokenInternal(addr, symbol);
-    }
+        external;
 
     function registerMintedToken(
         address addr,
         string  symbol
         )
-        external
-    {
-        require(msg.sender == tokenMintAddr);
-        registerTokenInternal(addr, symbol);
-    }
+        external;
 
     function unregisterToken(
         address addr,
         string  symbol
         )
-        external
-        onlyOwner
-    {
-        require(addr != 0x0);
-        require(symbolMap[symbol] == addr);
-        delete symbolMap[symbol];
+        external;
 
-        uint pos = addressMap[addr].pos;
-        require(pos != 0);
-        delete addressMap[addr];
-
-        // We will replace the token we need to unregister with the last token
-        // Only the pos of the last token will need to be updated
-        address lastToken = addresses[addresses.length - 1];
-
-        // Don't do anything if the last token is the one we want to delete
-        if (addr != lastToken) {
-            // Swap with the last token and update the pos
-            addresses[pos - 1] = lastToken;
-            addressMap[lastToken].pos = pos;
-        }
-        addresses.length--;
-
-        emit TokenUnregistered(addr, symbol);
-    }
-
-    function areAllTokensRegistered(address[] addressList)
+    function areAllTokensRegistered(
+        address[] addressList
+        )
         external
         view
-        returns (bool)
-    {
-        for (uint i = 0; i < addressList.length; i++) {
-            if (addressMap[addressList[i]].pos == 0) {
-                return false;
-            }
-        }
-        return true;
-    }
+        returns (bool);
 
-    function getAddressBySymbol(string symbol)
+    function getAddressBySymbol(
+        string symbol
+        )
         external
         view
-        returns (address)
-    {
-        return symbolMap[symbol];
-    }
+        returns (address);
 
-    function isTokenRegisteredBySymbol(string symbol)
+    function isTokenRegisteredBySymbol(
+        string symbol
+        )
         public
         view
-        returns (bool)
-    {
-        return symbolMap[symbol] != 0x0;
-    }
+        returns (bool);
 
-    function isTokenRegistered(address addr)
+    function isTokenRegistered(
+        address addr
+        )
         public
         view
-        returns (bool)
-    {
-        return addressMap[addr].pos != 0;
-    }
+        returns (bool);
 
     function getTokens(
         uint start,
@@ -158,44 +77,5 @@ contract TokenRegistry is Claimable {
         )
         public
         view
-        returns (address[] addressList)
-    {
-        uint num = addresses.length;
-
-        if (start >= num) {
-            return;
-        }
-
-        uint end = start + count;
-        if (end > num) {
-            end = num;
-        }
-
-        if (start == num) {
-            return;
-        }
-
-        addressList = new address[](end - start);
-        for (uint i = start; i < end; i++) {
-            addressList[i - start] = addresses[i];
-        }
-    }
-
-    function registerTokenInternal(
-        address addr,
-        string  symbol
-        )
-        internal
-    {
-        require(0x0 != addr);
-        require(bytes(symbol).length > 0);
-        require(0x0 == symbolMap[symbol]);
-        require(0 == addressMap[addr].pos);
-
-        addresses.push(addr);
-        symbolMap[symbol] = addr;
-        addressMap[addr] = TokenInfo(addresses.length, symbol);
-
-        emit TokenRegistered(addr, symbol);
-    }
+        returns (address[] addressList);
 }

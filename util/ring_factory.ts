@@ -11,7 +11,7 @@ export class RingFactory {
   public qtumAddress: string;
   public currBlockTimeStamp: number;
   public authAddress: string;
-  public walletId: BigNumber;
+  public walletAddr: string;
 
   constructor(loopringProtocolAddr: string,
               eosAddress: string,
@@ -32,7 +32,6 @@ export class RingFactory {
   public async generateRingForCancel(order1Owner: string,
                                      order2Owner: string,
                                      ringOwner: string,
-                                     minerId: BigNumber,
                                      feeSelections: number[]) {
     const orderPrams1 = {
       loopringProtocol: this.loopringProtocolAddr,
@@ -46,7 +45,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams2 = {
@@ -61,7 +60,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const order1 = new Order(order1Owner, orderPrams1);
@@ -69,7 +68,7 @@ export class RingFactory {
     await order1.signAsync();
     await order2.signAsync();
 
-    const ring = new Ring(ringOwner, [order1, order2], minerId, feeSelections);
+    const ring = new Ring(ringOwner, [order1, order2], feeSelections);
     await ring.signAsync();
 
     return ring;
@@ -78,7 +77,6 @@ export class RingFactory {
   public async generateSize2Ring01(order1Owner: string,
                                    order2Owner: string,
                                    ringOwner: string,
-                                   minerId: BigNumber,
                                    feeSelections: number[]) {
     const orderPrams1 = {
       loopringProtocol: this.loopringProtocolAddr,
@@ -92,7 +90,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams2 = {
@@ -107,7 +105,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const order1 = new Order(order1Owner, orderPrams1);
@@ -115,7 +113,7 @@ export class RingFactory {
     await order1.signAsync();
     await order2.signAsync();
 
-    const ring = new Ring(ringOwner, [order1, order2], minerId, feeSelections);
+    const ring = new Ring(ringOwner, [order1, order2], feeSelections);
     await ring.signAsync();
 
     return ring;
@@ -124,7 +122,6 @@ export class RingFactory {
   public async generateSize2Ring02(order1Owner: string,
                                    order2Owner: string,
                                    ringOwner: string,
-                                   minerId: BigNumber,
                                    feeSelections: number[]) {
 
     const orderPrams1 = {
@@ -139,7 +136,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 100,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams2 = {
@@ -154,7 +151,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 45,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const order1 = new Order(order1Owner, orderPrams1);
@@ -162,7 +159,7 @@ export class RingFactory {
     await order1.signAsync();
     await order2.signAsync();
 
-    const ring = new Ring(ringOwner, [order1, order2], minerId, feeSelections);
+    const ring = new Ring(ringOwner, [order1, order2], feeSelections);
     await ring.signAsync();
 
     return ring;
@@ -171,7 +168,6 @@ export class RingFactory {
   public async generateSize2Ring03(order1Owner: string,
                                    order2Owner: string,
                                    ringOwner: string,
-                                   minerId: BigNumber,
                                    feeSelections: number[]) {
     const orderPrams1: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
@@ -185,7 +181,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: true,
       marginSplitPercentage: 65,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams2: OrderParams = {
@@ -200,7 +196,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 45,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const order1 = new Order(order1Owner, orderPrams1);
@@ -208,7 +204,7 @@ export class RingFactory {
     await order1.signAsync();
     await order2.signAsync();
 
-    const ring = new Ring(ringOwner, [order1, order2], minerId, feeSelections);
+    const ring = new Ring(ringOwner, [order1, order2], feeSelections);
     await ring.signAsync();
 
     return ring;
@@ -218,7 +214,6 @@ export class RingFactory {
                                    order2Owner: string,
                                    order3Owner: string,
                                    ringOwner: string,
-                                   minerId: BigNumber,
                                    feeSelections: number[]) {
     const orderPrams1: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
@@ -232,7 +227,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: true,
       marginSplitPercentage: 55,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams2: OrderParams = {
@@ -247,7 +242,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams3: OrderParams = {
@@ -262,7 +257,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 60,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const order1 = new Order(order1Owner, orderPrams1);
@@ -272,7 +267,7 @@ export class RingFactory {
     await order2.signAsync();
     await order3.signAsync();
 
-    const ring = new Ring(ringOwner, [order1, order2, order3], minerId, feeSelections);
+    const ring = new Ring(ringOwner, [order1, order2, order3], feeSelections);
     await ring.signAsync();
 
     return ring;
@@ -283,7 +278,6 @@ export class RingFactory {
                                    order3Owner: string,
                                    ringOwner: string,
                                    salt: number,
-                                   minerId: BigNumber,
                                    feeSelections: number[]) {
     const orderPrams1: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
@@ -297,7 +291,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: true,
       marginSplitPercentage: 55,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams2: OrderParams = {
@@ -312,7 +306,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams3: OrderParams = {
@@ -327,7 +321,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 60,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const order1 = new Order(order1Owner, orderPrams1);
@@ -337,7 +331,7 @@ export class RingFactory {
     await order2.signAsync();
     await order3.signAsync();
 
-    const ring = new Ring(ringOwner, [order1, order2, order3], minerId, feeSelections);
+    const ring = new Ring(ringOwner, [order1, order2, order3], feeSelections);
     await ring.signAsync();
 
     return ring;
@@ -348,7 +342,6 @@ export class RingFactory {
                                    order3Owner: string,
                                    ringOwner: string,
                                    salt: number,
-                                   minerId: BigNumber,
                                    feeSelections: number[]) {
     const orderPrams1: OrderParams = {
       loopringProtocol: this.loopringProtocolAddr,
@@ -362,7 +355,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: true,
       marginSplitPercentage: 55,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams2: OrderParams = {
@@ -377,7 +370,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 0,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const orderPrams3: OrderParams = {
@@ -392,7 +385,7 @@ export class RingFactory {
       buyNoMoreThanAmountB: false,
       marginSplitPercentage: 60,
       authAddr: this.authAddress,
-      walletId: this.walletId,
+      walletAddr: this.walletAddr,
     };
 
     const order1 = new Order(order1Owner, orderPrams1);
@@ -402,7 +395,7 @@ export class RingFactory {
     await order2.signAsync();
     await order3.signAsync();
 
-    const ring = new Ring(ringOwner, [order1, order2, order3], minerId, feeSelections);
+    const ring = new Ring(ringOwner, [order1, order2, order3], feeSelections);
     await ring.signAsync();
 
     return ring;
@@ -446,7 +439,11 @@ export class RingFactory {
 
     for (let i = 0; i < ringSize; i++) {
       const order = ring.orders[i];
-      const addressListItem = [order.owner, order.params.tokenS, order.params.authAddr];
+      const addressListItem = [order.owner,
+                               order.params.tokenS,
+                               order.params.walletAddr,
+                               order.params.authAddr];
+
       addressList.push(addressListItem);
 
       const uintArgsListItem = [
@@ -456,7 +453,6 @@ export class RingFactory {
         order.params.validUntil,
         order.params.lrcFee,
         rateAmountSList[i],
-        order.params.walletId,
       ];
       uintArgsList.push(uintArgsListItem);
 
@@ -476,9 +472,9 @@ export class RingFactory {
     rList.push(...ring.authR);
     sList.push(...ring.authS);
 
-    vList.push(ring.v);
-    rList.push(ring.r);
-    sList.push(ring.s);
+    // vList.push(ring.v);
+    // rList.push(ring.r);
+    // sList.push(ring.s);
 
     const submitParams = {
       addressList,

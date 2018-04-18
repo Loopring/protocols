@@ -13,7 +13,6 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
 pragma solidity 0.4.21;
 
@@ -32,12 +31,15 @@ contract Ownable {
 
     /// @dev The Ownable constructor sets the original `owner` of the contract
     ///      to the sender.
-    function Ownable() public {
+    function Ownable()
+        public
+    {
         owner = msg.sender;
     }
 
     /// @dev Throws if called by any account other than the owner.
-    modifier onlyOwner() {
+    modifier onlyOwner()
+    {
         require(msg.sender == owner);
         _;
     }
@@ -45,7 +47,12 @@ contract Ownable {
     /// @dev Allows the current owner to transfer control of the contract to a
     ///      newOwner.
     /// @param newOwner The address to transfer ownership to.
-    function transferOwnership(address newOwner) onlyOwner public {
+    function transferOwnership(
+        address newOwner
+        )
+        onlyOwner
+        public
+    {
         require(newOwner != 0x0);
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;

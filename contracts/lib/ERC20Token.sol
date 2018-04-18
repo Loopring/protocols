@@ -13,7 +13,6 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-
 */
 pragma solidity 0.4.21;
 
@@ -61,7 +60,9 @@ contract ERC20Token is ERC20 {
         balances[_firstHolder] = totalSupply_;
     }
 
-    function () payable public
+    function ()
+        payable
+        public
     {
         revert();
     }
@@ -69,7 +70,11 @@ contract ERC20Token is ERC20 {
     /**
     * @dev total number of tokens in existence
     */
-    function totalSupply() public view returns (uint256) {
+    function totalSupply()
+        public
+        view
+        returns (uint256)
+    {
         return totalSupply_;
     }
 
@@ -100,7 +105,9 @@ contract ERC20Token is ERC20 {
     * @param _owner The address to query the the balance of.
     * @return An uint256 representing the amount owned by the passed address.
     */
-    function balanceOf(address _owner)
+    function balanceOf(
+        address _owner
+        )
         public
         view
         returns (uint256 balance)
@@ -163,7 +170,8 @@ contract ERC20Token is ERC20 {
      */
     function allowance(
         address _owner,
-        address _spender)
+        address _spender
+        )
         public
         view
         returns (uint256)

@@ -13,7 +13,6 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
 pragma solidity 0.4.21;
 
@@ -22,22 +21,50 @@ pragma solidity 0.4.21;
 /// @author Daniel Wang - <daniel@loopring.org>
 library MathUint {
 
-    function mul(uint a, uint b) internal pure returns (uint c) {
+    function mul(
+        uint a,
+        uint b
+        )
+        internal
+        pure
+        returns (uint c)
+    {
         c = a * b;
         require(a == 0 || c / a == b);
     }
 
-    function sub(uint a, uint b) internal pure returns (uint) {
+    function sub(
+        uint a,
+        uint b
+        )
+        internal
+        pure
+        returns (uint)
+    {
         require(b <= a);
         return a - b;
     }
 
-    function add(uint a, uint b) internal pure returns (uint c) {
+    function add(
+        uint a,
+        uint b
+        )
+        internal
+        pure
+        returns (uint c)
+    {
         c = a + b;
         require(c >= a);
     }
 
-    function tolerantSub(uint a, uint b) internal pure returns (uint c) {
+    function tolerantSub(
+        uint a,
+        uint b
+        )
+        internal
+        pure
+        returns (uint c)
+    {
         return (a >= b) ? a - b : 0;
     }
 

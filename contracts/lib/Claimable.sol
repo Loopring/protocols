@@ -13,7 +13,6 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
 */
 pragma solidity 0.4.21;
 
@@ -34,13 +33,21 @@ contract Claimable is Ownable {
 
     /// @dev Allows the current owner to set the pendingOwner address.
     /// @param newOwner The address to transfer ownership to.
-    function transferOwnership(address newOwner) onlyOwner public {
+    function transferOwnership(
+        address newOwner
+        )
+        onlyOwner
+        public
+    {
         require(newOwner != 0x0 && newOwner != owner);
         pendingOwner = newOwner;
     }
 
     /// @dev Allows the pendingOwner address to finalize the transfer.
-    function claimOwnership() onlyPendingOwner public {
+    function claimOwnership()
+        onlyPendingOwner
+        public
+    {
         emit OwnershipTransferred(owner, pendingOwner);
         owner = pendingOwner;
         pendingOwner = 0x0;

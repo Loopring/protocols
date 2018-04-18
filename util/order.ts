@@ -65,6 +65,7 @@ export class Order {
       this.owner,
       this.params.tokenS,
       this.params.tokenB,
+      this.params.walletAddr,
       this.params.authAddr,
       this.params.amountS,
       this.params.amountB,
@@ -72,7 +73,6 @@ export class Order {
       this.params.validUntil,
       this.params.lrcFee,
       this.params.buyNoMoreThanAmountB,
-      this.params.walletId,
       this.params.marginSplitPercentage,
     ]);
 

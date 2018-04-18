@@ -10,7 +10,6 @@ export class Ring {
   public owner: string;
   public orders: Order[];
 
-  public minerId: BigNumber;
   public feeSelections: number[];
 
   public v: number;
@@ -25,11 +24,9 @@ export class Ring {
 
   constructor(owner: string,
               orders: Order[],
-              minerId: BigNumber,
               feeSelections: number[]) {
     this.owner = owner;
     this.orders = orders;
-    this.minerId = minerId;
     this.feeSelections = feeSelections;
 
     try {
@@ -89,9 +86,8 @@ export class Ring {
 
     const ringHash = crypto.solSHA3WithType([
       this.xorReduceStr(orderHashList),
-      this.minerId.toNumber(),
       this.feeSelectionListToNumber(this.feeSelections),
-    ], ["string", "uint256", "uint16"]);
+    ], ["string", "uint16"]);
 
     return ringHash;
   }
