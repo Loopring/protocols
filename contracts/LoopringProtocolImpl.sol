@@ -283,10 +283,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         public
     {
         // Check if the highest bit of ringIndex is '1'.
-        require(ringIndex & ENTERED_MASK != ENTERED_MASK); // "attempted to re-ent submitRing function");
+        require((ringIndex >> 63) == 0); // "attempted to re-ent submitRing function");
 
         // Set the highest bit of ringIndex to '1'.
-        ringIndex |= ENTERED_MASK;
+        uint64 _ringIndex = ringIndex;
+        ringIndex |= (1 << 63);
 
         RingParams memory params = RingParams(
             addressList,
@@ -313,9 +314,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(params);
 
-        handleRing(params, orders);
+        handleRing(_ringIndex, params, orders);
 
-        ringIndex = (ringIndex ^ ENTERED_MASK) + 1;
+        ringIndex = _ringIndex + 1;
     }
 
     /// @dev Validate a ring.
@@ -376,12 +377,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function handleRing(
-        RingParams    params,
-        OrderState[]  orders
+        uint64       _ringIndex,
+        RingParams   params,
+        OrderState[] orders
         )
         private
     {
-        uint64 _ringIndex = ringIndex ^ ENTERED_MASK;
         address _lrcTokenAddress = lrcTokenAddress;
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
 
