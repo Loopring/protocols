@@ -53,10 +53,9 @@ contract LoopringProtocol {
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in orderValues.
-    /// @param addresses          owner, tokenS, tokenB, authAddr
+    /// @param addresses          owner, tokenS, tokenB, wallet, authAddr
     /// @param orderValues        amountS, amountB, validSince (second),
-    ///                           validUntil (second), lrcFee, walletId, and
-    ///                           cancelAmount.
+    ///                           validUntil (second), lrcFee, and cancelAmount.
     /// @param buyNoMoreThanAmountB -
     ///                           This indicates when a order should be considered
     ///                           as 'completely filled'.
@@ -66,8 +65,8 @@ contract LoopringProtocol {
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
     function cancelOrder(
-        address[4] addresses,
-        uint[7]    orderValues,
+        address[5] addresses,
+        uint[6]    orderValues,
         bool       buyNoMoreThanAmountB,
         uint8      marginSplitPercentage,
         uint8      v,
@@ -94,12 +93,12 @@ contract LoopringProtocol {
     function cancelAllOrders(uint cutoff) external;
 
     /// @dev Submit a order-ring for validation and settlement.
-    /// @param addressList  List of each order's owner, tokenS, and authAddr.
+    /// @param addressList  List of each order's owner, tokenS, wallet, authAddr.
     ///                     Note that next order's `tokenS` equals this order's
     ///                     `tokenB`.
     /// @param uintArgsList List of uint-type arguments in this order:
     ///                     amountS, amountB, validSince (second),
-    ///                     validUntil (second), lrcFee, rateAmountS, and walletId.
+    ///                     validUntil (second), lrcFee, and rateAmountS.
     /// @param uint8ArgsList -
     ///                     List of unit8-type arguments, in this order:
     ///                     marginSplitPercentageList.
@@ -114,28 +113,19 @@ contract LoopringProtocol {
     /// @param sList        List of s for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
-    /// @param minerId      The address pair that miner registered in NameRegistry.
-    ///                     The address pair contains a signer address and a fee
-    ///                     recipient address.
-    ///                     The signer address is used for sign this tx.
-    ///                     The Recipient address for fee collection. If this is
-    ///                     '0x0', all fees will be paid to the address who had
-    ///                     signed this transaction, not `msg.sender`. Noted if
-    ///                     LRC need to be paid back to order owner as the result
-    ///                     of fee selection model, LRC will also be sent from
-    ///                     this address.
+    /// @param miner        Miner address.
     /// @param feeSelections -
     ///                     Bits to indicate fee selections. `1` represents margin
     ///                     split and `0` represents LRC as fee.
     function submitRing(
-        address[3][]    addressList,
-        uint[7][]       uintArgsList,
+        address[4][]    addressList,
+        uint[6][]       uintArgsList,
         uint8[1][]      uint8ArgsList,
         bool[]          buyNoMoreThanAmountBList,
         uint8[]         vList,
         bytes32[]       rList,
         bytes32[]       sList,
-        uint            minerId,
+        address         miner,
         uint16          feeSelections
         ) public;
 }
