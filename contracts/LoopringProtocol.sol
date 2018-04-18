@@ -130,7 +130,7 @@ contract LoopringProtocol {
         uint8[]         vList,
         bytes32[]       rList,
         bytes32[]       sList,
-        address         minerAddress,
+        address         miner,
         uint16          feeSelections
         ) public;
 }

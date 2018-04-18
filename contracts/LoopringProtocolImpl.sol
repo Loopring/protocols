@@ -148,7 +148,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint8[]       vList;
         bytes32[]     rList;
         bytes32[]     sList;
-        address       miner;     // queried
+        address       miner;
         uint16        feeSelections;
         uint          ringSize;         // computed
         bytes32       ringHash;         // computed
@@ -295,7 +295,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             vList,
             rList,
             sList,
-            ((miner != 0x0) ? miner : msg.sender),
+            miner,
             feeSelections,
             addressList.length,
             0x0 // ringHash
@@ -793,6 +793,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         pure
     {
+        require(params.miner != 0x0);
         require(params.ringSize == params.addressList.length); // "ring data is inconsistent - addressList");
         require(params.ringSize == params.uintArgsList.length); // "ring data is inconsistent - uintArgsList");
         require(params.ringSize == params.uint8ArgsList.length); // "ring data is inconsistent - uint8ArgsList");
