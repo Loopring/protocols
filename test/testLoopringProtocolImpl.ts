@@ -749,8 +749,9 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const addresses = [order.owner,
                          order.params.tokenS,
                          order.params.tokenB,
+                         order.params.walletAddr,
                          order.params.authAddr,
-                         order.params.walletAddr];
+                        ];
 
       const orderValues = [order.params.amountS,
                            order.params.amountB,
@@ -845,8 +846,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const addresses = [order.owner,
                          order.params.tokenS,
                          order.params.tokenB,
-                         order.params.authAddr,
-                         order.params.walletAddr];
+                         order.params.walletAddr,
+                         order.params.authAddr];
 
       const orderValues = [order.params.amountS,
                            order.params.amountB,
@@ -883,8 +884,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const addresses = [order.owner,
                          order.params.tokenS,
                          order.params.tokenB,
-                         order.params.authAddr,
-                         order.params.walletAddr];
+                         order.params.walletAddr,
+                         order.params.authAddr];
 
       const orderValues = [order.params.amountS,
                            order.params.amountB,

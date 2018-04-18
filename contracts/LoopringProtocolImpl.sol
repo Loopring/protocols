@@ -347,7 +347,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             j = i + params.ringSize;
 
             verifySignature(
-                params.addressList[i][2],  // authAddr
+                params.addressList[i][3],  // authAddr
                 params.ringHash,
                 params.vList[j],
                 params.rList[j],

@@ -441,8 +441,9 @@ export class RingFactory {
       const order = ring.orders[i];
       const addressListItem = [order.owner,
                                order.params.tokenS,
-                               order.params.authAddr,
-                               order.params.walletAddr];
+                               order.params.walletAddr,
+                               order.params.authAddr];
+
       addressList.push(addressListItem);
 
       const uintArgsListItem = [
