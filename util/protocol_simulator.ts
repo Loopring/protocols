@@ -178,9 +178,9 @@ export class ProtocolSimulator {
       const balanceItem = balances[i];
       const tokenS = order.params.tokenS;
       const tokenB = order.params.tokenB;
-      const walletId = order.params.walletId.toNumber();
+      const walletAddr = order.params.walletAddr;
 
-      if (walletId > 0) {
+      if (walletAddr.length > 0) {
         feeItem.feeLrc = feeItem.feeLrc * (100 - this.walletSplitPercentage) / 100;
         feeItem.feeS = feeItem.feeS * (100 - this.walletSplitPercentage) / 100;
         feeItem.feeB = feeItem.feeB * (100 - this.walletSplitPercentage) / 100;

@@ -123,15 +123,14 @@ contract LoopringProtocol {
     ///                     Bits to indicate fee selections. `1` represents margin
     ///                     split and `0` represents LRC as fee.
     function submitRing(
-        address[4][] addressList,
-        uint[6][]    uintArgsList,
-        uint8[1][]   uint8ArgsList,
-        bool[]       buyNoMoreThanAmountBList,
-        uint8[]      vList,
-        bytes32[]    rList,
-        bytes32[]    sList,
-        address      miner,
-        uint16       feeSelections
-        )
-        public;
+        address[4][]    addressList,
+        uint[6][]       uintArgsList,
+        uint8[1][]      uint8ArgsList,
+        bool[]          buyNoMoreThanAmountBList,
+        uint8[]         vList,
+        bytes32[]       rList,
+        bytes32[]       sList,
+        address         minerAddress,
+        uint16          feeSelections
+        ) public;
 }

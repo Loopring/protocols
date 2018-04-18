@@ -118,7 +118,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                   qtumAddress,
                                   orderAuthAddr,
                                   currBlockTimeStamp);
-    ringFactory.walletId = new BigNumber(walletId.toNumber());
+    ringFactory.walletAddr = walletAddr;
 
     // approve only once for all test cases.
     const allTokens = [lrc, eos, neo, qtum];
@@ -136,7 +136,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner,
                                                          order2Owner,
                                                          ringOwner,
-                                                         new BigNumber(participantId),
                                                          feeSelections);
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
@@ -155,7 +154,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       participantId,
+                                                       p.feeRecepient,
                                                        p.feeSelections,
                                                        {from: owner});
 
@@ -193,7 +192,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const ring = await ringFactory.generateSize2Ring02(order1Owner,
                                                          order2Owner,
                                                          ringOwner,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
@@ -209,7 +207,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       participantId,
+                                                       p.feeRecepient,
                                                        p.feeSelections,
                                                        {from: owner});
       // console.log("tx.receipt.logs: ", tx.receipt.logs);
@@ -243,7 +241,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const ring = await ringFactory.generateSize2Ring03(order1Owner,
                                                          order2Owner,
                                                          ringOwner,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
@@ -260,7 +257,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       participantId,
+                                                       p.feeRecepient,
                                                        p.feeSelections,
                                                        {from: owner});
 
@@ -298,7 +295,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          order2Owner,
                                                          order3Owner,
                                                          ringOwner,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
@@ -321,7 +317,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       participantId,
+                                                       p.feeRecepient,
                                                        p.feeSelections,
                                                        {from: owner});
 
@@ -368,7 +364,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          order3Owner,
                                                          ringOwner,
                                                          100,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
@@ -393,7 +388,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       participantId,
+                                                       p.feeRecepient,
                                                        p.feeSelections,
                                                        {from: owner});
 
@@ -441,7 +436,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          order3Owner,
                                                          ringOwner,
                                                          200,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       assert(ring.orders[0].isValidSignature(), "invalid signature");
@@ -469,7 +463,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       participantId,
+                                                       p.feeRecepient,
                                                        p.feeSelections,
                                                        {from: owner});
 
@@ -517,7 +511,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          order3Owner,
                                                          ringOwner,
                                                          100,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       const availableAmountSList = [1000e18, 2006e18, 20e18];
@@ -538,7 +531,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       participantId,
+                                                       p.feeRecepient,
                                                        p.feeSelections,
                                                        {from: owner});
 
@@ -596,7 +589,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          order3Owner,
                                                          ringOwner,
                                                          200,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       const availableAmountSList = [1000e18, 2006e18, 20e18];
@@ -617,7 +609,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       participantId,
+                                                       p.feeRecepient,
                                                        p.feeSelections,
                                                        {from: owner});
 
@@ -664,7 +656,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          order3Owner,
                                                          ringOwner,
                                                          300,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       const availableAmountSList = [1000e18, 2006e18, 20e18];
@@ -685,7 +676,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                        p.vList,
                                                        p.rList,
                                                        p.sList,
-                                                       participantId,
+                                                       p.feeRecepient,
                                                        p.feeSelections,
                                                        {from: owner});
 
@@ -742,7 +733,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          order3Owner,
                                                          ringOwner,
                                                          400,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       const availableAmountSList = [1000e18, 2006e18, 20e18];
@@ -756,13 +746,17 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(1000e18);
-      const addresses = [order.owner, order.params.tokenS, order.params.tokenB, order.params.authAddr];
+      const addresses = [order.owner,
+                         order.params.tokenS,
+                         order.params.tokenB,
+                         order.params.authAddr,
+                         order.params.walletAddr];
+
       const orderValues = [order.params.amountS,
                            order.params.amountB,
                            order.params.validSince,
                            order.params.validUntil,
                            order.params.lrcFee,
-                           order.params.walletId,
                            cancelAmount];
 
       await loopringProtocolImpl.cancelOrder(addresses,
@@ -784,7 +778,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                               p.vList,
                                               p.rList,
                                               p.sList,
-                                              participantId,
+                                              p.feeRecepient,
                                               p.feeSelections,
                                               {from: owner});
       } catch (err) {
@@ -803,7 +797,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          order3Owner,
                                                          ringOwner,
                                                          500,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       const availableAmountSList = [1000e18, 2006e18, 20e18];
@@ -825,7 +818,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                               p.vList,
                                               p.rList,
                                               p.sList,
-                                              participantId,
+                                              p.feeRecepient,
                                               p.feeSelections,
                                               {from: owner});
       } catch (err) {
@@ -844,19 +837,22 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner,
                                                          order2Owner,
                                                          ringOwner,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(100e18);
 
-      const addresses = [order.owner, order.params.tokenS, order.params.tokenB, order.params.authAddr];
+      const addresses = [order.owner,
+                         order.params.tokenS,
+                         order.params.tokenB,
+                         order.params.authAddr,
+                         order.params.walletAddr];
+
       const orderValues = [order.params.amountS,
                            order.params.amountB,
                            order.params.validSince,
                            order.params.validUntil,
                            order.params.lrcFee,
-                           order.params.walletId,
                            cancelAmount];
 
       const cancelledOrFilledAmount0 = await loopringProtocolImpl.cancelledOrFilled(order.params.orderHashHex);
@@ -879,19 +875,22 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const ring = await ringFactory.generateSize2Ring01(order1Owner,
                                                          order2Owner,
                                                          ringOwner,
-                                                         new BigNumber(participantId),
                                                          feeSelectionList);
 
       const order = ring.orders[0];
       const cancelAmount = new BigNumber(100e18);
 
-      const addresses = [order.owner, order.params.tokenS, order.params.tokenB, order.params.authAddr];
+      const addresses = [order.owner,
+                         order.params.tokenS,
+                         order.params.tokenB,
+                         order.params.authAddr,
+                         order.params.walletAddr];
+
       const orderValues = [order.params.amountS,
                            order.params.amountB,
                            order.params.validSince,
                            order.params.validUntil,
                            order.params.lrcFee,
-                           order.params.walletId,
                            cancelAmount];
       try {
         const tx = await loopringProtocolImpl.cancelOrder(addresses,
@@ -924,7 +923,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const ring = await ringFactory.generateRingForCancel(order1Owner,
                                                            order2Owner,
                                                            ringOwner,
-                                                           new BigNumber(participantId),
                                                            [0, 0]);
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
@@ -945,7 +943,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                               p.vList,
                                               p.rList,
                                               p.sList,
-                                              participantId,
+                                              p.feeRecepient,
                                               p.feeSelections,
                                               {from: owner});
       } catch (err) {
@@ -980,7 +978,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const ring = await ringFactory.generateRingForCancel(order1Owner,
                                                            order2Owner,
                                                            ringOwner,
-                                                           new BigNumber(participantId),
                                                            [1, 1]);
 
       await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
@@ -1001,7 +998,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                               p.vList,
                                               p.rList,
                                               p.sList,
-                                              participantId,
+                                              p.feeRecepient,
                                               p.feeSelections,
                                               {from: owner});
       } catch (err) {

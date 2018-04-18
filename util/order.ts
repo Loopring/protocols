@@ -72,7 +72,7 @@ export class Order {
       this.params.validUntil,
       this.params.lrcFee,
       this.params.buyNoMoreThanAmountB,
-      this.params.walletId,
+      this.params.walletAddr,
       this.params.marginSplitPercentage,
     ]);
 

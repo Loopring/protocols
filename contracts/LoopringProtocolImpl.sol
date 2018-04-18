@@ -870,7 +870,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         params.ringHash = keccak256(
             params.ringHash,
-            params.miner,
             params.feeSelections
         );
     }
