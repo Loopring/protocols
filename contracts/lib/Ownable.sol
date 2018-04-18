@@ -32,7 +32,7 @@ contract Ownable {
     /// @dev The Ownable constructor sets the original `owner` of the contract
     ///      to the sender.
     function Ownable()
-      public
+        public
     {
         owner = msg.sender;
     }
