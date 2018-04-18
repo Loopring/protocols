@@ -33,6 +33,7 @@ import "./TokenTransferDelegate.sol";
 ///     https://github.com/rainydio
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
+///     https://github.com/Hephyrius
 contract LoopringProtocolImpl is LoopringProtocol {
     using AddressUtil   for address;
     using MathUint      for uint;
@@ -97,9 +98,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    amountB;
         uint    lrcFee;
         bool    buyNoMoreThanAmountB;
-        uint8   marginSplitPercentage;
-        bytes32 orderHash;
         bool    marginSplitAsFee;
+        bytes32 orderHash;
+        uint8   marginSplitPercentage;
         uint    rateS;
         uint    rateB;
         uint    fillAmountS;
@@ -179,9 +180,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderValues[1],
             orderValues[4],
             buyNoMoreThanAmountB,
-            marginSplitPercentage,
-            0x0,
             false,
+            0x0,
+            marginSplitPercentage,
             0,
             0,
             0,
@@ -193,7 +194,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         require(msg.sender == order.owner); // "cancelOrder not submitted by order owner");
 
-        bytes32 orderHash = calculateOrderStateHash(order);
+        bytes32 orderHash = calculateOrderHash(order);
 
         verifySignature(
             order.owner,
@@ -785,9 +786,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         pure
     {
         require(params.miner != 0x0);
-        require(params.ringSize == addressList.length); 
+        require(params.ringSize == addressList.length);
         require(params.ringSize == uintArgsList.length);
-        require(params.ringSize == uint8ArgsList.length); 
+        require(params.ringSize == uint8ArgsList.length);
         require(params.ringSize == buyNoMoreThanAmountBList.length);
         
         // Validate ring-mining related arguments.
@@ -834,9 +835,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uintArgsList[i][1],
                 uintArgsList[i][4],
                 buyNoMoreThanAmountBList[i],
-                uint8ArgsList[i][0],
-                bytes32(0),
                 marginSplitAsFee,
+                bytes32(0),
+                uint8ArgsList[i][0],
                 uintArgsList[i][5],
                 uintArgsList[i][1],
                 0,   // fillAmountS
@@ -848,7 +849,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             validateOrder(orders[i]);
 
-            bytes32 orderHash = calculateOrderStateHash(orders[i]);
+            bytes32 orderHash = calculateOrderHash(orders[i]);
             orders[i].orderHash = orderHash;
 
             verifySignature(
@@ -893,7 +894,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
-    function calculateOrderStateHash(
+    function calculateOrderHash(
         OrderState order
         )
         private
