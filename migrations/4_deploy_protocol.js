@@ -1,6 +1,6 @@
-var TokenRegistry           = artifacts.require("./TokenRegistry");
-var TokenTransferDelegate   = artifacts.require("./TokenTransferDelegate");
-var NameRegistry            = artifacts.require("./NameRegistry");
+var TokenRegistry           = artifacts.require("./TokenRegistryImpl");
+var TokenTransferDelegate   = artifacts.require("./TokenTransferDelegateImpl");
+var NameRegistry            = artifacts.require("./NameRegistryImpl");
 var LoopringProtocolImpl    = artifacts.require("./LoopringProtocolImpl");
 
 module.exports = function(deployer, network, accounts) {
