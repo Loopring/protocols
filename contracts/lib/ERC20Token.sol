@@ -47,10 +47,9 @@ contract ERC20Token is ERC20 {
         )
         public
     {
-        require(bytes(_name).length > 0);
-        require(bytes(_symbol).length > 0);
         require(_totalSupply > 0);
         require(_firstHolder != 0x0);
+        checkSymbolAndName(_symbol,_name);
 
         name = _name;
         symbol = _symbol;
@@ -226,5 +225,30 @@ contract ERC20Token is ERC20 {
         }
         emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
+    }
+
+    // Make sure symbol has 3-8 chars in [A-Za-z._] and name has up to 128 chars.
+    function checkSymbolAndName(
+        string memory _symbol,
+        string memory _name
+        )
+        internal
+        pure
+    {
+        bytes memory s = bytes(_symbol);
+        require(s.length >= 3 && s.length <= 8);
+        for (uint i = 0; i < s.length; i++) {
+            require(
+                s[i] == 0x2E ||  // "."
+                s[i] == 0x5F ||  // "_"
+                s[i] >= 0x41 && s[i] <= 0x5A ||  // [A-Z]
+                s[i] >= 0x61 && s[i] <= 0x7A     // [a-z]
+            );
+        }
+        bytes memory n = bytes(_name);
+        require(n.length >= s.length && n.length <= 128);
+        for (i = 0; i < n.length; i++) {
+            require(n[i] >= 0x20 && n[i] <= 0x7E);
+        }
     }
 }
