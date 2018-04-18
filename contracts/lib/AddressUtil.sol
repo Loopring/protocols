@@ -20,7 +20,9 @@ pragma solidity 0.4.21;
 /// @title Utility Functions for address
 /// @author Daniel Wang - <daniel@loopring.org>
 library AddressUtil {
-    function isContract(address addr)
+    function isContract(
+        address addr
+        )
         internal
         view
         returns (bool)

@@ -38,7 +38,11 @@ contract TransferableMultsigImpl is TransferableMultsig {
     }
 
     // default function does nothing.
-    function () payable public {}
+    function ()
+        payable
+        public
+    {
+    }
 
     function execute(
         uint8[]   sigV,

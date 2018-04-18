@@ -36,17 +36,23 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     mapping(address => AddressInfo) public addressInfos;
     address public latestAddress;
 
-    modifier onlyAuthorized() {
+    modifier onlyAuthorized()
+    {
         require(addressInfos[msg.sender].authorized);
         _;
     }
 
     /// @dev Disable default function.
-    function () payable public {
+    function ()
+        payable
+        public
+    {
         revert();
     }
 
-    function authorizeAddress(address addr)
+    function authorizeAddress(
+        address addr
+        )
         onlyOwner
         external
     {
@@ -73,7 +79,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
     }
 
-    function deauthorizeAddress(address addr)
+    function deauthorizeAddress(
+        address addr
+        )
         onlyOwner
         external
     {
@@ -84,7 +92,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
     }
 
-    function getLatestAuthorizedAddresses(uint max)
+    function getLatestAuthorizedAddresses(
+        uint max
+        )
         external
         view
         returns (address[] addresses)
@@ -108,7 +118,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         address token,
         address from,
         address to,
-        uint    value)
+        uint    value
+        )
         onlyAuthorized
         external
     {
@@ -123,7 +134,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         address lrcTokenAddress,
         address minerFeeRecipient,
         uint8 walletSplitPercentage,
-        bytes32[] batch)
+        bytes32[] batch
+        )
         onlyAuthorized
         external
     {
@@ -187,7 +199,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
     }
 
-    function isAddressAuthorized(address addr)
+    function isAddressAuthorized(
+        address addr
+        )
         public
         view
         returns (bool)

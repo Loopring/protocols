@@ -43,22 +43,30 @@ contract TokenRegistry {
         )
         external;
 
-    function areAllTokensRegistered(address[] addressList)
+    function areAllTokensRegistered(
+        address[] addressList
+        )
         external
         view
         returns (bool);
 
-    function getAddressBySymbol(string symbol)
+    function getAddressBySymbol(
+        string symbol
+        )
         external
         view
         returns (address);
 
-    function isTokenRegisteredBySymbol(string symbol)
+    function isTokenRegisteredBySymbol(
+        string symbol
+        )
         public
         view
         returns (bool);
 
-    function isTokenRegistered(address addr)
+    function isTokenRegistered(
+        address addr
+        )
         public
         view
         returns (bool);

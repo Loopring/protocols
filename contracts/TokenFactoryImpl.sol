@@ -35,7 +35,9 @@ contract TokenFactoryImpl is TokenFactory {
     address   public tokenTransferDelegate;
 
     /// @dev Disable default function.
-    function () payable public
+    function ()
+        payable
+        public
     {
         revert();
     }

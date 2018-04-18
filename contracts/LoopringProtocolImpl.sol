@@ -180,7 +180,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev Disable default function.
-    function () payable public {
+    function ()
+        payable
+        public
+    {
         revert();
     }
 
@@ -253,7 +256,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    function cancelAllOrders(uint cutoff)
+    function cancelAllOrders(
+        uint cutoff
+        )
         external
     {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
@@ -336,7 +341,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev Verify the ringHash has been signed with each order's auth private
     ///      keys as well as the miner's private key.
-    function verifyRingSignatures(RingParams params)
+    function verifyRingSignatures(
+        RingParams params
+        )
         private
         pure
     {
@@ -354,7 +361,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
     }
 
-    function verifyTokensRegistered(RingParams params)
+    function verifyTokensRegistered(
+        RingParams params
+        )
         private
         view
     {
@@ -493,8 +502,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev Verify miner has calculte the rates correctly.
     function verifyMinerSuppliedFillRates(
-        uint          ringSize,
-        OrderState[]  orders
+        uint         ringSize,
+        OrderState[] orders
         )
         private
         view
@@ -672,11 +681,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @return The smallest order's index.
     function calculateOrderFillAmount(
-        OrderState        state,
-        OrderState        next,
-        uint              i,
-        uint              j,
-        uint              smallestIdx
+        OrderState state,
+        OrderState next,
+        uint       i,
+        uint       j,
+        uint       smallestIdx
         )
         private
         pure
@@ -783,7 +792,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev verify input data's basic integrity.
-    function verifyInputDataIntegrity(RingParams params)
+    function verifyInputDataIntegrity(
+        RingParams params
+        )
         private
         pure
     {
@@ -808,7 +819,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev        assmble order parameters into Order struct.
     /// @return     A list of orders.
-    function assembleOrders(RingParams params)
+    function assembleOrders(
+        RingParams params
+        )
         private
         view
         returns (OrderState[] memory orders)
@@ -868,7 +881,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev validate order's parameters are OK.
-    function validateOrder(Order order)
+    function validateOrder(
+        Order order
+        )
         private
         view
     {
@@ -888,7 +903,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
-    function calculateOrderHash(Order order)
+    function calculateOrderHash(
+        Order order
+        )
         private
         view
         returns (bytes32)
@@ -931,7 +948,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         ); // "invalid signature");
     }
 
-    function getTradingPairCutoffs(address orderOwner, address token1, address token2)
+    function getTradingPairCutoffs(
+        address orderOwner,
+        address token1,
+        address token2
+        )
         public
         view
         returns (uint)

@@ -72,7 +72,8 @@ contract LoopringProtocol {
         uint8      v,
         bytes32    r,
         bytes32    s
-        ) external;
+        )
+        external;
 
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
@@ -83,14 +84,18 @@ contract LoopringProtocol {
         address token1,
         address token2,
         uint cutoff
-        ) external;
+        )
+        external;
 
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
     ///        timestamp.
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
-    function cancelAllOrders(uint cutoff) external;
+    function cancelAllOrders(
+        uint cutoff
+        )
+        external;
 
     /// @dev Submit a order-ring for validation and settlement.
     /// @param addressList  List of each order's owner, tokenS, wallet, authAddr.
@@ -118,14 +123,15 @@ contract LoopringProtocol {
     ///                     Bits to indicate fee selections. `1` represents margin
     ///                     split and `0` represents LRC as fee.
     function submitRing(
-        address[4][]    addressList,
-        uint[6][]       uintArgsList,
-        uint8[1][]      uint8ArgsList,
-        bool[]          buyNoMoreThanAmountBList,
-        uint8[]         vList,
-        bytes32[]       rList,
-        bytes32[]       sList,
-        address         miner,
-        uint16          feeSelections
-        ) public;
+        address[4][] addressList,
+        uint[6][]    uintArgsList,
+        uint8[1][]   uint8ArgsList,
+        bool[]       buyNoMoreThanAmountBList,
+        uint8[]      vList,
+        bytes32[]    rList,
+        bytes32[]    sList,
+        address      miner,
+        uint16       feeSelections
+        )
+        public;
 }
