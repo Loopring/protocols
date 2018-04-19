@@ -145,9 +145,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
         ERC20 lrc = ERC20(lrcTokenAddress);
 
+        address prevOwner = address(batch[len - 7]);
         for (uint i = 0; i < len; i += 7) {
             address owner = address(batch[i]);
-            address prevOwner = address(batch[(i + len - 7) % len]);
 
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
@@ -196,6 +196,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                 address(batch[i + 6]),
                 walletSplitPercentage
             );
+
+            prevOwner = owner;
         }
     }
 
