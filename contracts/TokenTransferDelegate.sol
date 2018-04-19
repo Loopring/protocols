@@ -25,6 +25,19 @@ contract TokenTransferDelegate {
     event AddressAuthorized(address indexed addr, uint32 number);
     event AddressDeauthorized(address indexed addr, uint32 number);
 
+    // The following map is used to keep trace of order fill and cancellation
+    // history.
+    mapping (bytes32 => uint) public cancelledOrFilled;
+
+    // This map is used to keep trace of order's cancellation history.
+    mapping (bytes32 => uint) public cancelled;
+
+    // A map from address to its cutoff timestamp.
+    mapping (address => uint) public cutoffs;
+
+    // A map from address to its trading-pair cutoff timestamp.
+    mapping (address => mapping (bytes20 => uint)) public tradingPairCutoffs;
+
     /// @dev Add a Loopring protocol address.
     /// @param addr A loopring protocol address.
     function authorizeAddress(
@@ -73,4 +86,20 @@ contract TokenTransferDelegate {
         public
         view
         returns (bool);
+
+    function addCancelled(bytes32 orderHash, uint cancelAmount)
+        external;
+
+    function addCancelledOrFilled(bytes32 orderHash, uint cancelOrFillAmount)
+        external;
+
+    function setCutoffs(uint t)
+        external;
+
+    function setTradingPairCutoffs(bytes20 tokenPair, uint t)
+        external;
+
+    function checkCutoffsBatch(address[] owners, bytes20[] tradingPairs, uint[] validSince)
+        external
+        view;
 }
