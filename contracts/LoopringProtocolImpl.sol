@@ -812,7 +812,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         orders = new OrderState[](params.ringSize);
 
         for (uint i = 0; i < params.ringSize; i++) {
-
             bool marginSplitAsFee = (params.feeSelections & (uint16(1) << i)) > 0;
             orders[i] = OrderState(
                 addressList[i][0],
@@ -854,6 +853,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             params.ringHash ^= orderHash;
         }
 
+        validateOrdersCutoffs(orders);
+
         params.ringHash = keccak256(
             params.ringHash,
             params.miner,
@@ -878,13 +879,24 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         require(order.validSince <= block.timestamp); // order is too early to match
         require(order.validUntil > block.timestamp); // order is expired
+    }
 
-        bytes20 tradingPair = bytes20(order.tokenS) ^ bytes20(order.tokenB);
+    function validateOrdersCutoffs(OrderState[] orders)
+        private
+        view
+    {
+        address[] memory owners = new address[](orders.length);
+        bytes20[] memory tradingPairs = new bytes20[](orders.length);
+        uint[] memory validSinceTimes = new uint[](orders.length);
+
+        for (uint i = 0; i < orders.length; i++) {
+            owners[i] = orders[i].owner;
+            tradingPairs[i] = bytes20(orders[i].tokenS) ^ bytes20(orders[i].tokenB);
+            validSinceTimes[i] = orders[i].validSince;
+        }
 
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
-        require(order.validSince > delegate.tradingPairCutoffs(order.owner, tradingPair));
-        // order trading pair is cut off
-        require(order.validSince > delegate.cutoffs(order.owner)); // order is cut off
+        delegate.checkCutoffsBatch(owners, tradingPairs, validSinceTimes);
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.

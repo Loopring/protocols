@@ -99,4 +99,7 @@ contract TokenTransferDelegate {
     function setTradingPairCutoffs(bytes20 tokenPair, uint t)
         external;
 
+    function checkCutoffsBatch(address[] owners, bytes20[] tradingPairs, uint[] validSince)
+        external
+        view;
 }
