@@ -22,6 +22,7 @@ import "./lib/MathUint.sol";
 import "./LoopringProtocol.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
+import "./OrderTracer.sol";
 
 
 /// @title An Implementation of LoopringProtocol.
@@ -41,6 +42,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  lrcTokenAddress             = 0x0;
     address public  tokenRegistryAddress        = 0x0;
     address public  delegateAddress             = 0x0;
+    address public  orderTracerAddress          = 0x0;
 
     uint64  public  ringIndex                   = 0;
     uint8   public  walletSplitPercentage       = 0;
@@ -59,19 +61,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     uint    public constant MAX_RING_SIZE       = 16;
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
-
-    // The following map is used to keep trace of order fill and cancellation
-    // history.
-    mapping (bytes32 => uint) public cancelledOrFilled;
-
-    // This map is used to keep trace of order's cancellation history.
-    mapping (bytes32 => uint) public cancelled;
-
-    // A map from address to its cutoff timestamp.
-    mapping (address => uint) public cutoffs;
-
-    // A map from address to its trading-pair cutoff timestamp.
-    mapping (address => mapping (bytes20 => uint)) public tradingPairCutoffs;
 
     /// @param orderHash    The order's hash
     /// @param feeSelection -
@@ -126,6 +115,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address _lrcTokenAddress,
         address _tokenRegistryAddress,
         address _delegateAddress,
+        address _orderTracerAddress,
         uint    _rateRatioCVSThreshold,
         uint8   _walletSplitPercentage
         )
@@ -134,6 +124,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(_lrcTokenAddress.isContract());
         require(_tokenRegistryAddress.isContract());
         require(_delegateAddress.isContract());
+        require(_orderTracerAddress.isContract());
 
         require(_rateRatioCVSThreshold > 0);
         require(_walletSplitPercentage > 0 && _walletSplitPercentage < 100);
@@ -141,6 +132,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         lrcTokenAddress = _lrcTokenAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         delegateAddress = _delegateAddress;
+        orderTracerAddress = _orderTracerAddress;
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
         walletSplitPercentage = _walletSplitPercentage;
     }
@@ -204,8 +196,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
-        cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
-        cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelAmount);
+        OrderTracer orderTracer = OrderTracer(orderTracerAddress);
+        orderTracer.addCancelled(orderHash, cancelAmount);
+        orderTracer.addCancelledOrFilled(orderHash, cancelAmount);
 
         emit OrderCancelled(orderHash, cancelAmount);
     }
@@ -220,10 +213,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-        require(tradingPairCutoffs[msg.sender][tokenPair] < t);
+        OrderTracer orderTracer = OrderTracer(orderTracerAddress);
+
+        require(orderTracer.tradingPairCutoffs(msg.sender, tokenPair) < t);
         // "attempted to set cutoff to a smaller value"
 
-        tradingPairCutoffs[msg.sender][tokenPair] = t;
+        orderTracer.setTradingPairCutoffs(tokenPair, t);
         emit OrdersCancelled(
             msg.sender,
             token1,
@@ -238,10 +233,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         external
     {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
+        OrderTracer orderTracer = OrderTracer(orderTracerAddress);
 
-        require(cutoffs[msg.sender] < t); // "attempted to set cutoff to a smaller value"
+        require(orderTracer.cutoffs(msg.sender) < t); // "attempted to set cutoff to a smaller value"
 
-        cutoffs[msg.sender] = t;
+        orderTracer.setCutoffs(t);
         emit AllOrdersCancelled(msg.sender, t);
     }
 
