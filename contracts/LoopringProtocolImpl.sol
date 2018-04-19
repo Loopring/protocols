@@ -22,7 +22,6 @@ import "./lib/MathUint.sol";
 import "./LoopringProtocol.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
-import "./OrderTracer.sol";
 
 
 /// @title An Implementation of LoopringProtocol.
@@ -42,7 +41,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  lrcTokenAddress             = 0x0;
     address public  tokenRegistryAddress        = 0x0;
     address public  delegateAddress             = 0x0;
-    address public  orderTracerAddress          = 0x0;
 
     uint64  public  ringIndex                   = 0;
     uint8   public  walletSplitPercentage       = 0;
@@ -115,7 +113,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address _lrcTokenAddress,
         address _tokenRegistryAddress,
         address _delegateAddress,
-        address _orderTracerAddress,
         uint    _rateRatioCVSThreshold,
         uint8   _walletSplitPercentage
         )
@@ -124,7 +121,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(_lrcTokenAddress.isContract());
         require(_tokenRegistryAddress.isContract());
         require(_delegateAddress.isContract());
-        require(_orderTracerAddress.isContract());
 
         require(_rateRatioCVSThreshold > 0);
         require(_walletSplitPercentage > 0 && _walletSplitPercentage < 100);
@@ -132,7 +128,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         lrcTokenAddress = _lrcTokenAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         delegateAddress = _delegateAddress;
-        orderTracerAddress = _orderTracerAddress;
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
         walletSplitPercentage = _walletSplitPercentage;
     }
@@ -196,9 +191,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             s
         );
 
-        OrderTracer orderTracer = OrderTracer(orderTracerAddress);
-        orderTracer.addCancelled(orderHash, cancelAmount);
-        orderTracer.addCancelledOrFilled(orderHash, cancelAmount);
+        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
+        delegate.addCancelled(orderHash, cancelAmount);
+        delegate.addCancelledOrFilled(orderHash, cancelAmount);
 
         emit OrderCancelled(orderHash, cancelAmount);
     }
@@ -213,12 +208,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-        OrderTracer orderTracer = OrderTracer(orderTracerAddress);
+        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
 
-        require(orderTracer.tradingPairCutoffs(msg.sender, tokenPair) < t);
+        require(delegate.tradingPairCutoffs(msg.sender, tokenPair) < t);
         // "attempted to set cutoff to a smaller value"
 
-        orderTracer.setTradingPairCutoffs(tokenPair, t);
+        delegate.setTradingPairCutoffs(tokenPair, t);
         emit OrdersCancelled(
             msg.sender,
             token1,
@@ -233,11 +228,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         external
     {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
-        OrderTracer orderTracer = OrderTracer(orderTracerAddress);
+        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
 
-        require(orderTracer.cutoffs(msg.sender) < t); // "attempted to set cutoff to a smaller value"
+        require(delegate.cutoffs(msg.sender) < t); // "attempted to set cutoff to a smaller value"
 
-        orderTracer.setCutoffs(t);
+        delegate.setCutoffs(t);
         emit AllOrdersCancelled(msg.sender, t);
     }
 
@@ -456,9 +451,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // Update fill records
             if (state.buyNoMoreThanAmountB) {
-                cancelledOrFilled[state.orderHash] += nextFillAmountS;
+                delegate.addCancelledOrFilled(state.orderHash, nextFillAmountS);
             } else {
-                cancelledOrFilled[state.orderHash] += state.fillAmountS;
+                delegate.addCancelledOrFilled(state.orderHash, state.fillAmountS);
             }
 
             orderHashList[i] = state.orderHash;
@@ -720,7 +715,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             if (state.buyNoMoreThanAmountB) {
                 amount = state.amountB.tolerantSub(
-                    cancelledOrFilled[state.orderHash]
+                    delegate.cancelledOrFilled(state.orderHash)
                 );
 
                 state.amountS = amount.mul(state.amountS) / state.amountB;
@@ -729,7 +724,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.amountB = amount;
             } else {
                 amount = state.amountS.tolerantSub(
-                    cancelledOrFilled[state.orderHash]
+                    delegate.cancelledOrFilled(state.orderHash)
                 );
 
                 state.amountB = amount.mul(state.amountB) / state.amountS;
@@ -885,9 +880,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(order.validUntil > block.timestamp); // order is expired
 
         bytes20 tradingPair = bytes20(order.tokenS) ^ bytes20(order.tokenB);
-        require(order.validSince > tradingPairCutoffs[order.owner][tradingPair]);
+
+        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
+        require(order.validSince > delegate.tradingPairCutoffs(order.owner, tradingPair));
         // order trading pair is cut off
-        require(order.validSince > cutoffs[order.owner]); // order is cut off
+        require(order.validSince > delegate.cutoffs(order.owner)); // order is cut off
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
@@ -899,7 +896,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         returns (bytes32)
     {
         return keccak256(
-            address(this),
+            delegateAddress,
             order.owner,
             order.tokenS,
             order.tokenB,
@@ -946,6 +943,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         returns (uint)
     {
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-        return tradingPairCutoffs[orderOwner][tokenPair];
+        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
+        return delegate.tradingPairCutoffs(orderOwner, tokenPair);
     }
 }
