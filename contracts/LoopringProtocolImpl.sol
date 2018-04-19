@@ -278,8 +278,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Assemble input data into structs so we can pass them to other functions.
         // This method also calculates ringHash, therefore it must be called before
         // calling `verifyRingSignatures`.
+        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
         OrderState[] memory orders = assembleOrders(
             params,
+            delegate,
             addressList,
             uintArgsList,
             uint8ArgsList,
@@ -290,7 +292,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyTokensRegistered(params, orders);
 
-        handleRing(_ringIndex, params, orders);
+        handleRing(_ringIndex, params, orders, delegate);
 
         ringIndex = _ringIndex + 1;
     }
@@ -357,12 +359,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function handleRing(
         uint64       _ringIndex,
         RingParams   params,
-        OrderState[] orders
+        OrderState[] orders,
+        TokenTransferDelegate delegate
         )
         private
     {
         address _lrcTokenAddress = lrcTokenAddress;
-        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
 
         // Do the hard work.
         verifyRingHasNoSubRing(params.ringSize, orders);
@@ -800,6 +802,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @return     A list of orders.
     function assembleOrders(
         RingParams params,
+        TokenTransferDelegate delegate,
         address[4][]  addressList,
         uint[6][]     uintArgsList,
         uint8[1][]    uint8ArgsList,
@@ -853,7 +856,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             params.ringHash ^= orderHash;
         }
 
-        validateOrdersCutoffs(orders);
+        validateOrdersCutoffs(orders, delegate);
 
         params.ringHash = keccak256(
             params.ringHash,
@@ -881,7 +884,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(order.validUntil > block.timestamp); // order is expired
     }
 
-    function validateOrdersCutoffs(OrderState[] orders)
+    function validateOrdersCutoffs(OrderState[] orders, TokenTransferDelegate delegate)
         private
         view
     {
@@ -895,7 +898,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             validSinceTimes[i] = orders[i].validSince;
         }
 
-        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
         delegate.checkCutoffsBatch(owners, tradingPairs, validSinceTimes);
     }
 
