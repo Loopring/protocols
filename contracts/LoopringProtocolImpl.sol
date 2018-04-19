@@ -790,7 +790,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require(params.ringSize == uintArgsList.length);
         require(params.ringSize == uint8ArgsList.length);
         require(params.ringSize == buyNoMoreThanAmountBList.length);
-        
+
         // Validate ring-mining related arguments.
         for (uint i = 0; i < params.ringSize; i++) {
             require(uintArgsList[i][5] > 0); // "order rateAmountS is zero");
@@ -865,6 +865,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         params.ringHash = keccak256(
             params.ringHash,
+            params.miner,
             params.feeSelections
         );
     }

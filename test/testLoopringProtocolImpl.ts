@@ -24,8 +24,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   const order4Owner = accounts[4];
   const order5Owner = accounts[5];
   const orderAuthAddr = accounts[7]; // should generate each time in front-end. we just mock it here.
-  const ringOwner = accounts[0];
-  const feeRecepient = accounts[6];
+  const ringOwner = accounts[6];
+  const feeRecepient = ringOwner;
   const walletAddr = accounts[8];
 
   let loopringProtocolImpl: any;

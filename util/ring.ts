@@ -86,8 +86,9 @@ export class Ring {
 
     const ringHash = crypto.solSHA3WithType([
       this.xorReduceStr(orderHashList),
+      this.owner,
       this.feeSelectionListToNumber(this.feeSelections),
-    ], ["string", "uint16"]);
+    ], ["string", "address", "uint16"]);
 
     return ringHash;
   }
