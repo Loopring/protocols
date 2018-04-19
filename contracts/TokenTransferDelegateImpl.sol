@@ -248,4 +248,47 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             );
         }
     }
+
+    function addCancelled(bytes32 orderHash, uint cancelAmount)
+        onlyAuthorized
+        external
+    {
+        cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
+    }
+
+    function addCancelledOrFilled(bytes32 orderHash, uint cancelOrFillAmount)
+        onlyAuthorized
+        external
+    {
+        cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelOrFillAmount);
+    }
+
+    function setCutoffs(uint t)
+        onlyAuthorized
+        external
+    {
+        cutoffs[tx.origin] = t;
+    }
+
+    function setTradingPairCutoffs(bytes20 tokenPair, uint t)
+        onlyAuthorized
+        external
+    {
+        tradingPairCutoffs[tx.origin][tokenPair] = t;
+    }
+
+    function checkCutoffsBatch(address[] owners, bytes20[] tradingPairs, uint[] validSince)
+        external
+        view
+    {
+        uint len = owners.length;
+        require(len == tradingPairs.length);
+        require(len == validSince.length);
+
+        for(uint i = 0; i < len; i++) {
+            require(validSince[i] > tradingPairCutoffs[owners[i]][tradingPairs[i]]);  // order trading pair is cut off
+            require(validSince[i] > cutoffs[owners[i]]);                              // order is cut off
+        }
+    }
+
 }
