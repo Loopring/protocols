@@ -398,9 +398,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
 
         /// Make transfers.
-        bytes32[] memory orderHashList;
-        uint[6][] memory amountsList;
-        (orderHashList, amountsList) = settleRing(
+        uint[] memory orderInfoList = settleRing(
             delegate,
             params.ringSize,
             orders,
@@ -412,8 +410,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             _ringIndex,
             params.ringHash,
             params.miner,
-            orderHashList,
-            amountsList
+            orderInfoList
         );
     }
 
@@ -425,13 +422,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address       _lrcTokenAddress
         )
         private
-        returns (
-        bytes32[] memory orderHashList,
-        uint[6][] memory amountsList)
+        returns (uint[] memory orderInfoList)
     {
         bytes32[] memory batch = new bytes32[](ringSize * 7); // ringSize * (owner + tokenS + 4 amounts + wallet)
-        orderHashList = new bytes32[](ringSize);
-        amountsList = new uint[6][](ringSize);
+        orderInfoList = new uint[](ringSize * 6);
 
         uint p = 0;
         uint prevSplitB = orders[ringSize - 1].splitB;
@@ -458,15 +452,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 delegate.addCancelledOrFilled(state.orderHash, state.fillAmountS);
             }
 
-            orderHashList[i] = state.orderHash;
-
-            uint[6] memory amounts = amountsList[i];
-            amounts[0] = state.fillAmountS + state.splitS;
-            amounts[1] = nextFillAmountS - state.splitB;
-            amounts[2] = state.lrcReward;
-            amounts[3] = state.lrcFeeState;
-            amounts[4] = state.splitS;
-            amounts[5] = state.splitB;
+            orderInfoList[i*6 + 0] = uint(state.orderHash);
+            orderInfoList[i*6 + 1] = state.fillAmountS;
+            orderInfoList[i*6 + 2] = state.lrcReward;
+            orderInfoList[i*6 + 3] = state.lrcFeeState;
+            orderInfoList[i*6 + 4] = state.splitS;
+            orderInfoList[i*6 + 5] = state.splitB;
 
             prevSplitB = state.splitB;
         }

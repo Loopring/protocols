@@ -30,8 +30,7 @@ contract LoopringProtocol {
         uint                _ringIndex,
         bytes32     indexed _ringHash,
         address             _feeRecipient,
-        bytes32[]           _orderHashList,
-        uint[6][]           _amountsList
+        uint[]              _orderInfoList
     );
 
     event OrderCancelled(
