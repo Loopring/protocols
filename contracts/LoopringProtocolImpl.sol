@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 
 import "./lib/AddressUtil.sol";
 import "./lib/ERC20.sol";
@@ -109,7 +109,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32       ringHash;         // computed
     }
 
-    function LoopringProtocolImpl(
+    constructor(
         address _lrcTokenAddress,
         address _tokenRegistryAddress,
         address _delegateAddress,

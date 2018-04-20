@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 
 import "../lib/ERC20Token.sol";
 import "../lib/MathUint.sol";
@@ -24,8 +24,7 @@ import "../lib/MathUint.sol";
 contract DummyToken is ERC20Token {
     using MathUint for uint;
 
-    /// constructor.
-    function DummyToken(
+    constructor(
         string _name,
         string _symbol,
         uint8  _decimals,

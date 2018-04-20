@@ -14,11 +14,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
+//pragma experimental ABIEncoderV2;
 
 import "./lib/AddressUtil.sol";
-import "./lib/StringUtil.sol";
 import "./lib/ERC20Token.sol";
+import "./lib/StringUtil.sol";
 import "./TokenFactory.sol";
 import "./TokenRegistry.sol";
 
@@ -42,7 +43,7 @@ contract TokenFactoryImpl is TokenFactory {
         revert();
     }
 
-    function TokenFactoryImpl(
+    constructor(
         address _tokenRegistry
         )
         public

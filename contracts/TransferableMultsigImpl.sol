@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 
 import "./TransferableMultsig.sol";
 
@@ -28,7 +28,7 @@ contract TransferableMultsigImpl is TransferableMultsig {
     mapping (address => bool) ownerMap; // immutable state
     address[] public owners;            // immutable state
 
-    function TransferableMultsig(
+    constructor(
         uint      _threshold,
         address[] _owners
         )
