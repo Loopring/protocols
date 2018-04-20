@@ -15,6 +15,8 @@
     limitations under the License.
 */
 pragma solidity 0.4.23;
+pragma experimental "v0.5.0";
+pragma experimental "ABIEncoderV2";
 
 import "./AddressUtil.sol";
 import "./ERC20.sol";
@@ -256,7 +258,7 @@ contract ERC20Token is ERC20 {
         }
         bytes memory n = bytes(_name);
         require(n.length >= s.length && n.length <= 128);
-        for (i = 0; i < n.length; i++) {
+        for (uint i = 0; i < n.length; i++) {
             require(n[i] >= 0x20 && n[i] <= 0x7E);
         }
     }

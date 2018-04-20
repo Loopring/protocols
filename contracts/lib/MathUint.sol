@@ -15,6 +15,8 @@
   limitations under the License.
 */
 pragma solidity 0.4.23;
+pragma experimental "v0.5.0";
+pragma experimental "ABIEncoderV2";
 
 
 /// @title Utility Functions for uint
@@ -25,7 +27,7 @@ library MathUint {
         uint a,
         uint b
         )
-        internal
+        public
         pure
         returns (uint c)
     {
@@ -37,7 +39,7 @@ library MathUint {
         uint a,
         uint b
         )
-        internal
+        public
         pure
         returns (uint)
     {
@@ -49,7 +51,7 @@ library MathUint {
         uint a,
         uint b
         )
-        internal
+        public
         pure
         returns (uint c)
     {
@@ -61,7 +63,7 @@ library MathUint {
         uint a,
         uint b
         )
-        internal
+        public
         pure
         returns (uint c)
     {
@@ -74,7 +76,7 @@ library MathUint {
         uint[] arr,
         uint scale
         )
-        internal
+        public
         pure
         returns (uint)
     {
@@ -96,7 +98,7 @@ library MathUint {
         uint cvs = 0;
         uint s;
         uint item;
-        for (i = 0; i < len; i++) {
+        for (uint i = 0; i < len; i++) {
             item = arr[i];
             s = item > avg ? item - avg : avg - item;
             cvs += mul(s, s);

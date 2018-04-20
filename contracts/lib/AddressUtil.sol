@@ -15,6 +15,8 @@
   limitations under the License.
 */
 pragma solidity 0.4.23;
+pragma experimental "v0.5.0";
+pragma experimental "ABIEncoderV2";
 
 
 /// @title Utility Functions for address
@@ -23,7 +25,7 @@ library AddressUtil {
     function isContract(
         address addr
         )
-        internal
+        public
         view
         returns (bool)
     {

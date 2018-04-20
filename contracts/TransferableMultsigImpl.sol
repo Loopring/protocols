@@ -15,6 +15,8 @@
   limitations under the License.
 */
 pragma solidity 0.4.23;
+pragma experimental "v0.5.0";
+pragma experimental "ABIEncoderV2";
 
 import "./TransferableMultsig.sol";
 
@@ -152,7 +154,7 @@ contract TransferableMultsigImpl is TransferableMultsig {
         }
 
         address lastAddr = 0x0;
-        for (i = 0; i < _owners.length; i++) {
+        for (uint i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
             require(owner > lastAddr);
 

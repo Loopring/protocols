@@ -15,6 +15,8 @@
   limitations under the License.
 */
 pragma solidity 0.4.23;
+pragma experimental "v0.5.0";
+pragma experimental "ABIEncoderV2";
 
 
 /// @title Utility Functions for uint8
@@ -25,7 +27,7 @@ library MathUint8 {
         uint8[] arr,
         uint    len
         )
-        internal
+        public
         pure
         returns (uint8 res)
     {

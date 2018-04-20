@@ -15,6 +15,8 @@
   limitations under the License.
 */
 pragma solidity 0.4.23;
+pragma experimental "v0.5.0";
+pragma experimental "ABIEncoderV2";
 
 
 /// @title Utility Functions for byte32
@@ -26,7 +28,7 @@ library MathBytes32 {
         bytes32[]   arr,
         uint        len
         )
-        internal
+        public
         pure
         returns (bytes32 res)
     {
