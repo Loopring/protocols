@@ -27,27 +27,27 @@ contract LoopringProtocol {
     /// _amountsList is an array of:
     /// [_amountS, _amountB, _lrcReward, _lrcFee, splitS, splitB].
     event RingMined(
-        uint                _ringIndex,
-        bytes32     indexed _ringHash,
-        address             _feeRecipient,
-        uint[]              _orderInfoList
+        uint            _ringIndex,
+        bytes32 indexed _ringHash,
+        address         _miner,
+        uint[]          _orderInfoList
     );
 
     event OrderCancelled(
-        bytes32     indexed _orderHash,
-        uint                _amountCancelled
+        bytes32 indexed _orderHash,
+        uint            _amountCancelled
     );
 
     event AllOrdersCancelled(
-        address     indexed _address,
-        uint                _cutoff
+        address indexed _address,
+        uint            _cutoff
     );
 
     event OrdersCancelled(
-        address     indexed _address,
-        address             _token1,
-        address             _token2,
-        uint                _cutoff
+        address indexed _address,
+        address         _token1,
+        address         _token2,
+        uint            _cutoff
     );
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified

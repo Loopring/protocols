@@ -22,8 +22,15 @@ pragma solidity 0.4.21;
 /// versions of Loopring protocol to avoid ERC20 re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenTransferDelegate {
-    event AddressAuthorized(address indexed addr, uint32 number);
-    event AddressDeauthorized(address indexed addr, uint32 number);
+    event AddressAuthorized(
+        address indexed addr,
+        uint32          number
+    );
+
+    event AddressDeauthorized(
+        address indexed addr,
+        uint32          number
+    );
 
     // The following map is used to keep trace of order fill and cancellation
     // history.

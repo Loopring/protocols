@@ -35,8 +35,17 @@ contract ERC20Token is ERC20 {
     mapping (address => uint256) balances;
     mapping (address => mapping (address => uint256)) internal allowed;
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint256 value
+    );
+
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 
     function ERC20Token(
         string  _name,

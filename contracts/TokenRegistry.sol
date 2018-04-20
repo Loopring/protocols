@@ -22,8 +22,15 @@ pragma solidity 0.4.21;
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenRegistry {
-    event TokenRegistered(address addr, string symbol);
-    event TokenUnregistered(address addr, string symbol);
+    event TokenRegistered(
+        address indexed addr,
+        string          symbol
+    );
+
+    event TokenUnregistered(
+        address indexed addr,
+        string  indexed symbol
+    );
 
     function registerToken(
         address addr,
