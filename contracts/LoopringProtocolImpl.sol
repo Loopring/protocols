@@ -452,12 +452,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 delegate.addCancelledOrFilled(state.orderHash, state.fillAmountS);
             }
 
-            orderInfoList[i*6 + 0] = uint(state.orderHash);
-            orderInfoList[i*6 + 1] = state.fillAmountS;
-            orderInfoList[i*6 + 2] = state.lrcReward;
-            orderInfoList[i*6 + 3] = state.lrcFeeState;
-            orderInfoList[i*6 + 4] = state.splitS;
-            orderInfoList[i*6 + 5] = state.splitB;
+            orderInfoList[i * 6 + 0] = uint(state.orderHash);
+            orderInfoList[i * 6 + 1] = state.fillAmountS;
+            orderInfoList[i * 6 + 2] = state.lrcReward;
+            orderInfoList[i * 6 + 3] = state.lrcFeeState;
+            orderInfoList[i * 6 + 4] = state.splitS;
+            orderInfoList[i * 6 + 5] = state.splitB;
 
             prevSplitB = state.splitB;
         }
