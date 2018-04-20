@@ -70,7 +70,7 @@ contract ERC20Token is ERC20 {
 
     function ()
         payable
-        public
+        external
     {
         revert();
     }

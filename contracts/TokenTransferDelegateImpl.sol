@@ -45,7 +45,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     /// @dev Disable default function.
     function ()
         payable
-        public
+        external
     {
         revert();
     }

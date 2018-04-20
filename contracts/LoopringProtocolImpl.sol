@@ -135,7 +135,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev Disable default function.
     function ()
         payable
-        public
+        external
     {
         revert();
     }

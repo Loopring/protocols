@@ -15,7 +15,8 @@
   limitations under the License.
 */
 pragma solidity 0.4.23;
-//pragma experimental ABIEncoderV2;
+pragma experimental "v0.5.0";
+// pragma experimental ABIEncoderV2;
 
 import "./lib/AddressUtil.sol";
 import "./lib/ERC20Token.sol";
@@ -38,7 +39,7 @@ contract TokenFactoryImpl is TokenFactory {
     /// @dev Disable default function.
     function ()
         payable
-        public
+        external
     {
         revert();
     }

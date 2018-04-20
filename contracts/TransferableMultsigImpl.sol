@@ -40,7 +40,7 @@ contract TransferableMultsigImpl is TransferableMultsig {
     // default function does nothing.
     function ()
         payable
-        public
+        external
     {
     }
 
