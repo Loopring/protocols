@@ -25,9 +25,6 @@ pragma experimental "ABIEncoderV2";
 contract LoopringProtocol {
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
 
-    /// @dev Event to emit if a ring is successfully mined.
-    /// _amountsList is an array of:
-    /// [_amountS, _amountB, _lrcReward, _lrcFee, splitS, splitB].
     event RingMined(
         uint            _ringIndex,
         bytes32 indexed _ringHash,

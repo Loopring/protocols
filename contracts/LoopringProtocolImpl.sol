@@ -101,13 +101,20 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev A struct to capture parameters passed to submitRing method and
     ///      various of other variables used across the submitRing core logics.
-    struct RingParams {
+    struct Context {
+        address[4][]  addressList;
+        uint[6][]     uintArgsList;
+        uint8[1][]    uint8ArgsList;
+        bool[]        buyNoMoreThanAmountBList;
         uint8[]       vList;
         bytes32[]     rList;
         bytes32[]     sList;
         address       miner;
         uint16        feeSelections;
+        uint64        ringIndex;
         uint          ringSize;         // computed
+        TokenTransferDelegate delegate;
+        OrderState[]  orders;
         bytes32       ringHash;         // computed
     }
 
@@ -155,7 +162,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         uint cancelAmount = orderValues[5];
 
-        require(cancelAmount > 0); // "amount to cancel is zero");
+        require(cancelAmount > 0, "invalid cancelAmount");
 
         OrderState memory order = OrderState(
             addresses[0],
@@ -181,7 +188,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             0
         );
 
-        require(msg.sender == order.owner); // "cancelOrder not submitted by order owner");
+        require(
+            msg.sender == order.owner,
+            "cancelOrder not submitted by owner"
+        );
 
         bytes32 orderHash = calculateOrderHash(order);
 
@@ -212,8 +222,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
 
-        require(delegate.tradingPairCutoffs(msg.sender, tokenPair) < t);
-        // "attempted to set cutoff to a smaller value"
+        require(
+            delegate.tradingPairCutoffs(msg.sender, tokenPair) < t,
+            "cutoff too small"
+        );
 
         delegate.setTradingPairCutoffs(tokenPair, t);
         emit OrdersCancelled(
@@ -232,7 +244,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
 
-        require(delegate.cutoffs(msg.sender) < t); // "attempted to set cutoff to a smaller value"
+        require(
+            delegate.cutoffs(msg.sender) < t,
+            "cutoff too small"
+        );
 
         delegate.setCutoffs(t);
         emit AllOrdersCancelled(msg.sender, t);
@@ -251,272 +266,357 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         public
     {
-        // Check if the highest bit of ringIndex is '1'.
-        require((ringIndex >> 63) == 0); // "attempted to re-ent submitRing function");
-
-        // Set the highest bit of ringIndex to '1'.
-        uint64 _ringIndex = ringIndex;
-        ringIndex |= (1 << 63);
-
-        RingParams memory params = RingParams(
+        Context memory ctx = Context(
+            addressList,
+            uintArgsList,
+            uint8ArgsList,
+            buyNoMoreThanAmountBList,
             vList,
             rList,
             sList,
             miner,
             feeSelections,
+            ringIndex,
             addressList.length,
+            TokenTransferDelegate(delegateAddress),
+            new OrderState[](addressList.length),
             0x0 // ringHash
         );
 
-        verifyInputDataIntegrity(
-            params,
-            addressList,
-            uintArgsList,
-            uint8ArgsList,
-            buyNoMoreThanAmountBList
-        );
+        // Check if the highest bit of ringIndex is '1'.
+        require((ringIndex >> 63) == 0, "reentry");
 
+        // Set the highest bit of ringIndex to '1'.
+        ringIndex |= (1 << 63);
 
-        // Assemble input data into structs so we can pass them to other functions.
-        // This method also calculates ringHash, therefore it must be called before
-        // calling `verifyRingSignatures`.
-        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
-        OrderState[] memory orders = assembleOrders(
-            params,
-            delegate,
-            addressList,
-            uintArgsList,
-            uint8ArgsList,
-            buyNoMoreThanAmountBList
-        );
+        verifyInputDataIntegrity(ctx);
 
-        verifyRingSignatures(params, orders);
+        assembleOrders(ctx);
 
-        verifyTokensRegistered(params, orders);
+        validateOrdersCutoffs(ctx);
 
-        handleRing(_ringIndex, params, orders, delegate);
+        verifyRingSignatures(ctx);
 
-        ringIndex = _ringIndex + 1;
+        verifyTokensRegistered(ctx);
+
+        verifyRingHasNoSubRing(ctx);
+
+        verifyMinerSuppliedFillRates(ctx);
+
+        scaleRingBasedOnHistoricalRecords(ctx);
+
+        calculateRingFillAmount(ctx);
+
+        calculateRingFees(ctx);
+
+        settleRing(ctx);
+
+        ringIndex = ctx.ringIndex + 1;
     }
 
-    /// @dev Validate a ring.
-    function verifyRingHasNoSubRing(
-        uint          ringSize,
-        OrderState[]  orders
+    /// @dev verify input data's basic integrity.
+    function verifyInputDataIntegrity(
+        Context ctx
         )
         private
         pure
     {
-        // Check the ring has no sub-ring.
-        for (uint i = 0; i < ringSize - 1; i++) {
-            address tokenS = orders[i].tokenS;
-            for (uint j = i + 1; j < ringSize; j++) {
-                require(tokenS != orders[j].tokenS); // "found sub-ring");
-            }
+        require(ctx.miner != 0x0, "bad miner");
+        require(
+            ctx.ringSize == ctx.addressList.length,
+            "wrong addressList size"
+        );
+        require(
+            ctx.ringSize == ctx.uintArgsList.length,
+            "wrong uintArgsList size"
+        );
+        require(
+            ctx.ringSize == ctx.uint8ArgsList.length,
+            "wrong uint8ArgsList size"
+        );
+        require(
+            ctx.ringSize == ctx.buyNoMoreThanAmountBList.length,
+            "wrong buyNoMoreThanAmountBList size"
+        );
+
+        // Validate ring-mining related arguments.
+        for (uint i = 0; i < ctx.ringSize; i++) {
+            require(ctx.uintArgsList[i][5] > 0, "rateAmountS is 0");
         }
+
+        //Check ring size
+        require(
+            ctx.ringSize > 1 && ctx.ringSize <= MAX_RING_SIZE,
+            "invalid ring size"
+        );
+
+        uint sigSize = ctx.ringSize << 1;
+        require(sigSize == ctx.vList.length, "invalid vList size");
+        require(sigSize == ctx.rList.length, "invalid rList size");
+        require(sigSize == ctx.sList.length, "invalid sList size");
+    }
+
+    /// @dev Assemble input data into structs so we can pass them to other functions.
+    /// This method also calculates ringHash, therefore it must be called before
+    /// calling `verifyRingSignatures`.
+    function assembleOrders(
+        Context ctx
+        )
+        private
+        view
+    {
+        for (uint i = 0; i < ctx.ringSize; i++) {
+            uint[6] memory uintArgs = ctx.uintArgsList[i];
+            bool marginSplitAsFee = (ctx.feeSelections & (uint16(1) << i)) > 0;
+            ctx.orders[i] = OrderState(
+                ctx.addressList[i][0],
+                ctx.addressList[i][1],
+                ctx.addressList[(i + 1) % ctx.ringSize][1],
+                ctx.addressList[i][2],
+                ctx.addressList[i][3],
+                uintArgs[2],
+                uintArgs[3],
+                uintArgs[0],
+                uintArgs[1],
+                uintArgs[4],
+                ctx.buyNoMoreThanAmountBList[i],
+                marginSplitAsFee,
+                bytes32(0),
+                ctx.uint8ArgsList[i][0],
+                uintArgs[5],
+                uintArgs[1],
+                0,   // fillAmountS
+                0,   // lrcReward
+                0,   // lrcFee
+                0,   // splitS
+                0    // splitB
+            );
+
+            validateOrder(ctx.orders[i]);
+
+            bytes32 orderHash = calculateOrderHash(ctx.orders[i]);
+            ctx.orders[i].orderHash = orderHash;
+
+            verifySignature(
+                ctx.orders[i].owner,
+                orderHash,
+                ctx.vList[i],
+                ctx.rList[i],
+                ctx.sList[i]
+            );
+
+            ctx.ringHash ^= orderHash;
+        }
+
+        ctx.ringHash = keccak256(
+            ctx.ringHash,
+            ctx.miner,
+            ctx.feeSelections
+        );
+    }
+
+   function validateOrdersCutoffs(
+        Context ctx
+        )
+        private
+        view
+    {
+        address[] memory owners = new address[](ctx.ringSize);
+        bytes20[] memory tradingPairs = new bytes20[](ctx.ringSize);
+        uint[] memory validSinceTimes = new uint[](ctx.ringSize);
+
+        for (uint i = 0; i < ctx.ringSize; i++) {
+            owners[i] = ctx.orders[i].owner;
+            tradingPairs[i] = bytes20(ctx.orders[i].tokenS) ^ bytes20(ctx.orders[i].tokenB);
+            validSinceTimes[i] = ctx.orders[i].validSince;
+        }
+
+        ctx.delegate.checkCutoffsBatch(owners, tradingPairs, validSinceTimes);
     }
 
     /// @dev Verify the ringHash has been signed with each order's auth private
     ///      keys as well as the miner's private key.
     function verifyRingSignatures(
-        RingParams params,
-        OrderState[] orders
+        Context ctx
         )
         private
         pure
     {
         uint j;
-        for (uint i = 0; i < params.ringSize; i++) {
-            j = i + params.ringSize;
+        for (uint i = 0; i < ctx.ringSize; i++) {
+            j = i + ctx.ringSize;
 
             verifySignature(
-                orders[i].authAddr,
-                params.ringHash,
-                params.vList[j],
-                params.rList[j],
-                params.sList[j]
+                ctx.orders[i].authAddr,
+                ctx.ringHash,
+                ctx.vList[j],
+                ctx.rList[j],
+                ctx.sList[j]
             );
         }
     }
 
     function verifyTokensRegistered(
-        RingParams params,
-        OrderState[] orders
+        Context ctx
         )
         private
         view
     {
         // Extract the token addresses
-        address[] memory tokens = new address[](params.ringSize);
-        for (uint i = 0; i < params.ringSize; i++) {
-            tokens[i] = orders[i].tokenS;
+        address[] memory tokens = new address[](ctx.ringSize);
+        for (uint i = 0; i < ctx.ringSize; i++) {
+            tokens[i] = ctx.orders[i].tokenS;
         }
 
         // Test all token addresses at once
         require(
-            TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens)
-        ); // "token not registered");
-    }
-
-    function handleRing(
-        uint64       _ringIndex,
-        RingParams   params,
-        OrderState[] orders,
-        TokenTransferDelegate delegate
-        )
-        private
-    {
-        address _lrcTokenAddress = lrcTokenAddress;
-
-        // Do the hard work.
-        verifyRingHasNoSubRing(params.ringSize, orders);
-
-        // Exchange rates calculation are performed by ring-miners as solidity
-        // cannot get power-of-1/n operation, therefore we have to verify
-        // these rates are correct.
-        verifyMinerSuppliedFillRates(params.ringSize, orders);
-
-        // Scale down each order independently by substracting amount-filled and
-        // amount-cancelled. Order owner's current balance and allowance are
-        // not taken into consideration in these operations.
-        scaleRingBasedOnHistoricalRecords(delegate, params.ringSize, orders);
-
-        // Based on the already verified exchange rate provided by ring-miners,
-        // we can furthur scale down orders based on token balance and allowance,
-        // then find the smallest order of the ring, then calculate each order's
-        // `fillAmountS`.
-        calculateRingFillAmount(params.ringSize, orders);
-
-        // Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
-        // of `fillAmountS` shall be paid to matching order or miner as margin
-        // split.
-
-        calculateRingFees(
-            delegate,
-            params.ringSize,
-            orders,
-            params.miner,
-            _lrcTokenAddress
-        );
-
-        /// Make transfers.
-        uint[] memory orderInfoList = settleRing(
-            delegate,
-            params.ringSize,
-            orders,
-            params.miner,
-            _lrcTokenAddress
-        );
-
-        emit RingMined(
-            _ringIndex,
-            params.ringHash,
-            params.miner,
-            orderInfoList
+            TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens),
+            "token not registered"
         );
     }
 
-    function settleRing(
-        TokenTransferDelegate delegate,
-        uint          ringSize,
-        OrderState[]  orders,
-        address       miner,
-        address       _lrcTokenAddress
+    /// @dev Validate a ring.
+    function verifyRingHasNoSubRing(
+        Context ctx
         )
         private
-        returns (uint[] memory orderInfoList)
+        pure
     {
-        bytes32[] memory batch = new bytes32[](ringSize * 7); // ringSize * (owner + tokenS + 4 amounts + wallet)
-        orderInfoList = new uint[](ringSize * 6);
-
-        uint p = 0;
-        uint prevSplitB = orders[ringSize - 1].splitB;
-        for (uint i = 0; i < ringSize; i++) {
-            OrderState memory state = orders[i];
-            uint nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
-
-            // Store owner and tokenS of every order
-            batch[p] = bytes32(state.owner);
-            batch[p + 1] = bytes32(state.tokenS);
-
-            // Store all amounts
-            batch[p + 2] = bytes32(state.fillAmountS - prevSplitB);
-            batch[p + 3] = bytes32(prevSplitB + state.splitS);
-            batch[p + 4] = bytes32(state.lrcReward);
-            batch[p + 5] = bytes32(state.lrcFeeState);
-            batch[p + 6] = bytes32(state.wallet);
-            p += 7;
-
-            // Update fill records
-            if (state.buyNoMoreThanAmountB) {
-                delegate.addCancelledOrFilled(state.orderHash, nextFillAmountS);
-            } else {
-                delegate.addCancelledOrFilled(state.orderHash, state.fillAmountS);
+        // Check the ring has no sub-ring.
+        for (uint i = 0; i < ctx.ringSize - 1; i++) {
+            address tokenS = ctx.orders[i].tokenS;
+            for (uint j = i + 1; j < ctx.ringSize; j++) {
+                require(tokenS != ctx.orders[j].tokenS, "subring found");
             }
-
-            orderInfoList[i * 6 + 0] = uint(state.orderHash);
-            orderInfoList[i * 6 + 1] = state.fillAmountS;
-            orderInfoList[i * 6 + 2] = state.lrcReward;
-            orderInfoList[i * 6 + 3] = state.lrcFeeState;
-            orderInfoList[i * 6 + 4] = state.splitS;
-            orderInfoList[i * 6 + 5] = state.splitB;
-
-            prevSplitB = state.splitB;
         }
-
-        // Do all transactions
-        delegate.batchTransferToken(
-            _lrcTokenAddress,
-            miner,
-            walletSplitPercentage,
-            batch
-        );
     }
 
-    /// @dev Verify miner has calculte the rates correctly.
+    /// @dev Exchange rates calculation are performed by ring-miners as solidity
+    /// cannot get power-of-1/n operation, therefore we have to verify
+    /// these rates are correct.
     function verifyMinerSuppliedFillRates(
-        uint         ringSize,
-        OrderState[] orders
+        Context ctx
         )
         private
         view
     {
-        uint[] memory rateRatios = new uint[](ringSize);
+        uint[] memory rateRatios = new uint[](ctx.ringSize);
         uint _rateRatioScale = RATE_RATIO_SCALE;
 
-        for (uint i = 0; i < ringSize; i++) {
-            uint s1b0 = orders[i].rateS.mul(orders[i].amountB);
-            uint s0b1 = orders[i].amountS.mul(orders[i].rateB);
+        for (uint i = 0; i < ctx.ringSize; i++) {
+            uint s1b0 = ctx.orders[i].rateS.mul(ctx.orders[i].amountB);
+            uint s0b1 = ctx.orders[i].amountS.mul(ctx.orders[i].rateB);
 
-            require(s1b0 <= s0b1); // "miner supplied exchange rate provides invalid discount");
+            require(s1b0 <= s0b1, "invalid discount");
 
             rateRatios[i] = _rateRatioScale.mul(s1b0) / s0b1;
         }
 
         uint cvs = MathUint.cvsquare(rateRatios, _rateRatioScale);
 
-        require(cvs <= rateRatioCVSThreshold);
-        // "miner supplied exchange rate is not evenly discounted");
+        require(cvs <= rateRatioCVSThreshold, "uneven discount");
     }
 
-    /// @dev Calculate each order's fee or LRC reward.
-    function calculateRingFees(
-        TokenTransferDelegate delegate,
-        uint            ringSize,
-        OrderState[]    orders,
-        address         miner,
-        address         _lrcTokenAddress
+    /// @dev Scale down all orders based on historical fill or cancellation
+    ///      stats but key the order's original exchange rate.
+    function scaleRingBasedOnHistoricalRecords(
+        Context ctx
         )
         private
         view
     {
+
+        uint ringSize = ctx.ringSize;
+        OrderState[] memory orders = ctx.orders;
+
+        for (uint i = 0; i < ringSize; i++) {
+            OrderState memory state = orders[i];
+            uint amount;
+
+            if (state.buyNoMoreThanAmountB) {
+                amount = state.amountB.tolerantSub(
+                    ctx.delegate.cancelledOrFilled(state.orderHash)
+                );
+
+                state.amountS = amount.mul(state.amountS) / state.amountB;
+                state.lrcFee = amount.mul(state.lrcFee) / state.amountB;
+
+                state.amountB = amount;
+            } else {
+                amount = state.amountS.tolerantSub(
+                    ctx.delegate.cancelledOrFilled(state.orderHash)
+                );
+
+                state.amountB = amount.mul(state.amountB) / state.amountS;
+                state.lrcFee = amount.mul(state.lrcFee) / state.amountS;
+
+                state.amountS = amount;
+            }
+
+            require(state.amountS > 0, "amountS scaled to 0");
+            require(state.amountB > 0, "amountB scaled to 0");
+
+            uint availableAmountS = getSpendable(ctx.delegate, state.tokenS, state.owner);
+            require(availableAmountS > 0, "spendable is 0");
+
+            state.fillAmountS = (
+                state.amountS < availableAmountS ?
+                state.amountS : availableAmountS
+            );
+        }
+    }
+
+    /// @dev Based on the already verified exchange rate provided by ring-miners,
+    /// we can furthur scale down orders based on token balance and allowance,
+    /// then find the smallest order of the ring, then calculate each order's
+    /// `fillAmountS`.
+    function calculateRingFillAmount(
+        Context ctx
+        )
+        private
+        pure
+    {
+        uint smallestIdx = 0;
+
+        for (uint i = 0; i < ctx.ringSize; i++) {
+            uint j = (i + 1) % ctx.ringSize;
+            smallestIdx = calculateOrderFillAmount(
+                ctx.orders[i],
+                ctx.orders[j],
+                i,
+                j,
+                smallestIdx
+            );
+        }
+
+        for (uint i = 0; i < smallestIdx; i++) {
+            calculateOrderFillAmount(
+                ctx.orders[i],
+                ctx.orders[(i + 1) % ctx.ringSize],
+                0,               // Not needed
+                0,               // Not needed
+                0                // Not needed
+            );
+        }
+    }
+
+    /// @dev  Calculate each order's `lrcFee` and `lrcRewrard` and splict how much
+    /// of `fillAmountS` shall be paid to matching order or miner as margin
+    /// split.
+    function calculateRingFees(
+        Context ctx
+        )
+        private
+        view
+    {
+        uint ringSize = ctx.ringSize;
         bool checkedMinerLrcSpendable = false;
         uint minerLrcSpendable = 0;
         uint8 _marginSplitPercentageBase = MARGIN_SPLIT_PERCENTAGE_BASE;
         uint nextFillAmountS;
 
         for (uint i = 0; i < ringSize; i++) {
-            OrderState memory state = orders[i];
+            OrderState memory state = ctx.orders[i];
             uint lrcReceiable = 0;
 
             if (state.lrcFeeState == 0) {
@@ -526,20 +626,20 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.marginSplitPercentage = _marginSplitPercentageBase;
             } else {
                 uint lrcSpendable = getSpendable(
-                    delegate,
-                    _lrcTokenAddress,
+                    ctx.delegate,
+                    lrcTokenAddress,
                     state.owner
                 );
 
                 // If the order is selling LRC, we need to calculate how much LRC
                 // is left that can be used as fee.
-                if (state.tokenS == _lrcTokenAddress) {
+                if (state.tokenS == lrcTokenAddress) {
                     lrcSpendable -= state.fillAmountS;
                 }
 
                 // If the order is buyign LRC, it will has more to pay as fee.
-                if (state.tokenB == _lrcTokenAddress) {
-                    nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
+                if (state.tokenB == lrcTokenAddress) {
+                    nextFillAmountS = ctx.orders[(i + 1) % ringSize].fillAmountS;
                     lrcReceiable = nextFillAmountS;
                 }
 
@@ -571,13 +671,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < state.lrcFeeState) {
                     checkedMinerLrcSpendable = true;
-                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, miner);
+                    minerLrcSpendable = getSpendable(ctx.delegate, lrcTokenAddress, ctx.miner);
                 }
 
                 // Only calculate split when miner has enough LRC;
                 // otherwise all splits are 0.
                 if (minerLrcSpendable >= state.lrcFeeState) {
-                    nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
+                    nextFillAmountS = ctx.orders[(i + 1) % ringSize].fillAmountS;
                     uint split;
                     if (state.buyNoMoreThanAmountB) {
                         split = (nextFillAmountS.mul(
@@ -619,38 +719,63 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
     }
 
-    /// @dev Calculate each order's fill amount.
-    function calculateRingFillAmount(
-        uint          ringSize,
-        OrderState[]  orders
+    function settleRing(
+        Context ctx
         )
         private
-        pure
     {
-        uint smallestIdx = 0;
-        uint i;
-        uint j;
+        bytes32[] memory batch = new bytes32[](ctx.ringSize * 7); // ringSize * (owner + tokenS + 4 amounts + wallet)
+        uint[] memory orderInfoList = new uint[](ctx.ringSize * 6);
 
-        for (i = 0; i < ringSize; i++) {
-            j = (i + 1) % ringSize;
-            smallestIdx = calculateOrderFillAmount(
-                orders[i],
-                orders[j],
-                i,
-                j,
-                smallestIdx
-            );
+        uint p = 0;
+        uint prevSplitB = ctx.orders[ctx.ringSize - 1].splitB;
+        for (uint i = 0; i < ctx.ringSize; i++) {
+            OrderState memory state = ctx.orders[i];
+            uint nextFillAmountS = ctx.orders[(i + 1) % ctx.ringSize].fillAmountS;
+
+            // Store owner and tokenS of every order
+            batch[p] = bytes32(state.owner);
+            batch[p + 1] = bytes32(state.tokenS);
+
+            // Store all amounts
+            batch[p + 2] = bytes32(state.fillAmountS - prevSplitB);
+            batch[p + 3] = bytes32(prevSplitB + state.splitS);
+            batch[p + 4] = bytes32(state.lrcReward);
+            batch[p + 5] = bytes32(state.lrcFeeState);
+            batch[p + 6] = bytes32(state.wallet);
+            p += 7;
+
+            // Update fill records
+            if (state.buyNoMoreThanAmountB) {
+                ctx.delegate.addCancelledOrFilled(state.orderHash, nextFillAmountS);
+            } else {
+                ctx.delegate.addCancelledOrFilled(state.orderHash, state.fillAmountS);
+            }
+
+            orderInfoList[i * 6 + 0] = uint(state.orderHash);
+            orderInfoList[i * 6 + 1] = state.fillAmountS;
+            orderInfoList[i * 6 + 2] = state.lrcReward;
+            orderInfoList[i * 6 + 3] = state.lrcFeeState;
+            orderInfoList[i * 6 + 4] = state.splitS;
+            orderInfoList[i * 6 + 5] = state.splitB;
+
+            prevSplitB = state.splitB;
         }
 
-        for (i = 0; i < smallestIdx; i++) {
-            calculateOrderFillAmount(
-                orders[i],
-                orders[(i + 1) % ringSize],
-                0,               // Not needed
-                0,               // Not needed
-                0                // Not needed
-            );
-        }
+        // Do all transactions
+        ctx.delegate.batchTransferToken(
+            lrcTokenAddress,
+            ctx.miner,
+            walletSplitPercentage,
+            batch
+        );
+
+        emit RingMined(
+            ctx.ringIndex,
+            ctx.ringHash,
+            ctx.miner,
+            orderInfoList
+        );
     }
 
     /// @return The smallest order's index.
@@ -698,53 +823,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
     }
 
-    /// @dev Scale down all orders based on historical fill or cancellation
-    ///      stats but key the order's original exchange rate.
-    function scaleRingBasedOnHistoricalRecords(
-        TokenTransferDelegate delegate,
-        uint ringSize,
-        OrderState[] orders
-        )
-        private
-        view
-    {
-        for (uint i = 0; i < ringSize; i++) {
-            OrderState memory state = orders[i];
-            uint amount;
-
-            if (state.buyNoMoreThanAmountB) {
-                amount = state.amountB.tolerantSub(
-                    delegate.cancelledOrFilled(state.orderHash)
-                );
-
-                state.amountS = amount.mul(state.amountS) / state.amountB;
-                state.lrcFee = amount.mul(state.lrcFee) / state.amountB;
-
-                state.amountB = amount;
-            } else {
-                amount = state.amountS.tolerantSub(
-                    delegate.cancelledOrFilled(state.orderHash)
-                );
-
-                state.amountB = amount.mul(state.amountB) / state.amountS;
-                state.lrcFee = amount.mul(state.lrcFee) / state.amountS;
-
-                state.amountS = amount;
-            }
-
-            require(state.amountS > 0); // "amountS is zero");
-            require(state.amountB > 0); // "amountB is zero");
-
-            uint availableAmountS = getSpendable(delegate, state.tokenS, state.owner);
-            require(availableAmountS > 0); // "order spendable amountS is zero");
-
-            state.fillAmountS = (
-                state.amountS < availableAmountS ?
-                state.amountS : availableAmountS
-            );
-        }
-    }
-
     /// @return Amount of ERC20 token that can be spent by this contract.
     function getSpendable(
         TokenTransferDelegate delegate,
@@ -764,105 +842,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         return (allowance < balance ? allowance : balance);
     }
 
-    /// @dev verify input data's basic integrity.
-    function verifyInputDataIntegrity(
-        RingParams params,
-        address[4][]  addressList,
-        uint[6][]     uintArgsList,
-        uint8[1][]    uint8ArgsList,
-        bool[]        buyNoMoreThanAmountBList
-        )
-        private
-        pure
-    {
-        require(params.miner != 0x0);
-        require(params.ringSize == addressList.length);
-        require(params.ringSize == uintArgsList.length);
-        require(params.ringSize == uint8ArgsList.length);
-        require(params.ringSize == buyNoMoreThanAmountBList.length);
-
-        // Validate ring-mining related arguments.
-        for (uint i = 0; i < params.ringSize; i++) {
-            require(uintArgsList[i][5] > 0); // "order rateAmountS is zero");
-        }
-
-        //Check ring size
-        require(params.ringSize > 1 && params.ringSize <= MAX_RING_SIZE); // "invalid ring size");
-
-        uint sigSize = params.ringSize << 1;
-        require(sigSize == params.vList.length);
-        require(sigSize == params.rList.length);
-        require(sigSize == params.sList.length);
-    }
-
-    /// @dev        assmble order parameters into Order struct.
-    /// @return     A list of orders.
-    function assembleOrders(
-        RingParams params,
-        TokenTransferDelegate delegate,
-        address[4][]  addressList,
-        uint[6][]     uintArgsList,
-        uint8[1][]    uint8ArgsList,
-        bool[]        buyNoMoreThanAmountBList
-        )
-        private
-        view
-        returns (OrderState[] memory orders)
-    {
-        orders = new OrderState[](params.ringSize);
-
-        for (uint i = 0; i < params.ringSize; i++) {
-            uint[6] memory uintArgs = uintArgsList[i];
-            bool marginSplitAsFee = (params.feeSelections & (uint16(1) << i)) > 0;
-            orders[i] = OrderState(
-                addressList[i][0],
-                addressList[i][1],
-                addressList[(i + 1) % params.ringSize][1],
-                addressList[i][2],
-                addressList[i][3],
-                uintArgs[2],
-                uintArgs[3],
-                uintArgs[0],
-                uintArgs[1],
-                uintArgs[4],
-                buyNoMoreThanAmountBList[i],
-                marginSplitAsFee,
-                bytes32(0),
-                uint8ArgsList[i][0],
-                uintArgs[5],
-                uintArgs[1],
-                0,   // fillAmountS
-                0,   // lrcReward
-                0,   // lrcFee
-                0,   // splitS
-                0    // splitB
-            );
-
-            validateOrder(orders[i]);
-
-            bytes32 orderHash = calculateOrderHash(orders[i]);
-            orders[i].orderHash = orderHash;
-
-            verifySignature(
-                orders[i].owner,
-                orderHash,
-                params.vList[i],
-                params.rList[i],
-                params.sList[i]
-            );
-
-            params.ringHash ^= orderHash;
-        }
-
-        validateOrdersCutoffs(orders, delegate);
-
-        params.ringHash = keccak256(
-            params.ringHash,
-            params.miner,
-            params.feeSelections
-        );
-    }
-
     /// @dev validate order's parameters are OK.
     function validateOrder(
         OrderState order
@@ -870,33 +849,18 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         view
     {
-        require(order.owner != 0x0); // invalid order owner
-        require(order.tokenS != 0x0); // invalid order tokenS
-        require(order.tokenB != 0x0); // invalid order tokenB
-        require(order.amountS != 0); // invalid order amountS
-        require(order.amountB != 0); // invalid order amountB
-        require(order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE);
-        // invalid order marginSplitPercentage
+        require(order.owner != 0x0, "invalid owner");
+        require(order.tokenS != 0x0, "invalid tokenS");
+        require(order.tokenB != 0x0, "nvalid tokenB");
+        require(order.amountS != 0, "invalid amountS");
+        require(order.amountB != 0, "invalid amountB");
+        require(
+            order.marginSplitPercentage <= MARGIN_SPLIT_PERCENTAGE_BASE,
+            "invalid marginSplitPercentage"
+        );
 
-        require(order.validSince <= block.timestamp); // order is too early to match
-        require(order.validUntil > block.timestamp); // order is expired
-    }
-
-    function validateOrdersCutoffs(OrderState[] orders, TokenTransferDelegate delegate)
-        private
-        view
-    {
-        address[] memory owners = new address[](orders.length);
-        bytes20[] memory tradingPairs = new bytes20[](orders.length);
-        uint[] memory validSinceTimes = new uint[](orders.length);
-
-        for (uint i = 0; i < orders.length; i++) {
-            owners[i] = orders[i].owner;
-            tradingPairs[i] = bytes20(orders[i].tokenS) ^ bytes20(orders[i].tokenB);
-            validSinceTimes[i] = orders[i].validSince;
-        }
-
-        delegate.checkCutoffsBatch(owners, tradingPairs, validSinceTimes);
+        require(order.validSince <= block.timestamp, "immature");
+        require(order.validUntil > block.timestamp, "expired");
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.
@@ -941,8 +905,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 v,
                 r,
                 s
-            )
-        ); // "invalid signature");
+            ),
+            "bad signature"
+        );
     }
 
     function getTradingPairCutoffs(
