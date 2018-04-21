@@ -47,7 +47,7 @@ contract BrokerRegistryImpl is BrokerRegistry {
         )
     {
         Broker storage b = brokerMap[owner][broker];
-        authenticated = (b.addr != 0x0);
+        authenticated = (b.addr == broker);
         tracker = b.tracker;
     }
 

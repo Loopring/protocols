@@ -25,30 +25,22 @@ contract BrokerTracker {
     function getAllowance(
         address owner,
         address broker,
-        address tokenB,
-        address tokenS
+        address token
         )
         public
         view
-        returns (
-            uint allowanceB,
-            uint allowanceS,
-            uint lrcAllowance
-        );
+        returns (uint allowance);
 
     /// @dev This method will be called from TokenTransferDelegateImpl, so
     ///      it must check `msg.sender` is the address of LoopringProtocol.
     ///      Check https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md
     ///      for the current address of LoopringProtocol deployment. 
-    function onSettlement(
+    function onTokenSpent(
         address owner,
         address broker,
-        address tokenB,
-        uint    amountB,
-        address tokenS,
-        uint    amountS,
-        uint    lrcFee,
-        uint    lrcReward
+        address token,
+        uint    amount
         )
-        public;
+        public
+        returns (bool ok);
 }

@@ -45,9 +45,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     address public  lrcTokenAddress             = 0x0;
     address public  tokenRegistryAddress        = 0x0;
     address public  delegateAddress             = 0x0;
+    address public  brokerRegistryAddress       = 0x0;
 
     uint64  public  ringIndex                   = 0;
-    uint8   public  walletSplitPercentage       = 0;
 
     // Exchange rate (rate) is the amount to sell or sold divided by the amount
     // to buy or bought.
@@ -64,34 +64,23 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
 
-    /// @param orderHash    The order's hash
-    /// @param feeSelection -
-    ///                     A miner-supplied value indicating if LRC (value = 0)
-    ///                     or margin split is choosen by the miner (value = 1).
-    ///                     We may support more fee model in the future.
-    /// @param rateS        Sell Exchange rate provided by miner.
-    /// @param rateB        Buy Exchange rate provided by miner.
-    /// @param fillAmountS  Amount of tokenS to sell, calculated by protocol.
-    /// @param lrcReward    The amount of LRC paid by miner to order owner in
-    ///                     exchange for margin split.
-    /// @param lrcFeeState  The amount of LR paid by order owner to miner.
-    /// @param splitS      TokenS paid to miner.
-    /// @param splitB      TokenB paid to miner.
     struct Order {
         address owner;
+        address signer;
         address tokenS;
         address tokenB;
         address wallet;
         address authAddr;
-        uint    validSince;
-        uint    validUntil;
         uint    amountS;
         uint    amountB;
+        uint    validSince;
+        uint    validUntil;
         uint    lrcFee;
         uint8   option;
         bool    capByAmountB;
         bool    marginSplitAsFee;
         bytes32 orderHash;
+        address trackerAddr;
         uint    rateS;
         uint    rateB;
         uint    fillAmountS;
@@ -104,7 +93,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev A struct to capture parameters passed to submitRing method and
     ///      various of other variables used across the submitRing core logics.
     struct Context {
-        address[4][]  addressesList;
+        address[5][]  addressesList;
         uint[6][]     valuesList;
         uint8[]       optionList;
         uint8[]       vList;
@@ -115,6 +104,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint64        ringIndex;
         uint          ringSize;         // computed
         TokenTransferDelegate delegate;
+        BrokerRegistry        brokerRegistry;
         Order[]  orders;
         bytes32       ringHash;         // computed
     }
@@ -123,23 +113,23 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address _lrcTokenAddress,
         address _tokenRegistryAddress,
         address _delegateAddress,
-        uint    _rateRatioCVSThreshold,
-        uint8   _walletSplitPercentage
+        address _brokerRegistryAddress,
+        uint    _rateRatioCVSThreshold
         )
         public
     {
         require(_lrcTokenAddress.isContract());
         require(_tokenRegistryAddress.isContract());
         require(_delegateAddress.isContract());
+        require(_brokerRegistryAddress.isContract());
 
         require(_rateRatioCVSThreshold > 0);
-        require(_walletSplitPercentage > 0 && _walletSplitPercentage < 100);
 
         lrcTokenAddress = _lrcTokenAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         delegateAddress = _delegateAddress;
+        brokerRegistryAddress = _brokerRegistryAddress;
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
-        walletSplitPercentage = _walletSplitPercentage;
     }
 
     /// @dev Disable default function.
@@ -151,7 +141,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function cancelOrder(
-        address[5] addresses,
+        address[6] addresses,
         uint[6]    orderValues,
         uint8      option,
         uint8      v,
@@ -163,21 +153,22 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint cancelAmount = orderValues[5];
 
         require(cancelAmount > 0, "invalid cancelAmount");
-
         Order memory order = Order(
             addresses[0],
             addresses[1],
             addresses[2],
             addresses[3],
             addresses[4],
-            orderValues[2],
-            orderValues[3],
+            addresses[5],
             orderValues[0],
             orderValues[1],
+            orderValues[2],
+            orderValues[3],
             orderValues[4],
             option,
             option & OPTION_MASK_CAP_BY_AMOUNTB > 0 ? true : false,
             false,
+            0x0,
             0x0,
             0,
             0,
@@ -187,21 +178,31 @@ contract LoopringProtocolImpl is LoopringProtocol {
             0,
             0
         );
-
         require(
-            msg.sender == order.owner,
-            "cancelOrder not submitted by owner"
+            msg.sender == order.signer,
+            "cancelOrder not submitted by signer"
         );
 
         bytes32 orderHash = calculateOrderHash(order);
 
         verifySignature(
-            order.owner,
+            order.signer,
             orderHash,
             v,
             r,
             s
         );
+
+        if (order.signer != order.owner) {
+            BrokerRegistry brokerRegistry = BrokerRegistry(brokerRegistryAddress);
+            bool authenticated;
+            address tracker;
+            (authenticated, tracker) = brokerRegistry.getBroker(
+                order.owner,
+                order.signer
+            );
+            require(authenticated, "invalid broker");
+        }
 
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
         delegate.addCancelled(orderHash, cancelAmount);
@@ -254,7 +255,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function submitRing(
-        address[4][]  addressesList,
+        address[5][]  addressesList,
         uint[6][]     valuesList,
         uint8[]       optionList,
         uint8[]       vList,
@@ -277,6 +278,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ringIndex,
             addressesList.length,
             TokenTransferDelegate(delegateAddress),
+            BrokerRegistry(brokerRegistryAddress),
             new Order[](addressesList.length),
             0x0 // ringHash
         );
@@ -367,44 +369,57 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint[6] memory uintArgs = ctx.valuesList[i];
             bool marginSplitAsFee = (ctx.feeSelections & (uint8(1) << i)) > 0;
 
-            ctx.orders[i] = Order(
+            Order memory order = Order(
                 ctx.addressesList[i][0],
                 ctx.addressesList[i][1],
-                ctx.addressesList[(i + 1) % ctx.ringSize][1],
                 ctx.addressesList[i][2],
+                ctx.addressesList[(i + 2) % ctx.ringSize][1],
                 ctx.addressesList[i][3],
-                uintArgs[2],
-                uintArgs[3],
+                ctx.addressesList[i][4],
                 uintArgs[0],
                 uintArgs[1],
+                uintArgs[2],
+                uintArgs[3],
                 uintArgs[4],
                 ctx.optionList[i],
                 ctx.optionList[i] & OPTION_MASK_CAP_BY_AMOUNTB > 0 ? true : false,
                 marginSplitAsFee,
-                bytes32(0),
+                0x0,
+                0x0,  // brokderTracker
                 uintArgs[5],
                 uintArgs[1],
                 0,   // fillAmountS
                 0,   // lrcReward
                 0,   // lrcFee
                 0,   // splitS
-                0    // splitB
+                0.   // splitB
             );
 
-            validateOrder(ctx.orders[i]);
+            validateOrder(order);
 
-            bytes32 orderHash = calculateOrderHash(ctx.orders[i]);
-            ctx.orders[i].orderHash = orderHash;
+            order.orderHash = calculateOrderHash(order);
 
             verifySignature(
-                ctx.orders[i].owner,
-                orderHash,
+                order.signer,
+                order.orderHash,
                 ctx.vList[i],
                 ctx.rList[i],
                 ctx.sList[i]
             );
 
-            ctx.ringHash ^= orderHash;
+            if (order.signer != order.owner) {
+                BrokerRegistry brokerRegistry = BrokerRegistry(brokerRegistryAddress);
+                bool authenticated;
+                (authenticated, order.trackerAddr) = brokerRegistry.getBroker(
+                    order.owner,
+                    order.signer
+                );
+
+                require(authenticated, "invalid broker");
+            }
+
+            ctx.orders[i] = order;
+            ctx.ringHash ^= order.orderHash;
         }
 
         ctx.ringHash = keccak256(
@@ -555,7 +570,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
             require(order.amountS > 0, "amountS scaled to 0");
             require(order.amountB > 0, "amountB scaled to 0");
 
-            uint availableAmountS = getSpendable(ctx.delegate, order.tokenS, order.owner);
+            uint availableAmountS = getSpendable(
+                ctx.delegate,
+                order.tokenS,
+                order.owner,
+                order.signer,
+                order.trackerAddr
+            );
             require(availableAmountS > 0, "spendable is 0");
 
             order.fillAmountS = (
@@ -625,7 +646,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uint lrcSpendable = getSpendable(
                     ctx.delegate,
                     lrcTokenAddress,
-                    order.owner
+                    order.owner,
+                    order.signer,
+                    order.trackerAddr
                 );
 
                 // If the order is selling LRC, we need to calculate how much LRC
@@ -667,7 +690,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < order.lrcFeeState) {
                     checkedMinerLrcSpendable = true;
-                    minerLrcSpendable = getSpendable(ctx.delegate, lrcTokenAddress, ctx.miner);
+                    minerLrcSpendable = getSpendable(
+                        ctx.delegate,
+                        lrcTokenAddress,
+                        ctx.miner,
+                        0x0,
+                        0x0
+                    );
                 }
 
                 // Only calculate split when miner has enough LRC;
@@ -714,7 +743,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         )
         private
     {
-        bytes32[] memory batch = new bytes32[](ctx.ringSize * 7); // ringSize * (owner + tokenS + 4 amounts + wallet)
+        bytes32[] memory batch = new bytes32[](ctx.ringSize * 7);
         Fill[] memory fills = new Fill[](ctx.ringSize);
 
         uint p = 0;
@@ -725,21 +754,29 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // Store owner and tokenS of every order
             batch[p] = bytes32(order.owner);
-            batch[p + 1] = bytes32(order.tokenS);
+            batch[p + 1] = bytes32(order.signer);
+            batch[p + 2] = bytes32(order.trackerAddr);
+            batch[p + 3] = bytes32(order.tokenS);
 
             // Store all amounts
-            batch[p + 2] = bytes32(order.fillAmountS - prevSplitB);
-            batch[p + 3] = bytes32(prevSplitB + order.splitS);
-            batch[p + 4] = bytes32(order.lrcReward);
-            batch[p + 5] = bytes32(order.lrcFeeState);
-            batch[p + 6] = bytes32(order.wallet);
-            p += 7;
+            batch[p + 4] = bytes32(order.fillAmountS - prevSplitB);
+            batch[p + 5] = bytes32(prevSplitB + order.splitS);
+            batch[p + 6] = bytes32(order.lrcReward);
+            batch[p + 7] = bytes32(order.lrcFeeState);
+            batch[p + 8] = bytes32(order.wallet);
+            p += 9;
 
             // Update fill records
             if (order.capByAmountB) {
-                ctx.delegate.addCancelledOrFilled(order.orderHash, nextFillAmountS);
+                ctx.delegate.addCancelledOrFilled(
+                    order.orderHash,
+                    nextFillAmountS
+                );
             } else {
-                ctx.delegate.addCancelledOrFilled(order.orderHash, order.fillAmountS);
+                ctx.delegate.addCancelledOrFilled(
+                    order.orderHash,
+                    order.fillAmountS
+                );
             }
 
             fills[i]  = Fill(
@@ -754,11 +791,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
             prevSplitB = order.splitB;
         }
 
+
         // Do all transactions
         ctx.delegate.batchTransferToken(
             lrcTokenAddress,
             ctx.miner,
-            walletSplitPercentage,
             batch
         );
 
@@ -774,9 +811,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function calculateOrderFillAmount(
         Order order,
         Order next,
-        uint       i,
-        uint       j,
-        uint       smallestIdx
+        uint  i,
+        uint  j,
+        uint  smallestIdx
         )
         private
         pure
@@ -819,19 +856,40 @@ contract LoopringProtocolImpl is LoopringProtocol {
     function getSpendable(
         TokenTransferDelegate delegate,
         address tokenAddress,
-        address tokenOwner
+        address tokenOwner,
+        address broker,
+        address trackerAddr
         )
         private
         view
-        returns (uint)
+        returns (uint spendable)
     {
         ERC20 token = ERC20(tokenAddress);
-        uint allowance = token.allowance(
+        spendable = token.allowance(
             tokenOwner,
             address(delegate)
         );
-        uint balance = token.balanceOf(tokenOwner);
-        return (allowance < balance ? allowance : balance);
+        if (spendable == 0) {
+            return;
+        }
+        uint amount = token.balanceOf(tokenOwner);
+        if (amount < spendable) {
+            spendable = amount;
+            if (spendable == 0) {
+                return;
+            }
+        }
+
+        if (trackerAddr != 0x0) {
+            amount = BrokerTracker(trackerAddr).getAllowance(
+                tokenOwner,
+                broker,
+                tokenAddress
+            );
+            if (amount < spendable) {
+                spendable = amount;
+            }
+        }
     }
 
     /// @dev validate order's parameters are OK.
@@ -861,6 +919,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         return keccak256(
             delegateAddress,
             order.owner,
+            order.signer,
             order.tokenS,
             order.tokenB,
             order.wallet,

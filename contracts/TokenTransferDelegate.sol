@@ -84,7 +84,6 @@ contract TokenTransferDelegate {
     function batchTransferToken(
         address lrcTokenAddress,
         address minerFeeRecipient,
-        uint8 walletSplitPercentage,
         bytes32[] batch
         )
         external;
@@ -96,19 +95,34 @@ contract TokenTransferDelegate {
         view
         returns (bool);
 
-    function addCancelled(bytes32 orderHash, uint cancelAmount)
+    function addCancelled(
+        bytes32 orderHash,
+        uint cancelAmount
+        )
         external;
 
-    function addCancelledOrFilled(bytes32 orderHash, uint cancelOrFillAmount)
+    function addCancelledOrFilled(
+        bytes32 orderHash,
+        uint cancelOrFillAmount
+        )
         external;
 
-    function setCutoffs(uint t)
+    function setCutoffs(
+        uint cutoff
+        )
         external;
 
-    function setTradingPairCutoffs(bytes20 tokenPair, uint t)
+    function setTradingPairCutoffs(
+        bytes20 tokenPair,
+        uint cutoff
+        )
         external;
 
-    function checkCutoffsBatch(address[] owners, bytes20[] tradingPairs, uint[] validSince)
+    function checkCutoffsBatch(
+        address[] owners,
+        bytes20[] tradingPairs,
+        uint[] validSince
+        )
         external
         view;
 }

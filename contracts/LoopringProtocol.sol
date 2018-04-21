@@ -62,7 +62,7 @@ contract LoopringProtocol {
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in values.
-    /// @param addresses          owner, tokenS, tokenB, wallet, authAddr
+    /// @param addresses          owner, signer, tokenS, tokenB, wallet, authAddr
     /// @param values             amountS, amountB, validSince (second),
     ///                           validUntil (second), lrcFee, and cancelAmount.
     /// @param option             This indicates when a order should be considered
@@ -71,7 +71,7 @@ contract LoopringProtocol {
     /// @param r                  Order ECDSA signature parameters r.
     /// @param s                  Order ECDSA signature parameters s.
     function cancelOrder(
-        address[5] addresses,
+        address[6] addresses,
         uint[6]    values,
         uint8      option,
         uint8      v,
@@ -103,7 +103,8 @@ contract LoopringProtocol {
         external;
 
     /// @dev Submit a order-ring for validation and settlement.
-    /// @param addressesList List of each order's owner, tokenS, wallet, authAddr.
+    /// @param addressesList List of each order's owner, signer, tokenS, wallet,
+    ///                      and authAddr.
     ///                      Note that next order's `tokenS` equals this order's
     ///                      `tokenB`.
     /// @param valuesList   List of uint-type arguments in this order:
@@ -124,7 +125,7 @@ contract LoopringProtocol {
     ///                     Bits to indicate fee selections. `1` represents margin
     ///                     split and `0` represents LRC as fee.
     function submitRing(
-        address[4][]    addressesList,
+        address[5][]    addressesList,
         uint[6][]       valuesList,
         bool[]          optionList,
         uint8[]         vList,
