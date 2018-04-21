@@ -22,7 +22,7 @@ pragma experimental "ABIEncoderV2";
 /// @title Trade Broker
 /// @dev A broker is an account that can submit order on behalf of other
 ///      accounts. When register a broker, the owner can also specify a
-///      pre-deployed BrokageTracker to manage the allowance of for the
+///      pre-deployed BrokageTracker to manage the allowance of the
 ///      specific broker.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract BrokerRegistry {

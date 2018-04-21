@@ -73,8 +73,8 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
         external
         onlyOwner
     {
-        require(addr != 0x0);
-        require(symbolMap[symbol] == addr);
+        require(addr != 0x0,"bad address");
+        require(symbolMap[symbol] == addr, "token not found");
         delete symbolMap[symbol];
 
         uint pos = addressMap[addr].pos;
@@ -187,10 +187,10 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
         )
         internal
     {
-        require(0x0 != addr);
-        require(bytes(symbol).length > 0);
-        require(0x0 == symbolMap[symbol]);
-        require(0 == addressMap[addr].pos);
+        require(0x0 != addr, "bad address");
+        require(bytes(symbol).length > 0, "empty symbol");
+        require(0x0 == symbolMap[symbol], "symbol registered");
+        require(0 == addressMap[addr].pos, "address registered");
 
         addresses.push(addr);
         symbolMap[symbol] = addr;

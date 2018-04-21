@@ -445,7 +445,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
             validSinceTimes[i] = ctx.orders[i].validSince;
         }
 
-        ctx.delegate.checkCutoffsBatch(owners, tradingPairs, validSinceTimes);
+        ctx.delegate.checkCutoffsBatch(
+            owners,
+            tradingPairs,
+            validSinceTimes
+        );
     }
 
     /// @dev Verify the ringHash has been signed with each order's auth private

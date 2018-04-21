@@ -34,7 +34,6 @@ contract TokenFactoryImpl is TokenFactory {
 
     mapping(bytes10 => address) public tokens;
     address   public tokenRegistry;
-    address   public tokenTransferDelegate;
 
     /// @dev Disable default function.
     function ()
@@ -62,12 +61,10 @@ contract TokenFactoryImpl is TokenFactory {
         external
         returns (address addr)
     {
-        require(tokenRegistry != 0x0);
-        require(tokenTransferDelegate != 0x0);
-        require(symbol.checkStringLength(3, 10));
+        require(symbol.checkStringLength(3, 10), "bad symbol size");
 
         bytes10 symbolBytes = symbol.stringToBytes10();
-        require(tokens[symbolBytes] == 0x0);
+        require(tokens[symbolBytes] == 0x0, "invalid symbol");
 
         ERC20Token token = new ERC20Token(
             name,

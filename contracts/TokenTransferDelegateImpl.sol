@@ -51,7 +51,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
     modifier onlyAuthorized()
     {
-        require(addressInfos[msg.sender].authorized);
+        require(addressInfos[msg.sender].authorized, "unauthorized");
         _;
     }
 
@@ -138,7 +138,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     {
         if (value > 0 && from != to && to != 0x0) {
             require(
-                ERC20(token).transferFrom(from, to, value)
+                ERC20(token).transferFrom(from, to, value),
+                "token transfer failure"
             );
         }
     }
@@ -173,7 +174,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                         owner,
                         prevOwner,
                         amount
-                    )
+                    ),
+                    "token transfer failure"
                 );
 
                 if (tracker != 0x0) {
@@ -183,7 +185,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                             signer,
                             token,
                             amount
-                        )
+                        ),
+                        "tracker update failure"
                     );
                 }
             }
@@ -196,7 +199,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                         miner,
                         owner,
                         amount
-                    )
+                    ),
+                    "token transfer failure"
                 );
             }
 
@@ -260,7 +264,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                     owner,
                     wallet,
                     walletFee
-                )
+                ),
+                "token transfer failure"
             );
         }
 
@@ -270,7 +275,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                     owner,
                     miner,
                     minerFee
-                )
+                ),
+                "token transfer failure"
             );
         }
 
@@ -281,40 +287,56 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                     broker,
                     token,
                     fee
-                )
+                ),
+                "token transfer failure"
             );
         }
     }
 
-    function addCancelled(bytes32 orderHash, uint cancelAmount)
+    function addCancelled(
+        bytes32 orderHash,
+        uint    cancelAmount
+        )
         onlyAuthorized
         external
     {
         cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
     }
 
-    function addCancelledOrFilled(bytes32 orderHash, uint cancelOrFillAmount)
+    function addCancelledOrFilled(
+        bytes32 orderHash,
+        uint    cancelOrFillAmount
+        )
         onlyAuthorized
         external
     {
         cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelOrFillAmount);
     }
 
-    function setCutoffs(uint t)
+    function setCutoffs(
+        uint cutoff
+        )
         onlyAuthorized
         external
     {
-        cutoffs[tx.origin] = t;
+        cutoffs[tx.origin] = cutoff;
     }
 
-    function setTradingPairCutoffs(bytes20 tokenPair, uint t)
+    function setTradingPairCutoffs(
+        bytes20 tokenPair,
+        uint    cutoff
+        )
         onlyAuthorized
         external
     {
-        tradingPairCutoffs[tx.origin][tokenPair] = t;
+        tradingPairCutoffs[tx.origin][tokenPair] = cutoff;
     }
 
-    function checkCutoffsBatch(address[] owners, bytes20[] tradingPairs, uint[] validSince)
+    function checkCutoffsBatch(
+        address[] owners,
+        bytes20[] tradingPairs,
+        uint[]    validSince
+        )
         external
         view
     {
