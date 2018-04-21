@@ -76,7 +76,8 @@ contract TransferableMultsigImpl is TransferableMultsig {
         );
 
         require(
-            destination.call.value(value)(data)
+            destination.call.value(value)(data),
+            "execution error"
         );
     }
 
