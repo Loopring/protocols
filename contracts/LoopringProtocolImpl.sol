@@ -715,7 +715,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
     {
         bytes32[] memory batch = new bytes32[](ctx.ringSize * 7); // ringSize * (owner + tokenS + 4 amounts + wallet)
-        uint[] memory orderInfoList = new uint[](ctx.ringSize * 6);
+        Fill[] memory fills = new Fill[](ctx.ringSize);
 
         uint p = 0;
         uint prevSplitB = ctx.orders[ctx.ringSize - 1].splitB;
@@ -742,12 +742,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 ctx.delegate.addCancelledOrFilled(order.orderHash, order.fillAmountS);
             }
 
-            orderInfoList[i * 6 + 0] = uint(order.orderHash);
-            orderInfoList[i * 6 + 1] = order.fillAmountS;
-            orderInfoList[i * 6 + 2] = order.lrcReward;
-            orderInfoList[i * 6 + 3] = order.lrcFeeState;
-            orderInfoList[i * 6 + 4] = order.splitS;
-            orderInfoList[i * 6 + 5] = order.splitB;
+            fills[i]  = Fill(
+                order.orderHash,
+                order.fillAmountS,
+                order.lrcReward,
+                order.lrcFeeState,
+                order.splitS,
+                order.splitB
+            );
 
             prevSplitB = order.splitB;
         }
@@ -764,7 +766,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             ctx.ringIndex,
             ctx.ringHash,
             ctx.miner,
-            orderInfoList
+            fills
         );
     }
 
