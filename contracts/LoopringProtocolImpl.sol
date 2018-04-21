@@ -287,7 +287,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         require((ringIndex >> 63) == 0, "reentry");
 
         // Set the highest bit of ringIndex to '1'.
-        ringIndex |= (1 << 63);
+        ringIndex |= (uint64(1) << 63);
 
         verifyInputDataIntegrity(ctx);
 
