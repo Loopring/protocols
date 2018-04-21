@@ -21,6 +21,8 @@ pragma experimental "ABIEncoderV2";
 import "./lib/AddressUtil.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
+import "./BrokerRegistry.sol";
+import "./BrokerTracker.sol";
 import "./LoopringProtocol.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";

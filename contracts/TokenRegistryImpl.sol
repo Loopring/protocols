@@ -34,7 +34,7 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
     mapping (string => address) symbolMap;
 
     struct TokenInfo {
-        uint   pos;      // 0 mens unregistered; if > 0, pos + 1 is the
+        uint   pos;      // 0 mens unregistered; if > 0, pos - 1 is the
                          // token's position in `addresses`.
         string symbol;   // Symbol of the token
     }
@@ -169,6 +169,17 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
             addressList[i - start] = addresses[i];
         }
     }
+
+    // address[] public addresses;
+    // mapping (address => TokenInfo) addressMap;
+    // mapping (string => address) symbolMap;
+
+    // struct TokenInfo {
+    //     uint   pos;      // 0 mens unregistered; if > 0, pos - 1 is the
+    //                      // token's position in `addresses`.
+    //     string symbol;   // Symbol of the token
+    // }
+
 
     function registerTokenInternal(
         address addr,
