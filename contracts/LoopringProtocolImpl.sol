@@ -195,13 +195,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         if (order.signer != order.owner) {
             BrokerRegistry brokerRegistry = BrokerRegistry(brokerRegistryAddress);
-            bool authenticated;
+            bool registered;
             address tracker;
-            (authenticated, tracker) = brokerRegistry.getBroker(
+            (registered, tracker) = brokerRegistry.getBroker(
                 order.owner,
                 order.signer
             );
-            require(authenticated, "invalid broker");
+            require(registered, "invalid broker");
         }
 
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);

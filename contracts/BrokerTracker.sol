@@ -34,7 +34,7 @@ contract BrokerTracker {
     /// @dev This method will be called from TokenTransferDelegateImpl, so
     ///      it must check `msg.sender` is the address of LoopringProtocol.
     ///      Check https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md
-    ///      for the current address of LoopringProtocol deployment. 
+    ///      for the current address of TokenTransferDelegateImpl deployment. 
     function onTokenSpent(
         address owner,
         address broker,

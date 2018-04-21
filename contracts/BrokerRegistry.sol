@@ -44,7 +44,7 @@ contract BrokerRegistry {
         external
         view
         returns(
-            bool authenticated,
+            bool registered,
             address tracker
         );
 

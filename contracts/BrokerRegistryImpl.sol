@@ -42,12 +42,12 @@ contract BrokerRegistryImpl is BrokerRegistry {
         external
         view
         returns(
-            bool authenticated,
+            bool registered,
             address tracker
         )
     {
         Broker storage b = brokerMap[owner][broker];
-        authenticated = (b.addr == broker);
+        registered = (b.addr == broker);
         tracker = b.tracker;
     }
 
