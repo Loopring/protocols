@@ -126,4 +126,13 @@ contract TokenTransferDelegate {
         )
         external
         view;
+
+    function suspend()
+        external;
+
+    function resume()
+        external;
+
+    function kill()
+        external;
 }

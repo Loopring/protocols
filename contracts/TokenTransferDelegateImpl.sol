@@ -336,9 +336,10 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         )
         onlyAuthorized
         notSuspended
-        public
+        external
     {
-        cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelOrFillAmount);
+        cancelledOrFilled[orderHash] =
+            cancelledOrFilled[orderHash].add(cancelOrFillAmount);
     }
 
 
@@ -384,7 +385,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     function suspend()
         onlyOwner
         notSuspended
-        public
+        external
     {
         suspended = true;
     }
@@ -392,7 +393,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     function resume()
         onlyOwner
         isSuspended
-        public
+        external
     {
         suspended = false;
     }
