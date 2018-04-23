@@ -84,7 +84,7 @@ library MathUint {
 
         uint avg = 0;
         for (uint i = 0; i < len; i++) {
-            avg += arr[i];
+            avg = add(avg, arr[i]);
         }
 
         avg = avg / len;
@@ -99,7 +99,7 @@ library MathUint {
         for (i = 0; i < len; i++) {
             item = arr[i];
             s = item > avg ? item - avg : avg - item;
-            cvs += mul(s, s);
+            cvs = add(cvs, mul(s, s));
         }
 
         return ((mul(mul(cvs, scale), scale) / avg) / avg) / (len - 1);

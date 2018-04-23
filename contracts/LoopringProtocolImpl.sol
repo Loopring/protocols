@@ -441,8 +441,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p++] = bytes32(state.tokenS);
 
             // Store all amounts
-            batch[p++] = bytes32(state.fillAmountS - prevSplitB);
-            batch[p++] = bytes32(prevSplitB + state.splitS);
+            batch[p++] = bytes32(state.fillAmountS.sub(prevSplitB));
+            batch[p++] = bytes32(prevSplitB.add(state.splitS));
             batch[p++] = bytes32(state.lrcReward);
             batch[p++] = bytes32(state.lrcFeeState);
             batch[p++] = bytes32(state.wallet);
@@ -533,7 +533,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 // If the order is selling LRC, we need to calculate how much LRC
                 // is left that can be used as fee.
                 if (state.tokenS == _lrcTokenAddress) {
-                    lrcSpendable -= state.fillAmountS;
+                    lrcSpendable = lrcSpendable.sub(state.fillAmountS);
                 }
 
                 // If the order is buyign LRC, it will has more to pay as fee.
@@ -542,7 +542,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     lrcReceiable = nextFillAmountS;
                 }
 
-                uint lrcTotal = lrcSpendable + lrcReceiable;
+                uint lrcTotal = lrcSpendable.add(lrcReceiable);
 
                 // If order doesn't have enough LRC, set margin split to 100%.
                 if (lrcTotal < state.lrcFeeState) {
@@ -562,7 +562,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         state.lrcFeeState = 0;
                     } else {
                         state.splitB = lrcReceiable;
-                        state.lrcFeeState -= lrcReceiable;
+                        state.lrcFeeState = state.lrcFeeState.sub(lrcReceiable);
                     }
                 }
             } else {
@@ -608,7 +608,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     // be paid LRC reward first, so the orders in the ring does
                     // mater.
                     if (split > 0) {
-                        minerLrcSpendable -= state.lrcFeeState;
+                        minerLrcSpendable = minerLrcSpendable.sub(state.lrcFeeState);
                         state.lrcReward = state.lrcFeeState;
                     }
                 }

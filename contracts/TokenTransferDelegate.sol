@@ -112,4 +112,10 @@ contract TokenTransferDelegate {
     function checkCutoffsBatch(address[] owners, bytes20[] tradingPairs, uint[] validSince)
         external
         view;
+
+    function suspend() external;
+
+    function resume() external;
+
+    function kill() external;
 }
