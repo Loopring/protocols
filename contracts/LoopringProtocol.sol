@@ -43,7 +43,8 @@ contract LoopringProtocol {
     );
 
     event OrderCancelled(
-        bytes32 indexed _orderHash,
+        address indexed _address,
+        bytes32         _orderHash,
         uint            _amountCancelled
     );
 
@@ -105,7 +106,7 @@ contract LoopringProtocol {
     /// @param valuesList   List of uint-type arguments in this order:
     ///                     amountS, amountB, validSince (second),
     ///                     validUntil (second), lrcFee, and rateAmountS.
-    /// @param optionList   This indicates when a order should be considered
+    /// @param optionList   Options associated with each order.
     /// @param sigList      Signature lists.
     /// @param miner        Miner address.
     /// @param feeSelections -

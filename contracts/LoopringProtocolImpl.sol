@@ -203,7 +203,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         delegate.addCancelled(orderHash, cancelAmount);
         delegate.addCancelledOrFilled(orderHash, cancelAmount);
 
-        emit OrderCancelled(orderHash, cancelAmount);
+        emit OrderCancelled(
+            order.owner,
+            orderHash,
+            cancelAmount
+        );
     }
 
     function cancelAllOrdersByTradingPair(
