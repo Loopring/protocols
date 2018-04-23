@@ -21,6 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "./lib/AddressUtil.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
+import "./lib/MultihashUtil.sol";
 import "./BrokerRegistry.sol";
 import "./BrokerTracker.sol";
 import "./LoopringProtocol.sol";
@@ -96,9 +97,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address[5][]  addressesList;
         uint[6][]     valuesList;
         uint8[]       optionList;
-        uint8[]       vList;
-        bytes32[]     rList;
-        bytes32[]     sList;
+        bytes[]       sigList;
         address       miner;
         uint8         feeSelections;
         uint64        ringIndex;
@@ -144,9 +143,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address[6] addresses,
         uint[6]    orderValues,
         uint8      option,
-        uint8      v,
-        bytes32    r,
-        bytes32    s
+        bytes      sig
         )
         external
     {
@@ -185,12 +182,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         bytes32 orderHash = calculateOrderHash(order);
 
-        verifySignature(
+        MultihashUtil.verifySignature(
             order.signer,
             orderHash,
-            v,
-            r,
-            s
+            sig
         );
 
         if (order.signer != order.owner) {
@@ -258,9 +253,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address[5][]  addressesList,
         uint[6][]     valuesList,
         uint8[]       optionList,
-        uint8[]       vList,
-        bytes32[]     rList,
-        bytes32[]     sList,
+        bytes[]       sigList,
         address       miner,
         uint8         feeSelections
         )
@@ -270,9 +263,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             addressesList,
             valuesList,
             optionList,
-            vList,
-            rList,
-            sList,
+            sigList,
             miner,
             feeSelections,
             ringIndex,
@@ -349,10 +340,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             "invalid ring size"
         );
 
-        uint sigSize = ctx.ringSize << 1;
-        require(sigSize == ctx.vList.length, "invalid vList size");
-        require(sigSize == ctx.rList.length, "invalid rList size");
-        require(sigSize == ctx.sList.length, "invalid sList size");
+        require(
+            (ctx.ringSize << 1) == ctx.sigList.length,
+            "invalid signature size"
+        );
     }
 
     /// @dev Assemble input data into structs so we can pass them to other functions.
@@ -399,13 +390,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             order.orderHash = calculateOrderHash(order);
 
-            verifySignature(
+            MultihashUtil.verifySignature(
                 order.signer,
                 order.orderHash,
-                ctx.vList[i],
-                ctx.rList[i],
-                ctx.sList[i]
-            );
+                ctx.sigList[i]
+           );
 
             if (order.signer != order.owner) {
                 BrokerRegistry brokerRegistry = BrokerRegistry(brokerRegistryAddress);
@@ -464,12 +453,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
         for (uint i = 0; i < ctx.ringSize; i++) {
             j = i + ctx.ringSize;
 
-            verifySignature(
+            MultihashUtil.verifySignature(
                 ctx.orders[i].authAddr,
                 ctx.ringHash,
-                ctx.vList[j],
-                ctx.rList[j],
-                ctx.sList[j]
+                ctx.sigList[i]
             );
         }
     }
@@ -924,28 +911,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.validUntil,
             order.lrcFee,
             order.option
-        );
-    }
-
-    /// @dev Verify signer's signature.
-    function verifySignature(
-        address signer,
-        bytes32 hash,
-        uint8   v,
-        bytes32 r,
-        bytes32 s
-        )
-        private
-        pure
-    {
-        require(
-            signer == ecrecover(
-                keccak256("\x19Ethereum Signed Message:\n32", hash),
-                v,
-                r,
-                s
-            ),
-            "bad signature"
         );
     }
 

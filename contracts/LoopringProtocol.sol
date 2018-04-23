@@ -66,16 +66,12 @@ contract LoopringProtocol {
     ///                           validUntil (second), lrcFee, and cancelAmount.
     /// @param option             This indicates when a order should be considered
     ///                           as 'completely filled'.
-    /// @param v                  Order ECDSA signature parameter v.
-    /// @param r                  Order ECDSA signature parameters r.
-    /// @param s                  Order ECDSA signature parameters s.
+    /// @param sig                Order's signature.
     function cancelOrder(
         address[6] addresses,
         uint[6]    values,
         uint8      option,
-        uint8      v,
-        bytes32    r,
-        bytes32    s
+        bytes      sig
         )
         external;
 
@@ -110,15 +106,7 @@ contract LoopringProtocol {
     ///                     amountS, amountB, validSince (second),
     ///                     validUntil (second), lrcFee, and rateAmountS.
     /// @param optionList   This indicates when a order should be considered
-    /// @param vList        List of v for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     v value of the ring signature.
-    /// @param rList        List of r for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     r value of the ring signature.
-    /// @param sList        List of s for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     s value of the ring signature.
+    /// @param sigList      Signature lists.
     /// @param miner        Miner address.
     /// @param feeSelections -
     ///                     Bits to indicate fee selections. `1` represents margin
@@ -127,9 +115,7 @@ contract LoopringProtocol {
         address[5][]    addressesList,
         uint[6][]       valuesList,
         bool[]          optionList,
-        uint8[]         vList,
-        bytes32[]       rList,
-        bytes32[]       sList,
+        bytes[]         sigList,
         address         miner,
         uint8           feeSelections
         )
