@@ -82,8 +82,8 @@ contract TokenTransferDelegate {
         external;
 
     function batchUpdateHistoryAndTransferTokens(
-        address lrcTokenAddress,
-        address minerFeeRecipient,
+        address   lrcTokenAddress,
+        address   minerFeeRecipient,
         bytes32[] historyBatch,
         bytes32[] transferBatch
         )
@@ -122,7 +122,7 @@ contract TokenTransferDelegate {
     function checkCutoffsBatch(
         address[] owners,
         bytes20[] tradingPairs,
-        uint[] validSince
+        uint[]    validSince
         )
         external
         view;

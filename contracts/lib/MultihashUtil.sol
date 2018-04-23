@@ -49,8 +49,8 @@ library MultihashUtil {
             require(
                 signer == ecrecover(
                     keccak256(
-                      SIG_PREFIX,
-                      plaintext
+                        SIG_PREFIX,
+                        plaintext
                     ),
                     uint8(multihash[2]),
                     BytesUtil.bytesToBytes32(multihash, 3),
