@@ -81,10 +81,11 @@ contract TokenTransferDelegate {
         )
         external;
 
-    function batchTransferToken(
+    function batchUpdateHistoryAndTransferTokens(
         address lrcTokenAddress,
         address minerFeeRecipient,
-        bytes32[] batch
+        bytes32[] historyBatch,
+        bytes32[] transferBatch
         )
         external;
 

@@ -748,40 +748,32 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
     {
         bytes32[] memory batch = new bytes32[](ctx.ringSize * 7);
+        bytes32[] memory historyBatch = new bytes32[](ctx.ringSize * 2);
         Fill[] memory fills = new Fill[](ctx.ringSize);
 
         uint p = 0;
+        uint q = 0;
         uint prevSplitB = ctx.orders[ctx.ringSize - 1].splitB;
         for (uint i = 0; i < ctx.ringSize; i++) {
             Order memory order = ctx.orders[i];
             uint nextFillAmountS = ctx.orders[(i + 1) % ctx.ringSize].fillAmountS;
 
             // Store owner and tokenS of every order
-            batch[p] = bytes32(order.owner);
-            batch[p + 1] = bytes32(order.signer);
-            batch[p + 2] = bytes32(order.trackerAddr);
-            batch[p + 3] = bytes32(order.tokenS);
+            batch[p++] = bytes32(order.owner);
+            batch[p++] = bytes32(order.signer);
+            batch[p++] = bytes32(order.trackerAddr);
+            batch[p++] = bytes32(order.tokenS);
 
             // Store all amounts
-            batch[p + 4] = bytes32(order.fillAmountS - prevSplitB);
-            batch[p + 5] = bytes32(prevSplitB + order.splitS);
-            batch[p + 6] = bytes32(order.lrcReward);
-            batch[p + 7] = bytes32(order.lrcFeeState);
-            batch[p + 8] = bytes32(order.wallet);
-            p += 9;
+            batch[p++] = bytes32(order.fillAmountS - prevSplitB);
+            batch[p++] = bytes32(prevSplitB + order.splitS);
+            batch[p++] = bytes32(order.lrcReward);
+            batch[p++] = bytes32(order.lrcFeeState);
+            batch[p++] = bytes32(order.wallet);
 
-            // Update fill records
-            if (order.capByAmountB) {
-                ctx.delegate.addCancelledOrFilled(
-                    order.orderHash,
-                    nextFillAmountS
-                );
-            } else {
-                ctx.delegate.addCancelledOrFilled(
-                    order.orderHash,
-                    order.fillAmountS
-                );
-            }
+            historyBatch[q++] = order.orderHash;
+            historyBatch[q++] =
+                bytes32(order.capByAmountB ? nextFillAmountS : order.fillAmountS);
 
             fills[i]  = Fill(
                 order.orderHash,
@@ -795,17 +787,15 @@ contract LoopringProtocolImpl is LoopringProtocol {
             prevSplitB = order.splitB;
         }
 
-
-        // Do all transactions
-        ctx.delegate.batchTransferToken(
+        ctx.delegate.batchUpdateHistoryAndTransferTokens(
             lrcTokenAddress,
             ctx.miner,
+            historyBatch,
             batch
         );
 
         emit RingMined(
             ctx.ringIndex,
-            ctx.ringHash,
             ctx.miner,
             fills
         );

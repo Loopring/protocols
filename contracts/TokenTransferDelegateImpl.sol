@@ -144,19 +144,27 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
     }
 
-    function batchTransferToken(
+    function batchUpdateHistoryAndTransferTokens(
         address lrcAddr,
         address miner,
+        bytes32[] historyBatch,
         bytes32[] batch
         )
         onlyAuthorized
         external
     {
-        require(batch.length % 9 == 0, "invalid batch");
+        // require(batch.length % 9 == 0);
+        // require(historyBatch.length % 2 == 0);
+        // require(batch.length / 9 == historyBatch.length / 2);
+        uint i;
+        for (i = 0; i < historyBatch.length / 2; i += 2) {
+            cancelledOrFilled[historyBatch[i]] =
+                cancelledOrFilled[historyBatch[i]].add(uint(historyBatch[i + 1]));
+        }
 
         address prevOwner = address(batch[batch.length - 9]);
 
-        for (uint i = 0; i < batch.length; i += 9) {
+        for (i = 0; i < batch.length; i += 9) {
             address owner = address(batch[i]);
             address signer = address(batch[i + 1]);
             address tracker = address(batch[i + 2]);
