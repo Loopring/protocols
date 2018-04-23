@@ -534,7 +534,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         view
     {
-
         uint ringSize = ctx.ringSize;
         Order[] memory orders = ctx.orders;
 
@@ -649,7 +648,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 // If the order is selling LRC, we need to calculate how much LRC
                 // is left that can be used as fee.
                 if (order.tokenS == lrcTokenAddress) {
-                    lrcSpendable -= order.fillAmountS;
+                    lrcSpendable = lrcSpendable.sub(order.fillAmountS);
                 }
 
                 // If the order is buyign LRC, it will has more to pay as fee.
@@ -658,7 +657,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     lrcReceiable = nextFillAmountS;
                 }
 
-                uint lrcTotal = lrcSpendable + lrcReceiable;
+                uint lrcTotal = lrcSpendable.add(lrcReceiable);
 
                 // If order doesn't have enough LRC, set margin split to 100%.
                 if (lrcTotal < order.lrcFeeState) {
@@ -677,7 +676,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         order.lrcFeeState = 0;
                     } else {
                         order.splitB = lrcReceiable;
-                        order.lrcFeeState -= lrcReceiable;
+                        order.lrcFeeState = order.lrcFeeState.sub(lrcReceiable);
                     }
                 }
             } else {
@@ -723,7 +722,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     // be paid LRC reward first, so the orders in the ring does
                     // mater.
                     if (split > 0) {
-                        minerLrcSpendable -= order.lrcFeeState;
+                        minerLrcSpendable = minerLrcSpendable.sub(order.lrcFeeState);
                         order.lrcReward = order.lrcFeeState;
                     }
                 }

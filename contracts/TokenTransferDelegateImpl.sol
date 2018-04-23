@@ -27,6 +27,7 @@ import "./TokenTransferDelegate.sol";
 
 /// @title An Implementation of TokenTransferDelegate.
 /// @author Daniel Wang - <daniel@loopring.org>.
+/// @author Kongliang Zhong - <kongliang@loopring.org>.
 contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     using MathUint for uint;
 
@@ -40,6 +41,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         require(_walletSplitPercentage >= 0 && _walletSplitPercentage <= 100);
         walletSplitPercentage = _walletSplitPercentage;
     }
+
+    bool public suspended = false;
+
     struct AddressInfo {
         address previous;
         uint32  index;
@@ -52,6 +56,18 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     modifier onlyAuthorized()
     {
         require(addressInfos[msg.sender].authorized, "unauthorized");
+        _;
+    }
+
+    modifier notSuspended()
+    {
+        require(!suspended);
+        _;
+    }
+
+    modifier isSuspended()
+    {
+        require(suspended);
         _;
     }
 
@@ -134,6 +150,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         uint    value
         )
         onlyAuthorized
+        notSuspended
         external
     {
         if (value > 0 && from != to && to != 0x0) {
@@ -151,6 +168,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         bytes32[] batch
         )
         onlyAuthorized
+        notSuspended
         external
     {
         // require(batch.length % 9 == 0);
@@ -306,6 +324,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         uint    cancelAmount
         )
         onlyAuthorized
+        notSuspended
         external
     {
         cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
@@ -316,15 +335,18 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         uint    cancelOrFillAmount
         )
         onlyAuthorized
-        external
+        notSuspended
+        public
     {
         cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelOrFillAmount);
     }
+
 
     function setCutoffs(
         uint cutoff
         )
         onlyAuthorized
+        notSuspended
         external
     {
         cutoffs[tx.origin] = cutoff;
@@ -335,6 +357,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         uint    cutoff
         )
         onlyAuthorized
+        notSuspended
         external
     {
         tradingPairCutoffs[tx.origin][tokenPair] = cutoff;
@@ -358,4 +381,29 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
     }
 
+    function suspend()
+        onlyOwner
+        notSuspended
+        public
+    {
+        suspended = true;
+    }
+
+    function resume()
+        onlyOwner
+        isSuspended
+        public
+    {
+        suspended = false;
+    }
+
+    /// owner must suspend delegate first before invoke kill method.
+    function kill()
+        onlyOwner
+        isSuspended
+        external
+    {
+        owner = 0x0;
+        emit OwnershipTransferred(owner, 0x0);
+    }
 }
