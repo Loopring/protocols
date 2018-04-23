@@ -288,8 +288,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     {
         require(batch.length % 2 == 0);
         for (uint i = 0; i < batch.length / 2; i++) {
-            cancelledOrFilled[batch[i * 2]] =
-                cancelledOrFilled[batch[i * 2]].add(uint(batch[i * 2 + 1]));
+            cancelledOrFilled[batch[i * 2]] = cancelledOrFilled[batch[i * 2]]
+                .add(uint(batch[i * 2 + 1]));
         }
     }
 

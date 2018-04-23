@@ -448,8 +448,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p++] = bytes32(state.wallet);
 
             historyBatch[r++] = state.orderHash;
-            historyBatch[r++] =
-                bytes32(state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS);
+            historyBatch[r++] = bytes32(state.buyNoMoreThanAmountB ?
+                nextFillAmountS : state.fillAmountS);
 
             orderInfoList[q++] = uint(state.orderHash);
             orderInfoList[q++] = state.fillAmountS;
