@@ -151,7 +151,6 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
-
             ERC20 token = ERC20(address(batch[i + 1]));
 
             // Here batch[i + 2] has been checked not to be 0.
@@ -258,9 +257,20 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
     function addCancelledOrFilled(bytes32 orderHash, uint cancelOrFillAmount)
         onlyAuthorized
-        external
+        public
     {
         cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelOrFillAmount);
+    }
+
+    function batchAddCancelledOrFilled(bytes32[] batch)
+        onlyAuthorized
+        public
+    {
+        require(batch.length % 2 == 0);
+        for (uint i = 0; i < batch.length / 2; i++) {
+            cancelledOrFilled[batch[i * 2]] =
+                cancelledOrFilled[batch[i * 2]].add(uint(batch[i * 2 + 1]));
+        }
     }
 
     function setCutoffs(uint t)

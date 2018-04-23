@@ -98,7 +98,10 @@ contract TokenTransferDelegate {
         external;
 
     function addCancelledOrFilled(bytes32 orderHash, uint cancelOrFillAmount)
-        external;
+        public;
+
+    function batchAddCancelledOrFilled(bytes32[] batch)
+        public;
 
     function setCutoffs(uint t)
         external;

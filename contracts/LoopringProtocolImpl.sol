@@ -425,42 +425,43 @@ contract LoopringProtocolImpl is LoopringProtocol {
         returns (uint[] memory orderInfoList)
     {
         bytes32[] memory batch = new bytes32[](ringSize * 7); // ringSize * (owner + tokenS + 4 amounts + wallet)
+        bytes32[] memory historyBatch = new bytes32[](ringSize * 2); // ringSize * (orderhash, fillAmount)
         orderInfoList = new uint[](ringSize * 6);
 
         uint p = 0;
+        uint q = 0;
+        uint r = 0;
         uint prevSplitB = orders[ringSize - 1].splitB;
         for (uint i = 0; i < ringSize; i++) {
             OrderState memory state = orders[i];
             uint nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
 
             // Store owner and tokenS of every order
-            batch[p] = bytes32(state.owner);
-            batch[p + 1] = bytes32(state.tokenS);
+            batch[p++] = bytes32(state.owner);
+            batch[p++] = bytes32(state.tokenS);
 
             // Store all amounts
-            batch[p + 2] = bytes32(state.fillAmountS - prevSplitB);
-            batch[p + 3] = bytes32(prevSplitB + state.splitS);
-            batch[p + 4] = bytes32(state.lrcReward);
-            batch[p + 5] = bytes32(state.lrcFeeState);
-            batch[p + 6] = bytes32(state.wallet);
-            p += 7;
+            batch[p++] = bytes32(state.fillAmountS - prevSplitB);
+            batch[p++] = bytes32(prevSplitB + state.splitS);
+            batch[p++] = bytes32(state.lrcReward);
+            batch[p++] = bytes32(state.lrcFeeState);
+            batch[p++] = bytes32(state.wallet);
 
-            // Update fill records
-            if (state.buyNoMoreThanAmountB) {
-                delegate.addCancelledOrFilled(state.orderHash, nextFillAmountS);
-            } else {
-                delegate.addCancelledOrFilled(state.orderHash, state.fillAmountS);
-            }
+            historyBatch[r++] = state.orderHash;
+            historyBatch[r++] =
+                bytes32(state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS);
 
-            orderInfoList[i * 6 + 0] = uint(state.orderHash);
-            orderInfoList[i * 6 + 1] = state.fillAmountS;
-            orderInfoList[i * 6 + 2] = state.lrcReward;
-            orderInfoList[i * 6 + 3] = state.lrcFeeState;
-            orderInfoList[i * 6 + 4] = state.splitS;
-            orderInfoList[i * 6 + 5] = state.splitB;
+            orderInfoList[q++] = uint(state.orderHash);
+            orderInfoList[q++] = state.fillAmountS;
+            orderInfoList[q++] = state.lrcReward;
+            orderInfoList[q++] = state.lrcFeeState;
+            orderInfoList[q++] = state.splitS;
+            orderInfoList[q++] = state.splitB;
 
             prevSplitB = state.splitB;
         }
+        // Update fill records
+        delegate.batchAddCancelledOrFilled(historyBatch);
 
         // Do all transactions
         delegate.batchTransferToken(
