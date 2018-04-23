@@ -247,11 +247,12 @@ contract ERC20Token is ERC20 {
         bytes memory s = bytes(_symbol);
         require(s.length >= 3 && s.length <= 8);
         for (uint i = 0; i < s.length; i++) {
+            // make sure symbol contains only [A-Za-z._]
             require(
-                s[i] == 0x2E ||  // "."
-                s[i] == 0x5F ||  // "_"
-                s[i] >= 0x41 && s[i] <= 0x5A ||  // [A-Z]
-                s[i] >= 0x61 && s[i] <= 0x7A     // [a-z]
+                s[i] == 0x2E || (
+                s[i] == 0x5F) || (
+                s[i] >= 0x41 && s[i] <= 0x5A) || (
+                s[i] >= 0x61 && s[i] <= 0x7A)
             );
         }
         bytes memory n = bytes(_name);
