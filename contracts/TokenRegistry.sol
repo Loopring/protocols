@@ -29,7 +29,7 @@ contract TokenRegistry {
 
     event TokenUnregistered(
         address indexed addr,
-        string  indexed symbol
+        string          symbol
     );
 
     function registerToken(
