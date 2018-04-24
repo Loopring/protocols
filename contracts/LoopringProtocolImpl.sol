@@ -426,7 +426,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         bytes32[] memory batch = new bytes32[](ringSize * 7); // ringSize * (owner + tokenS + 4 amounts + wallet)
         bytes32[] memory historyBatch = new bytes32[](ringSize * 2); // ringSize * (orderhash, fillAmount)
-        orderInfoList = new bytes32[](ringSize * 6);
+        orderInfoList = new bytes32[](ringSize * 7);
 
         uint p = 0;
         uint q = 0;
