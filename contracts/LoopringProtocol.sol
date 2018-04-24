@@ -116,7 +116,7 @@ contract LoopringProtocol {
     function submitRing(
         address[5][]    addressesList,
         uint[6][]       valuesList,
-        bool[]          optionList,
+        uint8[]          optionList,
         bytes[]         sigList,
         address         miner,
         uint8           feeSelections
