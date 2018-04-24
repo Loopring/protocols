@@ -762,8 +762,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p++] = bytes32(order.wallet);
 
             historyBatch[q++] = order.orderHash;
-            historyBatch[q++] =
-                bytes32(order.capByAmountB ? nextFillAmountS : order.fillAmountS);
+            historyBatch[q++] = bytes32(
+                order.capByAmountB ? nextFillAmountS : order.fillAmountS
+            );
 
             fills[i]  = Fill(
                 order.orderHash,
