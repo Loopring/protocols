@@ -398,7 +398,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
 
         /// Make transfers.
-        uint[] memory orderInfoList = settleRing(
+        bytes32[] memory orderInfoList = settleRing(
             delegate,
             params.ringSize,
             orders,
@@ -422,11 +422,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address       _lrcTokenAddress
         )
         private
-        returns (uint[] memory orderInfoList)
+        returns (bytes32[] memory orderInfoList)
     {
         bytes32[] memory batch = new bytes32[](ringSize * 7); // ringSize * (owner + tokenS + 4 amounts + wallet)
         bytes32[] memory historyBatch = new bytes32[](ringSize * 2); // ringSize * (orderhash, fillAmount)
-        orderInfoList = new uint[](ringSize * 6);
+        orderInfoList = new bytes32[](ringSize * 6);
 
         uint p = 0;
         uint q = 0;
@@ -451,12 +451,17 @@ contract LoopringProtocolImpl is LoopringProtocol {
             historyBatch[r++] = bytes32(
                 state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS);
 
-            orderInfoList[q++] = uint(state.orderHash);
-            orderInfoList[q++] = state.fillAmountS;
-            orderInfoList[q++] = state.lrcReward;
-            orderInfoList[q++] = state.lrcFeeState;
-            orderInfoList[q++] = state.splitS;
-            orderInfoList[q++] = state.splitB;
+            orderInfoList[q++] = bytes32(state.orderHash);
+            orderInfoList[q++] = bytes32(state.owner);
+            orderInfoList[q++] = bytes32(state.tokenS);
+            orderInfoList[q++] = bytes32(state.fillAmountS);
+            orderInfoList[q++] = bytes32(state.lrcReward);
+            orderInfoList[q++] = bytes32(
+                state.lrcFeeState > 0 ? int(state.lrcFeeState) : -int(state.lrcReward)
+            );
+            orderInfoList[q++] = bytes32(
+                state.splitS > 0 ? int(state.splitS) : -int(state.splitB)
+            );
 
             prevSplitB = state.splitB;
         }
