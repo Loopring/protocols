@@ -78,7 +78,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    validUntil;
         uint    lrcFee;
         uint8   option;
-        bool    capByAmountB;
+        bool    optCapByAmountB;
+        bool    optAllOrNone;
         bool    marginSplitAsFee;
         bytes32 orderHash;
         address trackerAddr;
@@ -164,6 +165,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderValues[4],
             option,
             option & OPTION_MASK_CAP_BY_AMOUNTB > 0 ? true : false,
+            option & OPTION_MASK_ALL_OR_NONE > 0 ? true : false,
             false,
             0x0,
             0x0,
@@ -199,6 +201,10 @@ contract LoopringProtocolImpl is LoopringProtocol {
             require(registered, "invalid broker");
         }
 
+        // For AON orders, must cancel it as a whole.
+        if (order.optAllOrNone) {
+            cancelAmount = order.optCapByAmountB ? order.amountB : order.amountS;
+        }
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
         delegate.addCancelled(orderHash, cancelAmount);
         delegate.addCancelledOrFilled(orderHash, cancelAmount);
@@ -298,7 +304,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         verifyMinerSuppliedFillRates(ctx);
 
-        scaleRingBasedOnHistoricalRecords(ctx);
+        scaleOrders(ctx);
 
         calculateRingFillAmount(ctx);
 
@@ -378,6 +384,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 uintArgs[4],
                 ctx.optionList[i],
                 ctx.optionList[i] & OPTION_MASK_CAP_BY_AMOUNTB > 0 ? true : false,
+                ctx.optionList[i] & OPTION_MASK_ALL_OR_NONE > 0 ? true : false,
                 marginSplitAsFee,
                 0x0,
                 0x0,  // brokderTracker
@@ -528,7 +535,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev Scale down all orders based on historical fill or cancellation
     ///      stats but key the order's original exchange rate.
-    function scaleRingBasedOnHistoricalRecords(
+    function scaleOrders(
         Context ctx
         )
         private
@@ -539,26 +546,34 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         for (uint i = 0; i < ringSize; i++) {
             Order memory order = orders[i];
-            uint amount;
 
-            if (order.capByAmountB) {
-                amount = order.amountB.tolerantSub(
-                    ctx.delegate.cancelledOrFilled(order.orderHash)
+            if (order.optAllOrNone) {
+                require(
+                    ctx.delegate.cancelledOrFilled(order.orderHash) == 0,
+                    "AON filled or cancelled already"
                 );
-
-                order.amountS = amount.mul(order.amountS) / order.amountB;
-                order.lrcFee = amount.mul(order.lrcFee) / order.amountB;
-
-                order.amountB = amount;
             } else {
-                amount = order.amountS.tolerantSub(
-                    ctx.delegate.cancelledOrFilled(order.orderHash)
-                );
+                uint amount;
 
-                order.amountB = amount.mul(order.amountB) / order.amountS;
-                order.lrcFee = amount.mul(order.lrcFee) / order.amountS;
+                if (order.optCapByAmountB) {
+                    amount = order.amountB.tolerantSub(
+                        ctx.delegate.cancelledOrFilled(order.orderHash)
+                    );
 
-                order.amountS = amount;
+                    order.amountS = amount.mul(order.amountS) / order.amountB;
+                    order.lrcFee = amount.mul(order.lrcFee) / order.amountB;
+
+                    order.amountB = amount;
+                } else {
+                    amount = order.amountS.tolerantSub(
+                        ctx.delegate.cancelledOrFilled(order.orderHash)
+                    );
+
+                    order.amountB = amount.mul(order.amountB) / order.amountS;
+                    order.lrcFee = amount.mul(order.lrcFee) / order.amountS;
+
+                    order.amountS = amount;
+                }
             }
 
             require(order.amountS > 0, "amountS scaled to 0");
@@ -571,12 +586,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order.signer,
                 order.trackerAddr
             );
-            require(availableAmountS > 0, "spendable is 0");
 
-            order.fillAmountS = (
-                order.amountS < availableAmountS ?
-                order.amountS : availableAmountS
-            );
+            // This check is more strict than it needs to be, in case the
+            // `optCapByAmountB`is true.
+            if (order.optAllOrNone) {
+                require(
+                    availableAmountS >= order.amountS,
+                    "AON spendable"
+                );
+            } else {
+                require(availableAmountS > 0, "spendable is 0");
+                order.fillAmountS = (
+                    order.amountS < availableAmountS ?
+                    order.amountS : availableAmountS
+                );
+            }
         }
     }
 
@@ -698,7 +722,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 if (minerLrcSpendable >= order.lrcFeeState) {
                     nextFillAmountS = ctx.orders[(i + 1) % ringSize].fillAmountS;
                     uint split;
-                    if (order.capByAmountB) {
+                    if (order.optCapByAmountB) {
                         split = (nextFillAmountS.mul(
                             order.amountS
                         ) / order.amountB).sub(
@@ -712,7 +736,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         ) / 2;
                     }
 
-                    if (order.capByAmountB) {
+                    if (order.optCapByAmountB) {
                         order.splitS = split;
                     } else {
                         order.splitB = split;
@@ -763,7 +787,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             historyBatch[q++] = order.orderHash;
             historyBatch[q++] = bytes32(
-                order.capByAmountB ? nextFillAmountS : order.fillAmountS
+                order.optCapByAmountB ? nextFillAmountS : order.fillAmountS
             );
 
             fills[i]  = Fill(
@@ -811,7 +835,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.rateB
         ) / order.rateS;
 
-        if (order.capByAmountB) {
+        if (order.optCapByAmountB) {
             if (fillAmountB > order.amountB) {
                 fillAmountB = order.amountB;
 
@@ -828,6 +852,21 @@ contract LoopringProtocolImpl is LoopringProtocol {
             order.lrcFeeState = order.lrcFee.mul(
                 order.fillAmountS
             ) / order.amountS;
+        }
+
+        // Check All-or-None orders
+        if (order.optAllOrNone){
+            if (order.optCapByAmountB) {
+                require(
+                    fillAmountB >= order.amountB,
+                    "AON failed on amountB"
+                );
+            } else {
+                require(
+                    order.fillAmountS >= order.amountS,
+                     "AON failed on amountS"
+                );
+            }
         }
 
         if (fillAmountB <= next.fillAmountS) {
