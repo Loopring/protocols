@@ -2,7 +2,7 @@ FROM mhart/alpine-node:9.11.1
 
 RUN apk add --no-cache git curl make gcc g++ python linux-headers
 
-RUN npm install -g truffle@4.0.1 typescript@2.4.2
+RUN npm install -g truffle@4.1.7 typescript@2.7.1
 
 ADD package.json package.json
 

@@ -28,12 +28,12 @@ contract LoopringProtocol {
     uint8   public constant OPTION_MASK_CAP_BY_AMOUNTB = 0x01;
 
     struct Fill {
-        bytes32 orderHash;
-        uint    amountS;
-        uint    lrcReward;
-        uint    lrcFee;
-        uint    splitS;
-        uint    splitB;
+        bytes32     orderHash;
+        address     owner;
+        address     tokenS;
+        uint        amountS;
+        int         split;  // Positive number for splitS and negaive for splitB .
+        int         lrcFee;
     }
 
     event RingMined(
