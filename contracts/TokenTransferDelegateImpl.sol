@@ -195,14 +195,16 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             // Here batch[i + 4] has been checked not to be 0.
             if (owner != prevOwner) {
                 amount = uint(batch[i + 4]);
-                require(
-                    ERC20(token).transferFrom(
-                        owner,
-                        prevOwner,
-                        amount
-                    ),
-                    "token transfer failure"
-                );
+                if (amount > 0) {
+                    require(
+                        ERC20(token).transferFrom(
+                            owner,
+                            prevOwner,
+                            amount
+                        ),
+                        "token transfer failure"
+                    );
+                }
 
                 if (tracker != 0x0) {
                     require(

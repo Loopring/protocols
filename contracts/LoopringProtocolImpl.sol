@@ -600,6 +600,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     order.amountS < availableAmountS ?
                     order.amountS : availableAmountS
                 );
+                require(order.fillAmountS > 0, "fillAmountS is 0");
             }
         }
     }
@@ -842,6 +843,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 order.fillAmountS = fillAmountB.mul(
                     order.rateS
                 ) / order.rateB;
+                require(order.fillAmountS > 0, "fillAmountS is 0");
 
                 newSmallestIdx = i;
             }

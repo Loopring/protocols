@@ -85,7 +85,7 @@ contract LoopringProtocol {
     function cancelAllOrdersByTradingPair(
         address token1,
         address token2,
-        uint cutoff
+        uint    cutoff
         )
         external;
 
@@ -116,7 +116,7 @@ contract LoopringProtocol {
     function submitRing(
         address[5][]    addressesList,
         uint[6][]       valuesList,
-        uint8[]          optionList,
+        uint8[]         optionList,
         bytes[]         sigList,
         address         miner,
         uint8           feeSelections
