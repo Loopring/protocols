@@ -684,6 +684,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     state.rateS
                 ) / state.rateB;
 
+                require(state.fillAmountS > 0);
+
                 newSmallestIdx = i;
             }
             state.lrcFeeState = state.lrcFee.mul(
@@ -746,6 +748,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.amountS < availableAmountS ?
                 state.amountS : availableAmountS
             );
+
+            require(state.fillAmountS > 0);
         }
     }
 
