@@ -171,7 +171,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             ERC20 token = ERC20(address(batch[i + 1]));
 
             // Here batch[i + 2] has been checked not to be 0.
-            if (owner != prevOwner) {
+            if (batch[i + 2] != 0x0 && owner != prevOwner) {
                 require(
                     token.transferFrom(
                         owner,
