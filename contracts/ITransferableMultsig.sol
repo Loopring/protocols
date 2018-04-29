@@ -19,8 +19,27 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 
-/// @title Ring Interceptor
+/// @title ITransferableMultsig
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract RingInterceptor {
+contract ITransferableMultsig {
+    // Note that address recovered from signatures must be strictly increasing.
+    function execute(
+        uint8[]   sigV,
+        bytes32[] sigR,
+        bytes32[] sigS,
+        address   destination,
+        uint      value,
+        bytes     data
+        )
+        external;
 
+    // Note that address recovered from signatures must be strictly increasing.
+    function transferOwnership(
+        uint8[]   sigV,
+        bytes32[] sigR,
+        bytes32[] sigS,
+        uint      _threshold,
+        address[] _owners
+        )
+        external;
 }

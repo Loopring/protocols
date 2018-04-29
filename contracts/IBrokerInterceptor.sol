@@ -19,8 +19,8 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 
-/// @title BrokerInterceptor
-contract BrokerInterceptor {
+/// @title IBrokerInterceptor
+contract IBrokerInterceptor {
     /// @dev Returns the max amount the broker can buy or sell.
     function getAllowance(
         address owner,

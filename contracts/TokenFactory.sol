@@ -18,28 +18,40 @@ pragma solidity 0.4.23;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "./lib/AddressUtil.sol";
+import "./lib/ERC20Token.sol";
+import "./lib/StringUtil.sol";
+import "./ITokenFactory.sol";
+import "./ITokenRegistry.sol";
 
-/// @title ERC20 Token Mint
-/// @dev This contract deploys ERC20 token contract and registered the contract
-///      so the token can be traded with Loopring Protocol.
+
+/// @title An Implementation of ITokenFactory.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TokenFactory {
-    event TokenCreated(
-        address indexed addr,
-        string  name,
-        string  symbol,
-        uint8   decimals,
-        uint    totalSupply,
-        address firstHolder
-    );
+contract TokenFactoryImpl is ITokenFactory {
+    using AddressUtil for address;
+    using StringUtil for string;
 
-    /// @dev Deploy an ERC20 token contract, register it with TokenRegistry,
-    ///      and returns the new token's address.
-    /// @param name The name of the token
-    /// @param symbol The symbol of the token.
-    /// @param decimals The decimals of the token.
-    /// @param totalSupply The total supply of the token.
+    mapping(bytes10 => address) public tokens;
+    address   public tokenRegistry;
+
+    /// @dev Disable default function.
+    function ()
+        payable
+        external
+    {
+        revert();
+    }
+
+    constructor(
+        address _tokenRegistry
+        )
+        public
+    {
+        require(tokenRegistry == 0x0 && _tokenRegistry.isContract());
+        tokenRegistry = _tokenRegistry;
+    }
+
     function createToken(
         string  name,
         string  symbol,
@@ -47,5 +59,32 @@ contract TokenFactory {
         uint    totalSupply
         )
         external
-        returns (address addr);
+        returns (address addr)
+    {
+        require(symbol.checkStringLength(3, 10), "bad symbol size");
+
+        bytes10 symbolBytes = symbol.stringToBytes10();
+        require(tokens[symbolBytes] == 0x0, "invalid symbol");
+
+        ERC20Token token = new ERC20Token(
+            name,
+            symbol,
+            decimals,
+            totalSupply,
+            tx.origin
+        );
+
+        addr = address(token);
+        ITokenRegistry(tokenRegistry).registerMintedToken(addr, symbol);
+        tokens[symbolBytes] = addr;
+
+        emit TokenCreated(
+            addr,
+            name,
+            symbol,
+            decimals,
+            totalSupply,
+            tx.origin
+        );
+    }
 }

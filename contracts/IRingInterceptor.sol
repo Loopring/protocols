@@ -19,8 +19,8 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 
-/// @title Order Interceptor
+/// @title IRingInterceptor
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract OrderInterceptor {
+contract IRingInterceptor {
 
 }

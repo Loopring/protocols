@@ -22,14 +22,14 @@ import "./lib/AddressUtil.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./lib/MultihashUtil.sol";
-import "./BrokerRegistry.sol";
-import "./BrokerInterceptor.sol";
-import "./ClearingHouse.sol";
-import "./TokenRegistry.sol";
-import "./TokenTransferDelegate.sol";
+import "./IBrokerRegistry.sol";
+import "./IBrokerInterceptor.sol";
+import "./IExchange.sol";
+import "./ITokenRegistry.sol";
+import "./ITokenTransferDelegate.sol";
 
 
-/// @title An Implementation of Clearn House.
+/// @title An Implementation of IExchange.
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 ///
@@ -39,7 +39,7 @@ import "./TokenTransferDelegate.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract ClearingHouseImpl is ClearingHouse {
+contract Exchange is IExchange {
     using AddressUtil   for address;
     using MathUint      for uint;
 
@@ -83,7 +83,7 @@ contract ClearingHouseImpl is ClearingHouse {
         bool    optAllOrNone;
         bool    marginSplitAsFee;
         bytes32 orderHash;
-        address trackerAddr;
+        address brokerInterceptor;
         uint    rateS;
         uint    rateB;
         uint    fillAmountS;
@@ -105,8 +105,8 @@ contract ClearingHouseImpl is ClearingHouse {
         uint8         feeSelections;
         uint64        ringIndex;
         uint          ringSize;         // computed
-        TokenTransferDelegate delegate;
-        BrokerRegistry        brokerRegistry;
+        ITokenTransferDelegate delegate;
+        IBrokerRegistry        brokerRegistry;
         Order[]  orders;
         bytes32       ringHash;         // computed
     }
@@ -194,7 +194,7 @@ contract ClearingHouseImpl is ClearingHouse {
         );
 
         if (order.signer != order.owner) {
-            BrokerRegistry brokerRegistry = BrokerRegistry(brokerRegistryAddress);
+            IBrokerRegistry brokerRegistry = IBrokerRegistry(brokerRegistryAddress);
             bool registered;
             address tracker;
             (registered, tracker) = brokerRegistry.getBroker(
@@ -208,7 +208,7 @@ contract ClearingHouseImpl is ClearingHouse {
         if (order.optAllOrNone) {
             cancelAmount = order.optCapByAmountB ? order.amountB : order.amountS;
         }
-        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
+        ITokenTransferDelegate delegate = ITokenTransferDelegate(delegateAddress);
         delegate.addCancelled(orderHash, cancelAmount);
         delegate.addCancelledOrFilled(orderHash, cancelAmount);
 
@@ -229,7 +229,7 @@ contract ClearingHouseImpl is ClearingHouse {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
+        ITokenTransferDelegate delegate = ITokenTransferDelegate(delegateAddress);
 
         require(
             delegate.tradingPairCutoffs(msg.sender, tokenPair) < t,
@@ -251,7 +251,7 @@ contract ClearingHouseImpl is ClearingHouse {
         external
     {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
-        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
+        ITokenTransferDelegate delegate = ITokenTransferDelegate(delegateAddress);
 
         require(
             delegate.cutoffs(msg.sender) < t,
@@ -283,8 +283,8 @@ contract ClearingHouseImpl is ClearingHouse {
             feeSelections,
             ringIndex,
             addressesList.length,
-            TokenTransferDelegate(delegateAddress),
-            BrokerRegistry(brokerRegistryAddress),
+            ITokenTransferDelegate(delegateAddress),
+            IBrokerRegistry(brokerRegistryAddress),
             new Order[](addressesList.length),
             0x0 // ringHash
         );
@@ -414,9 +414,9 @@ contract ClearingHouseImpl is ClearingHouse {
            );
 
             if (order.signer != order.owner) {
-                BrokerRegistry brokerRegistry = BrokerRegistry(brokerRegistryAddress);
+                IBrokerRegistry brokerRegistry = IBrokerRegistry(brokerRegistryAddress);
                 bool authenticated;
-                (authenticated, order.trackerAddr) = brokerRegistry.getBroker(
+                (authenticated, order.brokerInterceptor) = brokerRegistry.getBroker(
                     order.owner,
                     order.signer
                 );
@@ -492,7 +492,7 @@ contract ClearingHouseImpl is ClearingHouse {
 
         // Test all token addresses at once
         require(
-            TokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens),
+            ITokenRegistry(tokenRegistryAddress).areAllTokensRegistered(tokens),
             "token not registered"
         );
     }
@@ -590,7 +590,7 @@ contract ClearingHouseImpl is ClearingHouse {
                 order.tokenS,
                 order.owner,
                 order.signer,
-                order.trackerAddr
+                order.brokerInterceptor
             );
 
             // This check is more strict than it needs to be, in case the
@@ -673,7 +673,7 @@ contract ClearingHouseImpl is ClearingHouse {
                     lrcTokenAddress,
                     order.owner,
                     order.signer,
-                    order.trackerAddr
+                    order.brokerInterceptor
                 );
 
                 // If the order is selling LRC, we need to calculate how much LRC
@@ -782,7 +782,7 @@ contract ClearingHouseImpl is ClearingHouse {
             // Store owner and tokenS of every order
             batch[p++] = bytes32(order.owner);
             batch[p++] = bytes32(order.signer);
-            batch[p++] = bytes32(order.trackerAddr);
+            batch[p++] = bytes32(order.brokerInterceptor);
             batch[p++] = bytes32(order.tokenS);
 
             // Store all amounts
@@ -886,11 +886,11 @@ contract ClearingHouseImpl is ClearingHouse {
 
     /// @return Amount of ERC20 token that can be spent by this contract.
     function getSpendable(
-        TokenTransferDelegate delegate,
+        ITokenTransferDelegate delegate,
         address tokenAddress,
         address tokenOwner,
         address broker,
-        address trackerAddr
+        address brokerInterceptor
         )
         private
         view
@@ -912,8 +912,8 @@ contract ClearingHouseImpl is ClearingHouse {
             }
         }
 
-        if (trackerAddr != 0x0) {
-            amount = BrokerInterceptor(trackerAddr).getAllowance(
+        if (brokerInterceptor != 0x0) {
+            amount = IBrokerInterceptor(brokerInterceptor).getAllowance(
                 tokenOwner,
                 broker,
                 tokenAddress
@@ -975,7 +975,7 @@ contract ClearingHouseImpl is ClearingHouse {
         returns (uint)
     {
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-        TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
+        ITokenTransferDelegate delegate = ITokenTransferDelegate(delegateAddress);
         return delegate.tradingPairCutoffs(orderOwner, tokenPair);
     }
 }
