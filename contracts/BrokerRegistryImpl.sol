@@ -29,7 +29,7 @@ contract BrokerRegistryImpl is BrokerRegistry {
                             // token's position in `addresses`.
         address owner;
         address addr;
-        address tracker;
+        address interceptor;
     }
 
     mapping(address => Broker[]) public brokerageMap;
@@ -43,12 +43,12 @@ contract BrokerRegistryImpl is BrokerRegistry {
         view
         returns(
             bool registered,
-            address tracker
+            address interceptor
         )
     {
         Broker storage b = brokerMap[owner][broker];
         registered = (b.addr == broker);
-        tracker = b.tracker;
+        interceptor = b.interceptor;
     }
 
     function getBrokers(
@@ -59,7 +59,7 @@ contract BrokerRegistryImpl is BrokerRegistry {
         view
         returns (
             address[] brokers,
-            address[] trackers
+            address[] interceptors
         )
     {
         Broker[] storage _brokers = brokerageMap[msg.sender];
@@ -79,16 +79,16 @@ contract BrokerRegistryImpl is BrokerRegistry {
         }
 
         brokers = new address[](end - start);
-        trackers = new address[](end - start);
+        interceptors = new address[](end - start);
         for (uint i = start; i < end; i++) {
             brokers[i - start] = _brokers[i].addr;
-            trackers[i - start] = _brokers[i].tracker;
+            interceptors[i - start] = _brokers[i].interceptor;
         }
     }
 
     function registerBroker(
         address broker,
-        address tracker  // 0x0 allowed
+        address interceptor  // 0x0 allowed
         )
         external
     {
@@ -103,7 +103,7 @@ contract BrokerRegistryImpl is BrokerRegistry {
             brokers.length + 1,
             msg.sender,
             broker,
-            tracker
+            interceptor
         );
 
         brokers.push(b);
@@ -112,7 +112,7 @@ contract BrokerRegistryImpl is BrokerRegistry {
         emit BrokerRegistered(
             msg.sender,
             broker,
-            tracker
+            interceptor
         );
     }
     

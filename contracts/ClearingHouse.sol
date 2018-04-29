@@ -19,10 +19,10 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 
-/// @title Loopring Token Exchange Protocol Contract Interface
+/// @title Clearing House
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-contract LoopringProtocol {
+contract ClearingHouse {
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
 
     uint8   public constant OPTION_MASK_CAP_BY_AMOUNTB = 0x01;
@@ -63,14 +63,15 @@ contract LoopringProtocol {
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in values.
-    /// @param addresses          owner, signer, tokenS, tokenB, wallet, authAddr
+    /// @param addresses          owner, signer, tokenS, tokenB, wallet, authAddr,
+    ///                           and order interceptor
     /// @param values             amountS, amountB, validSince (second),
     ///                           validUntil (second), lrcFee, and cancelAmount.
     /// @param option             This indicates when a order should be considered
     ///                           as 'completely filled'.
     /// @param sig                Order's signature.
     function cancelOrder(
-        address[6] addresses,
+        address[7] addresses,
         uint[6]    values,
         uint8      option,
         bytes      sig
@@ -101,7 +102,7 @@ contract LoopringProtocol {
 
     /// @dev Submit a order-ring for validation and settlement.
     /// @param addressesList List of each order's owner, signer, tokenS, wallet,
-    ///                      and authAddr.
+    ///                      authAddr, and order interceptor.
     ///                      Note that next order's `tokenS` equals this order's
     ///                      `tokenB`.
     /// @param valuesList   List of uint-type arguments in this order:
@@ -110,15 +111,17 @@ contract LoopringProtocol {
     /// @param optionList   Options associated with each order.
     /// @param sigList      Signature lists.
     /// @param miner        Miner address.
+    /// @param inteceptor   Ring interceptor address.
     /// @param feeSelections -
     ///                     Bits to indicate fee selections. `1` represents margin
     ///                     split and `0` represents LRC as fee.
     function submitRing(
-        address[5][]    addressesList,
+        address[6][]    addressesList,
         uint[6][]       valuesList,
         uint8[]         optionList,
         bytes[]         sigList,
         address         miner,
+        address         inteceptor,
         uint8           feeSelections
         )
         public;

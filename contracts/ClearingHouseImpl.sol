@@ -23,13 +23,13 @@ import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./lib/MultihashUtil.sol";
 import "./BrokerRegistry.sol";
-import "./BrokerTracker.sol";
-import "./LoopringProtocol.sol";
+import "./BrokerInterceptor.sol";
+import "./ClearingHouse.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
 
 
-/// @title An Implementation of LoopringProtocol.
+/// @title An Implementation of Clearn House.
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 ///
@@ -39,7 +39,7 @@ import "./TokenTransferDelegate.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract LoopringProtocolImpl is LoopringProtocol {
+contract ClearingHouseImpl is ClearingHouse {
     using AddressUtil   for address;
     using MathUint      for uint;
 
@@ -72,6 +72,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address tokenB;
         address wallet;
         address authAddr;
+        address interceptor;
         uint    amountS;
         uint    amountB;
         uint    validSince;
@@ -95,11 +96,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev A struct to capture parameters passed to submitRing method and
     ///      various of other variables used across the submitRing core logics.
     struct Context {
-        address[5][]  addressesList;
+        address[6][]  addressesList;
         uint[6][]     valuesList;
         uint8[]       optionList;
         bytes[]       sigList;
         address       miner;
+        address       interceptor;
         uint8         feeSelections;
         uint64        ringIndex;
         uint          ringSize;         // computed
@@ -141,7 +143,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function cancelOrder(
-        address[6] addresses,
+        address[7] addresses,
         uint[6]    orderValues,
         uint8      option,
         bytes      sig
@@ -158,6 +160,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             addresses[3],
             addresses[4],
             addresses[5],
+            addresses[6],
             orderValues[0],
             orderValues[1],
             orderValues[2],
@@ -260,11 +263,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function submitRing(
-        address[5][]  addressesList,
+        address[6][]  addressesList,
         uint[6][]     valuesList,
         uint8[]       optionList,
         bytes[]       sigList,
         address       miner,
+        address       interceptor,
         uint8         feeSelections
         )
         public
@@ -275,6 +279,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             optionList,
             sigList,
             miner,
+            interceptor,
             feeSelections,
             ringIndex,
             addressesList.length,
@@ -377,6 +382,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 ctx.addressesList[(i + 2) % ctx.ringSize][1],
                 ctx.addressesList[i][3],
                 ctx.addressesList[i][4],
+                ctx.addressesList[i][5],
                 uintArgs[0],
                 uintArgs[1],
                 uintArgs[2],
@@ -907,7 +913,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         }
 
         if (trackerAddr != 0x0) {
-            amount = BrokerTracker(trackerAddr).getAllowance(
+            amount = BrokerInterceptor(trackerAddr).getAllowance(
                 tokenOwner,
                 broker,
                 tokenAddress

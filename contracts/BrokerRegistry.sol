@@ -22,14 +22,14 @@ pragma experimental "ABIEncoderV2";
 /// @title Trade Broker
 /// @dev A broker is an account that can submit order on behalf of other
 ///      accounts. When register a broker, the owner can also specify a
-///      pre-deployed BrokageTracker to manage the allowance of the
+///      pre-deployed BrokerInterceptor to manage the allowance of the
 ///      specific broker.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract BrokerRegistry {
     event BrokerRegistered(
         address owner,
         address broker,
-        address tracker
+        address interceptor
     );
 
     event BrokerUnregistered(
@@ -45,7 +45,7 @@ contract BrokerRegistry {
         view
         returns(
             bool registered,
-            address tracker
+            address interceptor
         );
 
     function getBrokers(
@@ -56,12 +56,12 @@ contract BrokerRegistry {
         view
         returns (
             address[] brokers,
-            address[] trackers
+            address[] interceptors
         );
 
     function registerBroker(
         address broker,
-        address tracker  // 0x0 allowed
+        address interceptor  // 0x0 allowed
         )
         external;
     

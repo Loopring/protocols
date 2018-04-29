@@ -21,7 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "./lib/Claimable.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
-import "./BrokerTracker.sol";
+import "./BrokerInterceptor.sol";
 import "./TokenTransferDelegate.sol";
 
 
@@ -208,7 +208,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
                 if (tracker != 0x0) {
                     require(
-                        BrokerTracker(tracker).onTokenSpent(
+                        BrokerInterceptor(tracker).onTokenSpent(
                             owner,
                             signer,
                             token,
@@ -310,7 +310,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
         if (broker != 0x0) {
             require(
-                BrokerTracker(tracker).onTokenSpent(
+                BrokerInterceptor(tracker).onTokenSpent(
                     owner,
                     broker,
                     token,
