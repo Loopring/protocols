@@ -75,7 +75,7 @@ contract TokenFactoryImpl is ITokenFactory {
         );
 
         addr = address(token);
-        ITokenRegistry(tokenRegistry).registerMintedToken(addr, symbol);
+        ITokenRegistry(tokenRegistry).registerToken(addr, symbol);
         tokens[symbolBytes] = addr;
 
         emit TokenCreated(

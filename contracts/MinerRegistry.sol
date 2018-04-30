@@ -1,147 +1,155 @@
-// /*
+/*
 
-//   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
+  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
 
-//   Licensed under the Apache License, Version 2.0 (the "License");
-//   you may not use this file except in compliance with the License.
-//   You may obtain a copy of the License at
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
 
-//   http://www.apache.org/licenses/LICENSE-2.0
+  http://www.apache.org/licenses/LICENSE-2.0
 
-//   Unless required by applicable law or agreed to in writing, software
-//   distributed under the License is distributed on an "AS IS" BASIS,
-//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//   See the License for the specific language governing permissions and
-//   limitations under the License.
-// */
-// pragma solidity 0.4.23;
-// pragma experimental "v0.5.0";
-// pragma experimental "ABIEncoderV2";
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+pragma solidity 0.4.23;
+pragma experimental "v0.5.0";
+pragma experimental "ABIEncoderV2";
 
-// import "./IMinerRegistry.sol";
+import "./IMinerRegistry.sol";
 
 
-// /// @title An Implementation of IBrokerRegistry.
-// /// @author Daniel Wang - <daniel@loopring.org>.
-// contract MinerRegistry is IMinerRegistry {
-//     struct Miner {
-//         uint    pos;        // 0 mens unregistered; if > 0, pos - 1 is the
-//                             // token's position in `addresses`.
-//         address owner;
-//         address addr;
-//         address interceptor;
-//     }
+/// @title An Implementation of IMinerRegistry.
+/// @author Daniel Wang - <daniel@loopring.org>.
+contract MinerRegistry is IMinerRegistry {
+    struct Miner {
+        uint    pos;        // 0 mens unregistered; if > 0, pos - 1 is the
+                            // token's position in `addresses`.
+        address owner;
+        address addr;
+    }
 
-//     mapping(address => Broker[]) public brokerageMap;
-//     mapping(address => mapping(address => Broker)) public brokerMap;
+    mapping(address => Miner[]) public minerListMap;
+    mapping(address => mapping(address => Miner)) public minerMap;
 
-//     function getBroker(
-//         address owner,
-//         address broker
-//         )
-//         external
-//         view
-//         returns(
-//             bool registered,
-//             address interceptor
-//         )
-//     {
-//         Broker storage b = brokerMap[owner][broker];
-//         registered = (b.addr == broker);
-//         interceptor = b.interceptor;
-//     }
+    /// @dev Disable default function.
+    function ()
+        payable
+        external
+    {
+        revert();
+    }
 
-//     function getBrokers(
-//         uint start,
-//         uint count
-//         )
-//         public
-//         view
-//         returns (
-//             address[] brokers,
-//             address[] interceptors
-//         )
-//     {
-//         Broker[] storage _brokers = brokerageMap[msg.sender];
-//         uint num = _brokers.length;
+    function isMinerRegistered(
+        address feeRecipient,
+        address miner 
+        )
+        external
+        view
+        returns(bool)
+    {
+        Miner storage m = minerMap[feeRecipient][miner];
+        return (m.addr == miner);
+    }
 
-//         if (start >= num) {
-//             return;
-//         }
+    function getMiners(
+        address feeRecipient,
+        uint    start,
+        uint    count
+        )
+        external
+        view
+        returns (address[] miners) 
+    {
+        Miner[] storage _miners = minerListMap[feeRecipient];
+        uint size = _miners.length;
 
-//         uint end = start + count;
-//         if (end > num) {
-//             end = num;
-//         }
+        if (start >= size) {
+            return;
+        }
 
-//         if (start == num) {
-//             return;
-//         }
+        uint end = start + count;
+        if (end > size) {
+            end = size;
+        }
 
-//         brokers = new address[](end - start);
-//         interceptors = new address[](end - start);
-//         for (uint i = start; i < end; i++) {
-//             brokers[i - start] = _brokers[i].addr;
-//             interceptors[i - start] = _brokers[i].interceptor;
-//         }
-//     }
+        if (start == end) {
+            return;
+        }
 
-//     function registerBroker(
-//         address broker,
-//         address interceptor  // 0x0 allowed
-//         )
-//         external
-//     {
-//         require(0x0 != broker,"bad broker");
-//         require(
-//             0 == brokerMap[msg.sender][broker].pos,
-//             "broker already exists"
-//         );
+        miners = new address[](end - start);
+        for (uint i = start; i < end; i++) {
+            miners[i - start] = _miners[i].addr;
+        }
+    }
 
-//         Broker[] storage brokers = brokerageMap[msg.sender];
-//         Broker memory b = Broker(
-//             brokers.length + 1,
-//             msg.sender,
-//             broker,
-//             interceptor
-//         );
+    function registerMiner(
+        address miner
+        )
+        external
+    {
+        require(0x0 != miner, "bad miner");
+        require(
+            0 == minerMap[msg.sender][miner].pos,
+            "miner already exists"
+        );
 
-//         brokers.push(b);
-//         brokerMap[msg.sender][broker] = b;
+        Miner[] storage miners = minerListMap[msg.sender];
+        Miner memory m = Miner(
+            miners.length + 1,
+            msg.sender,
+            miner
+        );
 
-//         emit BrokerRegistered(
-//             msg.sender,
-//             broker,
-//             interceptor
-//         );
-//     }
-    
-//     function unregisterBroker(
-//         address broker
-//         )
-//         external
-//     {
-//         require(0x0 != broker, "bad broker");
-//         require(
-//             brokerMap[msg.sender][broker].addr == broker,
-//             "broker not found"
-//         );
+        miners.push(m);
+        minerMap[msg.sender][miner] = m;
 
-//         Broker storage b = brokerMap[msg.sender][broker];
-//         delete brokerMap[msg.sender][broker];
+        emit MinerRegistered(
+            msg.sender,
+            miner
+        );
+    }
 
-//         Broker[] storage brokers = brokerageMap[msg.sender];
-//         Broker storage lastBroker = brokers[brokers.length - 1];
+    function unregisterMiner(
+        address miner
+        )
+        external
+    {
+        require(0x0 != miner, "bad miner");
+        require(
+            minerMap[msg.sender][miner].addr == miner,
+            "miner not found"
+        );
 
-//         if (lastBroker.addr != broker) {
-//             // Swap with the last token and update the pos
-//             lastBroker.pos = b.pos;
-//             brokers[b.pos - 1] = lastBroker;
-//             brokerMap[lastBroker.owner][lastBroker.addr] = lastBroker;
-//         }
+        Miner storage m = minerMap[msg.sender][miner];
+        Miner[] storage miners = minerListMap[msg.sender];
+        Miner storage lastMiner = miners[miners.length - 1];
 
-//         brokers.length--;
+        if (lastMiner.addr != miner) {
+            // Swap with the last token and update the pos
+            lastMiner.pos = m.pos;
+            miners[lastMiner.pos - 1] = lastMiner;
+            minerMap[lastMiner.owner][lastMiner.addr] = lastMiner;
+        }
 
-//         emit BrokerUnregistered(msg.sender, broker);
-//     }
-// }
+        miners.length--;
+        delete minerMap[msg.sender][miner];
+
+        emit MinerUnregistered(msg.sender, miner);
+    }
+
+    function unregisterAllMiners()
+        external
+    {
+        Miner[] storage miners = minerListMap[msg.sender];
+
+        for (uint i = 0; i < miners.length; i++) {
+            delete minerMap[msg.sender][miners[i].addr];
+        }
+        delete minerListMap[msg.sender];
+
+        emit AllMinersUnregistered(msg.sender);
+    }
+}

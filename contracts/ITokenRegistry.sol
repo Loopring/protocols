@@ -24,6 +24,17 @@ pragma experimental "ABIEncoderV2";
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract ITokenRegistry {
+    event AgencyRegistered(
+        address indexed agency
+    );
+
+    event AgencyUnregistered(
+        address indexed agency
+    );
+
+    event AllAgenciesUnregistered(
+    );
+
     event TokenRegistered(
         address indexed addr,
         string          symbol
@@ -33,6 +44,28 @@ contract ITokenRegistry {
         address indexed addr,
         string          symbol
     );
+
+    function registerAgency(
+        address agency
+        )
+        external;
+
+    function unregisterAgency(
+        address agency
+        )
+        external;
+
+    function unregisterAllAgencies(
+        )
+        external;
+
+    function getAngencies(
+        uint start,
+        uint count
+        )
+        public
+        view
+        returns (address[] agencies);
 
     function registerToken(
         address addr,
