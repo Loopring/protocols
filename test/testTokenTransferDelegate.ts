@@ -141,7 +141,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       batch.push(numberToBytes32Str(5e18));
       batch.push(walletAddr2);
 
-      const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, owner, 20, batch,
+      const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, loopringProtocolV1, owner, 20, batch,
                                                                 {from: loopringProtocolV1});
 
       const trader1NeoBalance = await getTokenBalanceAsync(neo, trader1);
@@ -188,7 +188,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
         batch.push(numberToBytes32Str(5e18));
         batch.push(walletAddr2);
 
-        const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, owner, 20, batch,
+        const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, loopringProtocolV2, owner, 20, batch,
                                                                   {from: loopringProtocolV2});
       } catch (err) {
         const errMsg = `${err}`;
