@@ -39,23 +39,27 @@ contract IExchange {
 
     event RingMined(
         uint            _ringIndex,
-        address indexed _miner,
+        address indexed _broker,
+        address indexed _feeRecipient,
         Fill[]          _fills
     );
 
     event OrderCancelled(
-        address indexed _address,
+        address indexed _owner,
+        address indexed _broker,
         bytes32         _orderHash,
         uint            _amountCancelled
     );
 
     event AllOrdersCancelled(
-        address indexed _address,
+        address indexed _owner,
+        address indexed _broker,
         uint            _cutoff
     );
 
     event OrdersCancelled(
-        address indexed _address,
+        address indexed _owner,
+        address indexed _broker,
         address         _token1,
         address         _token2,
         uint            _cutoff
@@ -63,7 +67,7 @@ contract IExchange {
 
     /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
     ///      in values.
-    /// @param addresses          owner, signer, tokenS, tokenB, wallet, authAddr,
+    /// @param addresses          owner, broker, tokenS, tokenB, wallet, authAddr,
     ///                           and order interceptor
     /// @param values             amountS, amountB, validSince (second),
     ///                           validUntil (second), lrcFee, and cancelAmount.
@@ -84,6 +88,7 @@ contract IExchange {
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
     function cancelAllOrdersByTradingPair(
+        address owner,
         address token1,
         address token2,
         uint    cutoff
@@ -96,12 +101,13 @@ contract IExchange {
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
     function cancelAllOrders(
-        uint cutoff
+        address owner,
+        uint    cutoff
         )
         external;
 
     /// @dev Submit a order-ring for validation and settlement.
-    /// @param addressesList List of each order's owner, signer, tokenS, wallet,
+    /// @param addressesList List of each order's owner, broker, tokenS, wallet,
     ///                      authAddr, and order interceptor.
     ///                      Note that next order's `tokenS` equals this order's
     ///                      `tokenB`.
@@ -110,7 +116,7 @@ contract IExchange {
     ///                     validUntil (second), lrcFee, and rateAmountS.
     /// @param optionList   Options associated with each order.
     /// @param sigList      Signature lists.
-    /// @param miner        Miner address.
+    /// @param feeRecipient Mineing fee recipient address.
     /// @param inteceptor   Ring interceptor address.
     /// @param feeSelections -
     ///                     Bits to indicate fee selections. `1` represents margin
@@ -120,7 +126,7 @@ contract IExchange {
         uint[6][]       valuesList,
         uint8[]         optionList,
         bytes[]         sigList,
-        address         miner,
+        address         feeRecipient,
         address         inteceptor,
         uint8           feeSelections
         )

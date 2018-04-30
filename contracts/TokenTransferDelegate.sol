@@ -31,18 +31,12 @@ import "./ITokenTransferDelegate.sol";
 contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
     using MathUint for uint;
 
-    uint8   public  walletSplitPercentage       = 0;
+    address private latestAddress = 0x0;
 
-    constructor(
-        uint8   _walletSplitPercentage
-        )
-        public
-    {
-        require(_walletSplitPercentage >= 0 && _walletSplitPercentage <= 100);
-        walletSplitPercentage = _walletSplitPercentage;
-    }
-
-    bool public suspended = false;
+    uint8 public walletSplitPercentage = 0;
+    bool  public suspended = false;
+    mapping(address => AddressInfo) public addressInfos;
+    
 
     struct AddressInfo {
         address previous;
@@ -50,8 +44,14 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
         bool    authorized;
     }
 
-    mapping(address => AddressInfo) public addressInfos;
-    address public latestAddress;
+    constructor(
+        uint8 _walletSplitPercentage
+        )
+        public
+    {
+        require(_walletSplitPercentage >= 0 && _walletSplitPercentage <= 100);
+        walletSplitPercentage = _walletSplitPercentage;
+    }
 
     modifier onlyAuthorized()
     {
@@ -96,11 +96,9 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
             address prev = latestAddress;
             if (prev == 0x0) {
                 addrInfo.index = 1;
-                addrInfo.authorized = true;
             } else {
                 addrInfo.previous = prev;
                 addrInfo.index = addressInfos[prev].index + 1;
-
             }
             addrInfo.authorized = true;
             latestAddress = addr;
@@ -138,7 +136,9 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
             if (addrInfo.index == 0) {
                 break;
             }
-            addresses[count++] = addr;
+            if (addrInfo.authorized) {
+                addresses[count++] = addr;
+            }
             addr = addrInfo.previous;
         }
     }
@@ -163,7 +163,8 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
 
     function batchUpdateHistoryAndTransferTokens(
         address lrcAddr,
-        address miner,
+        address   miner,
+        address   feeRecipient,
         bytes32[] historyBatch,
         bytes32[] batch
         )
@@ -184,10 +185,10 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
 
         for (i = 0; i < batch.length; i += 9) {
             address owner = address(batch[i]);
-            address signer = address(batch[i + 1]);
+            address broker = address(batch[i + 1]);
             address brokerInterceptor = address(batch[i + 2]);
 
-            // Pay token to previous order, or to miner as previous order's
+            // Pay token to previous order, or to feeRecipient as previous order's
             // margin split or/and this order's margin split.
             address token = address(batch[i + 3]);
             uint amount;
@@ -210,7 +211,7 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
                     require(
                         IBrokerInterceptor(brokerInterceptor).onTokenSpent(
                             owner,
-                            signer,
+                            broker,
                             token,
                             amount
                         ),
@@ -219,7 +220,7 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
                 }
             }
 
-            // Miner pays LRx fee to order owner
+            // Miner pays LRC award to order owner
             amount = uint(batch[i + 6]);
             if (amount != 0 && miner != owner) {
                 require(
@@ -232,23 +233,23 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
                 );
             }
 
-            // Split margin-split income between miner and wallet
+            // Split margin-split income between feeRecipient and wallet
             splitPayFee(
                 token,
                 owner,
-                miner,
-                signer,
+                feeRecipient,
+                broker,
                 brokerInterceptor,
                 address(batch[i + 8]),
                 uint(batch[i + 5])
             );
 
-            // Split LRC fee income between miner and wallet
+            // Split LRC fee income between feeRecipient and wallet
             splitPayFee(
                 lrcAddr,
                 owner,
-                miner,
-                signer,
+                feeRecipient,
+                broker,
                 brokerInterceptor,
                 address(batch[i + 8]),
                 uint(batch[i + 7])
@@ -271,7 +272,7 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
     function splitPayFee(
         address token,
         address owner,
-        address miner,
+        address feeRecipient,
         address broker,
         address brokerInterceptor,
         address wallet,
@@ -284,7 +285,7 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
         }
 
         uint walletFee = (wallet == 0x0) ? 0 : fee.mul(walletSplitPercentage) / 100;
-        uint minerFee = fee.sub(walletFee);
+        uint feeRecipientFee = fee.sub(walletFee);
 
         if (walletFee > 0 && wallet != owner) {
             require(
@@ -297,12 +298,12 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
             );
         }
 
-        if (minerFee > 0 && miner != 0x0 && miner != owner) {
+        if (feeRecipientFee > 0 && feeRecipient != 0x0 && feeRecipient != owner) {
             require(
                 ERC20(token).transferFrom(
                     owner,
-                    miner,
-                    minerFee
+                    feeRecipient,
+                    feeRecipientFee
                 ),
                 "token transfer failure"
             );
@@ -346,16 +347,18 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
 
 
     function setCutoffs(
-        uint cutoff
+        address owner,
+        uint    cutoff
         )
         onlyAuthorized
         notSuspended
         external
     {
-        cutoffs[tx.origin] = cutoff;
+        cutoffs[owner] = cutoff;
     }
 
     function setTradingPairCutoffs(
+        address owner,
         bytes20 tokenPair,
         uint    cutoff
         )
@@ -363,7 +366,7 @@ contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
         notSuspended
         external
     {
-        tradingPairCutoffs[tx.origin][tokenPair] = cutoff;
+        tradingPairCutoffs[owner][tokenPair] = cutoff;
     }
 
     function checkCutoffsBatch(

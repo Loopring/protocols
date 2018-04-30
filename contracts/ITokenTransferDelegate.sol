@@ -83,7 +83,8 @@ contract ITokenTransferDelegate {
 
     function batchUpdateHistoryAndTransferTokens(
         address   lrcTokenAddress,
-        address   minerFeeRecipient,
+        address   miner,
+        address   feeRecipient,
         bytes32[] historyBatch,
         bytes32[] transferBatch
         )
@@ -109,11 +110,13 @@ contract ITokenTransferDelegate {
         external;
 
     function setCutoffs(
+        address owner,
         uint cutoff
         )
         external;
 
     function setTradingPairCutoffs(
+        address owner,
         bytes20 tokenPair,
         uint cutoff
         )
