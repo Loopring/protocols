@@ -31,10 +31,10 @@ contract IBrokerInterceptor {
         view
         returns (uint allowance);
 
-    /// @dev This method will be called from TokenTransferDelegateImpl, so
+    /// @dev This method will be called from TradeDelegateImpl, so
     ///      it must check `msg.sender` is the address of LoopringProtocol.
     ///      Check https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md
-    ///      for the current address of TokenTransferDelegateImpl deployment. 
+    ///      for the current address of TradeDelegateImpl deployment. 
     function onTokenSpent(
         address owner,
         address broker,

@@ -22,13 +22,13 @@ import "./lib/Claimable.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./IBrokerInterceptor.sol";
-import "./ITokenTransferDelegate.sol";
+import "./ITradeDelegate.sol";
 
 
-/// @title An Implementation of ITokenTransferDelegate.
+/// @title An Implementation of ITradeDelegate.
 /// @author Daniel Wang - <daniel@loopring.org>.
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
-contract TokenTransferDelegate is ITokenTransferDelegate, Claimable {
+contract TradeDelegate is ITradeDelegate, Claimable {
     using MathUint for uint;
 
     address private latestAddress = 0x0;

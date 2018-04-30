@@ -19,11 +19,11 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 
-/// @title ITokenTransferDelegate
+/// @title ITradeDelegate
 /// @dev Acts as a middle man to transfer ERC20 tokens on behalf of different
 /// versions of Loopring protocol to avoid ERC20 re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract ITokenTransferDelegate {
+contract ITradeDelegate {
     event AddressAuthorized(
         address indexed addr,
         uint32          number

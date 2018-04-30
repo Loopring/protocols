@@ -26,7 +26,7 @@ import "./IBrokerRegistry.sol";
 import "./IBrokerInterceptor.sol";
 import "./IExchange.sol";
 import "./ITokenRegistry.sol";
-import "./ITokenTransferDelegate.sol";
+import "./ITradeDelegate.sol";
 
 
 /// @title An Implementation of IExchange.
@@ -105,7 +105,7 @@ contract Exchange is IExchange {
         uint8         feeSelections;
         uint64        ringIndex;
         uint          ringSize;         // computed
-        ITokenTransferDelegate delegate;
+        ITradeDelegate         delegate;
         IBrokerRegistry        brokerRegistry;
         Order[]  orders;
         bytes32       ringHash;         // computed
@@ -202,7 +202,7 @@ contract Exchange is IExchange {
         if (order.optAllOrNone) {
             cancelAmount = order.optCapByAmountB ? order.amountB : order.amountS;
         }
-        ITokenTransferDelegate delegate = ITokenTransferDelegate(delegateAddress);
+        ITradeDelegate delegate = ITradeDelegate(delegateAddress);
         delegate.addCancelled(orderHash, cancelAmount);
         delegate.addCancelledOrFilled(orderHash, cancelAmount);
 
@@ -227,7 +227,7 @@ contract Exchange is IExchange {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-        ITokenTransferDelegate delegate = ITokenTransferDelegate(delegateAddress);
+        ITradeDelegate delegate = ITradeDelegate(delegateAddress);
 
         require(
             delegate.tradingPairCutoffs(owner, tokenPair) < t,
@@ -258,7 +258,7 @@ contract Exchange is IExchange {
         verifyAuthenticationGetInterceptor(owner, tx.origin);
 
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
-        ITokenTransferDelegate delegate = ITokenTransferDelegate(delegateAddress);
+        ITradeDelegate delegate = ITradeDelegate(delegateAddress);
 
         require(
             delegate.cutoffs(owner) < t,
@@ -294,7 +294,7 @@ contract Exchange is IExchange {
             feeSelections,
             ringIndex,
             addressesList.length,
-            ITokenTransferDelegate(delegateAddress),
+            ITradeDelegate(delegateAddress),
             IBrokerRegistry(brokerRegistryAddress),
             new Order[](addressesList.length),
             0x0 // ringHash
@@ -895,7 +895,7 @@ contract Exchange is IExchange {
 
     /// @return Amount of ERC20 token that can be spent by this contract.
     function getSpendable(
-        ITokenTransferDelegate delegate,
+        ITradeDelegate delegate,
         address tokenAddress,
         address tokenOwner,
         address broker,
@@ -984,7 +984,7 @@ contract Exchange is IExchange {
         returns (uint)
     {
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-        ITokenTransferDelegate delegate = ITokenTransferDelegate(delegateAddress);
+        ITradeDelegate delegate = ITradeDelegate(delegateAddress);
         return delegate.tradingPairCutoffs(orderOwner, tokenPair);
     }
 
