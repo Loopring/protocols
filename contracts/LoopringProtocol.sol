@@ -30,6 +30,7 @@ contract LoopringProtocol {
         uint            _ringIndex,
         bytes32 indexed _ringHash,
         address         _miner,
+        address         _feeRecipient,
         bytes32[]       _orderInfoList
     );
 
@@ -117,7 +118,7 @@ contract LoopringProtocol {
     /// @param sList        List of s for each order. This list is 1-larger than
     ///                     the previous lists, with the last element being the
     ///                     s value of the ring signature.
-    /// @param miner        Miner address.
+    /// @param feeRecipient Miner address.
     /// @param feeSelections -
     ///                     Bits to indicate fee selections. `1` represents margin
     ///                     split and `0` represents LRC as fee.
@@ -129,7 +130,7 @@ contract LoopringProtocol {
         uint8[]         vList,
         bytes32[]       rList,
         bytes32[]       sList,
-        address         miner,
+        address         feeRecipient,
         uint16          feeSelections
         )
         public;

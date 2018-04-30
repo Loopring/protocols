@@ -149,7 +149,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     function batchTransferToken(
         address lrcTokenAddress,
         address miner,
-        address minerFeeRecipient,
+        address feeRecipient,
         uint8 walletSplitPercentage,
         bytes32[] batch
         )
@@ -199,7 +199,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                 token,
                 uint(batch[i + 3]),
                 owner,
-                minerFeeRecipient,
+                feeRecipient,
                 address(batch[i + 6]),
                 walletSplitPercentage
             );
@@ -209,7 +209,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                 lrc,
                 uint(batch[i + 5]),
                 owner,
-                minerFeeRecipient,
+                feeRecipient,
                 address(batch[i + 6]),
                 walletSplitPercentage
             );
@@ -232,7 +232,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         ERC20   token,
         uint    fee,
         address owner,
-        address minerFeeRecipient,
+        address feeRecipient,
         address walletFeeRecipient,
         uint    walletSplitPercentage
         )
@@ -255,11 +255,11 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             );
         }
 
-        if (minerFee > 0 && minerFeeRecipient != 0x0 && minerFeeRecipient != owner) {
+        if (minerFee > 0 && feeRecipient != 0x0 && feeRecipient != owner) {
             require(
                 token.transferFrom(
                     owner,
-                    minerFeeRecipient,
+                    feeRecipient,
                     minerFee
                 )
             );
