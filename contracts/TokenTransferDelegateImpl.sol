@@ -37,7 +37,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
     }
 
     mapping(address => AddressInfo) public addressInfos;
-    address public latestAddress;
+    address private latestAddress;
 
     modifier onlyAuthorized()
     {
@@ -82,11 +82,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             address prev = latestAddress;
             if (prev == 0x0) {
                 addrInfo.index = 1;
-                addrInfo.authorized = true;
             } else {
                 addrInfo.previous = prev;
                 addrInfo.index = addressInfos[prev].index + 1;
-
             }
             addrInfo.authorized = true;
             latestAddress = addr;
@@ -124,7 +122,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             if (addrInfo.index == 0) {
                 break;
             }
-            addresses[count++] = addr;
+            if (addrInfo.authorized) {
+                addresses[count++] = addr;
+            }
             addr = addrInfo.previous;
         }
     }
