@@ -22,8 +22,7 @@ pragma experimental "ABIEncoderV2";
 /// @title IBrokerRegistry
 /// @dev A broker is an account that can submit order on behalf of other
 ///      accounts. When register a broker, the owner can also specify a
-///      pre-deployed BrokerInterceptor to manage the allowance of the
-///      specific broker.
+///      pre-deployed BrokerInterceptor to hook into Exchange smart contract.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract IBrokerRegistry {
     event BrokerRegistered(
@@ -35,6 +34,10 @@ contract IBrokerRegistry {
     event BrokerUnregistered(
         address owner,
         address broker
+    );
+
+    event AllBrokersUnregistered(
+        address owner
     );
 
     function getBroker(
@@ -49,10 +52,11 @@ contract IBrokerRegistry {
         );
 
     function getBrokers(
-        uint start,
-        uint count
+        address owner,
+        uint    start,
+        uint    count
         )
-        public
+        external
         view
         returns (
             address[] brokers,
@@ -67,6 +71,10 @@ contract IBrokerRegistry {
     
     function unregisterBroker(
         address broker
+        )
+        external;
+
+    function unregisterAllBrokers(
         )
         external;
 }

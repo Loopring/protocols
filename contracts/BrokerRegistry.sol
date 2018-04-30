@@ -26,9 +26,9 @@ import "./IBrokerRegistry.sol";
 contract BrokerRegistry is IBrokerRegistry {
     struct Broker {
         uint    pos;        // 0 mens unregistered; if > 0, pos - 1 is the
-                            // token's position in `addresses`.
+                            // token's position in the containing array.
         address owner;
-        address addr;
+        address broker;
         address interceptor;
     }
 
@@ -47,41 +47,42 @@ contract BrokerRegistry is IBrokerRegistry {
         )
     {
         Broker storage b = brokerMap[owner][broker];
-        registered = (b.addr == broker);
+        registered = (b.broker == broker);
         interceptor = b.interceptor;
     }
 
     function getBrokers(
-        uint start,
-        uint count
+        address owner,
+        uint    start,
+        uint    count
         )
-        public
+        external
         view
         returns (
             address[] brokers,
             address[] interceptors
         )
     {
-        Broker[] storage _brokers = brokerageMap[msg.sender];
-        uint num = _brokers.length;
+        Broker[] storage _brokers = brokerageMap[owner];
+        uint size = _brokers.length;
 
-        if (start >= num) {
+        if (start >= size) {
             return;
         }
 
         uint end = start + count;
-        if (end > num) {
-            end = num;
+        if (end > size) {
+            end = size;
         }
 
-        if (start == num) {
+        if (start == end) {
             return;
         }
 
         brokers = new address[](end - start);
         interceptors = new address[](end - start);
         for (uint i = start; i < end; i++) {
-            brokers[i - start] = _brokers[i].addr;
+            brokers[i - start] = _brokers[i].broker;
             interceptors[i - start] = _brokers[i].interceptor;
         }
     }
@@ -92,7 +93,7 @@ contract BrokerRegistry is IBrokerRegistry {
         )
         external
     {
-        require(0x0 != broker,"bad broker");
+        require(0x0 != broker, "bad broker");
         require(
             0 == brokerMap[msg.sender][broker].pos,
             "broker already exists"
@@ -123,25 +124,38 @@ contract BrokerRegistry is IBrokerRegistry {
     {
         require(0x0 != broker, "bad broker");
         require(
-            brokerMap[msg.sender][broker].addr == broker,
+            brokerMap[msg.sender][broker].broker == broker,
             "broker not found"
         );
 
         Broker storage b = brokerMap[msg.sender][broker];
-        delete brokerMap[msg.sender][broker];
-
         Broker[] storage brokers = brokerageMap[msg.sender];
         Broker storage lastBroker = brokers[brokers.length - 1];
 
-        if (lastBroker.addr != broker) {
+        if (lastBroker.broker != broker) {
             // Swap with the last token and update the pos
             lastBroker.pos = b.pos;
-            brokers[b.pos - 1] = lastBroker;
-            brokerMap[lastBroker.owner][lastBroker.addr] = lastBroker;
+            brokers[lastBroker.pos - 1] = lastBroker;
+            brokerMap[lastBroker.owner][lastBroker.broker] = lastBroker;
         }
 
+        delete brokerMap[msg.sender][broker];
         brokers.length--;
 
         emit BrokerUnregistered(msg.sender, broker);
+    }
+
+    function unregisterAllBroker(
+        )
+        external
+    {
+        Broker[] storage brokers = brokerageMap[msg.sender];
+
+        for (uint i = 0; i < brokers.length; i++) {
+            delete brokerMap[msg.sender][brokers[i].broker];
+        }
+        delete brokerageMap[msg.sender];
+
+        emit AllBrokersUnregistered(msg.sender);
     }
 }
