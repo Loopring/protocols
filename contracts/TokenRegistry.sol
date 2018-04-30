@@ -56,7 +56,7 @@ contract TokenRegistry is ITokenRegistry, Claimable {
         onlyOwner
         external
     {
-        require(0x0 != agency, "bad agency");
+        require(agency.isContract(), "bad agency");
         require(
             0 == agencyPosMap[agency],
             "agency already exists"
@@ -106,7 +106,7 @@ contract TokenRegistry is ITokenRegistry, Claimable {
         uint start,
         uint count
         )
-        public
+        external
         view
         returns (address[] agencyList)
     {
@@ -212,7 +212,7 @@ contract TokenRegistry is ITokenRegistry, Claimable {
     function isTokenRegisteredBySymbol(
         string symbol
         )
-        public
+        external
         view
         returns (bool)
     {
@@ -222,7 +222,7 @@ contract TokenRegistry is ITokenRegistry, Claimable {
     function isTokenRegistered(
         address addr
         )
-        public
+        external
         view
         returns (bool)
     {
@@ -233,7 +233,7 @@ contract TokenRegistry is ITokenRegistry, Claimable {
         uint start,
         uint count
         )
-        public
+        external
         view
         returns (address[] addressList)
     {

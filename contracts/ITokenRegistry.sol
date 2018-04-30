@@ -63,7 +63,7 @@ contract ITokenRegistry {
         uint start,
         uint count
         )
-        public
+        external
         view
         returns (address[] agencies);
 
@@ -102,14 +102,14 @@ contract ITokenRegistry {
     function isTokenRegisteredBySymbol(
         string symbol
         )
-        public
+        external
         view
         returns (bool);
 
     function isTokenRegistered(
         address addr
         )
-        public
+        external
         view
         returns (bool);
 
@@ -117,7 +117,7 @@ contract ITokenRegistry {
         uint start,
         uint count
         )
-        public
+        external
         view
         returns (address[] addressList);
 }
