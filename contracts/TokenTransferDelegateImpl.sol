@@ -148,6 +148,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
     function batchTransferToken(
         address lrcTokenAddress,
+        address miner,
         address minerFeeRecipient,
         uint8 walletSplitPercentage,
         bytes32[] batch
@@ -183,10 +184,10 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
             // Miner pays LRx fee to order owner
             uint lrcReward = uint(batch[i + 4]);
-            if (lrcReward != 0 && minerFeeRecipient != owner) {
+            if (lrcReward != 0 && miner != owner) {
                 require(
                     lrc.transferFrom(
-                        minerFeeRecipient,
+                        miner,
                         owner,
                         lrcReward
                     )

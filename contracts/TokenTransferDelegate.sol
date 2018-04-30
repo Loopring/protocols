@@ -81,6 +81,7 @@ contract TokenTransferDelegate {
 
     function batchTransferToken(
         address lrcTokenAddress,
+        address miner,
         address minerFeeRecipient,
         uint8 walletSplitPercentage,
         bytes32[] batch

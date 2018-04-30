@@ -393,7 +393,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             delegate,
             params.ringSize,
             orders,
-            params.miner,
             _lrcTokenAddress
         );
 
@@ -471,6 +470,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // Do all transactions
         delegate.batchTransferToken(
             _lrcTokenAddress,
+            tx.origin,
             miner,
             walletSplitPercentage,
             batch
@@ -508,7 +508,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         TokenTransferDelegate delegate,
         uint            ringSize,
         OrderState[]    orders,
-        address         miner,
         address         _lrcTokenAddress
         )
         private
@@ -575,7 +574,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 // Only check the available miner balance when absolutely needed
                 if (!checkedMinerLrcSpendable && minerLrcSpendable < state.lrcFeeState) {
                     checkedMinerLrcSpendable = true;
-                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, miner);
+                    minerLrcSpendable = getSpendable(delegate, _lrcTokenAddress, tx.origin);
                 }
 
                 // Only calculate split when miner has enough LRC;
