@@ -25,15 +25,13 @@ import "./IBrokerRegistry.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract BrokerRegistry is IBrokerRegistry {
     struct Broker {
-        uint    pos;        // 0 mens unregistered; if > 0, pos - 1 is the
-                            // token's position in the containing array.
         address owner;
         address addr;
         address interceptor;
     }
 
-    mapping(address => Broker[]) public brokerListMap;
-    mapping(address => mapping(address => Broker)) public brokerMap;
+    mapping(address => Broker[]) public brokersMap;
+    mapping(address => mapping(address => uint)) public positionMap;
 
     /// @dev Disable default function.
     function ()
@@ -45,7 +43,7 @@ contract BrokerRegistry is IBrokerRegistry {
 
     function getBroker(
         address owner,
-        address broker
+        address addr
         )
         external
         view
@@ -54,9 +52,14 @@ contract BrokerRegistry is IBrokerRegistry {
             address interceptor
         )
     {
-        Broker storage b = brokerMap[owner][broker];
-        registered = (b.addr == broker);
-        interceptor = b.interceptor;
+        uint pos = positionMap[owner][addr];
+        if (pos == 0) {
+            registered = false;
+        } else {
+            registered = true;
+            Broker storage broker = brokersMap[owner][pos - 1];
+            interceptor = broker.interceptor;
+        }
     }
 
     function getBrokers(
@@ -71,7 +74,7 @@ contract BrokerRegistry is IBrokerRegistry {
             address[] interceptors
         )
     {
-        Broker[] storage _brokers = brokerListMap[owner];
+        Broker[] storage _brokers = brokersMap[owner];
         uint size = _brokers.length;
 
         if (start >= size) {
@@ -85,6 +88,7 @@ contract BrokerRegistry is IBrokerRegistry {
 
         brokers = new address[](end - start);
         interceptors = new address[](end - start);
+
         for (uint i = start; i < end; i++) {
             brokers[i - start] = _brokers[i].addr;
             interceptors[i - start] = _brokers[i].interceptor;
@@ -99,20 +103,19 @@ contract BrokerRegistry is IBrokerRegistry {
     {
         require(0x0 != broker, "bad broker");
         require(
-            0 == brokerMap[msg.sender][broker].pos,
+            0 == positionMap[msg.sender][broker],
             "broker already exists"
         );
 
-        Broker[] storage brokers = brokerListMap[msg.sender];
+        Broker[] storage brokers = brokersMap[msg.sender];
         Broker memory b = Broker(
-            brokers.length + 1,
             msg.sender,
             broker,
             interceptor
         );
 
         brokers.push(b);
-        brokerMap[msg.sender][broker] = b;
+        positionMap[msg.sender][broker] = brokers.length;
 
         emit BrokerRegistered(
             msg.sender,
@@ -122,43 +125,40 @@ contract BrokerRegistry is IBrokerRegistry {
     }
     
     function unregisterBroker(
-        address broker
+        address addr
         )
         external
     {
-        require(0x0 != broker, "bad broker");
-        require(
-            brokerMap[msg.sender][broker].addr == broker,
-            "broker not found"
-        );
+        require(0x0 != addr, "bad broker");
 
-        Broker storage b = brokerMap[msg.sender][broker];
-        Broker[] storage brokers = brokerListMap[msg.sender];
-        Broker storage lastBroker = brokers[brokers.length - 1];
+        uint pos = positionMap[msg.sender][addr];
+        require(pos != 0, "broker not found");
 
-        if (lastBroker.addr != broker) {
-            // Swap with the last token and update the pos
-            lastBroker.pos = b.pos;
-            brokers[lastBroker.pos - 1] = lastBroker;
-            brokerMap[lastBroker.owner][lastBroker.addr] = lastBroker;
+        Broker[] storage brokers = brokersMap[msg.sender];
+        uint size = brokers.length;
+
+        if (pos != size) {
+            Broker storage lastOne = brokers[size - 1];
+            brokers[pos - 1] = lastOne;
+            positionMap[lastOne.owner][lastOne.addr] = pos;
         }
 
-        brokers.length--;
-        delete brokerMap[msg.sender][broker];
+        brokers.length -= 1;
+        delete positionMap[msg.sender][addr];
 
-        emit BrokerUnregistered(msg.sender, broker);
+        emit BrokerUnregistered(msg.sender, addr);
     }
 
     function unregisterAllBroker(
         )
         external
     {
-        Broker[] storage brokers = brokerListMap[msg.sender];
+        Broker[] storage brokers = brokersMap[msg.sender];
 
         for (uint i = 0; i < brokers.length; i++) {
-            delete brokerMap[msg.sender][brokers[i].addr];
+            delete positionMap[msg.sender][brokers[i].addr];
         }
-        delete brokerListMap[msg.sender];
+        delete brokersMap[msg.sender];
 
         emit AllBrokersUnregistered(msg.sender);
     }

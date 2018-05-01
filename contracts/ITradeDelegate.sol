@@ -25,14 +25,14 @@ pragma experimental "ABIEncoderV2";
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract ITradeDelegate {
     event AddressAuthorized(
-        address indexed addr,
-        uint32          number
+        address indexed addr
     );
 
     event AddressDeauthorized(
-        address indexed addr,
-        uint32          number
+        address indexed addr
     );
+
+    address[] authorizedAddresses;
 
     // The following map is used to keep trace of order fill and cancellation
     // history.
@@ -60,13 +60,6 @@ contract ITradeDelegate {
         address addr
         )
         external;
-
-    function getLatestAuthorizedAddresses(
-        uint max
-        )
-        external
-        view
-        returns (address[] addresses);
 
     /// @dev Invoke ERC20 transferFrom method.
     /// @param token Address of token to transfer.

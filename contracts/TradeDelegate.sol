@@ -31,17 +31,14 @@ import "./ITradeDelegate.sol";
 contract TradeDelegate is ITradeDelegate, Claimable {
     using MathUint for uint;
 
-    address private latestAddress = 0x0;
-
     uint8 public walletSplitPercentage = 0;
     bool  public suspended = false;
-    mapping(address => AddressInfo) public addressInfos;
     
+    mapping(address => uint) private positionMap;
 
-    struct AddressInfo {
-        address previous;
-        uint32  index;
-        bool    authorized;
+    struct AuthorizedAddress {
+        uint    pos;
+        address addr;
     }
 
     constructor(
@@ -55,7 +52,7 @@ contract TradeDelegate is ITradeDelegate, Claimable {
 
     modifier onlyAuthorized()
     {
-        require(addressInfos[msg.sender].authorized, "unauthorized");
+        require(positionMap[msg.sender] > 0, "unauthorized");
         _;
     }
 
@@ -85,25 +82,16 @@ contract TradeDelegate is ITradeDelegate, Claimable {
         onlyOwner
         external
     {
-        AddressInfo storage addrInfo = addressInfos[addr];
+        require(addr != 0x0, "bad address");
+        require(
+            0 == positionMap[addr],
+            "address already registered"
+        );
 
-        if (addrInfo.index != 0) { // existing
-            if (addrInfo.authorized == false) { // re-authorize
-                addrInfo.authorized = true;
-                emit AddressAuthorized(addr, addrInfo.index);
-            }
-        } else {
-            address prev = latestAddress;
-            if (prev == 0x0) {
-                addrInfo.index = 1;
-            } else {
-                addrInfo.previous = prev;
-                addrInfo.index = addressInfos[prev].index + 1;
-            }
-            addrInfo.authorized = true;
-            latestAddress = addr;
-            emit AddressAuthorized(addr, addrInfo.index);
-        }
+        authorizedAddresses.push(addr);
+        positionMap[addr] = authorizedAddresses.length;
+        emit AddressAuthorized(addr);
+        
     }
 
     function deauthorizeAddress(
@@ -112,35 +100,22 @@ contract TradeDelegate is ITradeDelegate, Claimable {
         onlyOwner
         external
     {
-        uint32 index = addressInfos[addr].index;
-        if (index != 0) {
-            addressInfos[addr].authorized = false;
-            emit AddressDeauthorized(addr, index);
-        }
-    }
+        require(0x0 != addr, "bad address");
 
-    function getLatestAuthorizedAddresses(
-        uint max
-        )
-        external
-        view
-        returns (address[] addresses)
-    {
-        addresses = new address[](max);
-        address addr = latestAddress;
-        AddressInfo memory addrInfo;
-        uint count = 0;
+        uint pos = positionMap[addr];
+        require(pos != 0, "address not found");
 
-        while (addr != 0x0 && count < max) {
-            addrInfo = addressInfos[addr];
-            if (addrInfo.index == 0) {
-                break;
-            }
-            if (addrInfo.authorized) {
-                addresses[count++] = addr;
-            }
-            addr = addrInfo.previous;
+        uint size = authorizedAddresses.length;
+        if (pos != size) {
+            address lastOne = authorizedAddresses[size - 1];
+            authorizedAddresses[pos - 1] = lastOne;
+            positionMap[lastOne] = pos;
         }
+
+        authorizedAddresses.length -= 1;
+        delete positionMap[addr];
+
+        emit AddressDeauthorized(addr);
     }
 
     function transferToken(
@@ -266,7 +241,7 @@ contract TradeDelegate is ITradeDelegate, Claimable {
         view
         returns (bool)
     {
-        return addressInfos[addr].authorized;
+        return positionMap[addr] > 0;
     }
 
     function splitPayFee(
