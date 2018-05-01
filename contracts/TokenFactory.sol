@@ -32,7 +32,6 @@ contract TokenFactoryImpl is ITokenFactory {
     using AddressUtil for address;
     using StringUtil for string;
 
-    mapping(bytes10 => address) public tokens;
     address   public tokenRegistry;
 
     /// @dev Disable default function.
@@ -63,9 +62,6 @@ contract TokenFactoryImpl is ITokenFactory {
     {
         require(symbol.checkStringLength(3, 10), "bad symbol size");
 
-        bytes10 symbolBytes = symbol.stringToBytes10();
-        require(tokens[symbolBytes] == 0x0, "invalid symbol");
-
         ERC20Token token = new ERC20Token(
             name,
             symbol,
@@ -76,7 +72,6 @@ contract TokenFactoryImpl is ITokenFactory {
 
         addr = address(token);
         ITokenRegistry(tokenRegistry).registerToken(addr, symbol);
-        tokens[symbolBytes] = addr;
 
         emit TokenCreated(
             addr,

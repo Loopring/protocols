@@ -82,10 +82,10 @@ contract TradeDelegate is ITradeDelegate, Claimable {
         onlyOwner
         external
     {
-        require(addr != 0x0, "bad address");
+        require(0x0 !=addr, "bad address");
         require(
             0 == positionMap[addr],
-            "address already registered"
+            "address already exists"
         );
 
         authorizedAddresses.push(addr);

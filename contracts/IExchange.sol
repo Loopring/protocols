@@ -24,7 +24,6 @@ pragma experimental "ABIEncoderV2";
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract IExchange {
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
-
     uint8   public constant OPTION_MASK_CAP_BY_AMOUNTB = 0x01;
     uint8   public constant OPTION_MASK_ALL_OR_NONE    = 0x02;
 
