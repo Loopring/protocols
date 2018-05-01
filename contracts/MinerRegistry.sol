@@ -24,15 +24,8 @@ import "./IMinerRegistry.sol";
 /// @title An Implementation of IMinerRegistry.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract MinerRegistry is IMinerRegistry {
-    struct Miner {
-        uint    pos;        // 0 mens unregistered; if > 0, pos - 1 is the
-                            // token's position in `addresses`.
-        address owner;
-        address addr;
-    }
 
-    mapping(address => Miner[]) public minerListMap;
-    mapping(address => mapping(address => Miner)) public minerMap;
+    mapping(address => mapping(address => uint)) private positionMap;
 
     /// @dev Disable default function.
     function ()
@@ -50,35 +43,7 @@ contract MinerRegistry is IMinerRegistry {
         view
         returns(bool)
     {
-        Miner storage m = minerMap[feeRecipient][miner];
-        return (m.addr == miner);
-    }
-
-    function getMiners(
-        address feeRecipient,
-        uint    start,
-        uint    count
-        )
-        external
-        view
-        returns (address[] miners) 
-    {
-        Miner[] storage _miners = minerListMap[feeRecipient];
-        uint size = _miners.length;
-
-        if (start >= size) {
-            return;
-        }
-
-        uint end = start + count;
-        if (end > size) {
-            end = size;
-        }
-
-        miners = new address[](end - start);
-        for (uint i = start; i < end; i++) {
-            miners[i - start] = _miners[i].addr;
-        }
+        return (positionMap[feeRecipient][miner] > 0);
     }
 
     function registerMiner(
@@ -88,19 +53,14 @@ contract MinerRegistry is IMinerRegistry {
     {
         require(0x0 != miner, "bad miner");
         require(
-            0 == minerMap[msg.sender][miner].pos,
+            0 == positionMap[msg.sender][miner],
             "miner already exists"
         );
 
-        Miner[] storage miners = minerListMap[msg.sender];
-        Miner memory m = Miner(
-            miners.length + 1,
-            msg.sender,
-            miner
-        );
-
-        miners.push(m);
-        minerMap[msg.sender][miner] = m;
+        address[] storage miners = minersMap[msg.sender];
+ 
+        miners.push(miner);
+        positionMap[msg.sender][miner] = miners.length;
 
         emit MinerRegistered(
             msg.sender,
@@ -109,42 +69,39 @@ contract MinerRegistry is IMinerRegistry {
     }
 
     function unregisterMiner(
-        address miner
+        address addr
         )
         external
     {
-        require(0x0 != miner, "bad miner");
-        require(
-            minerMap[msg.sender][miner].addr == miner,
-            "miner not found"
-        );
+        require(0x0 != addr, "bad miner");
 
-        Miner storage m = minerMap[msg.sender][miner];
-        Miner[] storage miners = minerListMap[msg.sender];
-        Miner storage lastMiner = miners[miners.length - 1];
+        uint pos = positionMap[msg.sender][addr];
+        require(pos != 0, "broker not found");
 
-        if (lastMiner.addr != miner) {
-            // Swap with the last token and update the pos
-            lastMiner.pos = m.pos;
-            miners[lastMiner.pos - 1] = lastMiner;
-            minerMap[lastMiner.owner][lastMiner.addr] = lastMiner;
+        address[] storage miners = minersMap[msg.sender];
+        uint size = miners.length;
+
+        if (pos != size) {
+            address lastOne = miners[size - 1];
+            miners[pos - 1] = lastOne;
+            positionMap[msg.sender][lastOne] = pos;
         }
 
-        miners.length--;
-        delete minerMap[msg.sender][miner];
+        miners.length -= 1;
+        delete positionMap[msg.sender][addr];
 
-        emit MinerUnregistered(msg.sender, miner);
+        emit MinerUnregistered(msg.sender, addr);
     }
 
     function unregisterAllMiners()
         external
     {
-        Miner[] storage miners = minerListMap[msg.sender];
+        address[] storage miners = minersMap[msg.sender];
 
         for (uint i = 0; i < miners.length; i++) {
-            delete minerMap[msg.sender][miners[i].addr];
+            delete positionMap[msg.sender][miners[i]];
         }
-        delete minerListMap[msg.sender];
+        delete minersMap[msg.sender];
 
         emit AllMinersUnregistered(msg.sender);
     }
