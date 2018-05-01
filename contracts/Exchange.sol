@@ -22,6 +22,7 @@ import "./lib/AddressUtil.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./lib/MultihashUtil.sol";
+import "./lib/NoDefault.sol";
 import "./IBrokerRegistry.sol";
 import "./IBrokerInterceptor.sol";
 import "./IExchange.sol";
@@ -39,7 +40,7 @@ import "./ITradeDelegate.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract Exchange is IExchange {
+contract Exchange is IExchange, NoDefault {
     using AddressUtil   for address;
     using MathUint      for uint;
 
@@ -132,14 +133,6 @@ contract Exchange is IExchange {
         delegateAddress = _delegateAddress;
         brokerRegistryAddress = _brokerRegistryAddress;
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
-    }
-
-    /// @dev Disable default function.
-    function ()
-        payable
-        external
-    {
-        revert();
     }
 
     function cancelOrder(

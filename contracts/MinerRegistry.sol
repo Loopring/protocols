@@ -18,22 +18,15 @@ pragma solidity 0.4.23;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "./lib/NoDefault.sol";
 import "./IMinerRegistry.sol";
 
 
 /// @title An Implementation of IMinerRegistry.
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract MinerRegistry is IMinerRegistry {
+contract MinerRegistry is IMinerRegistry, NoDefault {
 
     mapping(address => mapping(address => uint)) private positionMap;
-
-    /// @dev Disable default function.
-    function ()
-        payable
-        external
-    {
-        revert();
-    }
 
     function isMinerRegistered(
         address feeRecipient,

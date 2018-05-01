@@ -20,27 +20,20 @@ pragma experimental "ABIEncoderV2";
 
 import "./lib/AddressUtil.sol";
 import "./lib/Claimable.sol";
+import "./lib/NoDefault.sol";
 import "./ITokenRegistry.sol";
 
 
 /// @title An Implementation of TokenRegistry.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TokenRegistry is ITokenRegistry, Claimable {
+contract TokenRegistry is ITokenRegistry, Claimable, NoDefault {
     using AddressUtil for address;
 
     mapping (address => uint)   private agencyPosMap;
     mapping (address => uint)   private tokenPosMap;
-    mapping (address => string) private addressToSymbolMap;
-    mapping (string => address) private symbolToAddressMap;
-
-    /// @dev Disable default function.
-    function ()
-        payable
-        external
-    {
-        revert();
-    }
+    mapping (address => string) public  addressToSymbolMap;
+    mapping (string => address) public  symbolToAddressMap;
 
     function registerAgency(
         address agency

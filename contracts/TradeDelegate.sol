@@ -21,6 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "./lib/Claimable.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
+import "./lib/NoDefault.sol";
 import "./IBrokerInterceptor.sol";
 import "./ITradeDelegate.sol";
 
@@ -28,7 +29,7 @@ import "./ITradeDelegate.sol";
 /// @title An Implementation of ITradeDelegate.
 /// @author Daniel Wang - <daniel@loopring.org>.
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
-contract TradeDelegate is ITradeDelegate, Claimable {
+contract TradeDelegate is ITradeDelegate, Claimable, NoDefault {
     using MathUint for uint;
 
     uint8 public walletSplitPercentage = 0;
@@ -68,14 +69,6 @@ contract TradeDelegate is ITradeDelegate, Claimable {
     {
         require(suspended);
         _;
-    }
-
-    /// @dev Disable default function.
-    function ()
-        payable
-        external
-    {
-        revert();
     }
 
     function authorizeAddress(

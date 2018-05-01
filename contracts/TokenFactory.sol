@@ -20,6 +20,7 @@ pragma experimental "ABIEncoderV2";
 
 import "./lib/AddressUtil.sol";
 import "./lib/ERC20Token.sol";
+import "./lib/NoDefault.sol";
 import "./lib/StringUtil.sol";
 import "./ITokenFactory.sol";
 import "./ITokenRegistry.sol";
@@ -28,19 +29,11 @@ import "./ITokenRegistry.sol";
 /// @title An Implementation of ITokenFactory.
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TokenFactoryImpl is ITokenFactory {
+contract TokenFactoryImpl is ITokenFactory, NoDefault {
     using AddressUtil for address;
     using StringUtil for string;
 
     address   public tokenRegistry;
-
-    /// @dev Disable default function.
-    function ()
-        payable
-        external
-    {
-        revert();
-    }
 
     constructor(
         address _tokenRegistry

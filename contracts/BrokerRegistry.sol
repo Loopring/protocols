@@ -18,12 +18,13 @@ pragma solidity 0.4.23;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "./lib/NoDefault.sol";
 import "./IBrokerRegistry.sol";
 
 
 /// @title An Implementation of IBrokerRegistry.
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract BrokerRegistry is IBrokerRegistry {
+contract BrokerRegistry is IBrokerRegistry, NoDefault {
     struct Broker {
         address owner;
         address addr;
@@ -32,14 +33,6 @@ contract BrokerRegistry is IBrokerRegistry {
 
     mapping(address => Broker[]) public brokersMap;
     mapping(address => mapping(address => uint)) public positionMap;
-
-    /// @dev Disable default function.
-    function ()
-        payable
-        external
-    {
-        revert();
-    }
 
     function getBroker(
         address owner,
