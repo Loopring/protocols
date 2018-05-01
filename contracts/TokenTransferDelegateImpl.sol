@@ -124,7 +124,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             if (addrInfo.index == 0) {
                 break;
             }
-            addresses[count++] = addr;
+            if (addrInfo.authorized) {
+                addresses[count++] = addr;
+            }
             addr = addrInfo.previous;
         }
     }
