@@ -38,12 +38,6 @@ contract TokenRegistry {
         )
         external;
 
-    function registerMintedToken(
-        address addr,
-        string  symbol
-        )
-        external;
-
     function unregisterToken(
         address addr,
         string  symbol
