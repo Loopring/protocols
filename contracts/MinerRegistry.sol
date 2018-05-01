@@ -75,10 +75,6 @@ contract MinerRegistry is IMinerRegistry {
             end = size;
         }
 
-        if (start == end) {
-            return;
-        }
-
         miners = new address[](end - start);
         for (uint i = start; i < end; i++) {
             miners[i - start] = _miners[i].addr;

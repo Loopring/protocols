@@ -29,10 +29,7 @@ import "./ITokenRegistry.sol";
 contract TokenRegistry is ITokenRegistry, Claimable {
     using AddressUtil for address;
 
-    address[] public agencies;
     mapping (address => uint) agencyPosMap;
-
-    address[] public tokens;
     mapping (address => Token) addressMap;
     mapping (string => address) symbolMap;
 
@@ -100,35 +97,6 @@ contract TokenRegistry is ITokenRegistry, Claimable {
         agencies.length = 0;
 
         emit AllAgenciesUnregistered();
-    }
-
-    function getAngencies(
-        uint start,
-        uint count
-        )
-        external
-        view
-        returns (address[] agencyList)
-    {
-        uint num = agencies.length;
-
-        if (start >= num) {
-            return;
-        }
-
-        uint end = start + count;
-        if (end > num) {
-            end = num;
-        }
-
-        if (start == end) {
-            return;
-        }
-
-        agencyList = new address[](end - start);
-        for (uint i = start; i < end; i++) {
-            agencyList[i - start] = agencies[i];
-        }
     }
 
     function registerToken(
@@ -227,34 +195,5 @@ contract TokenRegistry is ITokenRegistry, Claimable {
         returns (bool)
     {
         return addressMap[addr].pos != 0;
-    }
-
-    function getTokens(
-        uint start,
-        uint count
-        )
-        external
-        view
-        returns (address[] addressList)
-    {
-        uint num = tokens.length;
-
-        if (start >= num) {
-            return;
-        }
-
-        uint end = start + count;
-        if (end > num) {
-            end = num;
-        }
-
-        if (start == end) {
-            return;
-        }
-
-        addressList = new address[](end - start);
-        for (uint i = start; i < end; i++) {
-            addressList[i - start] = tokens[i];
-        }
     }
 }

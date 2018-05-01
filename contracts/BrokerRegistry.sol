@@ -83,10 +83,6 @@ contract BrokerRegistry is IBrokerRegistry {
             end = size;
         }
 
-        if (start == end) {
-            return;
-        }
-
         brokers = new address[](end - start);
         interceptors = new address[](end - start);
         for (uint i = start; i < end; i++) {
