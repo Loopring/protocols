@@ -29,15 +29,10 @@ import "./ITokenRegistry.sol";
 contract TokenRegistry is ITokenRegistry, Claimable {
     using AddressUtil for address;
 
-    mapping (address => uint) agencyPosMap;
-    mapping (address => Token) addressMap;
-    mapping (string => address) symbolMap;
-
-    struct Token {
-        uint   pos;      // 0 mens unregistered; if > 0, pos - 1 is the
-                         // token's position in `tokens`.
-        string symbol;   // Symbol of the token
-    }
+    mapping (address => uint)   private agencyPosMap;
+    mapping (address => uint)   private tokenPosMap;
+    mapping (address => string) private addressToSymbolMap;
+    mapping (string => address) private symbolToAddressMap;
 
     /// @dev Disable default function.
     function ()
@@ -76,11 +71,14 @@ contract TokenRegistry is ITokenRegistry, Claimable {
         uint pos = agencyPosMap[agency];
         require(pos != 0, "agency not exists");
 
-        if (pos != agencies.length) {
-            agencies[pos - 1] = agencies[agencies.length - 1];
+        uint size = agencies.length;
+        if (pos != size) {
+            address lastOne = agencies[size - 1];
+            agencies[pos - 1] = lastOne;
+            agencyPosMap[lastOne] = pos;
         }
 
-        agencies.length--;
+        agencies.length -= 1;
         delete agencyPosMap[agency];
 
         emit AgencyUnregistered(agency);
@@ -109,45 +107,44 @@ contract TokenRegistry is ITokenRegistry, Claimable {
             msg.sender == owner || agencyPosMap[msg.sender] != 0,
             "unauthenticated"
         );
+
         require(0x0 != addr, "bad address");
         require(bytes(symbol).length > 0, "empty symbol");
-        require(0x0 == symbolMap[symbol], "symbol registered");
-        require(0 == addressMap[addr].pos, "address registered");
+        require(0x0 == symbolToAddressMap[symbol], "symbol registered");
+        require(0 == bytes(addressToSymbolMap[addr]).length, "address registered");
 
         tokens.push(addr);
-        symbolMap[symbol] = addr;
-        addressMap[addr] = Token(tokens.length, symbol);
+        tokenPosMap[addr] = tokens.length;
+        addressToSymbolMap[addr] = symbol;
+        symbolToAddressMap[symbol] = addr;
 
         emit TokenRegistered(addr, symbol);
     }
 
     function unregisterToken(
-        address addr,
-        string  symbol
+        address addr
         )
         external
         onlyOwner
     {
         require(addr != 0x0, "bad token address ");
-        require(symbolMap[symbol] == addr, "token not found");
-       
 
-        uint pos = addressMap[addr].pos;
-        require(pos != 0);
-        // We will replace the token we need to unregister with the last token
-        // Only the pos of the last token will need to be updated
-        address lastToken = tokens[tokens.length - 1];
+        uint pos = tokenPosMap[addr];
+        require(pos != 0, "token not found");
 
-        // Don't do anything if the last token is the one we want to delete
-        if (addr != lastToken) {
-            // Swap with the last token and update the pos
-            tokens[pos - 1] = lastToken;
-            addressMap[lastToken].pos = pos;
+        uint size = tokens.length;
+        if (pos != size) {
+            address lastOne = tokens[size - 1];
+            tokens[pos - 1] = lastOne;
+            tokenPosMap[lastOne] = pos;
         }
+        tokens.length -= 1;
 
-        tokens.length--;
-        delete addressMap[addr];
-        delete symbolMap[symbol];
+        string storage symbol = addressToSymbolMap[addr];
+
+        delete symbolToAddressMap[symbol];
+        delete addressToSymbolMap[addr];
+        delete tokenPosMap[addr];
 
         emit TokenUnregistered(addr, symbol);
     }
@@ -160,7 +157,7 @@ contract TokenRegistry is ITokenRegistry, Claimable {
         returns (bool)
     {
         for (uint i = 0; i < addressList.length; i++) {
-            if (addressMap[addressList[i]].pos == 0) {
+            if (tokenPosMap[addressList[i]] == 0) {
                 return false;
             }
         }
@@ -174,26 +171,16 @@ contract TokenRegistry is ITokenRegistry, Claimable {
         view
         returns (address)
     {
-        return symbolMap[symbol];
+        return symbolToAddressMap[symbol];
     }
 
-    function isTokenRegisteredBySymbol(
-        string symbol
-        )
-        external
-        view
-        returns (bool)
-    {
-        return symbolMap[symbol] != 0x0;
-    }
-
-    function isTokenRegistered(
+    function getSymbolByAddress(
         address addr
         )
         external
         view
-        returns (bool)
+        returns (string)
     {
-        return addressMap[addr].pos != 0;
+        return addressToSymbolMap[addr];
     }
 }

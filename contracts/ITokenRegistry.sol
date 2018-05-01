@@ -26,8 +26,8 @@ pragma experimental "ABIEncoderV2";
 contract ITokenRegistry {
 
     address[] public agencies;
-
     address[] public tokens;
+
 
     event AgencyRegistered(
         address indexed agency
@@ -70,15 +70,8 @@ contract ITokenRegistry {
         )
         external;
 
-    function registerMintedToken(
-        address addr,
-        string  symbol
-        )
-        external;
-
     function unregisterToken(
-        address addr,
-        string  symbol
+        address addr
         )
         external;
 
@@ -96,17 +89,10 @@ contract ITokenRegistry {
         view
         returns (address);
 
-    function isTokenRegisteredBySymbol(
+    function getSymbolByAddress(
         string symbol
         )
         external
         view
-        returns (bool);
-
-    function isTokenRegistered(
-        address addr
-        )
-        external
-        view
-        returns (bool);
+        returns (address);
 }

@@ -35,6 +35,8 @@ contract TradeDelegate is ITradeDelegate, Claimable {
     bool  public suspended = false;
     
     mapping(address => uint) private positionMap;
+    mapping (address => string) private addressToSymbolMap;
+    mapping (string => address) private symbolToAddressMap;
 
     struct AuthorizedAddress {
         uint    pos;
