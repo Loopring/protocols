@@ -55,15 +55,6 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
         registerTokenInternal(addr, symbol);
     }
 
-    function registerMintedToken(
-        address addr,
-        string  symbol
-        )
-        external
-    {
-        registerTokenInternal(addr, symbol);
-    }
-
     function unregisterToken(
         address addr,
         string  symbol
@@ -156,10 +147,6 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
         uint end = start + count;
         if (end > num) {
             end = num;
-        }
-
-        if (start == num) {
-            return;
         }
 
         addressList = new address[](end - start);

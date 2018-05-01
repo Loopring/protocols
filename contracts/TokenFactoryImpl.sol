@@ -20,7 +20,6 @@ import "./lib/AddressUtil.sol";
 import "./lib/StringUtil.sol";
 import "./lib/ERC20Token.sol";
 import "./TokenFactory.sol";
-import "./TokenRegistry.sol";
 
 
 /// @title An Implementation of TokenFactory.
@@ -31,8 +30,6 @@ contract TokenFactoryImpl is TokenFactory {
     using StringUtil for string;
 
     mapping(bytes10 => address) public tokens;
-    address   public tokenRegistry;
-    address   public tokenTransferDelegate;
 
     /// @dev Disable default function.
     function ()
@@ -40,15 +37,6 @@ contract TokenFactoryImpl is TokenFactory {
         public
     {
         revert();
-    }
-
-    function TokenFactoryImpl(
-        address _tokenRegistry
-        )
-        public
-    {
-        require(tokenRegistry == 0x0 && _tokenRegistry.isContract());
-        tokenRegistry = _tokenRegistry;
     }
 
     function createToken(
@@ -60,8 +48,6 @@ contract TokenFactoryImpl is TokenFactory {
         external
         returns (address addr)
     {
-        require(tokenRegistry != 0x0);
-        require(tokenTransferDelegate != 0x0);
         require(symbol.checkStringLength(3, 10));
 
         bytes10 symbolBytes = symbol.stringToBytes10();
@@ -76,7 +62,6 @@ contract TokenFactoryImpl is TokenFactory {
         );
 
         addr = address(token);
-        TokenRegistry(tokenRegistry).registerMintedToken(addr, symbol);
         tokens[symbolBytes] = addr;
 
         emit TokenCreated(
