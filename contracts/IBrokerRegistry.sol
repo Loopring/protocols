@@ -33,7 +33,8 @@ contract IBrokerRegistry {
 
     event BrokerUnregistered(
         address owner,
-        address broker
+        address broker,
+        address interceptor
     );
 
     event AllBrokersUnregistered(

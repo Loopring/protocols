@@ -130,6 +130,7 @@ contract BrokerRegistry is IBrokerRegistry, NoDefault {
         Broker[] storage brokers = brokersMap[msg.sender];
         uint size = brokers.length;
 
+        address interceptor = brokers[pos - 1].interceptor;
         if (pos != size) {
             Broker storage lastOne = brokers[size - 1];
             brokers[pos - 1] = lastOne;
@@ -139,7 +140,11 @@ contract BrokerRegistry is IBrokerRegistry, NoDefault {
         brokers.length -= 1;
         delete positionMap[msg.sender][addr];
 
-        emit BrokerUnregistered(msg.sender, addr);
+        emit BrokerUnregistered(
+            msg.sender,
+            addr,
+            interceptor
+        );
     }
 
     function unregisterAllBroker(
