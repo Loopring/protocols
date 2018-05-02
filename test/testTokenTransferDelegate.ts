@@ -132,6 +132,8 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       batch.push(numberToBytes32Str(0));
       batch.push(numberToBytes32Str(5e18));
       batch.push(walletAddr1);
+      batch.push(numberToBytes32Str(0));
+      batch.push(numberToBytes32Str(0));
 
       batch.push(addressToBytes32Str(trader2));
       batch.push(addressToBytes32Str(neoAddress));
@@ -140,9 +142,12 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       batch.push(numberToBytes32Str(0));
       batch.push(numberToBytes32Str(5e18));
       batch.push(walletAddr2);
+      batch.push(numberToBytes32Str(0));
+      batch.push(numberToBytes32Str(0));
 
-      const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, loopringProtocolV1, owner, 20, batch,
-                                                                {from: loopringProtocolV1});
+      const tx = await tokenTransferDelegate.batchUpdateHistoryAndTransferTokens(
+          lrcAddress, loopringProtocolV1, owner, 20, batch,
+          {from: loopringProtocolV1});
 
       const trader1NeoBalance = await getTokenBalanceAsync(neo, trader1);
       const trader2EosBalance = await getTokenBalanceAsync(eos, trader2);
@@ -179,6 +184,8 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
         batch.push(numberToBytes32Str(0));
         batch.push(numberToBytes32Str(5e18));
         batch.push(walletAddr1);
+        batch.push(numberToBytes32Str(0));
+        batch.push(numberToBytes32Str(0));
 
         batch.push(addressToBytes32Str(trader2));
         batch.push(addressToBytes32Str(neoAddress));
@@ -187,9 +194,12 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
         batch.push(numberToBytes32Str(0));
         batch.push(numberToBytes32Str(5e18));
         batch.push(walletAddr2);
+        batch.push(numberToBytes32Str(0));
+        batch.push(numberToBytes32Str(0));
 
-        const tx = await tokenTransferDelegate.batchTransferToken(lrcAddress, loopringProtocolV2, owner, 20, batch,
-                                                                  {from: loopringProtocolV2});
+        const tx = await tokenTransferDelegate.batchUpdateHistoryAndTransferTokens(
+            lrcAddress, loopringProtocolV2, owner, 20, batch,
+            {from: loopringProtocolV2});
       } catch (err) {
         const errMsg = `${err}`;
         assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
