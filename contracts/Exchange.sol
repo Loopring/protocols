@@ -19,10 +19,11 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "./lib/AddressUtil.sol";
+import "./lib/BytesUtil.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./lib/MultihashUtil.sol";
-import "./lib/NoDefault.sol";
+import "./lib/NoDefaultFunc.sol";
 import "./IBrokerRegistry.sol";
 import "./IBrokerInterceptor.sol";
 import "./IExchange.sol";
@@ -40,7 +41,7 @@ import "./ITradeDelegate.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract Exchange is IExchange, NoDefault {
+contract Exchange is IExchange, NoDefaultFunc {
     using AddressUtil   for address;
     using MathUint      for uint;
 
@@ -135,79 +136,38 @@ contract Exchange is IExchange, NoDefault {
         rateRatioCVSThreshold = _rateRatioCVSThreshold;
     }
 
-    function cancelOrder(
-        address[7] addresses,
-        uint[6]    orderValues,
-        uint8      option,
-        bytes      sig
+    function cancelOrders(
+        address owner,
+        bytes   orderHashes
         )
         external
     {
-        uint cancelAmount = orderValues[5];
-
-        require(cancelAmount > 0, "invalid cancelAmount");
-        Order memory order = Order(
-            addresses[0],
-            addresses[1],
-            addresses[2],
-            addresses[3],
-            addresses[4],
-            addresses[5],
-            addresses[6],
-            orderValues[0],
-            orderValues[1],
-            orderValues[2],
-            orderValues[3],
-            orderValues[4],
-            option,
-            option & OPTION_MASK_CAP_BY_AMOUNTB > 0 ? true : false,
-            option & OPTION_MASK_ALL_OR_NONE > 0 ? true : false,
-            false,
-            0x0,
-            0x0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-        );
-        require(
-            tx.origin == order.broker,
-            "cancelOrder not submitted by broker"
+        uint size = orderHashes.length;
+        require(size > 0 && size % 32 == 0);
+        
+        verifyAuthenticationGetInterceptor(
+            owner,
+            tx.origin
         );
 
-        bytes32 orderHash = calculateOrderHash(order);
+        size /= 32;
+        bytes32[] memory hashes = new bytes32[](size);
 
-        MultihashUtil.verifySignature(
-            order.broker,
-            orderHash,
-            sig
-        );
-
-        order.brokerInterceptor = verifyAuthenticationGetInterceptor(
-            order.owner,
-            order.broker
-        );
-
-        // For AON orders, must cancel it as a whole.
-        if (order.optAllOrNone) {
-            cancelAmount = order.optCapByAmountB ? order.amountB : order.amountS;
-        }
         ITradeDelegate delegate = ITradeDelegate(delegateAddress);
-        delegate.addCancelled(orderHash, cancelAmount);
-        delegate.addCancelledOrFilled(orderHash, cancelAmount);
 
-        emit OrderCancelled(
-            order.owner,
+        for (uint i = 0; i < size; i++) {
+            hashes[i] = BytesUtil.bytesToBytes32(orderHashes, i * 32);
+            delegate.setCancelled(owner, hashes[i]);
+        }
+
+        emit OrdersCancelled(
+            owner,
             tx.origin,
-            orderHash,
-            cancelAmount
+            hashes
         );
     }
 
-    function cancelAllOrdersByTradingPair(
+    function cancelAllOrdersForTradingPair(
         address owner,
         address token1,
         address token2,
@@ -220,20 +180,14 @@ contract Exchange is IExchange, NoDefault {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-        ITradeDelegate delegate = ITradeDelegate(delegateAddress);
-
-        require(
-            delegate.tradingPairCutoffs(owner, tokenPair) < t,
-            "cutoff too small"
-        );
-
-        delegate.setTradingPairCutoffs(
+ 
+        ITradeDelegate(delegateAddress).setTradingPairCutoffs(
             owner,
             tokenPair,
             t
         );
 
-        emit OrdersCancelled(
+        emit AllOrdersCancelledForTradingPair(
             owner,
             tx.origin,
             token1,
@@ -248,17 +202,15 @@ contract Exchange is IExchange, NoDefault {
         )
         external
     {
-        verifyAuthenticationGetInterceptor(owner, tx.origin);
-
-        uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
-        ITradeDelegate delegate = ITradeDelegate(delegateAddress);
-
-        require(
-            delegate.cutoffs(owner) < t,
-            "cutoff too small"
+        verifyAuthenticationGetInterceptor(
+            owner,
+            tx.origin
         );
 
-        delegate.setCutoffs(owner, t);
+        uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
+
+        ITradeDelegate(delegateAddress).setCutoffs(owner, t);
+
         emit AllOrdersCancelled(
             owner,
             tx.origin,
@@ -303,7 +255,7 @@ contract Exchange is IExchange, NoDefault {
 
         assembleOrders(ctx);
 
-        validateOrdersCutoffs(ctx);
+        checkOrdersNotCancelled(ctx);
 
         verifyRingSignatures(ctx);
 
@@ -435,7 +387,7 @@ contract Exchange is IExchange, NoDefault {
         );
     }
 
-   function validateOrdersCutoffs(
+   function checkOrdersNotCancelled(
         Context ctx
         )
         private
@@ -446,9 +398,16 @@ contract Exchange is IExchange, NoDefault {
         uint[] memory validSinceTimes = new uint[](ctx.ringSize);
 
         for (uint i = 0; i < ctx.ringSize; i++) {
-            owners[i] = ctx.orders[i].owner;
-            tradingPairs[i] = bytes20(ctx.orders[i].tokenS) ^ bytes20(ctx.orders[i].tokenB);
-            validSinceTimes[i] = ctx.orders[i].validSince;
+            Order memory order = ctx.orders[i];
+
+            require(
+                !ctx.delegate.cancelled(order.owner, order.orderHash),
+                "ordre cancelled already"
+            );
+
+            owners[i] = order.owner;
+            tradingPairs[i] = bytes20(order.tokenS) ^ bytes20(order.tokenB);
+            validSinceTimes[i] = order.validSince;
         }
 
         ctx.delegate.checkCutoffsBatch(
@@ -555,7 +514,7 @@ contract Exchange is IExchange, NoDefault {
 
             if (order.optAllOrNone) {
                 require(
-                    ctx.delegate.cancelledOrFilled(order.orderHash) == 0,
+                    ctx.delegate.filled(order.orderHash) == 0,
                     "AON filled or cancelled already"
                 );
             } else {
@@ -563,7 +522,7 @@ contract Exchange is IExchange, NoDefault {
 
                 if (order.optCapByAmountB) {
                     amount = order.amountB.tolerantSub(
-                        ctx.delegate.cancelledOrFilled(order.orderHash)
+                        ctx.delegate.filled(order.orderHash)
                     );
 
                     order.amountS = amount.mul(order.amountS) / order.amountB;
@@ -572,7 +531,7 @@ contract Exchange is IExchange, NoDefault {
                     order.amountB = amount;
                 } else {
                     amount = order.amountS.tolerantSub(
-                        ctx.delegate.cancelledOrFilled(order.orderHash)
+                        ctx.delegate.filled(order.orderHash)
                     );
 
                     order.amountB = amount.mul(order.amountB) / order.amountS;

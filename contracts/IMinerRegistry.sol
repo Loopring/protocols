@@ -23,7 +23,7 @@ pragma experimental "ABIEncoderV2";
 /// @dev A miner need to be registered so it can mine on behalf of other addresses.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract IMinerRegistry {
-    mapping(address => address[]) public minersMap;
+    mapping (address => address[]) public minersMap;
 
     event MinerRegistered(
         address feeRecipient,

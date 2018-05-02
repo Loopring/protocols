@@ -43,11 +43,18 @@ contract IExchange {
         Fill[]          _fills
     );
 
-    event OrderCancelled(
+    event OrdersCancelled(
         address indexed _owner,
         address indexed _broker,
-        bytes32         _orderHash,
-        uint            _amountCancelled
+        bytes32[]       _orderHashes
+    );
+
+    event AllOrdersCancelledForTradingPair(
+        address indexed _owner,
+        address indexed _broker,
+        address         _token1,
+        address         _token2,
+        uint            _cutoff
     );
 
     event AllOrdersCancelled(
@@ -56,28 +63,14 @@ contract IExchange {
         uint            _cutoff
     );
 
-    event OrdersCancelled(
-        address indexed _owner,
-        address indexed _broker,
-        address         _token1,
-        address         _token2,
-        uint            _cutoff
-    );
 
-    /// @dev Cancel a order. cancel amount(amountS or amountB) can be specified
-    ///      in values.
-    /// @param addresses          owner, broker, tokenS, tokenB, wallet, authAddr,
+    /// @dev Cancel multiple orders.
+    /// @param owner              The order's owner.
     ///                           and order interceptor
-    /// @param values             amountS, amountB, validSince (second),
-    ///                           validUntil (second), lrcFee, and cancelAmount.
-    /// @param option             This indicates when a order should be considered
-    ///                           as 'completely filled'.
-    /// @param sig                Order's signature.
-    function cancelOrder(
-        address[7] addresses,
-        uint[6]    values,
-        uint8      option,
-        bytes      sig
+    /// @param orderHashes        Hashes of orders to be cancelled.
+    function cancelOrders(
+        address owner,
+        bytes   orderHashes
         )
         external;
 
@@ -86,7 +79,7 @@ contract IExchange {
     ///        timestamp, for a specific trading pair.
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
-    function cancelAllOrdersByTradingPair(
+    function cancelAllOrdersForTradingPair(
         address owner,
         address token1,
         address token2,

@@ -36,10 +36,10 @@ contract ITradeDelegate {
 
     // The following map is used to keep trace of order fill and cancellation
     // history.
-    mapping (bytes32 => uint) public cancelledOrFilled;
+    mapping (bytes32 => uint) public filled;
 
     // This map is used to keep trace of order's cancellation history.
-    mapping (bytes32 => uint) public cancelled;
+    mapping (address => mapping (bytes32 => bool)) public cancelled;
 
     // A map from address to its cutoff timestamp.
     mapping (address => uint) public cutoffs;
@@ -90,13 +90,13 @@ contract ITradeDelegate {
         view
         returns (bool);
 
-    function addCancelled(
-        bytes32 orderHash,
-        uint cancelAmount
+    function setCancelled(
+        address owner,
+        bytes32 orderHash
         )
         external;
 
-    function addCancelledOrFilled(
+    function addFilled(
         bytes32 orderHash,
         uint cancelOrFillAmount
         )

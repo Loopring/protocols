@@ -18,14 +18,19 @@ pragma solidity 0.4.23;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "./lib/NoDefaultFunc.sol";
+import "./IOrderBook.sol";
 
-/// @title NoDefault
-/// @dev Disable default functions.
-contract NoDefault {
-    function ()
-        payable
-        external
+
+/// @title An Implementation of IOrderbook.
+/// @author Daniel Wang - <daniel@loopring.org>.
+contract OrderBook is IOrderBook, NoDefaultFunc {
+
+    function submitOrder(
+      address owner
+    )
+    external
     {
-        revert();
+
     }
 }

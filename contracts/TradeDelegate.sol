@@ -21,7 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "./lib/Claimable.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
-import "./lib/NoDefault.sol";
+import "./lib/NoDefaultFunc.sol";
 import "./IBrokerInterceptor.sol";
 import "./ITradeDelegate.sol";
 
@@ -29,13 +29,13 @@ import "./ITradeDelegate.sol";
 /// @title An Implementation of ITradeDelegate.
 /// @author Daniel Wang - <daniel@loopring.org>.
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
-contract TradeDelegate is ITradeDelegate, Claimable, NoDefault {
+contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
     using MathUint for uint;
 
     uint8 public walletSplitPercentage = 0;
     bool  public suspended = false;
     
-    mapping(address => uint) private positionMap;
+    mapping (address => uint)   private positionMap;
     mapping (address => string) private addressToSymbolMap;
     mapping (string => address) private symbolToAddressMap;
 
@@ -132,7 +132,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefault {
     }
 
     function batchUpdateHistoryAndTransferTokens(
-        address lrcAddr,
+        address   lrcAddr,
         address   miner,
         address   feeRecipient,
         bytes32[] historyBatch,
@@ -142,13 +142,11 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefault {
         notSuspended
         external
     {
-        // require(batch.length % 9 == 0);
-        // require(historyBatch.length % 2 == 0);
-        // require(batch.length / 9 == historyBatch.length / 2);
         uint i;
         for (i = 0; i < historyBatch.length / 2; i += 2) {
-            cancelledOrFilled[historyBatch[i]] =
-                cancelledOrFilled[historyBatch[i]].add(uint(historyBatch[i + 1]));
+            filled[historyBatch[i]] = filled[historyBatch[i]].add(
+                uint(historyBatch[i + 1])
+            );
         }
 
         address prevOwner = address(batch[batch.length - 9]);
@@ -292,27 +290,26 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefault {
         }
     }
 
-    function addCancelled(
-        bytes32 orderHash,
-        uint    cancelAmount
+    function setCancelled(
+        address owner,
+        bytes32 orderHash
         )
         onlyAuthorized
         notSuspended
         external
     {
-        cancelled[orderHash] = cancelled[orderHash].add(cancelAmount);
+        cancelled[owner][orderHash] = true;
     }
 
-    function addCancelledOrFilled(
+    function addFilled(
         bytes32 orderHash,
-        uint    cancelOrFillAmount
+        uint    amount
         )
         onlyAuthorized
         notSuspended
         external
     {
-        cancelledOrFilled[orderHash] =
-            cancelledOrFilled[orderHash].add(cancelOrFillAmount);
+        filled[orderHash] = filled[orderHash].add(amount);
     }
 
 
@@ -324,6 +321,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefault {
         notSuspended
         external
     {
+        require(cutoffs[owner] < cutoff, "cutoff too small");
         cutoffs[owner] = cutoff;
     }
 
@@ -336,6 +334,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefault {
         notSuspended
         external
     {
+        require(tradingPairCutoffs[owner][tokenPair] < cutoff, "cutoff too small");
         tradingPairCutoffs[owner][tokenPair] = cutoff;
     }
 
@@ -351,7 +350,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefault {
         require(len == tradingPairs.length);
         require(len == validSince.length);
 
-        for(uint i = 0; i < len; i++) {
+        for (uint i = 0; i < len; i++) {
             require(validSince[i] > tradingPairCutoffs[owners[i]][tradingPairs[i]]);  // order trading pair is cut off
             require(validSince[i] > cutoffs[owners[i]]);                              // order is cut off
         }
