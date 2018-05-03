@@ -33,12 +33,12 @@
     "copyfiles": "^1.2.0",
     "dirty-chai": "^2.0.0",
     "ganache-cli": "^6.1.0",
-    "webpack": "^4.0.0",
     "solium": "^1.1.6",
     "truffle": "4.1.5",
     "tslint": "5.8.0",
-    "typescript": "2.4.2",
-    "web3-typescript-typings": "0.0.3"
+    "typescript": "^2.8.3",
+    "web3-typescript-typings": "^0.10.2",
+    "webpack": "^4.0.0"
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.30",
