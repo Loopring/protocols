@@ -174,6 +174,9 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
       const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
 
+      const filled = await tokenTransferDelegate.cancelledOrFilled(ring.orders[0].params.orderHashHex);
+      assert.equal(filled.toNumber(), 1e21, "incorrect filled amount of order.");
+
       assert.equal(lrcBalance21.toNumber(), 90e18, "lrc balance not match for order1Owner");
       assert.equal(eosBalance21.toNumber(), 9000e18, "eos balance not match for order1Owner");
       assert.equal(neoBalance21.toNumber(), 100e18, "neo balance not match for order1Owner");
@@ -183,6 +186,39 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       assert.equal(neoBalance22.toNumber(), 900e18, "neo balance not match for order2Owner");
 
       assert.equal(lrcBalance23.toNumber(), 12e18, "lrc balance not match for feeRecepient");
+
+      await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
+    });
+
+    it("should be able to fill ring with 2 orders which has the same owner", async () => {
+      const feeSelections: number[] = [0, 0];
+      const ring = await ringFactory.generateSize2Ring01WithSameOrderOwners(order1Owner,
+                                                                            ringOwner,
+                                                                            feeSelections);
+
+      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+      await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
+      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+      await neo.setBalance(order1Owner, web3.toWei(1000),  {from: owner});
+      await lrc.setBalance(feeRecepient, 0, {from: owner});
+
+      const p = ringFactory.ringToSubmitableParams(ring, feeSelections, feeRecepient);
+
+      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
+      const tx = await loopringProtocolImpl.submitRing(p.addressList,
+                                                       p.uintArgsList,
+                                                       p.uint8ArgsList,
+                                                       p.buyNoMoreThanAmountBList,
+                                                       p.vList,
+                                                       p.rList,
+                                                       p.sList,
+                                                       p.feeRecepient,
+                                                       p.feeSelections,
+                                                       {from: owner});
+
+      const filled = await tokenTransferDelegate.cancelledOrFilled(ring.orders[0].params.orderHashHex);
+      // console.log("filled:", filled);
+      assert.equal(filled.toNumber(), 1e21, "incorrect filled amount of order.");
 
       await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
     });
