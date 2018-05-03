@@ -287,6 +287,12 @@ contract Exchange is IExchange, NoDefaultFunc {
             ctx.feeRecipient = tx.origin;
         }
 
+        //Check ring size
+        require(
+            ctx.ringSize > 1 && ctx.ringSize <= MAX_RING_SIZE,
+            "invalid ring size"
+        );
+
         require(
             ctx.ringSize == ctx.addressesList.length,
             "wrong addressesList size"
@@ -302,21 +308,16 @@ contract Exchange is IExchange, NoDefaultFunc {
             "wrong optionList size"
         );
 
-        // Validate ring-mining related arguments.
-        for (uint i = 0; i < ctx.ringSize; i++) {
-            require(ctx.valuesList[i][5] > 0, "rateAmountS is 0");
-        }
-
-        //Check ring size
-        require(
-            ctx.ringSize > 1 && ctx.ringSize <= MAX_RING_SIZE,
-            "invalid ring size"
-        );
-
         require(
             (ctx.ringSize << 1) == ctx.sigList.length,
             "invalid signature size"
         );
+
+        // Validate ring-mining related arguments.
+
+        for (uint i = 0; i < ctx.ringSize; i++) {
+            require(ctx.valuesList[i][5] > 0, "rateAmountS is 0");
+       }
     }
 
     /// @dev Assemble input data into structs so we can pass them to other functions.

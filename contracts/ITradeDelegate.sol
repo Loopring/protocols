@@ -61,19 +61,6 @@ contract ITradeDelegate {
         )
         external;
 
-    /// @dev Invoke ERC20 transferFrom method.
-    /// @param token Address of token to transfer.
-    /// @param from Address to transfer token from.
-    /// @param to Address to transfer token to.
-    /// @param value Amount of token to transfer.
-    function transferToken(
-        address token,
-        address from,
-        address to,
-        uint    value
-        )
-        external;
-
     function batchUpdateHistoryAndTransferTokens(
         address   lrcTokenAddress,
         address   miner,
