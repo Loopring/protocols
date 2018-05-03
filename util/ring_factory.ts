@@ -445,6 +445,46 @@ export class RingFactory {
     return ring;
   }
 
+  public async generateRing(amountSList: number[],
+                            amountBList: number[],
+                            owners: string[],
+                            feeSelections: number[]) {
+    const ringSize = amountSList.length;
+    const salt =  Math.floor(Math.random() * 1000);
+    const tokenAddresses = [this.neoAddress, this.eosAddress];
+
+    const orders: Order[] = [];
+    for (let i = 0; i < ringSize; i ++) {
+      const nextIndex = (i + 1) % ringSize;
+
+      const orderParam: OrderParams = {
+        loopringProtocol: this.loopringProtocolAddr,
+        tokenS: tokenAddresses[i],
+        tokenB: tokenAddresses[nextIndex],
+        amountS: new BigNumber(amountSList[i]),
+        amountB: new BigNumber(amountBList[i]),
+        validSince: new BigNumber(this.currBlockTimeStamp - 60),
+        validUntil: new BigNumber((this.currBlockTimeStamp + 3600)),
+        lrcFee: new BigNumber(1e18), // TODO: change to (3 + rand(17)) * 1e17
+        buyNoMoreThanAmountB: false,
+        marginSplitPercentage: 55, // TODO: change to 40 + rand(20)
+        authAddr: this.authAddress,
+        walletAddr: this.walletAddr,
+      };
+
+      const order = new Order(owners[i], orderParam);
+
+      await order.signAsync();
+
+      orders.push(order);
+    }
+
+    const ring = new Ring(owners[ringSize], orders, feeSelections);
+    await ring.signAsync();
+
+    return ring;
+  }
+
   public caculateRateAmountS(ring: Ring) {
     let rate: number = 1;
     const result: BigNumber[] = [];

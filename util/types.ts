@@ -55,3 +55,10 @@ export interface SignResult {
   r: string;
   s: string;
 }
+
+export interface RingBalanceInfo {
+  participiants: string[];
+  tokenAddressList: string[];
+  tokenSymbolList: string[];
+  tokenBalances: number[][];
+}
