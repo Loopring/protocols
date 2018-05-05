@@ -9,7 +9,7 @@ npm install --global --production windows-build-tools
 ```
 
 Then run the following commands from project's root directory:
- 
+
 ```
 npm install
 npm run compile
@@ -18,10 +18,10 @@ npm run compile
 ## Deployment on Ethereum Mainnet:
 - LRC - https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md#protocol-token---lrc
 - Protocol deployments: https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md#protocol
-   
-## Run Unit Tests  
-* run `npm run testrpc` from project's root directory in terminal.  
-* run `npm run test` from project's root directory in another terminal window.  
+
+## Run Unit Tests
+* run `npm run testrpc` from project's root directory in terminal.
+* run `npm run test` from project's root directory in another terminal window.
 * run single test: `npm run test -- transpiled/test/xxx.js`
 
 ## Run Unit Tests inside Docker

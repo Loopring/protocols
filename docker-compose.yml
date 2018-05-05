@@ -13,6 +13,6 @@ services:
     container_name: test
     depends_on:
       - testrpc
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile.test

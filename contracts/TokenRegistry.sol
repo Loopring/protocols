@@ -57,7 +57,7 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         address agency
         )
         onlyOwner
-        external 
+        external
     {
         require(0x0 != agency, "bad agency");
 

@@ -116,7 +116,7 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
             interceptor
         );
     }
-    
+
     function unregisterBroker(
         address addr
         )

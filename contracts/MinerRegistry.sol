@@ -30,7 +30,7 @@ contract MinerRegistry is IMinerRegistry, NoDefaultFunc {
 
     function isMinerRegistered(
         address feeRecipient,
-        address miner 
+        address miner
         )
         external
         view
@@ -51,7 +51,7 @@ contract MinerRegistry is IMinerRegistry, NoDefaultFunc {
         );
 
         address[] storage miners = minersMap[msg.sender];
- 
+
         miners.push(miner);
         positionMap[msg.sender][miner] = miners.length;
 

@@ -41,7 +41,7 @@ contract IMinerRegistry {
 
     function isMinerRegistered(
         address feeRecipient,
-        address miner 
+        address miner
         )
         external
         view
@@ -61,7 +61,7 @@ contract IMinerRegistry {
         address miner
         )
         external;
-    
+
     // @dev this method must be called by feeRecipient.
     function unregisterMiner(
         address miner

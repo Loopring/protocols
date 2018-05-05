@@ -69,7 +69,7 @@ contract IBrokerRegistry {
         address interceptor  // 0x0 allowed
         )
         external;
-    
+
     function unregisterBroker(
         address broker
         )

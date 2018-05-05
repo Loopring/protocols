@@ -34,7 +34,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
 
     uint8 public walletSplitPercentage = 0;
     bool  public suspended = false;
-    
+
     mapping (address => uint)   private positionMap;
     mapping (address => string) private addressToSymbolMap;
     mapping (string => address) private symbolToAddressMap;
@@ -86,7 +86,6 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         authorizedAddresses.push(addr);
         positionMap[addr] = authorizedAddresses.length;
         emit AddressAuthorized(addr);
-        
     }
 
     function deauthorizeAddress(
@@ -337,7 +336,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
             require(
                 validSince[i] > cutoffs[owners[i]],
                 "order cancelled"
-            ); 
+            );
         }
     }
 
