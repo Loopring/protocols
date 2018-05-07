@@ -213,7 +213,9 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const owners = [order1Owner, order2Owner, ringOwner];
       const amountSList = [1e17, 300e18];
       const amountBList = [300e18, 1e17];
-      const ring = await ringFactory.generateRing(amountSList,
+      const tokens = [neoAddress, qtumAddress];
+      const ring = await ringFactory.generateRing(tokens,
+                                                  amountSList,
                                                   amountBList,
                                                   owners,
                                                   feeSelections);
@@ -222,7 +224,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
       await setBalanceBefore(ring, feeRecepient);
 
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelections, feeRecepient);
+      const p = ringFactory.ringToSubmitableParams(ring);
 
       const tx = await loopringProtocolImpl.submitRing(p.addressList,
                                                        p.uintArgsList,

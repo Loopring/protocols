@@ -244,6 +244,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
         uint walletFee = (walletFeeRecipient == 0x0) ? 0 : fee.mul(walletSplitPercentage) / 100;
         uint minerFee = fee.sub(walletFee);
+        walletFee = walletFee.sub(1);
+        minerFee = minerFee.sub(1);
 
         if (walletFee > 0 && walletFeeRecipient != owner) {
             require(

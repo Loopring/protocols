@@ -56,6 +56,17 @@ export interface SignResult {
   s: string;
 }
 
+export interface RingInfo {
+  miner: string;
+  orderOwners: string[];
+  tokenAddressList: string[];
+  amountSList: number[];
+  amountBList: number[];
+  lrcFeeAmountList: number[];
+  buyNoMoreThanAmountBList: boolean[];
+  feeSelections: number[];
+}
+
 export interface RingBalanceInfo {
   participiants: string[];
   tokenAddressList: string[];

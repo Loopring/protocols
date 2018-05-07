@@ -445,13 +445,13 @@ export class RingFactory {
     return ring;
   }
 
-  public async generateRing(amountSList: number[],
+  public async generateRing(tokenAddresses: string[],
+                            amountSList: number[],
                             amountBList: number[],
                             owners: string[],
                             feeSelections: number[]) {
     const ringSize = amountSList.length;
     const salt =  Math.floor(Math.random() * 1000);
-    const tokenAddresses = [this.neoAddress, this.eosAddress];
 
     const orders: Order[] = [];
     for (let i = 0; i < ringSize; i ++) {
@@ -506,9 +506,7 @@ export class RingFactory {
     return result;
   }
 
-  public ringToSubmitableParams(ring: Ring,
-                                feeSelectionList: number[],
-                                feeRecepient: string) {
+  public ringToSubmitableParams(ring: Ring) {
     const ringSize = ring.orders.length;
     const addressList: string[][] = [];
     const uintArgsList: BigNumber[][] = [];
@@ -569,8 +567,8 @@ export class RingFactory {
       rList,
       sList,
       ringOwner: ring.owner,
-      feeRecepient,
-      feeSelections: this.feeSelectionListToNumber(feeSelectionList),
+      feeRecepient: ring.owner,
+      feeSelections: this.feeSelectionListToNumber(ring.feeSelections),
     };
 
     return submitParams;
