@@ -146,6 +146,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
     }
 
+    event LogAddress(address addr);
+
     function batchTransferToken(
         address lrcTokenAddress,
         address miner,
@@ -169,6 +171,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
+            emit LogAddress(address(batch[i + 1]));
             ERC20 token = ERC20(address(batch[i + 1]));
 
             // Here batch[i + 2] has been checked not to be 0.
@@ -228,6 +231,8 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         return addressInfos[addr].authorized;
     }
 
+    event LogSplitPay(address from, address to, uint amount);
+
     function splitPayFee(
         ERC20   token,
         uint    fee,
@@ -244,10 +249,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
         uint walletFee = (walletFeeRecipient == 0x0) ? 0 : fee.mul(walletSplitPercentage) / 100;
         uint minerFee = fee.sub(walletFee);
-        walletFee = walletFee.sub(1);
-        minerFee = minerFee.sub(1);
 
         if (walletFee > 0 && walletFeeRecipient != owner) {
+            emit LogSplitPay(owner, walletFeeRecipient, walletFee);
             require(
                 token.transferFrom(
                     owner,
@@ -258,6 +262,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
 
         if (minerFee > 0 && feeRecipient != 0x0 && feeRecipient != owner) {
+            emit LogSplitPay(owner, feeRecipient, minerFee);
             require(
                 token.transferFrom(
                     owner,

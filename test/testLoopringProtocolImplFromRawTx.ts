@@ -83,7 +83,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     }
   };
 
-  const setBalanceBefore = async (ring: Ring, miner: string) => {
+  const setBalanceBefore = async (ring: Ring) => {
     const ringSize = ring.orders.length;
     let lrcRewardTotal = 0;
     for (let i = 0; i < ringSize; i++) {
@@ -95,15 +95,15 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       await tokenInstance.setBalance(orderOwner, balance);
 
       const lrcFee = order.params.lrcFee.toNumber();
-      await lrc.setBalance(orderOwner, balance);
+      await lrc.setBalance(orderOwner, lrcFee);
 
       lrcRewardTotal += lrcFee;
     }
 
-    await lrc.setBalance(miner, lrcRewardTotal);
+    await lrc.setBalance(ring.owner, lrcRewardTotal);
   };
 
-  const getRingBalanceInfoAfter = async (ring: Ring, miner: string) => {
+  const getRingBalanceInfo = async (ring: Ring) => {
     const participiants: string[] = [];
     const tokenBalances: number[][] = [];
 
@@ -122,7 +122,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     tokenSet.add(lrcAddress);
     const tokenList: string[] = [...tokenSet];
     const tokenSymbolList = tokenList.map((addr) => tokenSymbolMap.get(addr));
-    participiants.push(miner);
+    participiants.push(ring.owner);
     participiants.push(walletAddr);
 
     for (const participiant of participiants) {
@@ -204,6 +204,20 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     }
   });
 
+  const printRingInfo = (ring: Ring) => {
+    console.log("-".repeat(80));
+    console.log("ring miner:", ring.owner);
+    for (const order of ring.orders) {
+      console.log("-".repeat(80));
+      console.log("order owner:", order.owner);
+      console.log("tokenS:", order.params.tokenS, "; amount:", order.params.amountS.toNumber());
+      console.log("tokenB:", order.params.tokenB, "; amount:", order.params.amountB.toNumber());
+      console.log("lrcFee:", order.params.lrcFee.toNumber());
+      console.log("buyNoMoreThanAmountB:", order.params.buyNoMoreThanAmountB);
+    }
+    console.log("-".repeat(80));
+  };
+
   describe("submitRing", () => {
     const protocolAbi = fs.readFileSync("ABI/version151/LoopringProtocolImpl.abi", "ascii");
     const txParser = new TxParser(protocolAbi);
@@ -227,7 +241,17 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                     ringInfo.amountBList,
                                                     txOwners,
                                                     ringInfo.feeSelections);
-        // console.log("ring:", ring);
+        // console.log("ringInfo:", ringInfo);
+        printRingInfo(ring);
+        console.log("feeSelections:", ringInfo.feeSelections);
+
+        await setBalanceBefore(ring);
+
+        // console.log("ring.order[0].params:", ring.orders[0].params);
+        // console.log("ring.order[1].params:", ring.orders[1].params);
+
+        const balanceInfoBefore = await getRingBalanceInfo(ring);
+        console.log("balanceInfoBefore:",  balanceInfoBefore);
 
         const p = ringFactory.ringToSubmitableParams(ring);
 
@@ -242,8 +266,10 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          p.feeSelections,
                                                          {from: ring.owner});
 
-        const balanceInfo = await getRingBalanceInfoAfter(ring, ring.owner);
-        console.log("balanceInfo:",  balanceInfo);
+        // console.log("tx.receipt.logs: ", tx.receipt.logs);
+
+        const balanceInfoAfter = await getRingBalanceInfo(ring);
+        console.log("balanceInfoAfter:",  balanceInfoAfter);
       });
     }
 
