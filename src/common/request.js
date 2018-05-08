@@ -1,10 +1,20 @@
-import fetch from 'dva/fetch';
+import fetch from 'whatwg-fetch';
 import crypto from 'crypto';
 
 const headers = {
   'Content-Type': 'application/json'
 };
 
+
+function checkStatus(response) {
+    if (response.status >= 200 && response.status < 300) {
+        return response
+    } else {
+        const error = new Error(response.statusText);
+        error.response = response;
+        throw error
+    }
+}
 /**
  * @description Supports single request and batch request;
  * @param host
@@ -17,7 +27,7 @@ function request(host, options) {
       options.headers = options.headers || headers;
       options.body = JSON.stringify(options.body);
     }
-    return fetch(host, options).then(res => res.json()).catch((e)=>{
+    return fetch(host, options).then(checkStatus).then(res => res.json()).catch((e)=>{
       return {error:e}
     })
   }catch(e){
