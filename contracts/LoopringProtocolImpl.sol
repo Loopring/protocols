@@ -445,7 +445,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p++] = bytes32(state.tokenS);
 
             // Store all amounts
-            batch[p++] = bytes32(state.fillAmountS - prevSplitB);
+            batch[p++] = bytes32(state.fillAmountS.sub(prevSplitB));
             batch[p++] = bytes32(prevSplitB.add(state.splitS));
             batch[p++] = bytes32(state.lrcReward);
             batch[p++] = bytes32(state.lrcFeeState);
