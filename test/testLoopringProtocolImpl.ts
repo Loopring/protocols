@@ -8,6 +8,7 @@ import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { RingFactory } from "../util/ring_factory";
 import { OrderParams, RingBalanceInfo } from "../util/types";
+import { ringInfoList } from "./ringConfig";
 
 const {
   LoopringProtocolImpl,
@@ -165,7 +166,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
     const walletSplitPercentageBN = await loopringProtocolImpl.walletSplitPercentage();
     walletSplitPercentage = walletSplitPercentageBN.toNumber();
-    // console.log("walletSplitPercentage:", walletSplitPercentage);
 
     tokenTransferDelegate.authorizeAddress(LoopringProtocolImpl.address);
 
@@ -208,68 +208,40 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   });
 
   describe("submitRing", () => {
-    it("should be able to fill ring with 2 orders", async () => {
-      const feeSelections: number[] = [0, 0];
-      const owners = [order1Owner, order2Owner, ringOwner];
-      const amountSList = [1e17, 300e18];
-      const amountBList = [300e18, 1e17];
-      const tokens = [neoAddress, qtumAddress];
-      const ring = await ringFactory.generateRing(tokens,
-                                                  amountSList,
-                                                  amountBList,
-                                                  owners,
-                                                  feeSelections);
+    const allTokenAddrs = [eosAddress, neoAddress, qtumAddress, lrcAddress];
+    const allOwnerAddresses = [order1Owner, order2Owner, order3Owner, ringOwner];
 
-      assert(ring.orders[0].isValidSignature(), "invalid signature");
+    for (const ringInfo of ringInfoList) {
+      it(ringInfo.description, async () => {
+        // const feeSelections: number[] = [0, 0];
+        // const owners = [order1Owner, order2Owner, ringOwner];
+        // const amountSList = [1e17, 300e18];
+        // const amountBList = [300e18, 1e17];
+        // const tokens = [neoAddress, qtumAddress];
+        const ring = await ringFactory.generateRing(ringInfo);
 
-      await setBalanceBefore(ring, feeRecepient);
+        assert(ring.orders[0].isValidSignature(), "invalid signature");
 
-      const p = ringFactory.ringToSubmitableParams(ring);
+        await setBalanceBefore(ring, feeRecepient);
 
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: feeRecepient});
+        const p = ringFactory.ringToSubmitableParams(ring);
 
-      const balanceInfo = await getRingBalanceInfoAfter(ring, feeRecepient);
-      console.log("balanceInfo:",  balanceInfo);
+        const tx = await loopringProtocolImpl.submitRing(p.addressList,
+                                                         p.uintArgsList,
+                                                         p.uint8ArgsList,
+                                                         p.buyNoMoreThanAmountBList,
+                                                         p.vList,
+                                                         p.rList,
+                                                         p.sList,
+                                                         p.feeRecepient,
+                                                         p.feeSelections,
+                                                         {from: feeRecepient});
 
-      // console.log("tx.receipt.logs: ", tx.receipt.logs);
-      // const ethOfOwnerAfter = await getEthBalanceAsync(owner);
-      // const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber()) / 1e18;
-      // // console.log("all gas cost for 2 orders 01(ether):", allGas);
-
-      // const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
-      // const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      // const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
-
-      // const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
-      // const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
-      // const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-
-      // const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
-
-      // const filled = await tokenTransferDelegate.cancelledOrFilled(ring.orders[0].params.orderHashHex);
-      // assert.equal(filled.toNumber(), 1e21, "incorrect filled amount of order.");
-
-      // assert.equal(lrcBalance21.toNumber(), 90e18, "lrc balance not match for order1Owner");
-      // assert.equal(eosBalance21.toNumber(), 9000e18, "eos balance not match for order1Owner");
-      // assert.equal(neoBalance21.toNumber(), 100e18, "neo balance not match for order1Owner");
-
-      // assert.equal(lrcBalance22.toNumber(), 95e18, "lrc balance not match for order2Owner");
-      // assert.equal(eosBalance22.toNumber(), 1000e18, "eos balance not match for order2Owner");
-      // assert.equal(neoBalance22.toNumber(), 900e18, "neo balance not match for order2Owner");
-
-      // assert.equal(lrcBalance23.toNumber(), 12e18, "lrc balance not match for feeRecepient");
-
-      await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
-    });
+        const balanceInfo = await getRingBalanceInfoAfter(ring, feeRecepient);
+        console.log("balanceInfo:",  balanceInfo);
+        await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
+      });
+    }
 
     // it("should be able to fill ring with 2 orders", async () => {
     //   const feeSelections: number[] = [0, 0];

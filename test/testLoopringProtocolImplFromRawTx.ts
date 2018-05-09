@@ -9,6 +9,7 @@ import { Ring } from "../util/ring";
 import { RingFactory } from "../util/ring_factory";
 import { OrderParams, RingBalanceInfo, RingInfo } from "../util/types";
 import * as rawTxs from "./rawTxs";
+import { RingHelper } from "./ringHelper";
 
 const {
   LoopringProtocolImpl,
@@ -48,6 +49,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   let walletSplitPercentage: number;
 
   let ringFactory: RingFactory;
+  let ringHelper: RingHelper;
 
   const getTokenBalanceAsync = async (token: any, addr: string) => {
     const tokenBalanceStr = await token.balanceOf(addr);
@@ -103,49 +105,63 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     await lrc.setBalance(ring.owner, lrcRewardTotal);
   };
 
-  const getRingBalanceInfo = async (ring: Ring) => {
-    const participiants: string[] = [];
-    const tokenBalances: number[][] = [];
+  // const getRingBalanceInfo = async (ring: Ring) => {
+  //   const participiants: string[] = [];
+  //   const tokenBalances: number[][] = [];
 
-    const ringSize = ring.orders.length;
-    const tokenSet = new Set();
-    for (let i = 0; i < ringSize; i++) {
-      const order: Order = ring.orders[i];
-      participiants.push(order.owner);
+  //   const ringSize = ring.orders.length;
+  //   const tokenSet = new Set();
+  //   for (let i = 0; i < ringSize; i++) {
+  //     const order: Order = ring.orders[i];
+  //     participiants.push(order.owner);
 
-      const tokenSAddr = order.params.tokenS;
-      const tokenBAddr = order.params.tokenB;
-      tokenSet.add(tokenSAddr);
-      tokenSet.add(tokenBAddr);
-    }
+  //     const tokenSAddr = order.params.tokenS;
+  //     const tokenBAddr = order.params.tokenB;
+  //     tokenSet.add(tokenSAddr);
+  //     tokenSet.add(tokenBAddr);
+  //   }
 
-    tokenSet.add(lrcAddress);
-    const tokenList: string[] = [...tokenSet];
-    const tokenSymbolList = tokenList.map((addr) => tokenSymbolMap.get(addr));
-    participiants.push(ring.owner);
-    participiants.push(walletAddr);
+  //   tokenSet.add(lrcAddress);
+  //   const tokenList: string[] = [...tokenSet];
+  //   const tokenSymbolList = tokenList.map((addr) => tokenSymbolMap.get(addr));
+  //   participiants.push(ring.owner);
+  //   participiants.push(walletAddr);
 
-    for (const participiant of participiants) {
-      const participiantBalances: number[] = [];
+  //   for (const participiant of participiants) {
+  //     const participiantBalances: number[] = [];
 
-      for (const tokenAddr of tokenList) {
-        const tokenInstance = tokenMap.get(tokenAddr);
-        const tokenBalance = await getTokenBalanceAsync(tokenInstance, participiant);
-        participiantBalances.push(tokenBalance.toNumber());
-      }
+  //     for (const tokenAddr of tokenList) {
+  //       const tokenInstance = tokenMap.get(tokenAddr);
+  //       const tokenBalance = await getTokenBalanceAsync(tokenInstance, participiant);
+  //       participiantBalances.push(tokenBalance.toNumber());
+  //     }
 
-      tokenBalances.push(participiantBalances);
-    }
+  //     tokenBalances.push(participiantBalances);
+  //   }
 
-    const balanceInfo: RingBalanceInfo = {
-      participiants,
-      tokenAddressList: tokenList,
-      tokenSymbolList,
-      tokenBalances,
-    };
+  //   const balanceInfo: RingBalanceInfo = {
+  //     participiants,
+  //     tokenAddressList: tokenList,
+  //     tokenSymbolList,
+  //     tokenBalances,
+  //   };
 
-    return balanceInfo;
-  };
+  //   return balanceInfo;
+  // };
+
+  // const printRingInfo = (ring: Ring) => {
+  //   console.log("-".repeat(80));
+  //   console.log("ring miner:", ring.owner);
+  //   for (const order of ring.orders) {
+  //     console.log("-".repeat(80));
+  //     console.log("order owner:", order.owner);
+  //     console.log("tokenS:", order.params.tokenS, "; amount:", order.params.amountS.toNumber());
+  //     console.log("tokenB:", order.params.tokenB, "; amount:", order.params.amountB.toNumber());
+  //     console.log("lrcFee:", order.params.lrcFee.toNumber());
+  //     console.log("buyNoMoreThanAmountB:", order.params.buyNoMoreThanAmountB);
+  //   }
+  //   console.log("-".repeat(80));
+  // };
 
   before( async () => {
     [loopringProtocolImpl, tokenRegistry, tokenTransferDelegate] = await Promise.all([
@@ -162,7 +178,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
     const walletSplitPercentageBN = await loopringProtocolImpl.walletSplitPercentage();
     walletSplitPercentage = walletSplitPercentageBN.toNumber();
-    // console.log("walletSplitPercentage:", walletSplitPercentage);
 
     tokenTransferDelegate.authorizeAddress(LoopringProtocolImpl.address);
 
@@ -202,58 +217,57 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
         await token.approve(delegateAddr, web3.toWei(10000000000), {from: address});
       }
     }
+
+    const tokenAddresses = [eosAddress, neoAddress, lrcAddress];
+    const getTokenAddrAsync = async (symbol: string) => {
+      const addr = await tokenRegistry.getAddressBySymbol(symbol);
+      return addr;
+    };
+
+    const getTokenContractFuncAsync = async (symbol: string) => {
+      const addr = await tokenRegistry.getAddressBySymbol(symbol);
+      const contract = await DummyToken.at(lrcAddress);
+      return contract;
+    };
+
+    ringHelper = new RingHelper(tokenAddresses);
+    await ringHelper.init(getTokenAddrAsync, getTokenContractFuncAsync);
   });
 
-  const printRingInfo = (ring: Ring) => {
-    console.log("-".repeat(80));
-    console.log("ring miner:", ring.owner);
-    for (const order of ring.orders) {
-      console.log("-".repeat(80));
-      console.log("order owner:", order.owner);
-      console.log("tokenS:", order.params.tokenS, "; amount:", order.params.amountS.toNumber());
-      console.log("tokenB:", order.params.tokenB, "; amount:", order.params.amountB.toNumber());
-      console.log("lrcFee:", order.params.lrcFee.toNumber());
-      console.log("buyNoMoreThanAmountB:", order.params.buyNoMoreThanAmountB);
-    }
-    console.log("-".repeat(80));
+  const setDefaultValuesForRingInfo = (ringInfo: RingInfo) => {
+    const ringSize = ringInfo.amountSList.length;
+    assert(ringSize <= 3, "invalid orders size. amountSList:" + ringInfo.amountSList);
+
+    const tokenAddresses = [eosAddress, neoAddress, lrcAddress];
+    const orderOwners = [order1Owner, order2Owner, order3Owner];
+    ringInfo.tokenAddressList = tokenAddresses.slice(0, ringSize);
+    ringInfo.orderOwners = orderOwners.slice(0, ringSize);
+    ringInfo.miner = ringOwner;
   };
 
   describe("submitRing", () => {
     const protocolAbi = fs.readFileSync("ABI/version151/LoopringProtocolImpl.abi", "ascii");
     const txParser = new TxParser(protocolAbi);
-    const orderOwners = [order1Owner, order2Owner, order3Owner];
 
     const txs = rawTxs;
     for (let i = 0; i < txs.length; i++) {
       it("raw tx " + i, async () => {
-        const tokenAddresses = [eosAddress, neoAddress, lrcAddress];
-
         const rawTx = txs[i];
         const ringInfo = txParser.parseSubmitRingTx(rawTx);
+        setDefaultValuesForRingInfo(ringInfo);
 
-        const ringSize = ringInfo.tokenAddressList.length;
-        assert(ringSize <= 3, "invalid order size. tx index: " + i);
-        const txOwners = orderOwners.slice(0, ringSize);
-        txOwners.push(ringOwner);
-
-        const ring = await ringFactory.generateRing(tokenAddresses.slice(0, ringSize),
-                                                    ringInfo.amountSList,
-                                                    ringInfo.amountBList,
-                                                    txOwners,
-                                                    ringInfo.feeSelections);
-        // console.log("ringInfo:", ringInfo);
-        printRingInfo(ring);
+        const ring = await ringFactory.generateRing(ringInfo);
+        // printRingInfo(ring);
         console.log("feeSelections:", ringInfo.feeSelections);
 
         await setBalanceBefore(ring);
 
-        // console.log("ring.order[0].params:", ring.orders[0].params);
-        // console.log("ring.order[1].params:", ring.orders[1].params);
-
-        const balanceInfoBefore = await getRingBalanceInfo(ring);
-        console.log("balanceInfoBefore:",  balanceInfoBefore);
+        const balanceInfoBefore = await ringHelper.getRingBalanceInfo(ring);
+        // console.log("balanceInfoBefore:",  balanceInfoBefore);
 
         const p = ringFactory.ringToSubmitableParams(ring);
+
+        console.log("params:", p);
 
         const tx = await loopringProtocolImpl.submitRing(p.addressList,
                                                          p.uintArgsList,
@@ -268,7 +282,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
         // console.log("tx.receipt.logs: ", tx.receipt.logs);
 
-        const balanceInfoAfter = await getRingBalanceInfo(ring);
+        const balanceInfoAfter = await ringHelper.getRingBalanceInfo(ring);
         console.log("balanceInfoAfter:",  balanceInfoAfter);
       });
     }

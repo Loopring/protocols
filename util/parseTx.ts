@@ -33,6 +33,7 @@ export class TxParser {
       lrcFeeAmountList.push(this.bnToNumber(amounts[4]));
     }
 
+    const marginSplitPercentageList = [].concat(...arrayish[2]); // flatten array
     const buyNoMoreThanAmountBList = arrayish[3];
 
     const feeSelectionNumber = arrayish[8];
@@ -40,12 +41,13 @@ export class TxParser {
     const feeSelections = this.feeSelectionNumberToArray(feeSelectionNumber, ringSize);
 
     const ringInfo: RingInfo = {
-      miner,
-      orderOwners,
-      tokenAddressList,
       amountSList,
       amountBList,
       lrcFeeAmountList,
+      miner,
+      orderOwners,
+      tokenAddressList,
+      marginSplitPercentageList,
       buyNoMoreThanAmountBList,
       feeSelections,
     };

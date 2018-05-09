@@ -1,7 +1,7 @@
 import { BigNumber } from "bignumber.js";
 
 export interface OrderParams {
-  loopringProtocol: string;
+  delegateContract: string;
   tokenS: string;
   tokenB: string;
   amountS: BigNumber;
@@ -57,14 +57,17 @@ export interface SignResult {
 }
 
 export interface RingInfo {
-  miner: string;
-  orderOwners: string[];
-  tokenAddressList: string[];
   amountSList: number[];
   amountBList: number[];
   lrcFeeAmountList: number[];
-  buyNoMoreThanAmountBList: boolean[];
-  feeSelections: number[];
+  miner?: string;
+  orderOwners?: string[];
+  tokenAddressList?: string[];
+  marginSplitPercentageList?: number[];
+  buyNoMoreThanAmountBList?: boolean[];
+  feeSelections?: number[];
+  description?: string;
+  salt?: number;
 }
 
 export interface RingBalanceInfo {

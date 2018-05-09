@@ -414,8 +414,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    event LogInt2(uint n1, uint n2);
-
     function settleRing(
         TokenTransferDelegate delegate,
         uint          ringSize,
@@ -438,8 +436,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             OrderState memory state = orders[i];
             uint nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
 
-            emit LogInt2(state.splitS, state.splitB);
-
             // Store owner and tokenS of every order
             batch[p++] = bytes32(state.owner);
             batch[p++] = bytes32(state.tokenS);
@@ -459,11 +455,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderInfoList[q++] = bytes32(state.owner);
             orderInfoList[q++] = bytes32(state.tokenS);
             orderInfoList[q++] = bytes32(state.fillAmountS);
+            orderInfoList[q++] = bytes32(state.lrcReward);
             orderInfoList[q++] = bytes32(
-                state.lrcReward > 0 ? state.lrcReward : state.lrcFeeState
+                state.lrcFeeState > 0 ? int(state.lrcFeeState) : -int(state.lrcReward)
             );
-            orderInfoList[q++] = bytes32(state.splitS);
-            orderInfoList[q++] = bytes32(state.splitB);
+            orderInfoList[q++] = bytes32(
+                state.splitS > 0 ? int(state.splitS) : -int(state.splitB)
+            );
 
             prevSplitB = state.splitB;
         }
@@ -506,7 +504,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         // "miner supplied exchange rate is not evenly discounted");
     }
 
-    event LogInt(uint n);
     /// @dev Calculate each order's fee or LRC reward.
     function calculateRingFees(
         TokenTransferDelegate delegate,
@@ -600,8 +597,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                         );
                     }
 
-                    emit LogInt(split);
-
                     if (state.marginSplitPercentage != _marginSplitPercentageBase) {
                         split = split.mul(
                             state.marginSplitPercentage
@@ -613,8 +608,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                     } else {
                         state.splitB = split;
                     }
-
-                    emit LogInt(split);
 
                     // This implicits order with smaller index in the ring will
                     // be paid LRC reward first, so the orders in the ring does
