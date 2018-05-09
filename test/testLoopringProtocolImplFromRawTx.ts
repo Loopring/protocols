@@ -98,7 +98,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
       const lrcFee = order.params.lrcFee.toNumber();
       await lrc.setBalance(orderOwner, lrcFee);
-
       lrcRewardTotal += lrcFee;
     }
 
@@ -226,7 +225,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
     const getTokenContractFuncAsync = async (symbol: string) => {
       const addr = await tokenRegistry.getAddressBySymbol(symbol);
-      const contract = await DummyToken.at(lrcAddress);
+      const contract = await DummyToken.at(addr);
       return contract;
     };
 
@@ -257,9 +256,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
         setDefaultValuesForRingInfo(ringInfo);
 
         const ring = await ringFactory.generateRing(ringInfo);
-        // printRingInfo(ring);
-
         await setBalanceBefore(ring);
+        ringHelper.printRing(ring);
 
         const balanceInfoBefore = await ringHelper.getRingBalanceInfo(ring);
         console.log("balanceInfoBefore:",  balanceInfoBefore);

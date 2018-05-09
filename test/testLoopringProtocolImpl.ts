@@ -7,7 +7,7 @@ import { Order } from "../util/order";
 import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { RingFactory } from "../util/ring_factory";
-import { OrderParams, RingBalanceInfo } from "../util/types";
+import { OrderParams, RingBalanceInfo, RingInfo } from "../util/types";
 import { ringInfoList } from "./ringConfig";
 
 const {
@@ -207,6 +207,29 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     }
   });
 
+  const setDefaultValuesForRingInfo = (ringInfo: RingInfo) => {
+    const ringSize = ringInfo.amountSList.length;
+    assert(ringSize <= 3, "invalid orders size. amountSList:" + ringInfo.amountSList);
+
+    const tokenAddresses = [eosAddress, neoAddress, lrcAddress];
+    const orderOwners = [order1Owner, order2Owner, order3Owner];
+    ringInfo.tokenAddressList = tokenAddresses.slice(0, ringSize);
+    ringInfo.orderOwners = orderOwners.slice(0, ringSize);
+    ringInfo.miner = ringOwner;
+
+    if (!ringInfo.lrcFeeAmountList || ringInfo.lrcFeeAmountList.length < ringSize) {
+      ringInfo.lrcFeeAmountList = Array.from({length: ringSize}, () => 1e18);
+    }
+
+    if (!ringInfo.buyNoMoreThanAmountBList || ringInfo.buyNoMoreThanAmountBList.length < ringSize) {
+      ringInfo.buyNoMoreThanAmountBList = Array.from({length: ringSize}, () => false);
+    }
+
+    if (!ringInfo.marginSplitPercentageList || ringInfo.marginSplitPercentageList.length < ringSize) {
+      ringInfo.marginSplitPercentageList = Array.from({length: ringSize}, () => 50);
+    }
+  };
+
   describe("submitRing", () => {
     const allTokenAddrs = [eosAddress, neoAddress, qtumAddress, lrcAddress];
     const allOwnerAddresses = [order1Owner, order2Owner, order3Owner, ringOwner];
@@ -218,6 +241,10 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
         // const amountSList = [1e17, 300e18];
         // const amountBList = [300e18, 1e17];
         // const tokens = [neoAddress, qtumAddress];
+        setDefaultValuesForRingInfo(ringInfo);
+
+        // console.log("ringInfo", ringInfo);
+
         const ring = await ringFactory.generateRing(ringInfo);
 
         assert(ring.orders[0].isValidSignature(), "invalid signature");
