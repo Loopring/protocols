@@ -1,9 +1,9 @@
-import validator from './validator'
-import Response from '../common/response'
-import code from "../common/code"
-import {addHexPrefix, toHex, toNumber} from "../common/formatter";
-import {hashPersonalMessage, sha3} from 'ethereumjs-util'
-import EthTransaction from 'ethereumjs-tx'
+import validator from './validator';
+import Response from '../common/response';
+import code from '../common/code';
+import {addHexPrefix, toHex, toNumber} from '../common/formatter';
+import {hashPersonalMessage, sha3} from 'ethereumjs-util';
+import EthTransaction from 'ethereumjs-tx';
 
 /**
  * @description sign hash
