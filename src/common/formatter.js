@@ -191,7 +191,7 @@ export function getDisplaySymbol(settingsCurrency) {
  */
 export function toFixed(number, precision, ceil) {
   precision = precision || 0;
-  ceil = ceil || true;
+  ceil = ceil || false;
   if (number instanceof BigNumber) {
     const rm = ceil ? 0 : 1;
     return number.toFixed(precision, rm)
