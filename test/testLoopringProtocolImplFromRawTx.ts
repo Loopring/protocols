@@ -218,7 +218,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       }
     }
 
-    const tokenAddresses = [eosAddress, neoAddress, lrcAddress];
+    const tokenSymbols = ["EOS", "NEO", "QTUM", "LRC"];
     const getTokenAddrAsync = async (symbol: string) => {
       const addr = await tokenRegistry.getAddressBySymbol(symbol);
       return addr;
@@ -230,7 +230,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       return contract;
     };
 
-    ringHelper = new RingHelper(tokenAddresses);
+    ringHelper = new RingHelper(tokenSymbols);
     await ringHelper.init(getTokenAddrAsync, getTokenContractFuncAsync);
   });
 
@@ -258,16 +258,13 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
         const ring = await ringFactory.generateRing(ringInfo);
         // printRingInfo(ring);
-        console.log("feeSelections:", ringInfo.feeSelections);
 
         await setBalanceBefore(ring);
 
         const balanceInfoBefore = await ringHelper.getRingBalanceInfo(ring);
-        // console.log("balanceInfoBefore:",  balanceInfoBefore);
+        console.log("balanceInfoBefore:",  balanceInfoBefore);
 
         const p = ringFactory.ringToSubmitableParams(ring);
-
-        console.log("params:", p);
 
         const tx = await loopringProtocolImpl.submitRing(p.addressList,
                                                          p.uintArgsList,

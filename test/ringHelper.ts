@@ -40,27 +40,24 @@ export class RingHelper {
   }
 
   public async getRingBalanceInfo(ring: Ring) {
-    const participiants: string[] = [];
-    const tokenBalances: number[][] = [];
-
     const ringSize = ring.orders.length;
     const tokenSet = new Set();
+    const participiantSet = new Set();
     for (let i = 0; i < ringSize; i++) {
       const order: Order = ring.orders[i];
-      participiants.push(order.owner);
-      participiants.push(order.params.walletAddr);
-
-      const tokenSAddr = order.params.tokenS;
-      const tokenBAddr = order.params.tokenB;
-      tokenSet.add(tokenSAddr);
-      tokenSet.add(tokenBAddr);
+      participiantSet.add(order.owner);
+      participiantSet.add(order.params.walletAddr);
+      tokenSet.add(order.params.tokenS);
+      tokenSet.add(order.params.tokenB);
     }
 
     tokenSet.add(this.tokenSymbolAddressMap.get("LRC")); // add lrc address.
     const tokenList: string[] = [...tokenSet];
     const tokenSymbolList = tokenList.map((addr) => this.tokenAddressSymbolMap.get(addr));
-    participiants.push(ring.owner);
+    participiantSet.add(ring.owner);
+    const participiants = [...participiantSet];
 
+    const tokenBalances: number[][] = [];
     for (const participiant of participiants) {
       const participiantBalances: number[] = [];
 
