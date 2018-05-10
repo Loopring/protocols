@@ -16,15 +16,14 @@ export class ProtocolSimulator {
 
   constructor(ring: Ring,
               lrcAddress: string,
-              feeSelectionList: number[],
               walletSplitPercentage: number) {
     this.ring = ring;
     this.lrcAddress = lrcAddress;
-    this.feeSelectionList = feeSelectionList;
+    this.feeSelectionList = ring.feeSelections;
     this.walletSplitPercentage = walletSplitPercentage;
   }
 
-  public caculateRateAmountS() {
+  private caculateRateAmountS() {
     let rate: number = 1;
     const result: number[] = [];
     const size = this.ring.orders.length;

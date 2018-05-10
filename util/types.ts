@@ -76,3 +76,19 @@ export interface RingBalanceInfo {
   tokenSymbolList: string[];
   tokenBalances: number[][];
 }
+
+export interface SimulatorReport {
+  ringInfo: RingInfo;
+  fillAmountS: number[];
+  transferList: TransferItem[];
+  ringBalanceInfo: RingBalanceInfo;
+}
+
+export interface TransferItem {
+  description: string;
+  tokenAddress: string;
+  tokenSymbol: string;
+  fromAddress: string;
+  toAddress: string;
+  amount: number;
+}
