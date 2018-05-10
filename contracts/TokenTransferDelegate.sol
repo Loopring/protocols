@@ -79,7 +79,7 @@ contract TokenTransferDelegate {
         )
         external;
 
-    function batchTransferToken(
+    function batchUpdateHistoryAndTransferTokens(
         address lrcTokenAddress,
         address miner,
         address minerFeeRecipient,
@@ -101,8 +101,10 @@ contract TokenTransferDelegate {
     function addCancelledOrFilled(bytes32 orderHash, uint cancelOrFillAmount)
         public;
 
-    function batchAddCancelledOrFilled(bytes32[] batch)
-        public;
+    function getCancelledOrFilledBatch(bytes32 orderHashA, bytes32 orderHashB, bytes32 orderHashC)
+        external
+        view
+        returns (uint[3] amounts);
 
     function setCutoffs(uint t)
         external;

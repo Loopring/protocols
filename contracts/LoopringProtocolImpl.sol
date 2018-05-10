@@ -424,13 +424,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         returns (bytes32[] memory orderInfoList)
     {
-        bytes32[] memory batch = new bytes32[](ringSize * 7); // ringSize * (owner + tokenS + 4 amounts + wallet)
-        bytes32[] memory historyBatch = new bytes32[](ringSize * 2); // ringSize * (orderhash, fillAmount)
+        bytes32[] memory batch = new bytes32[](ringSize * 9); // ringSize * (owner + tokenS + 4 amounts + wallet + orderhash + fillAmount)
         orderInfoList = new bytes32[](ringSize * 7);
 
         uint p = 0;
         uint q = 0;
-        uint r = 0;
         uint prevSplitB = orders[ringSize - 1].splitB;
         for (uint i = 0; i < ringSize; i++) {
             OrderState memory state = orders[i];
@@ -447,8 +445,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             batch[p++] = bytes32(state.lrcFeeState);
             batch[p++] = bytes32(state.wallet);
 
-            historyBatch[r++] = state.orderHash;
-            historyBatch[r++] = bytes32(
+            batch[p++] = state.orderHash;
+            batch[p++] = bytes32(
                 state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS);
 
             orderInfoList[q++] = bytes32(state.orderHash);
@@ -465,11 +463,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             prevSplitB = state.splitB;
         }
-        // Update fill records
-        delegate.batchAddCancelledOrFilled(historyBatch);
 
         // Do all transactions
-        delegate.batchTransferToken(
+        delegate.batchUpdateHistoryAndTransferTokens(
             _lrcTokenAddress,
             tx.origin,
             feeRecipient,
@@ -714,23 +710,28 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         view
     {
+        uint[3] memory cancelledOrFilledAmounts;
         for (uint i = 0; i < ringSize; i++) {
             OrderState memory state = orders[i];
             uint amount;
 
-            if (state.buyNoMoreThanAmountB) {
-                amount = state.amountB.tolerantSub(
-                    delegate.cancelledOrFilled(state.orderHash)
+            if(i % 3 == 0) {
+                cancelledOrFilledAmounts = delegate.getCancelledOrFilledBatch(
+                    state.orderHash,
+                    (i+1 < ringSize) ? orders[i+1].orderHash : bytes32(0),
+                    (i+2 < ringSize) ? orders[i+2].orderHash : bytes32(0)
                 );
+            }
+
+            if (state.buyNoMoreThanAmountB) {
+                amount = state.amountB.tolerantSub(cancelledOrFilledAmounts[i % 3]);
 
                 state.amountS = amount.mul(state.amountS) / state.amountB;
                 state.lrcFee = amount.mul(state.lrcFee) / state.amountB;
 
                 state.amountB = amount;
             } else {
-                amount = state.amountS.tolerantSub(
-                    delegate.cancelledOrFilled(state.orderHash)
-                );
+                amount = state.amountS.tolerantSub(cancelledOrFilledAmounts[i % 3]);
 
                 state.amountB = amount.mul(state.amountB) / state.amountS;
                 state.lrcFee = amount.mul(state.lrcFee) / state.amountS;
