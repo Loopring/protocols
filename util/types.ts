@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import { Ring } from "./ring";
 
 export interface OrderParams {
   delegateContract: string;
@@ -38,22 +39,15 @@ export interface LoopringSubmitParams {
 }
 
 export interface FeeItem {
-  fillAmountS: number;
-  feeLrc: number;
   feeS: number;
   feeB: number;
+  feeLrc: number;
   lrcReward: number;
 }
 
 export interface BalanceItem {
   balanceS: number;
   balanceB: number;
-}
-
-export interface SignResult {
-  v: number;
-  r: string;
-  s: string;
 }
 
 export interface RingInfo {
@@ -78,16 +72,16 @@ export interface RingBalanceInfo {
 }
 
 export interface SimulatorReport {
-  ringInfo: RingInfo;
+  ring: Ring;
   fillAmountS: number[];
   transferList: TransferItem[];
-  ringBalanceInfo: RingBalanceInfo;
+  ringBalanceInfo?: RingBalanceInfo;
 }
 
 export interface TransferItem {
   description: string;
   tokenAddress: string;
-  tokenSymbol: string;
+  tokenSymbol?: string;
   fromAddress: string;
   toAddress: string;
   amount: number;

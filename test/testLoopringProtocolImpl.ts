@@ -266,6 +266,10 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
         const balanceInfo = await getRingBalanceInfoAfter(ring, feeRecepient);
         console.log("balanceInfo:",  balanceInfo);
+
+        const simulator = new ProtocolSimulator(ring, lrcAddress, walletSplitPercentage);
+        simulator.simulateAndReport(true);
+
         await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
       });
     }

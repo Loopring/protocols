@@ -7,9 +7,9 @@ import { TxParser } from "../util/parseTx";
 import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { RingFactory } from "../util/ring_factory";
+import { RingHelper } from "../util/ring_helper";
 import { OrderParams, RingBalanceInfo, RingInfo } from "../util/types";
 import * as rawTxs from "./rawTxs";
-import { RingHelper } from "./ringHelper";
 
 const {
   LoopringProtocolImpl,
