@@ -1,4 +1,4 @@
-import validator from '../common/validator';
+import validator from './validator';
 import {addHexPrefix, clearHexPrefix, formatAddress, formatKey, toBuffer, toHex, toNumber} from '../common/formatter';
 import {decryptKeystoreToPkey, pkeyToKeystore} from './keystore';
 import {privateToAddress, privateToPublic, publicToAddress, sha3, hashPersonalMessage, ecsign} from 'ethereumjs-util';
@@ -13,7 +13,7 @@ import * as Ledger from './ledger';
 import * as MetaMask from './metaMask';
 import {sendRawTransaction} from './utils';
 
-const wallets = require('../../config/wallets.json');
+const wallets = require('../config/wallets.json');
 const LoopringWallet = wallets.find(wallet => trimAll(wallet.name).toLowerCase() === 'loopringwallet');
 export const path = LoopringWallet.dpath;
 
@@ -105,16 +105,6 @@ export function fromMnemonic(mnemonic, dpath, password) {
  * @returns {Account}
  */
 export function fromPrivateKey(privateKey) {
-  try {
-    if (typeof privateKey === 'string') {
-      validator.validate({value: privateKey, type: 'PRIVATE_KEY'});
-      privateKey = toBuffer(addHexPrefix(privateKey))
-    } else {
-      validator.validate({value: privateKey, type: 'PRIVATE_KEY_BUFFER'});
-    }
-  } catch (e) {
-    throw new Error('Invalid private key')
-  }
   return new KeyAccount(privateKey)
 }
 
