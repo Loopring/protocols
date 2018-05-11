@@ -1,4 +1,4 @@
-import validator from '../common/validator'
+import validator from './validator'
 import request from '../common/request'
 import {id} from '../common/request'
 import Response from '../common/response'
