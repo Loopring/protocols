@@ -1,4 +1,4 @@
-import fetch from 'whatwg-fetch';
+import 'whatwg-fetch';
 import crypto from 'crypto';
 
 const headers = {

@@ -13,8 +13,8 @@ import code from "../../common/code"
  */
 export function getBalance(host, {delegateAddress, owner}) {
   try {
-    validator.validate({value: delegateAddress, type: 'Address'});
-    validator.validate({value: owner, type: 'Address'})
+    validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
+    validator.validate({value: owner, type: 'ETH_ADDRESS'})
   } catch (e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
   }
@@ -36,7 +36,7 @@ export function getBalance(host, {delegateAddress, owner}) {
  */
 export function register(host, {owner}) {
   try {
-    validator.validate({value: owner, type: 'Address'})
+    validator.validate({value: owner, type: 'ETH_ADDRESS'})
   } catch (e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
   }
@@ -61,9 +61,9 @@ export function register(host, {owner}) {
  */
 export function notifyTransactionSubmitted(host, {txHash, rawTx, from}) {
   try {
-    validator.validate({value: from, type: "ADDRESS"});
+    validator.validate({value: from, type: "ETH_ADDRESS"});
     validator.validate({value: rawTx, type: "TX"});
-    validator.validate({value: txHash, type: "TX_HASH"});
+    validator.validate({value: txHash, type: "HASH"});
   } catch (e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
   }
@@ -91,7 +91,7 @@ export function notifyTransactionSubmitted(host, {txHash, rawTx, from}) {
 export function getTransactions(host, {owner, status, txHash, pageIndex, pageSize}) {
   status = status || 'pending';
   try {
-    validator.validate({value: owner, type: "ADDRESS"});
+    validator.validate({value: owner, type: "ETH_ADDRESS"});
     validator.validate({value: status, type: "RPC_TAG"});
     if (txHash) {
       validator.validate({value: txHash, type: "HASH"});
@@ -124,7 +124,7 @@ export function getTransactions(host, {owner, status, txHash, pageIndex, pageSiz
  */
 export function getEstimatedAllocatedAllowance(host,{owner, token}) {
   try {
-    validator.validate({value: owner, type: "ADDRESS"})
+    validator.validate({value: owner, type: "ETH_ADDRESS"})
   } catch (e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
   }
@@ -146,7 +146,7 @@ export function getEstimatedAllocatedAllowance(host,{owner, token}) {
  */
 export function getFrozenLrcFee(host,{owner}) {
   try {
-    validator.validate({value: owner, type: "ADDRESS"})
+    validator.validate({value: owner, type: "ETH_ADDRESS"})
   } catch (e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
   }
@@ -168,7 +168,7 @@ export function getFrozenLrcFee(host,{owner}) {
  */
 export function getOldWethBalance(host,{owner}) {
   try {
-    validator.validate({value: owner, type: "ADDRESS"})
+    validator.validate({value: owner, type: "ETH_ADDRESS"})
   } catch (e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
   }
@@ -190,7 +190,7 @@ export function getOldWethBalance(host,{owner}) {
  */
 export function getPortfolio(host,{owner}) {
   try {
-    validator.validate({value: owner, type: "ADDRESS"})
+    validator.validate({value: owner, type: "ETH_ADDRESS"})
   } catch (e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
   }

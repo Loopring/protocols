@@ -14,7 +14,7 @@ import code from "../common/code"
 export async function getTransactionCount(host, {address, tag}) {
   tag = tag || "pending";
   try {
-    validator.validate({value: address, type: "ADDRESS"});
+    validator.validate({value: address, type: "ETH_ADDRESS"});
     validator.validate({value: tag, type: "RPC_TAG"})
   } catch (e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
@@ -94,7 +94,7 @@ export function getAccountBalance(host, {address, tag}) {
   if (tag) {
     try {
       validator.validate({value: tag, type: "RPC_TAG"});
-      validator.validate({value: address, type: "ADDRESS"});
+      validator.validate({value: address, type: "ETH_ADDRESS"});
     } catch (e) {
       return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
     }

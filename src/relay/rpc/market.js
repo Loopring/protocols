@@ -65,7 +65,7 @@ export function getSupportedTokens(host) {
  */
 export function getDepth(host, filter) {
   try {
-     validator.validate({value: filter.delegateAddress, type: 'ADDRESS'});
+     validator.validate({value: filter.delegateAddress, type: 'ETH_ADDRESS'});
      validator.validate({value: filter.market, type: 'STRING'});
      validator.validate({value: filter.length, type: 'OPTION_NUMBER'})
   } catch (e) {

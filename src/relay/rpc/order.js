@@ -14,10 +14,10 @@ import {toBN} from "../../common/formatter";
  */
 export function getOrders(host, filter) {
   try {
-    validator.validate({value: filter.delegateAddress, type: 'ADDRESS'});
+    validator.validate({value: filter.delegateAddress, type: 'ETH_ADDRESS'});
     validator.validate({value: filter.pageIndex, type: 'OPTION_NUMBER'});
     filter.market && validator.validate({value: filter.market, type: 'STRING'});
-    filter.owner && validator.validate({value: filter.owner, type: 'ADDRESS'});
+    filter.owner && validator.validate({value: filter.owner, type: 'ETH_ADDRESS'});
     filter.orderHash && validator.validate({value: filter.orderHash, type: 'STRING'});
     filter.pageSize && validator.validate({value: filter.pageSize, type: 'OPTION_NUMBER'});
   } catch (e) {
@@ -44,8 +44,8 @@ export function getOrders(host, filter) {
 export function getCutoff(host, {address, delegateAddress, blockNumber}) {
   blockNumber = blockNumber || 'latest';
   try {
-    validator.validate({value: address, type: 'ADDRESS'});
-    validator.validate({value: delegateAddress, type: 'ADDRESS'});
+    validator.validate({value: address, type: 'ETH_ADDRESS'});
+    validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
     validator.validate({value: blockNumber, type: 'RPC_TAG'});
   } catch (e) {
     return  Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))

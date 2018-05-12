@@ -25,7 +25,7 @@ export const path = LoopringWallet.dpath;
 export function privateKeytoAddress(privateKey) {
   try {
     if (typeof privateKey === 'string') {
-      validator.validate({value: privateKey, type: 'PRIVATE_KEY'});
+      validator.validate({value: privateKey, type: 'ETH_KEY'});
       privateKey = toBuffer(addHexPrefix(privateKey))
     } else {
       validator.validate({value: privateKey, type: 'PRIVATE_KEY_BUFFER'});
@@ -59,8 +59,8 @@ export function publicKeytoAddress(publicKey, sanitize) {
 export function getAddresses({publicKey, chainCode, pageSize, pageNum}) {
   const addresses = [];
   const hdk = new HDKey();
-  hdk.publicKey = new Buffer(publicKey, 'hex');
-  hdk.chainCode = new Buffer(chainCode, 'hex');
+  hdk.publicKey = publicKey instanceof Buffer ? publicKey : toBuffer(addHexPrefix(publicKey));
+  hdk.chainCode = chainCode instanceof Buffer ? chainCode : toBuffer(addHexPrefix(chainCode));
   for (let i = 0; i < pageSize; i++) {
     const dkey = hdk.derive(`m/${i + pageSize * pageNum}`);
     addresses.push(publicKeytoAddress(dkey.publicKey, true));
@@ -76,7 +76,7 @@ export function getAddresses({publicKey, chainCode, pageSize, pageNum}) {
 export function privateKeytoPublic(privateKey) {
   try {
     if (typeof privateKey === 'string') {
-      validator.validate({value: privateKey, type: 'PRIVATE_KEY'});
+      validator.validate({value: privateKey, type: 'ETH_KEY'});
       privateKey = toBuffer(addHexPrefix(privateKey))
     } else {
       validator.validate({value: privateKey, type: 'PRIVATE_KEY_BUFFER'});
@@ -180,7 +180,7 @@ export class KeyAccount extends Account {
     super();
     try {
       if (typeof privateKey === 'string') {
-        validator.validate({value: privateKey, type: 'PRIVATE_KEY'});
+        validator.validate({value: privateKey, type: 'ETH_KEY'});
         privateKey = toBuffer(addHexPrefix(privateKey))
       } else {
         validator.validate({value: privateKey, type: 'PRIVATE_KEY_BUFFER'});
