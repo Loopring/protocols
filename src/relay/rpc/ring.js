@@ -13,7 +13,7 @@ import {toBig, toHex} from "../../common/formatter";
  */
 export function getRings(host, filter) {
   try {
-    validator.validate({value: filter.delegateAddress, type: 'ADDRESS'});
+    validator.validate({value: filter.delegateAddress, type: 'ETH_ADDRESS'});
     if (filter.pageIndex) {
       validator.validate({value: filter.pageIndex, type: 'OPTION_NUMBER'})
     }
@@ -41,7 +41,7 @@ export function getRings(host, filter) {
  */
 export function getRingMinedDetail(host, {ringIndex, protocolAddress}) {
   try {
-    validator.validate({value: protocolAddress, type: 'ADDRESS'});
+    validator.validate({value: protocolAddress, type: 'ETH_ADDRESS'});
   } catch (e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
   }
@@ -66,10 +66,10 @@ export function getRingMinedDetail(host, {ringIndex, protocolAddress}) {
 export function getFills(host, filter) {
   try {
     if (filter.delegateAddress) {
-      validator.validate({value: filter.delegateAddress, type: 'ADDRESS'});
+      validator.validate({value: filter.delegateAddress, type: 'ETH_ADDRESS'});
     }
     if (filter.owner) {
-      validator.validate({value: filter.owner, type: 'ADDRESS'});
+      validator.validate({value: filter.owner, type: 'ETH_ADDRESS'});
     }
     if (filter.orderHash) {
       validator.validate({value: filter.orderHash, type: 'HASH'});
