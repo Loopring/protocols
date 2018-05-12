@@ -22,7 +22,7 @@ export class Order {
         this.web3Instance = web3;
       }
     } catch (err) {
-      // ignore.
+      console.log("get web3 instance in Order class failed. err:", err);
     }
   }
 

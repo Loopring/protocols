@@ -1,32 +1,56 @@
 import { BigNumber } from "bignumber.js";
+import { ChainReader } from "./chain_reader";
 import { Order } from "./order";
 import { Ring } from "./ring";
 import { BalanceItem, FeeItem, SimulatorReport, TransferItem } from "./types";
 
-// TODO: simulate order's fill/cancel amount.
-// TODO: connect to geth/testrpc, and get address's balance and allowance info.
-
 export class ProtocolSimulator {
   public ring: Ring;
   public lrcAddress: string;
-  public feeSelectionList: number[];
-
-  public availableAmountSList: number[];
-  public spendableLrcFeeList: number[];
-  public orderCancelled: number[];
-  public orderFilled: number[];
   public walletSplitPercentage: number;
+
+  public feeSelectionList: number[];
+  public chainReader: ChainReader;
+
+  private spendableAmountSList: number[];
+  private spendableLrcFeeList: number[];
+  private orderFilledOrCancelled: number[];
+  public orderFilled: number[];
 
   constructor(ring: Ring,
               lrcAddress: string,
               walletSplitPercentage: number) {
     this.ring = ring;
     this.lrcAddress = lrcAddress;
-    this.feeSelectionList = ring.feeSelections;
     this.walletSplitPercentage = walletSplitPercentage;
+
+    this.feeSelectionList = ring.feeSelections;
+    this.chainReader = new ChainReader();
   }
 
-  public simulateAndReport(print: boolean) {
+  private async loadChainData() {
+    const orderOwners = this.ring.orders.map((o) => o.owner);
+    const orderAndRingOwners = orderOwners.concat(this.ring.owner);
+    for (let i = 0; i < orderOwners.length; i++) {
+      const tokenAddr = this.ring.orders[i].params.tokenS;
+      const delegateAddr = this.ring.orders[i].params.delegateContract;
+      const spendableAmount = await this.chainReader.getERC20TokenSpendable(tokenAddr,
+                                                                            orderOwners[i],
+                                                                            delegateAddr);
+      spendableAmountSList.push(spendableAmount);
+    }
+
+    for (let i = 0; i < orderAndRingOwners; i++) {
+
+    }
+  }
+
+  private setBalances() {
+
+  }
+
+  public async simulateAndReport(print: boolean, amountAlwaysSpendable: boolean) {
+    await this.loadChainData();
     this.scaleRing();
     const rateAmountSList = this.caculateRateAmountS();
     const fillAmountSList = this.caculateFillAmountS(rateAmountSList);
@@ -104,9 +128,9 @@ export class ProtocolSimulator {
         availableAmountB = availableAmountS * amountB / amountS;
       }
 
-      if (this.availableAmountSList && this.availableAmountSList[i] &&
-          this.availableAmountSList[i] < availableAmountS) {
-        availableAmountS = this.availableAmountSList[i];
+      if (this.spendableAmountSList && this.spendableAmountSList[i] &&
+          this.spendableAmountSList[i] < availableAmountS) {
+        availableAmountS = this.spendableAmountSList[i];
         availableAmountB = availableAmountS * amountB / amountS;
       }
 
@@ -348,7 +372,7 @@ export class ProtocolSimulator {
     return transferItems;
   }
 
-  // The balance of tokenS of this.ring.orders[i].owner is this.availableAmountSList[i].
+  // The balance of tokenS of this.ring.orders[i].owner is this.spendableAmountSList[i].
   private caculateTraderTokenBalances(fees: FeeItem[], fillAmountSList: number[]) {
     const size = this.ring.orders.length;
     const balances: BalanceItem[] = [];
@@ -357,8 +381,8 @@ export class ProtocolSimulator {
       const nextInd = (i + 1) % size;
 
       let balanceSBefore = order.params.amountS.toNumber();
-      if (this.availableAmountSList) {
-        balanceSBefore = this.availableAmountSList[i];
+      if (this.spendableAmountSList) {
+        balanceSBefore = this.spendableAmountSList[i];
       }
 
       const balanceItem: BalanceItem = {
