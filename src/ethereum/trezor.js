@@ -4,7 +4,10 @@
  */
 
 import TrezorConnect from '../common/trezor-connect';
-import {clearHexPrefix, addHexPrefix, padLeftEven} from "../common/formatter";
+import {
+  clearHexPrefix, addHexPrefix, padLeftEven,
+  toNumber, toHex,
+} from '../common/formatter'
 import EthTransaction from 'ethereumjs-tx';
 import BN from 'bn.js'
 
@@ -40,7 +43,11 @@ export async function signMessage(dpath, message) {
     return new Promise((resolve) => {
       TrezorConnect.ethereumSignMessage(dpath, message, (result) => {
         if (result.success) {
-          resolve({result:result.signature})
+          const sig = result.signature;
+          const r = addHexPrefix(sig.slice(0,64));
+          const s = addHexPrefix(sig.slice(64,128));
+          const v = toNumber(sig.slice(128,130));
+          resolve({result: {r, s, v}});
         } else {
           resolve({error: result.error});
         }
@@ -73,7 +80,7 @@ export async function signEthereumTx(dpath, rawTx) {
               s: addHexPrefix(result.s),
               r: addHexPrefix(result.r)
             });
-            resolve({result: ethTx.serialize()})
+            resolve({result: toHex(ethTx.serialize())})
           } else {
             resolve({error: result.error});
           }
