@@ -268,7 +268,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
         console.log("balanceInfo:",  balanceInfo);
 
         const simulator = new ProtocolSimulator(ring, lrcAddress, walletSplitPercentage);
-        simulator.simulateAndReport(true);
+        simulator.simulateAndReport([], [], [], true, true);
 
         await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
       });

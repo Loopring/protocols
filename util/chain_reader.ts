@@ -1,11 +1,12 @@
 import { BigNumber } from "bignumber.js";
-import Web3 = require("web3");
 import fs = require("fs");
+import Web3 = require("web3");
 
 export class ChainReader {
   private web3Instance: Web3;
   private ERC20Contract: any;
   private DelegateContract: any;
+  private connected: boolean;
 
   constructor() {
     try {
@@ -17,14 +18,20 @@ export class ChainReader {
         // connect to main-net via a public node:
         // new Web3.providers.HttpProvider('https://api.myetherapi.com/eth')
       }
+      this.connected = true;
     } catch (err) {
       console.log("get web3 instance in class ChainReader failed. err:", err);
+      this.connected = false;
     }
 
     const erc20Abi = fs.readFileSync("ABI/version151/ERC20.abi", "ascii");
     const delegateAbi = fs.readFileSync("ABI/version151/TokenTransferDelegate.abi", "ascii");
     this.ERC20Contract = this.web3Instance.eth.contract(JSON.parse(erc20Abi));
     this.DelegateContract = this.web3Instance.eth.contract(JSON.parse(delegateAbi));
+  }
+
+  public isConnected() {
+    return this.connected;
   }
 
   public async getERC20TokenBalance(tokenAddr: string, ownerAddr: string) {

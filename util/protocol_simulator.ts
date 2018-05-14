@@ -12,10 +12,9 @@ export class ProtocolSimulator {
   public feeSelectionList: number[];
   public chainReader: ChainReader;
 
-  private spendableAmountSList: number[];
-  private spendableLrcFeeList: number[];
-  private orderFilledOrCancelled: number[];
-  public orderFilled: number[];
+  private spendableAmountSList: number[] = [];
+  private spendableLrcAmountList: number[] = [];
+  private orderFilledOrCancelledAmountList: number[] = [];
 
   constructor(ring: Ring,
               lrcAddress: string,
@@ -28,29 +27,18 @@ export class ProtocolSimulator {
     this.chainReader = new ChainReader();
   }
 
-  private async loadChainData() {
-    const orderOwners = this.ring.orders.map((o) => o.owner);
-    const orderAndRingOwners = orderOwners.concat(this.ring.owner);
-    for (let i = 0; i < orderOwners.length; i++) {
-      const tokenAddr = this.ring.orders[i].params.tokenS;
-      const delegateAddr = this.ring.orders[i].params.delegateContract;
-      const spendableAmount = await this.chainReader.getERC20TokenSpendable(tokenAddr,
-                                                                            orderOwners[i],
-                                                                            delegateAddr);
-      spendableAmountSList.push(spendableAmount);
+  public async simulateAndReport(spendableAmountSList: number[],
+                                 spendableLrcAmountList: number[],
+                                 orderFilledOrCancelledAmountList: number[],
+                                 loadDataFromChain: boolean,
+                                 printReport: boolean) {
+    if (loadDataFromChain) {
+      await this.loadChainData();
+    } else {
+      this.spendableAmountSList = spendableAmountSList;
+      this.spendableLrcAmountList = spendableLrcAmountList;
+      this.orderFilledOrCancelledAmountList = orderFilledOrCancelledAmountList;
     }
-
-    for (let i = 0; i < orderAndRingOwners; i++) {
-
-    }
-  }
-
-  private setBalances() {
-
-  }
-
-  public async simulateAndReport(print: boolean, amountAlwaysSpendable: boolean) {
-    await this.loadChainData();
     this.scaleRing();
     const rateAmountSList = this.caculateRateAmountS();
     const fillAmountSList = this.caculateFillAmountS(rateAmountSList);
@@ -71,6 +59,39 @@ export class ProtocolSimulator {
     }
 
     return result;
+  }
+
+  private async loadChainData() {
+    if (!this.chainReader.isConnected()) {
+      return;
+    }
+
+    const orderOwners = this.ring.orders.map((o) => o.owner);
+    const orderAndRingOwners = orderOwners.concat(this.ring.owner);
+    let delegateAddr = "";
+
+    for (let i = 0; i < orderOwners.length; i++) {
+      const tokenAddr = this.ring.orders[i].params.tokenS;
+      if (!delegateAddr) {
+        delegateAddr = this.ring.orders[i].params.delegateContract;
+      }
+      const spendableAmount = await this.chainReader.getERC20TokenSpendable(tokenAddr,
+                                                                            orderOwners[i],
+                                                                            delegateAddr);
+      this.spendableAmountSList.push(spendableAmount);
+
+      const orderHash = this.ring.orders[i].params.orderHashHex;
+      const cancelOrFillAmount = await this.chainReader.
+        getOrderCancelledOrFilledAmount(orderHash, delegateAddr);
+      this.orderFilledOrCancelledAmountList.push(cancelOrFillAmount);
+    }
+
+    for (const addr of orderAndRingOwners) {
+      const spendableAmount = await this.chainReader.getERC20TokenSpendable(this.lrcAddress,
+                                                                            addr,
+                                                                            delegateAddr);
+      this.spendableLrcAmountList.push(spendableAmount);
+    }
   }
 
   private printSimulatorReport(report: SimulatorReport) {
@@ -111,24 +132,15 @@ export class ProtocolSimulator {
       let availableAmountB = amountB;
 
       if (order.params.buyNoMoreThanAmountB) {
-        if (this.orderFilled && this.orderFilled[i]) {
-          availableAmountB -= this.orderFilled[i];
-        }
-        if (this.orderCancelled && this.orderCancelled[i]) {
-          availableAmountB -= this.orderCancelled[i];
-        }
+        availableAmountB -= this.orderFilledOrCancelledAmountList[i];
         availableAmountS = availableAmountB * amountS / amountB;
       } else {
-        if (this.orderFilled && this.orderFilled[i]) {
-          availableAmountS -= this.orderFilled[i];
-        }
-        if (this.orderCancelled && this.orderCancelled[i]) {
-          availableAmountS -= this.orderCancelled[i];
-        }
+        availableAmountS -= this.orderFilledOrCancelledAmountList[i];
         availableAmountB = availableAmountS * amountB / amountS;
       }
 
-      if (this.spendableAmountSList && this.spendableAmountSList[i] &&
+      if (this.spendableAmountSList &&
+          this.spendableAmountSList[i] &&
           this.spendableAmountSList[i] < availableAmountS) {
         availableAmountS = this.spendableAmountSList[i];
         availableAmountB = availableAmountS * amountB / amountS;
@@ -139,7 +151,7 @@ export class ProtocolSimulator {
       }
 
       order.params.scaledAmountS = availableAmountS;
-      order.params.scaledAmountB =  availableAmountB;
+      order.params.scaledAmountB = availableAmountB;
       order.params.lrcFee = new BigNumber(lrcFee.toPrecision(15));
     }
   }
@@ -231,7 +243,7 @@ export class ProtocolSimulator {
       feeTotals[tokenB] = this.sumFeeItem(feeTotals, tokenB, feeItem.feeB);
     }
 
-    feeTotals[this.lrcAddress] = this.sumFeeItem(feeTotals, this.lrcAddress, this.spendableLrcFeeList[size]);
+    feeTotals[this.lrcAddress] = this.sumFeeItem(feeTotals, this.lrcAddress, this.spendableLrcAmountList[size]);
 
     return feeTotals;
   }
@@ -248,7 +260,7 @@ export class ProtocolSimulator {
     const size = this.ring.orders.length;
     const fees: FeeItem[] = [];
 
-    let minerSpendableLrc = this.spendableLrcFeeList[size];
+    let minerSpendableLrc = this.spendableLrcAmountList[size];
     // caculate fees for each order. and assemble result.
     for (let i = 0; i < size; i++) {
       const nextInd = (i + 1) % size;
@@ -267,10 +279,10 @@ export class ProtocolSimulator {
       }
 
       if (order.params.tokenB === this.lrcAddress) {
-        this.spendableLrcFeeList[i] += fillAmountSList[nextInd];
+        this.spendableLrcAmountList[i] += fillAmountSList[nextInd];
       }
 
-      if (this.spendableLrcFeeList[i] === 0) {
+      if (this.spendableLrcAmountList[i] === 0) {
         this.feeSelectionList[i] = 1;
         order.params.marginSplitPercentage = 100;
       }
@@ -284,8 +296,8 @@ export class ProtocolSimulator {
           order.params.amountS.toNumber();
       }
 
-      if (this.spendableLrcFeeList[i] < feeLrcToPay) {
-        feeLrcToPay = this.spendableLrcFeeList[i];
+      if (this.spendableLrcAmountList[i] < feeLrcToPay) {
+        feeLrcToPay = this.spendableLrcAmountList[i];
         order.params.marginSplitPercentage = 100;
       }
 
