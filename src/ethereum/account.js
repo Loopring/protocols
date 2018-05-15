@@ -254,7 +254,7 @@ export class TrezorAccount extends Account {
   }
 
   async getAddress() {
-    const result = Trezor.getAddress(this.dpath);
+    const result = await Trezor.getAddress(this.dpath);
     if (result.error) {
       throw new Error(result.error.message)
     } else {

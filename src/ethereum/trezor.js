@@ -3,7 +3,7 @@
  * help website: https://github.com/trezor/connect
  */
 
-import TrezorConnect from '../common/trezor-connect';
+import {TrezorConnect} from '../common/trezor-connect';
 import {
   clearHexPrefix, addHexPrefix, padLeftEven,
   toNumber, toHex,
