@@ -1,28 +1,17 @@
 import { BigNumber } from "bignumber.js";
-import { Order } from "../util/order";
-import { Ring } from "../util/ring";
-import { RingBalanceInfo, RingInfo } from "../util/types";
+import { ChainReader } from "./chain_reader";
+import { Order } from "./order";
+import { Ring } from "./ring";
+import { RingBalanceInfo, RingInfo } from "./types";
 
 export class RingHelper {
 
-  public tokenSymbols: string[];
-  public tokenAddressSymbolMap = new Map();
-  public tokenSymbolAddressMap = new Map();
-  public tokenContractMap = new Map();
+  public tokenRegistryAddress: string;
+  public chainReader: ChainReader;
 
-  constructor(tokenSymbols: string[]) {
-    this.tokenSymbols = tokenSymbols;
-  }
-
-  public async init(tokenAddrFunc: (symbol: string) => Promise<string>,
-                    tokenContractFunc: (symbol: string) => Promise<any>) {
-    for (const symbol of this.tokenSymbols) {
-      const addr = await tokenAddrFunc(symbol);
-      const tokenContract = await tokenContractFunc(symbol);
-      this.tokenAddressSymbolMap.set(addr, symbol);
-      this.tokenSymbolAddressMap.set(symbol, addr);
-      this.tokenContractMap.set(addr, tokenContract);
-    }
+  constructor(tokenRegistryAddress: string) {
+    this.tokenRegistryAddress = tokenRegistryAddress;
+    this.chainReader = new ChainReader();
   }
 
   public printRing(ring: Ring) {
@@ -31,10 +20,7 @@ export class RingHelper {
     for (const order of ring.orders) {
       console.log("-".repeat(80));
       console.log("order owner:", order.owner);
-      console.log("tokenS:", order.params.tokenS, "; amount:", order.params.amountS.toNumber());
-      console.log("tokenB:", order.params.tokenB, "; amount:", order.params.amountB.toNumber());
-      console.log("lrcFee:", order.params.lrcFee.toNumber());
-      console.log("buyNoMoreThanAmountB:", order.params.buyNoMoreThanAmountB);
+      console.log("order params:", order.params);
     }
     console.log("-".repeat(80));
   }
@@ -48,12 +34,12 @@ export class RingHelper {
       participiantSet.add(order.owner);
       participiantSet.add(order.params.walletAddr);
       tokenSet.add(order.params.tokenS);
-      tokenSet.add(order.params.tokenB);
     }
+    const lrcAddr = this.chainReader.getTokenAddressBySymbol(this.tokenRegistryAddress, "LRC");
+    tokenSet.add(lrcAddr);
 
-    tokenSet.add(this.tokenSymbolAddressMap.get("LRC")); // add lrc address.
     const tokenList: string[] = [...tokenSet];
-    const tokenSymbolList = tokenList.map((addr) => this.tokenAddressSymbolMap.get(addr));
+    const tokenSymbolList: string[] = [];
     participiantSet.add(ring.owner);
     const participiants = [...participiantSet];
 
@@ -62,9 +48,11 @@ export class RingHelper {
       const participiantBalances: number[] = [];
 
       for (const tokenAddr of tokenList) {
-        const tokenInstance = this.tokenContractMap.get(tokenAddr);
-        const tokenBalance = await tokenInstance.balanceOf(participiant);
+        const tokenSymbol = await this.chainReader.getTokenSymbolByAddress(this.tokenRegistryAddress, tokenAddr);
+        const tokenBalance = await this.chainReader.getERC20TokenBalance(tokenAddr, participiant);
         const tokenBalanceBN = new BigNumber(tokenBalance);
+
+        tokenSymbolList.push(tokenSymbol);
         participiantBalances.push(tokenBalanceBN.toNumber());
       }
 

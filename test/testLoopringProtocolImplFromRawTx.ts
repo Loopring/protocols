@@ -229,8 +229,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       return contract;
     };
 
-    ringHelper = new RingHelper(tokenSymbols);
-    await ringHelper.init(getTokenAddrAsync, getTokenContractFuncAsync);
+    ringHelper = new RingHelper(tokenRegistry.address);
   });
 
   const setDefaultValuesForRingInfo = (ringInfo: RingInfo) => {

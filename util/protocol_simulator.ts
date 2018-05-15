@@ -2,7 +2,7 @@ import { BigNumber } from "bignumber.js";
 import { ChainReader } from "./chain_reader";
 import { Order } from "./order";
 import { Ring } from "./ring";
-import { BalanceItem, FeeItem, SimulatorReport, TransferItem } from "./types";
+import { BalanceItem, FeeItem, RingBalanceInfo, SimulatorReport, TransferItem } from "./types";
 
 export class ProtocolSimulator {
   public ring: Ring;
@@ -11,6 +11,8 @@ export class ProtocolSimulator {
 
   public feeSelectionList: number[];
   public chainReader: ChainReader;
+  public ringBalanceInfoBefore: RingBalanceInfo;
+  public verbose: boolean;
 
   private spendableAmountSList: number[] = [];
   private spendableLrcAmountList: number[] = [];
@@ -39,12 +41,11 @@ export class ProtocolSimulator {
       this.spendableLrcAmountList = spendableLrcAmountList;
       this.orderFilledOrCancelledAmountList = orderFilledOrCancelledAmountList;
     }
+
     this.scaleRing();
     const rateAmountSList = this.caculateRateAmountS();
     const fillAmountSList = this.caculateFillAmountS(rateAmountSList);
     const feeItems = this.caculateOrderFees(fillAmountSList, rateAmountSList);
-
-    // TODO: check fillAmountSList and feeItems is valid.
 
     const transferList = this.assembleTransferItems(fillAmountSList, feeItems);
 
@@ -54,7 +55,7 @@ export class ProtocolSimulator {
       transferList,
     };
 
-    if (print) {
+    if (printReport) {
       this.printSimulatorReport(result);
     }
 
@@ -385,34 +386,34 @@ export class ProtocolSimulator {
   }
 
   // The balance of tokenS of this.ring.orders[i].owner is this.spendableAmountSList[i].
-  private caculateTraderTokenBalances(fees: FeeItem[], fillAmountSList: number[]) {
-    const size = this.ring.orders.length;
-    const balances: BalanceItem[] = [];
-    for (let i = 0; i < size; i++) {
-      const order = this.ring.orders[i];
-      const nextInd = (i + 1) % size;
+  // private caculateTraderTokenBalances(fees: FeeItem[], fillAmountSList: number[]) {
+  //   const size = this.ring.orders.length;
+  //   const balances: BalanceItem[] = [];
+  //   for (let i = 0; i < size; i++) {
+  //     const order = this.ring.orders[i];
+  //     const nextInd = (i + 1) % size;
 
-      let balanceSBefore = order.params.amountS.toNumber();
-      if (this.spendableAmountSList) {
-        balanceSBefore = this.spendableAmountSList[i];
-      }
+  //     let balanceSBefore = order.params.amountS.toNumber();
+  //     if (this.spendableAmountSList) {
+  //       balanceSBefore = this.spendableAmountSList[i];
+  //     }
 
-      const balanceItem: BalanceItem = {
-        balanceB: fillAmountSList[nextInd] - fees[i].feeB,
-        balanceS: balanceSBefore - fillAmountSList[i] - fees[i].feeS,
-      };
+  //     const balanceItem: BalanceItem = {
+  //       balanceB: fillAmountSList[nextInd] - fees[i].feeB,
+  //       balanceS: balanceSBefore - fillAmountSList[i] - fees[i].feeS,
+  //     };
 
-      if (order.params.tokenS === this.lrcAddress && 0 === this.feeSelectionList[i]) {
-        balanceItem.balanceS -= fees[i].feeLrc;
-      }
+  //     if (order.params.tokenS === this.lrcAddress && 0 === this.feeSelectionList[i]) {
+  //       balanceItem.balanceS -= fees[i].feeLrc;
+  //     }
 
-      if (order.params.tokenB === this.lrcAddress && 0 === this.feeSelectionList[i]) {
-        balanceItem.balanceB -= fees[i].feeLrc;
-      }
+  //     if (order.params.tokenB === this.lrcAddress && 0 === this.feeSelectionList[i]) {
+  //       balanceItem.balanceB -= fees[i].feeLrc;
+  //     }
 
-      balances.push(balanceItem);
-    }
-    return balances;
-  }
+  //     balances.push(balanceItem);
+  //   }
+  //   return balances;
+  // }
 
 }

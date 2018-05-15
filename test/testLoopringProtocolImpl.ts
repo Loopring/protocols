@@ -230,28 +230,57 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     }
   };
 
+  const getTransferItem = async (token: string) => {
+    return new Promise((resolve, reject) => {
+      const tokenContractInstance = tokenMap.get(token);
+      const events = tokenContractInstance.Transfer({}, { fromBlock: 0, toBlock: "latest" });
+      events.watch();
+      events.get((error: any, event: any) => {
+        if (!error) {
+          resolve(event);
+        } else {
+          throw Error("Failed to find filtered event: " + error);
+        }
+      });
+      events.stopWatching();
+    });
+  };
+
+  const getTransferEvents = async (tokens: string[]) => {
+    let transferItems: Array<[string, string, number]> = [];
+    for (const tokenAddr of tokens) {
+      const eventArr: any = await getTransferItem(tokenAddr);
+      const items = eventArr.map((eventObj: any) => {
+        const from = eventObj.args.from;
+        const to = eventObj.args.to;
+        const amount = eventObj.args.value.toNumber();
+        const item: [string, string, number] = [from, to, amount];
+        return item;
+      });
+
+      transferItems = transferItems.concat(items);
+    }
+
+    return transferItems;
+  };
+
   describe("submitRing", () => {
     const allTokenAddrs = [eosAddress, neoAddress, qtumAddress, lrcAddress];
     const allOwnerAddresses = [order1Owner, order2Owner, order3Owner, ringOwner];
 
     for (const ringInfo of ringInfoList) {
       it(ringInfo.description, async () => {
-        // const feeSelections: number[] = [0, 0];
-        // const owners = [order1Owner, order2Owner, ringOwner];
-        // const amountSList = [1e17, 300e18];
-        // const amountBList = [300e18, 1e17];
-        // const tokens = [neoAddress, qtumAddress];
         setDefaultValuesForRingInfo(ringInfo);
 
-        // console.log("ringInfo", ringInfo);
-
         const ring = await ringFactory.generateRing(ringInfo);
-
         assert(ring.orders[0].isValidSignature(), "invalid signature");
 
         await setBalanceBefore(ring, feeRecepient);
 
         const p = ringFactory.ringToSubmitableParams(ring);
+
+        const simulator = new ProtocolSimulator(ring, lrcAddress, walletSplitPercentage);
+        const simulatorReport = simulator.simulateAndReport([], [], [], true, false);
 
         const tx = await loopringProtocolImpl.submitRing(p.addressList,
                                                          p.uintArgsList,
@@ -264,11 +293,18 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          p.feeSelections,
                                                          {from: feeRecepient});
 
+        // console.log("tx.receipt.logs: ", tx.receipt.logs);
         const balanceInfo = await getRingBalanceInfoAfter(ring, feeRecepient);
         console.log("balanceInfo:",  balanceInfo);
 
-        const simulator = new ProtocolSimulator(ring, lrcAddress, walletSplitPercentage);
-        simulator.simulateAndReport([], [], [], true, true);
+        const tokenSet = new Set([lrcAddress]);
+        for (const order of ring.orders) {
+          tokenSet.add(order.params.tokenS);
+        }
+
+        const tokensInRing = [...tokenSet];
+        const transferEvents = await getTransferEvents(tokensInRing);
+        console.log("transferEvents: ", transferEvents);
 
         await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
       });

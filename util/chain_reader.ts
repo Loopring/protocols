@@ -6,6 +6,7 @@ export class ChainReader {
   private web3Instance: Web3;
   private ERC20Contract: any;
   private DelegateContract: any;
+  private TokenRegistryContract: any;
   private connected: boolean;
 
   constructor() {
@@ -22,12 +23,15 @@ export class ChainReader {
     } catch (err) {
       console.log("get web3 instance in class ChainReader failed. err:", err);
       this.connected = false;
+      throw err;
     }
 
     const erc20Abi = fs.readFileSync("ABI/version151/ERC20.abi", "ascii");
     const delegateAbi = fs.readFileSync("ABI/version151/TokenTransferDelegate.abi", "ascii");
+    const tokenRegistryAbi = fs.readFileSync("ABI/version151/TokenRegistry.abi", "ascii");
     this.ERC20Contract = this.web3Instance.eth.contract(JSON.parse(erc20Abi));
     this.DelegateContract = this.web3Instance.eth.contract(JSON.parse(delegateAbi));
+    this.TokenRegistryContract = this.web3Instance.eth.contract(JSON.parse(tokenRegistryAbi));
   }
 
   public isConnected() {
@@ -63,6 +67,20 @@ export class ChainReader {
     const amount = await delegateContractInstance.cancelledOrFilled(orderHash);
     const amountBN = new BigNumber(amount);
     return amount.toNumber();
+  }
+
+  public async getTokenAddressBySymbol(tokenRegistryAddr: string,
+                                       symbol: string) {
+    const tokenRegistryInstance = this.TokenRegistryContract.at(tokenRegistryAddr);
+    const tokenAddr = await tokenRegistryInstance.getAddressBySymbol(symbol);
+    return tokenAddr;
+  }
+
+  public async getTokenSymbolByAddress(tokenRegistryAddr: string,
+                                       tokenAddr: string) {
+    const tokenRegistryInstance = this.TokenRegistryContract.at(tokenRegistryAddr);
+    const tokenSymbol = await tokenRegistryInstance.addressMap(tokenAddr).symbol;
+    return tokenSymbol;
   }
 
 }
