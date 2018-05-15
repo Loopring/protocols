@@ -108,6 +108,17 @@ export class Ring {
     return ringHashHex;
   }
 
+  public printToConsole() {
+    console.log("-".repeat(80));
+    console.log("ring miner:", this.owner);
+    for (const order of this.orders) {
+      console.log("-".repeat(80));
+      console.log("order owner:", order.owner);
+      console.log("order params:", order.params);
+    }
+    console.log("-".repeat(80));
+  }
+
   private xorReduce(numberArr: number[]) {
     const n0 = numberArr[0];
     const tail = numberArr.slice(1);

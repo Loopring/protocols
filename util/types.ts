@@ -53,7 +53,7 @@ export interface BalanceItem {
 export interface RingInfo {
   amountSList: number[];
   amountBList: number[];
-  lrcFeeAmountList: number[];
+  lrcFeeAmountList?: number[];
   miner?: string;
   orderOwners?: string[];
   tokenAddressList?: string[];

@@ -7,7 +7,7 @@ import { Order } from "../util/order";
 import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { RingFactory } from "../util/ring_factory";
-import { OrderParams, RingBalanceInfo, RingInfo } from "../util/types";
+import { OrderParams, RingBalanceInfo, RingInfo, TransferItem } from "../util/types";
 import { ringInfoList } from "./ringConfig";
 
 const {
@@ -230,10 +230,10 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     }
   };
 
-  const getTransferItem = async (token: string) => {
+  const getTransferItem = async (token: string, fromBlock: number) => {
     return new Promise((resolve, reject) => {
       const tokenContractInstance = tokenMap.get(token);
-      const events = tokenContractInstance.Transfer({}, { fromBlock: 0, toBlock: "latest" });
+      const events = tokenContractInstance.Transfer({}, { fromBlock, toBlock: "latest" });
       events.watch();
       events.get((error: any, event: any) => {
         if (!error) {
@@ -246,10 +246,10 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
   };
 
-  const getTransferEvents = async (tokens: string[]) => {
+  const getTransferEvents = async (tokens: string[], fromBlock: number) => {
     let transferItems: Array<[string, string, number]> = [];
     for (const tokenAddr of tokens) {
-      const eventArr: any = await getTransferItem(tokenAddr);
+      const eventArr: any = await getTransferItem(tokenAddr, fromBlock);
       const items = eventArr.map((eventObj: any) => {
         const from = eventObj.args.from;
         const to = eventObj.args.to;
@@ -264,9 +264,40 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     return transferItems;
   };
 
+  const assertTransfers = (tranferEvents: Array<[string, string, number]>, transferList: TransferItem[]) => {
+    const transfersFromSimulator = transferList.map((item) => [item.fromAddress, item.toAddress, item.amount]);
+    const sorter = (a: [string, string, number], b: [string, string, number]) => {
+      if (a[0] === b[0]) {
+        if (a[1] === b[1]) {
+          return a[2] - b[2];
+        } else {
+          return a[1] > b[1] ? 1 : -1;
+        }
+      } else {
+        return a[0] > b[0] ? 1 : -1;
+      }
+    };
+
+    transfersFromSimulator.sort(sorter);
+    tranferEvents.sort(sorter);
+
+    assert.equal(tranferEvents.length, transfersFromSimulator.length, "transfer amounts not match");
+    for (let i = 0; i < tranferEvents.length; i++) {
+      const transferFromEvent = tranferEvents[i];
+      const transferFromSimulator = transfersFromSimulator[i];
+      // console.log("transferFromEvent:", transferFromEvent);
+      // console.log("transferFromSimulator:", transferFromSimulator);
+
+      assert.equal(transferFromEvent[0], transferFromSimulator[0], "transfer event from not match");
+      assert.equal(transferFromEvent[1], transferFromSimulator[1], "transfer event to not match");
+      assert.equal(transferFromEvent[2], transferFromSimulator[2], "transfer event amount not match");
+    }
+  };
+
   describe("submitRing", () => {
     const allTokenAddrs = [eosAddress, neoAddress, qtumAddress, lrcAddress];
     const allOwnerAddresses = [order1Owner, order2Owner, order3Owner, ringOwner];
+    let eventFromBlock: number = 0;
 
     for (const ringInfo of ringInfoList) {
       it(ringInfo.description, async () => {
@@ -279,8 +310,10 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
         const p = ringFactory.ringToSubmitableParams(ring);
 
+        // ring.printToConsole();
+
         const simulator = new ProtocolSimulator(ring, lrcAddress, walletSplitPercentage);
-        const simulatorReport = simulator.simulateAndReport([], [], [], true, false);
+        const simulatorReport = await simulator.simulateAndReport([], [], [], true, false);
 
         const tx = await loopringProtocolImpl.submitRing(p.addressList,
                                                          p.uintArgsList,
@@ -295,7 +328,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
         // console.log("tx.receipt.logs: ", tx.receipt.logs);
         const balanceInfo = await getRingBalanceInfoAfter(ring, feeRecepient);
-        console.log("balanceInfo:",  balanceInfo);
+        // console.log("balanceInfo:",  balanceInfo);
 
         const tokenSet = new Set([lrcAddress]);
         for (const order of ring.orders) {
@@ -303,10 +336,12 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
         }
 
         const tokensInRing = [...tokenSet];
-        const transferEvents = await getTransferEvents(tokensInRing);
-        console.log("transferEvents: ", transferEvents);
+        const transferEvents = await getTransferEvents(tokensInRing, eventFromBlock);
+
+        assertTransfers(transferEvents, simulatorReport.transferList);
 
         await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
+        eventFromBlock = web3.eth.blockNumber + 1;
       });
     }
 
