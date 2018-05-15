@@ -369,12 +369,18 @@ export class ProtocolSimulator {
 
       for (let j = 0; j < amountList.length; j++) {
         if (amountList[j] > 0) {
+          const fromAddress = fromAddressList[j];
+          const toAddress = toAddressList[j];
+          if (fromAddress === toAddress) {
+            continue;
+          }
+
           const transferItem: TransferItem = {
             description: descriptions[j],
             tokenAddress: tokenAddressList[j],
             tokenSymbol: "",
-            fromAddress: fromAddressList[j],
-            toAddress: toAddressList[j],
+            fromAddress,
+            toAddress,
             amount: amountList[j],
           };
           transferItems.push(transferItem);

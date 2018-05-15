@@ -214,7 +214,12 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     const tokenAddresses = [eosAddress, neoAddress, lrcAddress];
     const orderOwners = [order1Owner, order2Owner, order3Owner];
     ringInfo.tokenAddressList = tokenAddresses.slice(0, ringSize);
-    ringInfo.orderOwners = orderOwners.slice(0, ringSize);
+    if (ringInfo.orderOwners && ringInfo.orderOwners.length > 0 &&
+        ringInfo.orderOwners[0] === "##sameOwners##") {
+      ringInfo.orderOwners = Array.from({length: ringSize}, () => orderOwners[0]);
+    } else {
+      ringInfo.orderOwners = orderOwners.slice(0, ringSize);
+    }
     ringInfo.miner = ringOwner;
 
     if (!ringInfo.lrcFeeAmountList || ringInfo.lrcFeeAmountList.length < ringSize) {
