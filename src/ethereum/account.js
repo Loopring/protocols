@@ -295,7 +295,7 @@ export class LedgerAccount extends Account {
     if (result.error) {
       throw new Error(result.error.message)
     } else {
-      return result.result.address;
+      return formatAddress(result.result.address);
     }
   }
 

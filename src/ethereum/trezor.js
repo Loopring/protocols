@@ -4,10 +4,7 @@
  */
 
 import {TrezorConnect} from '../common/trezor-connect';
-import {
-  clearHexPrefix, addHexPrefix, padLeftEven,
-  toNumber, toHex,
-} from '../common/formatter'
+import {clearHexPrefix, addHexPrefix, padLeftEven, toNumber, toHex, formatAddress} from '../common/formatter'
 import EthTransaction from 'ethereumjs-tx';
 import BN from 'bn.js'
 
@@ -21,7 +18,7 @@ export async function getAddress(dpath) {
     return new Promise((resolve) => {
       TrezorConnect.ethereumGetAddress(dpath, (result) => {
         if (result.success) {
-          resolve({result:result.address})
+          resolve({result: formatAddress(result.address)})
         } else {
           resolve({error: result.error});
         }
