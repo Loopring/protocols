@@ -95,7 +95,7 @@ export function privateKeytoPublic(privateKey) {
  * @returns {Account}
  */
 export function fromMnemonic(mnemonic, dpath, password) {
-  const privateKey = mnemonictoPrivatekey(mnemonic, password, dpath);
+  const privateKey = mnemonictoPrivatekey(mnemonic, dpath,password);
   return fromPrivateKey(privateKey)
 }
 
