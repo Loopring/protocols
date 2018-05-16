@@ -114,7 +114,7 @@ export async function signEthereumTx(dpath, rawTx, ledgerConnect) {
                         s: addHexPrefix(result.s)
                     };
                     const ethTx = new EthTransaction(txToSerialize)
-                    const serializedTx = ethTx.serialize();
+                    const serializedTx = toHex(ethTx.serialize());
                     resolve({result: serializedTx});
                 })
                 .catch(err => {

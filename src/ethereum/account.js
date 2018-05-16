@@ -214,7 +214,11 @@ export class KeyAccount extends Account {
 
   sign(hash) {
     hash = toBuffer(hash);
-    return ecsign(hash, this.privateKey);
+    const signature = ecsign(hash, this.privateKey);
+    const v = toNumber(signature.v);
+    const r = toHex(signature.r);
+    const s = toHex(signature.s);
+    return {r, s, v};
   };
 
   signMessage(message) {
@@ -250,7 +254,7 @@ export class TrezorAccount extends Account {
   }
 
   async getAddress() {
-    const result = Trezor.getAddress(this.dpath);
+    const result = await Trezor.getAddress(this.dpath);
     if (result.error) {
       throw new Error(result.error.message)
     } else {
@@ -291,7 +295,7 @@ export class LedgerAccount extends Account {
     if (result.error) {
       throw new Error(result.error.message)
     } else {
-      return result.result.address;
+      return formatAddress(result.result.address);
     }
   }
 
@@ -326,10 +330,10 @@ export class LedgerAccount extends Account {
 
 export class MetaMaskAccount extends Account {
 
-  constructor(input) {
-    if (input.web3 && input.web3.eth.accounts[0]) {
+  constructor(web3) {
+    if (web3 && web3.eth.accounts[0]) {
       super();
-      this.web3 = input.web3;
+      this.web3 = web3;
       this.account = this.web3.eth.accounts[0];
     }
   }
@@ -340,7 +344,7 @@ export class MetaMaskAccount extends Account {
   }
 
   async sign(hash) {
-    const result = MetaMask.sign(this.web3, this.account, hash);
+    const result = await MetaMask.sign(this.web3, this.account, hash);
     if (!result.error) {
       return result.result
     } else {
@@ -348,8 +352,8 @@ export class MetaMaskAccount extends Account {
     }
   }
 
-  signMessage(message) {
-    const result = MetaMask.signMessage(this.web3, this.account, message);
+ async  signMessage(message) {
+    const result = await MetaMask.signMessage(this.web3, this.account, message);
     if (!result.error) {
       return result.result
     } else {
@@ -357,8 +361,8 @@ export class MetaMaskAccount extends Account {
     }
   }
 
-  signEthereumTx(rawTx) {
-    const result = MetaMask.signEthereumTx(this.web3, this.account, rawTx);
+ async signEthereumTx(rawTx) {
+    const result = await MetaMask.signEthereumTx(this.web3, this.account, rawTx);
     if (!result.error) {
       return result.result
     } else {
@@ -371,15 +375,6 @@ export class MetaMaskAccount extends Account {
     const result = await MetaMask.signMessage(this.web3, this.account, hash);
     if (!result.error) {
       return {...order, ...result.result};
-    } else {
-      throw new Error(result.error.message)
-    }
-  }
-
-  sendTransactionByMetaMask(tx) {
-    const result =  MetaMask.sendTransaction(this.web3, tx);
-    if (!result.error) {
-      return result.result
     } else {
       throw new Error(result.error.message)
     }

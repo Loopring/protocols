@@ -39,7 +39,7 @@ export function decryptKeystoreToPkey(keystore, password) {
  * @returns {{version, id, address, crypto}}  keystore
  */
 export function pkeyToKeystore(privateKey, password) {
-  return fromPrivateKey(privateKey).toV3(password, {c: 1024})
+  return fromPrivateKey(privateKey).toV3(password, {c: 1024, n:1024})
 }
 
 /**

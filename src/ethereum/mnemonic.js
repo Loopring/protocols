@@ -7,7 +7,7 @@ import {fromMasterSeed} from 'hdkey';
  * @param password string
  * @param dpath string
  */
-export function mnemonictoPrivatekey(mnemonic, password, dpath) {
+export function mnemonictoPrivatekey(mnemonic, dpath, password) {
   if (dpath) {
     mnemonic = mnemonic.trim();
     if (!validateMnemonic(mnemonic)) {
