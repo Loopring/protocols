@@ -1,8 +1,5 @@
 import {rawEncode, methodID, rawDecode} from 'ethereumjs-abi';
-import {
-  toHex, clearHexPrefix, toBuffer,
-  addHexPrefix,
-} from '../../common/formatter'
+import {toHex, clearHexPrefix, toBuffer, addHexPrefix} from '../../common/formatter'
 import BN from 'bn.js'
 
 export default class AbiFunction {
