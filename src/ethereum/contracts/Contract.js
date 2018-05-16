@@ -1,4 +1,6 @@
-import AbiFunction from './AbiFunction';
+import AbiFunction from './AbiFunction'
+import { toHex } from '../../common/formatter'
+import { methodID } from 'ethereumjs-abi'
 
 export default class Contract {
 
@@ -7,10 +9,12 @@ export default class Contract {
     this.abiFunctions = funAbi.reduce((acc, item) => {
       const inputTypes = item.inputs.map(({type})=>type);
       const key = `${item.name}(${inputTypes.toString()})`;
+      const methodHash = methodID(item.name,inputTypes)
       return ({
         ...acc,
         [item.name]: new AbiFunction(item),
-        [key]:new AbiFunction(item)
+        [key]:new AbiFunction(item),
+        [methodHash]:new AbiFunction(item)
       })
     });
   }
@@ -27,7 +31,7 @@ export default class Contract {
     if (abiFunction) {
       return abiFunction.encodeInputs(inputs)
     } else {
-      throw  new Error(`No  ${method} method according to abi `)
+      throw new Error(`No  ${method} method according to abi `)
     }
   }
 
@@ -46,5 +50,20 @@ export default class Contract {
     }
   }
 
+  /**
+   * @description Decode encoded method and inputs
+   * @param encode string | Buffer
+   * @returns {*}
+   */
+  decodeEncodeInputs(encode){
+    encode = toHex(encode);
+    const methodId = encode.slice(0,10);
+    const abiFunction = this.abiFunctions[methodId];
+    if (abiFunction) {
+      return abiFunction.decodeEncodedInputs(encode.slice(10))
+    } else {
+      throw new Error(`No corresponding method according to abi `)
+    }
+  }
 
 }
