@@ -23,6 +23,9 @@ const loopringScheams = {
     enum: ['LRC', 'LRN', 'LRQ']
   },
   RAW_Order: {
+    type: 'object',
+    required: true,
+    fields:{
     delegateAddress:{
       ...basicSchemas.ETH_ADDRESS
     },
@@ -72,9 +75,12 @@ const loopringScheams = {
       minimum: 0,
       maximum: 100
     }
+    }
   },
   ORDER: {
-
+    type: 'object',
+    required: true,
+    fields:{
     delegateAddress:{
       ...basicSchemas.ETH_ADDRESS
     },
@@ -139,8 +145,12 @@ const loopringScheams = {
       required: true,
       pattern: /^0x[0-9a-fA-F]{64}$/g
     }
+    }
   },
   TX: {
+    type: 'object',
+    required: true,
+    fields:{
     to: {
       ...basicSchemas.ETH_ADDRESS
     },
@@ -164,6 +174,7 @@ const loopringScheams = {
       type: 'string',
       required: true,
       pattern: /^0x[0-9a-fA-F]*$/g
+    }
     }
   }
 };

@@ -12,80 +12,100 @@ export class Order{
   constructor (host){
     this.host = host;
   }
-  /**
-   * @description Get loopring order list.
-   * @param filter
-   * @returns {Promise.<*>}
-   */
- getOrders(filter) {
-    try {
-      validator.validate({value: filter.delegateAddress, type: 'ETH_ADDRESS'});
-      validator.validate({value: filter.pageIndex, type: 'OPTION_NUMBER'});
-      filter.market && validator.validate({value: filter.market, type: 'STRING'});
-      filter.owner && validator.validate({value: filter.owner, type: 'ETH_ADDRESS'});
-      filter.orderHash && validator.validate({value: filter.orderHash, type: 'STRING'});
-      filter.pageSize && validator.validate({value: filter.pageSize, type: 'OPTION_NUMBER'});
-    } catch (e) {
-      return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
-    }
-    const body = {};
-    body.method = 'loopring_getOrders';
-    body.params = [filter];
-    body.id = id();
-    return request(this.host, {
-      method: 'post',
-      body,
-    })
+
+  getOrders(filter){
+    return getOrders(this.host, filter)
   }
 
-  /**
-   * @description Get cut off time of the address.
-   * @param address
-   * @param delegateAddress
-   * @param blockNumber
-   * @returns {Promise.<*>}
-   */
- getCutoff({address, delegateAddress, blockNumber}) {
-    blockNumber = blockNumber || 'latest';
-    try {
-      validator.validate({value: address, type: 'ETH_ADDRESS'});
-      validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
-      validator.validate({value: blockNumber, type: 'RPC_TAG'});
-    } catch (e) {
-      return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-    }
-    const body = {};
-    body.method = 'loopring_getCutoff';
-    body.params = [{address, delegateAddress, blockNumber}];
-    body.id = id();
-    return request(this.host, {
-      method: 'post',
-      body,
-    })
+  getCutoff({address, delegateAddress, blockNumber}){
+    return getCutoff(this.host, {address, delegateAddress, blockNumber})
   }
 
-  /**
-   * @description  Submit an order.The order is submitted to relay as a JSON object,
-   * this JSON will be broadcast into peer-to-peer network for off-chain order-book maintainance and ring-ming.
-   * Once mined, the ring will be serialized into a transaction and submitted to Ethereum blockchain.
-   * @param order
-   * @returns {Promise.<*>}
-   */
-  placeOrder(order) {
-    try {
-      validator.validate({value: order, type: "Order"});
-    } catch(e) {
-      return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-    }
-    const body = {};
-    body.method = 'loopring_submitOrder';
-    body.params = [order];
-    body.id = id();
-    return request(this.host, {
-      method: 'post',
-      body,
-    })
+  placeOrder(order){
+    return placeOrder(this.host, order);
   }
+
+  getOrderHash(order){
+    return getOrderHash(order)
+  }
+}
+
+/**
+ * @description Get loopring order list.
+ * @param host
+ * @param filter
+ * @returns {Promise.<*>}
+ */
+export function getOrders(host,filter) {
+  try {
+    validator.validate({value: filter.delegateAddress, type: 'ETH_ADDRESS'});
+    validator.validate({value: filter.pageIndex, type: 'OPTION_NUMBER'});
+    filter.market && validator.validate({value: filter.market, type: 'STRING'});
+    filter.owner && validator.validate({value: filter.owner, type: 'ETH_ADDRESS'});
+    filter.orderHash && validator.validate({value: filter.orderHash, type: 'STRING'});
+    filter.pageSize && validator.validate({value: filter.pageSize, type: 'OPTION_NUMBER'});
+  } catch (e) {
+    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+  }
+  const body = {};
+  body.method = 'loopring_getOrders';
+  body.params = [filter];
+  body.id = id();
+  return request(host, {
+    method: 'post',
+    body,
+  })
+}
+
+/**
+ * @description Get cut off time of the address.
+ * @param host
+ * @param address
+ * @param delegateAddress
+ * @param blockNumber
+ * @returns {Promise.<*>}
+ */
+export function getCutoff(host,{address, delegateAddress, blockNumber}) {
+  blockNumber = blockNumber || 'latest';
+  try {
+    validator.validate({value: address, type: 'ETH_ADDRESS'});
+    validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
+    validator.validate({value: blockNumber, type: 'RPC_TAG'});
+  } catch (e) {
+    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
+  }
+  const body = {};
+  body.method = 'loopring_getCutoff';
+  body.params = [{address, delegateAddress, blockNumber}];
+  body.id = id();
+  return request(host, {
+    method: 'post',
+    body,
+  })
+}
+
+/**
+ * @description  Submit an order.The order is submitted to relay as a JSON object,
+ * this JSON will be broadcast into peer-to-peer network for off-chain order-book maintainance and ring-ming.
+ * Once mined, the ring will be serialized into a transaction and submitted to Ethereum blockchain.
+ * @param order
+ * @param host
+ * @returns {Promise.<*>}
+ */
+export function placeOrder(host,order) {
+  try {
+    validator.validate({value: order, type: "Order"});
+  } catch(e) {
+    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
+  }
+  const body = {};
+  body.method = 'loopring_submitOrder';
+  body.params = [order];
+  body.id = id();
+  return request(host, {
+    method: 'post',
+    body,
+  })
 }
 
 
