@@ -11,7 +11,7 @@ import {getOrderHash} from '../relay/rpc/order';
 import * as Trezor from './trezor';
 import * as Ledger from './ledger';
 import * as MetaMask from './metaMask';
-import {sendRawTransaction} from './utils';
+
 
 const wallets = require('../config/wallets.json');
 const LoopringWallet = wallets.find(wallet => trimAll(wallet.name).toLowerCase() === 'loopringwallet');
@@ -166,8 +166,8 @@ export class Account {
     throw Error('unimplemented')
   }
 
-  sendTransaction(host,{signedTx}){
-  return  sendRawTransaction(host,{signedTx})
+  sendTransaction(ethNode,signedTx){
+  return ethNode.sendRawTransaction(signedTx)
   }
 }
 
