@@ -41,7 +41,7 @@ export default class Eth {
    * @param signedTx
    * @returns {Promise}
    */
-  sendRawTransaction({signedTx}) {
+  sendRawTransaction(signedTx) {
     const body = {};
     body.method = 'eth_sendRawTransaction';
     body.params = [signedTx];
@@ -116,7 +116,7 @@ export default class Eth {
    * @param hash ethereum tx hash
    * @returns {Promise}
    */
-  getTransactionByhash({hash}) {
+  getTransactionByhash(hash) {
     try {
       validator.validate({value: hash, type: "ETH_DATA"});
     } catch (e) {
