@@ -5,12 +5,9 @@ const ethereumSchemas = {
   PRIVATE_KEY_BUFFER: {
     validator: (rule, value, cb) =>
     {
-      if (value instanceof Buffer)
-      {
+      if (value instanceof Buffer) {
         value.length === 32 ? cb() : cb('length of private key must be 32')
-      }
-      else
-      {
+      } else {
         cb('private key is not an instance of Buffer')
       }
     },
