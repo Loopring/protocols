@@ -43,6 +43,7 @@ export default class Ring{
   /**
    * @description Get ring mined detail
    * @param ringIndex
+   * @param protocolAddress
    * @returns {Promise}
    */
  getRingMinedDetail({ringIndex, protocolAddress}) {
