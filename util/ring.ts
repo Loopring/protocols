@@ -108,6 +108,20 @@ export class Ring {
     return ringHashHex;
   }
 
+  public clone() {
+    const clonedOrders = this.orders.map((order) => {
+      return order.clone();
+    });
+    const clonedFeeSelections = this.feeSelections.slice();
+    return new Ring(this.owner, clonedOrders, clonedFeeSelections);
+  }
+  // public clone(): Ring {
+  //   const clonedOrders = JSON.parse(JSON.stringify(this.orders));
+  //   const clonedFeeSelections = JSON.parse(JSON.stringify(this.feeSelections));
+  //   const clonedRing = new Ring(this.owner, clonedOrders, clonedFeeSelections);
+  //   return clonedRing;
+  // }
+
   public printToConsole() {
     console.log("-".repeat(80));
     console.log("ring miner:", this.owner);

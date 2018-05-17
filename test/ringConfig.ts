@@ -30,5 +30,26 @@ export const ringInfoList: RingInfo[] = [
     feeSelections: [0, 0],
     salt: 30,
   },
+  {
+    description: "ring with 2 orders - asymmetric orders & margin-split",
+    amountSList: [1000e18, 100e18],
+    amountBList: [50e18, 450e18],
+    lrcFeeAmountList: [0, 0],
+    marginSplitPercentageList: [100, 45],
+    buyNoMoreThanAmountBList: [false, false],
+    feeSelections: [1, 1],
+    salt: 40,
+    verbose: false,
+  },
+  // {
+  //   description: "ring with 2 orders - asymmetric orders & margin-split",
+  //   amountSList: [1000e18, 100e18],
+  //   amountBList: [50e18, 450e18],
+  //   lrcFeeAmountList: [0, 0],
+  //   marginSplitPercentageList: [100, 45],
+  //   buyNoMoreThanAmountBList: [false, false],
+  //   feeSelections: [1, 1],
+  //   salt: 50,
+  // },
 
 ];

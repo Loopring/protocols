@@ -62,6 +62,7 @@ export interface RingInfo {
   feeSelections?: number[];
   description?: string;
   salt?: number;
+  verbose?: boolean;
 }
 
 export interface RingBalanceInfo {
@@ -73,7 +74,7 @@ export interface RingBalanceInfo {
 
 export interface SimulatorReport {
   ring: Ring;
-  fillAmountS: number[];
+  feeItems: FeeItem[];
   transferList: TransferItem[];
   ringBalanceInfo?: RingBalanceInfo;
 }
