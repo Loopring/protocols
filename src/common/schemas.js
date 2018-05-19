@@ -43,6 +43,11 @@ const basicSchemas = {
     required: true,
     len: 64,
   },
+  ETH_DATA:{
+    type: 'string',
+    required: true,
+    pattern: /^0x[0-9a-fA-F]{64}$/g,
+  },
   QUANTITY: {
     type: 'string',
     required: true,

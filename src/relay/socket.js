@@ -4,9 +4,9 @@
  */
 import io from 'socket.io-client'
 
-
-
 export function connect(url, options, connectCallback) {
+
+  options = options || { transports: ['websocket']};
   const socket = io(url, options);
   return new Promise((resolve) => {
     socket.on('connect', () => {
