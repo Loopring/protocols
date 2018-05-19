@@ -2,7 +2,6 @@
  *
  * help website: https://github.com/trezor/connect
  */
-
 import {TrezorConnect} from '../common/trezor-connect';
 import {clearHexPrefix, addHexPrefix, padLeftEven, toNumber, toHex, formatAddress} from '../common/formatter'
 import EthTransaction from 'ethereumjs-tx';
