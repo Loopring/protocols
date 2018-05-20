@@ -28,7 +28,7 @@ contract TokenRegistryImpl is TokenRegistry, Claimable {
     using AddressUtil for address;
 
     address[] public addresses;
-    mapping (address => TokenInfo) addressMap;
+    mapping (address => TokenInfo) public addressMap;
     mapping (string => address) symbolMap;
 
     struct TokenInfo {

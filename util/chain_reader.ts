@@ -28,7 +28,7 @@ export class ChainReader {
 
     const erc20Abi = fs.readFileSync("ABI/version151/ERC20.abi", "ascii");
     const delegateAbi = fs.readFileSync("ABI/version151/TokenTransferDelegate.abi", "ascii");
-    const tokenRegistryAbi = fs.readFileSync("ABI/version151/TokenRegistry.abi", "ascii");
+    const tokenRegistryAbi = fs.readFileSync("ABI/version151/TokenRegistryImpl.abi", "ascii");
     this.ERC20Contract = this.web3Instance.eth.contract(JSON.parse(erc20Abi));
     this.DelegateContract = this.web3Instance.eth.contract(JSON.parse(delegateAbi));
     this.TokenRegistryContract = this.web3Instance.eth.contract(JSON.parse(tokenRegistryAbi));
@@ -79,8 +79,8 @@ export class ChainReader {
   public async getTokenSymbolByAddress(tokenRegistryAddr: string,
                                        tokenAddr: string) {
     const tokenRegistryInstance = this.TokenRegistryContract.at(tokenRegistryAddr);
-    const tokenSymbol = await tokenRegistryInstance.addressMap(tokenAddr).symbol;
-    return tokenSymbol;
+    const tokenInfo = await tokenRegistryInstance.addressMap(tokenAddr);
+    return tokenInfo[1];
   }
 
 }

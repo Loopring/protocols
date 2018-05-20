@@ -7,6 +7,7 @@ import { BalanceItem, FeeItem, RingBalanceInfo, SimulatorReport, TransferItem } 
 export class ProtocolSimulator {
   public ring: Ring;
   public lrcAddress: string;
+  public tokenRegistryAddress: string;
   public walletSplitPercentage: number;
 
   public feeSelectionList: number[];
@@ -20,9 +21,11 @@ export class ProtocolSimulator {
 
   constructor(ring: Ring,
               lrcAddress: string,
+              tokenRegistryAddress: string,
               walletSplitPercentage: number) {
     this.ring = ring;
     this.lrcAddress = lrcAddress;
+    this.tokenRegistryAddress = tokenRegistryAddress;
     this.walletSplitPercentage = walletSplitPercentage;
 
     this.feeSelectionList = ring.feeSelections;
@@ -42,8 +45,8 @@ export class ProtocolSimulator {
       this.orderFilledOrCancelledAmountList = orderFilledOrCancelledAmountList;
     }
 
+    this.ring.caculateAndSetRateAmount();
     this.scaleRing();
-    this.caculateRateAmountS();
     this.caculateFillAmountS();
 
     const feeItems = this.caculateOrderFees();
@@ -72,19 +75,24 @@ export class ProtocolSimulator {
     let delegateAddr = "";
 
     for (let i = 0; i < orderOwners.length; i++) {
-      const tokenAddr = this.ring.orders[i].params.tokenS;
+      const order = this.ring.orders[i];
+      const tokenAddr = order.params.tokenS;
       if (!delegateAddr) {
-        delegateAddr = this.ring.orders[i].params.delegateContract;
+        delegateAddr = order.params.delegateContract;
       }
       const spendableAmount = await this.chainReader.getERC20TokenSpendable(tokenAddr,
                                                                             orderOwners[i],
                                                                             delegateAddr);
       this.spendableAmountSList.push(spendableAmount);
 
-      const orderHash = this.ring.orders[i].params.orderHashHex;
+      const orderHash = order.params.orderHashHex;
       const cancelOrFillAmount = await this.chainReader.
         getOrderCancelledOrFilledAmount(orderHash, delegateAddr);
       this.orderFilledOrCancelledAmountList.push(cancelOrFillAmount);
+
+      const symbol = await await this.chainReader.
+        getTokenSymbolByAddress(this.tokenRegistryAddress, tokenAddr);
+      order.params.tokenSSymbol = symbol;
     }
 
     for (const addr of orderAndRingOwners) {
@@ -111,8 +119,8 @@ export class ProtocolSimulator {
       const amountS = order.params.amountS.toNumber();
       const amountB = order.params.amountB.toNumber();
       const lrcFee = order.params.lrcFee.toNumber();
-      let availableAmountS = amountS;
-      let availableAmountB = amountB;
+      let availableAmountS = order.params.amountS.toNumber();
+      let availableAmountB = order.params.amountB.toNumber();
 
       if (order.params.buyNoMoreThanAmountB) {
         availableAmountB -= this.orderFilledOrCancelledAmountList[i];
@@ -135,37 +143,23 @@ export class ProtocolSimulator {
 
       order.params.scaledAmountS = availableAmountS;
       order.params.scaledAmountB = availableAmountB;
-    }
-  }
 
-  private caculateRateAmountS() {
-    let rate: number = 1;
-    const size = this.ring.orders.length;
-    for (let i = 0; i < size; i++) {
-      const order = this.ring.orders[i];
-      rate = rate * order.params.amountS.toNumber() / order.params.amountB.toNumber();
-    }
-    rate = Math.pow(rate, 1 / size);
-
-    for (let i = 0; i < size; i ++) {
-      const order = this.ring.orders[i];
-      order.params.rateAmountB = order.params.scaledAmountB;
-      order.params.rateAmountS = order.params.scaledAmountS / rate;
+      order.params.fillAmountS = availableAmountS;
     }
   }
 
   private caculateFillAmountS() {
     const size = this.ring.orders.length;
 
+    let smallestIndex = 0;
     for (let i = 0; i < size; i++) {
       const nextIndex = (i + 1) % size;
       const currOrder = this.ring.orders[i];
       const nextOrder = this.ring.orders[nextIndex];
-      if (!currOrder.params.fillAmountS) {
-        currOrder.params.fillAmountS = currOrder.params.buyNoMoreThanAmountB ?
-          currOrder.params.rateAmountS : currOrder.params.scaledAmountS;
+      const sub = this.caculateNextFillAmountS(currOrder, nextOrder);
+      if (sub > 0) {
+        smallestIndex = nextIndex;
       }
-      nextOrder.params.fillAmountS = this.caculateNextFillAmountS(currOrder, nextOrder);
     }
 
     // do it again.
@@ -173,18 +167,23 @@ export class ProtocolSimulator {
       const nextIndex = (i + 1) % size;
       const currOrder = this.ring.orders[i];
       const nextOrder = this.ring.orders[nextIndex];
-      nextOrder.params.fillAmountS = this.caculateNextFillAmountS(currOrder, nextOrder);
+      this.caculateNextFillAmountS(currOrder, nextOrder);
     }
   }
 
   private caculateNextFillAmountS(currOrder: Order, nextOrder: Order) {
-    const currFillAmountB = currOrder.params.fillAmountS *
+    let currFillAmountB = currOrder.params.fillAmountS *
       currOrder.params.rateAmountB / currOrder.params.rateAmountS;
+    if (currOrder.params.buyNoMoreThanAmountB) {
+      if (currFillAmountB > currOrder.params.scaledAmountB) {
+        currFillAmountB = currOrder.params.scaledAmountB;
+        currOrder.params.fillAmountS = currFillAmountB *
+          currOrder.params.rateAmountS / currOrder.params.rateAmountB;
+      }
+    }
 
-    const nextFillAmountS = nextOrder.params.buyNoMoreThanAmountB ?
-      nextOrder.params.rateAmountS : nextOrder.params.scaledAmountS;
-
-    return Math.min(currFillAmountB, nextFillAmountS);
+    nextOrder.params.fillAmountS = Math.min(currFillAmountB, nextOrder.params.fillAmountS);
+    return currFillAmountB - nextOrder.params.fillAmountS;
   }
 
   private caculateOrderFees() {
@@ -193,6 +192,7 @@ export class ProtocolSimulator {
 
     const fees: FeeItem[] = [];
     let minerSpendableLrc = this.spendableLrcAmountList[size];
+
     for (let i = 0; i < size; i++) {
       const nextInd = (i + 1) % size;
       const order = this.ring.orders[i];
@@ -227,6 +227,14 @@ export class ProtocolSimulator {
           order.params.amountS.toNumber();
       }
 
+      if (order.params.tokenS === this.lrcAddress) {
+        this.spendableLrcAmountList[i] -= fillAmountSList[i];
+      }
+
+      if (order.params.tokenB === this.lrcAddress) {
+        this.spendableLrcAmountList[i] += fillAmountSList[nextInd];
+      }
+
       if (this.spendableLrcAmountList[i] < feeLrcToPay) {
         feeLrcToPay = this.spendableLrcAmountList[i];
         order.params.marginSplitPercentage = 100;
@@ -234,11 +242,20 @@ export class ProtocolSimulator {
 
       if (0 === this.feeSelectionList[i]) {
         feeItem.feeLrc = feeLrcToPay;
+        if (order.params.tokenB === this.lrcAddress) {
+          if (this.spendableLrcAmountList[i] >= feeLrcToPay) {
+            feeItem.feeB = feeLrcToPay;
+            feeItem.feeLrc = 0;
+          } else {
+            feeItem.feeB = this.spendableLrcAmountList[i];
+            feeItem.feeLrc = feeLrcToPay - this.spendableLrcAmountList[i];
+          }
+        }
       } else if (1 === this.feeSelectionList[i]) {
         if (minerSpendableLrc >= feeLrcToPay) {
           if (order.params.buyNoMoreThanAmountB) {
-            feeItem.feeS = fillAmountSList[i] *
-              order.params.scaledAmountS / order.params.rateAmountS - fillAmountSList[i];
+            feeItem.feeS = fillAmountSList[nextInd] *
+              order.params.amountS.toNumber() / order.params.amountB.toNumber() - fillAmountSList[i];
             feeItem.feeS = feeItem.feeS * order.params.marginSplitPercentage / 100;
           } else {
             feeItem.feeB = fillAmountSList[nextInd] -

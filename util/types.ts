@@ -14,6 +14,7 @@ export interface OrderParams {
   marginSplitPercentage: number;
   authAddr: string;
   walletAddr: string;
+  tokenSSymbol?: string;
   scaledAmountS?: number;
   scaledAmountB?: number;
   rateAmountS?: number;

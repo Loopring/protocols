@@ -80,8 +80,4 @@ export class Order {
     return orderHash;
   }
 
-  public clone() {
-    const clonedParams = Object.assign({}, this.params);
-    return new Order(this.owner, clonedParams);
-  }
 }

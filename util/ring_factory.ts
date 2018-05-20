@@ -479,26 +479,26 @@ export class RingFactory {
     return ring;
   }
 
-  public caculateRateAmountS(ring: Ring) {
-    let rate: number = 1;
-    const result: BigNumber[] = [];
-    const size = ring.orders.length;
-    for (let i = 0; i < size; i++) {
-      const order = ring.orders[i];
-      rate = rate * order.params.amountS.toNumber() / order.params.amountB.toNumber();
-    }
+  // public caculateRateAmountS(ring: Ring) {
+  //   let rate: number = 1;
+  //   const result: BigNumber[] = [];
+  //   const size = ring.orders.length;
+  //   for (let i = 0; i < size; i++) {
+  //     const order = ring.orders[i];
+  //     rate = rate * order.params.amountS.toNumber() / order.params.amountB.toNumber();
+  //   }
 
-    rate = Math.pow(rate, -1 / size);
+  //   rate = Math.pow(rate, -1 / size);
 
-    for (let i = 0; i < size; i ++) {
-      const order = ring.orders[i];
-      const rateAmountS = order.params.amountS.toNumber() * rate;
-      const rateSBigNumber = new BigNumber(rateAmountS.toPrecision(15));
-      result.push(rateSBigNumber);
-    }
+  //   for (let i = 0; i < size; i ++) {
+  //     const order = ring.orders[i];
+  //     const rateAmountS = order.params.amountS.toNumber() * rate;
+  //     const rateSBigNumber = new BigNumber(rateAmountS.toPrecision(15));
+  //     result.push(rateSBigNumber);
+  //   }
 
-    return result;
-  }
+  //   return result;
+  // }
 
   public ringToSubmitableParams(ring: Ring) {
     const ringSize = ring.orders.length;
@@ -510,7 +510,8 @@ export class RingFactory {
     const rList: string[] = [];
     const sList: string[] = [];
 
-    const rateAmountSList = this.caculateRateAmountS(ring);
+    ring.caculateAndSetRateAmount();
+    const rateAmountSList = ring.orders.map((o) => new BigNumber(o.params.rateAmountS.toPrecision(15)));
     // console.log("rateAmountSList", rateAmountSList);
 
     for (let i = 0; i < ringSize; i++) {
