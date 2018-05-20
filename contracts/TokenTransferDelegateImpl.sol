@@ -146,7 +146,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
     }
 
-    function batchTransferToken(
+    function batchUpdateHistoryAndTransferTokens(
         address lrcTokenAddress,
         address miner,
         address feeRecipient,
@@ -158,13 +158,13 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         external
     {
         uint len = batch.length;
-        require(len % 7 == 0);
+        require(len % 9 == 0);
         require(walletSplitPercentage > 0 && walletSplitPercentage < 100);
 
         ERC20 lrc = ERC20(lrcTokenAddress);
 
-        address prevOwner = address(batch[len - 7]);
-        for (uint i = 0; i < len; i += 7) {
+        address prevOwner = address(batch[len - 9]);
+        for (uint i = 0; i < len; i += 9) {
             address owner = address(batch[i]);
 
             // Pay token to previous order, or to miner as previous order's
@@ -213,6 +213,9 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
                 address(batch[i + 6]),
                 walletSplitPercentage
             );
+
+            // Update fill records
+            cancelledOrFilled[batch[i + 7]] = cancelledOrFilled[batch[i + 7]].add(uint(batch[i + 8]));
 
             prevOwner = owner;
         }
@@ -282,16 +285,15 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         cancelledOrFilled[orderHash] = cancelledOrFilled[orderHash].add(cancelOrFillAmount);
     }
 
-    function batchAddCancelledOrFilled(bytes32[] batch)
+    function getCancelledOrFilledBatch(bytes32 orderHashA, bytes32 orderHashB, bytes32 orderHashC)
         onlyAuthorized
-        notSuspended
-        public
+        external
+        view
+        returns (uint[3] amounts)
     {
-        require(batch.length % 2 == 0);
-        for (uint i = 0; i < batch.length / 2; i++) {
-            cancelledOrFilled[batch[i * 2]] = cancelledOrFilled[batch[i * 2]]
-                .add(uint(batch[i * 2 + 1]));
-        }
+        amounts[0] = cancelledOrFilled[orderHashA];
+        amounts[1] = cancelledOrFilled[orderHashB];
+        amounts[2] = cancelledOrFilled[orderHashC];
     }
 
     function setCutoffs(uint t)
