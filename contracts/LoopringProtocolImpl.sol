@@ -86,8 +86,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    rateS;
         bytes32 ringR;
         bytes32 ringS;
+        bytes32 r;
+        bytes32 s;
 
         uint8   ringV;
+        uint8   v;
         bool    buyNoMoreThanAmountB;
         bool    marginSplitAsFee;
         uint8   marginSplitPercentage;
@@ -171,6 +174,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             0,
             0x0,
             0x0,
+            0x0,
+            0x0,
+            0,
             0,
             buyNoMoreThanAmountB,
             false,
@@ -796,14 +802,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint ordersStartOffset = 0x64;  // 0x4 (function hash) + 0x20 (bytes length) + 0x20 (ring header)
         uint orderSize = 0x1C3;
 
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
         OrderState memory order;
         uint i;
         uint tempData;
-        uint nextIndex;
         for (i = 0; i < params.ringSize; i++) {
             order = orders[i];
 
@@ -811,16 +812,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
             assembly {
                 let offset := add(ordersStartOffset, mul(i, orderSize))
                 // Copy these bytes straight to the order struct
-                calldatacopy(order, offset, 0x180)
-                // Read r and s
-                r := calldataload(add(offset, 0x180))
-                s := calldataload(add(offset, 0x1A0))
+                calldatacopy(order, offset, 0x1C0)
                 // Last bytes containing packed data
                 tempData := calldataload(add(offset, 0x1C0))
             }
 
             // Unpack data
-            v = uint8((tempData >> 248) & 0xFF);
+            order.v = uint8((tempData >> 248) & 0xFF);
             order.ringV = uint8((tempData >> 240) & 0xFF);
             order.buyNoMoreThanAmountB = (tempData >> 232) & 128 > 0;
             order.marginSplitPercentage = uint8((tempData >> 232) & 127);
@@ -828,15 +826,24 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // Set members values that can be derived from other members
             order.rateB = order.amountB;
+        }
 
-            // Read tokenB from tokenS from the next order
-            nextIndex = (i + 1) % params.ringSize;
-            assembly {
-                let offset := add(ordersStartOffset, mul(nextIndex, orderSize))
-                // TokenS is stored as the 2nd word
-                tempData := calldataload(add(offset, 0x20))
+        OrderState memory prevOrder;
+        for (i = 0; i < params.ringSize; i++) {
+            order = orders[i];
+
+            // Get tokenB from the next order
+            order.tokenB = orders[(i + 1) % params.ringSize].tokenS;
+
+            // Reconstruct data using information from previous orders
+            if (i > 0) {
+                prevOrder = orders[i - 1];
+                order.wallet = address(uint(prevOrder.wallet) ^ uint(order.wallet));
+                order.authAddr = address(uint(prevOrder.authAddr) ^ uint(order.authAddr));
+                order.ringR = prevOrder.ringR ^ order.ringR;
+                order.ringS = prevOrder.ringS ^ order.ringS;
+                order.ringV = prevOrder.ringV ^ order.ringV;
             }
-            order.tokenB = address(tempData);
 
             validateOrder(order);
 
@@ -848,9 +855,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             verifySignature(
                 order.owner,
                 order.orderHash,
-                v,
-                r,
-                s
+                order.v,
+                order.r,
+                order.s
             );
 
             params.ringHash ^= order.orderHash;
