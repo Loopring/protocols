@@ -4,28 +4,34 @@
  */
 import io from 'socket.io-client'
 
-export function connect(url, options, connectCallback) {
+export class Socket{
 
-  options = options || { transports: ['websocket']};
-  const socket = io(url, options);
-  return new Promise((resolve) => {
+  constructor(url,options){
+    options = options || { transports: ['websocket']};
+    const socket = io(url, options);
+    const _this = this;
     socket.on('connect', () => {
-      if (connectCallback) {
-        connectCallback();
-      }
-      resolve(socket)
+      _this.socket = socket;
     })
-  })
+  }
+    emit(event, options) {
+    this.socket.emit(event, JSON.stringify(options))
+  }
+
+   on( event, handle) {
+    this.socket.on(event, (res) => {
+      res = JSON.parse(res);
+      handle(res)
+    })
+  }
+
 }
 
 
-export function emit(socket, event, options) {
-  socket.emit(event, JSON.stringify(options))
-}
 
-export function on(socket, event, handle) {
-  socket.on(event, (res) => {
-    res = JSON.parse(res);
-    handle(res)
-  })
-}
+
+
+
+
+
+
