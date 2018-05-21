@@ -94,7 +94,7 @@ export function getCutoff(host,{address, delegateAddress, blockNumber}) {
  */
 export function placeOrder(host,order) {
   try {
-    validator.validate({value: order, type: "Order"});
+    validator.validate({value: order, type: "ORDER"});
   } catch(e) {
     return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
   }
