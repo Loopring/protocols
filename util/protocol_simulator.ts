@@ -163,7 +163,7 @@ export class ProtocolSimulator {
     }
 
     // do it again.
-    for (let i = 0; i < size; i++) {
+    for (let i = 0; i < smallestIndex; i++) {
       const nextIndex = (i + 1) % size;
       const currOrder = this.ring.orders[i];
       const nextOrder = this.ring.orders[nextIndex];

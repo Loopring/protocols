@@ -1,13 +1,16 @@
 import { BigNumber } from "bignumber.js";
 import xor = require("bitwise-xor");
 import promisify = require("es6-promisify");
+import fs = require("fs");
 import * as _ from "lodash";
 import { Artifacts } from "../util/artifacts";
 import { Order } from "../util/order";
+import { TxParser } from "../util/parseTx";
 import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { RingFactory } from "../util/ring_factory";
 import { OrderParams, RingBalanceInfo, RingInfo, TransferItem } from "../util/types";
+import { rawTxs } from "./rawTxs";
 import { ringInfoList } from "./ringConfig";
 
 const {
@@ -96,7 +99,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const balance = order.params.amountS.toNumber();
       const tokenSAddr = order.params.tokenS;
       const tokenInstance = tokenMap.get(tokenSAddr);
-      await tokenInstance.setBalance(orderOwner, balance);
+      await tokenInstance.setBalance(orderOwner, balance / 2);
 
       const lrcFee = order.params.lrcFee.toNumber();
       await lrc.setBalance(orderOwner, balance);
@@ -308,11 +311,15 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   };
 
   describe("submitRing", () => {
-    const allTokenAddrs = [eosAddress, neoAddress, qtumAddress, lrcAddress];
-    const allOwnerAddresses = [order1Owner, order2Owner, order3Owner, ringOwner];
-    let eventFromBlock: number = 0;
+    const protocolAbi = fs.readFileSync("ABI/version151/LoopringProtocolImpl.abi", "ascii");
+    const txParser = new TxParser(protocolAbi);
+    const ringInfoListFromRawTxs = rawTxs.map((tx) => txParser.parseSubmitRingTx(tx));
 
-    for (const ringInfo of ringInfoList) {
+    // const ringInfoListForTest = ringInfoList;
+    const ringInfoListForTest = ringInfoListFromRawTxs;
+
+    let eventFromBlock: number = 0;
+    for (const ringInfo of ringInfoListForTest) {
       it(ringInfo.description, async () => {
         setDefaultValuesForRingInfo(ringInfo);
 

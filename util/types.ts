@@ -64,6 +64,7 @@ export interface RingInfo {
   description?: string;
   salt?: number;
   verbose?: boolean;
+  id?: string;
 }
 
 export interface RingBalanceInfo {
@@ -87,4 +88,11 @@ export interface TransferItem {
   fromAddress: string;
   toAddress: string;
   amount: number;
+}
+
+export interface RawTx {
+  content: string;
+  id?: string;
+  url?: string;
+  verbose?: boolean;
 }

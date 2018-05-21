@@ -414,6 +414,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
+    event LogUint2(uint n1, uint n2, uint n3);
     function settleRing(
         TokenTransferDelegate delegate,
         uint          ringSize,
@@ -461,6 +462,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.splitS > 0 ? int(state.splitS) : -int(state.splitB)
             );
 
+            emit LogUint2(state.splitS, state.splitB, state.lrcFeeState);
             prevSplitB = state.splitB;
         }
 
