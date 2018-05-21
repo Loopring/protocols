@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import ethUtil = require("ethereumjs-util");
 import { LoopringSubmitParams, OrderParams, RingInfo } from "../util/types";
 import { Order } from "./order";
 import { Ring } from "./ring";
@@ -51,6 +52,32 @@ export class RingFactory {
     return ring;
   }
 
+  public bnToHex(x: BigNumber) {
+    return web3.toHex(x).substring(2).padStart(64, "0");
+  }
+
+  public addressToHex(x: string) {
+    return "000000000000000000000000" + x.substring(2);
+  }
+
+  public padRight(x: string, n: number) {
+    for (let i = 0; i < n; i++) {
+        x = x + "0";
+    }
+    return x;
+  }
+
+  public addressXOR(s1: string, s2: string) {
+    const buf1 = Buffer.from(s1.slice(2), "hex");
+    const buf2 = Buffer.from(s2.slice(2), "hex");
+    const res = Buffer.alloc(32);
+    for (let i = 0; i < 32; i++) {
+      res[i] = buf1[i] ^ buf2[i];
+    }
+    const strRes = ethUtil.bufferToHex(res);
+    return strRes;
+  }
+
   public ringToSubmitableParams(ring: Ring) {
     const ringSize = ring.orders.length;
     const addressList: string[][] = [];
@@ -60,9 +87,20 @@ export class RingFactory {
     const vList: number[] = [];
     const rList: string[] = [];
     const sList: string[] = [];
+    let data = "0x";
 
     ring.caculateAndSetRateAmount();
     const rateAmountSList = ring.orders.map((o) => new BigNumber(o.params.rateAmountS.toPrecision(15)));
+
+    const ringSizeHex = this.bnToHex(new BigNumber(ringSize));
+    const feeSelectionHex = this.bnToHex(new BigNumber(this.feeSelectionListToNumber(ring.feeSelections)));
+    const feeRecipientHex = this.addressToHex(ring.owner);
+
+    let ringHeaderData = "";
+    ringHeaderData += ringSizeHex.substring(64 - 2);
+    ringHeaderData += feeSelectionHex.substring(64 - 4);
+    ringHeaderData += feeRecipientHex.substring(64 - 40);
+    data += this.padRight(ringHeaderData, 64 - ringHeaderData.length);
 
     for (let i = 0; i < ringSize; i++) {
       const order = ring.orders[i];
@@ -92,6 +130,45 @@ export class RingFactory {
       vList.push(order.params.v);
       rList.push(order.params.r);
       sList.push(order.params.s);
+
+      let authAddrHex = this.addressToHex(order.params.authAddr);
+      let walletAddrHex = this.addressToHex(order.params.walletAddr);
+      let ringAuthRHex = ring.authR[i].substring(2);
+      let ringAuthSHex = ring.authS[i].substring(2);
+      let ringAuthV = ring.authV[i];
+      if (i > 0) {
+        // Do some simple XOR compression
+        const previousOrder = ring.orders[i - 1];
+        authAddrHex = this.addressXOR(previousOrder.params.authAddr, order.params.authAddr).slice(2);
+        walletAddrHex = this.addressXOR(previousOrder.params.walletAddr, order.params.walletAddr).slice(2);
+        ringAuthRHex = this.addressXOR(ring.authR[i - 1], ring.authR[i]).slice(2);
+        ringAuthSHex = this.addressXOR(ring.authS[i - 1], ring.authS[i]).slice(2);
+        ringAuthV = ring.authV[i - 1] ^ ring.authV[i];
+      }
+
+      data += this.addressToHex(order.owner);
+      data += this.addressToHex(order.params.tokenS);
+      data += walletAddrHex;
+      data += authAddrHex;
+
+      data += this.bnToHex(order.params.validSince);
+      data += this.bnToHex(order.params.validUntil);
+      data += this.bnToHex(order.params.amountS);
+      data += this.bnToHex(order.params.amountB);
+      data += this.bnToHex(order.params.lrcFee);
+      data += this.bnToHex(rateAmountSList[i]);
+
+      data += ringAuthRHex;
+      data += ringAuthSHex;
+
+      data += order.params.r.substring(2);
+      data += order.params.s.substring(2);
+
+      let packedData = 0;
+      packedData += (order.params.v << 16);
+      packedData += (ringAuthV << 8);
+      packedData += ((order.params.buyNoMoreThanAmountB ? 1 : 0) << 7) + order.params.marginSplitPercentage;
+      data += this.bnToHex(new BigNumber(packedData)).substring(58);
     }
 
     vList.push(...ring.authV);
@@ -103,16 +180,7 @@ export class RingFactory {
     // sList.push(ring.s);
 
     const submitParams = {
-      addressList,
-      uintArgsList,
-      uint8ArgsList,
-      buyNoMoreThanAmountBList,
-      vList,
-      rList,
-      sList,
-      ringOwner: ring.owner,
-      feeRecepient: ring.owner,
-      feeSelections: this.feeSelectionListToNumber(ring.feeSelections),
+      data,
     };
 
     return submitParams;

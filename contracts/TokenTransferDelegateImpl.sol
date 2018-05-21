@@ -146,6 +146,18 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
     }
 
+    struct OrderSettleData {
+        address owner;
+        address tokenS;
+        uint    amount;
+        uint    split;
+        uint    lrcReward;
+        uint    lrcFeeState;
+        address wallet;
+        bytes32 orderHash;
+        uint    fillAmount;
+    }
+
     function batchUpdateHistoryAndTransferTokens(
         address lrcTokenAddress,
         address miner,
@@ -163,33 +175,38 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
         ERC20 lrc = ERC20(lrcTokenAddress);
 
+        OrderSettleData memory order;
+
         address prevOwner = address(batch[len - 9]);
-        for (uint i = 0; i < len; i += 9) {
-            address owner = address(batch[i]);
+        for (uint i = 0; i < batch.length; i += 9) {
+
+            // Copy the data straight to the order struct from the call data
+            assembly {
+                calldatacopy(order, add(0xC4, mul(i,0x20)), 0x120)
+            }
 
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
-            ERC20 token = ERC20(address(batch[i + 1]));
+            ERC20 token = ERC20(address(order.tokenS));
 
-            // Here batch[i + 2] has been checked not to be 0.
-            if (batch[i + 2] != 0x0 && owner != prevOwner) {
+            // Here orderBatch.amount has been checked not to be 0.
+            if (order.amount != 0 && order.owner != prevOwner) {
                 require(
                     token.transferFrom(
-                        owner,
+                        order.owner,
                         prevOwner,
-                        uint(batch[i + 2])
+                        order.amount
                     )
                 );
             }
 
             // Miner pays LRx fee to order owner
-            uint lrcReward = uint(batch[i + 4]);
-            if (lrcReward != 0 && miner != owner) {
+            if (order.lrcReward != 0 && miner != order.owner) {
                 require(
                     lrc.transferFrom(
                         miner,
-                        owner,
-                        lrcReward
+                        order.owner,
+                        order.lrcReward
                     )
                 );
             }
@@ -197,27 +214,27 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             // Split margin-split income between miner and wallet
             splitPayFee(
                 token,
-                uint(batch[i + 3]),
-                owner,
+                order.split,
+                order.owner,
                 feeRecipient,
-                address(batch[i + 6]),
+                order.wallet,
                 walletSplitPercentage
             );
 
             // Split LRx fee income between miner and wallet
             splitPayFee(
                 lrc,
-                uint(batch[i + 5]),
-                owner,
+                order.lrcFeeState,
+                order.owner,
                 feeRecipient,
-                address(batch[i + 6]),
+                order.wallet,
                 walletSplitPercentage
             );
 
             // Update fill records
-            cancelledOrFilled[batch[i + 7]] = cancelledOrFilled[batch[i + 7]].add(uint(batch[i + 8]));
+            cancelledOrFilled[order.orderHash] = cancelledOrFilled[order.orderHash].add(order.fillAmount);
 
-            prevOwner = owner;
+            prevOwner = order.owner;
         }
     }
 

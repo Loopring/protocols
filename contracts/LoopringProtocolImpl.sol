@@ -76,7 +76,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     struct OrderState {
         address owner;
         address tokenS;
-        address tokenB;
         address wallet;
         address authAddr;
         uint    validSince;
@@ -84,12 +83,19 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    amountS;
         uint    amountB;
         uint    lrcFee;
+        uint    rateS;
+        bytes32 ringR;
+        bytes32 ringS;
+
+        uint8   ringV;
         bool    buyNoMoreThanAmountB;
         bool    marginSplitAsFee;
-        bytes32 orderHash;
         uint8   marginSplitPercentage;
-        uint    rateS;
+
         uint    rateB;
+        address tokenB;
+
+        bytes32 orderHash;
         uint    fillAmountS;
         uint    lrcReward;
         uint    lrcFeeState;
@@ -100,9 +106,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @dev A struct to capture parameters passed to submitRing method and
     ///      various of other variables used across the submitRing core logics.
     struct RingParams {
-        uint8[]       vList;
-        bytes32[]     rList;
-        bytes32[]     sList;
         address       feeRecipient;
         uint16        feeSelections;
         uint          ringSize;         // computed
@@ -158,7 +161,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         OrderState memory order = OrderState(
             addresses[0],
             addresses[1],
-            addresses[2],
             addresses[3],
             addresses[4],
             orderValues[2],
@@ -166,12 +168,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderValues[0],
             orderValues[1],
             orderValues[4],
+            0,
+            0x0,
+            0x0,
+            0,
             buyNoMoreThanAmountB,
             false,
-            0x0,
             marginSplitPercentage,
             0,
-            0,
+            addresses[2],
+            0x0,
             0,
             0,
             0,
@@ -237,15 +243,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     }
 
     function submitRing(
-        address[4][]  addressList,
-        uint[6][]     uintArgsList,
-        uint8[1][]    uint8ArgsList,
-        bool[]        buyNoMoreThanAmountBList,
-        uint8[]       vList,
-        bytes32[]     rList,
-        bytes32[]     sList,
-        address       feeRecipient,
-        uint16        feeSelections
+        bytes data
         )
         public
     {
@@ -256,24 +254,24 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint64 _ringIndex = ringIndex;
         ringIndex |= (1 << 63);
 
+        // Read ring header from call data
+        uint ringHeader = 0;
+        assembly {
+            ringHeader := calldataload(add(calldataload(0x04), 0x24))
+        }
+
+        // Extract data from ring header
         RingParams memory params = RingParams(
-            vList,
-            rList,
-            sList,
-            feeRecipient,
-            feeSelections,
-            addressList.length,
+            address(ringHeader >> (256 - 184)),
+            uint16(ringHeader >> (256 - 24)),
+            uint8(ringHeader >> (256 - 8)),
             0x0 // ringHash
         );
 
         verifyInputDataIntegrity(
             params,
-            addressList,
-            uintArgsList,
-            uint8ArgsList,
-            buyNoMoreThanAmountBList
+            data
         );
-
 
         // Assemble input data into structs so we can pass them to other functions.
         // This method also calculates ringHash, therefore it must be called before
@@ -281,11 +279,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
         OrderState[] memory orders = assembleOrders(
             params,
-            delegate,
-            addressList,
-            uintArgsList,
-            uint8ArgsList,
-            buyNoMoreThanAmountBList
+            delegate
         );
 
         verifyRingSignatures(params, orders);
@@ -323,16 +317,13 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         pure
     {
-        uint j;
         for (uint i = 0; i < params.ringSize; i++) {
-            j = i + params.ringSize;
-
             verifySignature(
                 orders[i].authAddr,
                 params.ringHash,
-                params.vList[j],
-                params.rList[j],
-                params.sList[j]
+                orders[i].ringV,
+                orders[i].ringR,
+                orders[i].ringS
             );
         }
     }
@@ -775,44 +766,26 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     /// @dev verify input data's basic integrity.
     function verifyInputDataIntegrity(
-        RingParams params,
-        address[4][]  addressList,
-        uint[6][]     uintArgsList,
-        uint8[1][]    uint8ArgsList,
-        bool[]        buyNoMoreThanAmountBList
+        RingParams   params,
+        bytes data
         )
         private
         pure
     {
         require(params.feeRecipient != 0x0);
-        require(params.ringSize == addressList.length);
-        require(params.ringSize == uintArgsList.length);
-        require(params.ringSize == uint8ArgsList.length);
-        require(params.ringSize == buyNoMoreThanAmountBList.length);
-
-        // Validate ring-mining related arguments.
-        for (uint i = 0; i < params.ringSize; i++) {
-            require(uintArgsList[i][5] > 0); // "order rateAmountS is zero");
-        }
 
         //Check ring size
         require(params.ringSize > 1 && params.ringSize <= MAX_RING_SIZE); // "invalid ring size");
 
-        uint sigSize = params.ringSize << 1;
-        require(sigSize == params.vList.length);
-        require(sigSize == params.rList.length);
-        require(sigSize == params.sList.length);
+        //Check data size
+        require(data.length == 0x20 + 0x1C3 * params.ringSize);
     }
 
     /// @dev        assmble order parameters into Order struct.
     /// @return     A list of orders.
     function assembleOrders(
         RingParams params,
-        TokenTransferDelegate delegate,
-        address[4][]  addressList,
-        uint[6][]     uintArgsList,
-        uint8[1][]    uint8ArgsList,
-        bool[]        buyNoMoreThanAmountBList
+        TokenTransferDelegate delegate
         )
         private
         view
@@ -820,47 +793,67 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         orders = new OrderState[](params.ringSize);
 
-        for (uint i = 0; i < params.ringSize; i++) {
-            uint[6] memory uintArgs = uintArgsList[i];
-            bool marginSplitAsFee = (params.feeSelections & (uint16(1) << i)) > 0;
-            orders[i] = OrderState(
-                addressList[i][0],
-                addressList[i][1],
-                addressList[(i + 1) % params.ringSize][1],
-                addressList[i][2],
-                addressList[i][3],
-                uintArgs[2],
-                uintArgs[3],
-                uintArgs[0],
-                uintArgs[1],
-                uintArgs[4],
-                buyNoMoreThanAmountBList[i],
-                marginSplitAsFee,
-                bytes32(0),
-                uint8ArgsList[i][0],
-                uintArgs[5],
-                uintArgs[1],
-                0,   // fillAmountS
-                0,   // lrcReward
-                0,   // lrcFee
-                0,   // splitS
-                0    // splitB
-            );
+        uint ordersStartOffset = 0x64;  // 0x4 (function hash) + 0x20 (bytes length) + 0x20 (ring header)
+        uint orderSize = 0x1C3;
 
-            validateOrder(orders[i]);
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
 
-            bytes32 orderHash = calculateOrderHash(orders[i]);
-            orders[i].orderHash = orderHash;
+        OrderState memory order;
+        uint i;
+        uint tempData;
+        uint nextIndex;
+        for (i = 0; i < params.ringSize; i++) {
+            order = orders[i];
+
+            // Read order data straight from the call data
+            assembly {
+                let offset := add(ordersStartOffset, mul(i, orderSize))
+                // Copy these bytes straight to the order struct
+                calldatacopy(order, offset, 0x180)
+                // Read r and s
+                r := calldataload(add(offset, 0x180))
+                s := calldataload(add(offset, 0x1A0))
+                // Last bytes containing packed data
+                tempData := calldataload(add(offset, 0x1C0))
+            }
+
+            // Unpack data
+            v = uint8((tempData >> 248) & 0xFF);
+            order.ringV = uint8((tempData >> 240) & 0xFF);
+            order.buyNoMoreThanAmountB = (tempData >> 232) & 128 > 0;
+            order.marginSplitPercentage = uint8((tempData >> 232) & 127);
+            order.marginSplitAsFee = (params.feeSelections & (uint16(1) << i)) > 0;
+
+            // Set members values that can be derived from other members
+            order.rateB = order.amountB;
+
+            // Read tokenB from tokenS from the next order
+            nextIndex = (i + 1) % params.ringSize;
+            assembly {
+                let offset := add(ordersStartOffset, mul(nextIndex, orderSize))
+                // TokenS is stored as the 2nd word
+                tempData := calldataload(add(offset, 0x20))
+            }
+            order.tokenB = address(tempData);
+
+            validateOrder(order);
+
+            // Validate ring-mining related arguments.
+            require(order.rateS > 0); // "order rateAmountS is zero");
+
+            order.orderHash = calculateOrderHash(order);
 
             verifySignature(
-                orders[i].owner,
-                orderHash,
-                params.vList[i],
-                params.rList[i],
-                params.sList[i]
+                order.owner,
+                order.orderHash,
+                v,
+                r,
+                s
             );
 
-            params.ringHash ^= orderHash;
+            params.ringHash ^= order.orderHash;
         }
 
         validateOrdersCutoffs(orders, delegate);

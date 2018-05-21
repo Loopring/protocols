@@ -269,10 +269,10 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   describe("submitRing", () => {
     const protocolAbi = fs.readFileSync("ABI/version151/LoopringProtocolImpl.abi", "ascii");
     const txParser = new TxParser(protocolAbi);
-    const ringInfoListFromRawTxs = rawTxs.map((tx) => txParser.parseSubmitRingTx(tx));
+    // const ringInfoListFromRawTxs = rawTxs.map((tx) => txParser.parseSubmitRingTx(tx));
 
-    // const ringInfoListForTest = ringInfoList;
-    const ringInfoListForTest = ringInfoList.concat(ringInfoListFromRawTxs);
+    const ringInfoListForTest = ringInfoList;
+    // const ringInfoListForTest = ringInfoList.concat(ringInfoListFromRawTxs);
 
     let eventFromBlock: number = 0;
 
@@ -330,15 +330,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                                   ringInfo.orderFilledOrCancelledAmountList,
                                                                   ringInfo.verbose);
 
-        const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                         p.uintArgsList,
-                                                         p.uint8ArgsList,
-                                                         p.buyNoMoreThanAmountBList,
-                                                         p.vList,
-                                                         p.rList,
-                                                         p.sList,
-                                                         p.feeRecepient,
-                                                         p.feeSelections,
+        const tx = await loopringProtocolImpl.submitRing(p.data,
                                                          {from: feeRecepient});
         // console.log("tx.receipt.logs: ", tx.receipt.logs);
 

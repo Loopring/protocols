@@ -98,40 +98,28 @@ contract LoopringProtocol {
         external;
 
     /// @dev Submit a order-ring for validation and settlement.
-    /// @param addressList  List of each order's owner, tokenS, wallet, authAddr.
-    ///                     Note that next order's `tokenS` equals this order's
-    ///                     `tokenB`.
-    /// @param uintArgsList List of uint-type arguments in this order:
+    /// @param data         List of each order's owner, tokenS, wallet, authAddr, 
     ///                     amountS, amountB, validSince (second),
     ///                     validUntil (second), lrcFee, and rateAmountS.
-    /// @param uint8ArgsList -
-    ///                     List of unit8-type arguments, in this order:
-    ///                     marginSplitPercentageList.
-    /// @param buyNoMoreThanAmountBList -
-    ///                     This indicates when a order should be considered
-    /// @param vList        List of v for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     v value of the ring signature.
-    /// @param rList        List of r for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     r value of the ring signature.
-    /// @param sList        List of s for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     s value of the ring signature.
-    /// @param feeRecipient Miner address.
-    /// @param feeSelections -
+    ///                     Note that next order's `tokenS` equals this order's
+    ///                     `tokenB`.
     ///                     Bits to indicate fee selections. `1` represents margin
     ///                     split and `0` represents LRC as fee.
+    ///                     Miner address.
+    ///                     This indicates when a order should be considered
+    ///                     List of unit8-type arguments, in this order:
+    ///                     marginSplitPercentageList.                  
+    ///                     List of v for each order. This list is 1-larger than
+    ///                     the previous lists, with the last element being the
+    ///                     v value of the ring signature.
+    ///                     List of r for each order. This list is 1-larger than
+    ///                     the previous lists, with the last element being the
+    ///                     r value of the ring signature.
+    ///                     List of s for each order. This list is 1-larger than
+    ///                     the previous lists, with the last element being the
+    ///                     s value of the ring signature.
     function submitRing(
-        address[4][]    addressList,
-        uint[6][]       uintArgsList,
-        uint8[1][]      uint8ArgsList,
-        bool[]          buyNoMoreThanAmountBList,
-        uint8[]         vList,
-        bytes32[]       rList,
-        bytes32[]       sList,
-        address         feeRecipient,
-        uint16          feeSelections
+        bytes           data
         )
         public;
 }
