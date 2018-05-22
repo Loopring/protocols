@@ -27,8 +27,8 @@ export default class Account{
     return getTransactions(this.host, {owner, status, txHash, pageIndex, pageSize})
   }
 
-  getEstimatedAllocatedAllowance({owner, token}){
-    return getEstimatedAllocatedAllowance(this.host, {owner, token})
+  getEstimatedAllocatedAllowance({owner, token,delegateAddress}){
+    return getEstimatedAllocatedAllowance(this.host, {owner, token,delegateAddress})
   }
 
   getFrozenLrcFee(owner){
@@ -161,12 +161,13 @@ export function getTransactions(host,{owner, status, txHash, pageIndex, pageSize
 
 /**
  * @description Get the total frozen amount of all unfinished orders
+ * @param delegateAddress
  * @param host
  * @param owner
  * @param token
  * @returns {Promise}
  */
-export function getEstimatedAllocatedAllowance(host,{owner, token}) {
+export function getEstimatedAllocatedAllowance(host,{owner, token,delegateAddress}) {
   try {
     validator.validate({value: owner, type: "ETH_ADDRESS"})
   } catch (e) {
@@ -174,7 +175,7 @@ export function getEstimatedAllocatedAllowance(host,{owner, token}) {
   }
   const body = {};
   body.method = 'loopring_getEstimatedAllocatedAllowance';
-  body.params = [{owner, token}];
+  body.params = [{owner, token,delegateAddress}];
   body.id = id();
   body.jsonrpc = '2.0';
   return request(host,{
