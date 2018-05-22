@@ -146,18 +146,6 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         }
     }
 
-    struct OrderSettleData {
-        address owner;
-        address tokenS;
-        uint    amount;
-        uint    split;
-        uint    lrcReward;
-        uint    lrcFeeState;
-        address wallet;
-        bytes32 orderHash;
-        uint    fillAmount;
-    }
-
     function batchUpdateHistoryAndTransferTokens(
         address lrcTokenAddress,
         address miner,
@@ -175,7 +163,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
 
         ERC20 lrc = ERC20(lrcTokenAddress);
 
-        OrderSettleData memory order;
+        TokenTransfer.OrderSettleData memory order;
 
         address prevOwner = address(batch[len - 9]);
         for (uint i = 0; i < batch.length; i += 9) {

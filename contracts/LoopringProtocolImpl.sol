@@ -261,6 +261,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         ringIndex |= (1 << 63);
 
         // Read ring header from call data
+        require(data.length >= 4);
         uint ringHeader = 0;
         assembly {
             ringHeader := calldataload(add(calldataload(0x04), 0x24))
@@ -411,6 +412,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
+    struct SettledOrderInfo {
+        bytes32 orderHash;
+        address owner;
+        address tokenS;
+        uint fillAmountS;
+        uint lrcReward;
+        int lrcFee;
+        int split;
+    }
+
     function settleRing(
         TokenTransferDelegate delegate,
         uint          ringSize,
@@ -421,42 +432,41 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         returns (bytes32[] memory orderInfoList)
     {
-        bytes32[] memory batch = new bytes32[](ringSize * 9); // ringSize * (owner + tokenS + 4 amounts + wallet + orderhash + fillAmount)
-        orderInfoList = new bytes32[](ringSize * 7);
+        bytes32[] memory batch = new bytes32[](ringSize * 9); // ringSize * (num words in TokenTransfer.OrderSettleData)
+        orderInfoList = new bytes32[](ringSize * 7);          // ringSize * (num words in SettledOrderInfo)
 
-        uint p = 0;
-        uint q = 0;
+        TokenTransfer.OrderSettleData memory orderSettleData;
+        SettledOrderInfo memory settledOrderInfo;
         uint prevSplitB = orders[ringSize - 1].splitB;
         for (uint i = 0; i < ringSize; i++) {
             OrderState memory state = orders[i];
             uint nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
 
-            // Store owner and tokenS of every order
-            batch[p++] = bytes32(state.owner);
-            batch[p++] = bytes32(state.tokenS);
+            // This will make writes to orderSettleData to be stored in the memory of batch
+            assembly {
+                orderSettleData := add(add(batch, 0x20), mul(i, 0x120))  // 0x120 := sizeof(word) * (num words in TokenTransfer.OrderSettleData)
+            }
+            orderSettleData.owner = state.owner;
+            orderSettleData.tokenS = state.tokenS;
+            orderSettleData.amount = state.fillAmountS.sub(prevSplitB);
+            orderSettleData.split = prevSplitB.add(state.splitS);
+            orderSettleData.lrcReward = state.lrcReward;
+            orderSettleData.lrcFeeState = state.lrcFeeState;
+            orderSettleData.wallet = state.wallet;
+            orderSettleData.orderHash = state.orderHash;
+            orderSettleData.fillAmount = state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS;
 
-            // Store all amounts
-            batch[p++] = bytes32(state.fillAmountS.sub(prevSplitB));
-            batch[p++] = bytes32(prevSplitB.add(state.splitS));
-            batch[p++] = bytes32(state.lrcReward);
-            batch[p++] = bytes32(state.lrcFeeState);
-            batch[p++] = bytes32(state.wallet);
-
-            batch[p++] = state.orderHash;
-            batch[p++] = bytes32(
-                state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS);
-
-            orderInfoList[q++] = bytes32(state.orderHash);
-            orderInfoList[q++] = bytes32(state.owner);
-            orderInfoList[q++] = bytes32(state.tokenS);
-            orderInfoList[q++] = bytes32(state.fillAmountS);
-            orderInfoList[q++] = bytes32(state.lrcReward);
-            orderInfoList[q++] = bytes32(
-                state.lrcFeeState > 0 ? int(state.lrcFeeState) : -int(state.lrcReward)
-            );
-            orderInfoList[q++] = bytes32(
-                state.splitS > 0 ? int(state.splitS) : -int(state.splitB)
-            );
+            // This will make writes to settledOrderInfo to be stored in the memory of orderInfoList
+            assembly {
+                settledOrderInfo := add(add(orderInfoList, 0x20), mul(i, 0xE0))  // 0xE0 := sizeof(word) * (num words in SettledOrderInfo)
+            }
+            settledOrderInfo.orderHash = state.orderHash;
+            settledOrderInfo.owner = state.owner;
+            settledOrderInfo.tokenS = state.tokenS;
+            settledOrderInfo.fillAmountS = state.fillAmountS;
+            settledOrderInfo.lrcReward = state.lrcReward;
+            settledOrderInfo.lrcFee = state.lrcFeeState > 0 ? int(state.lrcFeeState) : -int(state.lrcReward);
+            settledOrderInfo.split = state.splitS > 0 ? int(state.splitS) : -int(state.splitB);
 
             prevSplitB = state.splitB;
         }

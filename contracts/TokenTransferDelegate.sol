@@ -122,3 +122,17 @@ contract TokenTransferDelegate {
 
     function kill() external;
 }
+
+library TokenTransfer {
+    struct OrderSettleData {
+        address owner;
+        address tokenS;
+        uint    amount;
+        uint    split;
+        uint    lrcReward;
+        uint    lrcFeeState;
+        address wallet;
+        bytes32 orderHash;
+        uint    fillAmount;
+    }
+}
