@@ -414,7 +414,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         );
     }
 
-    event LogUint2(uint n1, uint n2, uint n3);
     function settleRing(
         TokenTransferDelegate delegate,
         uint          ringSize,
@@ -462,7 +461,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 state.splitS > 0 ? int(state.splitS) : -int(state.splitB)
             );
 
-            emit LogUint2(state.splitS, state.splitB, state.lrcFeeState);
             prevSplitB = state.splitB;
         }
 
@@ -729,15 +727,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 amount = state.amountB.tolerantSub(cancelledOrFilledAmounts[i % 3]);
 
                 state.amountS = amount.mul(state.amountS) / state.amountB;
-                state.lrcFee = amount.mul(state.lrcFee) / state.amountB;
-
                 state.amountB = amount;
             } else {
                 amount = state.amountS.tolerantSub(cancelledOrFilledAmounts[i % 3]);
 
                 state.amountB = amount.mul(state.amountB) / state.amountS;
-                state.lrcFee = amount.mul(state.lrcFee) / state.amountS;
-
                 state.amountS = amount;
             }
 

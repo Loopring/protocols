@@ -124,17 +124,17 @@ export class ProtocolSimulator {
 
       if (order.params.buyNoMoreThanAmountB) {
         availableAmountB -= this.orderFilledOrCancelledAmountList[i];
-        availableAmountS = availableAmountB * amountS / amountB;
+        availableAmountS = Math.floor(availableAmountB * amountS / amountB);
       } else {
         availableAmountS -= this.orderFilledOrCancelledAmountList[i];
-        availableAmountB = availableAmountS * amountB / amountS;
+        availableAmountB = Math.floor(availableAmountS * amountB / amountS);
       }
 
       if (this.spendableAmountSList &&
           this.spendableAmountSList[i] &&
           this.spendableAmountSList[i] < availableAmountS) {
         availableAmountS = this.spendableAmountSList[i];
-        availableAmountB = availableAmountS * amountB / amountS;
+        availableAmountB = Math.floor(availableAmountS * amountB / amountS);
       }
 
       if (availableAmountS <= 0 || availableAmountB <= 0) {
@@ -174,11 +174,12 @@ export class ProtocolSimulator {
   private caculateNextFillAmountS(currOrder: Order, nextOrder: Order) {
     let currFillAmountB = currOrder.params.fillAmountS *
       currOrder.params.rateAmountB / currOrder.params.rateAmountS;
+    currFillAmountB = Math.floor(currFillAmountB);
     if (currOrder.params.buyNoMoreThanAmountB) {
       if (currFillAmountB > currOrder.params.scaledAmountB) {
         currFillAmountB = currOrder.params.scaledAmountB;
-        currOrder.params.fillAmountS = currFillAmountB *
-          currOrder.params.rateAmountS / currOrder.params.rateAmountB;
+        currOrder.params.fillAmountS = Math.floor(currFillAmountB *
+          currOrder.params.rateAmountS / currOrder.params.rateAmountB);
       }
     }
 
@@ -220,11 +221,12 @@ export class ProtocolSimulator {
 
       let feeLrcToPay = 0;
       if (order.params.buyNoMoreThanAmountB) {
-        const fillAmountB = fillAmountSList[i] * order.params.rateAmountB / order.params.rateAmountS;
-        feeLrcToPay = order.params.lrcFee.toNumber() * fillAmountB / order.params.amountB.toNumber();
+        const fillAmountB = Math.floor(fillAmountSList[i] * order.params.rateAmountB / order.params.rateAmountS);
+        feeLrcToPay = Math.floor(order.params.lrcFee.toNumber() * fillAmountB /
+                                 order.params.amountB.toNumber());
       } else {
-        feeLrcToPay = order.params.lrcFee.toNumber() * fillAmountSList[i] /
-          order.params.amountS.toNumber();
+        feeLrcToPay = Math.floor(order.params.lrcFee.toNumber() * fillAmountSList[i] /
+                                 order.params.amountS.toNumber());
       }
 
       if (order.params.tokenS === this.lrcAddress) {
@@ -254,13 +256,16 @@ export class ProtocolSimulator {
       } else if (1 === this.feeSelectionList[i]) {
         if (minerSpendableLrc >= feeLrcToPay) {
           if (order.params.buyNoMoreThanAmountB) {
-            feeItem.feeS = fillAmountSList[nextInd] *
-              order.params.amountS.toNumber() / order.params.amountB.toNumber() - fillAmountSList[i];
-            feeItem.feeS = feeItem.feeS * order.params.marginSplitPercentage / 100;
+            feeItem.feeS = Math.floor(fillAmountSList[nextInd] *
+                                      order.params.amountS.toNumber() /
+                                      order.params.amountB.toNumber()) - fillAmountSList[i];
+            feeItem.feeS = Math.floor(feeItem.feeS * order.params.marginSplitPercentage / 100);
           } else {
             feeItem.feeB = fillAmountSList[nextInd] -
-              fillAmountSList[i] * order.params.amountB.toNumber() / order.params.amountS.toNumber();
-            feeItem.feeB = feeItem.feeB * order.params.marginSplitPercentage / 100;
+              Math.floor(fillAmountSList[i] *
+                         order.params.amountB.toNumber() /
+                         order.params.amountS.toNumber());
+            feeItem.feeB = Math.floor(feeItem.feeB * order.params.marginSplitPercentage / 100);
           }
 
           if (feeItem.feeS > 0 || feeItem.feeB > 0) {
@@ -305,12 +310,16 @@ export class ProtocolSimulator {
 
       const feeItem = feeItems[i];
       const prevFeeItem = feeItems[prevIndex];
-      const walletSplit = this.walletSplitPercentage;
+
+      const walletSplit = Math.floor((feeItem.feeS + prevFeeItem.feeB) * this.walletSplitPercentage / 100);
+      const minerSplit = feeItem.feeS + prevFeeItem.feeB - walletSplit;
+      const walletLrc = Math.floor(feeItem.feeLrc * this.walletSplitPercentage / 100);
+      const minerLrc = feeItem.feeLrc - walletLrc;
       const amountList = [fillAmountS - prevFeeItem.feeB,
-                          (feeItem.feeS + prevFeeItem.feeB) * (100 - walletSplit) / 100,
-                          (feeItem.feeS + prevFeeItem.feeB) * walletSplit / 100,
-                          feeItem.feeLrc * (100 - this.walletSplitPercentage) / 100,
-                          feeItem.feeLrc * this.walletSplitPercentage / 100,
+                          minerSplit,
+                          walletSplit,
+                          minerLrc,
+                          walletLrc,
                           feeItem.lrcReward];
 
       for (let j = 0; j < amountList.length; j++) {
