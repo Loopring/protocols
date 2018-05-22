@@ -157,20 +157,21 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         notSuspended
         external
     {
+        uint numWordsInOrderSettleData = TokenTransfer.getNumWordsInOrderSettleData();
         uint len = batch.length;
-        require(len % 9 == 0);
+        require(len % numWordsInOrderSettleData == 0);
         require(walletSplitPercentage > 0 && walletSplitPercentage < 100);
 
         ERC20 lrc = ERC20(lrcTokenAddress);
 
         TokenTransfer.OrderSettleData memory order;
-
-        address prevOwner = address(batch[len - 9]);
-        for (uint i = 0; i < batch.length; i += 9) {
+        address prevOwner = address(batch[len - numWordsInOrderSettleData]);
+        for (uint i = 0; i < batch.length; i += numWordsInOrderSettleData) {
 
             // Copy the data straight to the order struct from the call data
             assembly {
-                calldatacopy(order, add(0xC4, mul(i,0x20)), 0x120)
+                // Offset 0xC4 = 0x04 (function hash) + 5 * 0x20 (5th parameter) + 0x20 (array size)
+                calldatacopy(order, add(0xC4, mul(i,0x20)), mul(numWordsInOrderSettleData, 0x20))
             }
 
             // Pay token to previous order, or to miner as previous order's

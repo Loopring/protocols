@@ -260,25 +260,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint64 _ringIndex = ringIndex;
         ringIndex |= (1 << 63);
 
-        // Read ring header from call data
-        require(data.length >= 4);
-        uint ringHeader = 0;
-        assembly {
-            ringHeader := calldataload(add(calldataload(0x04), 0x24))
-        }
-
-        // Extract data from ring header
-        RingParams memory params = RingParams(
-            address(ringHeader >> (256 - 184)),
-            uint16(ringHeader >> (256 - 24)),
-            uint8(ringHeader >> (256 - 8)),
-            0x0 // ringHash
-        );
-
-        verifyInputDataIntegrity(
-            params,
-            data
-        );
+        // Setup the ring parameters
+        RingParams memory params = setupRingParams(data);
 
         // Assemble input data into structs so we can pass them to other functions.
         // This method also calculates ringHash, therefore it must be called before
@@ -286,6 +269,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
         OrderState[] memory orders = assembleOrders(
             params,
+            data,
             delegate
         );
 
@@ -432,8 +416,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         returns (bytes32[] memory orderInfoList)
     {
-        bytes32[] memory batch = new bytes32[](ringSize * 9); // ringSize * (num words in TokenTransfer.OrderSettleData)
-        orderInfoList = new bytes32[](ringSize * 7);          // ringSize * (num words in SettledOrderInfo)
+        uint numWordsInOrderSettleData = TokenTransfer.getNumWordsInOrderSettleData();
+        bytes32[] memory batch = new bytes32[](ringSize * numWordsInOrderSettleData);
+
+        uint numWordsInSettledOrderInfo = 7;
+        orderInfoList = new bytes32[](ringSize * numWordsInSettledOrderInfo);
 
         TokenTransfer.OrderSettleData memory orderSettleData;
         SettledOrderInfo memory settledOrderInfo;
@@ -444,7 +431,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // This will make writes to orderSettleData to be stored in the memory of batch
             assembly {
-                orderSettleData := add(add(batch, 0x20), mul(i, 0x120))  // 0x120 := sizeof(word) * (num words in TokenTransfer.OrderSettleData)
+                orderSettleData := add(add(batch, 0x20), mul(i, mul(numWordsInOrderSettleData, 0x20)))
             }
             orderSettleData.owner = state.owner;
             orderSettleData.tokenS = state.tokenS;
@@ -458,7 +445,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // This will make writes to settledOrderInfo to be stored in the memory of orderInfoList
             assembly {
-                settledOrderInfo := add(add(orderInfoList, 0x20), mul(i, 0xE0))  // 0xE0 := sizeof(word) * (num words in SettledOrderInfo)
+                settledOrderInfo := add(add(orderInfoList, 0x20), mul(i, mul(numWordsInSettledOrderInfo, 0x20)))
             }
             settledOrderInfo.orderHash = state.orderHash;
             settledOrderInfo.owner = state.owner;
@@ -780,37 +767,55 @@ contract LoopringProtocolImpl is LoopringProtocol {
         return (allowance < balance ? allowance : balance);
     }
 
-    /// @dev verify input data's basic integrity.
-    function verifyInputDataIntegrity(
-        RingParams   params,
+    /// @dev extract the ring parameter values
+    /// @return     The ring parameters
+    function setupRingParams(
         bytes data
         )
         private
         pure
+        returns (RingParams memory params)
     {
-        require(params.feeRecipient != 0x0);
+        // Read ring header from call data
+        require(data.length >= 32);
+        uint ringHeader = 0;
+        assembly {
+            // Offset 0x44 = 0x04 (function hash) + 0x20 (offset to bytes data) + 0x20 (array size)
+            ringHeader := calldataload(0x44)
+        }
 
-        //Check ring size
+        // Extract data from ring header
+        params = RingParams(
+            address(ringHeader >> (256 - 184)),
+            uint16(ringHeader >> (256 - 24)),
+            uint8(ringHeader >> (256 - 8)),
+            0x0 // ringHash
+        );
+
+        require(params.feeRecipient != 0x0);
         require(params.ringSize > 1 && params.ringSize <= MAX_RING_SIZE); // "invalid ring size");
 
-        //Check data size
-        require(data.length == 0x20 + 0x1C3 * params.ringSize);
+        return params;
     }
 
     /// @dev        assmble order parameters into Order struct.
     /// @return     A list of orders.
     function assembleOrders(
         RingParams params,
+        bytes data,
         TokenTransferDelegate delegate
         )
         private
         view
         returns (OrderState[] memory orders)
     {
-        orders = new OrderState[](params.ringSize);
-
-        uint ordersStartOffset = 0x64;  // 0x4 (function hash) + 0x20 (bytes length) + 0x20 (ring header)
+        uint ordersStartOffset = 0x64;  // 0x04 (function hash) + 0x20 (data offset) + 0x20 (array length) + 0x20 (ring header)
         uint orderSize = 0x1C3;
+
+        // Validate the data size
+        require(data.length == 0x20 + orderSize * params.ringSize);
+
+        orders = new OrderState[](params.ringSize);
 
         OrderState memory order;
         uint i;
