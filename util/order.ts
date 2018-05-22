@@ -22,7 +22,7 @@ export class Order {
         this.web3Instance = web3;
       }
     } catch (err) {
-      // ignore.
+      console.log("get web3 instance in Order class failed. err:", err);
     }
   }
 
@@ -60,8 +60,9 @@ export class Order {
   }
 
   public getOrderHash() {
+    // console.log("this.params.loopringProtocol:", this.params.loopringProtocol);
     const orderHash = crypto.solSHA3([
-      this.params.loopringProtocol,
+      this.params.delegateContract,
       this.owner,
       this.params.tokenS,
       this.params.tokenB,
@@ -78,4 +79,5 @@ export class Order {
 
     return orderHash;
   }
+
 }

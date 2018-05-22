@@ -20,7 +20,9 @@ export class Ring {
   public authR: string[] = [];
   public authS: string[] = [];
 
-  public web3Instance: Web3;
+  private web3Instance: Web3;
+
+  private rate: number;
 
   constructor(owner: string,
               orders: Order[],
@@ -106,6 +108,34 @@ export class Ring {
     const ringHash = this.getRingHash();
     const ringHashHex = ethUtil.bufferToHex(ringHash);
     return ringHashHex;
+  }
+
+  public caculateAndSetRateAmount() {
+    const size = this.orders.length;
+    this.rate = 1;
+    for (const order of this.orders) {
+      this.rate = this.rate * order.params.amountS.toNumber() / order.params.amountB.toNumber();
+    }
+    this.rate = Math.pow(this.rate, 1 / size);
+
+    for (const order of this.orders) {
+      order.params.rateAmountB = order.params.amountB.toNumber();
+      order.params.rateAmountS = order.params.amountS.toNumber() / this.rate;
+    }
+  }
+
+  public printToConsole() {
+    console.log("-".repeat(80));
+    console.log("ring miner:", this.owner);
+    console.log("rate:", this.rate);
+    for (const order of this.orders) {
+      console.log("-".repeat(80));
+      console.log("order owner:", order.owner);
+      console.log("order params:", order.params);
+    }
+
+    console.log("fee Selections:", this.feeSelections);
+    console.log("-".repeat(80));
   }
 
   private xorReduce(numberArr: number[]) {

@@ -1,13 +1,17 @@
 import { BigNumber } from "bignumber.js";
 import xor = require("bitwise-xor");
 import promisify = require("es6-promisify");
+import fs = require("fs");
 import * as _ from "lodash";
 import { Artifacts } from "../util/artifacts";
 import { Order } from "../util/order";
+import { TxParser } from "../util/parseTx";
 import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { RingFactory } from "../util/ring_factory";
-import { OrderParams } from "../util/types";
+import { OrderParams, RingBalanceInfo, RingInfo, TransferItem } from "../util/types";
+import { rawTxs } from "./rawTxs";
+import { ringInfoList } from "./ringConfig";
 
 const {
   LoopringProtocolImpl,
@@ -26,6 +30,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   const orderAuthAddr = accounts[7]; // should generate each time in front-end. we just mock it here.
   const ringOwner = accounts[6];
   const feeRecepient = ringOwner;
+  const ringMiner = feeRecepient;
   const walletAddr = accounts[8];
 
   let loopringProtocolImpl: any;
@@ -42,6 +47,9 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   let eos: any;
   let neo: any;
   let qtum: any;
+
+  const tokenMap = new Map();
+  const tokenSymbolMap = new Map();
 
   let currBlockTimeStamp: number;
   let walletSplitPercentage: number;
@@ -61,8 +69,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   };
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, precision: number = 8) => {
-    const numStr1 = (n1 / 1e18).toFixed(precision);
-    const numStr2 = (n2 / 1e18).toFixed(precision);
+    const numStr1 = n1.toPrecision(precision);
+    const numStr2 = n2.toPrecision(precision);
 
     return assert.equal(Number(numStr1), Number(numStr2));
   };
@@ -82,6 +90,70 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     }
   };
 
+  const setBalanceBefore = async (ring: Ring, miner: string) => {
+    const ringSize = ring.orders.length;
+    let lrcRewardTotal = 0;
+    for (let i = 0; i < ringSize; i++) {
+      const order = ring.orders[i];
+      const orderOwner = order.owner;
+      const balance = order.params.amountS.toNumber();
+      const tokenSAddr = order.params.tokenS;
+      const tokenInstance = tokenMap.get(tokenSAddr);
+      await tokenInstance.setBalance(orderOwner, balance / 2);
+
+      const lrcFee = order.params.lrcFee.toNumber();
+      await lrc.setBalance(orderOwner, balance);
+
+      lrcRewardTotal += lrcFee;
+    }
+
+    await lrc.setBalance(miner, lrcRewardTotal);
+  };
+
+  const getRingBalanceInfoAfter = async (ring: Ring, miner: string) => {
+    const participiants: string[] = [];
+    const tokenBalances: number[][] = [];
+
+    const ringSize = ring.orders.length;
+    const tokenSet = new Set();
+    for (let i = 0; i < ringSize; i++) {
+      const order: Order = ring.orders[i];
+      participiants.push(order.owner);
+
+      const tokenSAddr = order.params.tokenS;
+      const tokenBAddr = order.params.tokenB;
+      tokenSet.add(tokenSAddr);
+      tokenSet.add(tokenBAddr);
+    }
+
+    tokenSet.add(lrcAddress);
+    const tokenList: string[] = [...tokenSet];
+    const tokenSymbolList = tokenList.map((addr) => tokenSymbolMap.get(addr));
+    participiants.push(miner);
+    participiants.push(walletAddr);
+
+    for (const participiant of participiants) {
+      const participiantBalances: number[] = [];
+
+      for (const tokenAddr of tokenList) {
+        const tokenInstance = tokenMap.get(tokenAddr);
+        const tokenBalance = await getTokenBalanceAsync(tokenInstance, participiant);
+        participiantBalances.push(tokenBalance.toNumber());
+      }
+
+      tokenBalances.push(participiantBalances);
+    }
+
+    const balanceInfo: RingBalanceInfo = {
+      participiants,
+      tokenAddressList: tokenList,
+      tokenSymbolList,
+      tokenBalances,
+    };
+
+    return balanceInfo;
+  };
+
   before( async () => {
     [loopringProtocolImpl, tokenRegistry, tokenTransferDelegate] = await Promise.all([
       LoopringProtocolImpl.deployed(),
@@ -97,7 +169,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
     const walletSplitPercentageBN = await loopringProtocolImpl.walletSplitPercentage();
     walletSplitPercentage = walletSplitPercentageBN.toNumber();
-    // console.log("walletSplitPercentage:", walletSplitPercentage);
 
     tokenTransferDelegate.authorizeAddress(LoopringProtocolImpl.address);
 
@@ -107,6 +178,15 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       DummyToken.at(neoAddress),
       DummyToken.at(qtumAddress),
     ]);
+
+    tokenMap.set(lrcAddress, lrc);
+    tokenSymbolMap.set(lrcAddress, "LRC");
+    tokenMap.set(eosAddress, eos);
+    tokenSymbolMap.set(eosAddress, "EOS");
+    tokenMap.set(neoAddress, neo);
+    tokenSymbolMap.set(neoAddress, "NEO");
+    tokenMap.set(qtumAddress, qtum);
+    tokenSymbolMap.set(qtumAddress, "QTUM");
 
     const currBlockNumber = web3.eth.blockNumber;
     currBlockTimeStamp = web3.eth.getBlock(currBlockNumber).timestamp;
@@ -130,922 +210,1086 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     }
   });
 
+  const setDefaultValuesForRingInfo = (ringInfo: RingInfo) => {
+    const ringSize = ringInfo.amountSList.length;
+    assert(ringSize <= 3, "invalid orders size. amountSList:" + ringInfo.amountSList);
+
+    const tokenAddresses = [eosAddress, neoAddress, lrcAddress];
+    const orderOwners = [order1Owner, order2Owner, order3Owner];
+    ringInfo.tokenAddressList = tokenAddresses.slice(0, ringSize);
+    if (ringInfo.orderOwners && ringInfo.orderOwners.length > 0 &&
+        ringInfo.orderOwners[0] === "##sameOwners##") {
+      ringInfo.orderOwners = Array.from({length: ringSize}, () => orderOwners[0]);
+    } else {
+      ringInfo.orderOwners = orderOwners.slice(0, ringSize);
+    }
+    ringInfo.miner = ringOwner;
+
+    if (!ringInfo.lrcFeeAmountList || ringInfo.lrcFeeAmountList.length < ringSize) {
+      ringInfo.lrcFeeAmountList = Array.from({length: ringSize}, () => 1e18);
+    }
+
+    if (!ringInfo.buyNoMoreThanAmountBList || ringInfo.buyNoMoreThanAmountBList.length < ringSize) {
+      ringInfo.buyNoMoreThanAmountBList = Array.from({length: ringSize}, () => false);
+    }
+
+    if (!ringInfo.marginSplitPercentageList || ringInfo.marginSplitPercentageList.length < ringSize) {
+      ringInfo.marginSplitPercentageList = Array.from({length: ringSize}, () => 50);
+    }
+  };
+
+  const getEventsFromContract = async (contract: any, eventName: string, fromBlock: number) => {
+    return new Promise((resolve, reject) => {
+      if (!contract[eventName]) {
+        throw Error("TypeError: contract[eventName] is not a function: " + eventName);
+      }
+
+      const events = contract[eventName]({}, { fromBlock, toBlock: "latest" });
+      events.watch();
+      events.get((error: any, event: any) => {
+        if (!error) {
+          resolve(event);
+        } else {
+          throw Error("Failed to find filtered event: " + error);
+        }
+      });
+      events.stopWatching();
+    });
+  };
+
+  const getTransferItems = async (token: string, fromBlock: number) => {
+    const tokenContractInstance = tokenMap.get(token);
+    return await getEventsFromContract(tokenContractInstance, "Transfer", fromBlock);
+  };
+
+  const getTransferEvents = async (tokens: string[], fromBlock: number) => {
+    let transferItems: Array<[string, string, number]> = [];
+    for (const tokenAddr of tokens) {
+      const eventArr: any = await getTransferItems(tokenAddr, fromBlock);
+      const items = eventArr.map((eventObj: any) => {
+        const from = eventObj.args.from;
+        const to = eventObj.args.to;
+        const amount = eventObj.args.value.toNumber();
+        const item: [string, string, number] = [from, to, amount];
+        return item;
+      });
+
+      transferItems = transferItems.concat(items);
+    }
+
+    return transferItems;
+  };
+
+  const assertTransfers = (tranferEvents: Array<[string, string, number]>, transferList: TransferItem[]) => {
+    const transfersFromSimulator: Array<[string, string, number]> = [];
+    transferList.forEach((item) => transfersFromSimulator.push([item.fromAddress, item.toAddress, item.amount]));
+    const sorter = (a: [string, string, number], b: [string, string, number]) => {
+      if (a[0] === b[0]) {
+        if (a[1] === b[1]) {
+          return a[2] - b[2];
+        } else {
+          return a[1] > b[1] ? 1 : -1;
+        }
+      } else {
+        return a[0] > b[0] ? 1 : -1;
+      }
+    };
+
+    transfersFromSimulator.sort(sorter);
+    tranferEvents.sort(sorter);
+    // console.log("transfersFromSimulator:", transfersFromSimulator);
+    // console.log("tranferEvents from testrpc:", tranferEvents);
+
+    assert.equal(tranferEvents.length, transfersFromSimulator.length, "transfer amounts not match");
+    for (let i = 0; i < tranferEvents.length; i++) {
+      const transferFromEvent = tranferEvents[i];
+      const transferFromSimulator = transfersFromSimulator[i];
+      assert.equal(transferFromEvent[0], transferFromSimulator[0]);
+      assert.equal(transferFromEvent[1], transferFromSimulator[1]);
+      assertNumberEqualsWithPrecision(transferFromEvent[2], transferFromSimulator[2]);
+    }
+  };
+
   describe("submitRing", () => {
-    it("should be able to fill ring with 2 orders", async () => {
-      const feeSelections: number[] = [0, 0];
-      const ring = await ringFactory.generateSize2Ring01(order1Owner,
-                                                         order2Owner,
-                                                         ringOwner,
-                                                         feeSelections);
-
-      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
-      await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
-      await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
-      await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
-      await lrc.setBalance(feeRecepient, 0, {from: owner});
-
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelections, feeRecepient);
-
-      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-
-      // console.log("tx.receipt.logs: ", tx.receipt.logs);
-
-      const ethOfOwnerAfter = await getEthBalanceAsync(owner);
-      const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber()) / 1e18;
-      // console.log("all gas cost for 2 orders 01(ether):", allGas);
-
-      const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
-      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
-
-      const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
-      const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
-      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-
-      const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
-
-      const filled = await tokenTransferDelegate.cancelledOrFilled(ring.orders[0].params.orderHashHex);
-      assert.equal(filled.toNumber(), 1e21, "incorrect filled amount of order.");
-
-      assert.equal(lrcBalance21.toNumber(), 90e18, "lrc balance not match for order1Owner");
-      assert.equal(eosBalance21.toNumber(), 9000e18, "eos balance not match for order1Owner");
-      assert.equal(neoBalance21.toNumber(), 100e18, "neo balance not match for order1Owner");
-
-      assert.equal(lrcBalance22.toNumber(), 95e18, "lrc balance not match for order2Owner");
-      assert.equal(eosBalance22.toNumber(), 1000e18, "eos balance not match for order2Owner");
-      assert.equal(neoBalance22.toNumber(), 900e18, "neo balance not match for order2Owner");
-
-      assert.equal(lrcBalance23.toNumber(), 12e18, "lrc balance not match for feeRecepient");
-
-      await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
-    });
-
-    it("should be able to fill ring with 2 orders which has the same owner", async () => {
-      const feeSelections: number[] = [0, 0];
-      const ring = await ringFactory.generateSize2Ring01WithSameOrderOwners(order1Owner,
-                                                                            ringOwner,
-                                                                            feeSelections);
-
-      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
-      await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
-      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
-      await neo.setBalance(order1Owner, web3.toWei(1000),  {from: owner});
-      await lrc.setBalance(feeRecepient, 0, {from: owner});
-
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelections, feeRecepient);
-
-      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-
-      const filled = await tokenTransferDelegate.cancelledOrFilled(ring.orders[0].params.orderHashHex);
-      // console.log("filled:", filled);
-      assert.equal(filled.toNumber(), 1e21, "incorrect filled amount of order.");
-
-      await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
-    });
-
-    it("should be able to fill ring with 2 orders where fee selection type is margin split", async () => {
-      const feeSelectionList: number[] = [1, 1];
-      const ring = await ringFactory.generateSize2Ring02(order1Owner,
-                                                         order2Owner,
-                                                         ringOwner,
-                                                         feeSelectionList);
-
-      await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
-      await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
-
-      const spendableLrcFeeList = [0, 0, 0];
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-      // console.log("tx.receipt.logs: ", tx.receipt.logs);
-
-      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
-
-      const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
-      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-
-      const eosBalance23 = await getTokenBalanceAsync(eos, feeRecepient);
-      const neoBalance23 = await getTokenBalanceAsync(neo, feeRecepient);
-
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
-      simulator.spendableLrcFeeList = spendableLrcFeeList;
-      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
-
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
-      assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
-
-      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
-      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
-
-      await clear([eos, neo], [order1Owner, order2Owner, feeRecepient]);
-    });
-
-    it("should be able to fill orders where fee selection type is margin split and lrc", async () => {
-      const feeSelectionList = [1, 0];
-      const ring = await ringFactory.generateSize2Ring03(order1Owner,
-                                                         order2Owner,
-                                                         ringOwner,
-                                                         feeSelectionList);
-
-      await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
-      await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
-      await lrc.setBalance(order2Owner, web3.toWei(20),  {from: owner});
-
-      const spendableLrcFeeList = [0, 5e17, 0];
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-
-      console.log("cumulativeGasUsed for a ring of 2 orders: " + tx.receipt.gasUsed);
-
-      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
-
-      const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
-      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-
-      const eosBalance23 = await getTokenBalanceAsync(eos, feeRecepient);
-      const neoBalance23 = await getTokenBalanceAsync(neo, feeRecepient);
-      const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
-
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
-      simulator.spendableLrcFeeList = spendableLrcFeeList;
-      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
-
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
-      assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
-      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
-      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
-      assertNumberEqualsWithPrecision(lrcBalance23.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
-
-      await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
-    });
-
-    it("should be able to fill ring with 3 orders", async () => {
-      const feeSelectionList = [1, 0, 1];
-
-      const ring = await ringFactory.generateSize3Ring01(order1Owner,
-                                                         order2Owner,
-                                                         order3Owner,
-                                                         ringOwner,
-                                                         feeSelectionList);
-
-      assert(ring.orders[0].isValidSignature(), "invalid signature");
-      assert(ring.orders[1].isValidSignature(), "invalid signature");
-      assert(ring.orders[2].isValidSignature(), "invalid signature");
-
-      await eos.setBalance(order1Owner, web3.toWei(80000), {from: owner});
-      await neo.setBalance(order2Owner, web3.toWei(234),  {from: owner});
-      await lrc.setBalance(order2Owner, web3.toWei(5),  {from: owner}); // insuffcient lrc balance.
-      await qtum.setBalance(order3Owner, web3.toWei(6780),  {from: owner});
-
-      const spendableLrcFeeList = [0, 5e18, 0, 0];
-
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-
-      console.log("cumulativeGasUsed for a ring of 3 orders: " + tx.receipt.gasUsed);
-
-      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
-
-      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-      const qtumBalance22 = await getTokenBalanceAsync(qtum, order2Owner);
-
-      const qtumBalance23 = await getTokenBalanceAsync(qtum, order3Owner);
-      const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
-
-      const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
-      const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
-      const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
-      const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
-
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
-      simulator.spendableLrcFeeList = spendableLrcFeeList;
-      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
-
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
-      assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(qtumBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
-
-      assertNumberEqualsWithPrecision(qtumBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
-      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
-
-      assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
-      assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
-      assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.totalFees[qtumAddress]);
-      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), 4e18);
-
-      await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
-    });
-
-    it("should be able to partial fill ring with 3 orders", async () => {
-      const feeSelectionList = [1, 0, 1];
-      const ring = await ringFactory.generateSize3Ring02(order1Owner,
-                                                         order2Owner,
-                                                         order3Owner,
-                                                         ringOwner,
-                                                         100,
-                                                         feeSelectionList);
-
-      assert(ring.orders[0].isValidSignature(), "invalid signature");
-      assert(ring.orders[1].isValidSignature(), "invalid signature");
-      assert(ring.orders[2].isValidSignature(), "invalid signature");
-
-      const availableAmountSList = [10000e18, 100e18, 10000e18];
-      const spendableLrcFeeList = [0, 6e18, 0, 0];
-
-      await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
-      await neo.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
-      await lrc.setBalance(order2Owner, web3.toWei(15),  {from: owner});
-      await qtum.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
-
-      // await approve([eos, neo, qtum], [order1Owner, order2Owner, order3Owner], availableAmountSList);
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-
-      // console.log("tx.receipt.logs: ", tx.receipt.logs);
-
-      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
-
-      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-      const qtumBalance22 = await getTokenBalanceAsync(qtum, order2Owner);
-
-      const qtumBalance23 = await getTokenBalanceAsync(qtum, order3Owner);
-      const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
-
-      const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
-      const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
-      const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
-      const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
-
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
-      simulator.availableAmountSList = availableAmountSList;
-      simulator.spendableLrcFeeList = spendableLrcFeeList;
-      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
-
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
-      assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(qtumBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
-
-      assertNumberEqualsWithPrecision(qtumBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
-      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
-
-      assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
-      assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
-      assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.totalFees[qtumAddress]);
-      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
-
-      await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
-    });
-
-    it("should be able to switch fee selection to margin-split(100%) when lrcFee is 0", async () => {
-      const feeSelectionList = [0, 1, 0];
-      const ring = await ringFactory.generateSize3Ring02(order1Owner,
-                                                         order2Owner,
-                                                         order3Owner,
-                                                         ringOwner,
-                                                         200,
-                                                         feeSelectionList);
-
-      assert(ring.orders[0].isValidSignature(), "invalid signature");
-      assert(ring.orders[1].isValidSignature(), "invalid signature");
-      assert(ring.orders[2].isValidSignature(), "invalid signature");
-
-      const availableAmountSList = [10000e18, 100e18, 10000e18];
-      const spendableLrcFeeList = [0, 6e18, 0, 0];
-
-      await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
-      await neo.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
-      await lrc.setBalance(order2Owner, web3.toWei(15),  {from: owner});
-      await qtum.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
-      await lrc.setBalance(feeRecepient, web3.toWei(15),  {from: owner});
-
-      // await approve([eos, neo, qtum], [order1Owner, order2Owner, order3Owner], availableAmountSList);
-      // await approve([lrc, lrc], [order2Owner, feeRecepient], [15e18, 15e18]);
-
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-
-      // console.log("tx.receipt.logs: ", tx.receipt.logs);
-
-      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
-
-      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-      const qtumBalance22 = await getTokenBalanceAsync(qtum, order2Owner);
-
-      const qtumBalance23 = await getTokenBalanceAsync(qtum, order3Owner);
-      const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
-
-      const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
-      const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
-      const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
-      const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
-
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
-      simulator.availableAmountSList = availableAmountSList;
-      simulator.spendableLrcFeeList = spendableLrcFeeList;
-      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
-
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
-      assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(qtumBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
-
-      assertNumberEqualsWithPrecision(qtumBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
-      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
-
-      assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
-      assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
-      assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.totalFees[qtumAddress]);
-      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress] + 15e18);
-
-      await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
-    });
-
-    it("should be able to pay lrc fee when receiving lrc as result of trading.", async () => {
-      const feeSelectionList = [0, 0, 1];
-      const ring = await ringFactory.generateSize3Ring03(order1Owner,
-                                                         order2Owner,
-                                                         order3Owner,
-                                                         ringOwner,
-                                                         100,
-                                                         feeSelectionList);
-
-      const availableAmountSList = [1000e18, 2006e18, 20e18];
-      const spendableLrcFeeList = [0, 6e18, 1e18, 20e18];
-
-      await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
-      await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
-      await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
-      await lrc.setBalance(order3Owner, web3.toWei(1),  {from: owner});
-      await lrc.setBalance(feeRecepient, web3.toWei(20),  {from: owner});
-
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-
-      // console.log("tx.receipt.logs: ", tx.receipt.logs);
-
-      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
-
-      const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
-      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-
-      const neoBalance23 = await getTokenBalanceAsync(neo, order3Owner);
-      const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
-
-      const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
-      const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
-      const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
-
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
-      simulator.availableAmountSList = availableAmountSList;
-      simulator.spendableLrcFeeList = spendableLrcFeeList;
-      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
-
-      // console.log("feeAndBalanceExpected", feeAndBalanceExpected);
-
-      // console.log("eosBalance21:", eosBalance21);
-      // console.log("lrcBalance21:", lrcBalance21);
-      // console.log("lrcBalance22:", lrcBalance22);
-      // console.log("neoBalance22:", neoBalance22);
-      // console.log("neoBalance23:", neoBalance23);
-      // console.log("eosBalance23:", eosBalance23);
-      // console.log("eosBalance24:", eosBalance24);
-      // console.log("neoBalance24:", neoBalance24);
-      // console.log("lrcBalance24:", lrcBalance24);
-
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
-      assertNumberEqualsWithPrecision(lrcBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(lrcBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
-
-      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
-      // assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
-
-      // assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
-      // assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
-      // assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
-
-      await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
-    });
-
-    it("should be able to choose margin split(100%) for fee when order owner's spendable lrc is 0.", async () => {
-      const feeSelectionList = [0, 0, 0];
-      const ring = await ringFactory.generateSize3Ring03(order1Owner,
-                                                         order2Owner,
-                                                         order3Owner,
-                                                         ringOwner,
-                                                         200,
-                                                         feeSelectionList);
-
-      const availableAmountSList = [1000e18, 2006e18, 20e18];
-      const spendableLrcFeeList = [0, 6e18, 0, 20e18];
-
-      await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
-      await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
-      await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
-      await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
-      await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
-
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-
-      // console.log("tx.receipt.logs: ", tx.receipt.logs);
-
-      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
-
-      const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
-      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-
-      const neoBalance23 = await getTokenBalanceAsync(neo, order3Owner);
-      const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
-
-      const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
-      const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
-      const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
-
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
-      simulator.availableAmountSList = availableAmountSList;
-      simulator.spendableLrcFeeList = spendableLrcFeeList;
-      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
-
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
-      assertNumberEqualsWithPrecision(lrcBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(lrcBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
-
-      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
-      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
-
-      assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
-      assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
-      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
-
-      await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
-    });
-
-    it("should not be able to get margin split fee if miner's spendable lrc is less than order's lrcFee.",
-    async () => {
-      const feeSelectionList = [1, 1, 1];
-      const ring = await ringFactory.generateSize3Ring03(order1Owner,
-                                                         order2Owner,
-                                                         order3Owner,
-                                                         ringOwner,
-                                                         300,
-                                                         feeSelectionList);
-
-      const availableAmountSList = [1000e18, 2006e18, 20e18];
-      const spendableLrcFeeList = [0, 6e18, 1e18, 0];
-
-      await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
-      await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
-      await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
-      await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
-      await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
-
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-
-      const tx = await loopringProtocolImpl.submitRing(p.addressList,
-                                                       p.uintArgsList,
-                                                       p.uint8ArgsList,
-                                                       p.buyNoMoreThanAmountBList,
-                                                       p.vList,
-                                                       p.rList,
-                                                       p.sList,
-                                                       p.feeRecepient,
-                                                       p.feeSelections,
-                                                       {from: owner});
-
-      // console.log("tx.receipt.logs: ", tx.receipt.logs);
-
-      const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
-      const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
-
-      const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
-      const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
-
-      const neoBalance23 = await getTokenBalanceAsync(neo, order3Owner);
-      const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
-
-      const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
-      const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
-      const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
-
-      const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
-      simulator.availableAmountSList = availableAmountSList;
-      simulator.spendableLrcFeeList = spendableLrcFeeList;
-      const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
-      // console.log("feeAndBalanceExpected", feeAndBalanceExpected);
-
-      // console.log("eosBalance21:", eosBalance21);
-      // console.log("lrcBalance21:", lrcBalance21);
-      // console.log("lrcBalance22:", lrcBalance22);
-      // console.log("neoBalance22:", neoBalance22);
-      // console.log("neoBalance23:", neoBalance23);
-      // console.log("eosBalance23:", eosBalance23);
-      // console.log("eosBalance24:", eosBalance24);
-      // console.log("neoBalance24:", neoBalance24);
-      // console.log("lrcBalance24:", lrcBalance24);
-
-      assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
-      assertNumberEqualsWithPrecision(lrcBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
-      assertNumberEqualsWithPrecision(lrcBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
-      assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
-
-      assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
-      assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
-
-      assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
-      assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
-      assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
-
-      await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
-    });
-
-    it("should not fill orders which are fully cancelled.", async () => {
-      const feeSelectionList = [1, 1, 1];
-      const ring = await ringFactory.generateSize3Ring03(order1Owner,
-                                                         order2Owner,
-                                                         order3Owner,
-                                                         ringOwner,
-                                                         400,
-                                                         feeSelectionList);
-
-      const availableAmountSList = [1000e18, 2006e18, 20e18];
-      const spendableLrcFeeList = [0, 6e18, 1e18, 0];
-
-      await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
-      await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
-      await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
-      await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
-      await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
-
-      const order = ring.orders[0];
-      const cancelAmount = new BigNumber(1000e18);
-      const addresses = [order.owner,
-                         order.params.tokenS,
-                         order.params.tokenB,
-                         order.params.walletAddr,
-                         order.params.authAddr,
-                        ];
-
-      const orderValues = [order.params.amountS,
-                           order.params.amountB,
-                           order.params.validSince,
-                           order.params.validUntil,
-                           order.params.lrcFee,
-                           cancelAmount];
-
-      await loopringProtocolImpl.cancelOrder(addresses,
-                                             orderValues,
-                                             order.params.buyNoMoreThanAmountB,
-                                             order.params.marginSplitPercentage,
-                                             order.params.v,
-                                             order.params.r,
-                                             order.params.s,
-                                             {from: order.owner});
-
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-
-      try {
-        await loopringProtocolImpl.submitRing(p.addressList,
-                                              p.uintArgsList,
-                                              p.uint8ArgsList,
-                                              p.buyNoMoreThanAmountBList,
-                                              p.vList,
-                                              p.rList,
-                                              p.sList,
-                                              p.feeRecepient,
-                                              p.feeSelections,
-                                              {from: owner});
-      } catch (err) {
-        const errMsg = `${err}`;
-        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
-               `Expected contract to throw, got: ${err}`);
-      }
-
-      await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
-    });
-
-    it("should not fill orders which are cancelled by cancelAllOrders.", async () => {
-      const feeSelectionList = [1, 1, 1];
-      const ring = await ringFactory.generateSize3Ring03(order1Owner,
-                                                         order2Owner,
-                                                         order3Owner,
-                                                         ringOwner,
-                                                         500,
-                                                         feeSelectionList);
-
-      const availableAmountSList = [1000e18, 2006e18, 20e18];
-      const spendableLrcFeeList = [0, 6e18, 1e18, 0];
-
-      await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
-      await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
-      await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
-      await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
-      await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
-
-      const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
-      await loopringProtocolImpl.cancelAllOrders(new BigNumber(currBlockTimeStamp), {from: order1Owner});
-      try {
-        await loopringProtocolImpl.submitRing(p.addressList,
-                                              p.uintArgsList,
-                                              p.uint8ArgsList,
-                                              p.buyNoMoreThanAmountBList,
-                                              p.vList,
-                                              p.rList,
-                                              p.sList,
-                                              p.feeRecepient,
-                                              p.feeSelections,
-                                              {from: owner});
-      } catch (err) {
-        const errMsg = `${err}`;
-        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
-               `Expected contract to throw, got: ${err}`);
-      }
-
-      await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
-    });
+    const protocolAbi = fs.readFileSync("ABI/version151/LoopringProtocolImpl.abi", "ascii");
+    const txParser = new TxParser(protocolAbi);
+    const ringInfoListFromRawTxs = rawTxs.map((tx) => txParser.parseSubmitRingTx(tx));
+
+    // const ringInfoListForTest = ringInfoList;
+    const ringInfoListForTest = ringInfoList.concat(ringInfoListFromRawTxs);
+
+    let eventFromBlock: number = 0;
+    for (const ringInfo of ringInfoListForTest) {
+      it(ringInfo.description, async () => {
+        setDefaultValuesForRingInfo(ringInfo);
+
+        const ring = await ringFactory.generateRing(ringInfo);
+        assert(ring.orders[0].isValidSignature(), "invalid signature");
+
+        await setBalanceBefore(ring, feeRecepient);
+
+        const p = ringFactory.ringToSubmitableParams(ring);
+
+        const simulator = new ProtocolSimulator(ring,
+                                                lrcAddress,
+                                                tokenRegistry.address,
+                                                walletSplitPercentage);
+        const simulatorReport = await simulator.simulateAndReport([],
+                                                                  [],
+                                                                  [],
+                                                                  true,
+                                                                  ringInfo.verbose);
+
+        const tx = await loopringProtocolImpl.submitRing(p.addressList,
+                                                         p.uintArgsList,
+                                                         p.uint8ArgsList,
+                                                         p.buyNoMoreThanAmountBList,
+                                                         p.vList,
+                                                         p.rList,
+                                                         p.sList,
+                                                         p.feeRecepient,
+                                                         p.feeSelections,
+                                                         {from: feeRecepient});
+
+        // console.log("tx.receipt.logs: ", tx.receipt.logs);
+        const balanceInfo = await getRingBalanceInfoAfter(ring, feeRecepient);
+        // console.log("balanceInfo:",  balanceInfo);
+
+        const tokenSet = new Set([lrcAddress]);
+        for (const order of ring.orders) {
+          tokenSet.add(order.params.tokenS);
+        }
+
+        const tokensInRing = [...tokenSet];
+        const transferEvents = await getTransferEvents(tokensInRing, eventFromBlock);
+
+        // const logs = await getEventsFromContract(loopringProtocolImpl, "LogUint2", eventFromBlock);
+        // (logs as Array<[any]>).forEach((log: any) => {
+        //   console.log(log.args.n1.toNumber(), log.args.n2.toNumber(), log.args.n3.toNumber());
+        // });
+
+        assertTransfers(transferEvents, simulatorReport.transferList);
+
+        await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
+        eventFromBlock = web3.eth.blockNumber + 1;
+      });
+    }
+
+    // it("should be able to fill ring with 2 orders", async () => {
+    //   const feeSelections: number[] = [0, 0];
+    //   const ring = await ringFactory.generateSize2Ring01(order1Owner,
+    //                                                      order2Owner,
+    //                                                      ringOwner,
+    //                                                      feeSelections);
+
+    //   await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+    //   await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
+    //   await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
+    //   await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
+    //   await lrc.setBalance(feeRecepient, 0, {from: owner});
+
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelections, feeRecepient);
+
+    //   const ethOfOwnerBefore = await getEthBalanceAsync(owner);
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+
+    //   // console.log("tx.receipt.logs: ", tx.receipt.logs);
+
+    //   const ethOfOwnerAfter = await getEthBalanceAsync(owner);
+    //   const allGas = (ethOfOwnerBefore.toNumber() - ethOfOwnerAfter.toNumber()) / 1e18;
+    //   // console.log("all gas cost for 2 orders 01(ether):", allGas);
+
+    //   const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
+    //   const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+    //   const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
+
+    //   const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
+    //   const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
+    //   const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+
+    //   const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+    //   const filled = await tokenTransferDelegate.cancelledOrFilled(ring.orders[0].params.orderHashHex);
+    //   assert.equal(filled.toNumber(), 1e21, "incorrect filled amount of order.");
+
+    //   assert.equal(lrcBalance21.toNumber(), 90e18, "lrc balance not match for order1Owner");
+    //   assert.equal(eosBalance21.toNumber(), 9000e18, "eos balance not match for order1Owner");
+    //   assert.equal(neoBalance21.toNumber(), 100e18, "neo balance not match for order1Owner");
+
+    //   assert.equal(lrcBalance22.toNumber(), 95e18, "lrc balance not match for order2Owner");
+    //   assert.equal(eosBalance22.toNumber(), 1000e18, "eos balance not match for order2Owner");
+    //   assert.equal(neoBalance22.toNumber(), 900e18, "neo balance not match for order2Owner");
+
+    //   assert.equal(lrcBalance23.toNumber(), 12e18, "lrc balance not match for feeRecepient");
+
+    //   await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
+    // });
+
+    // it("should be able to fill ring with 2 orders which has the same owner", async () => {
+    //   const feeSelections: number[] = [0, 0];
+    //   const ring = await ringFactory.generateSize2Ring01WithSameOrderOwners(order1Owner,
+    //                                                                         ringOwner,
+    //                                                                         feeSelections);
+
+    //   await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+    //   await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
+    //   await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+    //   await neo.setBalance(order1Owner, web3.toWei(1000),  {from: owner});
+    //   await lrc.setBalance(feeRecepient, 0, {from: owner});
+
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelections, feeRecepient);
+
+    //   const ethOfOwnerBefore = await getEthBalanceAsync(owner);
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+
+    //   const filled = await tokenTransferDelegate.cancelledOrFilled(ring.orders[0].params.orderHashHex);
+    //   // console.log("filled:", filled);
+    //   assert.equal(filled.toNumber(), 1e21, "incorrect filled amount of order.");
+
+    //   await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
+    // });
+
+    // it("should be able to fill ring with 2 orders where fee selection type is margin split", async () => {
+    //   const feeSelectionList: number[] = [1, 1];
+    //   const ring = await ringFactory.generateSize2Ring02(order1Owner,
+    //                                                      order2Owner,
+    //                                                      ringOwner,
+    //                                                      feeSelectionList);
+
+    //   await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
+    //   await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
+
+    //   const spendableLrcFeeList = [0, 0, 0];
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+    //   // console.log("tx.receipt.logs: ", tx.receipt.logs);
+
+    //   const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+    //   const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
+
+    //   const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
+    //   const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+
+    //   const eosBalance23 = await getTokenBalanceAsync(eos, feeRecepient);
+    //   const neoBalance23 = await getTokenBalanceAsync(neo, feeRecepient);
+
+    //   const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
+    //   simulator.spendableLrcFeeList = spendableLrcFeeList;
+    //   const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
+
+    //   assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
+    //   assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+    //   assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+    //   assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+
+    //   assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+    //   assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+
+    //   await clear([eos, neo], [order1Owner, order2Owner, feeRecepient]);
+    // });
+
+    // it("should be able to fill orders where fee selection type is margin split and lrc", async () => {
+    //   const feeSelectionList = [1, 0];
+    //   const ring = await ringFactory.generateSize2Ring03(order1Owner,
+    //                                                      order2Owner,
+    //                                                      ringOwner,
+    //                                                      feeSelectionList);
+
+    //   await eos.setBalance(order1Owner, web3.toWei(1000), {from: owner});
+    //   await neo.setBalance(order2Owner, web3.toWei(50),  {from: owner});
+    //   await lrc.setBalance(order2Owner, web3.toWei(20),  {from: owner});
+
+    //   const spendableLrcFeeList = [0, 5e17, 0];
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+
+    //   console.log("cumulativeGasUsed for a ring of 2 orders: " + tx.receipt.gasUsed);
+
+    //   const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+    //   const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
+
+    //   const eosBalance22 = await getTokenBalanceAsync(eos, order2Owner);
+    //   const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+
+    //   const eosBalance23 = await getTokenBalanceAsync(eos, feeRecepient);
+    //   const neoBalance23 = await getTokenBalanceAsync(neo, feeRecepient);
+    //   const lrcBalance23 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+    //   const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
+    //   simulator.spendableLrcFeeList = spendableLrcFeeList;
+    //   const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
+
+    //   assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
+    //   assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+    //   assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+    //   assertNumberEqualsWithPrecision(eosBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+    //   assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+    //   assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+    //   assertNumberEqualsWithPrecision(lrcBalance23.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
+
+    //   await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
+    // });
+
+    // it("should be able to fill ring with 3 orders", async () => {
+    //   const feeSelectionList = [1, 0, 1];
+
+    //   const ring = await ringFactory.generateSize3Ring01(order1Owner,
+    //                                                      order2Owner,
+    //                                                      order3Owner,
+    //                                                      ringOwner,
+    //                                                      feeSelectionList);
+
+    //   assert(ring.orders[0].isValidSignature(), "invalid signature");
+    //   assert(ring.orders[1].isValidSignature(), "invalid signature");
+    //   assert(ring.orders[2].isValidSignature(), "invalid signature");
+
+    //   await eos.setBalance(order1Owner, web3.toWei(80000), {from: owner});
+    //   await neo.setBalance(order2Owner, web3.toWei(234),  {from: owner});
+    //   await lrc.setBalance(order2Owner, web3.toWei(5),  {from: owner}); // insuffcient lrc balance.
+    //   await qtum.setBalance(order3Owner, web3.toWei(6780),  {from: owner});
+
+    //   const spendableLrcFeeList = [0, 5e18, 0, 0];
+
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+
+    //   console.log("cumulativeGasUsed for a ring of 3 orders: " + tx.receipt.gasUsed);
+
+    //   const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+    //   const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
+
+    //   const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+    //   const qtumBalance22 = await getTokenBalanceAsync(qtum, order2Owner);
+
+    //   const qtumBalance23 = await getTokenBalanceAsync(qtum, order3Owner);
+    //   const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
+
+    //   const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
+    //   const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
+    //   const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
+    //   const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+    //   const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
+    //   simulator.spendableLrcFeeList = spendableLrcFeeList;
+    //   const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
+
+    //   assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS);
+    //   assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+    //   assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+    //   assertNumberEqualsWithPrecision(qtumBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+
+    //   assertNumberEqualsWithPrecision(qtumBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
+    //   assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
+
+    //   assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+    //   assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+    //   assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.totalFees[qtumAddress]);
+    //   assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), 4e18);
+
+    //   await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    // });
+
+    // it("should be able to partial fill ring with 3 orders", async () => {
+    //   const feeSelectionList = [1, 0, 1];
+    //   const ring = await ringFactory.generateSize3Ring02(order1Owner,
+    //                                                      order2Owner,
+    //                                                      order3Owner,
+    //                                                      ringOwner,
+    //                                                      100,
+    //                                                      feeSelectionList);
+
+    //   assert(ring.orders[0].isValidSignature(), "invalid signature");
+    //   assert(ring.orders[1].isValidSignature(), "invalid signature");
+    //   assert(ring.orders[2].isValidSignature(), "invalid signature");
+
+    //   const availableAmountSList = [10000e18, 100e18, 10000e18];
+    //   const spendableLrcFeeList = [0, 6e18, 0, 0];
+
+    //   await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
+    //   await neo.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
+    //   await lrc.setBalance(order2Owner, web3.toWei(15),  {from: owner});
+    //   await qtum.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
+
+    //   // await approve([eos, neo, qtum], [order1Owner, order2Owner, order3Owner], availableAmountSList);
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+
+    //   // console.log("tx.receipt.logs: ", tx.receipt.logs);
+
+    //   const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+    //   const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
+
+    //   const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+    //   const qtumBalance22 = await getTokenBalanceAsync(qtum, order2Owner);
+
+    //   const qtumBalance23 = await getTokenBalanceAsync(qtum, order3Owner);
+    //   const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
+
+    //   const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
+    //   const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
+    //   const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
+    //   const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+    //   const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
+    //   simulator.availableAmountSList = availableAmountSList;
+    //   simulator.spendableLrcFeeList = spendableLrcFeeList;
+    //   const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
+
+    //   assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
+    //   assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+    //   assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+    //   assertNumberEqualsWithPrecision(qtumBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+
+    //   assertNumberEqualsWithPrecision(qtumBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
+    //   assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
+
+    //   assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+    //   assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+    //   assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.totalFees[qtumAddress]);
+    //   assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
+
+    //   await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    // });
+
+    // it("should be able to switch fee selection to margin-split(100%) when lrcFee is 0", async () => {
+    //   const feeSelectionList = [0, 1, 0];
+    //   const ring = await ringFactory.generateSize3Ring02(order1Owner,
+    //                                                      order2Owner,
+    //                                                      order3Owner,
+    //                                                      ringOwner,
+    //                                                      200,
+    //                                                      feeSelectionList);
+
+    //   assert(ring.orders[0].isValidSignature(), "invalid signature");
+    //   assert(ring.orders[1].isValidSignature(), "invalid signature");
+    //   assert(ring.orders[2].isValidSignature(), "invalid signature");
+
+    //   const availableAmountSList = [10000e18, 100e18, 10000e18];
+    //   const spendableLrcFeeList = [0, 6e18, 0, 0];
+
+    //   await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
+    //   await neo.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
+    //   await lrc.setBalance(order2Owner, web3.toWei(15),  {from: owner});
+    //   await qtum.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
+    //   await lrc.setBalance(feeRecepient, web3.toWei(15),  {from: owner});
+
+    //   // await approve([eos, neo, qtum], [order1Owner, order2Owner, order3Owner], availableAmountSList);
+    //   // await approve([lrc, lrc], [order2Owner, feeRecepient], [15e18, 15e18]);
+
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+
+    //   // console.log("tx.receipt.logs: ", tx.receipt.logs);
+
+    //   const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+    //   const neoBalance21 = await getTokenBalanceAsync(neo, order1Owner);
+
+    //   const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+    //   const qtumBalance22 = await getTokenBalanceAsync(qtum, order2Owner);
+
+    //   const qtumBalance23 = await getTokenBalanceAsync(qtum, order3Owner);
+    //   const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
+
+    //   const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
+    //   const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
+    //   const qtumBalance24 = await getTokenBalanceAsync(qtum, feeRecepient);
+    //   const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+    //   const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
+    //   simulator.availableAmountSList = availableAmountSList;
+    //   simulator.spendableLrcFeeList = spendableLrcFeeList;
+    //   const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
+
+    //   assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
+    //   assertNumberEqualsWithPrecision(neoBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+    //   assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+    //   assertNumberEqualsWithPrecision(qtumBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+
+    //   assertNumberEqualsWithPrecision(qtumBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
+    //   assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
+
+    //   assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+    //   assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+    //   assertNumberEqualsWithPrecision(qtumBalance24.toNumber(), feeAndBalanceExpected.totalFees[qtumAddress]);
+    //   assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress] + 15e18);
+
+    //   await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    // });
+
+    // it("should be able to pay lrc fee when receiving lrc as result of trading.", async () => {
+    //   const feeSelectionList = [0, 0, 1];
+    //   const ring = await ringFactory.generateSize3Ring03(order1Owner,
+    //                                                      order2Owner,
+    //                                                      order3Owner,
+    //                                                      ringOwner,
+    //                                                      100,
+    //                                                      feeSelectionList);
+
+    //   const availableAmountSList = [1000e18, 2006e18, 20e18];
+    //   const spendableLrcFeeList = [0, 6e18, 1e18, 20e18];
+
+    //   await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
+    //   await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
+    //   await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
+    //   await lrc.setBalance(order3Owner, web3.toWei(1),  {from: owner});
+    //   await lrc.setBalance(feeRecepient, web3.toWei(20),  {from: owner});
+
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+
+    //   // console.log("tx.receipt.logs: ", tx.receipt.logs);
+
+    //   const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+    //   const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
+
+    //   const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
+    //   const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+
+    //   const neoBalance23 = await getTokenBalanceAsync(neo, order3Owner);
+    //   const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
+
+    //   const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
+    //   const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
+    //   const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+    //   const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
+    //   simulator.availableAmountSList = availableAmountSList;
+    //   simulator.spendableLrcFeeList = spendableLrcFeeList;
+    //   const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
+
+    //   // console.log("feeAndBalanceExpected", feeAndBalanceExpected);
+
+    //   // console.log("eosBalance21:", eosBalance21);
+    //   // console.log("lrcBalance21:", lrcBalance21);
+    //   // console.log("lrcBalance22:", lrcBalance22);
+    //   // console.log("neoBalance22:", neoBalance22);
+    //   // console.log("neoBalance23:", neoBalance23);
+    //   // console.log("eosBalance23:", eosBalance23);
+    //   // console.log("eosBalance24:", eosBalance24);
+    //   // console.log("neoBalance24:", neoBalance24);
+    //   // console.log("lrcBalance24:", lrcBalance24);
+
+    //   assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
+    //   assertNumberEqualsWithPrecision(lrcBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+    //   assertNumberEqualsWithPrecision(lrcBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+    //   assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+
+    //   assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
+    //   // assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
+
+    //   // assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+    //   // assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+    //   // assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
+
+    //   await clear([eos, neo, lrc, qtum], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    // });
+
+    // it("should be able to choose margin split(100%) for fee when order owner's spendable lrc is 0.", async () => {
+    //   const feeSelectionList = [0, 0, 0];
+    //   const ring = await ringFactory.generateSize3Ring03(order1Owner,
+    //                                                      order2Owner,
+    //                                                      order3Owner,
+    //                                                      ringOwner,
+    //                                                      200,
+    //                                                      feeSelectionList);
+
+    //   const availableAmountSList = [1000e18, 2006e18, 20e18];
+    //   const spendableLrcFeeList = [0, 6e18, 0, 20e18];
+
+    //   await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
+    //   await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
+    //   await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
+    //   await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
+    //   await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
+
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+
+    //   // console.log("tx.receipt.logs: ", tx.receipt.logs);
+
+    //   const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+    //   const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
+
+    //   const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
+    //   const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+
+    //   const neoBalance23 = await getTokenBalanceAsync(neo, order3Owner);
+    //   const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
+
+    //   const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
+    //   const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
+    //   const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+    //   const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
+    //   simulator.availableAmountSList = availableAmountSList;
+    //   simulator.spendableLrcFeeList = spendableLrcFeeList;
+    //   const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
+
+    //   assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
+    //   assertNumberEqualsWithPrecision(lrcBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+    //   assertNumberEqualsWithPrecision(lrcBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+    //   assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+
+    //   assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
+    //   assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
+
+    //   assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+    //   assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+    //   assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
+
+    //   await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    // });
+
+    // it("should not be able to get margin split fee if miner's spendable lrc is less than order's lrcFee.",
+    // async () => {
+    //   const feeSelectionList = [1, 1, 1];
+    //   const ring = await ringFactory.generateSize3Ring03(order1Owner,
+    //                                                      order2Owner,
+    //                                                      order3Owner,
+    //                                                      ringOwner,
+    //                                                      300,
+    //                                                      feeSelectionList);
+
+    //   const availableAmountSList = [1000e18, 2006e18, 20e18];
+    //   const spendableLrcFeeList = [0, 6e18, 1e18, 0];
+
+    //   await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
+    //   await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
+    //   await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
+    //   await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
+    //   await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
+
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+    //   const tx = await loopringProtocolImpl.submitRing(p.addressList,
+    //                                                    p.uintArgsList,
+    //                                                    p.uint8ArgsList,
+    //                                                    p.buyNoMoreThanAmountBList,
+    //                                                    p.vList,
+    //                                                    p.rList,
+    //                                                    p.sList,
+    //                                                    p.feeRecepient,
+    //                                                    p.feeSelections,
+    //                                                    {from: owner});
+
+    //   // console.log("tx.receipt.logs: ", tx.receipt.logs);
+
+    //   const eosBalance21 = await getTokenBalanceAsync(eos, order1Owner);
+    //   const lrcBalance21 = await getTokenBalanceAsync(lrc, order1Owner);
+
+    //   const lrcBalance22 = await getTokenBalanceAsync(lrc, order2Owner);
+    //   const neoBalance22 = await getTokenBalanceAsync(neo, order2Owner);
+
+    //   const neoBalance23 = await getTokenBalanceAsync(neo, order3Owner);
+    //   const eosBalance23 = await getTokenBalanceAsync(eos, order3Owner);
+
+    //   const eosBalance24 = await getTokenBalanceAsync(eos, feeRecepient);
+    //   const neoBalance24 = await getTokenBalanceAsync(neo, feeRecepient);
+    //   const lrcBalance24 = await getTokenBalanceAsync(lrc, feeRecepient);
+
+    //   const simulator = new ProtocolSimulator(ring, lrcAddress, feeSelectionList, walletSplitPercentage);
+    //   simulator.availableAmountSList = availableAmountSList;
+    //   simulator.spendableLrcFeeList = spendableLrcFeeList;
+    //   const feeAndBalanceExpected = simulator.caculateRingFeesAndBalances();
+    //   // console.log("feeAndBalanceExpected", feeAndBalanceExpected);
+
+    //   // console.log("eosBalance21:", eosBalance21);
+    //   // console.log("lrcBalance21:", lrcBalance21);
+    //   // console.log("lrcBalance22:", lrcBalance22);
+    //   // console.log("neoBalance22:", neoBalance22);
+    //   // console.log("neoBalance23:", neoBalance23);
+    //   // console.log("eosBalance23:", eosBalance23);
+    //   // console.log("eosBalance24:", eosBalance24);
+    //   // console.log("neoBalance24:", neoBalance24);
+    //   // console.log("lrcBalance24:", lrcBalance24);
+
+    //   assertNumberEqualsWithPrecision(eosBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceS, 6);
+    //   assertNumberEqualsWithPrecision(lrcBalance21.toNumber(), feeAndBalanceExpected.balances[0].balanceB);
+    //   assertNumberEqualsWithPrecision(lrcBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceS);
+    //   assertNumberEqualsWithPrecision(neoBalance22.toNumber(), feeAndBalanceExpected.balances[1].balanceB);
+
+    //   assertNumberEqualsWithPrecision(neoBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceS);
+    //   assertNumberEqualsWithPrecision(eosBalance23.toNumber(), feeAndBalanceExpected.balances[2].balanceB);
+
+    //   assertNumberEqualsWithPrecision(eosBalance24.toNumber(), feeAndBalanceExpected.totalFees[eosAddress]);
+    //   assertNumberEqualsWithPrecision(neoBalance24.toNumber(), feeAndBalanceExpected.totalFees[neoAddress]);
+    //   assertNumberEqualsWithPrecision(lrcBalance24.toNumber(), feeAndBalanceExpected.totalFees[lrcAddress]);
+
+    //   await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    // });
+
+    // it("should not fill orders which are fully cancelled.", async () => {
+    //   const feeSelectionList = [1, 1, 1];
+    //   const ring = await ringFactory.generateSize3Ring03(order1Owner,
+    //                                                      order2Owner,
+    //                                                      order3Owner,
+    //                                                      ringOwner,
+    //                                                      400,
+    //                                                      feeSelectionList);
+
+    //   const availableAmountSList = [1000e18, 2006e18, 20e18];
+    //   const spendableLrcFeeList = [0, 6e18, 1e18, 0];
+
+    //   await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
+    //   await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
+    //   await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
+    //   await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
+    //   await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
+
+    //   const order = ring.orders[0];
+    //   const cancelAmount = new BigNumber(1000e18);
+    //   const addresses = [order.owner,
+    //                      order.params.tokenS,
+    //                      order.params.tokenB,
+    //                      order.params.walletAddr,
+    //                      order.params.authAddr,
+    //                     ];
+
+    //   const orderValues = [order.params.amountS,
+    //                        order.params.amountB,
+    //                        order.params.validSince,
+    //                        order.params.validUntil,
+    //                        order.params.lrcFee,
+    //                        cancelAmount];
+
+    //   await loopringProtocolImpl.cancelOrder(addresses,
+    //                                          orderValues,
+    //                                          order.params.buyNoMoreThanAmountB,
+    //                                          order.params.marginSplitPercentage,
+    //                                          order.params.v,
+    //                                          order.params.r,
+    //                                          order.params.s,
+    //                                          {from: order.owner});
+
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+
+    //   try {
+    //     await loopringProtocolImpl.submitRing(p.addressList,
+    //                                           p.uintArgsList,
+    //                                           p.uint8ArgsList,
+    //                                           p.buyNoMoreThanAmountBList,
+    //                                           p.vList,
+    //                                           p.rList,
+    //                                           p.sList,
+    //                                           p.feeRecepient,
+    //                                           p.feeSelections,
+    //                                           {from: owner});
+    //   } catch (err) {
+    //     const errMsg = `${err}`;
+    //     assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+    //            `Expected contract to throw, got: ${err}`);
+    //   }
+
+    //   await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    // });
+
+    // it("should not fill orders which are cancelled by cancelAllOrders.", async () => {
+    //   const feeSelectionList = [1, 1, 1];
+    //   const ring = await ringFactory.generateSize3Ring03(order1Owner,
+    //                                                      order2Owner,
+    //                                                      order3Owner,
+    //                                                      ringOwner,
+    //                                                      500,
+    //                                                      feeSelectionList);
+
+    //   const availableAmountSList = [1000e18, 2006e18, 20e18];
+    //   const spendableLrcFeeList = [0, 6e18, 1e18, 0];
+
+    //   await eos.setBalance(order1Owner, availableAmountSList[0], {from: owner});
+    //   await lrc.setBalance(order2Owner, availableAmountSList[1],  {from: owner});
+    //   await neo.setBalance(order3Owner, availableAmountSList[2],  {from: owner});
+    //   await lrc.setBalance(order3Owner, spendableLrcFeeList[2],  {from: owner});
+    //   await lrc.setBalance(feeRecepient, spendableLrcFeeList[3],  {from: owner});
+
+    //   const p = ringFactory.ringToSubmitableParams(ring, feeSelectionList, feeRecepient);
+    //   await loopringProtocolImpl.cancelAllOrders(new BigNumber(currBlockTimeStamp), {from: order1Owner});
+    //   try {
+    //     await loopringProtocolImpl.submitRing(p.addressList,
+    //                                           p.uintArgsList,
+    //                                           p.uint8ArgsList,
+    //                                           p.buyNoMoreThanAmountBList,
+    //                                           p.vList,
+    //                                           p.rList,
+    //                                           p.sList,
+    //                                           p.feeRecepient,
+    //                                           p.feeSelections,
+    //                                           {from: owner});
+    //   } catch (err) {
+    //     const errMsg = `${err}`;
+    //     assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+    //            `Expected contract to throw, got: ${err}`);
+    //   }
+
+    //   await clear([eos, neo, lrc], [order1Owner, order2Owner, order3Owner, feeRecepient]);
+    // });
   });
 
-  describe("cancelOrder", () => {
-    it("should be able to set order cancelled amount by order owner", async () => {
-      const feeSelectionList = [0, 0];
-      const ring = await ringFactory.generateSize2Ring01(order1Owner,
-                                                         order2Owner,
-                                                         ringOwner,
-                                                         feeSelectionList);
+  // describe("cancelOrder", () => {
+  //   it("should be able to set order cancelled amount by order owner", async () => {
+  //     const feeSelectionList = [0, 0];
+  //     const ring = await ringFactory.generateSize2Ring01(order1Owner,
+  //                                                        order2Owner,
+  //                                                        ringOwner,
+  //                                                        feeSelectionList);
 
-      const order = ring.orders[0];
-      const cancelAmount = new BigNumber(100e18);
+  //     const order = ring.orders[0];
+  //     const cancelAmount = new BigNumber(100e18);
 
-      const addresses = [order.owner,
-                         order.params.tokenS,
-                         order.params.tokenB,
-                         order.params.walletAddr,
-                         order.params.authAddr];
+  //     const addresses = [order.owner,
+  //                        order.params.tokenS,
+  //                        order.params.tokenB,
+  //                        order.params.walletAddr,
+  //                        order.params.authAddr];
 
-      const orderValues = [order.params.amountS,
-                           order.params.amountB,
-                           order.params.validSince,
-                           order.params.validUntil,
-                           order.params.lrcFee,
-                           cancelAmount];
+  //     const orderValues = [order.params.amountS,
+  //                          order.params.amountB,
+  //                          order.params.validSince,
+  //                          order.params.validUntil,
+  //                          order.params.lrcFee,
+  //                          cancelAmount];
 
-      const cancelledOrFilledAmount0 = await tokenTransferDelegate.cancelledOrFilled(order.params.orderHashHex);
-      const tx = await loopringProtocolImpl.cancelOrder(addresses,
-                                                        orderValues,
-                                                        order.params.buyNoMoreThanAmountB,
-                                                        order.params.marginSplitPercentage,
-                                                        order.params.v,
-                                                        order.params.r,
-                                                        order.params.s,
-                                                        {from: order.owner});
+  //     const cancelledOrFilledAmount0 = await tokenTransferDelegate.cancelledOrFilled(order.params.orderHashHex);
+  //     const tx = await loopringProtocolImpl.cancelOrder(addresses,
+  //                                                       orderValues,
+  //                                                       order.params.buyNoMoreThanAmountB,
+  //                                                       order.params.marginSplitPercentage,
+  //                                                       order.params.v,
+  //                                                       order.params.r,
+  //                                                       order.params.s,
+  //                                                       {from: order.owner});
 
-      const cancelledOrFilledAmount1 = await tokenTransferDelegate.cancelledOrFilled(order.params.orderHashHex);
-      assert.equal(cancelledOrFilledAmount1.minus(cancelledOrFilledAmount0).toNumber(),
-        cancelAmount.toNumber(), "cancelled amount not match");
-    });
+  //     const cancelledOrFilledAmount1 = await tokenTransferDelegate.cancelledOrFilled(order.params.orderHashHex);
+  //     assert.equal(cancelledOrFilledAmount1.minus(cancelledOrFilledAmount0).toNumber(),
+  //       cancelAmount.toNumber(), "cancelled amount not match");
+  //   });
 
-    it("should not be able to cancell order by other address", async () => {
-      const feeSelectionList = [0, 0];
-      const ring = await ringFactory.generateSize2Ring01(order1Owner,
-                                                         order2Owner,
-                                                         ringOwner,
-                                                         feeSelectionList);
+  //   it("should not be able to cancell order by other address", async () => {
+  //     const feeSelectionList = [0, 0];
+  //     const ring = await ringFactory.generateSize2Ring01(order1Owner,
+  //                                                        order2Owner,
+  //                                                        ringOwner,
+  //                                                        feeSelectionList);
 
-      const order = ring.orders[0];
-      const cancelAmount = new BigNumber(100e18);
+  //     const order = ring.orders[0];
+  //     const cancelAmount = new BigNumber(100e18);
 
-      const addresses = [order.owner,
-                         order.params.tokenS,
-                         order.params.tokenB,
-                         order.params.walletAddr,
-                         order.params.authAddr];
+  //     const addresses = [order.owner,
+  //                        order.params.tokenS,
+  //                        order.params.tokenB,
+  //                        order.params.walletAddr,
+  //                        order.params.authAddr];
 
-      const orderValues = [order.params.amountS,
-                           order.params.amountB,
-                           order.params.validSince,
-                           order.params.validUntil,
-                           order.params.lrcFee,
-                           cancelAmount];
-      try {
-        const tx = await loopringProtocolImpl.cancelOrder(addresses,
-                                                          orderValues,
-                                                          order.params.buyNoMoreThanAmountB,
-                                                          order.params.marginSplitPercentage,
-                                                          order.params.v,
-                                                          order.params.r,
-                                                          order.params.s,
-                                                          {from: order2Owner});
-      } catch (err) {
-        const errMsg = `${err}`;
-        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
-               `Expected contract to throw, got: ${err}`);
-      }
-    });
-  });
+  //     const orderValues = [order.params.amountS,
+  //                          order.params.amountB,
+  //                          order.params.validSince,
+  //                          order.params.validUntil,
+  //                          order.params.lrcFee,
+  //                          cancelAmount];
+  //     try {
+  //       const tx = await loopringProtocolImpl.cancelOrder(addresses,
+  //                                                         orderValues,
+  //                                                         order.params.buyNoMoreThanAmountB,
+  //                                                         order.params.marginSplitPercentage,
+  //                                                         order.params.v,
+  //                                                         order.params.r,
+  //                                                         order.params.s,
+  //                                                         {from: order2Owner});
+  //     } catch (err) {
+  //       const errMsg = `${err}`;
+  //       assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+  //              `Expected contract to throw, got: ${err}`);
+  //     }
+  //   });
+  // });
 
-  describe("cancelAllOrders", () => {
-    it("should be able to set cutoffs", async () => {
-      await loopringProtocolImpl.cancelAllOrders(new BigNumber(1508566125), {from: order2Owner});
-      const cutoff = await tokenTransferDelegate.cutoffs(order2Owner);
-      assert.equal(cutoff.toNumber(), 1508566125, "cutoff not set correctly");
-    });
+  // describe("cancelAllOrders", () => {
+  //   it("should be able to set cutoffs", async () => {
+  //     await loopringProtocolImpl.cancelAllOrders(new BigNumber(1508566125), {from: order2Owner});
+  //     const cutoff = await tokenTransferDelegate.cutoffs(order2Owner);
+  //     assert.equal(cutoff.toNumber(), 1508566125, "cutoff not set correctly");
+  //   });
 
-    it("should be able to prevent orders from being traded by cutoffs.", async () => {
-      await loopringProtocolImpl.cancelAllOrders(new BigNumber(currBlockTimeStamp),
-                                                 {from: order2Owner});
+  //   it("should be able to prevent orders from being traded by cutoffs.", async () => {
+  //     await loopringProtocolImpl.cancelAllOrders(new BigNumber(currBlockTimeStamp),
+  //                                                {from: order2Owner});
 
-      const ring = await ringFactory.generateRingForCancel(order1Owner,
-                                                           order2Owner,
-                                                           ringOwner,
-                                                           [0, 0]);
+  //     const ring = await ringFactory.generateRingForCancel(order1Owner,
+  //                                                          order2Owner,
+  //                                                          ringOwner,
+  //                                                          [0, 0]);
 
-      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
-      await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
-      await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
-      await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
-      await lrc.setBalance(feeRecepient, 0, {from: owner});
+  //     await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+  //     await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
+  //     await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
+  //     await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
+  //     await lrc.setBalance(feeRecepient, 0, {from: owner});
 
-      const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
+  //     const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
 
-      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
+  //     const ethOfOwnerBefore = await getEthBalanceAsync(owner);
 
-      try {
-        await loopringProtocolImpl.submitRing(p.addressList,
-                                              p.uintArgsList,
-                                              p.uint8ArgsList,
-                                              p.buyNoMoreThanAmountBList,
-                                              p.vList,
-                                              p.rList,
-                                              p.sList,
-                                              p.feeRecepient,
-                                              p.feeSelections,
-                                              {from: owner});
-      } catch (err) {
-        const errMsg = `${err}`;
-        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
-               `Expected contract to throw, got: ${err}`);
-      }
+  //     try {
+  //       await loopringProtocolImpl.submitRing(p.addressList,
+  //                                             p.uintArgsList,
+  //                                             p.uint8ArgsList,
+  //                                             p.buyNoMoreThanAmountBList,
+  //                                             p.vList,
+  //                                             p.rList,
+  //                                             p.sList,
+  //                                             p.feeRecepient,
+  //                                             p.feeSelections,
+  //                                             {from: owner});
+  //     } catch (err) {
+  //       const errMsg = `${err}`;
+  //       assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+  //              `Expected contract to throw, got: ${err}`);
+  //     }
 
-    });
+  //   });
 
-  });
+  // });
 
-  describe("cancelAllOrdersByTradingPair", () => {
-    it("should be able to set trading pair cutoffs", async () => {
-      await loopringProtocolImpl.cancelAllOrdersByTradingPair(eosAddress,
-                                                              neoAddress,
-                                                              new BigNumber(1508566125),
-                                                              {from: order2Owner});
+  // describe("cancelAllOrdersByTradingPair", () => {
+  //   it("should be able to set trading pair cutoffs", async () => {
+  //     await loopringProtocolImpl.cancelAllOrdersByTradingPair(eosAddress,
+  //                                                             neoAddress,
+  //                                                             new BigNumber(1508566125),
+  //                                                             {from: order2Owner});
 
-      const cutoff = await loopringProtocolImpl.getTradingPairCutoffs(order2Owner,
-                                                                      eosAddress,
-                                                                      neoAddress);
+  //     const cutoff = await loopringProtocolImpl.getTradingPairCutoffs(order2Owner,
+  //                                                                     eosAddress,
+  //                                                                     neoAddress);
 
-      assert.equal(cutoff.toNumber(), 1508566125, "trading pair cutoff not set correctly");
-    });
+  //     assert.equal(cutoff.toNumber(), 1508566125, "trading pair cutoff not set correctly");
+  //   });
 
-    it("should be able to prevent orders from being traded by tradingPairCutoffs", async () => {
-      await loopringProtocolImpl.cancelAllOrdersByTradingPair(neoAddress,
-                                                              eosAddress,
-                                                              new BigNumber(currBlockTimeStamp),
-                                                              {from: order2Owner});
-      const ring = await ringFactory.generateRingForCancel(order1Owner,
-                                                           order2Owner,
-                                                           ringOwner,
-                                                           [1, 1]);
+  //   it("should be able to prevent orders from being traded by tradingPairCutoffs", async () => {
+  //     await loopringProtocolImpl.cancelAllOrdersByTradingPair(neoAddress,
+  //                                                             eosAddress,
+  //                                                             new BigNumber(currBlockTimeStamp),
+  //                                                             {from: order2Owner});
+  //     const ring = await ringFactory.generateRingForCancel(order1Owner,
+  //                                                          order2Owner,
+  //                                                          ringOwner,
+  //                                                          [1, 1]);
 
-      await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
-      await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
-      await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
-      await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
-      await lrc.setBalance(feeRecepient, 0, {from: owner});
+  //     await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
+  //     await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
+  //     await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
+  //     await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
+  //     await lrc.setBalance(feeRecepient, 0, {from: owner});
 
-      const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
+  //     const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
 
-      const ethOfOwnerBefore = await getEthBalanceAsync(owner);
+  //     const ethOfOwnerBefore = await getEthBalanceAsync(owner);
 
-      try {
-        await loopringProtocolImpl.submitRing(p.addressList,
-                                              p.uintArgsList,
-                                              p.uint8ArgsList,
-                                              p.buyNoMoreThanAmountBList,
-                                              p.vList,
-                                              p.rList,
-                                              p.sList,
-                                              p.feeRecepient,
-                                              p.feeSelections,
-                                              {from: owner});
-      } catch (err) {
-        const errMsg = `${err}`;
-        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
-               `Expected contract to throw, got: ${err}`);
-      }
+  //     try {
+  //       await loopringProtocolImpl.submitRing(p.addressList,
+  //                                             p.uintArgsList,
+  //                                             p.uint8ArgsList,
+  //                                             p.buyNoMoreThanAmountBList,
+  //                                             p.vList,
+  //                                             p.rList,
+  //                                             p.sList,
+  //                                             p.feeRecepient,
+  //                                             p.feeSelections,
+  //                                             {from: owner});
+  //     } catch (err) {
+  //       const errMsg = `${err}`;
+  //       assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+  //              `Expected contract to throw, got: ${err}`);
+  //     }
 
-    });
+  //   });
 
-  });
+  // });
 
 });

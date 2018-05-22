@@ -1,7 +1,8 @@
 import { BigNumber } from "bignumber.js";
+import { Ring } from "./ring";
 
 export interface OrderParams {
-  loopringProtocol: string;
+  delegateContract: string;
   tokenS: string;
   tokenB: string;
   amountS: BigNumber;
@@ -13,6 +14,7 @@ export interface OrderParams {
   marginSplitPercentage: number;
   authAddr: string;
   walletAddr: string;
+  tokenSSymbol?: string;
   scaledAmountS?: number;
   scaledAmountB?: number;
   rateAmountS?: number;
@@ -38,10 +40,9 @@ export interface LoopringSubmitParams {
 }
 
 export interface FeeItem {
-  fillAmountS: number;
-  feeLrc: number;
   feeS: number;
   feeB: number;
+  feeLrc: number;
   lrcReward: number;
 }
 
@@ -50,8 +51,48 @@ export interface BalanceItem {
   balanceB: number;
 }
 
-export interface SignResult {
-  v: number;
-  r: string;
-  s: string;
+export interface RingInfo {
+  amountSList: number[];
+  amountBList: number[];
+  lrcFeeAmountList?: number[];
+  miner?: string;
+  orderOwners?: string[];
+  tokenAddressList?: string[];
+  marginSplitPercentageList?: number[];
+  buyNoMoreThanAmountBList?: boolean[];
+  feeSelections?: number[];
+  description?: string;
+  salt?: number;
+  verbose?: boolean;
+  id?: string;
+}
+
+export interface RingBalanceInfo {
+  participiants: string[];
+  tokenAddressList: string[];
+  tokenSymbolList: string[];
+  tokenBalances: number[][];
+}
+
+export interface SimulatorReport {
+  ring: Ring;
+  feeItems: FeeItem[];
+  transferList: TransferItem[];
+  ringBalanceInfo?: RingBalanceInfo;
+}
+
+export interface TransferItem {
+  description: string;
+  tokenAddress: string;
+  tokenSymbol?: string;
+  fromAddress: string;
+  toAddress: string;
+  amount: number;
+}
+
+export interface RawTx {
+  content: string;
+  id?: string;
+  url?: string;
+  verbose?: boolean;
 }

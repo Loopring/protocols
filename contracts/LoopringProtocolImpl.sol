@@ -727,15 +727,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
                 amount = state.amountB.tolerantSub(cancelledOrFilledAmounts[i % 3]);
 
                 state.amountS = amount.mul(state.amountS) / state.amountB;
-                state.lrcFee = amount.mul(state.lrcFee) / state.amountB;
-
                 state.amountB = amount;
             } else {
                 amount = state.amountS.tolerantSub(cancelledOrFilledAmounts[i % 3]);
 
                 state.amountB = amount.mul(state.amountB) / state.amountS;
-                state.lrcFee = amount.mul(state.lrcFee) / state.amountS;
-
                 state.amountS = amount;
             }
 
