@@ -51,6 +51,7 @@ export function getOrders(host,filter) {
   body.method = 'loopring_getOrders';
   body.params = [filter];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -78,6 +79,7 @@ export function getCutoff(host,{address, delegateAddress, blockNumber}) {
   body.method = 'loopring_getCutoff';
   body.params = [{address, delegateAddress, blockNumber}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -102,6 +104,7 @@ export function placeOrder(host,order) {
   body.method = 'loopring_submitOrder';
   body.params = [order];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
