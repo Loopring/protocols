@@ -24,6 +24,10 @@ export default class Ring{
   getFills(filter){
     return getFills(this.host,filter)
   }
+
+  getRingHash(orders, feeRecipient, feeSelections){
+    return getRingHash(orders, feeRecipient, feeSelections)
+  }
 }
 
 /**
@@ -121,11 +125,11 @@ export function getFills(host,filter) {
 }
 
 
-export function getRingHash (orders,owner,feeSelections) {
+export function getRingHash (orders,feeRecipient, feeSelections) {
   const orderHashList = orders.map(order =>getOrderHash(order) )
   return soliditySHA3(["string", "address", "uint16"],[
     xorReduceStr(orderHashList),
-    owner,
+    feeRecipient,
     feeSelections
   ]);
 
