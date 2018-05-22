@@ -46,6 +46,7 @@ export function getRings(host,filter) {
   body.method = 'loopring_getRingMined';
   body.params = [filter];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -70,6 +71,7 @@ export function getRingMinedDetail(host,{ringIndex, protocolAddress}) {
   body.method = 'loopring_getRingMinedDetail';
   body.params = [{ringIndex}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -109,6 +111,7 @@ export function getFills(host,filter) {
   body.method = 'loopring_getFills';
   body.params = [filter];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,

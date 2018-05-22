@@ -63,6 +63,7 @@ export function getBalance(host,{delegateAddress, owner}) {
   body.method = 'loopring_getBalance';
   body.params = [{delegateAddress, owner}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -85,6 +86,7 @@ export function register(host,owner) {
   body.method = 'loopring_unlockWallet';
   body.params = [{owner}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -113,6 +115,7 @@ export function notifyTransactionSubmitted(host,{txHash, rawTx, from}) {
   body.method = 'loopring_notifyTransactionSubmitted';
   body.params = [{hash: txHash, nonce, to, value, gasPrice, gas: gasLimit, input: data, from,}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body
@@ -173,6 +176,7 @@ export function getEstimatedAllocatedAllowance(host,{owner, token}) {
   body.method = 'loopring_getEstimatedAllocatedAllowance';
   body.params = [{owner, token}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host,{
     method: 'post',
     body,
@@ -239,6 +243,7 @@ export function getPortfolio(host,owner) {
   body.method = 'loopring_getPortfolio';
   body.params = [{owner}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host,{
     method: 'post',
     body,

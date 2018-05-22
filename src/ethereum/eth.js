@@ -60,6 +60,7 @@ export function getTransactionCount(host,{address, tag}) {
   body.method = 'eth_getTransactionCount';
   body.params = params;
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -78,6 +79,7 @@ export function sendRawTransaction(host,signedTx) {
   body.method = 'eth_sendRawTransaction';
   body.params = [signedTx];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host,{
     method: 'post',
     body,
@@ -112,6 +114,7 @@ export function estimateGas(host,tx) {
   body.method = 'eth_estimateGas';
   body.params = [tx];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -140,6 +143,7 @@ export function getAccountBalance(host,{address, tag}) {
   body.method = 'eth_getBalance';
   body.params = params;
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -163,6 +167,7 @@ export function getTransactionByhash(host,hash) {
   body.method = 'eth_getTransactionByHash';
   body.params = params;
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
@@ -190,6 +195,7 @@ export function call(host,{tx, tag}) {
   body.method = 'eth_call';
   body.params = params;
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,

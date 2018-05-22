@@ -71,6 +71,7 @@ export function getSupportedMarket(host) {
   body.method = 'loopring_getSupportedMarket';
   body.params = [{}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body
@@ -87,6 +88,7 @@ export function getSupportedTokens(host) {
   body.method = 'loopring_getSupportedTokens';
   body.params = [{}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body
@@ -110,6 +112,7 @@ export function getDepth(host, filter) {
   body.method = 'loopring_getDepth';
   body.params = [filter];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body
@@ -126,6 +129,7 @@ export function getTicker(host) {
   body.method = 'loopring_getTicker';
   body.params = [{}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body
@@ -142,6 +146,7 @@ export function getTickers(host,market) {
   body.method = 'loopring_getTickers';
   body.params = [{market}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body
@@ -166,6 +171,7 @@ export function getTrend(host,{market, interval}) {
   body.method = 'loopring_getTrend';
   body.params = [{market, interval}];
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body
