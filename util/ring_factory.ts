@@ -53,7 +53,7 @@ export class RingFactory {
   }
 
   public bnToHex(x: BigNumber) {
-    return web3.toHex(x).substring(2).padStart(64, "0");
+    return web3.toHex(x.round(0, BigNumber.ROUND_DOWN)).substring(2).padStart(64, "0");
   }
 
   public addressToHex(x: string) {
