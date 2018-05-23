@@ -31,8 +31,8 @@ export default class Eth {
   }
 
 
-  getTransactionByhash(address){
-    return getTransactionByhash(this.host, address);
+  getTransactionByhash(txHash){
+    return getTransactionByhash(this.host, txHash);
   }
 
   call({tx,tag}){
