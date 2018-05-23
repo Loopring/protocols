@@ -75,7 +75,7 @@ export function getRingMinedDetail(host,{ringIndex, protocolAddress}) {
   ringIndex = toHex(toBig(ringIndex));
   const body = {};
   body.method = 'loopring_getRingMinedDetail';
-  body.params = [{ringIndex}];
+  body.params = [{ringIndex,protocolAddress}];
   body.id = id();
   body.jsonrpc = '2.0';
   return request(host, {
