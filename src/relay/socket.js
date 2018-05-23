@@ -8,11 +8,7 @@ export class Socket{
 
   constructor(url,options){
     options = options || { transports: ['websocket']};
-    const socket = io(url, options);
-    const _this = this;
-    socket.on('connect', () => {
-      _this.socket = socket;
-    })
+    this.socket = io(url, options);
   }
     emit(event, options) {
     this.socket.emit(event, JSON.stringify(options))
@@ -25,6 +21,10 @@ export class Socket{
     })
   }
 
+
+  close(){
+    this.socket.close()
+  }
 }
 
 
