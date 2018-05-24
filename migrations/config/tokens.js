@@ -18,13 +18,13 @@ module.exports = {
     },
     {
       decimals: 18,
-      name: "NEO",
-      symbol: "NEO",
+      name: "RDN",
+      symbol: "RDN",
     },
     {
       decimals: 18,
-      name: "QTUM",
-      symbol: "QTUM",
+      name: "GTO",
+      symbol: "GTO",
     },
   ],
 

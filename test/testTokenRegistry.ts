@@ -14,16 +14,16 @@ contract("TokenRegistry", (accounts: string[]) => {
   let testTokenAddr: string;
   let lrcAddress: string;
   let eosAddress: string;
-  let neoAddress: string;
-  let qtumAddress: string;
+  let gtoAddress: string;
+  let rdnAddress: string;
 
   before(async () => {
     tokenRegistry = await TokenRegistry.deployed();
     testTokenAddr = "0x8d01f9bcca92e63a1b2752b22d16e1962aa3c920";
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
     eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
-    neoAddress = await tokenRegistry.getAddressBySymbol("NEO");
-    qtumAddress = await tokenRegistry.getAddressBySymbol("QTUM");
+    gtoAddress = await tokenRegistry.getAddressBySymbol("GTO");
+    rdnAddress = await tokenRegistry.getAddressBySymbol("RDN");
   });
 
   describe("owner", () => {
@@ -48,7 +48,7 @@ contract("TokenRegistry", (accounts: string[]) => {
     });
 
     it("should be able to check all tokens registered in array", async () => {
-      const tokenList = [lrcAddress, neoAddress, eosAddress, qtumAddress];
+      const tokenList = [lrcAddress, gtoAddress, eosAddress, rdnAddress];
       const allRegistered = await tokenRegistry.areAllTokensRegistered(tokenList);
       assert.equal(allRegistered, true, "all token registered in migration script.");
 
