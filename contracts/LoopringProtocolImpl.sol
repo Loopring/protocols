@@ -309,6 +309,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
         pure
     {
         for (uint i = 0; i < params.ringSize; i++) {
+            // Don't verify the signature again if it's the same as the previous order
+            if(i > 0 &&
+               orders[i].authAddr == orders[i - 1].authAddr &&
+               orders[i].ringV == orders[i - 1].ringV &&
+               orders[i].ringR == orders[i - 1].ringR &&
+               orders[i].ringS == orders[i - 1].ringS) {
+                continue;
+            }
             verifySignature(
                 orders[i].authAddr,
                 params.ringHash,
