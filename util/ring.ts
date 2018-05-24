@@ -1,9 +1,9 @@
 import { BigNumber } from "bignumber.js";
 import promisify = require("es6-promisify");
+import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import * as _ from "lodash";
 import Web3 = require("web3");
-import { crypto } from "./crypto";
 import { Order } from "./order";
 
 export class Ring {
@@ -86,11 +86,17 @@ export class Ring {
       orderHashList.push(ethUtil.bufferToHex(orderHash));
     }
 
-    const ringHash = crypto.solSHA3WithType([
-      this.xorReduceStr(orderHashList),
-      this.owner,
-      this.feeSelectionListToNumber(this.feeSelections),
-    ], ["string", "address", "uint16"]);
+    const ringHash = ABI.soliditySHA3(
+      [
+        "string",
+        "address",
+        "uint16",
+      ],
+      [
+        this.xorReduceStr(orderHashList),
+        this.owner,
+        this.feeSelectionListToNumber(this.feeSelections),
+      ]);
 
     return ringHash;
   }

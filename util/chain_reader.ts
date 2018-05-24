@@ -15,7 +15,6 @@ export class ChainReader {
         this.web3Instance = web3; // inject by truffle.
       } else {
         this.web3Instance = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
-
         // connect to main-net via a public node:
         // new Web3.providers.HttpProvider('https://api.myetherapi.com/eth')
       }
