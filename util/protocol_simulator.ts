@@ -2,7 +2,11 @@ import { BigNumber } from "bignumber.js";
 import { ChainReader } from "./chain_reader";
 import { Order } from "./order";
 import { Ring } from "./ring";
-import { BalanceItem, FeeItem, RingBalanceInfo, SimulatorReport, TransferItem } from "./types";
+import { BalanceItem,
+         FeeItem,
+         RingBalanceInfo,
+         SimulatorReport,
+         TransferItem } from "./types";
 
 export class ProtocolSimulator {
   public ring: Ring;

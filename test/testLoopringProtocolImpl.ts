@@ -222,23 +222,14 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     });
   };
 
-  const getTransferItems = async (token: string, fromBlock: number) => {
-    const tokenContractInstance = tokenMap.get(token);
-    return await getEventsFromContract(tokenContractInstance, "Transfer", fromBlock);
-  };
-
   const getTransferEvents = async (tokens: string[], fromBlock: number) => {
     let transferItems: Array<[string, string, number]> = [];
     for (const tokenAddr of tokens) {
-      const eventArr: any = await getTransferItems(tokenAddr, fromBlock);
+      const tokenContractInstance = tokenMap.get(tokenAddr);
+      const eventArr: any = await getEventsFromContract(tokenContractInstance, "Transfer", fromBlock);
       const items = eventArr.map((eventObj: any) => {
-        const from = eventObj.args.from;
-        const to = eventObj.args.to;
-        const amount = eventObj.args.value.toNumber();
-        const item: [string, string, number] = [from, to, amount];
-        return item;
+        return [eventObj.args.from, eventObj.args.to, eventObj.args.value.toNumber()];
       });
-
       transferItems = transferItems.concat(items);
     }
 
@@ -343,10 +334,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                          p.feeRecepient,
                                                          p.feeSelections,
                                                          {from: feeRecepient});
-
         // console.log("tx.receipt.logs: ", tx.receipt.logs);
-        // const balanceInfo = await getRingBalanceInfoAfter(ring, feeRecepient);
-        // console.log("balanceInfo:",  balanceInfo);
 
         const tokenSet = new Set([lrcAddress]);
         for (const order of ring.orders) {
