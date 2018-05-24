@@ -25,11 +25,11 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
 
   let lrc: any;
   let eos: any;
-  let neo: any;
+  let gto: any;
 
   let lrcAddress: string;
   let eosAddress: string;
-  let neoAddress: string;
+  let gtoAddress: string;
   let delegateAddr: string;
 
   const getTokenBalanceAsync = async (token: any, addr: string) => {
@@ -57,10 +57,10 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
     delegateAddr = TokenTransferDelegate.address;
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
     eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
-    neoAddress = await tokenRegistry.getAddressBySymbol("NEO");
+    gtoAddress = await tokenRegistry.getAddressBySymbol("GTO");
     lrc = await DummyToken.at(lrcAddress);
     eos = await DummyToken.at(eosAddress);
-    neo = await DummyToken.at(neoAddress);
+    gto = await DummyToken.at(gtoAddress);
   });
 
   describe("TokenTransferDelegate", () => {
@@ -120,9 +120,9 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       await eos.approve(delegateAddr, web3.toWei(0), {from: trader1});
       await eos.approve(delegateAddr, web3.toWei(100), {from: trader1});
 
-      await neo.setBalance(trader2, web3.toWei(10), {from: owner});
-      await neo.approve(delegateAddr, web3.toWei(0), {from: trader2});
-      await neo.approve(delegateAddr, web3.toWei(10), {from: trader2});
+      await gto.setBalance(trader2, web3.toWei(10), {from: owner});
+      await gto.approve(delegateAddr, web3.toWei(0), {from: trader2});
+      await gto.approve(delegateAddr, web3.toWei(10), {from: trader2});
 
       const batch: string[] = [];
       batch.push(addressToBytes32Str(trader1));
@@ -136,7 +136,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       batch.push(numberToBytes32Str(0));
 
       batch.push(addressToBytes32Str(trader2));
-      batch.push(addressToBytes32Str(neoAddress));
+      batch.push(addressToBytes32Str(gtoAddress));
       batch.push(numberToBytes32Str(10e18));
       batch.push(numberToBytes32Str(0));
       batch.push(numberToBytes32Str(0));
@@ -149,11 +149,11 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
           lrcAddress, loopringProtocolV1, owner, 20, batch,
           {from: loopringProtocolV1});
 
-      const trader1NeoBalance = await getTokenBalanceAsync(neo, trader1);
+      const trader1GtoBalance = await getTokenBalanceAsync(gto, trader1);
       const trader2EosBalance = await getTokenBalanceAsync(eos, trader2);
       const ownerLrcBalance = await getTokenBalanceAsync(lrc, owner);
 
-      assert.equal(trader1NeoBalance.toNumber(), 10e18, "trade amount incorrect");
+      assert.equal(trader1GtoBalance.toNumber(), 10e18, "trade amount incorrect");
       assert.equal(trader2EosBalance.toNumber(), 100e18, "trade amount incorrect");
       assert.equal(ownerLrcBalance.toNumber(), 8e18, "lrc fee amount incorrect");
     });
@@ -172,9 +172,9 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
         await eos.approve(delegateAddr, web3.toWei(0), {from: trader1});
         await eos.approve(delegateAddr, web3.toWei(100), {from: trader1});
 
-        await neo.setBalance(trader2, web3.toWei(10), {from: owner});
-        await neo.approve(delegateAddr, web3.toWei(0), {from: trader2});
-        await neo.approve(delegateAddr, web3.toWei(10), {from: trader2});
+        await gto.setBalance(trader2, web3.toWei(10), {from: owner});
+        await gto.approve(delegateAddr, web3.toWei(0), {from: trader2});
+        await gto.approve(delegateAddr, web3.toWei(10), {from: trader2});
 
         const batch: string[] = [];
         batch.push(addressToBytes32Str(trader1));
@@ -188,7 +188,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
         batch.push(numberToBytes32Str(0));
 
         batch.push(addressToBytes32Str(trader2));
-        batch.push(addressToBytes32Str(neoAddress));
+        batch.push(addressToBytes32Str(gtoAddress));
         batch.push(numberToBytes32Str(10e18));
         batch.push(numberToBytes32Str(0));
         batch.push(numberToBytes32Str(0));

@@ -37,14 +37,14 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
   let lrcAddress: string;
   let eosAddress: string;
-  let neoAddress: string;
-  let qtumAddress: string;
+  let gtoAddress: string;
+  let rdnAddress: string;
   let delegateAddr: string;
 
   let lrc: any;
   let eos: any;
-  let neo: any;
-  let qtum: any;
+  let gto: any;
+  let rdn: any;
 
   let allTokens: any[];
   let allAddresses: string[];
@@ -66,8 +66,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
     eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
-    neoAddress = await tokenRegistry.getAddressBySymbol("NEO");
-    qtumAddress = await tokenRegistry.getAddressBySymbol("QTUM");
+    gtoAddress = await tokenRegistry.getAddressBySymbol("GTO");
+    rdnAddress = await tokenRegistry.getAddressBySymbol("RDN");
     delegateAddr = TokenTransferDelegate.address;
 
     const walletSplitPercentageBN = await loopringProtocolImpl.walletSplitPercentage();
@@ -75,35 +75,31 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
     tokenTransferDelegate.authorizeAddress(LoopringProtocolImpl.address);
 
-    [lrc, eos, neo, qtum] = await Promise.all([
+    [lrc, eos, gto, rdn] = await Promise.all([
       DummyToken.at(lrcAddress),
       DummyToken.at(eosAddress),
-      DummyToken.at(neoAddress),
-      DummyToken.at(qtumAddress),
+      DummyToken.at(gtoAddress),
+      DummyToken.at(rdnAddress),
     ]);
 
     tokenMap.set(lrcAddress, lrc);
     tokenSymbolMap.set(lrcAddress, "LRC");
     tokenMap.set(eosAddress, eos);
     tokenSymbolMap.set(eosAddress, "EOS");
-    tokenMap.set(neoAddress, neo);
-    tokenSymbolMap.set(neoAddress, "NEO");
-    tokenMap.set(qtumAddress, qtum);
-    tokenSymbolMap.set(qtumAddress, "QTUM");
+    tokenMap.set(gtoAddress, gto);
+    tokenSymbolMap.set(gtoAddress, "GTO");
+    tokenMap.set(rdnAddress, rdn);
+    tokenSymbolMap.set(rdnAddress, "RDN");
 
     const currBlockNumber = web3.eth.blockNumber;
     currBlockTimeStamp = web3.eth.getBlock(currBlockNumber).timestamp;
 
     ringFactory = new RingFactory(TokenTransferDelegate.address,
-                                  eosAddress,
-                                  neoAddress,
-                                  lrcAddress,
-                                  qtumAddress,
                                   orderAuthAddr,
                                   currBlockTimeStamp);
     ringFactory.walletAddr = walletAddr;
 
-    allTokens = [eos, neo, lrc, qtum];
+    allTokens = [eos, gto, lrc, rdn];
     allAddresses = [order1Owner, order2Owner, order3Owner, feeRecepient];
 
     // approve only once for all test cases.
@@ -183,7 +179,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     const ringSize = ringInfo.amountSList.length;
     assert(ringSize <= 3, "invalid orders size. amountSList:" + ringInfo.amountSList);
 
-    const tokenAddresses = [eosAddress, neoAddress, lrcAddress];
+    const tokenAddresses = [eosAddress, gtoAddress, lrcAddress];
     const orderOwners = [order1Owner, order2Owner, order3Owner];
     ringInfo.tokenAddressList = tokenAddresses.slice(0, ringSize);
     if (ringInfo.orderOwners && ringInfo.orderOwners.length > 0 &&
@@ -373,7 +369,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
         assertTransfers(transferEvents, simulatorReport.transferList);
 
-        await clear([eos, neo, lrc], [order1Owner, order2Owner, feeRecepient]);
+        await clear([eos, gto, lrc], [order1Owner, order2Owner, feeRecepient]);
         eventFromBlock = web3.eth.blockNumber + 1;
       });
     }
@@ -387,7 +383,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const orderPrams = {
         delegateContract: delegateAddr,
         tokenS: eosAddress,
-        tokenB: neoAddress,
+        tokenB: gtoAddress,
         amountS: new BigNumber(1000e18),
         amountB: new BigNumber(100e18),
         validSince: new BigNumber(currBlockTimeStamp),
@@ -436,7 +432,7 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
       const orderPrams = {
         delegateContract: delegateAddr,
         tokenS: eosAddress,
-        tokenB: neoAddress,
+        tokenB: gtoAddress,
         amountS: new BigNumber(1000e18),
         amountB: new BigNumber(100e18),
         validSince: new BigNumber(currBlockTimeStamp),
@@ -493,13 +489,13 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
   describe("cancelAllOrdersByTradingPair", () => {
     it("should be able to set trading pair cutoffs", async () => {
       await loopringProtocolImpl.cancelAllOrdersByTradingPair(eosAddress,
-                                                              neoAddress,
+                                                              gtoAddress,
                                                               new BigNumber(1508566125),
                                                               {from: order2Owner});
 
       const cutoff = await loopringProtocolImpl.getTradingPairCutoffs(order2Owner,
                                                                       eosAddress,
-                                                                      neoAddress);
+                                                                      gtoAddress);
 
       assert.equal(cutoff.toNumber(), 1508566125, "trading pair cutoff not set correctly");
     });
