@@ -35,13 +35,16 @@ export class ProtocolSimulator {
   public async simulateAndReport(spendableAmountSList: number[],
                                  spendableLrcAmountList: number[],
                                  orderFilledOrCancelledAmountList: number[],
-                                 loadDataFromChain: boolean,
                                  printReport: boolean) {
-    if (loadDataFromChain) {
-      await this.loadChainData();
-    } else {
+    const ringSize = this.ring.orders.length;
+    await this.loadChainData();
+    if (spendableAmountSList && spendableAmountSList.length === ringSize) {
       this.spendableAmountSList = spendableAmountSList;
+    }
+    if (spendableLrcAmountList && spendableLrcAmountList.length === ringSize) {
       this.spendableLrcAmountList = spendableLrcAmountList;
+    }
+    if (orderFilledOrCancelledAmountList && orderFilledOrCancelledAmountList.length === ringSize) {
       this.orderFilledOrCancelledAmountList = orderFilledOrCancelledAmountList;
     }
 
@@ -119,8 +122,8 @@ export class ProtocolSimulator {
       const amountS = order.params.amountS.toNumber();
       const amountB = order.params.amountB.toNumber();
       const lrcFee = order.params.lrcFee.toNumber();
-      let availableAmountS = order.params.amountS.toNumber();
-      let availableAmountB = order.params.amountB.toNumber();
+      let availableAmountS = amountS;
+      let availableAmountB = amountB;
 
       if (order.params.buyNoMoreThanAmountB) {
         availableAmountB -= this.orderFilledOrCancelledAmountList[i];
@@ -141,6 +144,16 @@ export class ProtocolSimulator {
         throw new Error("order amountS or amountB is zero");
       }
 
+      if (amountS < availableAmountS) {
+        availableAmountS = amountS;
+        availableAmountB = Math.floor(availableAmountS * amountB / amountS);
+      }
+
+      if (amountB < availableAmountB) {
+        availableAmountB = amountB;
+        availableAmountS = Math.floor(availableAmountB * amountS / amountB);
+      }
+
       order.params.scaledAmountS = availableAmountS;
       order.params.scaledAmountB = availableAmountB;
 
@@ -156,10 +169,7 @@ export class ProtocolSimulator {
       const nextIndex = (i + 1) % size;
       const currOrder = this.ring.orders[i];
       const nextOrder = this.ring.orders[nextIndex];
-      const sub = this.caculateNextFillAmountS(currOrder, nextOrder);
-      if (sub > 0) {
-        smallestIndex = nextIndex;
-      }
+      smallestIndex = this.caculateNextFillAmountS(currOrder, nextOrder, smallestIndex, i, nextIndex);
     }
 
     // do it again.
@@ -167,11 +177,16 @@ export class ProtocolSimulator {
       const nextIndex = (i + 1) % size;
       const currOrder = this.ring.orders[i];
       const nextOrder = this.ring.orders[nextIndex];
-      this.caculateNextFillAmountS(currOrder, nextOrder);
+      this.caculateNextFillAmountS(currOrder, nextOrder, 0, 0, 0);
     }
   }
 
-  private caculateNextFillAmountS(currOrder: Order, nextOrder: Order) {
+  private caculateNextFillAmountS(currOrder: Order,
+                                  nextOrder: Order,
+                                  smallestIndex: number,
+                                  currIndex: number,
+                                  nextIndex: number) {
+    let newSamllestIndex = smallestIndex;
     let currFillAmountB = currOrder.params.fillAmountS *
       currOrder.params.rateAmountB / currOrder.params.rateAmountS;
     currFillAmountB = Math.floor(currFillAmountB);
@@ -179,12 +194,18 @@ export class ProtocolSimulator {
       if (currFillAmountB > currOrder.params.scaledAmountB) {
         currFillAmountB = currOrder.params.scaledAmountB;
         currOrder.params.fillAmountS = Math.floor(currFillAmountB *
-          currOrder.params.rateAmountS / currOrder.params.rateAmountB);
+                                                  currOrder.params.rateAmountS /
+                                                  currOrder.params.rateAmountB);
+        newSamllestIndex = currIndex;
       }
     }
 
-    nextOrder.params.fillAmountS = Math.min(currFillAmountB, nextOrder.params.fillAmountS);
-    return currFillAmountB - nextOrder.params.fillAmountS;
+    if (nextOrder.params.fillAmountS >= currFillAmountB) {
+      nextOrder.params.fillAmountS = currFillAmountB;
+    } else {
+      newSamllestIndex = nextIndex;
+    }
+    return newSamllestIndex;
   }
 
   private caculateOrderFees() {

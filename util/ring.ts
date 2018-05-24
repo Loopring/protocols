@@ -120,7 +120,7 @@ export class Ring {
 
     for (const order of this.orders) {
       order.params.rateAmountB = order.params.amountB.toNumber();
-      order.params.rateAmountS = order.params.amountS.toNumber() / this.rate;
+      order.params.rateAmountS = Math.floor(order.params.amountS.toNumber() / this.rate);
     }
   }
 

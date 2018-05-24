@@ -61,6 +61,9 @@ export interface RingInfo {
   marginSplitPercentageList?: number[];
   buyNoMoreThanAmountBList?: boolean[];
   feeSelections?: number[];
+  spendableAmountSList?: number[];
+  spendableLrcFeeAmountList?: number[];
+  orderFilledOrCancelledAmountList?: number[];
   description?: string;
   salt?: number;
   verbose?: boolean;
