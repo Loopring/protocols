@@ -380,207 +380,130 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
   });
 
-  // describe("cancelOrder", () => {
-  //   it("should be able to set order cancelled amount by order owner", async () => {
-  //     const feeSelectionList = [0, 0];
+  describe("cancelOrder", () => {
+    it("should be able to set order cancelled amount by order owner", async () => {
+      const feeSelectionList = [0, 0];
 
-  //     const orderPrams = {
-  //       delegateContract: delegateAddr,
-  //       tokenS: eosAddress,
-  //       tokenB: neoAddress,
-  //       amountS: new BigNumber(1000e18),
-  //       amountB: new BigNumber(100e18),
-  //       validSince: new BigNumber(currBlockTimeStamp),
-  //       validUntil: new BigNumber((currBlockTimeStamp + 360000) + 130),
-  //       lrcFee: new BigNumber(1e18),
-  //       buyNoMoreThanAmountB: false,
-  //       marginSplitPercentage: 0,
-  //       authAddr: orderAuthAddr,
-  //       walletAddr,
-  //     };
+      const orderPrams = {
+        delegateContract: delegateAddr,
+        tokenS: eosAddress,
+        tokenB: neoAddress,
+        amountS: new BigNumber(1000e18),
+        amountB: new BigNumber(100e18),
+        validSince: new BigNumber(currBlockTimeStamp),
+        validUntil: new BigNumber((currBlockTimeStamp + 360000) + 130),
+        lrcFee: new BigNumber(1e18),
+        buyNoMoreThanAmountB: false,
+        marginSplitPercentage: 0,
+        authAddr: orderAuthAddr,
+        walletAddr,
+      };
 
-  //     const order = new Order(order1Owner, orderPrams);
-  //     await order.signAsync();
+      const order = new Order(order1Owner, orderPrams);
+      await order.signAsync();
 
-  //     const cancelAmount = new BigNumber(100e18);
-  //     const addresses = [order.owner,
-  //                        order.params.tokenS,
-  //                        order.params.tokenB,
-  //                        order.params.walletAddr,
-  //                        order.params.authAddr];
+      const cancelAmount = new BigNumber(100e18);
+      const addresses = [order.owner,
+                         order.params.tokenS,
+                         order.params.tokenB,
+                         order.params.walletAddr,
+                         order.params.authAddr];
 
-  //     const orderValues = [order.params.amountS,
-  //                          order.params.amountB,
-  //                          order.params.validSince,
-  //                          order.params.validUntil,
-  //                          order.params.lrcFee,
-  //                          cancelAmount];
+      const orderValues = [order.params.amountS,
+                           order.params.amountB,
+                           order.params.validSince,
+                           order.params.validUntil,
+                           order.params.lrcFee,
+                           cancelAmount];
 
-  //     const cancelledOrFilledAmount0 = await tokenTransferDelegate.cancelledOrFilled(order.params.orderHashHex);
-  //     const tx = await loopringProtocolImpl.cancelOrder(addresses,
-  //                                                       orderValues,
-  //                                                       order.params.buyNoMoreThanAmountB,
-  //                                                       order.params.marginSplitPercentage,
-  //                                                       order.params.v,
-  //                                                       order.params.r,
-  //                                                       order.params.s,
-  //                                                       {from: order.owner});
+      const cancelledOrFilledAmount0 = await tokenTransferDelegate.cancelledOrFilled(order.params.orderHashHex);
+      const tx = await loopringProtocolImpl.cancelOrder(addresses,
+                                                        orderValues,
+                                                        order.params.buyNoMoreThanAmountB,
+                                                        order.params.marginSplitPercentage,
+                                                        order.params.v,
+                                                        order.params.r,
+                                                        order.params.s,
+                                                        {from: order.owner});
 
-  //     const cancelledOrFilledAmount1 = await tokenTransferDelegate.cancelledOrFilled(order.params.orderHashHex);
-  //     assert.equal(cancelledOrFilledAmount1.minus(cancelledOrFilledAmount0).toNumber(),
-  //       cancelAmount.toNumber(), "cancelled amount not match");
-  //   });
+      const cancelledOrFilledAmount1 = await tokenTransferDelegate.cancelledOrFilled(order.params.orderHashHex);
+      assert.equal(cancelledOrFilledAmount1.minus(cancelledOrFilledAmount0).toNumber(),
+        cancelAmount.toNumber(), "cancelled amount not match");
+    });
 
-  //   it("should not be able to cancell order by other address", async () => {
-  //     const feeSelectionList = [0, 0];
-  //     const orderPrams = {
-  //       delegateContract: delegateAddr,
-  //       tokenS: eosAddress,
-  //       tokenB: neoAddress,
-  //       amountS: new BigNumber(1000e18),
-  //       amountB: new BigNumber(100e18),
-  //       validSince: new BigNumber(currBlockTimeStamp),
-  //       validUntil: new BigNumber((currBlockTimeStamp + 360000) + 130),
-  //       lrcFee: new BigNumber(1e18),
-  //       buyNoMoreThanAmountB: false,
-  //       marginSplitPercentage: 0,
-  //       authAddr: orderAuthAddr,
-  //       walletAddr,
-  //     };
+    it("should not be able to cancell order by other address", async () => {
+      const feeSelectionList = [0, 0];
+      const orderPrams = {
+        delegateContract: delegateAddr,
+        tokenS: eosAddress,
+        tokenB: neoAddress,
+        amountS: new BigNumber(1000e18),
+        amountB: new BigNumber(100e18),
+        validSince: new BigNumber(currBlockTimeStamp),
+        validUntil: new BigNumber((currBlockTimeStamp + 360000) + 130),
+        lrcFee: new BigNumber(1e18),
+        buyNoMoreThanAmountB: false,
+        marginSplitPercentage: 0,
+        authAddr: orderAuthAddr,
+        walletAddr,
+      };
 
-  //     const order = new Order(order1Owner, orderPrams);
-  //     await order.signAsync();
-  //     const cancelAmount = new BigNumber(100e18);
+      const order = new Order(order1Owner, orderPrams);
+      await order.signAsync();
+      const cancelAmount = new BigNumber(100e18);
 
-  //     const addresses = [order.owner,
-  //                        order.params.tokenS,
-  //                        order.params.tokenB,
-  //                        order.params.walletAddr,
-  //                        order.params.authAddr];
+      const addresses = [order.owner,
+                         order.params.tokenS,
+                         order.params.tokenB,
+                         order.params.walletAddr,
+                         order.params.authAddr];
 
-  //     const orderValues = [order.params.amountS,
-  //                          order.params.amountB,
-  //                          order.params.validSince,
-  //                          order.params.validUntil,
-  //                          order.params.lrcFee,
-  //                          cancelAmount];
-  //     try {
-  //       const tx = await loopringProtocolImpl.cancelOrder(addresses,
-  //                                                         orderValues,
-  //                                                         order.params.buyNoMoreThanAmountB,
-  //                                                         order.params.marginSplitPercentage,
-  //                                                         order.params.v,
-  //                                                         order.params.r,
-  //                                                         order.params.s,
-  //                                                         {from: order2Owner});
-  //     } catch (err) {
-  //       const errMsg = `${err}`;
-  //       assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
-  //              `Expected contract to throw, got: ${err}`);
-  //     }
-  //   });
-  // });
+      const orderValues = [order.params.amountS,
+                           order.params.amountB,
+                           order.params.validSince,
+                           order.params.validUntil,
+                           order.params.lrcFee,
+                           cancelAmount];
+      try {
+        const tx = await loopringProtocolImpl.cancelOrder(addresses,
+                                                          orderValues,
+                                                          order.params.buyNoMoreThanAmountB,
+                                                          order.params.marginSplitPercentage,
+                                                          order.params.v,
+                                                          order.params.r,
+                                                          order.params.s,
+                                                          {from: order2Owner});
+      } catch (err) {
+        const errMsg = `${err}`;
+        assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
+               `Expected contract to throw, got: ${err}`);
+      }
+    });
+  });
 
-  // describe("cancelAllOrders", () => {
-  //   it("should be able to set cutoffs", async () => {
-  //     await loopringProtocolImpl.cancelAllOrders(new BigNumber(1508566125), {from: order2Owner});
-  //     const cutoff = await tokenTransferDelegate.cutoffs(order2Owner);
-  //     assert.equal(cutoff.toNumber(), 1508566125, "cutoff not set correctly");
-  //   });
+  describe("cancelAllOrders", () => {
+    it("should be able to set cutoffs", async () => {
+      await loopringProtocolImpl.cancelAllOrders(new BigNumber(1508566125), {from: order2Owner});
+      const cutoff = await tokenTransferDelegate.cutoffs(order2Owner);
+      assert.equal(cutoff.toNumber(), 1508566125, "cutoff not set correctly");
+    });
 
-  //   // it("should be able to prevent orders from being traded by cutoffs.", async () => {
-  //   //   await loopringProtocolImpl.cancelAllOrders(new BigNumber(currBlockTimeStamp),
-  //   //                                              {from: order2Owner});
+  });
 
-  //   //   const ring = await ringFactory.generateRingForCancel(order1Owner,
-  //   //                                                        order2Owner,
-  //   //                                                        ringOwner,
-  //   //                                                        [0, 0]);
+  describe("cancelAllOrdersByTradingPair", () => {
+    it("should be able to set trading pair cutoffs", async () => {
+      await loopringProtocolImpl.cancelAllOrdersByTradingPair(eosAddress,
+                                                              neoAddress,
+                                                              new BigNumber(1508566125),
+                                                              {from: order2Owner});
 
-  //   //   await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
-  //   //   await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
-  //   //   await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
-  //   //   await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
-  //   //   await lrc.setBalance(feeRecepient, 0, {from: owner});
+      const cutoff = await loopringProtocolImpl.getTradingPairCutoffs(order2Owner,
+                                                                      eosAddress,
+                                                                      neoAddress);
 
-  //   //   const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
+      assert.equal(cutoff.toNumber(), 1508566125, "trading pair cutoff not set correctly");
+    });
 
-  //   //   const ethOfOwnerBefore = await getEthBalanceAsync(owner);
-
-  //   //   try {
-  //   //     await loopringProtocolImpl.submitRing(p.addressList,
-  //   //                                           p.uintArgsList,
-  //   //                                           p.uint8ArgsList,
-  //   //                                           p.buyNoMoreThanAmountBList,
-  //   //                                           p.vList,
-  //   //                                           p.rList,
-  //   //                                           p.sList,
-  //   //                                           p.feeRecepient,
-  //   //                                           p.feeSelections,
-  //   //                                           {from: owner});
-  //   //   } catch (err) {
-  //   //     const errMsg = `${err}`;
-  //   //     assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
-  //   //            `Expected contract to throw, got: ${err}`);
-  //   //   }
-
-  //   // });
-
-  // });
-
-  // describe("cancelAllOrdersByTradingPair", () => {
-  //   it("should be able to set trading pair cutoffs", async () => {
-  //     await loopringProtocolImpl.cancelAllOrdersByTradingPair(eosAddress,
-  //                                                             neoAddress,
-  //                                                             new BigNumber(1508566125),
-  //                                                             {from: order2Owner});
-
-  //     const cutoff = await loopringProtocolImpl.getTradingPairCutoffs(order2Owner,
-  //                                                                     eosAddress,
-  //                                                                     neoAddress);
-
-  //     assert.equal(cutoff.toNumber(), 1508566125, "trading pair cutoff not set correctly");
-  //   });
-
-  //   // it("should be able to prevent orders from being traded by tradingPairCutoffs", async () => {
-  //   //   await loopringProtocolImpl.cancelAllOrdersByTradingPair(neoAddress,
-  //   //                                                           eosAddress,
-  //   //                                                           new BigNumber(currBlockTimeStamp),
-  //   //                                                           {from: order2Owner});
-  //   //   const ring = await ringFactory.generateRingForCancel(order1Owner,
-  //   //                                                        order2Owner,
-  //   //                                                        ringOwner,
-  //   //                                                        [1, 1]);
-
-  //   //   await lrc.setBalance(order1Owner, web3.toWei(100),   {from: owner});
-  //   //   await eos.setBalance(order1Owner, web3.toWei(10000), {from: owner});
-  //   //   await lrc.setBalance(order2Owner, web3.toWei(100),   {from: owner});
-  //   //   await neo.setBalance(order2Owner, web3.toWei(1000),  {from: owner});
-  //   //   await lrc.setBalance(feeRecepient, 0, {from: owner});
-
-  //   //   const p = ringFactory.ringToSubmitableParams(ring, [0, 0], feeRecepient);
-
-  //   //   const ethOfOwnerBefore = await getEthBalanceAsync(owner);
-
-  //   //   try {
-  //   //     await loopringProtocolImpl.submitRing(p.addressList,
-  //   //                                           p.uintArgsList,
-  //   //                                           p.uint8ArgsList,
-  //   //                                           p.buyNoMoreThanAmountBList,
-  //   //                                           p.vList,
-  //   //                                           p.rList,
-  //   //                                           p.sList,
-  //   //                                           p.feeRecepient,
-  //   //                                           p.feeSelections,
-  //   //                                           {from: owner});
-  //   //   } catch (err) {
-  //   //     const errMsg = `${err}`;
-  //   //     assert(_.includes(errMsg, "Error: VM Exception while processing transaction: revert"),
-  //   //            `Expected contract to throw, got: ${err}`);
-  //   //   }
-
-  //   // });
-
-  // });
+  });
 
 });
