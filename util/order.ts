@@ -1,10 +1,11 @@
 import { BigNumber } from "bignumber.js";
 import xor = require("bitwise-xor");
+import BN = require("bn.js");
 import promisify = require("es6-promisify");
+import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import * as _ from "lodash";
 import Web3 = require("web3");
-import { crypto } from "./crypto";
 import { OrderParams } from "./types";
 
 export class Order {
@@ -34,7 +35,6 @@ export class Order {
     const orderHash = this.getOrderHash();
     // console.log("hash len:", orderHash.length.toString());
     const msgHash = ethUtil.hashPersonalMessage(orderHash);
-    // console.log("msgHash:", ethUtil.bufferToHex(msgHash));
     try {
       const pubKey = ethUtil.ecrecover(msgHash, v, ethUtil.toBuffer(r), ethUtil.toBuffer(s));
       const recoveredAddress = ethUtil.bufferToHex(ethUtil.pubToAddress(pubKey));
@@ -46,8 +46,6 @@ export class Order {
 
   public async signAsync() {
     const orderHash = this.getOrderHash();
-    // console.log("order owner:", this.owner);
-    // console.log("order hash:", ethUtil.bufferToHex(orderHash));
 
     const signature = await promisify(this.web3Instance.eth.sign)(this.owner, ethUtil.bufferToHex(orderHash));
     const { v, r, s } = ethUtil.fromRpcSig(signature);
@@ -60,24 +58,43 @@ export class Order {
   }
 
   public getOrderHash() {
-    // console.log("this.params.loopringProtocol:", this.params.loopringProtocol);
-    const orderHash = crypto.solSHA3([
+    const args = [
       this.params.delegateContract,
       this.owner,
       this.params.tokenS,
       this.params.tokenB,
       this.params.walletAddr,
       this.params.authAddr,
-      this.params.amountS,
-      this.params.amountB,
-      this.params.validSince,
-      this.params.validUntil,
-      this.params.lrcFee,
+      this.toBN(this.params.amountS),
+      this.toBN(this.params.amountB),
+      this.toBN(this.params.validSince),
+      this.toBN(this.params.validUntil),
+      this.toBN(this.params.lrcFee),
       this.params.buyNoMoreThanAmountB,
       this.params.marginSplitPercentage,
-    ]);
+    ];
 
+    const argTypes = [
+      "address",
+      "address",
+      "address",
+      "address",
+      "address",
+      "address",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint256",
+      "bool",
+      "uint8",
+    ];
+    const orderHash = ABI.soliditySHA3(argTypes, args);
     return orderHash;
+  }
+
+  private toBN(bg: BigNumber) {
+    return new BN(bg.toString(10), 10);
   }
 
 }
