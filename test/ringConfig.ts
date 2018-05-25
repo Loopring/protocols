@@ -10,6 +10,16 @@ export const ringInfoList: RingInfo[] = [
     salt: 10,
   },
   {
+    description: "ring with 2 orders - prices exactly match",
+    amountSList: [1e17, 300e18],
+    amountBList: [300e18, 1e17],
+    buyNoMoreThanAmountBList: [false, false],
+    feeSelections: [0, 0],
+    orderFilledOrCancelledAmountList: [5e16, 0],
+    salt: 11,
+    verbose: false,
+  },
+  {
     description: "ring with 2 orders - no margin split",
     amountSList: [1000e18, 100e18],
     amountBList: [100e18, 1000e18],
