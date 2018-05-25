@@ -275,25 +275,31 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
     const ringInfoListForTest = ringInfoList.concat(ringInfoListFromRawTxs);
 
     let eventFromBlock: number = 0;
+
+    const cancelOrderAmount = async (order: Order, cancelAmount: number) => {
+      const addresses = [order.owner,
+                         order.params.tokenS,
+                         order.params.tokenB,
+                         order.params.walletAddr,
+                         order.params.authAddr];
+      const orderValues = [order.params.amountS,
+                           order.params.amountB,
+                           order.params.validSince,
+                           order.params.validUntil,
+                           order.params.lrcFee,
+                           cancelAmount];
+      await loopringProtocolImpl.cancelOrder(addresses,
+                                             orderValues,
+                                             order.params.buyNoMoreThanAmountB,
+                                             order.params.marginSplitPercentage,
+                                             order.params.v,
+                                             order.params.r,
+                                             order.params.s,
+                                             {from: order.owner});
+    };
+
     for (const ringInfo of ringInfoListForTest) {
       it(ringInfo.description, async () => {
-        const ringSize = ringInfo.amountSList.length;
-        let spendableAmountSList: number[] = [];
-        let spendableLrcFeeAmountList: number[] = [];
-        let orderFilledOrCancelledAmountList: number[] = [];
-        if (ringInfo.spendableAmountSList &&
-            ringInfo.spendableAmountSList.length === ringSize) {
-          spendableAmountSList = ringInfo.spendableAmountSList.slice();
-        }
-        if (ringInfo.spendableLrcFeeAmountList &&
-            ringInfo.spendableLrcFeeAmountList.length === (ringSize + 1)) {
-          spendableLrcFeeAmountList = ringInfo.spendableLrcFeeAmountList.slice();
-        }
-        if (ringInfo.orderFilledOrCancelledAmountList &&
-            ringInfo.orderFilledOrCancelledAmountList.length === ringSize) {
-          orderFilledOrCancelledAmountList = ringInfo.orderFilledOrCancelledAmountList.slice();
-        }
-
         setDefaultValuesForRingInfo(ringInfo);
 
         const ring = await ringFactory.generateRing(ringInfo);
@@ -301,8 +307,8 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
 
         await setBalanceBefore(ring,
                                feeRecepient,
-                               spendableAmountSList,
-                               spendableLrcFeeAmountList);
+                               ringInfo.spendableAmountSList,
+                               ringInfo.spendableLrcFeeAmountList);
 
         const p = ringFactory.ringToSubmitableParams(ring);
 
@@ -310,18 +316,18 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
                                                 lrcAddress,
                                                 tokenRegistry.address,
                                                 walletSplitPercentage);
-
-        const spendableLrcAmountList = ring.orders.map((o, index) => {
-          if (o.params.tokenS === lrcAddress) {
-            return o.params.lrcFee.toNumber() + o.params.amountS.toNumber();
-          } else {
-            return o.params.lrcFee.toNumber();
-          }
-        });
+        // set order's cancelOrFilledAmount
+        if (ringInfo.orderFilledOrCancelledAmountList) {
+          ringInfo.orderFilledOrCancelledAmountList.forEach(async (n, i) => {
+            if (n > 0) {
+              await cancelOrderAmount(ring.orders[i], n);
+            }
+          });
+        }
 
         const simulatorReport = await simulator.simulateAndReport([],
                                                                   [],
-                                                                  orderFilledOrCancelledAmountList,
+                                                                  ringInfo.orderFilledOrCancelledAmountList,
                                                                   ringInfo.verbose);
 
         const tx = await loopringProtocolImpl.submitRing(p.addressList,
