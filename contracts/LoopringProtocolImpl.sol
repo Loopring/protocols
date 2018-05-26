@@ -61,6 +61,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
     uint    public constant RATE_RATIO_SCALE    = 10000;
 
+    uint    public constant RING_HEADER_SIZE    = 23;
+
     /// @param orderHash    The order's hash
     /// @param feeSelection -
     ///                     A miner-supplied value indicating if LRC (value = 0)
@@ -785,8 +787,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         returns (RingParams memory params)
     {
         // Read ring header from call data
-        require(data.length >= 32);
-        uint ringHeader = MemoryUtil.loadCallDataWord(0);
+        require(data.length >= RING_HEADER_SIZE);
+        uint ringHeader = MemoryUtil.bytesToUint(data, 0);
 
         // Extract data from ring header
         params.ringSize = uint8(ringHeader >> 248);
@@ -810,7 +812,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         view
         returns (OrderState[] memory orders)
     {
-        uint offset = 23;       // ring header size
+        uint offset = RING_HEADER_SIZE;
         uint orderSize = 451;
 
         // Validate the data size
@@ -828,8 +830,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             assembly {
                 orderPtr := order
             }
-            MemoryUtil.copyCallDataBytes(orderPtr, offset, 448);
-            uint packedData = MemoryUtil.loadCallDataWord(offset + 448);
+            MemoryUtil.copyCallDataBytesInArray(0, orderPtr, offset, 448);
+            uint packedData = MemoryUtil.bytesToUint(data, offset + 448);
 
             // Unpack data
             order.v = uint8(packedData >> 248);

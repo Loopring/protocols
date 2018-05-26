@@ -17,7 +17,7 @@
 pragma solidity 0.4.21;
 
 
-/// @title Utility Functions for byte32
+/// @title Utility Functions for memory related operations
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 library MemoryUtil {
@@ -35,22 +35,8 @@ library MemoryUtil {
         }
     }
 
-    // This function assumes the contract was called using a function that has a single bytes array parameter
-    function loadCallDataWord(
-        uint offsetInBytes
-        )
-        internal
-        pure
-        returns (uint data)
-    {
-        assembly {
-            // Offset 68 = 4 (function hash) + 32 (offset to bytes data) + 32 (array size)
-            data := calldataload(add(68, offsetInBytes))
-        }
-    }
-
-    // This function assumes the contract was called using a function that has a single bytes array parameter
-    function copyCallDataBytes(
+    function copyCallDataBytesInArray(
+        uint parameterIndex,
         uint dst,
         uint offsetInBytes,
         uint numBytes
@@ -59,8 +45,21 @@ library MemoryUtil {
         pure
     {
         assembly {
-            // Offset 68 = 4 (function hash) + 32 (offset to bytes data) + 32 (array size)
-            calldatacopy(dst, add(68, offsetInBytes), numBytes)
+            let parameterOffset := add(calldataload(add(4, mul(parameterIndex, 32))), 4)
+            calldatacopy(dst, add(add(parameterOffset, 32), offsetInBytes), numBytes)
+        }
+    }
+
+    function bytesToUint(
+        bytes b,
+        uint offset
+        )
+        internal
+        pure
+        returns (uint data)
+    {
+        assembly {
+            data := mload(add(add(b, 0x20), offset))
         }
     }
 }

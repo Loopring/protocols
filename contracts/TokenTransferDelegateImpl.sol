@@ -173,8 +173,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             assembly {
                 orderPtr := order
             }
-            // batch data will be stored after all 5 function parameters, so add 4 extra words as offset
-            MemoryUtil.copyCallDataBytes(orderPtr, (i + 4) * 32, 9 * 32);
+            MemoryUtil.copyCallDataBytesInArray(4, orderPtr, i * 32, 9 * 32);
 
 
             // Pay token to previous order, or to miner as previous order's
