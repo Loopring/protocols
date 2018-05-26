@@ -1,6 +1,7 @@
 import { BigNumber } from "bignumber.js";
-import ethUtil = require("ethereumjs-util");
+import BN = require("bn.js");
 import { LoopringSubmitParams, OrderParams, RingInfo } from "../util/types";
+import { Bitstream } from "./bitstream";
 import { Order } from "./order";
 import { Ring } from "./ring";
 
@@ -52,135 +53,58 @@ export class RingFactory {
     return ring;
   }
 
-  public bnToHex(x: BigNumber) {
-    return web3.toHex(x.round(0, BigNumber.ROUND_DOWN)).substring(2).padStart(64, "0");
-  }
-
-  public addressToHex(x: string) {
-    return "000000000000000000000000" + x.substring(2);
-  }
-
-  public padRight(x: string, n: number) {
-    for (let i = 0; i < n; i++) {
-        x = x + "0";
-    }
-    return x;
-  }
-
-  public addressXOR(s1: string, s2: string) {
-    const buf1 = Buffer.from(s1.slice(2), "hex");
-    const buf2 = Buffer.from(s2.slice(2), "hex");
-    const res = Buffer.alloc(32);
-    for (let i = 0; i < 32; i++) {
-      res[i] = buf1[i] ^ buf2[i];
-    }
-    const strRes = ethUtil.bufferToHex(res);
-    return strRes;
-  }
-
   public ringToSubmitableParams(ring: Ring) {
     const ringSize = ring.orders.length;
-    const addressList: string[][] = [];
-    const uintArgsList: BigNumber[][] = [];
-    const uint8ArgsList: number[][] = [];
-    const buyNoMoreThanAmountBList: boolean[] = [];
-    const vList: number[] = [];
-    const rList: string[] = [];
-    const sList: string[] = [];
-    let data = "0x";
-
     ring.caculateAndSetRateAmount();
-    const rateAmountSList = ring.orders.map((o) => new BigNumber(o.params.rateAmountS.toPrecision(15)));
 
-    const ringSizeHex = this.bnToHex(new BigNumber(ringSize));
-    const feeSelectionHex = this.bnToHex(new BigNumber(this.feeSelectionListToNumber(ring.feeSelections)));
-    const feeRecipientHex = this.addressToHex(ring.owner);
+    const bitstream = new Bitstream();
 
-    let ringHeaderData = "";
-    ringHeaderData += ringSizeHex.substring(64 - 2);
-    ringHeaderData += feeSelectionHex.substring(64 - 4);
-    ringHeaderData += feeRecipientHex.substring(64 - 40);
-    data += this.padRight(ringHeaderData, 64 - ringHeaderData.length);
+    bitstream.addNumber(ringSize, 1);
+    bitstream.addNumber(this.feeSelectionListToNumber(ring.feeSelections), 2);
+    bitstream.addAddress(ring.owner);
 
     for (let i = 0; i < ringSize; i++) {
       const order = ring.orders[i];
-      const addressListItem = [order.owner,
-                               order.params.tokenS,
-                               order.params.walletAddr,
-                               order.params.authAddr];
 
-      addressList.push(addressListItem);
-
-      const uintArgsListItem = [
-        order.params.amountS,
-        order.params.amountB,
-        order.params.validSince,
-        order.params.validUntil,
-        order.params.lrcFee,
-        rateAmountSList[i],
-      ];
-      uintArgsList.push(uintArgsListItem);
-
-      const uint8ArgsListItem = [order.params.marginSplitPercentage];
-
-      uint8ArgsList.push(uint8ArgsListItem);
-
-      buyNoMoreThanAmountBList.push(order.params.buyNoMoreThanAmountB);
-
-      vList.push(order.params.v);
-      rList.push(order.params.r);
-      sList.push(order.params.s);
-
-      let authAddrHex = this.addressToHex(order.params.authAddr);
-      let walletAddrHex = this.addressToHex(order.params.walletAddr);
-      let ringAuthRHex = ring.authR[i].substring(2);
-      let ringAuthSHex = ring.authS[i].substring(2);
+      let authAddr = order.params.authAddr;
+      let walletAddr = order.params.walletAddr;
+      let ringAuthR = ring.authR[i];
+      let ringAuthS = ring.authS[i];
       let ringAuthV = ring.authV[i];
       if (i > 0) {
-        // Do some simple XOR compression
         const previousOrder = ring.orders[i - 1];
-        authAddrHex = this.addressXOR(previousOrder.params.authAddr, order.params.authAddr).slice(2);
-        walletAddrHex = this.addressXOR(previousOrder.params.walletAddr, order.params.walletAddr).slice(2);
-        ringAuthRHex = this.addressXOR(ring.authR[i - 1], ring.authR[i]).slice(2);
-        ringAuthSHex = this.addressXOR(ring.authS[i - 1], ring.authS[i]).slice(2);
+
+        // Do simple XOR compression using values of the previous order
+        authAddr = this.xor(previousOrder.params.authAddr, order.params.authAddr, 20);
+        walletAddr = this.xor(previousOrder.params.walletAddr, order.params.walletAddr, 20);
+        ringAuthR = this.xor(ring.authR[i - 1], ring.authR[i], 32);
+        ringAuthS = this.xor(ring.authS[i - 1], ring.authS[i], 32);
         ringAuthV = ring.authV[i - 1] ^ ring.authV[i];
       }
 
-      data += this.addressToHex(order.owner);
-      data += this.addressToHex(order.params.tokenS);
-      data += walletAddrHex;
-      data += authAddrHex;
+      bitstream.addAddress(order.owner, 32);
+      bitstream.addAddress(order.params.tokenS, 32);
+      bitstream.addAddress(walletAddr, 32);
+      bitstream.addAddress(authAddr, 32);
+      bitstream.addBigNumber(order.params.validSince);
+      bitstream.addBigNumber(order.params.validUntil);
+      bitstream.addBigNumber(order.params.amountS);
+      bitstream.addBigNumber(order.params.amountB);
+      bitstream.addBigNumber(order.params.lrcFee);
+      bitstream.addBigNumber(new BigNumber(order.params.rateAmountS.toPrecision(15)), 32);
 
-      data += this.bnToHex(order.params.validSince);
-      data += this.bnToHex(order.params.validUntil);
-      data += this.bnToHex(order.params.amountS);
-      data += this.bnToHex(order.params.amountB);
-      data += this.bnToHex(order.params.lrcFee);
-      data += this.bnToHex(rateAmountSList[i]);
+      bitstream.addHex(ringAuthR);
+      bitstream.addHex(ringAuthS);
+      bitstream.addHex(order.params.r);
+      bitstream.addHex(order.params.s);
 
-      data += ringAuthRHex;
-      data += ringAuthSHex;
-
-      data += order.params.r.substring(2);
-      data += order.params.s.substring(2);
-
-      let packedData = 0;
-      packedData += (order.params.v << 16);
-      packedData += (ringAuthV << 8);
-      packedData += ((order.params.buyNoMoreThanAmountB ? 1 : 0) << 7) + order.params.marginSplitPercentage;
-      data += this.bnToHex(new BigNumber(packedData)).substring(58);
+      bitstream.addNumber(order.params.v, 1);
+      bitstream.addNumber(ringAuthV, 1);
+      bitstream.addNumber(((order.params.buyNoMoreThanAmountB ? 1 : 0) << 7) + order.params.marginSplitPercentage, 1);
     }
 
-    vList.push(...ring.authV);
-    rList.push(...ring.authR);
-    sList.push(...ring.authS);
-
-    // vList.push(ring.v);
-    // rList.push(ring.r);
-    // sList.push(ring.s);
-
     const submitParams = {
-      data,
+      data: bitstream.getData(),
     };
 
     return submitParams;
@@ -193,6 +117,13 @@ export class RingFactory {
     }
 
     return res;
+  }
+
+  private xor(s1: string, s2: string, numBytes: number) {
+    const x1 = new BN(s1.slice(2), 16);
+    const x2 = new BN(s2.slice(2), 16);
+    const result = x1.xor(x2);
+    return "0x" + result.toString(16, numBytes * 2);
   }
 
 }

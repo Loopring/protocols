@@ -810,11 +810,11 @@ contract LoopringProtocolImpl is LoopringProtocol {
         view
         returns (OrderState[] memory orders)
     {
-        uint offset = 32;       // ring header size
+        uint offset = 23;       // ring header size
         uint orderSize = 451;
 
         // Validate the data size
-        require(data.length == 32 + orderSize * params.ringSize);
+        require(data.length == offset + orderSize * params.ringSize);
 
         orders = new OrderState[](params.ringSize);
 
@@ -832,8 +832,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint packedData = MemoryUtil.loadCallDataWord(offset + 448);
 
             // Unpack data
-            order.v = uint8((packedData >> 248) & 0xFF);
-            order.ringV = uint8((packedData >> 240) & 0xFF);
+            order.v = uint8(packedData >> 248);
+            order.ringV = uint8(packedData >> 240);
             order.buyNoMoreThanAmountB = (packedData >> 232) & 128 > 0;
             order.marginSplitPercentage = uint8((packedData >> 232) & 127);
             order.marginSplitAsFee = (params.feeSelections & (uint16(1) << i)) > 0;
@@ -844,7 +844,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             offset += orderSize;
         }
 
-        OrderState memory prevOrder;
         for (i = 0; i < params.ringSize; i++) {
             order = orders[i];
 
@@ -853,7 +852,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
             // Reconstruct data using information from previous orders
             if (i > 0) {
-                prevOrder = orders[i - 1];
+                OrderState memory prevOrder = orders[i - 1];
                 order.wallet = address(uint(prevOrder.wallet) ^ uint(order.wallet));
                 order.authAddr = address(uint(prevOrder.authAddr) ^ uint(order.authAddr));
                 order.ringR = prevOrder.ringR ^ order.ringR;
