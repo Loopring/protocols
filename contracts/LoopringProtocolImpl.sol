@@ -430,8 +430,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         returns (bytes32[] memory orderInfoList)
     {
-        bytes32[] memory batch = new bytes32[](ringSize * 9);
-        orderInfoList = new bytes32[](ringSize * 6);
+        bytes32[] memory batch = new bytes32[](ringSize * 9); // ringSize * sizeof(TokenTransfer.OrderSettleData)
+        orderInfoList = new bytes32[](ringSize * 6);          // ringSize * sizeof(SettledOrderInfo)
 
         TokenTransfer.OrderSettleData memory orderSettleData;
         SettledOrderInfo memory settledOrderInfo;
