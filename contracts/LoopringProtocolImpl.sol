@@ -22,6 +22,7 @@ import "./lib/MathUint.sol";
 import "./LoopringProtocol.sol";
 import "./TokenRegistry.sol";
 import "./TokenTransferDelegate.sol";
+import "./lib/MemoryUtil.sol";
 
 
 /// @title An Implementation of LoopringProtocol.
@@ -111,7 +112,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     struct RingParams {
         address       feeRecipient;
         uint16        feeSelections;
-        uint          ringSize;         // computed
+        uint          ringSize;
         bytes32       ringHash;         // computed
     }
 
@@ -424,11 +425,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         returns (bytes32[] memory orderInfoList)
     {
-        uint numWordsInOrderSettleData = TokenTransfer.getNumWordsInOrderSettleData();
-        bytes32[] memory batch = new bytes32[](ringSize * numWordsInOrderSettleData);
-
-        uint numWordsInSettledOrderInfo = 7;
-        orderInfoList = new bytes32[](ringSize * numWordsInSettledOrderInfo);
+        bytes32[] memory batch = new bytes32[](ringSize * 9);
+        orderInfoList = new bytes32[](ringSize * 7);
 
         TokenTransfer.OrderSettleData memory orderSettleData;
         SettledOrderInfo memory settledOrderInfo;
@@ -438,8 +436,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
 
             // This will make writes to orderSettleData to be stored in the memory of batch
+            uint ptr = MemoryUtil.getBytes32Pointer(batch, 9 * i);
             assembly {
-                orderSettleData := add(add(batch, 0x20), mul(i, mul(numWordsInOrderSettleData, 0x20)))
+                orderSettleData := ptr
             }
             orderSettleData.owner = state.owner;
             orderSettleData.tokenS = state.tokenS;
@@ -452,8 +451,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderSettleData.fillAmount = state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS;
 
             // This will make writes to settledOrderInfo to be stored in the memory of orderInfoList
+            ptr = MemoryUtil.getBytes32Pointer(orderInfoList, 7 * i);
             assembly {
-                settledOrderInfo := add(add(orderInfoList, 0x20), mul(i, mul(numWordsInSettledOrderInfo, 0x20)))
+                settledOrderInfo := ptr
             }
             settledOrderInfo.orderHash = state.orderHash;
             settledOrderInfo.owner = state.owner;
@@ -786,19 +786,12 @@ contract LoopringProtocolImpl is LoopringProtocol {
     {
         // Read ring header from call data
         require(data.length >= 32);
-        uint ringHeader = 0;
-        assembly {
-            // Offset 0x44 = 0x04 (function hash) + 0x20 (offset to bytes data) + 0x20 (array size)
-            ringHeader := calldataload(0x44)
-        }
+        uint ringHeader = MemoryUtil.loadCallDataWord(0);
 
         // Extract data from ring header
-        params = RingParams(
-            address(ringHeader >> (256 - 184)),
-            uint16(ringHeader >> (256 - 24)),
-            uint8(ringHeader >> (256 - 8)),
-            0x0 // ringHash
-        );
+        params.ringSize = uint8(ringHeader >> 248);
+        params.feeSelections = uint16(ringHeader >> 232);
+        params.feeRecipient = address(ringHeader >> 72);
 
         require(params.feeRecipient != 0x0);
         require(params.ringSize > 1 && params.ringSize <= MAX_RING_SIZE); // "invalid ring size");
@@ -817,38 +810,38 @@ contract LoopringProtocolImpl is LoopringProtocol {
         view
         returns (OrderState[] memory orders)
     {
-        uint ordersStartOffset = 0x64;  // 0x04 (function hash) + 0x20 (data offset) + 0x20 (array length) + 0x20 (ring header)
-        uint orderSize = 0x1C3;
+        uint offset = 32;       // ring header size
+        uint orderSize = 451;
 
         // Validate the data size
-        require(data.length == 0x20 + orderSize * params.ringSize);
+        require(data.length == 32 + orderSize * params.ringSize);
 
         orders = new OrderState[](params.ringSize);
 
         OrderState memory order;
         uint i;
-        uint tempData;
         for (i = 0; i < params.ringSize; i++) {
             order = orders[i];
 
             // Read order data straight from the call data
+            uint orderPtr;
             assembly {
-                let offset := add(ordersStartOffset, mul(i, orderSize))
-                // Copy these bytes straight to the order struct
-                calldatacopy(order, offset, 0x1C0)
-                // Last bytes containing packed data
-                tempData := calldataload(add(offset, 0x1C0))
+                orderPtr := order
             }
+            MemoryUtil.copyCallDataBytes(orderPtr, offset, 448);
+            uint packedData = MemoryUtil.loadCallDataWord(offset + 448);
 
             // Unpack data
-            order.v = uint8((tempData >> 248) & 0xFF);
-            order.ringV = uint8((tempData >> 240) & 0xFF);
-            order.buyNoMoreThanAmountB = (tempData >> 232) & 128 > 0;
-            order.marginSplitPercentage = uint8((tempData >> 232) & 127);
+            order.v = uint8((packedData >> 248) & 0xFF);
+            order.ringV = uint8((packedData >> 240) & 0xFF);
+            order.buyNoMoreThanAmountB = (packedData >> 232) & 128 > 0;
+            order.marginSplitPercentage = uint8((packedData >> 232) & 127);
             order.marginSplitAsFee = (params.feeSelections & (uint16(1) << i)) > 0;
 
             // Set members values that can be derived from other members
             order.rateB = order.amountB;
+
+            offset += orderSize;
         }
 
         OrderState memory prevOrder;

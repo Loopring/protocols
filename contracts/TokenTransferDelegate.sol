@@ -135,12 +135,4 @@ library TokenTransfer {
         bytes32 orderHash;
         uint    fillAmount;
     }
-
-    function getNumWordsInOrderSettleData()
-        internal
-        pure
-        returns (uint)
-    {
-        return 9;
-    }
 }

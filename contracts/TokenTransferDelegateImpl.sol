@@ -20,6 +20,7 @@ import "./lib/Claimable.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./TokenTransferDelegate.sol";
+import "./lib/MemoryUtil.sol";
 
 
 /// @title An Implementation of TokenTransferDelegate.
@@ -157,22 +158,24 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         notSuspended
         external
     {
-        uint numWordsInOrderSettleData = TokenTransfer.getNumWordsInOrderSettleData();
         uint len = batch.length;
-        require(len % numWordsInOrderSettleData == 0);
+        require(len % 9 == 0);
         require(walletSplitPercentage > 0 && walletSplitPercentage < 100);
 
         ERC20 lrc = ERC20(lrcTokenAddress);
 
         TokenTransfer.OrderSettleData memory order;
-        address prevOwner = address(batch[len - numWordsInOrderSettleData]);
-        for (uint i = 0; i < batch.length; i += numWordsInOrderSettleData) {
+        address prevOwner = address(batch[len - 9]);
+        for (uint i = 0; i < batch.length; i += 9) {
 
             // Copy the data straight to the order struct from the call data
+            uint orderPtr;
             assembly {
-                // Offset 0xC4 = 0x04 (function hash) + 5 * 0x20 (5th parameter) + 0x20 (array size)
-                calldatacopy(order, add(0xC4, mul(i,0x20)), mul(numWordsInOrderSettleData, 0x20))
+                orderPtr := order
             }
+            // batch is the 5th parameter, so add 4 extra words as offset
+            MemoryUtil.copyCallDataBytes(orderPtr, (i + 4) * 32, 9 * 32);
+
 
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
