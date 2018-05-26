@@ -416,8 +416,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address owner;
         address tokenS;
         uint fillAmountS;
-        uint lrcReward;
-        int lrcFee;
+        int lrcRewardOrFee;
         int split;
     }
 
@@ -432,7 +431,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         returns (bytes32[] memory orderInfoList)
     {
         bytes32[] memory batch = new bytes32[](ringSize * 9);
-        orderInfoList = new bytes32[](ringSize * 7);
+        orderInfoList = new bytes32[](ringSize * 6);
 
         TokenTransfer.OrderSettleData memory orderSettleData;
         SettledOrderInfo memory settledOrderInfo;
@@ -457,7 +456,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderSettleData.fillAmount = state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS;
 
             // This will make writes to settledOrderInfo to be stored in the memory of orderInfoList
-            ptr = MemoryUtil.getBytes32Pointer(orderInfoList, 7 * i);
+            ptr = MemoryUtil.getBytes32Pointer(orderInfoList, 6 * i);
             assembly {
                 settledOrderInfo := ptr
             }
@@ -465,8 +464,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             settledOrderInfo.owner = state.owner;
             settledOrderInfo.tokenS = state.tokenS;
             settledOrderInfo.fillAmountS = state.fillAmountS;
-            settledOrderInfo.lrcReward = state.lrcReward;
-            settledOrderInfo.lrcFee = state.lrcFeeState > 0 ? int(state.lrcFeeState) : -int(state.lrcReward);
+            settledOrderInfo.lrcRewardOrFee = state.lrcFeeState > 0 ? int(state.lrcFeeState) : -int(state.lrcReward);
             settledOrderInfo.split = state.splitS > 0 ? int(state.splitS) : -int(state.splitB);
 
             prevSplitB = state.splitB;

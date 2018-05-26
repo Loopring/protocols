@@ -25,7 +25,7 @@ contract LoopringProtocol {
 
     /// @dev Event to emit if a ring is successfully mined.
     /// _orderInfoList is an array of:
-    /// [orderHash, owner, tokenS, fillAmountS, _lrcReward/_lrcFee, splitS, splitB].
+    /// [orderHash, owner, tokenS, fillAmountS, lrcReward/lrcFee, splitS/splitB].
     event RingMined(
         uint            _ringIndex,
         bytes32 indexed _ringHash,
