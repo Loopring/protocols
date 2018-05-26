@@ -60,8 +60,8 @@ export class RingFactory {
     const bitstream = new Bitstream();
 
     bitstream.addNumber(ringSize, 1);
-    bitstream.addNumber(this.feeSelectionListToNumber(ring.feeSelections), 2);
     bitstream.addAddress(ring.owner);
+    bitstream.addNumber(this.feeSelectionListToNumber(ring.feeSelections), 2);
 
     for (let i = 0; i < ringSize; i++) {
       const order = ring.orders[i];
@@ -92,12 +92,10 @@ export class RingFactory {
       bitstream.addBigNumber(order.params.amountB);
       bitstream.addBigNumber(order.params.lrcFee);
       bitstream.addBigNumber(new BigNumber(order.params.rateAmountS.toPrecision(15)), 32);
-
-      bitstream.addHex(ringAuthR);
-      bitstream.addHex(ringAuthS);
       bitstream.addHex(order.params.r);
       bitstream.addHex(order.params.s);
-
+      bitstream.addHex(ringAuthR);
+      bitstream.addHex(ringAuthS);
       bitstream.addNumber(order.params.v, 1);
       bitstream.addNumber(ringAuthV, 1);
       bitstream.addNumber(((order.params.buyNoMoreThanAmountB ? 1 : 0) << 7) + order.params.marginSplitPercentage, 1);

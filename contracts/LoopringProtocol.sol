@@ -97,27 +97,39 @@ contract LoopringProtocol {
         )
         external;
 
-    /// @dev Submit a order-ring for validation and settlement.
-    /// @param data         List of each order's owner, tokenS, wallet, authAddr, 
-    ///                     amountS, amountB, validSince (second),
-    ///                     validUntil (second), lrcFee, and rateAmountS.
-    ///                     Note that next order's `tokenS` equals this order's
-    ///                     `tokenB`.
-    ///                     Bits to indicate fee selections. `1` represents margin
-    ///                     split and `0` represents LRC as fee.
-    ///                     Miner address.
-    ///                     This indicates when a order should be considered
-    ///                     List of unit8-type arguments, in this order:
-    ///                     marginSplitPercentageList.                  
-    ///                     List of v for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     v value of the ring signature.
-    ///                     List of r for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     r value of the ring signature.
-    ///                     List of s for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     s value of the ring signature.
+    /// @dev Submit an order-ring for validation and settlement.
+    /// @param data   Packed data containing a ring header and orders
+    ///                 Ring header: 23 bytes as follows:
+    ///                   - Ring size (1 byte)
+    ///                   - FeeRecipient (20 bytes)
+    ///                   - Fee selections (2 bytes)
+    ///                 'Ring size' orders: 451 bytes each as follows:
+    ///                   - Owner (32 bytes)
+    ///                   - TokenS (32 bytes)
+    ///                   - Wallet (32 bytes)
+    ///                   - AuthAddr (32 bytes)
+    ///                   - ValidSince (in seconds) (32 bytes)
+    ///                   - ValidUntil (in seconds) (32 bytes)
+    ///                   - AmountS (32 bytes)
+    ///                   - AmountB (32 bytes)
+    ///                   - LrcFee (32 bytes)
+    ///                   - RateAmountS (32 bytes)
+    ///                   - OrderR (32 bytes)
+    ///                   - OrderS (32 bytes)
+    ///                   - RingR (32 bytes)
+    ///                   - RingS (32 bytes)
+    ///                   - OrderV (1 byte)
+    ///                   - RingV (1 byte)
+    ///                   - BuyNoMoreThanAmountB (1 bit)
+    ///                   - MarginSplitPercentage (7 bits)
+    ///                 Note that next order's `tokenS` equals this order's `tokenB`.
+    ///               * The following order members contain the result of a XOR with
+    ///                 the value of the previous order:
+    ///                   AuthAddr, Wallet, RingR, RingS, RingV.
+    ///               * Fee selections: Bits to indicate fee selections.
+    ///                 `1` represents margin split and `0` represents LRC as fee.
+    ///               * BuyNoMoreThanAmountB: This indicates when a order should
+    ///                 be considered as 'completely filled'.
     function submitRing(
         bytes           data
         )

@@ -77,6 +77,9 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @param splitS      TokenS paid to miner.
     /// @param splitB      TokenB paid to miner.
     struct OrderState {
+        // The following members are used directly to deserialize the call data
+        // so any changes need to be synced with the call data layout
+        // Start --
         address owner;
         address tokenS;
         address wallet;
@@ -87,13 +90,14 @@ contract LoopringProtocolImpl is LoopringProtocol {
         uint    amountB;
         uint    lrcFee;
         uint    rateS;
-        bytes32 ringR;
-        bytes32 ringS;
         bytes32 r;
         bytes32 s;
+        bytes32 ringR;
+        bytes32 ringS;
+        // -- End
 
-        uint8   ringV;
         uint8   v;
+        uint8   ringV;
         bool    buyNoMoreThanAmountB;
         bool    marginSplitAsFee;
         uint8   marginSplitPercentage;
@@ -792,8 +796,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         // Extract data from ring header
         params.ringSize = uint8(ringHeader >> 248);
-        params.feeSelections = uint16(ringHeader >> 232);
-        params.feeRecipient = address(ringHeader >> 72);
+        params.feeRecipient = address(ringHeader >> 88);
+        params.feeSelections = uint16(ringHeader >> 72);
 
         require(params.feeRecipient != 0x0);
         require(params.ringSize > 1 && params.ringSize <= MAX_RING_SIZE); // "invalid ring size");
