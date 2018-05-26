@@ -173,7 +173,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             assembly {
                 orderPtr := order
             }
-            // batch is the 5th parameter, so add 4 extra words as offset
+            // batch data will be stored after all 5 function parameters, so add 4 extra words as offset
             MemoryUtil.copyCallDataBytes(orderPtr, (i + 4) * 32, 9 * 32);
 
 
@@ -181,7 +181,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             // margin split or/and this order's margin split.
             ERC20 token = ERC20(address(order.tokenS));
 
-            // Here orderBatch.amount has been checked not to be 0.
+            // Here order.amount has been checked not to be 0.
             if (order.amount != 0 && order.owner != prevOwner) {
                 require(
                     token.transferFrom(
