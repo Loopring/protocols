@@ -130,7 +130,7 @@ library TokenTransfer {
         uint    amount;
         uint    split;
         uint    lrcReward;
-        uint    lrcFeeState;
+        uint    lrcFee;
         address wallet;
         bytes32 orderHash;
         uint    fillAmount;

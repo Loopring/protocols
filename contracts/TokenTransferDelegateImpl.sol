@@ -215,7 +215,7 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             // Split LRx fee income between miner and wallet
             splitPayFee(
                 lrc,
-                order.lrcFeeState,
+                order.lrcFee,
                 order.owner,
                 feeRecipient,
                 order.wallet,

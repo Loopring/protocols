@@ -450,7 +450,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderSettleData.amount = state.fillAmountS.sub(prevSplitB);
             orderSettleData.split = prevSplitB.add(state.splitS);
             orderSettleData.lrcReward = state.lrcReward;
-            orderSettleData.lrcFeeState = state.lrcFeeState;
+            orderSettleData.lrcFee = state.lrcFeeState;
             orderSettleData.wallet = state.wallet;
             orderSettleData.orderHash = state.orderHash;
             orderSettleData.fillAmount = state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS;
