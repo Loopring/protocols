@@ -24,7 +24,7 @@ function checkStatus(response) {
  */
 function request(host, options, timeOut) {
 
-    timeOut = timeOut || 150000
+    timeOut = timeOut || 15000
    const request_promise = new Promise((resolve) => {
      if (options.body) {
        options.headers = options.headers || headers;
