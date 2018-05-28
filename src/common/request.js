@@ -19,24 +19,32 @@ function checkStatus(response) {
  * @description Supports single request and batch request;
  * @param host
  * @param options
+ * @param timeOut
  * @returns {Promise}
  */
-function request(host, options) {
-  try{
-    if (options.body) {
-      options.headers = options.headers || headers;
-      options.body = JSON.stringify(options.body);
-    }
-    return fetch(host, options).then(checkStatus).then(res => res.json()).catch((e)=>{
-      return {error:e}
-    })
-  }catch(e){
-    return new Promise((resolve)=>{
-      resolve({"error":e})
-    })
-  }
-}
+function request(host, options, timeOut) {
 
+    timeOut = timeOut || 15000
+   const request_promise = new Promise((resolve) => {
+     if (options.body) {
+       options.headers = options.headers || headers;
+       options.body = JSON.stringify(options.body);
+     }
+     fetch(host, options)
+     .then(checkStatus)
+     .then(res => res.json())
+     .then(data => resolve(data))
+     .catch((e)=>{
+       resolve({error:e})
+     })
+   });
+   const timeout_promise =  new Promise((resolve, reject) => {
+     setTimeout(() => {
+       reject({error:{message:'request time out'}});
+     },timeOut)
+  });
+   return Promise.race([request_promise,timeout_promise])
+}
 /**
  * @description Returns a random hex string
  */

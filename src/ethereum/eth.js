@@ -97,6 +97,7 @@ export function getGasPrice(host) {
   body.method = 'eth_gasPrice';
   body.params = params;
   body.id = id();
+  body.jsonrpc = '2.0';
   return request(host, {
     method: 'post',
     body,
