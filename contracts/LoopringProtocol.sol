@@ -103,7 +103,7 @@ contract LoopringProtocol {
     ///                   - Ring size (1 byte)
     ///                   - FeeRecipient (20 bytes)
     ///                   - Fee selections (2 bytes)
-    ///                 'Ring size' orders: 451 bytes each as follows:
+    ///                 'Ring size' orders: 395 bytes each as follows:
     ///                   - Owner (32 bytes)
     ///                   - TokenS (32 bytes)
     ///                   - Wallet (32 bytes)
