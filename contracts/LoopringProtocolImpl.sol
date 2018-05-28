@@ -84,8 +84,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
         address tokenS;
         address wallet;
         address authAddr;
-        uint    validSince;
-        uint    validUntil;
         uint    amountS;
         uint    amountB;
         uint    lrcFee;
@@ -96,6 +94,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         bytes32 ringS;
         // -- End
 
+        uint    validSince;
+        uint    validUntil;
         uint8   v;
         uint8   ringV;
         bool    buyNoMoreThanAmountB;
@@ -173,8 +173,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             addresses[1],
             addresses[3],
             addresses[4],
-            orderValues[2],
-            orderValues[3],
             orderValues[0],
             orderValues[1],
             orderValues[4],
@@ -183,6 +181,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
             0x0,
             0x0,
             0x0,
+            orderValues[2],
+            orderValues[3],
             0,
             0,
             buyNoMoreThanAmountB,
@@ -815,7 +815,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         returns (OrderState[] memory orders)
     {
         uint offset = RING_HEADER_SIZE;
-        uint orderSize = 451;
+        uint orderSize = 395;
 
         // Validate the data size
         require(data.length == offset + orderSize * params.ringSize);
@@ -832,14 +832,16 @@ contract LoopringProtocolImpl is LoopringProtocol {
             assembly {
                 orderPtr := order
             }
-            MemoryUtil.copyCallDataBytesInArray(0, orderPtr, offset, 448);
-            uint packedData = MemoryUtil.bytesToUint(data, offset + 448);
+            MemoryUtil.copyCallDataBytesInArray(0, orderPtr, offset, 384);
+            uint packedData = MemoryUtil.bytesToUint(data, offset + 384);
 
             // Unpack data
-            order.v = uint8(packedData >> 248);
-            order.ringV = uint8(packedData >> 240);
-            order.buyNoMoreThanAmountB = (packedData >> 232) & 128 > 0;
-            order.marginSplitPercentage = uint8((packedData >> 232) & 127);
+            order.validSince = (packedData >> 224) & 0xFFFFFFFF;
+            order.validUntil = ((packedData >> 192) & 0xFFFFFFFF) + order.validSince;
+            order.v = uint8(packedData >> 184);
+            order.ringV = uint8(packedData >> 176);
+            order.buyNoMoreThanAmountB = (packedData >> 168) & 128 > 0;
+            order.marginSplitPercentage = uint8((packedData >> 168) & 127);
             order.marginSplitAsFee = (params.feeSelections & (uint16(1) << i)) > 0;
 
             // Set members values that can be derived from other members

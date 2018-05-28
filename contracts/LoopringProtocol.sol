@@ -108,8 +108,6 @@ contract LoopringProtocol {
     ///                   - TokenS (32 bytes)
     ///                   - Wallet (32 bytes)
     ///                   - AuthAddr (32 bytes)
-    ///                   - ValidSince (in seconds) (32 bytes)
-    ///                   - ValidUntil (in seconds) (32 bytes)
     ///                   - AmountS (32 bytes)
     ///                   - AmountB (32 bytes)
     ///                   - LrcFee (32 bytes)
@@ -118,6 +116,8 @@ contract LoopringProtocol {
     ///                   - OrderS (32 bytes)
     ///                   - RingR (32 bytes)
     ///                   - RingS (32 bytes)
+    ///                   - ValidSince (in seconds) (4 bytes)
+    ///                   - ValidDuration (in seconds) (4 bytes)
     ///                   - OrderV (1 byte)
     ///                   - RingV (1 byte)
     ///                   - BuyNoMoreThanAmountB (1 bit)
@@ -131,7 +131,7 @@ contract LoopringProtocol {
     ///               * BuyNoMoreThanAmountB: This indicates when a order should
     ///                 be considered as 'completely filled'.
     function submitRing(
-        bytes           data
+        bytes data
         )
         public;
 }

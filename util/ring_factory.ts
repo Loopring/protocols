@@ -86,8 +86,6 @@ export class RingFactory {
       bitstream.addAddress(order.params.tokenS, 32);
       bitstream.addAddress(walletAddr, 32);
       bitstream.addAddress(authAddr, 32);
-      bitstream.addBigNumber(order.params.validSince);
-      bitstream.addBigNumber(order.params.validUntil);
       bitstream.addBigNumber(order.params.amountS);
       bitstream.addBigNumber(order.params.amountB);
       bitstream.addBigNumber(order.params.lrcFee);
@@ -96,6 +94,8 @@ export class RingFactory {
       bitstream.addHex(order.params.s);
       bitstream.addHex(ringAuthR);
       bitstream.addHex(ringAuthS);
+      bitstream.addBigNumber(order.params.validSince, 4);
+      bitstream.addBigNumber(order.params.validUntil.minus(order.params.validSince), 4);
       bitstream.addNumber(order.params.v, 1);
       bitstream.addNumber(ringAuthV, 1);
       bitstream.addNumber(((order.params.buyNoMoreThanAmountB ? 1 : 0) << 7) + order.params.marginSplitPercentage, 1);
