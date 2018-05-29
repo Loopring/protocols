@@ -101,7 +101,8 @@ const loopringScheams = {
       ...basicSchemas.ETH_ADDRESS
     },
     authPrivateKey:{
-      ...basicSchemas.ETH_KEY
+      ...basicSchemas.ETH_KEY,
+        required: false
     },
     validSince: {
       ...basicSchemas.ETH_VALUES
