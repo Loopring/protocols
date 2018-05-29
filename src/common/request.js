@@ -40,7 +40,7 @@ function request(host, options, timeOut) {
    });
    const timeout_promise =  new Promise((resolve, reject) => {
      setTimeout(() => {
-       reject({error:{message:'request time out'}});
+       resolve({error:{message:'request time out'}});
      },timeOut)
   });
    return Promise.race([request_promise,timeout_promise])
