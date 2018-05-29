@@ -112,10 +112,6 @@ contract TokenTransferDelegate {
     function setTradingPairCutoffs(bytes20 tokenPair, uint t)
         external;
 
-    function checkCutoffsBatch(address[] owners, bytes20[] tradingPairs, uint[] validSince)
-        external
-        view;
-
     function suspend() external;
 
     function resume() external;
@@ -134,5 +130,6 @@ library TokenTransfer {
         address wallet;
         bytes32 orderHash;
         uint    fillAmount;
+        uint    validSince;
     }
 }

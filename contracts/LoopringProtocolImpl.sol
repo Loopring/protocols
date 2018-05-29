@@ -276,8 +276,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
         TokenTransferDelegate delegate = TokenTransferDelegate(delegateAddress);
         OrderState[] memory orders = assembleOrders(
             params,
-            data,
-            delegate
+            data
         );
 
         verifyRingSignatures(params, orders);
@@ -430,8 +429,8 @@ contract LoopringProtocolImpl is LoopringProtocol {
         private
         returns (bytes32[] memory orderInfoList)
     {
-        bytes32[] memory batch = new bytes32[](ringSize * 9); // ringSize * sizeof(TokenTransfer.OrderSettleData)
-        orderInfoList = new bytes32[](ringSize * 6);          // ringSize * sizeof(SettledOrderInfo)
+        bytes32[] memory batch = new bytes32[](ringSize * 10); // ringSize * sizeof(TokenTransfer.OrderSettleData)
+        orderInfoList = new bytes32[](ringSize * 6);           // ringSize * sizeof(SettledOrderInfo)
 
         TokenTransfer.OrderSettleData memory orderSettleData;
         SettledOrderInfo memory settledOrderInfo;
@@ -441,7 +440,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             uint nextFillAmountS = orders[(i + 1) % ringSize].fillAmountS;
 
             // This will make writes to orderSettleData to be stored in the memory of batch
-            uint ptr = MemoryUtil.getBytes32Pointer(batch, 9 * i);
+            uint ptr = MemoryUtil.getBytes32Pointer(batch, 10 * i);
             assembly {
                 orderSettleData := ptr
             }
@@ -454,6 +453,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
             orderSettleData.wallet = state.wallet;
             orderSettleData.orderHash = state.orderHash;
             orderSettleData.fillAmount = state.buyNoMoreThanAmountB ? nextFillAmountS : state.fillAmountS;
+            orderSettleData.validSince = state.validSince;
 
             // This will make writes to settledOrderInfo to be stored in the memory of orderInfoList
             ptr = MemoryUtil.getBytes32Pointer(orderInfoList, 6 * i);
@@ -807,8 +807,7 @@ contract LoopringProtocolImpl is LoopringProtocol {
     /// @return     A list of orders.
     function assembleOrders(
         RingParams params,
-        bytes data,
-        TokenTransferDelegate delegate
+        bytes data
         )
         private
         view
@@ -884,8 +883,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
             params.ringHash ^= order.orderHash;
         }
 
-        validateOrdersCutoffs(orders, delegate);
-
         params.ringHash = keccak256(
             params.ringHash,
             params.feeRecipient,
@@ -910,23 +907,6 @@ contract LoopringProtocolImpl is LoopringProtocol {
 
         require(order.validSince <= block.timestamp); // order is too early to match
         require(order.validUntil > block.timestamp); // order is expired
-    }
-
-    function validateOrdersCutoffs(OrderState[] orders, TokenTransferDelegate delegate)
-        private
-        view
-    {
-        address[] memory owners = new address[](orders.length);
-        bytes20[] memory tradingPairs = new bytes20[](orders.length);
-        uint[] memory validSinceTimes = new uint[](orders.length);
-
-        for (uint i = 0; i < orders.length; i++) {
-            owners[i] = orders[i].owner;
-            tradingPairs[i] = bytes20(orders[i].tokenS) ^ bytes20(orders[i].tokenB);
-            validSinceTimes[i] = orders[i].validSince;
-        }
-
-        delegate.checkCutoffsBatch(owners, tradingPairs, validSinceTimes);
     }
 
     /// @dev Get the Keccak-256 hash of order with specified parameters.

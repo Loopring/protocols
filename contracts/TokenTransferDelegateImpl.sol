@@ -158,23 +158,34 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         notSuspended
         external
     {
-        uint len = batch.length;
-        require(len % 9 == 0);
+        require(batch.length % 10 == 0);
         require(walletSplitPercentage > 0 && walletSplitPercentage < 100);
 
-        ERC20 lrc = ERC20(lrcTokenAddress);
-
         TokenTransfer.OrderSettleData memory order;
-        address prevOwner = address(batch[len - 9]);
-        for (uint i = 0; i < batch.length; i += 9) {
+        uint orderPtr;
+        assembly {
+            orderPtr := order
+        }
+        uint i;
+
+        // Check cutoffs before doing the transfers
+        for (i = 0; i < batch.length; i += 10) {
 
             // Copy the data straight to the order struct from the call data
-            uint orderPtr;
-            assembly {
-                orderPtr := order
-            }
-            MemoryUtil.copyCallDataBytesInArray(4, orderPtr, i * 32, 9 * 32);
+            MemoryUtil.copyCallDataBytesInArray(4, orderPtr, i * 32, 10 * 32);
 
+            bytes20 tradingPair = bytes20(order.tokenS) ^ bytes20(batch[((i + 10) % batch.length) + 1]); // tokenS ^ tokenB
+            require(order.validSince > tradingPairCutoffs[order.owner][tradingPair]);     // order trading pair is cut off
+            require(order.validSince > cutoffs[order.owner]);                             // order is cut off
+        }
+
+        // Now transfer the tokens
+        ERC20 lrc = ERC20(lrcTokenAddress);
+        address prevOwner = address(batch[batch.length - 10]);
+        for (i = 0; i < batch.length; i += 10) {
+
+            // Copy the data straight to the order struct from the call data
+            MemoryUtil.copyCallDataBytesInArray(4, orderPtr, i * 32, 10 * 32);
 
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
@@ -318,20 +329,6 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         external
     {
         tradingPairCutoffs[tx.origin][tokenPair] = t;
-    }
-
-    function checkCutoffsBatch(address[] owners, bytes20[] tradingPairs, uint[] validSince)
-        external
-        view
-    {
-        uint len = owners.length;
-        require(len == tradingPairs.length);
-        require(len == validSince.length);
-
-        for(uint i = 0; i < len; i++) {
-            require(validSince[i] > tradingPairCutoffs[owners[i]][tradingPairs[i]]);  // order trading pair is cut off
-            require(validSince[i] > cutoffs[owners[i]]);                              // order is cut off
-        }
     }
 
     function suspend()
