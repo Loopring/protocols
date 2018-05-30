@@ -21,6 +21,8 @@ pragma solidity 0.4.21;
 /// @dev Acts as a middle man to transfer ERC20 tokens on behalf of different
 /// versions of Loopring protocol to avoid ERC20 re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
+/// Recognized contributing developers from the community:
+///     https://github.com/Brechtpd
 contract TokenTransferDelegate {
     event AddressAuthorized(
         address indexed addr,

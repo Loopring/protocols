@@ -18,8 +18,7 @@ pragma solidity 0.4.21;
 
 
 /// @title Utility Functions for memory related operations
-/// @author Kongliang Zhong - <kongliang@loopring.org>,
-/// @author Daniel Wang - <daniel@loopring.org>.
+/// @author Brechtpd https://github.com/Brechtpd
 library MemoryUtil {
 
     function getBytes32Pointer(

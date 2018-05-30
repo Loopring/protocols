@@ -342,17 +342,6 @@ contract("LoopringProtocolImpl", (accounts: string[]) => {
         const tokensInRing = [...tokenSet];
         const transferEvents = await getTransferEvents(tokensInRing, eventFromBlock);
 
-        // const logs = await getEventsFromContract(loopringProtocolImpl, "LogUint2", eventFromBlock);
-        // const logs = await getEventsFromContract(tokenTransferDelegate, "LogSplitPay", eventFromBlock);
-        // (logs as Array<[any]>).forEach((log: any) => {
-        //   console.log(log.args.from, log.args.to, log.args.value.toNumber() / 1e18);
-        // });
-
-        // const logs2 = await getEventsFromContract(tokenTransferDelegate, "LogUint1", eventFromBlock);
-        // (logs2 as Array<[any]>).forEach((log: any) => {
-        //   console.log(log.args.n1.toNumber() / 1e18, log.args.n2.toNumber() / 1e18);
-        // });
-
         assertTransfers(transferEvents, simulatorReport.transferList);
 
         await clear([eos, gto, lrc], [order1Owner, order2Owner, feeRecepient]);

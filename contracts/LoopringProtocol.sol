@@ -20,6 +20,8 @@ pragma solidity 0.4.21;
 /// @title Loopring Token Exchange Protocol Contract Interface
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
+/// Recognized contributing developers from the community:
+///     https://github.com/Brechtpd
 contract LoopringProtocol {
     uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
 
