@@ -46,6 +46,9 @@ export default class Account{
   getPendingRawTxByHash(txHash){
     return getPendingRawTxByHash(this.host,txHash)
   }
+  getGasPrice(){
+    return getGasPrice(this.host)
+  }
 }
 
 
@@ -273,11 +276,25 @@ export function getPendingRawTxByHash(host,txHash) {
   body.params = params;
   body.id = id();
   body.jsonrpc = '2.0';
-  return request({
+  return request(host,{
     method: 'post',
     body,
   })
 }
 
+/**
+ * Get network gasPrice that relay computes
+ * @returns {Promise}
+ */
+export async function getGasPrice(host) {
+  let body = {};
+  body.method = 'loopring_getEstimateGasPrice';
+  body.params = [{}];
+  return request(host,{
+    method:'post',
+    headers,
+    body,
+  })
+}
 
 
