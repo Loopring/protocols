@@ -42,6 +42,10 @@ export default class Account{
   getPortfolio(owner){
     return getPortfolio(this.host, owner);
   }
+
+  getPendingRawTxByHash(txHash){
+    return getPendingRawTxByHash(this.host,txHash)
+  }
 }
 
 
@@ -246,6 +250,30 @@ export function getPortfolio(host,owner) {
   body.id = id();
   body.jsonrpc = '2.0';
   return request(host,{
+    method: 'post',
+    body,
+  })
+}
+
+/**
+ * Gets pending tx detail that sent to relay
+ * @param host
+ * @param txHash
+ * @returns {Promise}
+ */
+export function getPendingRawTxByHash(host,txHash) {
+  try {
+    validator.validate({value: txHash, type: "HASH"})
+  } catch (e) {
+    throw new Error('Invalid tx hash')
+  }
+  const params = [{thxHash: txHash}];
+  const body = {};
+  body.method = 'loopring_getPendingRawTxByHash';
+  body.params = params;
+  body.id = id();
+  body.jsonrpc = '2.0';
+  return request({
     method: 'post',
     body,
   })
