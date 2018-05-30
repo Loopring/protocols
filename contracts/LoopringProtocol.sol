@@ -25,7 +25,7 @@ contract LoopringProtocol {
 
     /// @dev Event to emit if a ring is successfully mined.
     /// _orderInfoList is an array of:
-    /// [orderHash, owner, tokenS, fillAmountS, _lrcReward/_lrcFee, splitS, splitB].
+    /// [orderHash, owner, tokenS, fillAmountS, lrcReward/lrcFee, splitS/splitB].
     event RingMined(
         uint            _ringIndex,
         bytes32 indexed _ringHash,
@@ -97,41 +97,41 @@ contract LoopringProtocol {
         )
         external;
 
-    /// @dev Submit a order-ring for validation and settlement.
-    /// @param addressList  List of each order's owner, tokenS, wallet, authAddr.
-    ///                     Note that next order's `tokenS` equals this order's
-    ///                     `tokenB`.
-    /// @param uintArgsList List of uint-type arguments in this order:
-    ///                     amountS, amountB, validSince (second),
-    ///                     validUntil (second), lrcFee, and rateAmountS.
-    /// @param uint8ArgsList -
-    ///                     List of unit8-type arguments, in this order:
-    ///                     marginSplitPercentageList.
-    /// @param buyNoMoreThanAmountBList -
-    ///                     This indicates when a order should be considered
-    /// @param vList        List of v for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     v value of the ring signature.
-    /// @param rList        List of r for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     r value of the ring signature.
-    /// @param sList        List of s for each order. This list is 1-larger than
-    ///                     the previous lists, with the last element being the
-    ///                     s value of the ring signature.
-    /// @param feeRecipient Miner address.
-    /// @param feeSelections -
-    ///                     Bits to indicate fee selections. `1` represents margin
-    ///                     split and `0` represents LRC as fee.
+    /// @dev Submit an order-ring for validation and settlement.
+    /// @param data   Packed data containing a ring header and orders
+    ///                 Ring header: 23 bytes as follows:
+    ///                   - Ring size (1 byte)
+    ///                   - FeeRecipient (20 bytes)
+    ///                   - Fee selections (2 bytes)
+    ///                 'Ring size' orders: 395 bytes each as follows:
+    ///                   - Owner (32 bytes)
+    ///                   - TokenS (32 bytes)
+    ///                   - Wallet (32 bytes)
+    ///                   - AuthAddr (32 bytes)
+    ///                   - AmountS (32 bytes)
+    ///                   - AmountB (32 bytes)
+    ///                   - LrcFee (32 bytes)
+    ///                   - RateAmountS (32 bytes)
+    ///                   - OrderR (32 bytes)
+    ///                   - OrderS (32 bytes)
+    ///                   - RingR (32 bytes)
+    ///                   - RingS (32 bytes)
+    ///                   - ValidSince (in seconds) (4 bytes)
+    ///                   - ValidDuration (in seconds) (4 bytes)
+    ///                   - OrderV (1 byte)
+    ///                   - RingV (1 byte)
+    ///                   - BuyNoMoreThanAmountB (1 bit)
+    ///                   - MarginSplitPercentage (7 bits)
+    ///                 Note that next order's `tokenS` equals this order's `tokenB`.
+    ///               * The following order members contain the result of a XOR with
+    ///                 the value of the previous order:
+    ///                   AuthAddr, Wallet, RingR, RingS, RingV.
+    ///               * Fee selections: Bits to indicate fee selections.
+    ///                 `1` represents margin split and `0` represents LRC as fee.
+    ///               * BuyNoMoreThanAmountB: This indicates when a order should
+    ///                 be considered as 'completely filled'.
     function submitRing(
-        address[4][]    addressList,
-        uint[6][]       uintArgsList,
-        uint8[1][]      uint8ArgsList,
-        bool[]          buyNoMoreThanAmountBList,
-        uint8[]         vList,
-        bytes32[]       rList,
-        bytes32[]       sList,
-        address         feeRecipient,
-        uint16          feeSelections
+        bytes data
         )
         public;
 }

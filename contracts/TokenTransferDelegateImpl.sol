@@ -20,6 +20,7 @@ import "./lib/Claimable.sol";
 import "./lib/ERC20.sol";
 import "./lib/MathUint.sol";
 import "./TokenTransferDelegate.sol";
+import "./lib/MemoryUtil.sol";
 
 
 /// @title An Implementation of TokenTransferDelegate.
@@ -157,39 +158,57 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         notSuspended
         external
     {
-        uint len = batch.length;
-        require(len % 9 == 0);
+        require(batch.length % 10 == 0);
         require(walletSplitPercentage > 0 && walletSplitPercentage < 100);
 
-        ERC20 lrc = ERC20(lrcTokenAddress);
+        TokenTransfer.OrderSettleData memory order;
+        uint orderPtr;
+        assembly {
+            orderPtr := order
+        }
+        uint i;
 
-        address prevOwner = address(batch[len - 9]);
-        for (uint i = 0; i < len; i += 9) {
-            address owner = address(batch[i]);
+        // Check cutoffs before doing the transfers
+        for (i = 0; i < batch.length; i += 10) {
+
+            // Copy the data straight to the order struct from the call data
+            MemoryUtil.copyCallDataBytesInArray(4, orderPtr, i * 32, 10 * 32);
+
+            bytes20 tradingPair = bytes20(order.tokenS) ^ bytes20(batch[((i + 10) % batch.length) + 1]); // tokenS ^ tokenB
+            require(order.validSince > tradingPairCutoffs[order.owner][tradingPair]);     // order trading pair is cut off
+            require(order.validSince > cutoffs[order.owner]);                             // order is cut off
+        }
+
+        // Now transfer the tokens
+        ERC20 lrc = ERC20(lrcTokenAddress);
+        address prevOwner = address(batch[batch.length - 10]);
+        for (i = 0; i < batch.length; i += 10) {
+
+            // Copy the data straight to the order struct from the call data
+            MemoryUtil.copyCallDataBytesInArray(4, orderPtr, i * 32, 10 * 32);
 
             // Pay token to previous order, or to miner as previous order's
             // margin split or/and this order's margin split.
-            ERC20 token = ERC20(address(batch[i + 1]));
+            ERC20 token = ERC20(address(order.tokenS));
 
-            // Here batch[i + 2] has been checked not to be 0.
-            if (batch[i + 2] != 0x0 && owner != prevOwner) {
+            // Here order.amount has been checked not to be 0.
+            if (order.amount != 0 && order.owner != prevOwner) {
                 require(
                     token.transferFrom(
-                        owner,
+                        order.owner,
                         prevOwner,
-                        uint(batch[i + 2])
+                        order.amount
                     )
                 );
             }
 
             // Miner pays LRx fee to order owner
-            uint lrcReward = uint(batch[i + 4]);
-            if (lrcReward != 0 && miner != owner) {
+            if (order.lrcReward != 0 && miner != order.owner) {
                 require(
                     lrc.transferFrom(
                         miner,
-                        owner,
-                        lrcReward
+                        order.owner,
+                        order.lrcReward
                     )
                 );
             }
@@ -197,27 +216,27 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
             // Split margin-split income between miner and wallet
             splitPayFee(
                 token,
-                uint(batch[i + 3]),
-                owner,
+                order.split,
+                order.owner,
                 feeRecipient,
-                address(batch[i + 6]),
+                order.wallet,
                 walletSplitPercentage
             );
 
             // Split LRx fee income between miner and wallet
             splitPayFee(
                 lrc,
-                uint(batch[i + 5]),
-                owner,
+                order.lrcFee,
+                order.owner,
                 feeRecipient,
-                address(batch[i + 6]),
+                order.wallet,
                 walletSplitPercentage
             );
 
             // Update fill records
-            cancelledOrFilled[batch[i + 7]] = cancelledOrFilled[batch[i + 7]].add(uint(batch[i + 8]));
+            cancelledOrFilled[order.orderHash] = cancelledOrFilled[order.orderHash].add(order.fillAmount);
 
-            prevOwner = owner;
+            prevOwner = order.owner;
         }
     }
 
@@ -310,20 +329,6 @@ contract TokenTransferDelegateImpl is TokenTransferDelegate, Claimable {
         external
     {
         tradingPairCutoffs[tx.origin][tokenPair] = t;
-    }
-
-    function checkCutoffsBatch(address[] owners, bytes20[] tradingPairs, uint[] validSince)
-        external
-        view
-    {
-        uint len = owners.length;
-        require(len == tradingPairs.length);
-        require(len == validSince.length);
-
-        for(uint i = 0; i < len; i++) {
-            require(validSince[i] > tradingPairCutoffs[owners[i]][tradingPairs[i]]);  // order trading pair is cut off
-            require(validSince[i] > cutoffs[owners[i]]);                              // order is cut off
-        }
     }
 
     function suspend()

@@ -134,6 +134,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       batch.push(walletAddr1);
       batch.push(numberToBytes32Str(0));
       batch.push(numberToBytes32Str(0));
+      batch.push(numberToBytes32Str(1));
 
       batch.push(addressToBytes32Str(trader2));
       batch.push(addressToBytes32Str(gtoAddress));
@@ -144,6 +145,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
       batch.push(walletAddr2);
       batch.push(numberToBytes32Str(0));
       batch.push(numberToBytes32Str(0));
+      batch.push(numberToBytes32Str(1));
 
       const tx = await tokenTransferDelegate.batchUpdateHistoryAndTransferTokens(
           lrcAddress, loopringProtocolV1, owner, 20, batch,
@@ -186,6 +188,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
         batch.push(walletAddr1);
         batch.push(numberToBytes32Str(0));
         batch.push(numberToBytes32Str(0));
+        batch.push(numberToBytes32Str(1));
 
         batch.push(addressToBytes32Str(trader2));
         batch.push(addressToBytes32Str(gtoAddress));
@@ -196,6 +199,7 @@ contract("TokenTransferDelegate", (accounts: string[]) => {
         batch.push(walletAddr2);
         batch.push(numberToBytes32Str(0));
         batch.push(numberToBytes32Str(0));
+        batch.push(numberToBytes32Str(1));
 
         const tx = await tokenTransferDelegate.batchUpdateHistoryAndTransferTokens(
             lrcAddress, loopringProtocolV2, owner, 20, batch,
