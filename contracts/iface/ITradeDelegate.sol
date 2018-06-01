@@ -85,7 +85,13 @@ contract ITradeDelegate {
 
     function addFilled(
         bytes32 orderHash,
-        uint cancelOrFillAmount
+        uint amount
+        )
+        external;
+
+    function setFilled(
+        bytes32 orderHash,
+        uint amount
         )
         external;
 

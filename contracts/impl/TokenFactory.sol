@@ -18,12 +18,12 @@ pragma solidity 0.4.23;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "./lib/AddressUtil.sol";
-import "./lib/ERC20Token.sol";
-import "./lib/NoDefaultFunc.sol";
-import "./lib/StringUtil.sol";
-import "./ITokenFactory.sol";
-import "./ITokenRegistry.sol";
+import "../iface/ITokenFactory.sol";
+import "../iface/ITokenRegistry.sol";
+import "../lib/AddressUtil.sol";
+import "../lib/ERC20Token.sol";
+import "../lib/NoDefaultFunc.sol";
+import "../lib/StringUtil.sol";
 
 
 /// @title An Implementation of ITokenFactory.

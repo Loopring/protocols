@@ -18,12 +18,12 @@ pragma solidity 0.4.23;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "./lib/Claimable.sol";
-import "./lib/ERC20.sol";
-import "./lib/MathUint.sol";
-import "./lib/NoDefaultFunc.sol";
-import "./IBrokerInterceptor.sol";
-import "./ITradeDelegate.sol";
+import "../iface/IBrokerInterceptor.sol";
+import "../iface/ITradeDelegate.sol";
+import "../lib/Claimable.sol";
+import "../lib/ERC20.sol";
+import "../lib/MathUint.sol";
+import "../lib/NoDefaultFunc.sol";
 
 
 /// @title An Implementation of ITradeDelegate.
@@ -288,6 +288,17 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         external
     {
         filled[orderHash] = filled[orderHash].add(amount);
+    }
+
+    function setFilled(
+        bytes32 orderHash,
+        uint    amount
+        )
+        onlyAuthorized
+        notSuspended
+        external
+    {
+        filled[orderHash] = amount;
     }
 
 

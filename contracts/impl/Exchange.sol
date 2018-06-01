@@ -18,17 +18,17 @@ pragma solidity 0.4.23;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "./lib/AddressUtil.sol";
-import "./lib/BytesUtil.sol";
-import "./lib/ERC20.sol";
-import "./lib/MathUint.sol";
-import "./lib/MultihashUtil.sol";
-import "./lib/NoDefaultFunc.sol";
-import "./IBrokerRegistry.sol";
-import "./IBrokerInterceptor.sol";
-import "./IExchange.sol";
-import "./ITokenRegistry.sol";
-import "./ITradeDelegate.sol";
+import "../lib/AddressUtil.sol";
+import "../lib/BytesUtil.sol";
+import "../lib/ERC20.sol";
+import "../lib/MathUint.sol";
+import "../lib/MultihashUtil.sol";
+import "../lib/NoDefaultFunc.sol";
+import "../iface/IBrokerRegistry.sol";
+import "../iface/IBrokerInterceptor.sol";
+import "../iface/IExchange.sol";
+import "../iface/ITokenRegistry.sol";
+import "../iface/ITradeDelegate.sol";
 
 
 /// @title An Implementation of IExchange.
@@ -144,7 +144,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         uint size = orderHashes.length;
         require(size > 0 && size % 32 == 0);
-        
+
         verifyAuthenticationGetInterceptor(
             owner,
             tx.origin
@@ -180,7 +180,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
- 
+
         ITradeDelegate(delegateAddress).setTradingPairCutoffs(
             owner,
             tokenPair,

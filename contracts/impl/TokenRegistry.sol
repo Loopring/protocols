@@ -18,10 +18,10 @@ pragma solidity 0.4.23;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "./lib/AddressUtil.sol";
-import "./lib/Claimable.sol";
-import "./lib/NoDefaultFunc.sol";
-import "./ITokenRegistry.sol";
+import "../iface/ITokenRegistry.sol";
+import "../lib/AddressUtil.sol";
+import "../lib/Claimable.sol";
+import "../lib/NoDefaultFunc.sol";
 
 
 /// @title An Implementation of TokenRegistry.

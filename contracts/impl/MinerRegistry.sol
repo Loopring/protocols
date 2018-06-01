@@ -18,8 +18,8 @@ pragma solidity 0.4.23;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "./lib/NoDefaultFunc.sol";
-import "./IMinerRegistry.sol";
+import "../iface/IMinerRegistry.sol";
+import "../lib/NoDefaultFunc.sol";
 
 
 /// @title An Implementation of IMinerRegistry.
