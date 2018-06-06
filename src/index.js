@@ -1,5 +1,10 @@
-import apis from './common';
+
+import common from './common';
+import ethereum from './ethereum';
+import relay from './relay';
 
 export default {
-	apis,
-}
+    common,
+    ethereum,
+    relay
+};

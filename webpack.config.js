@@ -20,11 +20,21 @@ const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 const Path = require('path');
 
 module.exports = {
-    entry: './src/loopring.js',
+    entry: './src/index.js',
     resolve: {
         modules: [
             'bower_components',
             'node_modules'
+        ]
+    },
+    module: {
+        rules: [
+            { test: /\.js$/,
+                exclude: /node_modules/,
+                use: {loader: 'babel-loader',
+                    options: {presets: ['@babel/preset-env']}}
+
+            }
         ]
     },
     output: {
@@ -46,7 +56,6 @@ module.exports = {
         })
     ],
     externals: {
-        axios: 'axios',
         'bignumber.js': 'BigNumber',
         'bn.js': 'BN',
         lodash: '_'
