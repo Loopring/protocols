@@ -34,11 +34,11 @@
     "dirty-chai": "^2.0.1",
     "ganache-cli": "^6.1.0",
     "solium": "^1.1.6",
-    "truffle": "^4.1.7",
+    "truffle": "^4.1.11",
     "tslint": "5.8.0",
     "typescript": "2.7.1",
     "web3-typescript-typings": "0.0.3",
-    "webpack": "^4.0.0"
+    "webpack": "^4.11.1"
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.30",
@@ -58,7 +58,7 @@
     "events": "^1.1.1",
     "js-sha3": "^0.7.0",
     "lodash": "^4.17.5",
-    "npm": "^5.8.0",
+    "npm": "^6.1.0",
     "web3": "0.20.2"
   }
 }
