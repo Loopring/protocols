@@ -52,11 +52,11 @@ library MiningHelper {
         public
         pure
     {
-        mining.hash = keccak256(
+        mining.hash = keccak256(abi.encodePacked(
             mining.feeRecipient,
             mining.miner,
             mining.hash
-        );
+        ));
     }
     function checkMinerSignature(
         Data.Mining mining,

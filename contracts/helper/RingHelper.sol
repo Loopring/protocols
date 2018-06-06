@@ -37,11 +37,11 @@ library RingHelper {
     {
         for (uint i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
-            ring.hash = keccak256(
+            ring.hash = keccak256(abi.encodePacked(
                 ring.hash,
                 p.order.hash,
                 p.marginSplitAsFee
-            );
+            ));
         }
     }
 

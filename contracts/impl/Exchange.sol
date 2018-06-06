@@ -381,11 +381,11 @@ contract Exchange is IExchange, NoDefaultFunc {
             ctx.ringHash ^= order.orderHash;
         }
 
-        ctx.ringHash = keccak256(
+        ctx.ringHash = keccak256(abi.encodePacked(
             ctx.ringHash,
             ctx.feeRecipient,
             ctx.feeSelections
-        );
+        ));
     }
 
    function checkOrdersNotCancelled(
@@ -910,7 +910,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         view
         returns (bytes32)
     {
-        return keccak256(
+        return keccak256(abi.encodePacked(
             delegateAddress,
             order.owner,
             order.broker,
@@ -924,7 +924,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             order.validUntil,
             order.lrcFee,
             order.option
-        );
+        ));
     }
 
     function getTradingPairCutoffs(

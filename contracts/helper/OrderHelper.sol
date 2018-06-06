@@ -35,7 +35,7 @@ library OrderHelper {
         public
         pure
     {
-        order.hash = keccak256(
+        order.hash = keccak256(abi.encodePacked(
             order.owner,
             order.tokenS,
             order.tokenB,
@@ -50,7 +50,7 @@ library OrderHelper {
             order.validUntil,
             order.limitByAmountB,
             order.allOrNone
-        );
+        ));
     }
 
     function updateBrokerAndInterceptor(

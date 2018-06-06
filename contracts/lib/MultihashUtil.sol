@@ -48,10 +48,10 @@ library MultihashUtil {
             require(size == 65, "bad multihash size");
             require(
                 signer == ecrecover(
-                    keccak256(
+                    keccak256(abi.encodePacked(
                         SIG_PREFIX,
                         plaintext
-                    ),
+                    )),
                     uint8(multihash[2]),
                     BytesUtil.bytesToBytes32(multihash, 3),
                     BytesUtil.bytesToBytes32(multihash, 11)
