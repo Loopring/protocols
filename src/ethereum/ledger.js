@@ -8,17 +8,23 @@ import validator from './validator';
  * @description connect to Ledger
  * @returns {Promise}
  */
-export async function connect() {
-    return new Promise((resolve) => {
+export async function connect ()
+{
+    return new Promise((resolve) =>
+    {
         ledger.comm_u2f.create_async()
-            .then(comm => {
-                try {
+            .then(comm =>
+            {
+                try
+                {
                     resolve({result: new ledger.eth(comm)});
-                } catch (e) {
-                    resolve({error: {message: e.message}})
                 }
-            })
-    })
+                catch (e)
+                {
+                    resolve({error: {message: e.message}});
+                }
+            });
+    });
 }
 
 /**
@@ -27,31 +33,41 @@ export async function connect() {
  * @param ledgerConnect
  * @returns {Promise}
  */
-export async function getXPubKey(dpath, ledgerConnect) {
-    if (dpath) {
-        return new Promise((resolve) => {
+export async function getXPubKey (dpath, ledgerConnect)
+{
+    if (dpath)
+    {
+        return new Promise((resolve) =>
+        {
             ledgerConnect.getAddress_async(dpath, false, true)
-                .then(res => {
-                    resolve({result: res})
-                }).catch(err => {
-                resolve({error: err})
-            });
-        })
-    } else {
-        throw new Error('dpath can\'t be null')
+                .then(res =>
+                {
+                    resolve({result: res});
+                }).catch(err =>
+                {
+                    resolve({error: err});
+                });
+        });
+    }
+    else
+    {
+        throw new Error('dpath can\'t be null');
     }
 }
 
-function hexEncodeQuantity(value) {
+function hexEncodeQuantity (value)
+{
     const trimmedValue = trimStart((value).toString('hex'), '0');
     return addHexPrefix(trimmedValue === '' ? '0' : trimmedValue);
 }
 
-function hexEncodeData(value) {
+function hexEncodeData (value)
+{
     return toHex(toBuffer(value));
 }
 
-function getTransactionFields(t) {
+function getTransactionFields (t)
+{
     const {data, gasLimit, gasPrice, to, nonce, value} = t;
     const chainId = t.getChainId();
     return {
@@ -63,7 +79,7 @@ function getTransactionFields(t) {
         gasLimit: hexEncodeQuantity(gasLimit),
         chainId
     };
-};
+}
 
 /**
  * @description sign message
@@ -72,19 +88,28 @@ function getTransactionFields(t) {
  * @param ledgerConnect
  * @returns {Promise}
  */
-export async function signMessage(dpath, message, ledgerConnect) {
-    if (dpath) {
-        return new Promise((resolve) => {
-            ledgerConnect.signPersonalMessage_async(dpath, message).then(result => {
-                if (result.error) {
+export async function signMessage (dpath, message, ledgerConnect)
+{
+    if (dpath)
+    {
+        return new Promise((resolve) =>
+        {
+            ledgerConnect.signPersonalMessage_async(dpath, message).then(result =>
+            {
+                if (result.error)
+                {
                     return resolve({error: result.error});
-                } else {
+                }
+                else
+                {
                     resolve({result: {v: result.v, r: addHexPrefix(result.r), s: addHexPrefix(result.s)}});
                 }
             });
         });
-    } else {
-        throw new Error('dpath can\'t be null')
+    }
+    else
+    {
+        throw new Error('dpath can\'t be null');
     }
 }
 
@@ -95,17 +120,21 @@ export async function signMessage(dpath, message, ledgerConnect) {
  * @param ledgerConnect
  * @returns {Promise}
  */
-export async function signEthereumTx(dpath, rawTx, ledgerConnect) {
-    if (dpath) {
+export async function signEthereumTx (dpath, rawTx, ledgerConnect)
+{
+    if (dpath)
+    {
         validator.validate({type: 'BASIC_TX', value: rawTx});
         const t = new EthTransaction(rawTx);
         t.v = toBuffer([t._chainId]);
         t.r = toBuffer(0);
         t.s = toBuffer(0);
-        return new Promise((resolve) => {
+        return new Promise((resolve) =>
+        {
             ledgerConnect.ledger
                 .signTransaction_async(dpath, t.serialize().toString('hex'))
-                .then(result => {
+                .then(result =>
+                {
                     const strTx = getTransactionFields(t);
                     const txToSerialize = {
                         ...strTx,
@@ -113,17 +142,18 @@ export async function signEthereumTx(dpath, rawTx, ledgerConnect) {
                         r: addHexPrefix(result.r),
                         s: addHexPrefix(result.s)
                     };
-                    const ethTx = new EthTransaction(txToSerialize)
+                    const ethTx = new EthTransaction(txToSerialize);
                     const serializedTx = toHex(ethTx.serialize());
                     resolve({result: serializedTx});
                 })
-                .catch(err => {
+                .catch(err =>
+                {
                     return resolve({error: {message: (`${err.message} . Check to make sure contract data is on`)}});
                 });
         });
-    } else {
-        throw new Error('dpath can\'t be null')
+    }
+    else
+    {
+        throw new Error('dpath can\'t be null');
     }
 }
-
-

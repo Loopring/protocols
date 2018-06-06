@@ -7,18 +7,23 @@ import {fromMasterSeed} from 'hdkey';
  * @param password string
  * @param dpath string
  */
-export function mnemonictoPrivatekey(mnemonic, dpath, password) {
-  if (dpath) {
-    mnemonic = mnemonic.trim();
-    if (!validateMnemonic(mnemonic)) {
-      throw new Error('Invalid mnemonic');
+export function mnemonictoPrivatekey (mnemonic, dpath, password)
+{
+    if (dpath)
+    {
+        mnemonic = mnemonic.trim();
+        if (!validateMnemonic(mnemonic))
+        {
+            throw new Error('Invalid mnemonic');
+        }
+        const seed = mnemonicToSeed(mnemonic, password);
+        const derived = fromMasterSeed(seed).derive(dpath);
+        return derived.privateKey;
     }
-    const seed = mnemonicToSeed(mnemonic, password);
-    const derived = fromMasterSeed(seed).derive(dpath);
-    return derived.privateKey;
-  } else {
-    throw new Error('dpath can\'t be null')
-  }
+    else
+    {
+        throw new Error('dpath can\'t be null');
+    }
 }
 
 /**
@@ -26,6 +31,7 @@ export function mnemonictoPrivatekey(mnemonic, dpath, password) {
  * @param phrase string
  * @returns {bool}
  */
-export function isValidateMnemonic(phrase) {
-  return validateMnemonic(phrase)
+export function isValidateMnemonic (phrase)
+{
+    return validateMnemonic(phrase);
 }

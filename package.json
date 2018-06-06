@@ -2,6 +2,9 @@
   "name": "loopring.js",
   "version": "0.0.8",
   "description": "Loopring javascript library",
+  "scripts": {
+    "build": "webpack"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/loopring/loopring.js.git"
@@ -23,17 +26,25 @@
     "hdkey": "0.7.1",
     "ledgerco": "1.2.1",
     "lodash": "4.17.5",
+    "raw-loader": "^0.5.1",
     "socket.io-client": "2.0.4",
     "whatwg-fetch": "^2.0.4"
   },
   "devDependencies": {
+    "@babel/core": "^7.0.0-beta.49",
+    "@babel/preset-env": "^7.0.0-beta.49",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^8.0.0-beta.0",
     "eslint": "^4.12.1",
     "eslint-config-standard": "^10.2.1",
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.6.0",
     "eslint-plugin-standard": "^3.0.1",
+    "file-loader": "^1.1.11",
+    "json-loader": "^0.5.7",
     "uglifyjs-webpack-plugin": "^1.2.4",
-    "webpack": "^4.4.1"
+    "webpack": "^4.11.0",
+    "webpack-cli": "^3.0.2"
   }
 }

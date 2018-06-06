@@ -27,6 +27,16 @@ module.exports = {
             'node_modules'
         ]
     },
+    module: {
+        rules: [
+            { test: /\.js$/,
+                exclude: /node_modules/,
+                use: {loader: 'babel-loader',
+                    options: {presets: ['@babel/preset-env']}}
+
+            }
+        ]
+    },
     output: {
         path: Path.join(__dirname, '/dist'),
         library: 'loopring',

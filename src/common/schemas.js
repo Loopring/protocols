@@ -2,70 +2,76 @@
 // required: value should be not empty eg: null, undefined, ''
 
 const basicSchemas = {
-  STRING: {
-    type: 'string',
-    required: true,
-  },
-  OPTION_NUMBER: {
-    validator: (rule, value, cb) => {
-      if (value) {
-        if (typeof(value) === 'number') {
-          cb()
-        } else {
-          cb('page number valid')
+    STRING: {
+        type: 'string',
+        required: true
+    },
+    OPTION_NUMBER: {
+        validator: (rule, value, cb) =>
+        {
+            if (value)
+            {
+                if (typeof (value) === 'number')
+                {
+                    cb();
+                }
+                else
+                {
+                    cb('page number valid');
+                }
+            }
+            else
+            {
+                cb();
+            }
         }
-      } else {
-        cb()
-      }
+    },
+    URL: {
+        type: 'url',
+        required: true
+    },
+    HEX: {
+        type: 'string',
+        required: true,
+        pattern: /^0x[0-9a-fA-F]+$/g
+    },
+    ETH_VALUES: {
+        type: 'string',
+        required: true,
+        pattern: /^0x[0-9a-fA-F]{1,64}$/g
+    },
+    ETH_ADDRESS: {
+        type: 'string',
+        required: true,
+        pattern: /^0x[0-9a-fA-F]{40}$/g
+    },
+    ETH_KEY: {
+        type: 'string',
+        required: true,
+        len: 64
+    },
+    ETH_DATA: {
+        type: 'string',
+        required: true,
+        pattern: /^0x[0-9a-fA-F]{64}$/g
+    },
+    QUANTITY: {
+        type: 'string',
+        required: true
+    },
+    TIMESTAMP: {
+        type: 'string'
+    },
+    CURRENCY: {
+        type: 'string',
+        required: true,
+        enum: ['USD', 'CNY']
+    },
+    RPC_TAG: {
+        type: 'enum',
+        required: true,
+        enum: ['latest', 'earliest', 'pending']
     }
-  },
-  URL: {
-    type: 'url',
-    required: true,
-  },
-  HEX: {
-    type: 'string',
-    required: true,
-    pattern: /^0x[0-9a-fA-F]+$/g,
-  },
-  ETH_VALUES: {
-    type: 'string',
-    required: true,
-    pattern: /^0x[0-9a-fA-F]{1,64}$/g,
-  },
-  ETH_ADDRESS:{
-    type: 'string',
-    required: true,
-    pattern: /^0x[0-9a-fA-F]{40}$/g,
-  },
-  ETH_KEY: {
-    type: 'string',
-    required: true,
-    len: 64,
-  },
-  ETH_DATA:{
-    type: 'string',
-    required: true,
-    pattern: /^0x[0-9a-fA-F]{64}$/g,
-  },
-  QUANTITY: {
-    type: 'string',
-    required: true,
-  },
-  TIMESTAMP: {
-    type: 'string',
-  },
-  CURRENCY: {
-    type: 'string',
-    required: true,
-    enum: ['USD', 'CNY'],
-  },
-  RPC_TAG: {
-    type: 'enum',
-    required: true,
-    enum: ['latest', 'earliest', 'pending'],
-  },
 };
 
 export default basicSchemas;
-
