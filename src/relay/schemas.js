@@ -46,7 +46,7 @@ const loopringScheams = {
             },
             authPrivateKey: {
                 ...basicSchemas.ETH_KEY,
-              required: false
+                required: false
             },
             validSince: {
                 ...basicSchemas.ETH_VALUES
@@ -102,7 +102,7 @@ const loopringScheams = {
             },
             authPrivateKey: {
                 ...basicSchemas.ETH_KEY,
-              required: false
+                required: false
             },
             validSince: {
                 ...basicSchemas.ETH_VALUES

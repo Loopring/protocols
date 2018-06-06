@@ -17,6 +17,7 @@ export function trimAll (str)
     return trim(str).replace(/\s/g, '');
 }
 
-export function keccakHash(str) {
-  return ethUtil.bufferToHex(ethUtil.keccak(str))
+export function keccakHash (str)
+{
+    return ethUtil.bufferToHex(ethUtil.keccak(str));
 }
