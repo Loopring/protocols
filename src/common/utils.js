@@ -1,5 +1,5 @@
 import {keccak} from 'ethereumjs-util';
-import {toHex} from './formatter';
+import {toHex, toBig} from './formatter';
 
 /**
  * trim head space and tail space
@@ -22,4 +22,9 @@ export function trimAll (str)
 export function keccakHash (str)
 {
     return toHex(keccak(str));
+}
+
+export function calculateGas(gasPrice, gasLimit)
+{
+    return toBig(gasPrice).times(gasLimit).div(1e9);
 }
