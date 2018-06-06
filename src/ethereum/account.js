@@ -121,10 +121,11 @@ export function fromKeystore(keystore, password) {
 
 /**
  * @description generate mnemonic
+ * @param strength
  * @returns {*}
  */
-export function createMnemonic() {
-  return generateMnemonic(256);
+export function createMnemonic(strength) {
+  return generateMnemonic(strength || 256);
 }
 
 export class Account {
