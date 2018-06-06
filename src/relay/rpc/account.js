@@ -1,56 +1,64 @@
-import request from '../../common/request'
-import {id} from '../../common/request'
-import validator from '../validator'
-import Response from '../../common/response'
-import code from "../../common/code"
+import request, {id} from '../../common/request';
+import validator from '../validator';
+import Response from '../../common/response';
+import code from '../../common/code';
 
+export default class Account
+{
+    constructor (host)
+    {
+        this.host = host;
+    }
 
-export default class Account{
+    getBalance ({delegateAddress, owner})
+    {
+        return getBalance(this.host, {delegateAddress, owner});
+    }
 
-  constructor(host){
-    this.host = host
-  }
+    register (owner)
+    {
+        return register(this.host, owner);
+    }
 
-  getBalance({delegateAddress, owner}){
-    return getBalance(this.host, {delegateAddress, owner})
-  }
+    notifyTransactionSubmitted ({txHash, rawTx, from})
+    {
+        return notifyTransactionSubmitted(this.host, {txHash, rawTx, from});
+    }
 
-  register(owner){
-    return register(this.host, owner);
-  }
+    getTransactions ({owner, status, txHash, pageIndex, pageSize})
+    {
+        return getTransactions(this.host, {owner, status, txHash, pageIndex, pageSize});
+    }
 
-  notifyTransactionSubmitted({txHash, rawTx, from}){
-    return notifyTransactionSubmitted(this.host, {txHash, rawTx, from})
-  }
+    getEstimatedAllocatedAllowance ({owner, token, delegateAddress})
+    {
+        return getEstimatedAllocatedAllowance(this.host, {owner, token, delegateAddress});
+    }
 
-  getTransactions({owner, status, txHash, pageIndex, pageSize}){
-    return getTransactions(this.host, {owner, status, txHash, pageIndex, pageSize})
-  }
+    getFrozenLrcFee (owner)
+    {
+        return getFrozenLrcFee(this.host, owner);
+    }
 
-  getEstimatedAllocatedAllowance({owner, token,delegateAddress}){
-    return getEstimatedAllocatedAllowance(this.host, {owner, token,delegateAddress})
-  }
+    getOldWethBalance (owner)
+    {
+        return getOldWethBalance(this.host, owner);
+    }
 
-  getFrozenLrcFee(owner){
-    return getFrozenLrcFee(this.host, owner);
-  }
+    getPortfolio (owner)
+    {
+        return getPortfolio(this.host, owner);
+    }
 
-  getOldWethBalance(owner){
-    return getOldWethBalance(this.host, owner);
-  }
-
-  getPortfolio(owner){
-    return getPortfolio(this.host, owner);
-  }
-
-  getPendingRawTxByHash(txHash){
-    return getPendingRawTxByHash(this.host,txHash)
-  }
-  getGasPrice(){
-    return getGasPrice(this.host)
-  }
+    getPendingRawTxByHash (txHash)
+    {
+        return getPendingRawTxByHash(this.host, txHash);
+    }
+    getGasPrice ()
+    {
+        return getGasPrice(this.host);
+    }
 }
-
 
 /**
  * @description Get user's balance and token allowance info.
@@ -59,22 +67,26 @@ export default class Account{
  * @param owner
  * @returns {Promise.<*>}
  */
-export function getBalance(host,{delegateAddress, owner}) {
-  try {
-    validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
-    validator.validate({value: owner, type: 'ETH_ADDRESS'})
-  } catch (e) {
-    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-  }
-  let body = {};
-  body.method = 'loopring_getBalance';
-  body.params = [{delegateAddress, owner}];
-  body.id = id();
-  body.jsonrpc = '2.0';
-  return request(host, {
-    method: 'post',
-    body,
-  })
+export function getBalance (host, {delegateAddress, owner})
+{
+    try
+    {
+        validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    let body = {};
+    body.method = 'loopring_getBalance';
+    body.params = [{delegateAddress, owner}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 /**
@@ -83,21 +95,25 @@ export function getBalance(host,{delegateAddress, owner}) {
  * @param owner
  * @returns {Promise}
  */
-export function register(host,owner) {
-  try {
-    validator.validate({value: owner, type: 'ETH_ADDRESS'})
-  } catch (e) {
-    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-  }
-  let body = {};
-  body.method = 'loopring_unlockWallet';
-  body.params = [{owner}];
-  body.id = id();
-  body.jsonrpc = '2.0';
-  return request(host, {
-    method: 'post',
-    body,
-  })
+export function register (host, owner)
+{
+    try
+    {
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    let body = {};
+    body.method = 'loopring_unlockWallet';
+    body.params = [{owner}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 /**
@@ -109,24 +125,28 @@ export function register(host,owner) {
  * @param from
  * @returns {Promise.<*>}
  */
-export function notifyTransactionSubmitted(host,{txHash, rawTx, from}) {
-  try {
-    validator.validate({value: from, type: "ETH_ADDRESS"});
-    validator.validate({value: rawTx, type: "TX"});
-    validator.validate({value: txHash, type: "HASH"});
-  } catch (e) {
-    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-  }
-  const {nonce, to, value, gasPrice, gasLimit, data} = rawTx;
-  const body = {};
-  body.method = 'loopring_notifyTransactionSubmitted';
-  body.params = [{hash: txHash, nonce, to, value, gasPrice, gas: gasLimit, input: data, from,}];
-  body.id = id();
-  body.jsonrpc = '2.0';
-  return request(host, {
-    method: 'post',
-    body
-  })
+export function notifyTransactionSubmitted (host, {txHash, rawTx, from})
+{
+    try
+    {
+        validator.validate({value: from, type: 'ETH_ADDRESS'});
+        validator.validate({value: rawTx, type: 'TX'});
+        validator.validate({value: txHash, type: 'HASH'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    const {nonce, to, value, gasPrice, gasLimit, data} = rawTx;
+    const body = {};
+    body.method = 'loopring_notifyTransactionSubmitted';
+    body.params = [{hash: txHash, nonce, to, value, gasPrice, gas: gasLimit, input: data, from}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 /**
@@ -139,31 +159,38 @@ export function notifyTransactionSubmitted(host,{txHash, rawTx, from}) {
  * @param pageSize
  * @returns {Promise.<*>}
  */
-export function getTransactions(host,{owner, status, txHash, pageIndex, pageSize}) {
-  status = status || 'pending';
-  try {
-    validator.validate({value: owner, type: "ETH_ADDRESS"});
-    validator.validate({value: status, type: "RPC_TAG"});
-    if (txHash) {
-      validator.validate({value: txHash, type: "HASH"});
+export function getTransactions (host, {owner, status, txHash, pageIndex, pageSize})
+{
+    status = status || 'pending';
+    try
+    {
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
+        validator.validate({value: status, type: 'RPC_TAG'});
+        if (txHash)
+        {
+            validator.validate({value: txHash, type: 'HASH'});
+        }
+        if (pageIndex)
+        {
+            validator.validate({value: pageIndex, type: 'OPTION_NUMBER'});
+        }
+        if (pageSize)
+        {
+            validator.validate({value: pageSize, type: 'OPTION_NUMBER'});
+        }
     }
-    if (pageIndex) {
-      validator.validate({value: pageIndex, type: 'OPTION_NUMBER'})
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
     }
-    if (pageSize) {
-      validator.validate({value: pageSize, type: 'OPTION_NUMBER'})
-    }
-  } catch (e) {
-    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-  }
-  const body = {};
-  body.method = 'loopring_getTransactions';
-  body.params = [{owner, status, txHash, pageIndex, pageSize}];
-  body.id = id();
-  return request(host, {
-    method: 'post',
-    body,
-  })
+    const body = {};
+    body.method = 'loopring_getTransactions';
+    body.params = [{owner, status, txHash, pageIndex, pageSize}];
+    body.id = id();
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 /**
@@ -174,21 +201,25 @@ export function getTransactions(host,{owner, status, txHash, pageIndex, pageSize
  * @param token
  * @returns {Promise}
  */
-export function getEstimatedAllocatedAllowance(host,{owner, token,delegateAddress}) {
-  try {
-    validator.validate({value: owner, type: "ETH_ADDRESS"})
-  } catch (e) {
-    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-  }
-  const body = {};
-  body.method = 'loopring_getEstimatedAllocatedAllowance';
-  body.params = [{owner, token,delegateAddress}];
-  body.id = id();
-  body.jsonrpc = '2.0';
-  return request(host,{
-    method: 'post',
-    body,
-  })
+export function getEstimatedAllocatedAllowance (host, {owner, token, delegateAddress})
+{
+    try
+    {
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    const body = {};
+    body.method = 'loopring_getEstimatedAllocatedAllowance';
+    body.params = [{owner, token, delegateAddress}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 /**
@@ -197,20 +228,24 @@ export function getEstimatedAllocatedAllowance(host,{owner, token,delegateAddres
  * @param owner
  * @returns {Promise}
  */
-export function getFrozenLrcFee(host,owner) {
-  try {
-    validator.validate({value: owner, type: "ETH_ADDRESS"})
-  } catch (e) {
-    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-  }
-  const body = {};
-  body.method = 'loopring_getFrozenLRCFee';
-  body.params = [{owner}];
-  body.id = id();
-  return request(host,{
-    method: 'post',
-    body,
-  })
+export function getFrozenLrcFee (host, owner)
+{
+    try
+    {
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    const body = {};
+    body.method = 'loopring_getFrozenLRCFee';
+    body.params = [{owner}];
+    body.id = id();
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 /**
@@ -219,20 +254,24 @@ export function getFrozenLrcFee(host,owner) {
  * @param owner
  * @returns {Promise.<*>}
  */
-export function getOldWethBalance(host,owner) {
-  try {
-    validator.validate({value: owner, type: "ETH_ADDRESS"})
-  } catch (e) {
-    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-  }
-  const body = {};
-  body.method = 'loopring_getOldVersionWethBalance';
-  body.params = [{owner}];
-  body.id = id();
-  return request(host,{
-    method: 'post',
-    body,
-  })
+export function getOldWethBalance (host, owner)
+{
+    try
+    {
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    const body = {};
+    body.method = 'loopring_getOldVersionWethBalance';
+    body.params = [{owner}];
+    body.id = id();
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 /**
@@ -241,21 +280,25 @@ export function getOldWethBalance(host,owner) {
  * @param owner
  * @returns {*}
  */
-export function getPortfolio(host,owner) {
-  try {
-    validator.validate({value: owner, type: "ETH_ADDRESS"})
-  } catch (e) {
-    return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg))
-  }
-  const body = {};
-  body.method = 'loopring_getPortfolio';
-  body.params = [{owner}];
-  body.id = id();
-  body.jsonrpc = '2.0';
-  return request(host,{
-    method: 'post',
-    body,
-  })
+export function getPortfolio (host, owner)
+{
+    try
+    {
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    const body = {};
+    body.method = 'loopring_getPortfolio';
+    body.params = [{owner}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 /**
@@ -264,38 +307,41 @@ export function getPortfolio(host,owner) {
  * @param txHash
  * @returns {Promise}
  */
-export function getPendingRawTxByHash(host,txHash) {
-  try {
-    validator.validate({value: txHash, type: "HASH"})
-  } catch (e) {
-    throw new Error('Invalid tx hash')
-  }
-  const params = [{thxHash: txHash}];
-  const body = {};
-  body.method = 'loopring_getPendingRawTxByHash';
-  body.params = params;
-  body.id = id();
-  body.jsonrpc = '2.0';
-  return request(host,{
-    method: 'post',
-    body,
-  })
+export function getPendingRawTxByHash (host, txHash)
+{
+    try
+    {
+        validator.validate({value: txHash, type: 'HASH'});
+    }
+    catch (e)
+    {
+        throw new Error('Invalid tx hash');
+    }
+    const params = [{thxHash: txHash}];
+    const body = {};
+    body.method = 'loopring_getPendingRawTxByHash';
+    body.params = params;
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 /**
  * Get network gasPrice that relay computes
  * @returns {Promise}
  */
-export async function getGasPrice(host) {
-  let body = {};
-  body.method = 'loopring_getEstimateGasPrice';
-  body.params = [{}];
-  body.id = id();
-  body.jsonrpc = '2.0';
-  return request(host,{
-    method:'post',
-    body,
-  })
+export async function getGasPrice (host)
+{
+    let body = {};
+    body.method = 'loopring_getEstimateGasPrice';
+    body.params = [{}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
-
-
