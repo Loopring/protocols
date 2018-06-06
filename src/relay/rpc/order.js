@@ -109,7 +109,7 @@ export function placeOrder (host, order)
 {
     try
     {
-        validator.validate({value: order, type: 'Order'});
+        validator.validate({value: order, type: 'ORDER'});
     }
     catch (e)
     {

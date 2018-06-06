@@ -1,3 +1,4 @@
+import ethUtil from 'ethereumjs-util';
 /**
  * trim head space and tail space
  * @param str string
@@ -14,4 +15,8 @@ export function trim (str)
 export function trimAll (str)
 {
     return trim(str).replace(/\s/g, '');
+}
+
+export function keccakHash(str) {
+  return ethUtil.bufferToHex(ethUtil.keccak(str))
 }
