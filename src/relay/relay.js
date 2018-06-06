@@ -1,5 +1,5 @@
 import Account from './rpc/account';
-import { Order } from './rpc/order';
+import Order from './rpc/order';
 import Market from './rpc/market';
 import Ring from './rpc/ring';
 
