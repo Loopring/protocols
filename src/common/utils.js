@@ -24,7 +24,7 @@ export function keccakHash (str)
     return toHex(keccak(str));
 }
 
-export function calculateGas(gasPrice, gasLimit)
+export function calculateGas (gasPrice, gasLimit)
 {
     return toBig(gasPrice).times(gasLimit).div(1e9);
 }

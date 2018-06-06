@@ -21,6 +21,7 @@ const Path = require('path');
 
 module.exports = {
     entry: './src/index.js',
+    mode: 'production',
     resolve: {
         modules: [
             'bower_components',
