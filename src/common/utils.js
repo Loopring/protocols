@@ -1,4 +1,6 @@
-import ethUtil from 'ethereumjs-util';
+import {keccak} from 'ethereumjs-util';
+import {toHex} from './formatter';
+
 /**
  * trim head space and tail space
  * @param str string
@@ -19,5 +21,5 @@ export function trimAll (str)
 
 export function keccakHash (str)
 {
-    return ethUtil.bufferToHex(ethUtil.keccak(str));
+    return toHex(keccak(str));
 }
