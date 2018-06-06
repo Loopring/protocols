@@ -1,6 +1,6 @@
 {
   "name": "loopring.js",
-  "version": "0.0.8",
+  "version": "1.0.1",
   "description": "Loopring javascript library",
   "scripts": {
     "build": "webpack"
