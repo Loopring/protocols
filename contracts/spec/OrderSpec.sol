@@ -25,7 +25,7 @@ import "../impl/Data.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 library OrderSpec {
     function limitByAmountB(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -33,7 +33,7 @@ library OrderSpec {
     }
 
     function allOrNone(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -41,7 +41,7 @@ library OrderSpec {
     }
 
     function hasDualAuth(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -49,7 +49,7 @@ library OrderSpec {
     }
 
     function hasSignature(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -57,7 +57,7 @@ library OrderSpec {
     }
 
     function hasBroker(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -65,7 +65,7 @@ library OrderSpec {
     }
 
     function hasBrokerInterceptor(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -73,7 +73,7 @@ library OrderSpec {
     }
 
     function hasWallet(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -81,7 +81,7 @@ library OrderSpec {
     }
 
     function hasValidSince(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -89,7 +89,7 @@ library OrderSpec {
     }
 
     function hasValidUntil(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -97,7 +97,7 @@ library OrderSpec {
     }
 
     function hasOrderInterceptor(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {

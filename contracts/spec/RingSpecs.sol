@@ -33,7 +33,7 @@ library RingSpecs {
         Data.Order[] orders,
         Data.Inputs inputs
         )
-        public
+        internal
         pure
         returns (Data.Ring[] memory rings)
     {

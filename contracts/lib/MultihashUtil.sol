@@ -36,7 +36,7 @@ library MultihashUtil {
         bytes32 plaintext,
         bytes   multihash
         )
-        public
+        internal
         pure
     {
         uint8 algorithm = uint8(multihash[0]);

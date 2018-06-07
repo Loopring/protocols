@@ -27,7 +27,7 @@ library MathUint {
         uint a,
         uint b
         )
-        public
+        internal
         pure
         returns (uint c)
     {
@@ -39,7 +39,7 @@ library MathUint {
         uint a,
         uint b
         )
-        public
+        internal
         pure
         returns (uint)
     {
@@ -51,7 +51,7 @@ library MathUint {
         uint a,
         uint b
         )
-        public
+        internal
         pure
         returns (uint c)
     {
@@ -63,7 +63,7 @@ library MathUint {
         uint a,
         uint b
         )
-        public
+        internal
         pure
         returns (uint c)
     {
@@ -76,7 +76,7 @@ library MathUint {
         uint[] arr,
         uint scale
         )
-        public
+        internal
         pure
         returns (uint)
     {

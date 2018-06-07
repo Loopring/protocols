@@ -28,11 +28,10 @@ import "../lib/MultihashUtil.sol";
 /// @title An Implementation of IOrderbook.
 /// @author Daniel Wang - <daniel@loopring.org>.
 library OrderHelper {
-
     using MathUint      for uint;
 
     function updateHash(Data.Order order)
-        public
+        internal
         pure
     {
         order.hash = keccak256(abi.encodePacked(
@@ -57,7 +56,7 @@ library OrderHelper {
         Data.Order order,
         Data.Context ctx
         )
-        public
+        internal
         view
     {
         if (order.broker == address(0x0)) {
@@ -76,7 +75,7 @@ library OrderHelper {
         Data.Order order,
         Data.Context ctx
         )
-        public
+        internal
         view
     {
         order.maxAmountLrcFee = getSpendable(
@@ -118,7 +117,7 @@ library OrderHelper {
         Data.Order order,
         Data.Context ctx
         )
-        public
+        internal
         view
     {
         if (order.sig.length == 0) {
@@ -142,7 +141,7 @@ library OrderHelper {
         Data.Order order,
         bytes32  miningHash
         )
-        public
+        internal
         pure
     {
         if (order.dualAuthSig.length != 0) {

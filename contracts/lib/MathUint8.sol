@@ -27,7 +27,7 @@ library MathUint8 {
         uint8[] arr,
         uint    len
         )
-        public
+        internal
         pure
         returns (uint8 res)
     {

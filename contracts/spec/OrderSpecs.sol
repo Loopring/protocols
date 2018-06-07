@@ -33,7 +33,7 @@ library OrderSpecs {
         uint16[] specs,
         Data.Inputs inputs
         )
-        public
+        internal
         pure
         returns (Data.Order[] memory orders)
     {

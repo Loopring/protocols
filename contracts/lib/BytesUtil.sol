@@ -26,7 +26,7 @@ library BytesUtil {
         bytes b,
         uint offset
         )
-        public
+        internal
         pure
         returns (bytes32 out)
     {

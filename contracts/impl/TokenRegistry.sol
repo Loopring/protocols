@@ -28,12 +28,11 @@ import "../lib/NoDefaultFunc.sol";
 /// @author Kongliang Zhong - <kongliang@loopring.org>,
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
-    using AddressUtil for address;
 
     mapping (address => uint)   private agencyPosMap;
     mapping (address => uint)   private tokenPosMap;
+    mapping (string => address) private  symbolToAddressMap;
     mapping (address => string) public  addressToSymbolMap;
-    mapping (string => address) public  symbolToAddressMap;
 
     function registerAgency(
         address agency
@@ -41,7 +40,7 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         onlyOwner
         external
     {
-        require(agency.isContract(), "bad agency");
+        // require(agency.isContract(), "bad agency");
         require(
             0 == agencyPosMap[agency],
             "agency already exists"

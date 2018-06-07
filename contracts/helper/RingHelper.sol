@@ -32,7 +32,7 @@ library RingHelper {
     function updateHash(
         Data.Ring ring
         )
-        public
+        internal
         pure
     {
         for (uint i = 0; i < ring.size; i++) {
@@ -49,7 +49,7 @@ library RingHelper {
         Data.Ring ring,
         Data.Mining mining
         )
-        public
+        internal
         view
     {
         for (uint i = 0; i < ring.size; i++) {

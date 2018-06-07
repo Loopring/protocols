@@ -28,7 +28,7 @@ library MathBytes32 {
         bytes32[]   arr,
         uint        len
         )
-        public
+        internal
         pure
         returns (bytes32 res)
     {

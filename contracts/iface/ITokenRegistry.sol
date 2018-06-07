@@ -90,9 +90,9 @@ contract ITokenRegistry {
         returns (address);
 
     function getSymbolByAddress(
-        string symbol
+        address addr
         )
         external
         view
-        returns (address);
+        returns (string);
 }

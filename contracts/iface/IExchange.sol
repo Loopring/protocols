@@ -99,28 +99,13 @@ contract IExchange {
         external;
 
     /// @dev Submit a order-ring for validation and settlement.
-    /// @param addressesList List of each order's owner, broker, tokenS, wallet,
-    ///                      authAddr, and order interceptor.
-    ///                      Note that next order's `tokenS` equals this order's
-    ///                      `tokenB`.
-    /// @param valuesList   List of uint-type arguments in this order:
-    ///                     amountS, amountB, validSince (second),
-    ///                     validUntil (second), lrcFee, and rateAmountS.
-    /// @param optionList   Options associated with each order.
-    /// @param sigList      Signature lists.
-    /// @param feeRecipient Mineing fee recipient address.
-    /// @param inteceptor   Ring interceptor address.
-    /// @param feeSelections -
-    ///                     Bits to indicate fee selections. `1` represents margin
-    ///                     split and `0` represents LRC as fee.
     function submitRing(
-        address[6][]    addressesList,
-        uint[6][]       valuesList,
-        uint8[]         optionList,
-        bytes[]         sigList,
-        address         feeRecipient,
-        address         inteceptor,
-        uint8           feeSelections
+        uint16 miningSpec,
+        uint16[] orderSpecs,
+        uint8[][] ringSpecs,
+        address[] addressLists,
+        uint[] uintList,
+        bytes[] bytesList
         )
         public;
 }

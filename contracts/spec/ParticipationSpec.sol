@@ -26,7 +26,7 @@ import "../impl/Data.sol";
 library ParticipationSpec {
 
     function orderIndex(uint8 spec)
-        public
+        internal
         pure
         returns (uint)
     {
@@ -34,7 +34,7 @@ library ParticipationSpec {
     }
 
     function marginSplitAsFee(uint8 spec)
-        public
+        internal
         pure
         returns (bool)
     {

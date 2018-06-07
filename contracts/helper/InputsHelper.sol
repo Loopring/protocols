@@ -28,7 +28,7 @@ library InputsHelper {
     function nextAddress(
         Data.Inputs inputs
         )
-        public
+        internal
         pure
         returns (address)
     {
@@ -38,7 +38,7 @@ library InputsHelper {
     function nextUint(
         Data.Inputs inputs
         )
-        public
+        internal
         pure
         returns (uint)
     {
@@ -48,7 +48,7 @@ library InputsHelper {
     function nextBytes(
         Data.Inputs inputs
         )
-        public
+        internal
         pure
         returns (bytes)
     {

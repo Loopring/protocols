@@ -30,7 +30,7 @@ library MiningHelper {
         Data.Mining mining,
         Data.Context ctx
         )
-        public
+        internal
         view
         returns (bytes32)
     {
@@ -49,7 +49,7 @@ library MiningHelper {
     function updateHash(
         Data.Mining mining
         )
-        public
+        internal
         pure
     {
         mining.hash = keccak256(abi.encodePacked(
@@ -62,7 +62,7 @@ library MiningHelper {
         Data.Mining mining,
         Data.Context ctx
         )
-        public
+        internal
         view
     {
         if (mining.sig.length == 0) {

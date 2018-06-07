@@ -30,7 +30,7 @@ library ParticipationHelper {
     function adjustOrderState(
         Data.Participation p
         )
-        public
+        internal
         pure
     {
         p.order.maxAmountS = p.order.maxAmountS.sub(p.fillAmountS);
@@ -45,7 +45,7 @@ library ParticipationHelper {
     function calculateFillAmounts(
         Data.Participation p
         )
-        public
+        internal
         pure
         returns (bool thisOrderIsSmaller)
     {
@@ -69,7 +69,7 @@ library ParticipationHelper {
         Data.Participation p,
         Data.Mining mining
         )
-        public
+        internal
         pure
     {
         Data.Order memory order = p.order;

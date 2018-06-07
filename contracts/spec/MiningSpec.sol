@@ -25,7 +25,7 @@ import "../impl/Data.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 library MiningSpec {
     function hasMiner(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -33,7 +33,7 @@ library MiningSpec {
     }
 
     function hasBroker(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -41,7 +41,7 @@ library MiningSpec {
     }
 
     function hasMinerInterceptor(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -49,7 +49,7 @@ library MiningSpec {
     }
 
     function hasSignature(uint16 spec)
-        public
+        internal
         pure
         returns (bool)
     {

@@ -23,7 +23,7 @@ pragma experimental "ABIEncoderV2";
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 library StringUtil {
     function stringToBytes12(string str)
-        public
+        internal
         pure
         returns (bytes12 result)
     {
@@ -33,7 +33,7 @@ library StringUtil {
     }
 
     function stringToBytes10(string str)
-        public
+        internal
         pure
         returns (bytes10 result)
     {
@@ -44,7 +44,7 @@ library StringUtil {
 
     /// check length >= min && <= max
     function checkStringLength(string name, uint min, uint max)
-        public
+        internal
         pure
         returns (bool)
     {
