@@ -56,14 +56,14 @@ import "./Data.sol";
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
 contract Exchange is IExchange, NoDefaultFunc {
-    /* using MathUint      for uint; */
-    /* using MiningSpec    for uint16; */
-    /* using OrderSpecs    for uint16[]; */
-    /* using RingSpecs     for uint8[][]; */
-    /* using OrderHelper     for Data.Order; */
-    /* using RingHelper      for Data.Ring; */
-    /* using InputsHelper    for Data.Inputs; */
-    /* using MiningHelper    for Data.Mining; */
+    using MathUint      for uint;
+    using MiningSpec    for uint16;
+    using OrderSpecs    for uint16[];
+    using RingSpecs     for uint8[][];
+    using OrderHelper     for Data.Order;
+    using RingHelper      for Data.Ring;
+    using InputsHelper    for Data.Inputs;
+    using MiningHelper    for Data.Mining;
 
     address public  lrcTokenAddress             = 0x0;
     address public  tokenRegistryAddress        = 0x0;
@@ -185,67 +185,67 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
-        /* Data.Context memory ctx = Data.Context( */
-        /*     lrcTokenAddress, */
-        /*     ITokenRegistry(tokenRegistryAddress), */
-        /*     ITradeDelegate(delegateAddress), */
-        /*     IBrokerRegistry(orderBrokerRegistryAddress), */
-        /*     IBrokerRegistry(minerBrokerRegistryAddress), */
-        /*     IOrderRegistry(orderRegistryAddress), */
-        /*     IMinerRegistry(minerRegistryAddress) */
-        /* ); */
+        Data.Context memory ctx = Data.Context(
+            lrcTokenAddress,
+            ITokenRegistry(tokenRegistryAddress),
+            ITradeDelegate(delegateAddress),
+            IBrokerRegistry(orderBrokerRegistryAddress),
+            IBrokerRegistry(minerBrokerRegistryAddress),
+            IOrderRegistry(orderRegistryAddress),
+            IMinerRegistry(minerRegistryAddress)
+        );
 
-        /* Data.Inputs memory inputs = Data.Inputs( */
-        /*     addressLists, */
-        /*     uintList, */
-        /*     bytesList, */
-        /*     0, 0, 0  // current indices of addressLists, uintList, and bytesList. */
-        /* ); */
+        Data.Inputs memory inputs = Data.Inputs(
+            addressLists,
+            uintList,
+            bytesList,
+            0, 0, 0  // current indices of addressLists, uintList, and bytesList.
+        );
 
-        /* Data.Mining memory mining = Data.Mining( */
-        /*     inputs.nextAddress(), */
-        /*     (miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0)), */
-        /*     (miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0)), */
-        /*     bytes32(0x0), // hash */
-        /*     address(0x0),  // interceptor */
-        /*     getSpendable( */
-        /*         ctx.delegate, */
-        /*         ctx.lrcTokenAddress, */
-        /*         tx.origin, // TODO(daniel): pay from msg.sender? */
-        /*         0x0, // broker */
-        /*         0x0  // brokerInterceptor */
-        /*     ) */
-        /* ); */
+        Data.Mining memory mining = Data.Mining(
+            inputs.nextAddress(),
+            (miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0)),
+            (miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0)),
+            bytes32(0x0), // hash
+            address(0x0),  // interceptor
+            getSpendable(
+                ctx.delegate,
+                ctx.lrcTokenAddress,
+                tx.origin, // TODO(daniel): pay from msg.sender?
+                0x0, // broker
+                0x0  // brokerInterceptor
+            )
+        );
 
-        /* Data.Order[] memory orders = orderSpecs.assembleOrders(inputs); */
-        /* Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs); */
+        Data.Order[] memory orders = orderSpecs.assembleOrders(inputs);
+        Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
 
-        /* for (uint i = 0; i < orders.length; i++) { */
-        /*     orders[i].updateHash(); */
-        /*     orders[i].updateBrokerAndInterceptor(ctx); */
-        /*     orders[i].checkBrokerSignature(ctx); */
-        /* } */
+        for (uint i = 0; i < orders.length; i++) {
+            orders[i].updateHash();
+            orders[i].updateBrokerAndInterceptor(ctx);
+            orders[i].checkBrokerSignature(ctx);
+        }
 
-        /* for (uint i = 0; i < rings.length; i++) { */
-        /*     rings[i].updateHash(); */
-        /*     mining.hash ^= rings[i].hash; */
-        /* } */
+        for (uint i = 0; i < rings.length; i++) {
+            rings[i].updateHash();
+            mining.hash ^= rings[i].hash;
+        }
 
-        /* mining.updateHash(); */
-        /* mining.updateMinerAndInterceptor(ctx); */
-        /* mining.checkMinerSignature(ctx); */
+        mining.updateHash();
+        mining.updateMinerAndInterceptor(ctx);
+        mining.checkMinerSignature(ctx);
 
-        /* for (uint i = 0; i < orders.length; i++) { */
-        /*     orders[i].checkDualAuthSignature(mining.hash); */
-        /* } */
+        for (uint i = 0; i < orders.length; i++) {
+            orders[i].checkDualAuthSignature(mining.hash);
+        }
 
-        /* for (uint i = 0; i < orders.length; i++) { */
-        /*     orders[i].updateStates(ctx); */
-        /* } */
+        for (uint i = 0; i < orders.length; i++) {
+            orders[i].updateStates(ctx);
+        }
 
-        /* for (uint i = 0; i < rings.length; i++){ */
-        /*     rings[i].calculateFillAmountAndFee(mining); */
-        /* } */
+        for (uint i = 0; i < rings.length; i++){
+            rings[i].calculateFillAmountAndFee(mining);
+        }
     }
 
     /// @return Amount of ERC20 token that can be spent by this contract.

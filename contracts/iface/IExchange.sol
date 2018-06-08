@@ -99,7 +99,7 @@ contract IExchange {
         external;
 
     /// @dev Submit a order-ring for validation and settlement.
-    function submitRing(
+    function submitRings(
         uint16 miningSpec,
         uint16[] orderSpecs,
         uint8[][] ringSpecs,
