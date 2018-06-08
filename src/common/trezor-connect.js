@@ -25,7 +25,7 @@ function _fwStrFix (obj, fw)
     return obj;
 }
 
-this.TrezorConnect = (function ()
+export const TrezorConnect = (function ()
 {
     'use strict';
 

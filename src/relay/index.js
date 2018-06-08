@@ -1,4 +1,4 @@
-import Relay from './Relay';
+import Relay from './relay';
 import rpc from './rpc';
 import validator from './validator';
 import Socket from './socket';

@@ -3,7 +3,9 @@
   "version": "1.0.1",
   "description": "Loopring javascript library",
   "scripts": {
-    "build": "webpack"
+    "lint": "eslint . --fix",
+    "build": "webpack && babel -D -d lib/ src/",
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -11,6 +13,7 @@
   },
   "keywords": [],
   "author": "",
+  "main": "index.js",
   "license": "Apache-2.0",
   "bugs": "https://github.com/loopring/loopring.js/issues",
   "homepage": "https://github.com/loopring/loopring.js#readme",
@@ -30,10 +33,12 @@
     "whatwg-fetch": "^2.0.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0-beta.49",
-    "@babel/preset-env": "^7.0.0-beta.49",
     "babel-core": "^6.26.3",
-    "babel-loader": "^8.0.0-beta.0",
+    "babel-loader": "^7.1.4",
+    "babel-plugin-transform-es2015-spread": "^6.22.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
     "eslint": "^4.12.1",
     "eslint-config-standard": "^10.2.1",
     "eslint-plugin-import": "^2.8.0",
@@ -41,7 +46,7 @@
     "eslint-plugin-promise": "^3.6.0",
     "eslint-plugin-standard": "^3.0.1",
     "uglifyjs-webpack-plugin": "^1.2.4",
-    "webpack": "^4.11.0",
+    "webpack": "^4.11.1",
     "webpack-cli": "^3.0.2"
   }
 }

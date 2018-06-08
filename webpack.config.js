@@ -20,7 +20,7 @@ const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 const Path = require('path');
 
 module.exports = {
-    entry: './src/index.js',
+    entry: ['babel-polyfill', './src/index.js'],
     mode: 'production',
     resolve: {
         modules: [
@@ -28,13 +28,15 @@ module.exports = {
             'node_modules'
         ]
     },
+    devtool: 'source-map',
     module: {
         rules: [
             { test: /\.js$/,
                 exclude: /node_modules/,
                 use: {loader: 'babel-loader',
-                    options: {presets: ['@babel/preset-env']}}
-
+                    options: {presets: ['env'],
+                        plugins: ['babel-plugin-transform-object-rest-spread', 'babel-plugin-transform-es2015-spread']}
+                }
             }
         ]
     },
@@ -48,6 +50,7 @@ module.exports = {
         new UglifyJSPlugin({
             exclude: /\/node_modules/,
             parallel: true,
+            sourceMap: true,
             uglifyOptions: {
                 beautify: false,
                 ecma: 6,
@@ -55,10 +58,5 @@ module.exports = {
                 comments: false
             }
         })
-    ],
-    externals: {
-        'bignumber.js': 'BigNumber',
-        'bn.js': 'BN',
-        lodash: '_'
-    }
+    ]
 };
