@@ -34,7 +34,7 @@
     "dirty-chai": "^2.0.1",
     "ganache-cli": "^6.1.0",
     "solc": "^0.4.24",
-    "solium": "^1.1.6",
+    "solium": "^1.1.7",
     "truffle": "^4.1.11",
     "tslint": "5.8.0",
     "typescript": "2.7.1",

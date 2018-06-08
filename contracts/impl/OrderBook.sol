@@ -27,7 +27,7 @@ import "../lib/NoDefaultFunc.sol";
 contract OrderBook is IOrderBook, NoDefaultFunc {
 
     function submitOrder(
-      address owner
+        address owner
     )
     external
     {

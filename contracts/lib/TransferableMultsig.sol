@@ -58,15 +58,17 @@ contract TransferableMultsig is ITransferableMultsig {
     {
         // Follows ERC191 signature scheme:
         //    https://github.com/ethereum/EIPs/issues/191
-        bytes32 txHash = keccak256(abi.encodePacked(
-            byte(0x19),
-            byte(0),
-            this,
-            nonce++,
-            destination,
-            value,
-            data
-        ));
+        bytes32 txHash = keccak256(
+            abi.encodePacked(
+                byte(0x19),
+                byte(0),
+                this,
+                nonce++,
+                destination,
+                value,
+                data
+            )
+        );
 
         verifySignatures(
             sigV,
@@ -92,14 +94,16 @@ contract TransferableMultsig is ITransferableMultsig {
     {
         // Follows ERC191 signature scheme:
         //    https://github.com/ethereum/EIPs/issues/191
-        bytes32 txHash = keccak256(abi.encodePacked(
-            byte(0x19),
-            byte(0),
-            this,
-            nonce++,
-            _threshold,
-            _owners
-        ));
+        bytes32 txHash = keccak256(
+            abi.encodePacked(
+                byte(0x19),
+                byte(0),
+                this,
+                nonce++,
+                _threshold,
+                _owners
+            )
+        );
 
         verifySignatures(
             sigV,

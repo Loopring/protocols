@@ -25,6 +25,6 @@ contract IOrderBook {
 
     function submitOrder(
         address owner
-    )
-    external;
+        )
+        external;
 }

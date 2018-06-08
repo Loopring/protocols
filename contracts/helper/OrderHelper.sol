@@ -34,22 +34,24 @@ library OrderHelper {
         internal
         pure
     {
-        order.hash = keccak256(abi.encodePacked(
-            order.owner,
-            order.tokenS,
-            order.tokenB,
-            order.amountS,
-            order.amountB,
-            order.lrcFee,
-            order.dualAuthAddr,
-            order.broker,
-            order.orderInterceptor,
-            order.wallet,
-            order.validSince,
-            order.validUntil,
-            order.limitByAmountB,
-            order.allOrNone
-        ));
+        order.hash = keccak256(
+            abi.encodePacked(
+                order.owner,
+                order.tokenS,
+                order.tokenB,
+                order.amountS,
+                order.amountB,
+                order.lrcFee,
+                order.dualAuthAddr,
+                order.broker,
+                order.orderInterceptor,
+                order.wallet,
+                order.validSince,
+                order.validUntil,
+                order.limitByAmountB,
+                order.allOrNone
+            )
+        );
     }
 
     function updateBrokerAndInterceptor(
@@ -67,7 +69,7 @@ library OrderHelper {
                 order.owner,
                 order.broker
             );
-             require(registered, "broker unregistered");
+            require(registered, "broker unregistered");
         }
     }
 

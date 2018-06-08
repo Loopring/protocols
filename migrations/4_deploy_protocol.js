@@ -20,7 +20,7 @@ module.exports = function(deployer, network, accounts) {
         Exchange,
         lrcAddr,
         TokenRegistry.address,
-        TradeDelegate.address
+        TradeDelegate.address,
       );
     });
 
