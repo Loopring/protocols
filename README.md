@@ -58,7 +58,7 @@ const loopring = require('loopring.js');
 
 babel-polyfill is also required
 
-####  [ 中文开发者文档](https://github.com/Loopring/loopring.js/wiki/loopring.js-v2.0.0-%E4%B8%AD%E6%96%87%E5%BC%80%E5%8F%91%E8%80%85%E6%96%87%E6%A1%A3). 
+####  [中文开发者文档](https://github.com/Loopring/loopring.js/wiki/loopring.js-v2.0.0-%E4%B8%AD%E6%96%87%E5%BC%80%E5%8F%91%E8%80%85%E6%96%87%E6%A1%A3). 
 
 ####  English Documention is coming soon
 
