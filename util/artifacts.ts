@@ -1,13 +1,13 @@
 
 export class Artifacts {
   public TokenRegistry: any;
-  public LoopringProtocolImpl: any;
-  public TokenTransferDelegate: any;
+  public Exchange: any;
+  public TradeDelegate: any;
   public DummyToken: any;
   constructor(artifacts: any) {
-    this.TokenRegistry = artifacts.require("TokenRegistryImpl");
-    this.LoopringProtocolImpl = artifacts.require("LoopringProtocolImpl");
-    this.TokenTransferDelegate = artifacts.require("TokenTransferDelegateImpl");
+    this.TokenRegistry = artifacts.require("impl/TokenRegistry");
+    this.Exchange = artifacts.require("impl/Exchange");
+    this.TradeDelegate = artifacts.require("impl/TradeDelegate");
     this.DummyToken = artifacts.require("test/DummyToken");
   }
 }

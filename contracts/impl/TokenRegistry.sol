@@ -93,6 +93,7 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         address addr,
         string  symbol
         )
+        onlyOwner
         external
     {
         require(
@@ -116,8 +117,8 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
     function unregisterToken(
         address addr
         )
-        external
         onlyOwner
+        external
     {
         require(addr != 0x0, "bad token address ");
 
@@ -175,4 +176,6 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
     {
         return addressToSymbolMap[addr];
     }
+
+
 }
