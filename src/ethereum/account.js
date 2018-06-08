@@ -465,7 +465,7 @@ export class MetaMaskAccount extends Account
     async signOrder (order)
     {
         const hash = toHex(hashPersonalMessage(getOrderHash(order)));
-        const result = await MetaMask.signMessage(this.web3, this.account, hash);
+        const result = await MetaMask.sign(this.web3, this.account, hash);
         if (!result.error)
         {
             return {...order, ...result.result};
