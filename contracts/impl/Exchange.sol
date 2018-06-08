@@ -220,6 +220,17 @@ contract Exchange is IExchange, NoDefaultFunc {
         Data.Order[] memory orders = orderSpecs.assembleOrders(inputs);
         Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
 
+        handleSubmitRings(ctx, mining, orders, rings);
+    }
+
+    function handleSubmitRings(
+        Data.Context ctx,
+        Data.Mining mining,
+        Data.Order[] orders,
+        Data.Ring[] rings
+        )
+        private
+    {
         for (uint i = 0; i < orders.length; i++) {
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
