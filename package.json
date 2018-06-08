@@ -1,6 +1,6 @@
 {
-  "name": "loopring",
-  "version": "1.1.12",
+  "name": "loopring.js",
+  "version": "1.0.1",
   "description": "Loopring javascript library",
   "scripts": {
     "lint": "eslint . --fix",
