@@ -31,6 +31,11 @@ export default class Order
     {
         return getOrderHash(order);
     }
+
+    storeDatasInShortTerm (hash, origin)
+    {
+        return storeDatasInShortTerm(this.host, hash, origin);
+    }
 }
 
 /**
@@ -171,4 +176,33 @@ export function getOrderHash (order)
         order.marginSplitPercentage
     ];
     return soliditySHA3(orderTypes, orderData);
+}
+
+/**
+ * @description Submit some datas to relay that will store in a short term (24H)
+ * @param host
+ * @param hash
+ * @param origin
+ * @returns {Promise.<*>}
+ */
+export function storeDatasInShortTerm (host, hash, origin)
+{
+    try
+    {
+        validator.validate({value: hash, type: 'STRING'});
+        validator.validate({value: origin, type: 'STRING'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    const body = {};
+    body.method = 'loopring_setOrderTransfer';
+    body.params = [{hash, origin}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }

@@ -131,8 +131,7 @@ export async function signEthereumTx (dpath, rawTx, ledgerConnect)
         t.s = toBuffer(0);
         return new Promise((resolve) =>
         {
-            ledgerConnect.ledger
-                .signTransaction_async(dpath, t.serialize().toString('hex'))
+            ledgerConnect.signTransaction_async(dpath, t.serialize().toString('hex'))
                 .then(result =>
                 {
                     const strTx = getTransactionFields(t);
