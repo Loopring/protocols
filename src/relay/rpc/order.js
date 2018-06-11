@@ -239,7 +239,7 @@ export function cancelOrder (host, {sign, orderHash, tokenS, tokenB, cutoff, typ
                 validator.validate({value: orderHash, type: 'ETH_DATA'});
                 break;
             case 2:
-
+                break;
             case 3:
                 validator.validate({value: cutoff, type: 'NUM'});
                 break;
