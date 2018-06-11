@@ -36,6 +36,11 @@ export default class Order
     {
         return storeDatasInShortTerm(this.host, hash, origin);
     }
+
+    cancelOrder (params)
+    {
+        return cancelOrder(this.host, params);
+    }
 }
 
 /**
@@ -205,4 +210,57 @@ export function storeDatasInShortTerm (host, hash, origin)
         method: 'post',
         body
     });
+}
+
+/**
+ * Cancel order by Relay
+ * @param host
+ * @param sign
+ * @param orderHash
+ * @param tokenS
+ * @param tokenB
+ * @param cutoff
+ * @param type
+ * @returns {*}
+ */
+export function cancelOrder (host, {sign, orderHash, tokenS, tokenB, cutoff, type})
+{
+    const {address, r, s, v} = sign;
+    try
+    {
+        validator.validate({value: address, type: 'ETH_ADDRESS'});
+        validator.validate({value: v, type: 'NUM'});
+        validator.validate({value: s, type: 'ETH_DATA'});
+        validator.validate({value: r, type: 'ETH_DATA'});
+        validator.validate({value: type, type: 'CANCEL_ORDER_TYPE'});
+        switch (type)
+        {
+            case 1:
+                validator.validate({value: orderHash, type: 'ETH_DATA'});
+                break;
+            case 2:
+
+            case 3:
+                validator.validate({value: cutoff, type: 'NUM'});
+                break;
+            case 4:
+                validator.validate({value: tokenS, type: 'ETH_ADDRESS'});
+                validator.validate({value: tokenB, type: 'ETH_ADDRESS'});
+                break;
+            default:
+        }
+        const body = {};
+        body.method = 'loopring_cancelOrder';
+        body.params = [{sign, orderHash, tokenS, tokenB, cutoff, type}];
+        body.id = id();
+        body.jsonrpc = '2.0';
+        return request(host, {
+            method: 'post',
+            body
+        });
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
 }
