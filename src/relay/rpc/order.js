@@ -250,7 +250,7 @@ export function cancelOrder (host, {sign, orderHash, tokenS, tokenB, cutoff, typ
             default:
         }
         const body = {};
-        body.method = 'loopring_cancelOrder';
+        body.method = 'loopring_flexCancelOrder';
         body.params = [{sign, orderHash, tokenS, tokenB, cutoff, type}];
         body.id = id();
         body.jsonrpc = '2.0';
