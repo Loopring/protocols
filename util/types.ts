@@ -1,7 +1,7 @@
 import { BigNumber } from "bignumber.js";
 
 export interface OrderParams {
-  loopringProtocol: string;
+  delegateContract: string;
   tokenS: string;
   tokenB: string;
   amountS: BigNumber;
@@ -24,34 +24,11 @@ export interface OrderParams {
   s?: string;
 }
 
-export interface LoopringSubmitParams {
-  addressList: string[][];
-  uintArgsList: BigNumber[][];
-  uint8ArgsList: number[][];
-  buyNoMoreThanAmountBList: boolean[];
-  vList: number[];
-  rList: string[];
-  sList: string[];
-  ringOwner: string;
-  feeRecepient: string;
-  feeSelections: number;
-}
-
-export interface FeeItem {
-  fillAmountS: number;
-  feeLrc: number;
-  feeS: number;
-  feeB: number;
-  lrcReward: number;
-}
-
-export interface BalanceItem {
-  balanceS: number;
-  balanceB: number;
-}
-
-export interface SignResult {
-  v: number;
-  r: string;
-  s: string;
+export interface RingsSubmitParams {
+  miningSpec: number;
+  orderSpecs: number[];
+  ringSpecs: number[][];
+  addressList: string[];
+  uintList: BigNumber[];
+  bytesList: string[];
 }

@@ -179,7 +179,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint16 miningSpec,
         uint16[] orderSpecs,
         uint8[][] ringSpecs,
-        address[] addressLists,
+        address[] addressList,
         uint[] uintList,
         bytes[] bytesList
         )
