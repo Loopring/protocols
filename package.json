@@ -38,8 +38,7 @@
     "truffle": "^4.1.11",
     "tslint": "5.8.0",
     "typescript": "2.7.1",
-    "web3-typescript-typings": "0.0.3",
-    "webpack": "^4.11.1"
+    "web3-typescript-typings": "0.10.2"
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.30",
@@ -60,6 +59,6 @@
     "js-sha3": "^0.7.0",
     "lodash": "^4.17.5",
     "npm": "^6.1.0",
-    "web3": "0.20.2"
+    "web3": "0.20.6"
   }
 }

@@ -175,6 +175,57 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
     }
 
+    event LogData(address a, uint i, bytes bs);
+
+    struct Test {
+        address a;
+        uint b;
+        uint8 c;
+        bytes32 d; // 32 * 4 = 128
+        bytes h;  // 42
+    }
+
+    function structCopyTest(bytes data) public {
+        Test memory t;
+        uint ptr;
+        assembly {
+            ptr := t
+        }
+
+        copyStruct(0, ptr, 0, 170);
+        emit LogData(t.a, t.b, t.h);
+    }
+
+    function copyStruct(
+        uint parameterIndex,
+        uint dst,
+        uint offsetInBytes,
+        uint numBytes
+        )
+        internal
+        pure
+    {
+        assembly {
+            let structOffset := add(4, mul(parameterIndex, 32))
+            calldatacopy(dst, add(structOffset, offsetInBytes), numBytes)
+        }
+    }
+
+    function copyCallDataBytesInArray(
+        uint parameterIndex,
+        uint dst,
+        uint offsetInBytes,
+        uint numBytes
+        )
+        internal
+        pure
+    {
+        assembly {
+            let parameterOffset := add(calldataload(add(4, mul(parameterIndex, 32))), 4)
+            calldatacopy(dst, add(add(parameterOffset, 32), offsetInBytes), numBytes)
+        }
+    }
+
     function submitRings(
         uint16 miningSpec,
         uint16[] orderSpecs,
@@ -196,7 +247,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
 
         Data.Inputs memory inputs = Data.Inputs(
-            addressLists,
+            addressList,
             uintList,
             bytesList,
             0, 0, 0  // current indices of addressLists, uintList, and bytesList.

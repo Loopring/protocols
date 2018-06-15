@@ -1,3 +1,6 @@
+import { BigNumber } from "bignumber.js";
+import BN = require("bn.js");
+import abi = require("ethereumjs-abi");
 import * as _ from "lodash";
 import { Artifacts } from "../util/artifacts";
 import { Ring } from "../util/ring";
@@ -45,17 +48,31 @@ contract("Exchange", (accounts: string[]) => {
   });
 
   describe("submitRing", () => {
-    it("should be able to fill ring with 2 orders", async () => {
-      const rings: Ring[] = ringsGenerator.generateRings();
-      const params: RingsSubmitParams = ringsGenerator.toSubmitableParam(rings);
-      exchange.submitRings(params.miningSpec,
-                           params.orderSpecs,
-                           params.ringSpecs,
-                           params.addressList,
-                           params.uintList,
-                           params.bytesList,
-                           {from: miner});
-      assert(true);
+    // it("should be able to fill ring with 2 orders", async () => {
+    //   const rings: Ring[] = ringsGenerator.generateRings();
+    //   const params: RingsSubmitParams = ringsGenerator.toSubmitableParam(rings);
+    //   exchange.submitRings(params.miningSpec,
+    //                        params.orderSpecs,
+    //                        params.ringSpecs,
+    //                        params.addressList,
+    //                        params.uintList,
+    //                        params.bytesList,
+    //                        {from: miner});
+    //   assert(true);
+    // });
+
+    it("bytes test", async () => {
+      const a = accounts[9];
+      const bn = new BigNumber(12345);
+      const c = 31;
+      const d = "xxxbbbcc";
+      const h = "ccccccccccccccccccccccccccdddddddddddddddd\
+ddddddddddddddddddxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\
+xxxxxxxxxxxxxxxxxxxxfffffffffffffffffffffffff987";
+
+      const paramsBytes = abi.rawEncode(["address", "uint256", "uint8", "bytes32", "bytes"],
+                                        [a, new BN(bn.toString(10), 10), c, d, h]);
+      console.log("paramsBytes:", paramsBytes.toString("hex"));
     });
 
   });
