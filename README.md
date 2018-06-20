@@ -1,72 +1,25 @@
 # Loopring Protocol Javascript Library
 
-**Development ongoing**
+Loopring.js is a javascript library. Loopring.js enables developers to quickly develop an Ethereum  wallet, interact with Loopring protocol and develop a decentralized exchange. 
 
-## Environment
+loopring.js is used in [project loopr](https://github.com/Loopring/loopr)  and [project circular](https://github.com/Loopring/circulr)
 
-You need to install [npm](https://www.npmjs.com/get-npm), [yarn](https://yarnpkg.com/lang/en/docs/cli/install/),[babel](https://babeljs.io/docs/en/index.html) and [webpack](https://github.com/webpack/webpack).
-
-## Compile
-
-Then run the following commands from project's root directory:
-
-```
-yarn install 
-```
-
-To build the dist directory and lib directory from the src director run the following:
-
-```
-npm run build
-```
-
-## Installation
+### Installation
 
 ```javascript
 npm install loopring.js --save
 ```
 
-## Browser Usage
+#### [Documentation](https://loopring.github.io/loopring.js/english)
 
-loopring.js ships as both a [UMD](https://github.com/umdjs/umd) module and a [CommonJS](https://en.wikipedia.org/wiki/CommonJS) package.
+loopring.js 是路印协议官方提供的javascript的开发者工具包。loopring.js 可以帮助开发者快速实现以太坊钱包功能，快速的接入路印协议，实现去中心化交易所功能。
 
-##### UMD Package
+loopring.js 已经被[loopr](https://github.com/Loopring/loopr)项目和[circular](https://github.com/Loopring/circulr)项目使用。
 
-Include the following script tags in your HTML:
-
-```javascript
-<script src="../node_modules/loopring/dist/loopring.min.js"></script>
-```
-
-To use the library in your JavaSrcipt code, get each component like so:
+### 获取
 
 ```javascript
-window.loopring.common
-window.loopring.ethereum
-window.loopring.relay
+npm install loopring.js --save
 ```
 
-##### CommonJS  Package
-
-```javascript
-import loopring from 'loopring.js';
-or
-import {relay} from 'loopring.js';
-or
-const loopring = require('loopring.js');
-```
-
-babel-polyfill is also required
-
-####  [中文开发者文档](https://github.com/Loopring/loopring.js/wiki/loopring.js-v2.0.0-%E4%B8%AD%E6%96%87%E5%BC%80%E5%8F%91%E8%80%85%E6%96%87%E6%A1%A3). 
-
-####  [English Documentation](https://github.com/Loopring/loopring.js/wiki/loopring.js-v2.0.0-English-Developer%E2%80%99s-Documentation)
-
-## Developers
-
-Before commit your changes or submit a pull request, please lint your code by running:
-
-```
-npm run lint
-npm run build
-```
+#### [文档](https://loopring.github.io/loopring.js/chinese)
