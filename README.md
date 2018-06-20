@@ -4,7 +4,7 @@
 
 ## Environment
 
-You need to install [npm](https://www.npmjs.com/get-npm), [yarn](https://yarnpkg.com/lang/en/docs/cli/install/), and [webpack](https://github.com/webpack/webpack).
+You need to install [npm](https://www.npmjs.com/get-npm), [yarn](https://yarnpkg.com/lang/en/docs/cli/install/),[babel](https://babeljs.io/docs/en/index.html) and [webpack](https://github.com/webpack/webpack).
 
 ## Compile
 
@@ -60,7 +60,7 @@ babel-polyfill is also required
 
 ####  [中文开发者文档](https://github.com/Loopring/loopring.js/wiki/loopring.js-v2.0.0-%E4%B8%AD%E6%96%87%E5%BC%80%E5%8F%91%E8%80%85%E6%96%87%E6%A1%A3). 
 
-####  English Documention is coming soon
+####  [English Documentation](https://github.com/Loopring/loopring.js/wiki/loopring.js-v2.0.0-English-Developer%E2%80%99s-Documentation)
 
 ## Developers
 
