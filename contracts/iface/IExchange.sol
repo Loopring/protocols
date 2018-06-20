@@ -100,12 +100,13 @@ contract IExchange {
 
     /// @dev Submit a order-ring for validation and settlement.
     function submitRings(
-        uint16 miningSpec,
-        uint16[] orderSpecs,
-        uint8[][] ringSpecs,
-        address[] addressList,
-        uint[] uintList,
-        bytes[] bytesList
+        /* uint16 miningSpec, */
+        /* uint16[] orderSpecs, */
+        /* // uint8[][] ringSpecs, */
+        /* address[] addressList, */
+        /* uint[] uintList, */
+        /* bytes[] bytesList */
+        bytes data
         )
         public;
 }

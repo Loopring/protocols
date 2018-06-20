@@ -35,6 +35,12 @@ export class Bitstream {
     }
   }
 
+  public addRawBytes(bs: string) {
+    const bsHex = web3.toHex(bs);
+    console.log("bsHex:", bsHex);
+    this.data += bsHex.slice(2);
+  }
+
   private padString(x: string, targetLength: number) {
     if (x.length > targetLength) {
       throw Error("0x" + x + " is too big to fit in the requested length (" + targetLength + ")");

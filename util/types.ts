@@ -24,11 +24,37 @@ export interface OrderParams {
   s?: string;
 }
 
-export interface RingsSubmitParams {
+export interface RingsSubmitParam {
   miningSpec: number;
   orderSpecs: number[];
   ringSpecs: number[][];
   addressList: string[];
   uintList: BigNumber[];
   bytesList: string[];
+}
+
+export interface RingInfo {
+  amountSList: number[];
+  amountBList: number[];
+  lrcFeeAmountList?: number[];
+  miner?: string;
+  orderOwners?: string[];
+  tokenAddressList?: string[];
+  authAddressList?: string[];
+  walletAddrList?: string[];
+  marginSplitPercentageList?: number[];
+  buyNoMoreThanAmountBList?: boolean[];
+  feeSelections?: number[];
+  spendableAmountSList?: number[];
+  spendableLrcFeeAmountList?: number[];
+  orderFilledOrCancelledAmountList?: number[];
+  description?: string;
+  salt?: number;
+  verbose?: boolean;
+  id?: string;
+}
+
+export interface RingsInfo {
+  description?: string;
+  ringInfoList: RingInfo[];
 }
