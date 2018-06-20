@@ -1,8 +1,3 @@
----
----
-
-@import "{{ site.theme }}";
-
 ## gas cost for ring with 3 orders:  
    gas price: 21Gwei
     
