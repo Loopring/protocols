@@ -366,7 +366,8 @@ export class LedgerAccount extends Account
 
     async signMessage (message)
     {
-        const result = await Ledger.signMessage(this.dpath, message, this.ledger);
+        const hash = clearHexPrefix(toHex(sha3(message)));
+        const result = await Ledger.signMessage(this.dpath, hash, this.ledger);
         if (result.error)
         {
             throw new Error(result.error.message);
