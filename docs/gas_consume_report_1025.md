@@ -2,7 +2,7 @@
 
 The following measurements usge 21Gwei as gas price.
 
-## Gas Usage for a Ring of 3 Orders:  
+## A Ring of 3 Orders:  
     
 | Function                                       |        ETH           |
 | ------                                         | ------               |
