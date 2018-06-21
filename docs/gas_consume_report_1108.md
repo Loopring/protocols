@@ -1,4 +1,9 @@
-## gas cost for ring with 2 orders:  
+# Gas Usage at Oct-26-2017
+
+The following measurements usge 21Gwei as gas price.
+
+## Gas Usage for a Ring of 2 Orders:  
+
     
 | Function or Code Segment                     | GAS    |
 | ------                                       | ------ |
@@ -18,7 +23,7 @@
 | total                                        | 369718 |
 
 
-## gas cost for ring with 3 orders:  
+## Gas Usage for a Ring of 3 Orders:   
     
 | Function or Code Segment                     | GAS    |
 | ------                                       | ------ |
