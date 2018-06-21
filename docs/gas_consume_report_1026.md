@@ -1,4 +1,6 @@
-## gas cost for ring with 2 orders:  
+# Gas Usage at Oct-26-2017
+
+## Gas Usage for a Ring of 2 Orders:  
    gas price: 21Gwei
     
 | Function                                       |        ETH           |
