@@ -22,7 +22,7 @@
 | total                                          | 0.008721321000009727 |
 
 
-## gas cost for ring with 3 orders:  
+## Gas Usage for a Ring of 3 Orders:  
    gas price: 21Gwei
     
 | Function                                       |        ETH           |
