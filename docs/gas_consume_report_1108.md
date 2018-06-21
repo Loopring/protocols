@@ -2,7 +2,7 @@
 
 The following measurements usge 21Gwei as gas price.
 
-## Gas Usage for a Ring of 2 Orders:  
+## A Ring of 2 Orders:  
 
     
 | Function or Code Segment                     | GAS    |
@@ -23,7 +23,7 @@ The following measurements usge 21Gwei as gas price.
 | total                                        | 369718 |
 
 
-## Gas Usage for a Ring of 3 Orders:   
+## A Ring of 3 Orders:   
     
 | Function or Code Segment                     | GAS    |
 | ------                                       | ------ |
