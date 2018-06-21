@@ -1,4 +1,4 @@
-# loopring.js 开发者中文文档
+# 简介
 
 该开发者文档主要介绍如果使用loopring.js接入路印协议。文档主要包括两个部分，Ethereum 部分和Relay接入部分。
 
