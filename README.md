@@ -15,10 +15,6 @@ npm install
 npm run compile
 ```
 
-## Deployment on Ethereum Mainnet:
-- LRC - https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md#protocol-token---lrc
-- Protocol deployments: https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md#protocol
-
 ## Run Unit Tests
 * run `npm run testrpc` from project's root directory in terminal.
 * run `npm run test` from project's root directory in another terminal window.
@@ -40,3 +36,6 @@ docker-compose logs -f test
 ```
 
 The logs command is optional but will give you an easy to read output of the tests without the output from testrpc mixed in (though the combination of both is good for debugging and is why they're not being silenced.)
+
+## More
+For more information, please check out https://loopring.github.io/protocol.
