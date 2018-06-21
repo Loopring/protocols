@@ -1,5 +1,3 @@
-# Loopring Protocol
-
 ## Design
 
 Please check out our [whitepaper](https://github.com/Loopring/whitepaper/raw/master/en_whitepaper.pdf) to understand the design and features of the Loopring Protocol.
