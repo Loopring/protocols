@@ -1,4 +1,4 @@
-Loopring.js English Developer’s Documentation
+# Loopring.js English Developer’s Documentation
 
 This developer documentation introduces the use of loopring.js to access Loopring’s Protocol. The Document consists of two sections: Ethereum and the Relay.
 
