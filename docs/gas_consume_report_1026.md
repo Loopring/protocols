@@ -1,7 +1,8 @@
 # Gas Usage at Oct-26-2017
 
+The following measurements usge 21Gwei as gas price.
+
 ## Gas Usage for a Ring of 2 Orders:  
-   gas price: 21Gwei
     
 | Function                                       |        ETH           |
 | ------                                         | ------               |
