@@ -2,13 +2,7 @@ import { BigNumber } from "bignumber.js";
 import { Bitstream } from "./bitstream";
 import { Order } from "./order";
 import { Ring } from "./ring";
-import { ringsInfoList } from "./ringsConfig";
-import { OrderParams, RingInfo, RingsInfo, RingsSubmitParam } from "./types";
-
-export interface Rings {
-  description?: string;
-  rings: Ring[];
-}
+import { OrderInfo, RingsInfo, RingsSubmitParam } from "./types";
 
 export class RingsGenerator {
   public delegateContractAddr: string;
@@ -20,73 +14,11 @@ export class RingsGenerator {
     this.currBlockTimeStamp = currBlockTimeStamp;
   }
 
-  public getRingsInfoList() {
-    return ringsInfoList;
-  }
-
-  public async ringsInfoToRings(ringsInfo: RingsInfo) {
-    const rings: Ring[] = [];
-    for (const ringInfo of ringsInfo.ringInfoList) {
-      const ring = await this.generateRing(ringInfo);
-      rings.push(ring);
-    }
-
-    const ringsObj = {
-      description: ringsInfo.description,
-      rings,
-    };
-
-    return ringsObj;
-  }
-
-  public async generateRing(ringInfo: RingInfo) {
-    const ringSize = ringInfo.amountSList.length;
-    const salt = ringInfo.salt ? ringInfo.salt : 0;
-
-    const orders: Order[] = [];
-    for (let i = 0; i < ringSize; i ++) {
-      const nextIndex = (i + 1) % ringSize;
-
-      const orderParam: OrderParams = {
-        delegateContract: this.delegateContractAddr,
-        tokenS: ringInfo.tokenAddressList[i],
-        tokenB: ringInfo.tokenAddressList[nextIndex],
-        amountS: new BigNumber(ringInfo.amountSList[i]),
-        amountB: new BigNumber(ringInfo.amountBList[i]),
-        validSince: new BigNumber(this.currBlockTimeStamp - 60),
-        validUntil: new BigNumber(this.currBlockTimeStamp + 3600 + salt),
-        lrcFee: new BigNumber(ringInfo.lrcFeeAmountList[i]),
-        buyNoMoreThanAmountB: ringInfo.buyNoMoreThanAmountBList[i],
-        marginSplitPercentage: ringInfo.marginSplitPercentageList[i],
-        authAddr: ringInfo.authAddressList[i],
-        walletAddr: ringInfo.walletAddrList[i],
-      };
-
-      const order = new Order(ringInfo.orderOwners[i], orderParam);
-      await order.signAsync();
-      orders.push(order);
-    }
-
-    const ring = new Ring(ringInfo.miner, orders, ringInfo.feeSelections);
-    await ring.signAsync();
-
-    return ring;
-  }
-
   public toSubmitableParam(rings: RingsInfo) {
-    // const ringsObj = this.ringsInfoToRings(rings);
-    const param: RingsSubmitParam = {
-      miningSpec: 8,
-      orderSpecs: [0],
-      ringSpecs: [[0]],
-      addressList: ["0x17233e07c67d086464fD408148c3ABB56245FA64"],
-      uintList: [new BigNumber(0)],
-      bytesList: ["xxx", "ccc"],
-    };
+    const param = this.ringsToParam(rings);
 
     const encodeSpecs: number[] = [];
     const len = 5 + param.ringSpecs.length + param.bytesList.length;
-    console.log("encode specs len:", len);
     encodeSpecs.push(len);
     encodeSpecs.push(param.orderSpecs.length);
     encodeSpecs.push(param.ringSpecs.length);
@@ -99,14 +31,114 @@ export class RingsGenerator {
     return this.submitParamToBytes(param, encodeSpecs);
   }
 
+  private ringsToParam(ringsInfo: RingsInfo) {
+    const param: RingsSubmitParam = {
+      miningSpec: 0,
+      orderSpecs: [],
+      ringSpecs: [],
+      addressList: [],
+      uintList: [],
+      bytesList: [],
+    };
+
+    this.calculateMiningSepc(ringsInfo, param);
+    ringsInfo.orders.map((o) => this.calculateOrderSpec(o, param));
+    return param;
+  }
+
+  private calculateMiningSepc(ringsInfo: RingsInfo, param: RingsSubmitParam) {
+    let miningSpec = 0;
+    if (ringsInfo.feeRecipient) {
+      miningSpec += 1;
+      param.addressList.push(ringsInfo.feeRecipient);
+    }
+
+    if (ringsInfo.miner) {
+      miningSpec += 1 << 1;
+      param.addressList.push(ringsInfo.miner);
+    }
+
+    if (ringsInfo.sig) {
+      miningSpec += 1 << 2;
+      param.bytesList.push(ringsInfo.sig);
+    }
+
+    param.miningSpec = miningSpec;
+  }
+
+  private calculateOrderSpec(order: OrderInfo, param: RingsSubmitParam) {
+    param.addressList.push(order.owner);
+    param.addressList.push(order.delegateContract);
+    param.addressList.push(order.tokenS);
+    param.addressList.push(order.tokenB);
+    param.uintList.push(new BigNumber(order.amountS));
+    param.uintList.push(new BigNumber(order.amountB));
+    param.uintList.push(new BigNumber(order.lrcFee));
+
+    let spec = 0;
+    if (order.dualAuthAddr) {
+      spec += 1;
+      param.addressList.push(order.dualAuthAddr);
+    }
+    if (order.broker) {
+      spec += 1 << 1;
+      param.addressList.push(order.broker);
+    }
+    if (order.orderInterceptor) {
+      spec += 1 << 2;
+      param.addressList.push(order.orderInterceptor);
+    }
+    if (order.walletAddr) {
+      spec += 1 << 3;
+      param.addressList.push(order.walletAddr);
+    }
+
+    if (order.validSince) {
+      spec += 1 << 4;
+      param.uintList.push(new BigNumber(order.validSince));
+    }
+    if (order.validUntil) {
+      spec += 1 << 5;
+      param.uintList.push(new BigNumber(order.validUntil));
+    }
+    if (order.buyNoMoreThanAmountB) {
+      spec += 1 << 6;
+      param.uintList.push(new BigNumber(1));
+    }
+    if (order.allOrNone) {
+      spec += 1 << 7;
+      param.uintList.push(new BigNumber(1));
+    }
+
+    if (order.sig) {
+      spec += 1 << 8;
+      param.bytesList.push(order.sig);
+    }
+    if (order.dualAuthSig) {
+      spec += 1 << 9;
+      param.bytesList.push(order.dualAuthSig);
+    }
+
+    console.log("order spec:", spec);
+    param.orderSpecs.push(spec);
+  }
+
+  private calculateRingSpec(ring: number[]) {
+    // TODO
+    return [1, 1];
+  }
+
   private submitParamToBytes(param: RingsSubmitParam, encodeSpecs: number[]) {
+    console.log("encodeSpecs:", encodeSpecs);
+    console.log("param.orderSpecs:", param.orderSpecs);
+
     const stream = new Bitstream();
     encodeSpecs.forEach((i) => stream.addNumber(i, 2));
     stream.addNumber(param.miningSpec, 2);
     param.orderSpecs.forEach((i) => stream.addNumber(i, 2));
     const ringSpecsFlattened = [].concat(...param.ringSpecs);
     ringSpecsFlattened.forEach((i) => stream.addNumber(i, 1));
-    param.addressList.forEach((a) => stream.addAddress(a));
+    param.addressList.forEach((a) => stream.addAddress(a, 32));
     param.uintList.forEach((bn) => stream.addBigNumber(bn));
     param.bytesList.forEach((bs) => stream.addRawBytes(bs));
 

@@ -57,7 +57,7 @@ library Data {
         // computed fields
         bytes32 hash;
         address interceptor;
-        uint    spendableLRC;
+        /* uint    spendableLRC; */  // no lrc reward, so this field is unused.
     }
 
     struct Order {

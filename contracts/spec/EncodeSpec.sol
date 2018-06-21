@@ -20,67 +20,93 @@ pragma experimental "ABIEncoderV2";
 
 import "../impl/Data.sol";
 
-/// encode spec:
-///            len(encodeSpecs)  len(orderSpecs)
-///                |                    |
-/// uint16 array:  0                    1
+/// encode spec expanlation:
+/// uint16[]:
+/// ------------------------------
+/// | index | field              |
+/// ------------------------------
+/// | 0     | encodeSpecs length |
+/// ------------------------------
+/// | 1     | orderSpecs length  |
+/// ------------------------------
+/// | 2     | ringSpecs length   |
+/// ------------------------------
+/// | 3     | addressList length |
+/// ------------------------------
+/// | 4     | uintList length    |
+/// ------------------------------
+/// | 5     | bytesList length   |
+/// ------------------------------
+/// | 6     | ringSpecs i length |
+/// ------------------------------
+/// | 6     | bytes[i] length    |
+/// ------------------------------
 /// @title Encode spec for SumitRings parameters.
 /// @author Kongliang - <kongliang@loopring.org>.
 library EncodeSpec {
-    function orderSpecSize(uint spec)
+    function orderSpecSize(uint16[] spec)
         internal
         pure
-        returns (uint)
+        returns (uint16)
     {
-        return 0;
+        return spec[1];
     }
 
-    function ringSpecSize(uint spec)
+    function ringSpecSize(uint16[] spec)
         internal
         pure
-        returns (uint)
+        returns (uint16)
     {
-        return 0;
+        return spec[2];
     }
 
-    function ringSpecSizeI(uint spec, uint i)
+    /// i: index of ringSpecs[i], starts from 0.
+    function ringSpecSizeI(uint16[] spec, uint i)
         internal
         pure
-        returns (uint)
+        returns (uint16)
     {
-        return 0;
+        uint ringSize = ringSpecSize(spec);
+        require(i < ringSize);
+        uint ind = 6 + i;
+        return spec[ind];
     }
 
-    function addressListSize(uint spec)
+    function addressListSize(uint16[] spec)
         internal
         pure
-        returns (uint)
+        returns (uint16)
     {
-        return 0;
+        return spec[3];
     }
 
-    function uintListSize(uint spec)
+    function uintListSize(uint16[] spec)
         internal
         pure
-        returns (uint)
+        returns (uint16)
     {
-        return 0;
+        return spec[4];
     }
 
-    function bytesListSize(uint spec)
+    function bytesListSize(uint16[] spec)
         internal
         pure
-        returns (uint)
+        returns (uint16)
     {
-        return 0;
+        return spec[5];
     }
 
-    function bytesListSizeI(uint spec, uint i)
+    function bytesListSizeI(uint16[] spec, uint i)
         internal
         pure
-        returns (uint)
+        returns (uint16)
     {
-        return 0;
+        uint bytesListSize = bytesListSize(spec);
+        require(i < bytesListSize);
+
+        uint ringSize = ringSpecSize(spec);
+        uint ind = 6 + ringSize + i;
+        return spec[ind];
     }
 
 }

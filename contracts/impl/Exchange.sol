@@ -34,6 +34,7 @@ import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
 import "../lib/NoDefaultFunc.sol";
 
+import "../spec/EncodeSpec.sol";
 import "../spec/OrderSpecs.sol";
 import "../spec/MiningSpec.sol";
 import "../spec/RingSpecs.sol";
@@ -59,6 +60,7 @@ import "./Data.sol";
 contract Exchange is IExchange, NoDefaultFunc {
     using MathUint      for uint;
     using MiningSpec    for uint16;
+    using EncodeSpec    for uint16[];
     using OrderSpecs    for uint16[];
     using RingSpecs     for uint8[][];
     using OrderHelper     for Data.Order;
@@ -186,63 +188,11 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
     }
 
-    event LogData(address a, uint i, uint i8, bytes32 bs);
-    event LogBytes(bytes d);
+    /* event LogParam(uint16 miningSpec, uint16[] orderSpecs, address[] addressList, uint[] uintList); */
 
-    struct Test {
-        address a;
-        uint b;
-        uint c;
-        bytes32 d; // 32 * 4 = 128
-    }
+    /* event Log2DArr(uint8[] uis); */
 
-    function structCopyTest(bytes data) public {
-        emit LogBytes(msg.data);
-        Test memory t;
-        uint ptr;
-        assembly {
-            ptr := t
-        }
-
-        MemoryUtil.copyCallDataBytesInArray(0, ptr, 0, 270);
-        //copyStruct(0, ptr, 0, 270);
-        emit LogData(t.a, t.b, t.c, t.d);
-    }
-
-    function copyStruct(
-        uint parameterIndex,
-        uint dst,
-        uint offsetInBytes,
-        uint numBytes
-        )
-        internal
-        pure
-    {
-        assembly {
-            let structOffset := add(32, add(4, mul(parameterIndex, 32)))
-            calldatacopy(dst, structOffset, numBytes)
-        }
-    }
-
-    function copyCallDataBytesInArray(
-        uint parameterIndex,
-        uint dst,
-        uint offsetInBytes,
-        uint numBytes
-        )
-        internal
-        pure
-    {
-        assembly {
-            let parameterOffset := add(calldataload(add(4, mul(parameterIndex, 32))), 4)
-            calldatacopy(dst, add(add(parameterOffset, 32), offsetInBytes), numBytes)
-        }
-    }
-
-    event LogParam(uint16 miningSpec, uint16[] orderSpecs, address[] addressList, uint[] uintList);
-
-    event Log2DArr(uint8[] uis);
-    event LogInt(uint16 i16);
+    event LogInt16(uint16 i16);
     event LogIntArr(uint16[] arr);
 
     function submitRings(
@@ -253,13 +203,37 @@ contract Exchange is IExchange, NoDefaultFunc {
         // emit LogBytes(data);
         uint16 encodeSpecsLen = uint16(MemoryUtil.bytesToUintX(data, 0, 2));
         // emit LogInt(encodeSpecsLen);
-        uint16[] memory encodeSpecs = new uint16[](encodeSpecsLen);
-        for (uint i = 0; i < encodeSpecsLen; i ++) {
-            uint offset = 2 + i * 2;
+        uint16[] memory encodeSpecs = new uint16[](encodeSpecsLen + 1);
+        encodeSpecs[0] = encodeSpecsLen;
+        uint offset = 2;
+        for (uint i = 1; i < encodeSpecsLen + 1; i ++) {
             uint16 spec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
             encodeSpecs[i] = spec;
+            offset += 2;
         }
-        emit LogIntArr(encodeSpecs);
+
+        uint16 miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
+        emit LogInt16(miningSpec);
+        offset += 2;
+
+        uint orderSpecsLen = encodeSpecs.orderSpecSize();
+        uint16[] memory orderSpecs = new uint16[](orderSpecsLen);
+        for (uint i = 0; i < orderSpecsLen; i++) {
+            uint16 orderSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
+            orderSpecs[i] = orderSpec;
+            offset += 2;
+        }
+
+        // no ring specs for now.
+
+        uint addressListSize = encodeSpecs.addressListSize();
+
+
+        uint uintListSize = encodeSpecs.uintListSize();
+        uint bytesListSize = encodeSpecs.bytesListSize();
+
+        /* emit LogIntArr(encodeSpecs); */
+        /* emit LogIntArr(orderSpecs); */
         /* uint8[][] memory ringSpecs = new uint8[][](3); */
         /* uint8[] memory spec1 = new uint8[](2); */
         /* spec1[0] = 19; */
@@ -278,43 +252,43 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         internal
     {
-        emit LogParam(miningSpec, orderSpecs, addressList, uintList);
-        /* Data.Context memory ctx = Data.Context( */
-        /*     lrcTokenAddress, */
-        /*     ITokenRegistry(tokenRegistryAddress), */
-        /*     ITradeDelegate(delegateAddress), */
-        /*     IBrokerRegistry(orderBrokerRegistryAddress), */
-        /*     IBrokerRegistry(minerBrokerRegistryAddress), */
-        /*     IOrderRegistry(orderRegistryAddress), */
-        /*     IMinerRegistry(minerRegistryAddress) */
-        /* ); */
+        // emit LogParam(miningSpec, orderSpecs, addressList, uintList);
+        Data.Context memory ctx = Data.Context(
+            lrcTokenAddress,
+            ITokenRegistry(tokenRegistryAddress),
+            ITradeDelegate(delegateAddress),
+            IBrokerRegistry(orderBrokerRegistryAddress),
+            IBrokerRegistry(minerBrokerRegistryAddress),
+            IOrderRegistry(orderRegistryAddress),
+            IMinerRegistry(minerRegistryAddress)
+        );
 
-        /* Data.Inputs memory inputs = Data.Inputs( */
-        /*     addressList, */
-        /*     uintList, */
-        /*     bytesList, */
-        /*     0, 0, 0  // current indices of addressLists, uintList, and bytesList. */
-        /* ); */
+        Data.Inputs memory inputs = Data.Inputs(
+            addressList,
+            uintList,
+            bytesList,
+            0, 0, 0  // current indices of addressLists, uintList, and bytesList.
+        );
 
-        /* Data.Mining memory mining = Data.Mining( */
-        /*     inputs.nextAddress(), */
-        /*     (miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0)), */
-        /*     (miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0)), */
-        /*     bytes32(0x0), // hash */
-        /*     address(0x0),  // interceptor */
-        /*     getSpendable( */
-        /*         ctx.delegate, */
-        /*         ctx.lrcTokenAddress, */
-        /*         tx.origin, // TODO(daniel): pay from msg.sender? */
-        /*         0x0, // broker */
-        /*         0x0  // brokerInterceptor */
-        /*     ) */
-        /* ); */
+        Data.Mining memory mining = Data.Mining(
+            inputs.nextAddress(),
+            (miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0)),
+            (miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0)),
+            bytes32(0x0), // hash
+            address(0x0)  // interceptor
+            /* getSpendable( */
+            /*     ctx.delegate, */
+            /*     ctx.lrcTokenAddress, */
+            /*     tx.origin, // TODO(daniel): pay from msg.sender? */
+            /*     0x0, // broker */
+            /*     0x0  // brokerInterceptor */
+            /* ) */
+        );
 
-        /* Data.Order[] memory orders = orderSpecs.assembleOrders(inputs); */
-        /* Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs); */
+        Data.Order[] memory orders = orderSpecs.assembleOrders(inputs);
+        Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
 
-        /* handleSubmitRings(ctx, mining, orders, rings); */
+        handleSubmitRings(ctx, mining, orders, rings);
     }
 
     function handleSubmitRings(
