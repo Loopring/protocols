@@ -4,7 +4,7 @@
 
 Ethereum 部分主要针对以太坊钱包功能。可以实现以太坊账户的生成，私钥解锁，助记词解锁与生成，keystore 的解锁生成，MetaMask的接入，Trezor 以及Ledger等硬件钱包的接入都账户功能，可以实现以太坊交易的签名，实现信息签名，路印订单签名等签名功能，可以实现以太坊合约调用中abi功能以及abi信息的解析。同时该部分还实现了部分以太坊JSON-RPC的接口，包括eth_getTransactionCount，eth_sendRawTransaction，eth_gasPrice，eth_estimateGas，eth_getBalance，eth_getTransactionByHash，eth_call。
 
-Relay 部分主要针对Loopring Relay的接口接入，包括JSON-RPC 接口和SocketIO接口。具体的接口详情见[Loopring Relay 接入文档](https://github.com/Loopring/relay/blob/wallet_v2/LOOPRING_RELAY_API_SPEC_V2.md)。
+Relay 部分主要针对Loopring Relay的接口接入，包括JSON-RPC 接口和SocketIO接口。具体的接口详情见[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2)。
 
 ## 浏览器端使用方法
 
@@ -1635,7 +1635,7 @@ const ethNode = new Eth(host);
 
 获取指定owner的账户余额，以及对路印delegateAddress的授权值。
 
-详情参考[Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getbalance)
+详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getbalance)
 
 ##### 代码样例
 
@@ -1649,31 +1649,31 @@ const response = relay.account.getBalance({owner,delegataAddress});
 
 向relay注册指定的owner地址。注册以后，relay会解析存储该地址的相关Ethereum txs。
 
-详情参考[Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_unlockwallet)
+详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_unlockwallet)
 
 ##### notifyTransactionSubmitted({txHash, rawTx, from})
 
 通知Relay 已经发送的以太坊tx。relay会跟踪tx的状态。
 
-详情参考[Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_notifytransactionsubmitted)
+详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_notifytransactionsubmitted)
 
 ##### getTransactions({owner, status, txHash, pageIndex, pageSize})
 
 获取指定owner的以太坊txs
 
-详情参考[Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_gettransactions)
+详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_gettransactions)
 
 ##### getFrozenLrcFee(owner)
 
 获得指定Owner的有效订单需要的LRC Fee的总和。
 
-详情参考[Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getgetfrozenlrcfee)
+详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getgetfrozenlrcfee)
 
 ##### getPortfolio(owner)
 
 获得指定owner 地址的portfolio
 
-详情参考 [Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getportfolio)
+详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getportfolio)
 
 ##### Market
 
@@ -1683,43 +1683,43 @@ const response = relay.account.getBalance({owner,delegataAddress});
 
 获得Relay支持的所有token的指定Currency的价格
 
-详情参考[Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getpricequote)
+详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getpricequote)
 
 ##### getSupportedMarket()
 
 获得Relay支持的所有市场
 
-详情参考 [Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getsupportedmarket)
+详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getsupportedmarket)
 
 ##### getSupportedTokens()
 
 获得Relay支持的所有token
 
-详情参考 [Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getsupportedtokens)
+详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getsupportedtokens)
 
 ##### getDepth(filter)
 
 获得市场的深度
 
- 详情参考 [Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getdepth)
+ 详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getdepth)
 
 ##### getTicker()
 
 获得Loopring 所有市场的24小时合并的成交统计
 
-详情参考 [Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getticker)
+详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getticker)
 
 ##### getTickers(market)
 
 获得注定市场多个交易所24小时合并的成交统计
 
-详情参考 [Loopring Relay的接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_gettickers)
+详情参考 [Loopring Relay的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_gettickers)
 
 ##### getTrend({market, interval})
 
 获得多个交易所指定市场在指定interval的价格变化等趋势信息
 
-详情参考[Loopring Relay 的接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_gettrend)
+详情参考[Loopring Relay 的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_gettrend)
 
 ##### Order
 
@@ -1729,19 +1729,19 @@ const response = relay.account.getBalance({owner,delegataAddress});
 
 获得路印的订单列表
 
-详情参考[Loopring Relay 的接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getorders)
+详情参考[Loopring Relay 的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getorders)
 
 ##### getCutoff({address, delegateAddress, blockNumber})
 
 获得注定address，在对应loopring 的delegateAddress 的cut off 时间戳。 cut off 对应时间之前的订单会被取消。
 
-详情参考[ Loopring Relay的接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getcutoff)
+详情参考[ Loopring Relay的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getcutoff)
 
 ##### placeOrder(order)
 
 提交订单到Loopring Relay
 
-详情参考[Loopring Relay的接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_submitorder)
+详情参考[Loopring Relay的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_submitorder)
 
 ##### getOrderHash(order)
 
@@ -1755,23 +1755,23 @@ const response = relay.account.getBalance({owner,delegataAddress});
 
 获得已经撮合的环路
 
-详情参考 [Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getringmined)
+详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getringmined)
 
 ##### getRingMinedDetail({ringIndex, protocolAddress})
 
 获得ring的详细信息
 
-详情参考 [Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getRingMinedDetail)
+详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getRingMinedDetail)
 
 getFills(filter)
 
 获取订单撮合历史记录
 
-详情参考 [Loopring Relay 接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md#loopring_getfills)
+详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getfills)
 
 ##### socket
 
-Loopring Relay 使用socket.io 实现Web Socket。Loopring Relay 的socket 事件列表详情见[Loopring Relay接入文档](https://github.com/Loopring/relay-cluster/blob/master/LOOPRING_RELAY_API_SPEC_V2.md)
+Loopring Relay 使用socket.io 实现Web Socket。Loopring Relay 的socket 事件列表详情见[Loopring Relay接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2)
 
 ##### 构造方法
 
