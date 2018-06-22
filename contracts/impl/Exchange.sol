@@ -221,6 +221,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint offset = 2;
         uint16[] memory encodeSpecs = data.copyToUint16Array(offset, encodeSpecsLen);
         offset += 2 * encodeSpecsLen;
+        emit LogIntArr(encodeSpecs);
+
         uint16 miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
         offset += 2;
         uint16[] memory orderSpecs = data.copyToUint16Array(
@@ -228,7 +230,6 @@ contract Exchange is IExchange, NoDefaultFunc {
             encodeSpecs.orderSpecSize()
         );
         offset += 2 * encodeSpecs.orderSpecSize();
-        // emit LogIntArr(encodeSpecs);
 
         address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
         emit LogAddrArr(addressList);

@@ -22,25 +22,23 @@ import "../impl/Data.sol";
 
 /// encode spec expanlation:
 /// uint16[]:
-/// ------------------------------
-/// | index | field              |
-/// ------------------------------
-/// | 0     | encodeSpecs length |
-/// ------------------------------
-/// | 1     | orderSpecs length  |
-/// ------------------------------
-/// | 2     | ringSpecs length   |
-/// ------------------------------
-/// | 3     | addressList length |
-/// ------------------------------
-/// | 4     | uintList length    |
-/// ------------------------------
-/// | 5     | bytesList length   |
-/// ------------------------------
-/// | 6     | ringSpecs i length |
-/// ------------------------------
-/// | 6     | bytes[i] length    |
-/// ------------------------------
+/// --------------------------------
+/// | index    | field             |
+/// --------------------------------
+/// | 0        | orderSpecs length |
+/// --------------------------------
+/// | 1        | ringSpecs length  |
+/// --------------------------------
+/// | 2        | addressList length|
+/// --------------------------------
+/// | 3        | uintList length   |
+/// --------------------------------
+/// | 4        | bytesList length  |
+/// --------------------------------
+/// | 5 ~ 4+i  | ringSpecs i length|
+/// --------------------------------
+/// | 4+i ~    | bytes[i] length   |
+/// --------------------------------
 /// @title Encode spec for SumitRings parameters.
 /// @author Kongliang - <kongliang@loopring.org>.
 library EncodeSpec {
@@ -49,7 +47,7 @@ library EncodeSpec {
         pure
         returns (uint16)
     {
-        return spec[1];
+        return spec[0];
     }
 
     function ringSpecSize(uint16[] spec)
@@ -57,7 +55,7 @@ library EncodeSpec {
         pure
         returns (uint16)
     {
-        return spec[2];
+        return spec[1];
     }
 
     /// i: index of ringSpecs[i], starts from 0.
@@ -77,7 +75,7 @@ library EncodeSpec {
         pure
         returns (uint16)
     {
-        return spec[3];
+        return spec[2];
     }
 
     function uintListSize(uint16[] spec)
@@ -85,7 +83,7 @@ library EncodeSpec {
         pure
         returns (uint16)
     {
-        return spec[4];
+        return spec[3];
     }
 
     function bytesListSize(uint16[] spec)
@@ -93,7 +91,7 @@ library EncodeSpec {
         pure
         returns (uint16)
     {
-        return spec[5];
+        return spec[4];
     }
 
     function bytesListSizeI(uint16[] spec, uint i)
