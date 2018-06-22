@@ -10,7 +10,7 @@ Relay 部分主要针对Loopring Relay的接口接入，包括JSON-RPC 接口和
 
 loopring.js包含UMD规范的版本和CommonJS规范的版本
 
-##### UMD 规范包
+### UMD 规范包
 
 通过下面的方式引入 loopring.min.js
 
@@ -26,7 +26,7 @@ window.loopring.ethereum
 window.loopring.relay
 ```
 
-##### CommonJS  规范包  (要求引入babel-polyfill)
+### CommonJS  规范包  (要求引入babel-polyfill)
 
 ```javascript
 import loopring from 'loopring.js';
@@ -40,17 +40,17 @@ const loopring = require('loopring.js');
 
 ### Account
 
-##### path
+#### path
 
 常量，路印钱包中使用的dpath，（m/44'/60'/0'/0）
 
-##### privateKeytoAddress(privatekey)
+#### privateKeytoAddress(privatekey)
 
 通过私钥获取地址
 
 ##### 参数
 
-- privatekey  hex string| Buffer
+- privatekey  hex string or  Buffer
 
 #####  返回值
 
@@ -63,13 +63,13 @@ const pKey = "07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466bf9e";
 privateKeytoAddress(pkey); //address:0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A
 ```
 
-##### publicKeytoAddress（publicKey，sanitize）
+#### publicKeytoAddress（publicKey，sanitize）
 
 通过公钥获得地址
 
 ##### 参数
 
-- publicKey	hex string  | Buffer
+- publicKey	hex string  or Buffer
 - sanitize           bool 默认是false
 
 ##### 返回值
@@ -83,13 +83,13 @@ const publicKey = "0895b915149d15148ac4171f453060d6b53a9ebb694689351df8e3a49c109
 publicKeytoAddress(publicKey)//address:0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A
 ```
 
-##### privateKeytoPublic(privatekey)
+#### privateKeytoPublic(privatekey)
 
 通过私钥获取公钥
 
 ##### 参数
 
-- privateKey hex string | Buffer
+- privateKey hex string Buffer
 
 ##### 返回值
 
@@ -103,7 +103,7 @@ const publicKey = privateKeytoPublic(privateKey);
 //publicKey:"0895b915149d15148ac4171f453060d6b53a9ebb694689351df8e3a49c109c7a65374b5c196ce8cc35ff79cb3ce54ea1695704dd5b3cfc6864bd110b62cfd509"
 ```
 
-##### fromMnemonic(mnemonic, dpath, password)
+#### fromMnemonic(mnemonic, dpath, password)
 
 通过助记词，dpath，以及密码生成Account 实例。
 
@@ -124,7 +124,7 @@ const password = "1111111";
 const account =  fromMnemonic(mnemonic,dpath,password);
 ```
 
-##### fromKeystore(keystone,password)
+#### fromKeystore(keystone,password)
 
 通过keystore 和password获得keyAccount 实例
 
@@ -145,13 +145,13 @@ const password = "1111111";
 const account =  fromKeystore(keystore,password);
 ```
 
-##### fromPrivateKey(privateKey)
+#### fromPrivateKey(privateKey)
 
 通过privateKey 获得KeyAccount 实例。
 
 ##### 参数
 
-- privateKey   hex string | Buffer
+- privateKey   hex string  Buffer
 
 ##### 返回值
 
@@ -164,7 +164,7 @@ const privateKey = "07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466
 const account = fromPrivateKey(privateKey);
 ```
 
-##### createMnemonic()
+#### createMnemonic()
 
 生成一组24个单词组成的英文助记词
 
@@ -177,14 +177,14 @@ const mnemonic = createMnemonic();
 // mnemonic: "seven museum glove patrol gain dumb dawn bridge task alone lion check interest hair scare cash sentence diary better kingdom remember nerve sunset move"
 ```
 
-##### getAddresses({publicKey, chainCode, pageSize, pageNum})
+#### getAddresses({publicKey, chainCode, pageSize, pageNum})
 
 使用publicKey 和chainCode 获取指定pageSize数量的地址。
 
 ##### 参数
 
-- publicKey     hex string | Buffer
-- chainCode   hex string | Buffer
+- publicKey     hex string  Buffer
+- chainCode   hex string  Buffer
 - pageSize   number  
 - pageNum  number
 
@@ -203,11 +203,11 @@ const addresses = getAddresses({publicKey, chainCode, pageSize, pageNum});
 //addresses:["0xc57bb1cd690e7483ee2d2b4ecee060145a33fa3c","0x7d0749db3013f6e4c949d7810630aebe0e2e8756","0x7a9bbf63e8cc2bd7dba83884b6ed2d1e2e764409","0xef803e1d485fe9ae9ea6308d5c5d874cc011ac9a","0xfdffa0f9d72f7766b204bb8d6166990548419d96"]
 ```
 
-#### Account 
+### Account 
 
 Account 类，实现了sendTransaction方法。
 
-##### sendTransaction（host，{signTx}）
+#### sendTransaction（host，{signTx}）
 
 发送以太坊交易
 
@@ -238,11 +238,11 @@ const response = await sendTransaction(host,{signTx});
 
 类，扩展了Account 类，在Account 的基础上实现了toV3Keystore，getPublicKey，getAddress，sign,signMessage,signEthereumTx,signOrder方法。
 
-##### 构造方法
+#### 构造方法
 
 ##### 参数
 
-- privateKey  hex string | Buffer
+- privateKey  hex string or Buffer
 
 ##### 代码样例
 
@@ -251,7 +251,7 @@ const privateKey = '07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466
 const account = new KeyAccount(privateKey);
 ```
 
-##### getAddress()
+#### getAddress()
 
 获得账户的地址
 
@@ -265,7 +265,7 @@ const account = new KeyAccount(privateKey);
 account.getAddress();//address:0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A
 ```
 
-##### getPublicKey()
+#### getPublicKey()
 
 获取账户的publicKey
 
@@ -280,7 +280,7 @@ const publicKey = account.getPublicKey();
 //publicKey:"0895b915149d15148ac4171f453060d6b53a9ebb694689351df8e3a49c109c7a65374b5c196ce8cc35ff79cb3ce54ea1695704dd5b3cfc6864bd110b62cfd509"
 ```
 
-##### toV3Keystore(password)
+#### toV3Keystore(password)
 
 转成v3型 Keystore Json 
 
@@ -313,7 +313,7 @@ const keystore = account.toV3Keystore('123456789');
      mac: '33fb274ba8eb91674f0e5957e86784358cf65d9593c4b1e55333299a94249565' } }
 ```
 
-##### sign(hash)
+#### sign(hash)
 
 对hash签名
 
@@ -338,13 +338,13 @@ const sig = account.sign(hash);
   v: 28 }
 ```
 
-##### signMessage(message)
+#### signMessage(message)
 
 对Message签名，自动添加以太坊规定的前缀信息，即（"\x19Ethereum Signed Message:\n" + len(keccak256(message)）。
 
 ##### 参数
 
-- Message  string | Buffer
+- Message  string or Buffer
 
 #####   返回值
 
@@ -363,7 +363,7 @@ const sig = account.signMessage(messsage);
   v: 28 }
 ```
 
-##### signEthereumTx(rawTx)
+#### signEthereumTx(rawTx)
 
 对以太坊交易进行签名，获得序列化的16进制字符形式的tx。
 
@@ -371,12 +371,12 @@ const sig = account.signMessage(messsage);
 
 - rawTx 
   - chainId  number    — 例如以太坊主网的chainId为1
-  - nonce   hex string | Buffer
-  - value   hex string  | Buffer
-  - data  hex string    | Buffer
-  - gasPrice  hex string | Buffer
-  - gasLimit  hex string  | Buffer
-  - to   address  | Buffer
+  - nonce   hex string or Buffer
+  - value   hex string  or Buffer
+  - data  hex string    or Buffer
+  - gasPrice  hex string or Buffer
+  - gasLimit  hex string  or Buffer
+  - to   address  or Buffer
 
 ##### 返回值
 
@@ -398,7 +398,7 @@ const tx = account.signEthereumTx(rawTx)
 //tx:0xf86f819b8504e3b2920083015f909488699e7fee2da0462981a08a15a3b940304cc51689056bc75e2d631000008025a0d75c34cf2236bf632126f10d9ee8e963bf94623f8ec2dedb59c6d13342dbe3bea0644afdfa9812f494eee21adafc1b268c5b88bc47905880577876a8a293bd9c66
 ```
 
-##### signOrder(order)
+#### signOrder(order)
 
  对路印订单进行签名，获得签名后的订单。
 
@@ -468,11 +468,11 @@ const signedOrder = account.signOrder(order);
 }
 ```
 
-TrezorAccount 
+### TrezorAccount 
 
 类，连接TREZOR的账户，扩展了Account 类，实现了getAddress，signMessage，signEthereumTx。 TREZOR 的signMessage方法与其他的account的签名方式不同，仅可以通过TREZOR本身来验证。因此，TREZOR不支持对Loopring Order 进行签名，这导致TREZOR用户无法通过TREZOR下单，除非通过TREZOR助记词在Loopr 中解锁，下单。
 
-##### 构造方法
+#### 构造方法
 
 ##### 参数
 
@@ -489,7 +489,7 @@ const dpath = "m/44'/60'/0'/0/0";
 const account = new TrezorAccount(dpath);
 ```
 
-##### getAddress()
+#### getAddress()
 
 获得账户地址
 
@@ -504,7 +504,7 @@ const address = await account.getAddress();
 //address:0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A
 ```
 
-##### signMessage(message)
+#### signMessage(message)
 
 对Message进行签名，只能被TREZOR进行验证。
 
@@ -519,7 +519,7 @@ const address = await account.getAddress();
   - s    hex string 
   - v    number
 
-##### 样例代码
+#### 样例代码
 
 ```javascript
 const message = 'loopring';
@@ -531,7 +531,7 @@ const sig = account.signMessage(message);
     }
 ```
 
-##### signEthereumTx(rawTx)
+#### signEthereumTx(rawTx)
 
 见KeyAccount.signEthereumTx
 
@@ -547,13 +547,13 @@ const sig = account.signMessage(message);
 
 见KeyAccount.signEthereumTx
 
-##### LedgerAccount
+### LedgerAccount
 
 类，连接Ledger的账户。扩展Account，实现getAddress，signMessage，signEthereumTx，signOrder。
 
-##### 构造方法
+#### 构造方法
 
-参数
+##### 参数
 
 - ledger  Ledger连接实例
 - dpath   string 
@@ -562,7 +562,7 @@ const sig = account.signMessage(message);
 
 - account   LedgerAccount
 
-##### getAddress（）
+#### getAddress（）
 
 获得账户地址
 
@@ -570,14 +570,14 @@ const sig = account.signMessage(message);
 
 - address    Address
 
-代码样例
+##### 代码样例
 
 ```javascript
 const address = await account.getAddress();
 //address:0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A
 ```
 
-##### signMessage（message）
+#### signMessage（message）
 
 对Message签名，自动添加以太坊规定的前缀信息，即（"\x19Ethereum Signed Message:\n" + len(keccak256(message)）。
 
@@ -602,7 +602,7 @@ const sig = account.signMessage(messsage);
   v: 28 }
 ```
 
-##### signEthereumTx(rawTx)
+#### signEthereumTx(rawTx)
 
 见KeyAccount.signEthereumTx
 
@@ -615,7 +615,7 @@ const sig = account.signMessage(messsage);
   - data  hex string  
   - gasPrice  hex string 
   - gasLimit  hex string 
-  - to   address  | Buffer
+  - to   address  or Buffer
 
 ##### 返回值
 
@@ -625,7 +625,7 @@ const sig = account.signMessage(messsage);
 
 参考KeyAccount.signEthereumTx
 
-##### signOrder(order) 
+#### signOrder(order) 
 
 参考KeyAccount.signOrder
 
@@ -641,11 +641,11 @@ const sig = account.signMessage(messsage);
 
 参考KeyAccount.signOrder
 
-##### MetaMaskAccount
+### MetaMaskAccount
 
 类，连接MetaMask钱包账户。扩展了Account，实现了getAddress，sign，signMessage，signEthereumTx，signOrder。
 
-##### 构造方法
+#### 构造方法
 
 ##### 参数
 
@@ -655,13 +655,13 @@ const sig = account.signMessage(messsage);
 
 - account     MetaMaskAccount
 
-##### getAddress, sign(hash),  signMessage(message), signEthereumTx(rawTx), signOrder(order) 见KeyAccount对应的方法。
+getAddress, sign(hash),  signMessage(message), signEthereumTx(rawTx), signOrder(order) 见KeyAccount对应的方法。
 
 ------
 
 ### keystore
 
-##### decryptKeystoreToPkey(keystore, password)
+#### decryptKeystoreToPkey(keystore, password)
 
 通过keystore和password 解锁得到私钥
 
@@ -682,7 +682,7 @@ const password = "1111111";
 const privatekey =  decryptKeystoreToPkey(keystore,password);
 ```
 
-##### pkeyToKeystore(privateKey, password)
+#### pkeyToKeystore(privateKey, password)
 
 通过privateKey 和 password 获得Keystore
 
@@ -718,7 +718,7 @@ const keystore = pkeyToKeystore(privateKey,password);
      mac: '33fb274ba8eb91674f0e5957e86784358cf65d9593c4b1e55333299a94249565' } }
 ```
 
-##### decryptUtcKeystoreToPkey(keystore, password)
+#### decryptUtcKeystoreToPkey(keystore, password)
 
 通过keystore 和password 解锁 utc 类型的keystore，获得privatekey；
 
@@ -735,7 +735,7 @@ const keystore = pkeyToKeystore(privateKey,password);
 
 见decryptKeystoreToPkey
 
-##### determineKeystoreType(keystore)
+#### determineKeystoreType(keystore)
 
 解析keystore，获得keystore的类型
 
@@ -755,7 +755,7 @@ const type = determineKeystoreType(keystore);
 //type:v2-v3-utc
 ```
 
-##### decryptPresaleToPrivKey(keystore, password)
+#### decryptPresaleToPrivKey(keystore, password)
 
 通过keystore 和 password 解锁 presale 类型的keystore
 
@@ -773,7 +773,7 @@ const type = determineKeystoreType(keystore);
 
 见decryptKeystoreToPkey
 
-##### decryptMewV1ToPrivKey(keystore, password)
+#### decryptMewV1ToPrivKey(keystore, password)
 
 通过 keystore 和password，解锁v1-encrypted 类型的keystore
 
@@ -790,7 +790,7 @@ const type = determineKeystoreType(keystore);
 
 见decryptKeystoreToPkey
 
-##### isKeystorePassRequired(keystore)
+#### isKeystorePassRequired(keystore)
 
 通过解析keystore，判断keystore解锁是否需要密码。
 
@@ -805,12 +805,12 @@ const type = determineKeystoreType(keystore);
 ##### 样例代码
 
 ```javascript
- const keystore = "{"version":3,"id":"e603b01d-9aa9-4ddf-a165-1b21630237a5","address":"2131b0816b3ef8fe2d120e32b20d15c866e6b4c1","Crypto":{"ciphertext":"7e0c30a985cf29493486acaf86259a2cb0eb45befb367ab59a0baa7738adf49e","cipherparams":{"iv":"54bbb6e77719a13c3fc2072bb88a708c"},"cipher":"aes-128-ctr","kdf":"scrypt","kdfparams":{"dklen":32,"salt":"50c31e2a99f231b09201494cac1cf0943246edcc6864a91cc931563cd11eb0ce","n":1024,"r":8,"p":1},"mac":"13d3566174d20d93d2fb447167c21a127190d4b9b4843fe7cbebeb6054639a4f"}}";
+const keystore = "{"version":3,"id":"e603b01d-9aa9-4ddf-a165-1b21630237a5","address":"2131b0816b3ef8fe2d120e32b20d15c866e6b4c1","Crypto":{"ciphertext":"7e0c30a985cf29493486acaf86259a2cb0eb45befb367ab59a0baa7738adf49e","cipherparams":{"iv":"54bbb6e77719a13c3fc2072bb88a708c"},"cipher":"aes-128-ctr","kdf":"scrypt","kdfparams":{"dklen":32,"salt":"50c31e2a99f231b09201494cac1cf0943246edcc6864a91cc931563cd11eb0ce","n":1024,"r":8,"p":1},"mac":"13d3566174d20d93d2fb447167c21a127190d4b9b4843fe7cbebeb6054639a4f"}}";
 const isPasswordRequired = isKeystorePassRequired(keystore);
 // true
 ```
 
-##### getFileName(address)
+#### getFileName(address)
 
 获得V3 规范的keystore 文件名
 
@@ -834,7 +834,7 @@ const fileName = getFileName(address);
 
 ### ledger
 
-##### connect()
+#### connect()
 
 连接Ledger钱包，获得连接实例。
 
@@ -847,7 +847,7 @@ if(!response.error){
 }
 ```
 
-##### getXPubKey(dpath,ledgerConnect)
+#### getXPubKey(dpath,ledgerConnect)
 
 获取指定dpath的publicKey和chainCode
 
@@ -875,7 +875,7 @@ if(!response.error){
 }
 ```
 
-##### signMessage(dpath, message, ledgerConnect)
+#### signMessage(dpath, message, ledgerConnect)
 
 对指定的message进行签名
 
@@ -900,7 +900,7 @@ const message = 'loopring';
 const sig = await signMessage(dpath,message,ledger);
 ```
 
-##### signEthereumTx(dpath, rawTx, ledgerConnect)
+#### signEthereumTx(dpath, rawTx, ledgerConnect)
 
  对指定的rawTx进行签名
 
@@ -941,9 +941,9 @@ if(!response.error){
 
 ------
 
-##### MetaMask
+### MetaMask
 
-##### sign(web3, account, hash)
+#### sign(web3, account, hash)
 
  通MetaMask,用指定的account 对hash进行签名。MetaMask对hash 签名，不会添加以太坊头部信息。
 
@@ -969,7 +969,7 @@ const account = '0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A';
 const sig = await sign(web3,account,toBuffer(message))
 ```
 
-##### signMessage(web3,account,message)
+#### signMessage(web3,account,message)
 
 对Message签名，自动添加以太坊规定的前缀信息，即（"\x19Ethereum Signed Message:\n" + len(keccak256(message)）。
 
@@ -995,7 +995,7 @@ const account = '0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A';
 const sig = await signMessage(web3,account,message)
 ```
 
-##### signEthereumTx(web3, account, rawTx)
+#### signEthereumTx(web3, account, rawTx)
 
 对Ethereum tx 进行签名，返回签名后的序列化的tx
 
@@ -1036,7 +1036,7 @@ if(!response.error){
 }
 ```
 
-##### sendTransaction(web3,tx)
+#### sendTransaction(web3,tx)
 
 通过MetaMask发送以太坊交易
 
@@ -1073,9 +1073,9 @@ if(!response.error){
 }
 ```
 
-##### Mnemonic
+### Mnemonic
 
-##### mnemonictoPrivatekey(mnemonic, dpath, password)
+#### mnemonictoPrivatekey(mnemonic, dpath, password)
 
 解锁助记词得到私钥
 
@@ -1097,7 +1097,7 @@ const dpath = "m/44'/60'/0'/0/0";
 const privateKey = mnemonictoPrivatekey(mnemonic,dpath);
 ```
 
-##### isValidateMnemonic(mnemonic)
+#### isValidateMnemonic(mnemonic)
 
 验证助记词的合法性
 
@@ -1119,9 +1119,9 @@ const isValid = isValidateMnemonic(mnemonic);
 
 ------
 
-##### Trezor
+### Trezor
 
-##### getAddress(dpath)
+#### getAddress(dpath)
 
 通过指定的dpath 获得地址
 
@@ -1137,7 +1137,7 @@ const isValid = isValidateMnemonic(mnemonic);
 
 参考ledger.getAddress
 
-##### signMessage(dpath, message)
+#### signMessage(dpath, message)
 
 用dpath指定账户，对Message进行签名。签名中会添加头部信息，但是与以太坊的规则不同，因此TREZOR的签名信息只能通过TREZOR进行验证。
 
@@ -1169,7 +1169,7 @@ if(!response.error){
     }
 ```
 
-##### signEthereumTx(dpath, rawTx)
+#### signEthereumTx(dpath, rawTx)
 
 用dpath指定账户，对rawTx进行签名。
 
@@ -1209,7 +1209,7 @@ if(!response.error){
 //tx:0xf86f819b8504e3b2920083015f909488699e7fee2da0462981a08a15a3b940304cc51689056bc75e2d631000008025a0d75c34cf2236bf632126f10d9ee8e963bf94623f8ec2dedb59c6d13342dbe3bea0644afdfa9812f494eee21adafc1b268c5b88bc47905880577876a8a293bd9c66
 ```
 
-##### getXPubKey(dpath)
+#### getXPubKey(dpath)
 
 获得指定dpath的账户的publicKey 和 chainCode
 
@@ -1236,15 +1236,15 @@ if(!response.error){
 
 ------
 
-#### Contracts
+### Contracts
 
 根据Ethereum abi，实现对合约方法的调用。
 
-##### AbiFunction
+#### AbiFunction
 
 类，实现abi method 的encode，abi output 的decode，abi input encoded 后的数据的decode。
 
-##### 构造方法
+#### 构造方法
 
 ##### 参数
 
@@ -1286,7 +1286,7 @@ if(!response.error){
   const abiFunction = new AbiFunction(abiMethod);
 ```
 
-##### encodeInputs(inputs)
+#### encodeInputs(inputs)
 
 encode 
 
@@ -1307,7 +1307,7 @@ const data = abiFunction.encodeInputs({_to,_value});
 //data: "0xa9059cbb000000000000000000000000d91a7cb8efc59f485e999f02019bf2947b15ee1d0000000000000000000000000000000000000000000008ac7230489e80000";
 ```
 
-##### decodeEncodedInputs(encodedInputs)
+#### decodeEncodedInputs(encodedInputs)
 
 decode 已经encoded 的inputs参数
 
@@ -1420,7 +1420,7 @@ const abi = [
   const contract = new Contract(abi);
 ```
 
-##### encodeInputs(method, inputs)
+#### encodeInputs(method, inputs)
 
 encode 指定方法的inputs。
 
@@ -1435,14 +1435,14 @@ encode 指定方法的inputs。
 ##### 代码样例
 
 ```javascript
- const method='transfer' //(transfer(address,uint256) | '0xa9059cbb')
+ const method='transfer' //(transfer(address,uint256) or '0xa9059cbb')
  const _to = "0x88699e7fee2da0462981a08a15a3b940304cc516";
  const _value = "0xde0b6b3a7640000";
  const data = contract.encodeInputs(method,{_to,_value})
  //data:"0xa9059cbb000000000000000000000000d91a7cb8efc59f485e999f02019bf2947b15ee1d0000000000000000000000000000000000000000000008ac7230489e80000"
 ```
 
-##### decodeEncodeInputs(data)
+#### decodeEncodeInputs(data)
 
 decode 已经encoded 指定method的inputs参数。
 
@@ -1462,7 +1462,7 @@ const inputs = contract.decodeEncodeInputs(data);
 //inputs:['88699e7fee2da0462981a08a15a3b940304cc516','0xde0b6b3a7640000']
 ```
 
-##### decodeOutputs(method, data)
+#### decodeOutputs(method, data)
 
 decode 指定method的outputs 。
 
@@ -1483,13 +1483,13 @@ const outputs = contract.decodeOutputs(method, data);
 //outputs:['0xe6cbc4f6ec6156401801fc']
 ```
 
-##### Contracts
+### Contracts
 
 多个接入路印协议常用的合约。包括ERC20，WETH，AirdropContract，LoopringProtocol。
 
 LoopringProtocol 封装实现了encodECancelOrder, encodeSubmitRing
 
-##### encodeCancelOrder(signedOrder, amount)
+#### encodeCancelOrder(signedOrder, amount)
 
 取消指定amount数量的订单可成交量。如果amount 超过订单可成家量，则订单记为完全取消。
 
@@ -1515,9 +1515,9 @@ LoopringProtocol 封装实现了encodECancelOrder, encodeSubmitRing
   - r               hex string
   - v              hex string
   - powNonce  number     满足难度系数的随机数
-- amount  number | hex string  要取消的数量 ，默认为订单全量
+  - amount  number or hex string  要取消的数量 ，默认为订单全量
 
-#### 返回值
+##### 返回值
 
 - data    hex string
 
@@ -1550,23 +1550,23 @@ const data = LoopringProtocol.encodeCancelOrder(signedOrder);
 "0x8c59f7ca000000000000000000000000b94065482ad64d4c2b9252358d746b39e820a582000000000000000000000000ef68e7c694f40c8202821edf525de3782458639f000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000b94065482ad64d4c2b9252358d746b39e820a5820000000000000000000000005b98dac691be2f2882bfb79067ee50c221d2020300000000000000000000000000000000000000000000000ad78ebc5ac62000000000000000000000000000000000000000000000000000000429d069189e0000000000000000000000000000000000000000000000000000000000005b038122000000000000000000000000000000000000000000000000000000005b04d2a20000000000000000000000000000000000000000000000000928ca80cfc2000000000000000000000000000000000000000000000000000ad78ebc5ac620000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000001cbdf3c5bdeeadbddc0995d7fb51471e2166774c8ad5ed9cc315635985c190e5734ab135ff654c3f5e87183865175b6180e342565525eefc56bf2a0d5d5c564a73"
 ```
 
-##### encodeSubmitRing(orders,feeRecipient, feeSelections)
+#### encodeSubmitRing(orders,feeRecipient, feeSelections)
 
 ##### 参数
 
 - orders                  order[]
 - feeRecipient       address
-- feeSelections     0 |1          (0 代表选择分润，1代表选择lrcFee，默认为1)
+- feeSelections     0 or1          (0 代表选择分润，1代表选择lrcFee，默认为1)
 
 ##### 返回值
 
 - data                     hex string
 
-##### ETH
+### ETH
 
 实现部分Ethereum jsonrpc 接口
 
-##### 构造方法
+#### 构造方法
 
 ##### 参数
 
@@ -1579,59 +1579,59 @@ const host = 'localhost:8545';
 const ethNode = new Eth(host);
 ```
 
-##### getTransactionCount({address,tag})
+#### getTransactionCount({address,tag})
 
 获得指定地址的transactionCount
 
 详情参考[Ethereum Jsonrpc eth_getTransactionCount接口](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactioncount) 
 
-##### sendRawTransaction(signTx)
+#### sendRawTransaction(signTx)
 
 向以太坊节点发送签名交易
 
 详情参考 [Ethereum JSON-RPC eth_sendRawTransaction 接口](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sendrawtransaction)
 
-##### getGasPrice()
+#### getGasPrice()
 
 获得Ethereum 网络的平均gas price
 
 详情参考 [Ethereum JSON-RPC eth_gasPrice 接口](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gasprice)
 
-##### getAccountBalance({address,tag})
+#### getAccountBalance({address,tag})
 
 查询指定address 的Ethereum 余额
 
 详情参考 [Ethereum JSON-RPC eth_getBalance 接口](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getbalance)
 
-##### getTransactionByhash(hash)
+#### getTransactionByhash(hash)
 
 获得指定hash的transaction详情
 
 详情参考 [Ethereum JSON-RPC eth_getTransactionByHash 接口](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactionbyhash)
 
-##### call({tx,tag})
+#### call({tx,tag})
 
 模拟执行一条tx
 
 详情参考 [Ethereum JSON-RPC eth_call 接口](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_call)
 
-### Relay
+## Relay
 
 实现Loopring Relay的JSON-RPC 接口和Socket 接口。Loopring Relay的接口详情见[Loopring Relay 接入文档](https://github.com/Loopring/relay/blob/wallet_v2/LOOPRING_RELAY_API_SPEC_V2.md)
 
-##### Relay
+### Relay
 
-##### 构造方法
+#### 构造方法
 
 ##### 参数
 
 - host    Loopring Relay host
 
-##### Account
+#### Account
 
 实现Loopring Relay 的相关JSON-RPC接口。
 
-##### getBalance({delegateAddress, owner})
+#### getBalance({delegateAddress, owner})
 
 获取指定owner的账户余额，以及对路印delegateAddress的授权值。
 
@@ -1645,135 +1645,135 @@ const delegataAddress = "0x17233e07c67d086464fD408148c3ABB56245FA64";
 const response = relay.account.getBalance({owner,delegataAddress});
 ```
 
-##### register(owner)
+#### register(owner)
 
 向relay注册指定的owner地址。注册以后，relay会解析存储该地址的相关Ethereum txs。
 
 详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_unlockwallet)
 
-##### notifyTransactionSubmitted({txHash, rawTx, from})
+#### notifyTransactionSubmitted({txHash, rawTx, from})
 
 通知Relay 已经发送的以太坊tx。relay会跟踪tx的状态。
 
 详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_notifytransactionsubmitted)
 
-##### getTransactions({owner, status, txHash, pageIndex, pageSize})
+#### getTransactions({owner, status, txHash, pageIndex, pageSize})
 
 获取指定owner的以太坊txs
 
 详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_gettransactions)
 
-##### getFrozenLrcFee(owner)
+#### getFrozenLrcFee(owner)
 
 获得指定Owner的有效订单需要的LRC Fee的总和。
 
 详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getgetfrozenlrcfee)
 
-##### getPortfolio(owner)
+#### getPortfolio(owner)
 
 获得指定owner 地址的portfolio
 
 详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getportfolio)
 
-##### Market
+#### Market
 
 实现Loopring Relay Market 相关的JSON-RPC 接口
 
-##### getPriceQuote(currency)
+#### getPriceQuote(currency)
 
 获得Relay支持的所有token的指定Currency的价格
 
 详情参考[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getpricequote)
 
-##### getSupportedMarket()
+#### getSupportedMarket()
 
 获得Relay支持的所有市场
 
 详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getsupportedmarket)
 
-##### getSupportedTokens()
+#### getSupportedTokens()
 
 获得Relay支持的所有token
 
 详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getsupportedtokens)
 
-##### getDepth(filter)
+#### getDepth(filter)
 
 获得市场的深度
 
  详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getdepth)
 
-##### getTicker()
+#### getTicker()
 
 获得Loopring 所有市场的24小时合并的成交统计
 
 详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getticker)
 
-##### getTickers(market)
+#### getTickers(market)
 
 获得注定市场多个交易所24小时合并的成交统计
 
 详情参考 [Loopring Relay的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_gettickers)
 
-##### getTrend({market, interval})
+#### getTrend({market, interval})
 
 获得多个交易所指定市场在指定interval的价格变化等趋势信息
 
 详情参考[Loopring Relay 的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_gettrend)
 
-##### Order
+#### Order
 
 实现Loopring Relay
 
-##### getOrders(filter)
+#### getOrders(filter)
 
 获得路印的订单列表
 
 详情参考[Loopring Relay 的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getorders)
 
-##### getCutoff({address, delegateAddress, blockNumber})
+#### getCutoff({address, delegateAddress, blockNumber})
 
 获得注定address，在对应loopring 的delegateAddress 的cut off 时间戳。 cut off 对应时间之前的订单会被取消。
 
 详情参考[ Loopring Relay的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getcutoff)
 
-##### placeOrder(order)
+#### placeOrder(order)
 
 提交订单到Loopring Relay
 
 详情参考[Loopring Relay的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_submitorder)
 
-##### getOrderHash(order)
+#### getOrderHash(order)
 
 计算orderHash
 
-##### Ring
+#### Ring
 
 实现Loopring Relay ring 相关的JSON-RPC接口
 
-##### getRings(fiter)
+#### getRings(fiter)
 
 获得已经撮合的环路
 
 详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getringmined)
 
-##### getRingMinedDetail({ringIndex, protocolAddress})
+#### getRingMinedDetail({ringIndex, protocolAddress})
 
 获得ring的详细信息
 
 详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getRingMinedDetail)
 
-getFills(filter)
+#### getFills(filter)
 
 获取订单撮合历史记录
 
 详情参考 [Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getfills)
 
-##### socket
+### socket
 
 Loopring Relay 使用socket.io 实现Web Socket。Loopring Relay 的socket 事件列表详情见[Loopring Relay接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2)
 
-##### 构造方法
+#### 构造方法
 
 连接指定url的socket 服务器，详情参考 [socket.io_client api 文档](https://github.com/socketio/socket.io-client/blob/master/docs/API.md#iourl-options)
 
@@ -1790,7 +1790,7 @@ const options= {transports: ['websocket']};
 const socket = new Socket(url,options)
 ```
 
-##### emit ( event, options)
+#### emit ( event, options)
 
 向relay发送一条消息，开始监听指定的event或者更新指定事件的条件
 
@@ -1807,7 +1807,7 @@ const options = '{"owner" : "0x847983c3a34afa192cfee860698584c030f4c9db1"}';
 socket.emit(event,options)
 ```
 
-##### on(event,handle)
+#### on(event,handle)
 
 监听指定event 的数据返回
 
@@ -1824,7 +1824,7 @@ const handle = (data)=> {console.log(data)}
 socket.on(event,handle);
 ```
 
-##### close()
+#### close()
 
 手动断开socket连接
 
