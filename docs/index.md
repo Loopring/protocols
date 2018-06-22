@@ -20,7 +20,7 @@ The Relay section focuses on the access of the Loopring Relay interfaces, includ
 
 loopring.js ships as both a [UMD](https://github.com/umdjs/umd) module and a [CommonJS](https://en.wikipedia.org/wiki/CommonJS) package.
 
-## UMD Package
+### UMD Package
 
 Include the following script tag in your HTML:
 
@@ -36,7 +36,7 @@ window.loopring.ethereum
 window.loopring.relay
 ```
 
-## CommonJS  Package   (babel-polyfill is required)
+### CommonJS  Package   (babel-polyfill is required)
 
 ```javascript
 import loopring from 'loopring.js';
