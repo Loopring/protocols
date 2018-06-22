@@ -9,6 +9,13 @@ The Ethereum section focuses on the functionality of the wallet. The wallet func
 
 The Relay section focuses on the access of the Loopring Relay interfaces, including the JSON-RPC and SocketIO interfaces. See the [Loopring Relay](https://github.com/Loopring/relay/blob/wallet_v2/LOOPRING_RELAY_API_SPEC_V2.md) access documentation for details on the specific interfaces. 
 
+
+## Installation
+
+```javascript
+ npm install loopring.js --save
+```
+
 ## Browser Usage
 
 loopring.js ships as both a [UMD](https://github.com/umdjs/umd) module and a [CommonJS](https://en.wikipedia.org/wiki/CommonJS) package.

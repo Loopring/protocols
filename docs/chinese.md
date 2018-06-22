@@ -6,6 +6,12 @@ Ethereum 部分主要针对以太坊钱包功能。可以实现以太坊账户�
 
 Relay 部分主要针对Loopring Relay的接口接入，包括JSON-RPC 接口和SocketIO接口。具体的接口详情见[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2)。
 
+## 获取
+
+```javascript
+ npm install loopring.js --save
+```
+  
 ## 浏览器端使用方法
 
 loopring.js包含UMD规范的版本和CommonJS规范的版本
