@@ -1,6 +1,3 @@
-## Documents in Other Languages
-
-- [中文文档（Chinese）](chinese)
 
 ## About
 This developer documentation introduces the use of loopring.js to access Loopring’s Protocol. The Document consists of two sections: Ethereum and the Relay.
@@ -8,6 +5,10 @@ This developer documentation introduces the use of loopring.js to access Looprin
 The Ethereum section focuses on the functionality of the wallet. The wallet functions include: the creation of Ethereum accounts, unlocking of private keys, unlocking and generation of mnemonics, unlocking and generation of keystores, access to MetaMask, and access to hardware wallets such as Trezor and Ledger. Signatures of Ethereum transactions can be realized. In the creation of Ethereum contracts, the following functions are done: the signing of the information, the signing of Loopring orders, and an analyses of the abi function and abi information. Also, this section includes some Ethereum JSON-RPC interfaces, including eth_getTransactionCount，eth_sendRawTransaction, eth_gasPrice, eth_estimateGas, eth_getBalance，eth_getTransactionByHash, eth_call. 
 
 The Relay section focuses on the access of the Loopring Relay interfaces, including the JSON-RPC and SocketIO interfaces. See the [Loopring Relay](https://github.com/Loopring/relay/blob/wallet_v2/LOOPRING_RELAY_API_SPEC_V2.md) access documentation for details on the specific interfaces. 
+
+## Documents in Other Languages
+
+- [Chinese (中文文档)](chinese.md)
 
 
 ## Installation
