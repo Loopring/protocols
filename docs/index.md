@@ -10,11 +10,17 @@ The Ethereum section focuses on the functionality of the wallet. The wallet func
 The Relay section focuses on the access of the Loopring Relay interfaces, including the JSON-RPC and SocketIO interfaces. See the [Loopring Relay](https://github.com/Loopring/relay/blob/wallet_v2/LOOPRING_RELAY_API_SPEC_V2.md) access documentation for details on the specific interfaces. 
 
 
+## Installation
+
+```javascript
+ npm install loopring.js --save
+```
+
 ## Browser Usage
 
 loopring.js ships as both a [UMD](https://github.com/umdjs/umd) module and a [CommonJS](https://en.wikipedia.org/wiki/CommonJS) package.
 
-##### UMD Package
+## UMD Package
 
 Include the following script tag in your HTML:
 
@@ -30,7 +36,7 @@ window.loopring.ethereum
 window.loopring.relay
 ```
 
-##### CommonJS  Package   (babel-polyfill is required)
+## CommonJS  Package   (babel-polyfill is required)
 
 ```javascript
 import loopring from 'loopring.js';
@@ -40,7 +46,7 @@ or
 const loopring = require('loopring.js');
 ```
 
-# Ethereum
+## Ethereum
 
 ### Account
 
@@ -48,56 +54,56 @@ const loopring = require('loopring.js');
 
 path is constant used in Loopring wallet,（m/44'/60'/0'/0）
 
-##### privateKeytoAddress(privatekey)
+#### privateKeytoAddress(privatekey)
 
 Get the address using the private key
 
 ##### Parameters
 
-- privatekey | hex string | Buffer
+- privatekey   hex string  or Buffer
 
-##### **Returns**
+#####  Returns
 
 -  address
 
-##### Example
+#####  Example
 
 ```javascript
 const pKey = "07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466bf9e";
 privateKeytoAddress(pkey); //address:0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A
 ```
 
-##### publicKeytoAddress （publicKey, sanitize)
+#### publicKeytoAddress （publicKey, sanitize)
 
 Get the address using the public key
 
 ##### Parameters
 
-- publicKey | hex string | Buffer
-- sanitize | bool, the default is false
+- publicKey  	hex string  or  Buffer
+  - sanitize    bool, the default is false
 
 ##### Returns
 
 - address
 
-##### **Example**
+#####  Example
 
 ```javascript
 const publicKey = "0895b915149d15148ac4171f453060d6b53a9ebb694689351df8e3a49c109c7a65374b5c196ce8cc35ff79cb3ce54ea1695704dd5b3cfc6864bd110b62cfd509";
 publicKeytoAddress(publicKey)//address:0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A
 ```
 
-##### privateKeytoPublic(privatekey)
+#### privateKeytoPublic(privatekey)
 
 Get public key using the private key
 
 ##### Parameters
 
-- privateKey | hex string | Buffer
+- privateKey  hex string  or  Buffer
 
 ##### Returns
 
-- publickey | hex string, without prefix
+- publickey  hex string, without prefix
 
 ##### Example
 
@@ -107,17 +113,15 @@ const privateKey = '07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466
  //publicKey:"0895b915149d15148ac4171f453060d6b53a9ebb694689351df8e3a49c109c7a65374b5c196ce8cc35ff79cb3ce54ea1695704dd5b3cfc6864bd110b62cfd509"
 ```
 
-
-
-##### fromMnemonic(mnemonic, dpath, password)
+#### fromMnemonic(mnemonic, dpath, password)
 
 An example account is generated using mnemonics, dpath, and passwords. 
 
 ##### Parameters
 
--  mnemonic | string
-- dpath | string
-- password | string - can be empty
+-  mnemonic  string
+- dpath   string
+- password  string - can be empty
 
 ##### Returns
 
@@ -132,18 +136,18 @@ const mnemonic = "seven museum glove patrol gain dumb dawn bridge task alone lio
  const account =  fromMnemonic(mnemonic,dpath,password);
 ```
 
-##### fromKeystore(keystone,password)
+#### fromKeystore(keystone,password)
 
 Get keyAccount using the keystore and password
 
 ##### Parameters
 
--  keystore | string
-- password | string - can be empty, depending on whether the keystore requires a password to unlock it.
+-  keystore  string
+- password  string - can be empty, depending on whether the keystore requires a password to unlock it.
 
 ##### Returns
 
-- KeyAccount | account 
+- KeyAccount   account 
 
 ##### Example
 
@@ -153,17 +157,17 @@ const keystore = "{"version":3,"id":"e603b01d-9aa9-4ddf-a165-1b21630237a5","addr
  const account =  fromKeystore(keystore,password);
 ```
 
-##### fromPrivateKey(privateKey)
+#### fromPrivateKey(privateKey)
 
 Get the keyAccount using the privateKey
 
 ##### Parameters
 
--  privateKey | hex string | Buffer
+-  privateKey  hex string or  Buffer
 
 ##### Returns
 
-- KeyAccount | account
+- KeyAccount   account
 
 ##### Example
 
@@ -172,7 +176,7 @@ const privateKey = "07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466
  const account = fromPrivateKey(privateKey);
 ```
 
-##### createMnemonic()
+#### createMnemonic()
 
 Generate a set of 24 English word mnemonics
 
@@ -187,16 +191,16 @@ const mnemonic = createMnemonic();
  // mnemonic: "seven museum glove patrol gain dumb dawn bridge task alone lion check interest hair scare cash sentence diary better kingdom remember nerve sunset move"
 ```
 
-##### getAddresses({publicKey, chainCode, pageSize, pageNum})
+#### getAddresses({publicKey, chainCode, pageSize, pageNum})
 
 Get the specified address using the publicKey, chainCode, and pageSize number.
 
 ##### Parameters
 
-- publicKey | hex string | Buffer
-- chainCode | hex string | Buffer
-- pageSize | number
-- pageNum | number
+- publicKey   hex string or Buffer
+- chainCode  hex string or Buffer
+- pageSize    number
+- pageNum  number
 
 ##### Returns
 
@@ -217,7 +221,7 @@ const publicKey = "029a29b250b48fb317b81717d405f8fcf54a6bcd25d5a4f9e446db01d14c8
 
 This account type implements the sendTransaction method.
 
-##### sendTransaction（host，{signTx})
+#### sendTransaction（host，{signTx})
 
 Send Ethereum transactions
 
@@ -248,11 +252,11 @@ const host = 'localhost:8545';
 
 The class, which extends the Account class, implements the toV3Keystore, getPublicKey, getAddress, sign, signMessage, signEthereumTx, and signOrder methods based on the Account.
 
-##### Creation Method
+#### Creation Method
 
 ##### Parameters
 
-- privateKey | hex string | Buffer
+- privateKey    hex string or Buffer
 
 ##### Example
 
@@ -281,7 +285,7 @@ Get the publicKey of the account
 
 ##### Returns
 
-- publicKey | hex string
+- publicKey hex string
 
 ##### Example
 
@@ -290,17 +294,17 @@ const publicKey = account.getPublicKey();
  //publicKey:"0895b915149d15148ac4171f453060d6b53a9ebb694689351df8e3a49c109c7a65374b5c196ce8cc35ff79cb3ce54ea1695704dd5b3cfc6864bd110b62cfd509"
 ```
 
-##### toV3Keystore(password)
+#### toV3Keystore(password)
 
 The Json Keystore is converted to v3
 
 ##### Parameters
 
-- password | string
+- password string
 
 ##### Returns
 
-- keystore | object
+- keystore  object
 
 ##### Example
 
@@ -323,20 +327,20 @@ const keystore = account.toV3Keystore('123456789');
       mac: '33fb274ba8eb91674f0e5957e86784358cf65d9593c4b1e55333299a94249565' } }
 ```
 
-##### sign(hash)
+#### sign(hash)
 
 Sign the hash
 
 ##### Parameters
 
-- hash | Buffer
+- hash  Buffer
 
 ##### Returns
 
 - sig {r, s, v}
-  -  r | hex string
-  - s | hex string
-  -  v | number
+  -  r   hex string
+  - s   hex string
+  -  v  number
 
 ##### Example
 
@@ -348,20 +352,20 @@ const hash = toBuffer('loopring');
    v: 28 }
 ```
 
-##### signMessage(message)
+#### signMessage(message)
 
 Signing the Message automatically adds Ethereum-defined prefix information: ("\x19Ethereum Signed Message:\n" + len(keccak256(message)).
 
 ##### Parameters
 
-- Message | string | Buffer
+- Message   string or Buffer
 
 ##### Returns
 
 - sig {r, s, v}
-  -  r | hex string
-  - s | hex string
-  -  v | number
+  -  r    hex string
+  - s    hex string
+  -  v    number
 
 ##### Example
 
@@ -373,24 +377,24 @@ const message = 'loopring';
    v: 28 }
 ```
 
-##### signEthereumTx(rawTx)
+#### signEthereumTx(rawTx)
 
 Sign the Ethereum transaction to obtain Tx in the form of serialized hexadecimal characters.
 
 ##### Parameters
 
 -  rawTx 
-  - chainId | number - For example, the chainId of Ethereum is 1 
-  - nonce | hex string | Buffer
-  - value | hex string | Buffer
-  - data | hex string | Buffer
-  - gasPrice | hex string | Buffer
-  - gasLimit | hex string | Buffer
-  - to | address | Buffer
+  - chainId   number - For example, the chainId of Ethereum is 1 
+  - nonce  hex string or Buffer
+  - value   hex string or Buffer
+  - data  hex string or Buffer
+  - gasPrice  hex string or Buffer
+  - gasLimit   hex string or Buffer
+  - to  address  Buffer
 
 ##### Returns
 
-- tx | hex string, serialized tx
+- tx  hex string, serialized tx
 
 ##### Example
 
@@ -408,28 +412,28 @@ const rawTx = {
  //tx:0xf86f819b8504e3b2920083015f909488699e7fee2da0462981a08a15a3b940304cc51689056bc75e2d631000008025a0d75c34cf2236bf632126f10d9ee8e963bf94623f8ec2dedb59c6d13342dbe3bea0644afdfa9812f494eee21adafc1b268c5b88bc47905880577876a8a293bd9c66
 ```
 
-##### signOrder(order)
+#### signOrder(order)
 
 Sign the Loopring order, and return the signed order back
 
 ##### Parameter
 
 - order
-  -  protocol | address, here is an example version 1.5.1 protocol address: 0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78
-  - delegate | address, the Loopring protocol authorization address, here is an example version 1.5.1 address: 0x17233e07c67d086464fD408148c3ABB56245FA64
-  -  owner | address, the address of the ordering user
-  - tokenS | address, the contract address that is selling currency 
-  - tokenB | address, the contract address that is buying currency 
-  -  authAddr | address, randomly generated account address
-  - authPriavteKey | privatekey, randomly generated privatekey corresponding to the account
-  -  validSince | hex string, the order effective time, timestamp in seconds
-  -  validUntil | hex string, the order expiration time, timestamp in seconds
-  -  amountB | hex string, the amount of tokenB to buy (here in units of the smallest unit)
-  - amountS | hex string, the amount of tokenS to sell (here in units of the smallest unit)
-  - walletAddress | address, address of the wallet that receives the tokens from an order
-  - buyNoMoreThanAmountB | bool, true if amountB is greater than tokenB
-  - lrcFee | hex string, orders fully match the maximum amount of fees that need to be paid. (Here the unit of LRC is the smallest unit)
-  -  marginSplitPercentage | number(0–100), the proportion of funds used to pay for the reconciliation
+  -  protocol   address, here is an example version 1.5.1 protocol address: 0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78
+  -  delegate  address, the Loopring protocol authorization address, here is an example version 1.5.1 address: 0x17233e07c67d086464fD408148c3ABB56245FA64
+  -  owner  address, the address of the ordering user
+  -  tokenS  address, the contract address that is selling currency 
+  -  tokenB  address, the contract address that is buying currency 
+  -  authAddr  address, randomly generated account address
+  -  authPriavteKey  privatekey, randomly generated privatekey corresponding to the account
+  -  validSince  hex string, the order effective time, timestamp in seconds
+  -  validUntil  hex string, the order expiration time, timestamp in seconds
+  -  amountB  hex string, the amount of tokenB to buy (here in units of the smallest unit)
+  -  amountS  hex string, the amount of tokenS to sell (here in units of the smallest unit)
+  -  walletAddress  address, address of the wallet that receives the tokens from an order
+  -  buyNoMoreThanAmountB  bool, true if amountB is greater than tokenB
+  -  lrcFee  hex string, orders fully match the maximum amount of fees that need to be paid.(Here the unit of LRC is the smallest unit)
+  -  marginSplitPercentage  number(0–100), the proportion of funds used to pay for the reconciliation
 
 ##### Returns
 
@@ -482,15 +486,15 @@ const order = {
 
 The class, connecting to the TREZOR account, extends the Account class, and implements getAddress, signMessage, and signEthereumTx. TREZOR's signMessage method is different from other account signatures and can only be verified by TREZOR itself. Therefore, TREZOR does not support the signing of a Loopring order, which results in TREZOR users being unable to place orders through TREZOR unless they were unlocked in Loopr by TREZOR mnemonics and placed orders.
 
-##### Creation Method
+#### Creation Method
 
 ##### Parameters
 
-- dpath | string
+- dpath  string
 
 ##### Returns
 
-- TrezorAccount | account
+- TrezorAccount  account
 
 ##### Example
 
@@ -505,7 +509,7 @@ Get account address
 
 ##### Returns
 
-- address | address
+- address  address
 
 ##### Example
 
@@ -514,20 +518,20 @@ const address = await account.getAddress();
  //address:0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A
 ```
 
-##### signMessage(message)
+#### signMessage(message)
 
 Signing messages can only be verified by TREZOR
 
 ##### Parameters
 
-- message | string
+- message  string
 
 ##### Returns
 
 - sig
-  - r | hex string
-  - s | hex string
-  -  v | number
+  - r  hex string
+  - s  hex string
+  - v  number
 
 ##### Example
 
@@ -541,7 +545,7 @@ const sig = account.signMessage(message);
      }
 ```
 
-##### signEthereumTx(rawTx)
+#### signEthereumTx(rawTx)
 
 See KeyAccount.signEthereumTx
 
@@ -561,16 +565,16 @@ See KeyAccount.signEthereumTx
 
 The class connects the Ledger to the account. The account is expanded to implement the getAddress, signMessage, signEthereumTx, and signOrder. 
 
-##### Creation Method
+#### Creation Method
 
 ##### Parameters
 
-- ledger | Ledger, connection example
-- dpath | string
+- ledger  Ledger, connection example
+- dpath  string
 
 ##### Returns
 
-- LedgerAccount | account
+- LedgerAccount  account
 
 ##### getAddress()
 
@@ -587,20 +591,20 @@ const address = await account.getAddress();
  //address:0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A
 ```
 
-##### signMessage(message)
+#### signMessage(message)
 
 Signing the message automatically adds Ethereum-defined prefix information ("\x19Ethereum Signed Message:\n" + len(keccak256(message)).
 
 ##### Parameters
 
-- message | string
+- message  string
 
 ##### Returns
 
 - sig {r, s, v}
-  - r | hex string
-  - s | hex string
-  -  v | number
+  - r  hex string
+  - s  hex string
+  -  v  number
 
 ##### Example
 
@@ -612,20 +616,20 @@ const sig = account.signMessage(messsage);
    v: 28 }
 ```
 
-##### signEthereumTx(rawTx)
+#### signEthereumTx(rawTx)
 
 See KeyAccount.signEthereumTx
 
 ##### Parameters
 
 - rawTx
-  - chainId | number - for example, the chainId of the Ethereum main network is 1.
-  -  nonce | hex string
-  - value | hex string
-  - data | hex string
-  - gasPrice | hex string
-  - gasLimit | hex string
-  - to address | Buffer
+  - chainId  number - for example, the chainId of the Ethereum main network is 1.
+  - nonce  hex string
+  - value  hex string
+  - data  hex string
+  - gasPrice  hex string
+  - gasLimit  hex string
+  - to address  Buffer
 
 ##### Returns
 
@@ -651,11 +655,11 @@ Reference KeyAccount.signOrder
 
 Reference KeyAccount.signOrder
 
-#### MetaMaskAccount
+### MetaMaskAccount
 
 This is an account class that connects the MetaMask wallet to your account. It extends the Account by implementing getAddress, sign, signMessage, signEthereumTx, and signOrder.
 
-##### Creation Method
+#### Creation Method
 
 ##### Parameters
 
@@ -671,7 +675,7 @@ This is an account class that connects the MetaMask wallet to your account. It e
 
 ### keystore
 
-##### decryptKeystoreToPkey(keystore, password)
+#### decryptKeystoreToPkey(keystore, password)
 
 Decrypt the private key using the keystore and password
 
@@ -692,7 +696,7 @@ const keystore = "{"version":3,"id":"e603b01d-9aa9-4ddf-a165-1b21630237a5","addr
  const privatekey =  decryptKeystoreToPkey(keystore,password);
 ```
 
-##### pkeyToKeystore(privateKey, password)
+#### pkeyToKeystore(privateKey, password)
 
 Keystore obtained using the privatekey and password
 
@@ -728,7 +732,7 @@ const privateKey = toBuffer('0x07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a
       mac: '33fb274ba8eb91674f0e5957e86784358cf65d9593c4b1e55333299a94249565' } }
 ```
 
-##### decryptUtcKeystoreToPkey(keystore, password)
+#### decryptUtcKeystoreToPkey(keystore, password)
 
 Decrypt the utc-type keystore using the keystore and password to get the privatekey
 
@@ -745,7 +749,7 @@ Decrypt the utc-type keystore using the keystore and password to get the private
 
 See decryptKeystoreToPkey
 
-##### determineKeystoreType(keystore)
+#### determineKeystoreType(keystore)
 
 Analyze the keystore to get the keystore type
 
@@ -757,7 +761,7 @@ Analyze the keystore to get the keystore type
 
 - type string
 
-##### **Example**
+##### Example
 
 ```javascript
 const keystore = "{"version":3,"id":"e603b01d-9aa9-4ddf-a165-1b21630237a5","address":"2131b0816b3ef8fe2d120e32b20d15c866e6b4c1","Crypto":{"ciphertext":"7e0c30a985cf29493486acaf86259a2cb0eb45befb367ab59a0baa7738adf49e","cipherparams":{"iv":"54bbb6e77719a13c3fc2072bb88a708c"},"cipher":"aes-128-ctr","kdf":"scrypt","kdfparams":{"dklen":32,"salt":"50c31e2a99f231b09201494cac1cf0943246edcc6864a91cc931563cd11eb0ce","n":1024,"r":8,"p":1},"mac":"13d3566174d20d93d2fb447167c21a127190d4b9b4843fe7cbebeb6054639a4f"}}";
@@ -765,7 +769,7 @@ const keystore = "{"version":3,"id":"e603b01d-9aa9-4ddf-a165-1b21630237a5","addr
  //type:v2-v3-utc
 ```
 
-##### decryptPresaleToPrivKey(keystore, password)
+#### decryptPresaleToPrivKey(keystore, password)
 
 Decrypt the presale keystore type using the keystore and password
 
@@ -782,7 +786,7 @@ Decrypt the presale keystore type using the keystore and password
 
 See decryptKeystoreToPkey
 
-##### decryptMewV1ToPrivKey(keystore, password)
+#### decryptMewV1ToPrivKey(keystore, password)
 
 Decrypt the v-1-encrypted privatekey using the keystore and password
 
@@ -799,7 +803,7 @@ Decrypt the v-1-encrypted privatekey using the keystore and password
 
 See decryptKeystoreToPkey
 
-##### isKeystorePassRequired(keystore)
+#### isKeystorePassRequired(keystore)
 
 By analyzing the keystore, we determine if the keystore unlocks need a password
 
@@ -819,7 +823,7 @@ const keystore = "{"version":3,"id":"e603b01d-9aa9-4ddf-a165-1b21630237a5","addr
  // true
 ```
 
-##### getFileName(address)
+#### getFileName(address)
 
 Get the keystore file name of the V3 specification
 
@@ -841,7 +845,7 @@ const address = "0x48ff2269e58a373120FFdBBdEE3FBceA854AC30A";
 
 ### ledger
 
-##### connect()
+#### connect()
 
 Connect Ledger wallet to get a connection.
 
@@ -854,7 +858,7 @@ const response = await connect()；
  }
 ```
 
-##### getXPubKey(dpath,ledgerConnect)
+#### getXPubKey(dpath,ledgerConnect)
 
 Get the publicKey and chainCode of the specified dpath
 
@@ -882,7 +886,7 @@ const dpath = "m/44'/60'/0'/0";
  }
 ```
 
-##### signMessage(dpath, message, ledgerConnect)
+#### signMessage(dpath, message, ledgerConnect)
 
 Sign the specified message
 
@@ -895,9 +899,9 @@ Sign the specified message
 ##### Returns
 
 - sig
-  - r | hex string
-  - s | hex string
-  - v | number
+  - r  hex string
+  - s  hex string
+  - v  number
 
 ##### Example
 
@@ -907,7 +911,7 @@ const dpath = "m/44'/60'/0'/0";
  const sig = await signMessage(dpath,message,ledger);
 ```
 
-##### signEthereumTx(dpath, rawTx, ledgerConnect)
+#### signEthereumTx(dpath, rawTx, ledgerConnect)
 
 Signing the specified rawTx
 
@@ -948,22 +952,22 @@ const dpath = "m/44'/60'/0'/0";
 
 ### MetaMask
 
-##### sign(web3, account, hash)
+#### sign(web3, account, hash)
 
 Using MetaMask, the hash is signed with the specified account. MetaMask signs the hash and does not add Ethereum header information.
 
 ##### Parameters
 
 - web3
--  account | address
-- hash | string
+-  account  address
+- hash  string
 
 ##### Returns
 
 - sig
-  -  r | hex string
-  - s | hex string
-  - v | number
+  -  r  hex string
+  - s  hex string
+  - v  number
 
 ##### **Example**
 
@@ -974,7 +978,7 @@ const web3 = window.web3 // MetaMask
  const sig = await sign(web3,account,toBuffer(message))
 ```
 
-##### **signMessage(web3,account,message)**
+#### signMessage(web3,account,message)
 
 Signing the Message automatically adds Ethereum-defined prefix information ("\x19Ethereum Signed Message:\n" + len(keccak256(message)).
 
@@ -982,18 +986,18 @@ Signing the Message automatically adds Ethereum-defined prefix information ("\x1
 
 - web3
 
-- account | address
+- account  address
 
-- hash | string
+- hash  string
 
 ##### Returns
 
 - sig
-  -  r | hex string
-  -  s | hex string
-  -  v | number
+  -  r  hex string
+  -  s  hex string
+  -  v  number
 
-##### **Example**
+##### Example
 
 ```javascript
 const message = 'loopring'；
@@ -1002,22 +1006,22 @@ const message = 'loopring'；
  const sig = await signMessage(web3,account,message)
 ```
 
-##### signEthereumTx(web3, account, rawTx)
+#### signEthereumTx(web3, account, rawTx)
 
 Sign Ethereum tx, returning signed serialized tx
 
 ##### Parameters
 
 - web3
-- account | address
-- rawTx | object
-  - chainId | number - for example, the chainId of the Ethereum main network is 1.
-  -  nonce | hex string
-  -  value | hex string
-  - data | hex string
-  - gasPrice | hex string
-  - gasLimit | hex string
-  - to | address
+- account  address
+- rawTx  object
+  - chainId  number - for example, the chainId of the Ethereum main network is 1.
+  -  nonce  hex string
+  -  value  hex string
+  - data  hex string
+  - gasPrice  hex string
+  - gasLimit  hex string
+  - to  address
 
 ##### Returns
 
@@ -1043,7 +1047,7 @@ const web3 = window.web3
  }
 ```
 
-##### sendTransaction(web3,tx)
+#### sendTransaction(web3,tx)
 
 Send Ethereum Trading via MetaMask
 
@@ -1051,16 +1055,16 @@ Send Ethereum Trading via MetaMask
 
 - web3
 -  tx
-  - nonce | hex string
-  - value | hex string
-  - data | hex string
-  - gasPrice | hex string
-  - gasLimit | hex string
-  - to | address
+  - nonce  hex string
+  - value  hex string
+  - data  hex string
+  - gasPrice  hex string
+  - gasLimit  hex string
+  - to  address
 
 ##### Returns
 
-- txHash | hex string
+- txHash  hex string
 
 ##### Example
 
@@ -1082,19 +1086,19 @@ const rawTx = {
 
 ### Mnemonic
 
-##### mnemonictoPrivatekey(mnemonic, dpath, password)
+#### mnemonictoPrivatekey(mnemonic, dpath, password)
 
 Decrypt mnemonics to get private keys
 
 ##### Parameters
 
-- mnemonic | string
-- dpath | string
-- password | string (optional)
+- mnemonic  string
+- dpath  string
+- password  string (optional)
 
 ##### Returns
 
-- privateKey | Buffer
+- privateKey  Buffer
 
 ##### Example
 
@@ -1104,17 +1108,17 @@ const dpath = "m/44'/60'/0'/0/0";
 const privateKey = mnemonictoPrivatekey(mnemonic,dpath);
 ```
 
-##### isValidateMnemonic(mnemonic)
+#### isValidateMnemonic(mnemonic)
 
 Determine the validity of mnemonic
 
 ##### Parameters
 
-- mnemonic | string
+- mnemonic  string
 
 ##### Returns
 
-- isValid | bool
+- isValid  bool
 
 ##### Example
 
@@ -1126,7 +1130,7 @@ const menmonic = "seven museum glove patrol gain dumb dawn bridge task alone lio
 
 ###  Trezor
 
-##### getAddress(dpath)
+#### getAddress(dpath)
 
 Get the address through the specified dpath
 
@@ -1142,21 +1146,21 @@ Reference ledger.getAddress
 
 Reference ledger.getAddress
 
-##### signMessage(dpath, message)
+#### signMessage(dpath, message)
 
 Specify the account using dpath and sign the message. The header information is added to the signature, but it is different from Ethereum's rules, because TREZOR's signature information can only be verified by TREZOR.
 
 ##### Parameters
 
-- dpath | string
-- message | string
+- dpath  string
+- message  string
 
 ##### Returns
 
 -  sig
-  - r | hex string
-  -  s | hex string
-  -  v | number
+  - r  hex string
+  -  s  hex string
+  -  v  number
 
 ##### **Example**
 
@@ -1174,25 +1178,25 @@ const message = 'loopring';
      }
 ```
 
-##### signEthereumTx(dpath, rawTx)
+#### signEthereumTx(dpath, rawTx)
 
 Specify the account using dpath and sign the rawTx.
 
 ##### Parameters
 
-- dpath | string
+- dpath  string
 - rawTx
-  - nonce | hex string
-  - value | hex string
-  -  data | hex string
-  - gasPrice | hex string
-  -  gasLimit | hex string
-  -  to | address
-  - chainId | number
+  - nonce  hex string
+  - value  hex string
+  -  data  hex string
+  - gasPrice  hex string
+  -  gasLimit  hex string
+  -  to  address
+  - chainId  number
 
 ##### Returns
 
-- signTx | hex string
+- signTx  hex string
 
 ##### Example
 
@@ -1214,13 +1218,13 @@ const rawTx = {
  //tx:0xf86f819b8504e3b2920083015f909488699e7fee2da0462981a08a15a3b940304cc51689056bc75e2d631000008025a0d75c34cf2236bf632126f10d9ee8e963bf94623f8ec2dedb59c6d13342dbe3bea0644afdfa9812f494eee21adafc1b268c5b88bc47905880577876a8a293bd9c66
 ```
 
-##### getXPubKey(dpath)
+#### getXPubKey(dpath)
 
 PublicKey and chainCode of the account that obtained the specified dpath
 
 ##### Parameters
 
-- dpath | string
+- dpath  string
 
 ##### Returns
 
@@ -1245,20 +1249,20 @@ const dpath = "m/44'/60'/0'/0";
 
 According to Ethereum abi, the contract method is implemented.
 
-##### AbiFunction
+#### AbiFunction
 
 This function implements the encoded abi method, which is the decoding of the abi output data, and the decoding of the abi input data.
 
-##### Creation Method
+#### Creation Method
 
 ##### Parameters
 
 - abiMethod object 
-  - inputs | Array, a list of incoming parameters
-    -  name | string, the parameter name
+  - inputs  Array, a list of incoming parameters
+    -  name  string, the parameter name
     - type, the parameter type 
-  - name | string, the abi method name
-  - outputs | Array abi method value list
+  - name  string, the abi method name
+  - outputs  Array abi method value list
 
 ##### Example
 
@@ -1289,17 +1293,17 @@ const abiMethod =   {
    const abiFunction = new AbiFunction(abiMethod);
 ```
 
-##### encodeInputs(inputs)
+#### encodeInputs(inputs)
 
 Encode the input data
 
-Parameters
+##### Parameters
 
--  inputs | object, abi method corresponding parameter. The key of the inputs is the name of the abi method.
+-  inputs  object, abi method corresponding parameter. The key of the inputs is the name of the abi method.
 
 ##### Returns
 
-- data | hex string (methodId + parameters), corresponds to the Ethereum TX data
+- data  hex string (methodId + parameters), corresponds to the Ethereum TX data
 
 ##### Examples
 
@@ -1310,17 +1314,17 @@ const _to = "0x88699e7fee2da0462981a08a15a3b940304cc516";
  //data: "0xa9059cbb000000000000000000000000d91a7cb8efc59f485e999f02019bf2947b15ee1d0000000000000000000000000000000000000000000008ac7230489e80000";
 ```
 
-##### decodeEncodedInputs(encodedInputs)
+#### decodeEncodedInputs(encodedInputs)
 
 Decode input parameters that have been encoded
 
 ##### Parameter
 
-encodedInputs | hex string
+encodedInputs  hex string
 
 ##### Returns
 
--  inputs | Array
+-  inputs  Array
 
 ##### Example
 
@@ -1330,17 +1334,17 @@ const data = "0x00000000000000000000000088699e7fee2da0462981a08a15a3b940304cc516
  //inputs ['88699e7fee2da0462981a08a15a3b940304cc516','0xde0b6b3a7640000']
 ```
 
-##### decodeOutputs(outputs)
+#### decodeOutputs(outputs)
 
 decode abi method and return output values
 
 ##### Parameter
 
-- data | hex string
+- data  hex string
 
 ##### Returns
 
-- outputs | Array
+- outputs  Array
 
 ##### Example
 
@@ -1370,13 +1374,13 @@ const abiMethod =   {
  //outputs:['0xe6cbc4f6ec6156401801fc']
 ```
 
-##### Contract
+#### Contract
 
-##### **Creation Method**
+#### Creation Method
 
 ●      abi contract abi
 
-##### **Example**
+##### Example
 
 ```javascript
 const abi = [
@@ -1420,39 +1424,39 @@ const abi = [
    const contract = new Contract(abi);
 ```
 
-##### encodeInputs(method, inputs)
+#### encodeInputs(method, inputs)
 
 This method specifies that the inputs must be encoded
 
 ##### Parameter
 
-- Method | string, if there is no method with the same methodName in the abi, it can be called methodName. Otherwise, the argument will pass on this type of methodName + methodId.
+- Method  string, if there is no method with the same methodName in the abi, it can be called methodName. Otherwise, the argument will pass on this type of methodName + methodId.
 
 ##### Returns
 
-- data | hex string
+- data  hex string
 
-##### **Example**
+##### Example
 
 ```javascript
-const method='transfer' //(transfer(address,uint256) | '0xa9059cbb')
+const method='transfer' //(transfer(address,uint256)  '0xa9059cbb')
   const _to = "0x88699e7fee2da0462981a08a15a3b940304cc516";
   const _value = "0xde0b6b3a7640000";
   const data = contract.encodeInputs(method,{_to,_value})
   //data:"0xa9059cbb000000000000000000000000d91a7cb8efc59f485e999f02019bf2947b15ee1d0000000000000000000000000000000000000000000008ac7230489e80000"
 ```
 
-##### decodeEncodeInputs(data)
+#### decodeEncodeInputs(data)
 
 Decode the encoded input parameter data of the specified method.
 
 ##### Parameters
 
-- data | hex string (methodId + parameters)
+- data  hex string (methodId + parameters)
 
 ##### Returns
 
--  inputs | Array
+-  inputs  Array
 
 ##### Example
 
@@ -1462,17 +1466,17 @@ const data = "0xa9059cbb000000000000000000000000d91a7cb8efc59f485e999f02019bf294
  //inputs:['88699e7fee2da0462981a08a15a3b940304cc516','0xde0b6b3a7640000']
 ```
 
-##### decodeOutputs(method, data)
+#### decodeOutputs(method, data)
 
 Decode the output data of the specified method
 
 ##### Parameters
 
-- Method | string, if there is no method with the same methodName in the abi, it can be called methodName. Otherwise, you should pass the methodName + inputs type or methodId.
+- Method  string, if there is no method with the same methodName in the abi, it can be called methodName. Otherwise, you should pass the methodName + inputs type or methodId.
 
 ##### Returns
 
-- outputs | Array
+- outputs  Array
 
 ##### Example
 
@@ -1483,44 +1487,44 @@ const method = 'balanceOf'
  //outputs:['0xe6cbc4f6ec6156401801fc']
 ```
 
-##### Contracts
+#### Contracts
 
 Multiple access to Loopring protocol’s commonly used contracts. Including ERC-20, WETH, AirdropContract, and Loopring Protocol.
 
 LoopringProtocol captures the encodECancelOrder and the encodeSubmitRing
 
-##### encodeCancelOrder(signedOrder, amount)
+#### encodeCancelOrder(signedOrder, amount)
 
 There is a specified number of orders that can be assigned at once. If the amount exceeds the order availability, the order is marked as complete cancellation.
 
 ##### Parameters
 
 - signedOrder
-  - protocol | address, here is an example version 1.5.1 protocol address: 0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78
-  - delegate | address, the Loopring protocol authorization address, here is an example version 1.5.1 address: 0x17233e07c67d086464fD408148c3ABB56245FA64
-  -  owner | address, the address of the ordering user
-  - tokenS | address, the contract address that is selling currency 
-  - tokenB | address, the contract address that is buying currency 
-  - authAddr | address, randomly generated account address
-  -  authPriavteKey | privatekey, randomly generated privatekey corresponding to the account
-  -  validSince | hex string, the order effective time, timestamp in seconds
-  - validUntil | hex string, the order expiration time, timestamp in seconds
-  -  amountB | hex string, the amount of tokenB to buy (here in units of the smallest unit)
-  - amountS | hex string, the amount of tokenS to sell (here in units of the smallest unit)
-  - walletAddress | address, address of the wallet that receives the tokens from an order
-  - buyNoMoreThanAmountB | bool, true if amountB is greater than tokenB
-  -  lrcFee | hex string, orders fully match the maximum amount of fees that need to be paid. (Here the unit of LRC is the smallest unit)
-  - marginSplitPercentage | number(0–100), the proportion of funds used to pay for the reconciliation
-  - r | hex string
-  - s | hex string
-  -  v | number
-  - powNonce | number, a random number that satisfies the degree of difficulty
+  - protocol  address, here is an example version 1.5.1 protocol address: 0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78
+  - delegate  address, the Loopring protocol authorization address, here is an example version 1.5.1 address: 0x17233e07c67d086464fD408148c3ABB56245FA64
+  -  owner  address, the address of the ordering user
+  - tokenS  address, the contract address that is selling currency 
+  - tokenB  address, the contract address that is buying currency 
+  - authAddr  address, randomly generated account address
+  -  authPriavteKey  privatekey, randomly generated privatekey corresponding to the account
+  -  validSince  hex string, the order effective time, timestamp in seconds
+  - validUntil  hex string, the order expiration time, timestamp in seconds
+  -  amountB  hex string, the amount of tokenB to buy (here in units of the smallest unit)
+  - amountS  hex string, the amount of tokenS to sell (here in units of the smallest unit)
+  - walletAddress  address, address of the wallet that receives the tokens from an order
+  - buyNoMoreThanAmountB  bool, true if amountB is greater than tokenB
+  -  lrcFee  hex string, orders fully match the maximum amount of fees that need to be paid. (Here the unit of LRC is the smallest unit)
+  - marginSplitPercentage  number(0–100), the proportion of funds used to pay for the reconciliation
+  - r  hex string
+  - s  hex string
+  -  v  number
+  - powNonce  number, a random number that satisfies the degree of difficulty
 
-- amount | number, the quantity to be cancelled is defaulted to the full quantity of the order
+- amount  number, the quantity to be cancelled is defaulted to the full quantity of the order
 
-#### Returns
+##### Returns
 
-- data | hex string
+- data  hex string
 
 ##### Example
 
@@ -1551,29 +1555,29 @@ const signedOrder = {
  "0x8c59f7ca000000000000000000000000b94065482ad64d4c2b9252358d746b39e820a582000000000000000000000000ef68e7c694f40c8202821edf525de3782458639f000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000b94065482ad64d4c2b9252358d746b39e820a5820000000000000000000000005b98dac691be2f2882bfb79067ee50c221d2020300000000000000000000000000000000000000000000000ad78ebc5ac62000000000000000000000000000000000000000000000000000000429d069189e0000000000000000000000000000000000000000000000000000000000005b038122000000000000000000000000000000000000000000000000000000005b04d2a20000000000000000000000000000000000000000000000000928ca80cfc2000000000000000000000000000000000000000000000000000ad78ebc5ac620000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000001cbdf3c5bdeeadbddc0995d7fb51471e2166774c8ad5ed9cc315635985c190e5734ab135ff654c3f5e87183865175b6180e342565525eefc56bf2a0d5d5c564a73"
 ```
 
-##### encodeSubmitRing(orders,feeRecipient, feeSelections)
+#### encodeSubmitRing(orders,feeRecipient, feeSelections)
 
 ##### Parameters
 
-- orders | order
+- orders  order
 
-- feeRecipient | address
+- feeRecipient  address
 
-- feeSelections 0 |1 (0 means select sub-run, 1 means select lrcFee, the default is 1)
+- feeSelections 0 1 (0 means select sub-run, 1 means select lrcFee, the default is 1)
 
 ##### Returns
 
--  data | hex string
+-  data  hex string
 
-##### ETH
+### ETH
 
 Implement part of the Ethereum jsonrpc interface
 
-##### **Creation Method**
+#### Creation Method
 
 ##### Parameters
 
-- host | string
+- host  string
 
 ##### **Example**
 
@@ -1582,37 +1586,37 @@ const host = 'localhost:8545';
 const ethNode = new Eth(host);
 ```
 
-##### getTransactionCount({address,tag})
+#### getTransactionCount({address,tag})
 
 Get the transactionCount at the specified address
 
 For details, reference: [Ethereum Jsonrpc eth_getTransactionCount interface](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactioncount)
 
-##### sendRawTransaction(signTx)
+#### sendRawTransaction(signTx)
 
 Send signature transactions to Ethereum nodes
 
 For details, reference: [Ethereum JSON-RPC eth_sendRawTransaction interface](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sendrawtransaction)
 
-##### getGasPrice()
+#### getGasPrice()
 
 Get the average gas price of the Ethereum network
 
 For details, reference: [Ethereum JSON-RPC eth_gasPrice interface](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gasprice)
 
-##### getAccountBalance({address,tag})
+#### getAccountBalance({address,tag})
 
 Get the Ethereum balance for the specified address
 
 For details, reference: [Ethereum JSON-RPC eth_getBalance interface](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getbalance)
 
-##### getTransactionByhash(hash)
+#### getTransactionByhash(hash)
 
 Get the transaction details for the specified hash
 
 For details, reference: [Ethereum JSON-RPC eth_getTransactionByHash interface](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactionbyhash)
 
-##### call({tx,tag})
+#### call({tx,tag})
 
 Simulate a tx
 
@@ -1622,7 +1626,7 @@ For details, reference: [Ethereum JSON-RPC eth_call interface](https://github.co
 
 Implement Loopring Relay's JSON-RPC interface and Socket interface. See the Loopring Relay interface for more details. [Loopring Relay Documents](https://loopring.github.io/relay-cluster/relay_api_spec_v2)
 
-##### Creation Method
+#### Creation Method
 
 ##### Parameters
 
@@ -1638,7 +1642,7 @@ Get the account balance of the specified owner and the authorized value of the L
 
 For details, reference: [Loopring Relay getBalance interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getbalance)
 
-##### **Example**
+##### Example
 
 ```javascript
 const owner = "0x88699e7fee2da0462981a08a15a3b940304cc516";
@@ -1646,135 +1650,135 @@ const owner = "0x88699e7fee2da0462981a08a15a3b940304cc516";
  const response = relay.account.getBalance({owner,delegataAddress});
 ```
 
-##### register(owner)
+#### register(owner)
 
 Registers the specified owner address to therelay. After registration, relay will analyze the Ethereum txs that stores the address.
 
 For details, reference: [Loopring Relay register interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_unlockwallet)
 
-##### notifyTransactionSubmitted({txHash, rawTx, from})
+#### notifyTransactionSubmitted({txHash, rawTx, from})
 
 Informs the Ethereum tx that the Relay has sent. The Relay will track the state of tx.
 
 For details, reference: [Loopring Relay notifyTransactionSubmitted interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_notifytransactionsubmitted)
 
-##### getTransactions({owner, status, txHash, pageIndex, pageSize})
+#### getTransactions({owner, status, txHash, pageIndex, pageSize})
 
 Get the Ethereum txs for the specified owner
 
 For details, reference: [Loopring Relay getTransactions interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_gettransactions)
 
-##### getFrozenLrcFee(owner)
+#### getFrozenLrcFee(owner)
 
 The sum of the LRC Fee required to obtain a valid order for the specified Owner.
 
 For details, reference: [Loopring Relay getFrozenLrcFee interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getgetfrozenlrcfee)
 
-##### getPortfolio(owner)
+#### getPortfolio(owner)
 
 Get the specified owner address of the portfolio
 
 For details, reference: [Loopring Relay getPortfolio interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getportfolio)
 
-##### Market
+#### Market
 
 Implement Loopring Relay Market related JSON-RPC interface
 
-##### getPriceQuote(currency)
+#### getPriceQuote(currency)
 
 Get the price of the specified Currency for all tokens supported by the Relay
 
 For details, reference: [Loopring Relay getPriceQuote interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getpricequote)
 
-##### getSupportedMarket()
+#### getSupportedMarket()
 
 Get all the markets supported by the Relay
 
 For details, reference: [Loopring Relay getSupportedMarket inteface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getsupportedmarket)
 
-##### getSupportedTokens()
+#### getSupportedTokens()
 
 Get all tokens supported by the Relay
 
 For details, reference: [Loopring Relay getSupportedTokens interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getsupportedtokens)
 
-##### getDepth(filter)
+#### getDepth(filter)
 
 Get the depth of the market
 
 For details, reference: [Loopring Relay getDepth interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getdepth)
 
-##### getTicker()
+#### getTicker()
 
 Get 24-hour combined trade statistics for all Loopring markets
 
 For details, reference: [Loopring Relay getTicker interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getticker)
 
-##### getTickers(market)
+#### getTickers(market)
 
 Get statistics on the 24-hour merger of multiple exchanges destined for the market
 
 For details, reference: [Loopring Relay getTickers](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_gettickers)
 
-##### getTrend({market, interval})
+#### getTrend({market, interval})
 
 Obtain trend information such as price changes for specific markets at multiple specified exchanges
 
 For details, reference: [Loopring Relay getTrend interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_gettrend)
 
-##### Order
+### Order
 
 Implement Loopring Relay
 
-##### getOrders(filter)
+#### getOrders(filter)
 
 Get a Loopring order list
 
 For details, reference: [Loopring Relay getOrders interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getorders)
 
-##### getCutoff({address, delegateAddress, blockNumber})
+#### getCutoff({address, delegateAddress, blockNumber})
 
 Get the destined address and the cutoff timestamp of the delegateAddress of the corresponding loopring. Orders before the corresponding cutoff time will be cancelled.
 
 For details, reference: [Loopring Relay getCutoff interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getcutoff)
 
-##### placeOrder(order)
+#### placeOrder(order)
 
 Submit Order to the Loopring Relay
 
 For details, reference: [Loopring Relay placeOrder interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_submitorder)
 
-##### getOrderHash(order)
+#### getOrderHash(order)
 
 Calculate orderHash
 
-##### Ring
+### Ring
 
 Implementing the Loopring Relay JSON-RPC interface
 
-##### getRings(fiter)
+#### getRings(fiter)
 
 Get a ring that has been matched
 
 For details, reference: [Loopring Relay getRings interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getringmined)
 
-##### getRingMinedDetail({ringIndex, protocolAddress})
+#### getRingMinedDetail({ringIndex, protocolAddress})
 
 Get ring details
 
 For details, reference: [Loopring Relay getRingMinedDetail interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getRingMinedDetail)
 
-##### getFills(filter)
+#### getFills(filter)
 
 Get order match history
 
 For details, reference: [Loopring Relay getFills interface ](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_getfills)
 
-##### socket
+### socket
 
 The Loopring Relay implements Web Sockets using socket.io. See the Loopring Relay socket event list for details: [Loopring Relay socket interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2)
 
-##### Creation Method
+#### Creation Method
 
 Connect to the socket server for the specified url. For details, reference: [socket.io_client api documents](https://github.com/socketio/socket.io-client/blob/master/docs/API.md#iourl-options)
 
@@ -1788,11 +1792,11 @@ Connect to the socket server for the specified url. For details, reference: [soc
 
 ```javascript
 const url = 'ws://relay.loopring'
- const options= {transports: ['websocket']};
- const socket = new Socket(url,options)
+const options= {transports: ['websocket']};
+const socket = new Socket(url,options)
 ```
 
-##### emit (event, options)
+#### emit (event, options)
 
 Send a message to the relay, then start monitoring the specified event or update the conditions of the specified event
 
@@ -1802,7 +1806,7 @@ Send a message to the relay, then start monitoring the specified event or update
 
 - options string(json) event, the parameters
 
-##### **Example**
+##### Example
 
 ```javascript
 const event = 'portfolio_req';
@@ -1810,7 +1814,7 @@ const options = '{"owner" : "0x847983c3a34afa192cfee860698584c030f4c9db1"}';
 socket.emit(event,options)
 ```
 
-##### on(event,handle)
+#### on(event,handle)
 
 Focus on the data of the specified event
 
@@ -1823,11 +1827,11 @@ Focus on the data of the specified event
 
 ```javascript
 const event = "portfolio_res"
- const handle = (data)=> {console.log(data)}
- socket.on(event,handle);
+const handle = (data)=> {console.log(data)}
+socket.on(event,handle);
 ```
 
-##### close()
+#### close()
 
 Manually disconnect the socket connection
 
