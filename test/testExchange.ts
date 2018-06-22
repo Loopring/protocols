@@ -111,7 +111,12 @@ contract("Exchange", (accounts: string[]) => {
 
         await exchange.submitRings(bs, {from: miner});
         await watchAndPrintEvent(exchange, "LogIntArr");
-        await watchAndPrintEvent(exchange, "LogInt16");
+
+        // await exchange.bar("ab".repeat(16) + "xy".repeat(10), {from: miner});
+
+        await watchAndPrintEvent(exchange, "LogBytes");
+        await watchAndPrintEvent(exchange, "LogAddrArr");
+        // await watchAndPrintEvent(exchange, "LogInt16");
 
         assert(true);
       });

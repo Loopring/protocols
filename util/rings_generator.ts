@@ -119,7 +119,6 @@ export class RingsGenerator {
       param.bytesList.push(order.dualAuthSig);
     }
 
-    console.log("order spec:", spec);
     param.orderSpecs.push(spec);
   }
 
@@ -131,14 +130,15 @@ export class RingsGenerator {
   private submitParamToBytes(param: RingsSubmitParam, encodeSpecs: number[]) {
     console.log("encodeSpecs:", encodeSpecs);
     console.log("param.orderSpecs:", param.orderSpecs);
+    console.log("addrList:", param.addressList);
 
     const stream = new Bitstream();
     encodeSpecs.forEach((i) => stream.addNumber(i, 2));
     stream.addNumber(param.miningSpec, 2);
     param.orderSpecs.forEach((i) => stream.addNumber(i, 2));
-    const ringSpecsFlattened = [].concat(...param.ringSpecs);
-    ringSpecsFlattened.forEach((i) => stream.addNumber(i, 1));
-    param.addressList.forEach((a) => stream.addAddress(a, 32));
+    // const ringSpecsFlattened = [].concat(...param.ringSpecs);
+    // ringSpecsFlattened.forEach((i) => stream.addNumber(i, 1));
+    param.addressList.forEach((a) => stream.addAddress(a));
     param.uintList.forEach((bn) => stream.addBigNumber(bn));
     param.bytesList.forEach((bs) => stream.addRawBytes(bs));
 

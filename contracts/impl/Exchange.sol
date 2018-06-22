@@ -59,6 +59,7 @@ import "./Data.sol";
 ///     https://github.com/Hephyrius
 contract Exchange is IExchange, NoDefaultFunc {
     using MathUint      for uint;
+    using BytesUtil     for bytes;
     using MiningSpec    for uint16;
     using EncodeSpec    for uint16[];
     using OrderSpecs    for uint16[];
@@ -192,54 +193,63 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     /* event Log2DArr(uint8[] uis); */
 
+    event LogInt(uint i);
     event LogInt16(uint16 i16);
+    event LogBytes(bytes bs);
     event LogIntArr(uint16[] arr);
+    event LogAddrArr(address[] addrArr);
+
+    function bar(bytes bs) public {
+        emit LogBytes(msg.data);
+        bytes memory copy;
+        uint ptr;
+        assembly {
+            ptr := copy
+            let len := sub(calldatasize, 68)
+            calldatacopy(ptr, 36, add(32, len))
+        }
+        emit LogBytes(copy);
+    }
 
     function submitRings(
         bytes data
         )
         public
     {
-        // emit LogBytes(data);
+        // emit LogBytes(msg.data);
         uint16 encodeSpecsLen = uint16(MemoryUtil.bytesToUintX(data, 0, 2));
-        // emit LogInt(encodeSpecsLen);
-        uint16[] memory encodeSpecs = new uint16[](encodeSpecsLen + 1);
-        encodeSpecs[0] = encodeSpecsLen;
         uint offset = 2;
-        for (uint i = 1; i < encodeSpecsLen + 1; i ++) {
-            uint16 spec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
-            encodeSpecs[i] = spec;
-            offset += 2;
-        }
-
+        uint16[] memory encodeSpecs = data.copyToUint16Array(offset, encodeSpecsLen);
+        offset += 2 * encodeSpecsLen;
         uint16 miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
-        emit LogInt16(miningSpec);
         offset += 2;
+        uint16[] memory orderSpecs = data.copyToUint16Array(
+            offset,
+            encodeSpecs.orderSpecSize()
+        );
+        offset += 2 * encodeSpecs.orderSpecSize();
+        // emit LogIntArr(encodeSpecs);
 
-        uint orderSpecsLen = encodeSpecs.orderSpecSize();
-        uint16[] memory orderSpecs = new uint16[](orderSpecsLen);
-        for (uint i = 0; i < orderSpecsLen; i++) {
-            uint16 orderSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
-            orderSpecs[i] = orderSpec;
-            offset += 2;
-        }
+        address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
+        emit LogAddrArr(addressList);
 
-        // no ring specs for now.
+        /* // no ring specs for now. */
 
-        uint addressListSize = encodeSpecs.addressListSize();
-
-
-        uint uintListSize = encodeSpecs.uintListSize();
-        uint bytesListSize = encodeSpecs.bytesListSize();
-
-        /* emit LogIntArr(encodeSpecs); */
-        /* emit LogIntArr(orderSpecs); */
-        /* uint8[][] memory ringSpecs = new uint8[][](3); */
-        /* uint8[] memory spec1 = new uint8[](2); */
-        /* spec1[0] = 19; */
-        /* spec1[1] = 10; */
-        /* ringSpecs[0] = spec1; */
-        /* emit Log2DArr(spec1); */
+        /* uint addressListSize = encodeSpecs.addressListSize(); */
+        /* emit LogInt(addressListSize); */
+        /* // address[] memory addrList = new address[](addressListSize); */
+        /* bytes memory tmpBs; */
+        /* uint addrListPtr; */
+        /* uint parameterOffset; */
+        /* assembly { */
+        /*     addrListPtr := tmpBs */
+        /*     parameterOffset := 36 */
+        /*         // dataSize := mul(32, addressListSize) */
+        /*     //calldatacopy(addrListPtr, parameterOffset, 95) */
+        /* } */
+        // MemoryUtil.copyCallDataBytesInArray(0, addrListPtr, offset, 64);
+        // emit LogAddrArr(addrList);
+        // emit LogBytes(tmpBs);
     }
 
     function submitRingsInternal(

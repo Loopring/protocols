@@ -76,4 +76,17 @@ library MemoryUtil {
         }
     }
 
+    function bytesToAddress(
+        bytes b,
+        uint offset
+        )
+        internal
+        pure
+        returns (address addr)
+    {
+        assembly {
+            addr := mload(add(add(b, 20), offset))
+        }
+    }
+
 }

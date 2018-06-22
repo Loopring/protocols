@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "./MemoryUtil.sol";
 
 /// @title Utility Functions for bytes
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -36,5 +37,27 @@ library BytesUtil {
             temp := mload(add(add(b, 0x20), offset))
         }
         return temp;
+    }
+
+    function copyToUint16Array(bytes b, uint offset, uint arraySize)
+        internal
+        pure
+        returns (uint16[]) {
+        uint16[] memory resultArray = new uint16[](arraySize);
+        for (uint i = 0; i < arraySize; i++) {
+            resultArray[i] = uint16(MemoryUtil.bytesToUintX(b, offset + i * 2, 2));
+        }
+        return resultArray;
+    }
+
+    function copyToAddressArray(bytes b, uint offset, uint arraySize)
+        internal
+        pure
+        returns (address[]) {
+        address[] memory resultArray = new address[](arraySize);
+        for (uint i = 0; i < arraySize; i++) {
+            resultArray[i] = MemoryUtil.bytesToAddress(b, offset + i * 20);
+        }
+        return resultArray;
     }
 }
