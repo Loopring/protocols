@@ -67,15 +67,15 @@ library RingSpecs {
             uint8 pspec = pspecs[i];
             parts[i] = Data.Participation(
                 orders[pspec.orderIndex()],
-                pspec.marginSplitAsFee(),
-                inputs.nextUint(),
-                inputs.nextUint(),
-                0, // splitS
-                0, // splitB
-                0, // lrcFee
-                0, // lrcReward
-                0, // fillAmountS
-                0  // fillAmountB
+                /* pspec.marginSplitAsFee(), */
+                /* inputs.nextUint(), */
+                /* inputs.nextUint(), */
+                /* 0, // splitS */
+                /* 0, // splitB */
+                inputs.nextUint(), // lrcFee
+                /* 0, // lrcReward */
+                0 // fillAmountS
+                // 0  // fillAmountB
             );
 
             parts[i].order.tokenB = prevTokenS;

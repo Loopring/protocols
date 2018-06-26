@@ -42,6 +42,7 @@ export class RingsGenerator {
     };
 
     this.calculateMiningSepc(ringsInfo, param);
+    param.ringSpecs = ringsInfo.rings;
     ringsInfo.orders.map((o) => this.calculateOrderSpec(o, param));
     return param;
   }
@@ -70,7 +71,7 @@ export class RingsGenerator {
     param.addressList.push(order.owner);
     param.addressList.push(order.delegateContract);
     param.addressList.push(order.tokenS);
-    param.addressList.push(order.tokenB);
+    // param.addressList.push(order.tokenB);
     param.uintList.push(new BigNumber(order.amountS));
     param.uintList.push(new BigNumber(order.amountB));
     param.uintList.push(new BigNumber(order.lrcFee));
@@ -131,13 +132,14 @@ export class RingsGenerator {
     console.log("encodeSpecs:", encodeSpecs);
     console.log("param.orderSpecs:", param.orderSpecs);
     console.log("addrList:", param.addressList);
+    console.log("uintList:", param.uintList);
 
     const stream = new Bitstream();
     encodeSpecs.forEach((i) => stream.addNumber(i, 2));
     stream.addNumber(param.miningSpec, 2);
     param.orderSpecs.forEach((i) => stream.addNumber(i, 2));
-    // const ringSpecsFlattened = [].concat(...param.ringSpecs);
-    // ringSpecsFlattened.forEach((i) => stream.addNumber(i, 1));
+    const ringSpecsFlattened = [].concat(...param.ringSpecs);
+    ringSpecsFlattened.forEach((i) => stream.addNumber(i, 1));
     param.addressList.forEach((a) => stream.addAddress(a));
     param.uintList.forEach((bn) => stream.addBigNumber(bn));
     param.bytesList.forEach((bs) => stream.addRawBytes(bs));

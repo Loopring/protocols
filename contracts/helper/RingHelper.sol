@@ -40,8 +40,8 @@ library RingHelper {
             ring.hash = keccak256(
                 abi.encodePacked(
                     ring.hash,
-                    p.order.hash,
-                    p.marginSplitAsFee
+                    p.order.hash
+                    // p.marginSplitAsFee
                 )
             );
         }
@@ -58,7 +58,7 @@ library RingHelper {
             Data.Participation memory p = ring.participations[i];
             Data.Order memory order = p.order;
             p.fillAmountS = order.maxAmountS;
-            p.fillAmountB = order.maxAmountB;
+            // p.fillAmountB = order.maxAmountB;
         }
 
         uint smallest = 0;
@@ -98,10 +98,10 @@ library RingHelper {
         uint j = (i + 1) % ring.size;
         Data.Participation memory nextP = ring.participations[j];
 
-        if (p.fillAmountB < nextP.fillAmountS) {
-            nextP.fillAmountS = p.fillAmountB;
-        } else {
-            smallest_ = j;
-        }
+        /* if (p.fillAmountB < nextP.fillAmountS) { */
+        /*     nextP.fillAmountS = p.fillAmountB; */
+        /* } else { */
+        /*     smallest_ = j; */
+        /* } */
     }
 }

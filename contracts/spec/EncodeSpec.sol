@@ -70,6 +70,30 @@ library EncodeSpec {
         return spec[ind];
     }
 
+    function ringSpecSizeArray(uint16[] spec)
+        internal
+        pure
+        returns (uint[]) {
+        uint arrayLen = ringSpecSize(spec);
+        uint[] memory sizeArray = new uint[](arrayLen);
+        for (uint i = 0; i < arrayLen; i++) {
+            sizeArray[i] = ringSpecSizeI(spec, i);
+        }
+        return sizeArray;
+    }
+
+    function ringSpecsDataLen(uint16[] spec)
+        internal
+        pure
+        returns (uint) {
+        uint arrayLen = ringSpecSize(spec);
+        uint dataLen = 0;
+        for (uint i = 0; i < arrayLen; i++) {
+            dataLen += ringSpecSizeI(spec,i);
+        }
+        return dataLen;
+    }
+
     function addressListSize(uint16[] spec)
         internal
         pure

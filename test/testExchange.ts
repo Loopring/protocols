@@ -116,6 +116,7 @@ contract("Exchange", (accounts: string[]) => {
 
         await watchAndPrintEvent(exchange, "LogBytes");
         await watchAndPrintEvent(exchange, "LogAddrArr");
+        await watchAndPrintEvent(exchange, "LogOrderFields");
         // await watchAndPrintEvent(exchange, "LogInt16");
 
         assert(true);

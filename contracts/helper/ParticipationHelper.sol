@@ -34,7 +34,7 @@ library ParticipationHelper {
         pure
     {
         p.order.maxAmountS = p.order.maxAmountS.sub(p.fillAmountS);
-        p.order.maxAmountB = p.order.maxAmountB.sub(p.fillAmountB);
+        /* p.order.maxAmountB = p.order.maxAmountB.sub(p.fillAmountB); */
         p.order.maxAmountLrcFee = p.order.maxAmountLrcFee.sub(p.lrcFee);
 
         if (p.order.sellLRC) {
@@ -49,20 +49,22 @@ library ParticipationHelper {
         pure
         returns (bool thisOrderIsSmaller)
     {
-        Data.Order memory order = p.order;
+        thisOrderIsSmaller = true;
 
-        p.fillAmountB = p.fillAmountS.mul(p.rateB) / p.rateS;
+        /* Data.Order memory order = p.order; */
 
-        if (order.limitByAmountB) {
-            if (p.fillAmountB > order.maxAmountB) {
-                p.fillAmountB = order.maxAmountB;
-                p.fillAmountS = p.fillAmountB.mul(p.rateS) / p.rateB;
-                thisOrderIsSmaller = true;
-            }
-            p.lrcFee = order.lrcFee.mul(p.fillAmountB) / order.amountB;
-        } else {
-            p.lrcFee = order.lrcFee.mul(p.fillAmountS) / order.amountS;
-        }
+        /* p.fillAmountB = p.fillAmountS.mul(p.rateB) / p.rateS; */
+
+        /* if (order.limitByAmountB) { */
+        /*     if (p.fillAmountB > order.maxAmountB) { */
+        /*         p.fillAmountB = order.maxAmountB; */
+        /*         p.fillAmountS = p.fillAmountB.mul(p.rateS) / p.rateB; */
+        /*         thisOrderIsSmaller = true; */
+        /*     } */
+        /*     p.lrcFee = order.lrcFee.mul(p.fillAmountB) / order.amountB; */
+        /* } else { */
+        /*     p.lrcFee = order.lrcFee.mul(p.fillAmountS) / order.amountS; */
+        /* } */
     }
 
     function calculateFeeAmounts(

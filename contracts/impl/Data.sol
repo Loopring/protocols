@@ -93,17 +93,17 @@ library Data {
     struct Participation {
         // required fields
         Order order;
-        bool marginSplitAsFee;
-        uint rateS;
-        uint rateB;
+        /* bool marginSplitAsFee; */
+        /* uint rateS; */
+        /* uint rateB; */
 
-        // computed fields
-        uint splitS;
-        uint splitB;
+        /* // computed fields */
+        /* uint splitS; */
+        /* uint splitB; */
         uint lrcFee;
-        uint lrcReward;
+        // uint lrcReward;
         uint fillAmountS;
-        uint fillAmountB;
+        // uint fillAmountB;
     }
 
     struct Ring{
