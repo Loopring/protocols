@@ -32,6 +32,11 @@ export default class Order
         return getOrderHash(order);
     }
 
+    packOrder (order)
+    {
+        return packOrder(order);
+    }
+
     storeDatasInShortTerm (hash, origin)
     {
         return storeDatasInShortTerm(this.host, hash, origin);
@@ -183,6 +188,50 @@ export function getOrderHash (order)
     return soliditySHA3(orderTypes, orderData);
 }
 
+export function packOrder (order)
+{
+    try
+    {
+        validator.validate({value: order, type: 'RAW_Order'});
+    }
+    catch (e)
+    {
+        return new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg);
+    }
+    const orderTypes = [
+        'address',
+        'address',
+        'address',
+        'address',
+        'address',
+        'address',
+        'uint',
+        'uint',
+        'uint',
+        'uint',
+        'uint',
+        'bool',
+        'uint8'
+    ];
+    const orderData = [
+        order.delegateAddress,
+        order.owner,
+        order.tokenS,
+        order.tokenB,
+        order.walletAddress,
+        order.authAddr,
+        toBN(order.amountS),
+        toBN(order.amountB),
+        toBN(order.validSince),
+        toBN(order.validUntil),
+        toBN(order.lrcFee),
+        order.buyNoMoreThanAmountB,
+        order.marginSplitPercentage
+    ];
+
+    return solidityPack(orderTypes, orderData);
+}
+
 /**
  * @description Submit some datas to relay that will store in a short term (24H)
  * @param host
@@ -225,10 +274,10 @@ export function storeDatasInShortTerm (host, hash, origin)
  */
 export function cancelOrder (host, {sign, orderHash, tokenS, tokenB, cutoff, type})
 {
-    const {address, r, s, v} = sign;
+    const {owner, r, s, v} = sign;
     try
     {
-        validator.validate({value: address, type: 'ETH_ADDRESS'});
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
         validator.validate({value: v, type: 'NUM'});
         validator.validate({value: s, type: 'ETH_DATA'});
         validator.validate({value: r, type: 'ETH_DATA'});
