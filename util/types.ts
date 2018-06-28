@@ -56,7 +56,7 @@ export interface OrderInfo {
   r?: string;
   s?: string;
 
-  id?: number;
+  index?: number;
   delegateContract?: string;
 }
 

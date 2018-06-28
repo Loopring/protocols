@@ -107,16 +107,18 @@ contract("Exchange", (accounts: string[]) => {
         }
 
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
-        console.log("bs:", bs);
+        // console.log("bs:", bs);
 
         await exchange.submitRings(bs, {from: miner});
+        await watchAndPrintEvent(exchange, "LogInt16Arr");
         await watchAndPrintEvent(exchange, "LogIntArr");
 
         // await exchange.bar("ab".repeat(16) + "xy".repeat(10), {from: miner});
 
-        await watchAndPrintEvent(exchange, "LogBytes");
-        await watchAndPrintEvent(exchange, "LogAddrArr");
-        await watchAndPrintEvent(exchange, "LogOrderFields");
+        // await watchAndPrintEvent(exchange, "LogUint8ArrList");
+        // await watchAndPrintEvent(exchange, "LogIntArr");
+        // await watchAndPrintEvent(exchange, "LogAddrArr");
+        // await watchAndPrintEvent(exchange, "LogOrderFields");
         // await watchAndPrintEvent(exchange, "LogInt16");
 
         assert(true);

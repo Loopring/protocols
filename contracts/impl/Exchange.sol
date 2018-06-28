@@ -199,9 +199,10 @@ contract Exchange is IExchange, NoDefaultFunc {
     event LogInt16Arr(uint16[] arr);
     event LogIntArr(uint[] arr);
     event LogAddrArr(address[] addrArr);
+    event LogUint8ArrList(uint8[][] al);
 
     function bar(bytes bs) public {
-        emit LogBytes(msg.data);
+        // emit LogBytes(msg.data);
         bytes memory copy;
         uint ptr;
         assembly {
@@ -222,7 +223,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint offset = 2;
         uint16[] memory encodeSpecs = data.copyToUint16Array(offset, encodeSpecsLen);
         offset += 2 * encodeSpecsLen;
-        // emit LogInt16Arr(encodeSpecs);
+        emit LogInt16Arr(encodeSpecs);
 
         uint16 miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
         offset += 2;
@@ -232,24 +233,29 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
         offset += 2 * encodeSpecs.orderSpecSize();
 
-        uint8[][] memory ringSpecs = data.copyToUint8ArrayList(offset, encodeSpecs.ringSpecSizeArray());
-        offset += 1 * encodeSpecs.ringSpecsDataLen();
+        emit LogInt16Arr(orderSpecs);
 
-        address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
-        offset += 20 * encodeSpecs.addressListSize();
+        uint[] memory _arr = encodeSpecs.ringSpecSizeArray();
+        emit LogIntArr(_arr);
+        // uint8[][] memory ringSpecs = data.copyToUint8ArrayList(offset, encodeSpecs.ringSpecSizeArray());
+        /* emit LogUint8ArrList(ringSpecs); */
+        /* offset += 1 * encodeSpecs.ringSpecsDataLen(); */
 
-        uint[] memory uintList =  data.copyToUintArray(offset, encodeSpecs.uintListSize());
-        offset += 32 * encodeSpecs.uintListSize();
-        // emit LogIntArr(uintList);
+        /* address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize()); */
+        /* offset += 20 * encodeSpecs.addressListSize(); */
 
-        submitRingsInternal(
-            miningSpec,
-            orderSpecs,
-            ringSpecs,
-            addressList,
-            uintList,
-            new bytes[](0)
-        );
+        /* uint[] memory uintList =  data.copyToUintArray(offset, encodeSpecs.uintListSize()); */
+        /* offset += 32 * encodeSpecs.uintListSize(); */
+        /* // emit LogIntArr(uintList); */
+
+        /* submitRingsInternal( */
+        /*     miningSpec, */
+        /*     orderSpecs, */
+        /*     ringSpecs, */
+        /*     addressList, */
+        /*     uintList, */
+        /*     new bytes[](0) */
+        /* ); */
     }
 
     function submitRingsInternal(
@@ -302,7 +308,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
 
-        handleSubmitRings(ctx, mining, orders, rings);
+        // handleSubmitRings(ctx, mining, orders, rings);
     }
 
     event LogOrder(Data.Order order);
@@ -327,21 +333,21 @@ contract Exchange is IExchange, NoDefaultFunc {
             mining.hash ^= rings[i].hash;
         }
 
-        mining.updateHash();
-        mining.updateMinerAndInterceptor(ctx);
-        mining.checkMinerSignature(ctx);
+        /* mining.updateHash(); */
+        /* mining.updateMinerAndInterceptor(ctx); */
+        /* mining.checkMinerSignature(ctx); */
 
-        for (uint i = 0; i < orders.length; i++) {
-            orders[i].checkDualAuthSignature(mining.hash);
-        }
+        /* for (uint i = 0; i < orders.length; i++) { */
+        /*     orders[i].checkDualAuthSignature(mining.hash); */
+        /* } */
 
-        for (uint i = 0; i < orders.length; i++) {
-            orders[i].updateStates(ctx);
-        }
+        /* for (uint i = 0; i < orders.length; i++) { */
+        /*     orders[i].updateStates(ctx); */
+        /* } */
 
-        for (uint i = 0; i < rings.length; i++){
-            rings[i].calculateFillAmountAndFee(mining);
-        }
+        /* for (uint i = 0; i < rings.length; i++){ */
+        /*     rings[i].calculateFillAmountAndFee(mining); */
+        /* } */
     }
 
     /* /// @return Amount of ERC20 token that can be spent by this contract. */

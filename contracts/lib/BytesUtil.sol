@@ -53,17 +53,17 @@ library BytesUtil {
     function copyToUint8ArrayList(bytes b, uint offset, uint[] innerArraySizeList)
         internal
         pure
-        returns (uint8[][]) {
+        returns (uint8[][] memory) {
         uint arraySize = innerArraySizeList.length;
         uint8[][] memory resultArray = new uint8[][](arraySize);
-        for (uint i = 0; i < arraySize; i++) {
-            uint len = innerArraySizeList[i];
-            uint8[] memory innerArray = new uint8[](len);
-            for (uint j = 0; j < len; j++) {
-                innerArray[j] = uint8(MemoryUtil.bytesToUintX(b, offset + j * (i + 1), 1));
-            }
-            resultArray[i] = innerArray;
-        }
+        /* for (uint i = 0; i < arraySize; i++) { */
+        /*     uint len = innerArraySizeList[i]; */
+        /*     uint8[] memory innerArray = new uint8[](len); */
+        /*     for (uint j = 0; j < len; j++) { */
+        /*         // innerArray[j] = uint8(MemoryUtil.bytesToUintX(b, offset + j * (i + 1), 1)); */
+        /*     } */
+        /*     resultArray[i] = innerArray; */
+        /* } */
         return resultArray;
     }
 

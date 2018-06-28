@@ -35,9 +35,9 @@ import "../impl/Data.sol";
 /// --------------------------------
 /// | 4        | bytesList length  |
 /// --------------------------------
-/// | 5 ~ 4+i  | ringSpecs i length|
+/// | 5 ~ 5+i  | ringSpecs i length|
 /// --------------------------------
-/// | 4+i ~    | bytes[i] length   |
+/// | 5+i+j ~  | bytes[j] length   |
 /// --------------------------------
 /// @title Encode spec for SumitRings parameters.
 /// @author Kongliang - <kongliang@loopring.org>.
@@ -66,18 +66,18 @@ library EncodeSpec {
     {
         uint ringSize = ringSpecSize(spec);
         require(i < ringSize);
-        uint ind = 6 + i;
+        uint ind = 5 + i;
         return spec[ind];
     }
 
     function ringSpecSizeArray(uint16[] spec)
         internal
         pure
-        returns (uint[]) {
-        uint arrayLen = ringSpecSize(spec);
+        returns (uint[] memory) {
+        uint arrayLen = spec[1];
         uint[] memory sizeArray = new uint[](arrayLen);
         for (uint i = 0; i < arrayLen; i++) {
-            sizeArray[i] = ringSpecSizeI(spec, i);
+            sizeArray[i] = uint(spec[5 + i]);
         }
         return sizeArray;
     }

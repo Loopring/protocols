@@ -95,8 +95,8 @@ library RingHelper {
             smallest_ = i;
         }
 
-        uint j = (i + 1) % ring.size;
-        Data.Participation memory nextP = ring.participations[j];
+        // uint j = (i + 1) % ring.size;
+        // Data.Participation memory nextP = ring.participations[j];
 
         /* if (p.fillAmountB < nextP.fillAmountS) { */
         /*     nextP.fillAmountS = p.fillAmountB; */

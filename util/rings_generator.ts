@@ -123,22 +123,20 @@ export class RingsGenerator {
     param.orderSpecs.push(spec);
   }
 
-  private calculateRingSpec(ring: number[]) {
-    // TODO
-    return [1, 1];
-  }
-
   private submitParamToBytes(param: RingsSubmitParam, encodeSpecs: number[]) {
     console.log("encodeSpecs:", encodeSpecs);
+    // console.log("param.orderSpecs:", param.orderSpecs);
+    // console.log("addrList:", param.addressList);
+    // console.log("uintList:", param.uintList);
     console.log("param.orderSpecs:", param.orderSpecs);
-    console.log("addrList:", param.addressList);
-    console.log("uintList:", param.uintList);
+    console.log("param.ringSpecs:", param.ringSpecs);
 
     const stream = new Bitstream();
     encodeSpecs.forEach((i) => stream.addNumber(i, 2));
     stream.addNumber(param.miningSpec, 2);
     param.orderSpecs.forEach((i) => stream.addNumber(i, 2));
     const ringSpecsFlattened = [].concat(...param.ringSpecs);
+    console.log("ringSpecsFlattened:", ringSpecsFlattened);
     ringSpecsFlattened.forEach((i) => stream.addNumber(i, 1));
     param.addressList.forEach((a) => stream.addAddress(a));
     param.uintList.forEach((bn) => stream.addBigNumber(bn));
