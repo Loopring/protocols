@@ -29,7 +29,7 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x2 != 0;
+        return spec & (1 << 6) != 0;
     }
 
     function allOrNone(uint16 spec)
@@ -37,7 +37,7 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x4 != 0;
+        return spec & (1 << 7) != 0;
     }
 
     function hasDualAuth(uint16 spec)
@@ -45,7 +45,7 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x8 != 0;
+        return spec & 0x1 != 0;
     }
 
     function hasSignature(uint16 spec)
@@ -53,7 +53,7 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x8 != 0;
+        return spec & (1 << 8) != 0;
     }
 
     function hasBroker(uint16 spec)
@@ -61,7 +61,7 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x8 != 0;
+        return spec & (1 << 1) != 0;
     }
 
     function hasBrokerInterceptor(uint16 spec)
@@ -69,7 +69,7 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x8 != 0;
+        return spec & (1 << 10) != 0;
     }
 
     function hasWallet(uint16 spec)
@@ -77,7 +77,7 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x8 != 0;
+        return spec & (1 << 3) != 0;
     }
 
     function hasValidSince(uint16 spec)
@@ -85,7 +85,7 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x8 != 0;
+        return spec & (1 << 4) != 0;
     }
 
     function hasValidUntil(uint16 spec)
@@ -93,7 +93,7 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x8 != 0;
+        return spec & (1 << 5) != 0;
     }
 
     function hasOrderInterceptor(uint16 spec)
@@ -101,6 +101,6 @@ library OrderSpec {
         pure
         returns (bool)
     {
-        return spec & 0x8 != 0;
+        return spec & (1 << 2) != 0;
     }
 }

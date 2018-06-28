@@ -16,6 +16,7 @@ const {
   TokenRegistry,
   TradeDelegate,
   DummyToken,
+  RingSpecs,
 } = new Artifacts(artifacts);
 
 contract("Exchange", (accounts: string[]) => {
@@ -109,17 +110,18 @@ contract("Exchange", (accounts: string[]) => {
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
 
-        await exchange.submitRings(bs, {from: miner});
-        await watchAndPrintEvent(exchange, "LogInt16Arr");
-        await watchAndPrintEvent(exchange, "LogIntArr");
+        const tx = await exchange.submitRings(bs, {from: miner});
+        // console.log("tx:", tx);
+        // await watchAndPrintEvent(exchange, "LogInt16Arr");
+        // await watchAndPrintEvent(exchange, "LogIntArr");
 
         // await exchange.bar("ab".repeat(16) + "xy".repeat(10), {from: miner});
 
-        // await watchAndPrintEvent(exchange, "LogUint8ArrList");
+        // await watchAndPrintEvent(exchange, "LogUint8Arr");
         // await watchAndPrintEvent(exchange, "LogIntArr");
         // await watchAndPrintEvent(exchange, "LogAddrArr");
         // await watchAndPrintEvent(exchange, "LogOrderFields");
-        // await watchAndPrintEvent(exchange, "LogInt16");
+        await watchAndPrintEvent(exchange, "LogInt");
 
         assert(true);
       });

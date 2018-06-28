@@ -34,7 +34,7 @@ library RingSpecs {
         Data.Inputs inputs
         )
         internal
-        pure
+        // pure
         returns (Data.Ring[] memory rings)
     {
         uint size = specs.length;
@@ -54,11 +54,11 @@ library RingSpecs {
         Data.Inputs inputs
         )
         internal
-        pure
+        // pure
         returns (Data.Ring memory)
     {
         uint size = pspecs.length;
-        require(size < 2 || size > 8, "bad ring size");
+        require(size > 1 && size <= 8, "bad ring size");
 
         Data.Participation[] memory parts = new Data.Participation[](size);
         address prevTokenS = address(0x0);

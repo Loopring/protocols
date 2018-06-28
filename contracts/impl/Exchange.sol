@@ -199,7 +199,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     event LogInt16Arr(uint16[] arr);
     event LogIntArr(uint[] arr);
     event LogAddrArr(address[] addrArr);
-    event LogUint8ArrList(uint8[][] al);
+    event LogUint8Arr(uint8[] al);
 
     function bar(bytes bs) public {
         // emit LogBytes(msg.data);
@@ -223,7 +223,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint offset = 2;
         uint16[] memory encodeSpecs = data.copyToUint16Array(offset, encodeSpecsLen);
         offset += 2 * encodeSpecsLen;
-        emit LogInt16Arr(encodeSpecs);
+        // emit LogInt16Arr(encodeSpecs);
 
         uint16 miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
         offset += 2;
@@ -233,29 +233,33 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
         offset += 2 * encodeSpecs.orderSpecSize();
 
-        emit LogInt16Arr(orderSpecs);
+        // emit LogInt16Arr(orderSpecs);
 
-        uint[] memory _arr = encodeSpecs.ringSpecSizeArray();
-        emit LogIntArr(_arr);
-        // uint8[][] memory ringSpecs = data.copyToUint8ArrayList(offset, encodeSpecs.ringSpecSizeArray());
-        /* emit LogUint8ArrList(ringSpecs); */
-        /* offset += 1 * encodeSpecs.ringSpecsDataLen(); */
+        // uint[] memory _arr = encodeSpecs.ringSpecSizeArray();
+        // emit LogIntArr(_arr);
+        uint8[][] memory ringSpecs = data.copyToUint8ArrayList(offset, encodeSpecs.ringSpecSizeArray());
 
-        /* address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize()); */
-        /* offset += 20 * encodeSpecs.addressListSize(); */
+        for (uint i = 0; i < ringSpecs.length; i++) {
+            emit LogUint8Arr(ringSpecs[i]);
+        }
+        offset += 1 * encodeSpecs.ringSpecsDataLen();
 
-        /* uint[] memory uintList =  data.copyToUintArray(offset, encodeSpecs.uintListSize()); */
-        /* offset += 32 * encodeSpecs.uintListSize(); */
-        /* // emit LogIntArr(uintList); */
+        address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
+        offset += 20 * encodeSpecs.addressListSize();
+        // emit LogAddrArr(addressList);
 
-        /* submitRingsInternal( */
-        /*     miningSpec, */
-        /*     orderSpecs, */
-        /*     ringSpecs, */
-        /*     addressList, */
-        /*     uintList, */
-        /*     new bytes[](0) */
-        /* ); */
+        uint[] memory uintList =  data.copyToUintArray(offset, encodeSpecs.uintListSize());
+        offset += 32 * encodeSpecs.uintListSize();
+        // emit LogIntArr(uintList);
+
+        submitRingsInternal(
+            miningSpec,
+            orderSpecs,
+            ringSpecs,
+            addressList,
+            uintList,
+            new bytes[](0)
+        );
     }
 
     function submitRingsInternal(
@@ -287,7 +291,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
 
         Data.Mining memory mining = Data.Mining(
-            inputs.nextAddress(),
+            (miningSpec.hasFeeRecipient() ? inputs.nextAddress() : tx.origin),
             (miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0)),
             (miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0)),
             bytes32(0x0), // hash
@@ -302,9 +306,10 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
 
         Data.Order[] memory orders = orderSpecs.assembleOrders(inputs);
-        Data.Order memory o = orders[0];
-        // emit LogOrder(orders[0]);
-        emit LogOrderFields(o.owner, o.tokenS, o.amountS, o.lrcFee);
+        /* Data.Order memory o = orders[0]; */
+        /* // emit LogOrder(orders[0]); */
+        /* emit LogOrderFields(o.owner, o.tokenS, o.amountS, o.lrcFee); */
+        // emit LogInt(orders.length);
 
         Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
 

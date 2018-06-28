@@ -44,6 +44,8 @@ export class RingsGenerator {
     this.calculateMiningSepc(ringsInfo, param);
     param.ringSpecs = ringsInfo.rings;
     ringsInfo.orders.map((o) => this.calculateOrderSpec(o, param));
+
+    ringsInfo.orders.forEach((o) => console.log(o));
     return param;
   }
 
@@ -69,12 +71,13 @@ export class RingsGenerator {
 
   private calculateOrderSpec(order: OrderInfo, param: RingsSubmitParam) {
     param.addressList.push(order.owner);
-    param.addressList.push(order.delegateContract);
     param.addressList.push(order.tokenS);
     // param.addressList.push(order.tokenB);
     param.uintList.push(new BigNumber(order.amountS));
     param.uintList.push(new BigNumber(order.amountB));
     param.uintList.push(new BigNumber(order.lrcFee));
+
+    // param.addressList.push(order.delegateContract);
 
     let spec = 0;
     if (order.dualAuthAddr) {
@@ -124,12 +127,12 @@ export class RingsGenerator {
   }
 
   private submitParamToBytes(param: RingsSubmitParam, encodeSpecs: number[]) {
-    console.log("encodeSpecs:", encodeSpecs);
+    // console.log("encodeSpecs:", encodeSpecs);
     // console.log("param.orderSpecs:", param.orderSpecs);
-    // console.log("addrList:", param.addressList);
-    // console.log("uintList:", param.uintList);
-    console.log("param.orderSpecs:", param.orderSpecs);
-    console.log("param.ringSpecs:", param.ringSpecs);
+    console.log("addrList:", param.addressList);
+    console.log("uintList:", param.uintList);
+    // console.log("param.orderSpecs:", param.orderSpecs);
+    // console.log("param.ringSpecs:", param.ringSpecs);
 
     const stream = new Bitstream();
     encodeSpecs.forEach((i) => stream.addNumber(i, 2));

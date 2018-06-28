@@ -56,14 +56,15 @@ library BytesUtil {
         returns (uint8[][] memory) {
         uint arraySize = innerArraySizeList.length;
         uint8[][] memory resultArray = new uint8[][](arraySize);
-        /* for (uint i = 0; i < arraySize; i++) { */
-        /*     uint len = innerArraySizeList[i]; */
-        /*     uint8[] memory innerArray = new uint8[](len); */
-        /*     for (uint j = 0; j < len; j++) { */
-        /*         // innerArray[j] = uint8(MemoryUtil.bytesToUintX(b, offset + j * (i + 1), 1)); */
-        /*     } */
-        /*     resultArray[i] = innerArray; */
-        /* } */
+        for (uint i = 0; i < arraySize; i++) {
+            uint len = innerArraySizeList[i];
+            uint8[] memory innerArray = new uint8[](len);
+            for (uint j = 0; j < len; j++) {
+                innerArray[j] = uint8(MemoryUtil.bytesToUintX(b, offset + j, 1));
+            }
+            resultArray[i] = innerArray;
+            offset += len;
+        }
         return resultArray;
     }
 
