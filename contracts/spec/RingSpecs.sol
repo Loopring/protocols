@@ -34,7 +34,7 @@ library RingSpecs {
         Data.Inputs inputs
         )
         internal
-        // pure
+        pure
         returns (Data.Ring[] memory rings)
     {
         uint size = specs.length;
@@ -54,7 +54,7 @@ library RingSpecs {
         Data.Inputs inputs
         )
         internal
-        // pure
+        pure
         returns (Data.Ring memory)
     {
         uint size = pspecs.length;
@@ -72,7 +72,7 @@ library RingSpecs {
                 /* inputs.nextUint(), */
                 /* 0, // splitS */
                 /* 0, // splitB */
-                inputs.nextUint(), // lrcFee
+                orders[pspec.orderIndex()].lrcFee, // lrcFee
                 /* 0, // lrcReward */
                 0 // fillAmountS
                 // 0  // fillAmountB

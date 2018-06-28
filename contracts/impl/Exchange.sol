@@ -313,11 +313,14 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
 
-        // handleSubmitRings(ctx, mining, orders, rings);
+        // emit LogInt(rings.length);
+
+        handleSubmitRings(ctx, mining, orders, rings);
     }
 
     event LogOrder(Data.Order order);
     event LogOrderFields(address owner, address tokenS, uint amountS, uint lrcFee);
+    event LogHash(bytes32 hash);
 
     function handleSubmitRings(
         Data.Context ctx,
@@ -329,14 +332,15 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         for (uint i = 0; i < orders.length; i++) {
             orders[i].updateHash();
-            orders[i].updateBrokerAndInterceptor(ctx);
-            orders[i].checkBrokerSignature(ctx);
+            /* orders[i].updateBrokerAndInterceptor(ctx); */
+            /* orders[i].checkBrokerSignature(ctx); */
+            emit LogHash(orders[i].hash);
         }
 
-        for (uint i = 0; i < rings.length; i++) {
-            rings[i].updateHash();
-            mining.hash ^= rings[i].hash;
-        }
+        /* for (uint i = 0; i < rings.length; i++) { */
+        /*     rings[i].updateHash(); */
+        /*     mining.hash ^= rings[i].hash; */
+        /* } */
 
         /* mining.updateHash(); */
         /* mining.updateMinerAndInterceptor(ctx); */
@@ -346,9 +350,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         /*     orders[i].checkDualAuthSignature(mining.hash); */
         /* } */
 
-        /* for (uint i = 0; i < orders.length; i++) { */
-        /*     orders[i].updateStates(ctx); */
-        /* } */
+        for (uint i = 0; i < orders.length; i++) {
+            orders[i].updateStates(ctx);
+        }
 
         /* for (uint i = 0; i < rings.length; i++){ */
         /*     rings[i].calculateFillAmountAndFee(mining); */
