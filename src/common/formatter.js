@@ -44,7 +44,7 @@ export function toHex (mixed)
     if (typeof mixed === 'string')
     {
         const regex = new RegExp(/^0x[0-9a-fA-F]*$/);
-        return regex.test(mixed) ? mixed : addHexPrefix(toBuffer(String).toString('hex'));
+        return regex.test(mixed) ? mixed : addHexPrefix(toBuffer(mixed).toString('hex'));
     }
     throw new Error('Unsupported type');
 }
