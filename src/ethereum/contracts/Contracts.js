@@ -34,9 +34,8 @@ const encodeCancelOrder = (signedOrder, amount) =>
 const encodeSubmitRing = (orders, feeRecipient, feeSelections) =>
 {
     validator.validate({type: 'ETH_ADDRESS', value: feeRecipient});
-    if (feeSelections === null || feeSelections === undefined)
-    {
-        feeSelections = 0;
+    if (!feeSelections) {
+        feeSelections = orders.map(item => 0);
     }
     const rate = Math.pow(orders.reduce(order => (total, order) =>
     {

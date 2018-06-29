@@ -102,6 +102,7 @@ Get public key using the private key
 - privateKey  hex string  or  Buffer
 
 ##### Returns
+
 - publickey  hex string, without prefix
 
 ##### Example
@@ -142,7 +143,7 @@ Get keyAccount using the keystore and password
 ##### Parameters
 
 -  keystore  string
--  password  string - can be empty, depending on whether the keystore requires a password to unlock it.
+- password  string - can be empty, depending on whether the keystore requires a password to unlock it.
 
 ##### Returns
 
