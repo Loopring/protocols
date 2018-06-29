@@ -154,7 +154,7 @@ export function getRingHash (orders, feeRecipient, feeSelections)
     return soliditySHA3(['string', 'address', 'uint16'], [
         xorReduceStr(orderHashList),
         feeRecipient,
-        feeSelections
+        feeSelectionListToNumber(feeSelections)
     ]);
 }
 
@@ -175,4 +175,15 @@ function xorReduceStr (strArr)
     };
     const reduceRes = tail.reduce((a, b) => strXor(a, b), s0);
     return Buffer.from(reduceRes.slice(2), 'hex');
+}
+
+function feeSelectionListToNumber (feeSelections)
+{
+    let res = 0;
+    for (let i = 0; i < feeSelections.length; i++)
+    {
+        res += feeSelections[i] << i;
+    }
+
+    return res;
 }
