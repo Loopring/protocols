@@ -103,7 +103,7 @@ library Data {
         uint lrcFee;
         // uint lrcReward;
         uint fillAmountS;
-        // uint fillAmountB;
+        uint fillAmountB;
     }
 
     struct Ring{

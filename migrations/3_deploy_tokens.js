@@ -13,7 +13,7 @@ module.exports = function(deployer, network, accounts) {
     deployer.then(() => {
       return TokenRegistry.deployed();
     }).then((tokenRegistry) => {
-      return Bluebird.each(devTokenInfos.map(token =>  DummyToken.new(
+      return Bluebird.each(devTokenInfos.map(token => DummyToken.new(
         token.name,
         token.symbol,
         token.decimals,

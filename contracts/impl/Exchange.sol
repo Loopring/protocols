@@ -307,7 +307,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         Data.Order[] memory orders = orderSpecs.assembleOrders(inputs);
         /* Data.Order memory o = orders[0]; */
-        /* // emit LogOrder(orders[0]); */
+        /* // Emit Logorder(orders[0]); */
         /* emit LogOrderFields(o.owner, o.tokenS, o.amountS, o.lrcFee); */
         // emit LogInt(orders.length);
 
@@ -318,8 +318,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         handleSubmitRings(ctx, mining, orders, rings);
     }
 
-    event LogOrder(Data.Order order);
-    event LogOrderFields(address owner, address tokenS, uint amountS, uint lrcFee);
+    event LogOrderFields(uint maxAmountS, uint maxLrcFee);
     event LogHash(bytes32 hash);
 
     function handleSubmitRings(
@@ -352,11 +351,12 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].updateStates(ctx);
+            emit LogOrderFields(orders[i].maxAmountS, orders[i].maxAmountLrcFee);
         }
 
-        /* for (uint i = 0; i < rings.length; i++){ */
-        /*     rings[i].calculateFillAmountAndFee(mining); */
-        /* } */
+        for (uint i = 0; i < rings.length; i++){
+            rings[i].calculateFillAmountAndFee(mining);
+        }
     }
 
     /* /// @return Amount of ERC20 token that can be spent by this contract. */

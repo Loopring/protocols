@@ -74,8 +74,8 @@ library RingSpecs {
                 /* 0, // splitB */
                 orders[pspec.orderIndex()].lrcFee, // lrcFee
                 /* 0, // lrcReward */
-                0 // fillAmountS
-                // 0  // fillAmountB
+                0, // fillAmountS
+                0  // fillAmountB
             );
 
             parts[i].order.tokenB = prevTokenS;
