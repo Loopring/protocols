@@ -40,8 +40,8 @@ library RingHelper {
             ring.hash = keccak256(
                 abi.encodePacked(
                     ring.hash,
-                    p.order.hash,
-                    p.marginSplitAsFee
+                    p.order.hash
+                    // p.marginSplitAsFee
                 )
             );
         }
@@ -58,22 +58,26 @@ library RingHelper {
             Data.Participation memory p = ring.participations[i];
             Data.Order memory order = p.order;
             p.fillAmountS = order.maxAmountS;
-            p.fillAmountB = order.maxAmountB;
+            // p.fillAmountB = order.maxAmountB;
         }
 
         uint smallest = 0;
 
         for (uint i = 0; i < ring.size; i++) {
-            smallest = calculateOrderFillAmounts(ring, i, smallest);
+            if (i == ring.size - 1 && smallest == 0) {
+                smallest = calculateOrderFillAmounts(ring, i, smallest, true);
+            } else {
+                smallest = calculateOrderFillAmounts(ring, i, smallest, false);
+            }
         }
 
-        for (uint i = 0; i < smallest; i++) {
+        for (uint i = 0; i < smallest ; i++) {
             calculateOrderFillAmounts(ring, i, smallest);
         }
 
         for (uint i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
-            p.calculateFeeAmounts(mining);
+            // p.calculateFeeAmounts(mining);
             p.adjustOrderState();
         }
     }
@@ -81,7 +85,8 @@ library RingHelper {
     function calculateOrderFillAmounts(
         Data.Ring ring,
         uint i,
-        uint smallest
+        uint smallest,
+        bool last
         )
         internal
         pure

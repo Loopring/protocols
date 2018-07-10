@@ -57,7 +57,7 @@ library Data {
         // computed fields
         bytes32 hash;
         address interceptor;
-        uint    spendableLRC;
+        /* uint    spendableLRC; */  // no lrc reward, so this field is unused.
     }
 
     struct Order {
@@ -93,15 +93,15 @@ library Data {
     struct Participation {
         // required fields
         Order order;
-        bool marginSplitAsFee;
-        uint rateS;
-        uint rateB;
+        /* bool marginSplitAsFee; */
+        /* uint rateS; */
+        /* uint rateB; */
 
-        // computed fields
+        /* // computed fields */
         uint splitS;
         uint splitB;
         uint lrcFee;
-        uint lrcReward;
+        // uint lrcReward;
         uint fillAmountS;
         uint fillAmountB;
     }

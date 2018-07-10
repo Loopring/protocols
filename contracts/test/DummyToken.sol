@@ -57,4 +57,16 @@ contract DummyToken is ERC20Token {
         balances[_target] = _value;
     }
 
+    function addBalance(
+        address _target,
+        uint _value
+        )
+        public
+    {
+        uint currBalance = balanceOf(_target);
+        require(_value + currBalance >= currBalance);
+        totalSupply_ = totalSupply_.add(_value);
+        balances[_target] = currBalance.add(_value);
+    }
+
 }

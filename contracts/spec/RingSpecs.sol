@@ -58,7 +58,7 @@ library RingSpecs {
         returns (Data.Ring memory)
     {
         uint size = pspecs.length;
-        require(size < 2 || size > 8, "bad ring size");
+        require(size > 1 && size <= 8, "bad ring size");
 
         Data.Participation[] memory parts = new Data.Participation[](size);
         address prevTokenS = address(0x0);
@@ -67,13 +67,13 @@ library RingSpecs {
             uint8 pspec = pspecs[i];
             parts[i] = Data.Participation(
                 orders[pspec.orderIndex()],
-                pspec.marginSplitAsFee(),
-                inputs.nextUint(),
-                inputs.nextUint(),
+                /* pspec.marginSplitAsFee(), */
+                /* inputs.nextUint(), */
+                /* inputs.nextUint(), */
                 0, // splitS
                 0, // splitB
-                0, // lrcFee
-                0, // lrcReward
+                orders[pspec.orderIndex()].lrcFee, // lrcFee
+                /* 0, // lrcReward */
                 0, // fillAmountS
                 0  // fillAmountB
             );

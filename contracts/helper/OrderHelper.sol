@@ -183,7 +183,7 @@ library OrderHelper {
             }
         }
 
-        if (brokerInterceptor != tokenOwner) {
+        if (brokerInterceptor != 0x0 && brokerInterceptor != tokenOwner) {
             amount = IBrokerInterceptor(brokerInterceptor).getAllowance(
                 tokenOwner,
                 broker,

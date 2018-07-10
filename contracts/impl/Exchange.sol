@@ -28,11 +28,13 @@ import "../iface/IMinerRegistry.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/BytesUtil.sol";
+import "../lib/MemoryUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
 import "../lib/NoDefaultFunc.sol";
 
+import "../spec/EncodeSpec.sol";
 import "../spec/OrderSpecs.sol";
 import "../spec/MiningSpec.sol";
 import "../spec/RingSpecs.sol";
@@ -57,7 +59,9 @@ import "./Data.sol";
 ///     https://github.com/Hephyrius
 contract Exchange is IExchange, NoDefaultFunc {
     using MathUint      for uint;
+    using BytesUtil     for bytes;
     using MiningSpec    for uint16;
+    using EncodeSpec    for uint16[];
     using OrderSpecs    for uint16[];
     using RingSpecs     for uint8[][];
     using OrderHelper     for Data.Order;
@@ -76,6 +80,16 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint64  public  ringIndex                   = 0;
 
     uint    public constant MAX_RING_SIZE       = 8;
+
+    struct SubmitRingsParam {
+        uint16[]    encodeSpecs;
+        uint16      miningSpec;
+        uint16[]    orderSpecs;
+        uint8[][]   ringSpecs;
+        address[]   addressList;
+        uint[]      uintList;
+        bytes[]     bytesList;
+    }
 
     constructor(
         address _lrcTokenAddress,
@@ -175,16 +189,90 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
     }
 
+    /* event LogParam(uint16 miningSpec, uint16[] orderSpecs, address[] addressList, uint[] uintList); */
+
+    /* event Log2DArr(uint8[] uis); */
+
+    event LogInt(uint i);
+    event LogInt16(uint16 i16);
+    event LogBytes(bytes bs);
+    event LogInt16Arr(uint16[] arr);
+    event LogIntArr(uint[] arr);
+    event LogAddrArr(address[] addrArr);
+    event LogUint8Arr(uint8[] al);
+
+    function bar(bytes bs) public {
+        // emit LogBytes(msg.data);
+        bytes memory copy;
+        uint ptr;
+        assembly {
+            ptr := copy
+            let len := sub(calldatasize, 68)
+            calldatacopy(ptr, 36, add(32, len))
+        }
+        emit LogBytes(copy);
+    }
+
     function submitRings(
-        uint16 miningSpec,
-        uint16[] orderSpecs,
-        uint8[][] ringSpecs,
-        address[] addressLists,
-        uint[] uintList,
-        bytes[] bytesList
+        bytes data
         )
         public
     {
+        // emit LogBytes(msg.data);
+        uint16 encodeSpecsLen = uint16(MemoryUtil.bytesToUintX(data, 0, 2));
+        uint offset = 2;
+        uint16[] memory encodeSpecs = data.copyToUint16Array(offset, encodeSpecsLen);
+        offset += 2 * encodeSpecsLen;
+        // emit LogInt16Arr(encodeSpecs);
+
+        uint16 miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
+        offset += 2;
+        uint16[] memory orderSpecs = data.copyToUint16Array(
+            offset,
+            encodeSpecs.orderSpecSize()
+        );
+        offset += 2 * encodeSpecs.orderSpecSize();
+
+        // emit LogInt16Arr(orderSpecs);
+
+        // uint[] memory _arr = encodeSpecs.ringSpecSizeArray();
+        // emit LogIntArr(_arr);
+        uint8[][] memory ringSpecs = data.copyToUint8ArrayList(offset, encodeSpecs.ringSpecSizeArray());
+
+        for (uint i = 0; i < ringSpecs.length; i++) {
+            emit LogUint8Arr(ringSpecs[i]);
+        }
+        offset += 1 * encodeSpecs.ringSpecsDataLen();
+
+        address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
+        offset += 20 * encodeSpecs.addressListSize();
+        // emit LogAddrArr(addressList);
+
+        uint[] memory uintList =  data.copyToUintArray(offset, encodeSpecs.uintListSize());
+        offset += 32 * encodeSpecs.uintListSize();
+        // emit LogIntArr(uintList);
+
+        submitRingsInternal(
+            miningSpec,
+            orderSpecs,
+            ringSpecs,
+            addressList,
+            uintList,
+            new bytes[](0)
+        );
+    }
+
+    function submitRingsInternal(
+        uint16 miningSpec,
+        uint16[] orderSpecs,
+        uint8[][] ringSpecs,
+        address[] addressList,
+        uint[] uintList,
+        bytes[] bytesList
+        )
+        internal
+    {
+        // emit LogParam(miningSpec, orderSpecs, addressList, uintList);
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
             ITokenRegistry(tokenRegistryAddress),
@@ -196,32 +284,42 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
 
         Data.Inputs memory inputs = Data.Inputs(
-            addressLists,
+            addressList,
             uintList,
             bytesList,
             0, 0, 0  // current indices of addressLists, uintList, and bytesList.
         );
 
         Data.Mining memory mining = Data.Mining(
-            inputs.nextAddress(),
+            (miningSpec.hasFeeRecipient() ? inputs.nextAddress() : tx.origin),
             (miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0)),
             (miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0)),
             bytes32(0x0), // hash
-            address(0x0),  // interceptor
-            getSpendable(
-                ctx.delegate,
-                ctx.lrcTokenAddress,
-                tx.origin, // TODO(daniel): pay from msg.sender?
-                0x0, // broker
-                0x0  // brokerInterceptor
-            )
+            address(0x0)  // interceptor
+            /* getSpendable( */
+            /*     ctx.delegate, */
+            /*     ctx.lrcTokenAddress, */
+            /*     tx.origin, // TODO(daniel): pay from msg.sender? */
+            /*     0x0, // broker */
+            /*     0x0  // brokerInterceptor */
+            /* ) */
         );
 
         Data.Order[] memory orders = orderSpecs.assembleOrders(inputs);
+        /* Data.Order memory o = orders[0]; */
+        /* // Emit Logorder(orders[0]); */
+        /* emit LogOrderFields(o.owner, o.tokenS, o.amountS, o.lrcFee); */
+        // emit LogInt(orders.length);
+
         Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
+
+        // emit LogInt(rings.length);
 
         handleSubmitRings(ctx, mining, orders, rings);
     }
+
+    event LogOrderFields(uint maxAmountS, uint maxLrcFee);
+    event LogHash(bytes32 hash);
 
     function handleSubmitRings(
         Data.Context ctx,
@@ -233,71 +331,73 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         for (uint i = 0; i < orders.length; i++) {
             orders[i].updateHash();
-            orders[i].updateBrokerAndInterceptor(ctx);
-            orders[i].checkBrokerSignature(ctx);
+            /* orders[i].updateBrokerAndInterceptor(ctx); */
+            /* orders[i].checkBrokerSignature(ctx); */
+            emit LogHash(orders[i].hash);
         }
 
-        for (uint i = 0; i < rings.length; i++) {
-            rings[i].updateHash();
-            mining.hash ^= rings[i].hash;
-        }
+        /* for (uint i = 0; i < rings.length; i++) { */
+        /*     rings[i].updateHash(); */
+        /*     mining.hash ^= rings[i].hash; */
+        /* } */
 
-        mining.updateHash();
-        mining.updateMinerAndInterceptor(ctx);
-        mining.checkMinerSignature(ctx);
+        /* mining.updateHash(); */
+        /* mining.updateMinerAndInterceptor(ctx); */
+        /* mining.checkMinerSignature(ctx); */
 
-        for (uint i = 0; i < orders.length; i++) {
-            orders[i].checkDualAuthSignature(mining.hash);
-        }
+        /* for (uint i = 0; i < orders.length; i++) { */
+        /*     orders[i].checkDualAuthSignature(mining.hash); */
+        /* } */
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].updateStates(ctx);
+            emit LogOrderFields(orders[i].maxAmountS, orders[i].maxAmountLrcFee);
         }
 
-        for (uint i = 0; i < rings.length; i++){
-            rings[i].calculateFillAmountAndFee(mining);
-        }
+        /* for (uint i = 0; i < rings.length; i++){ */
+        /*     rings[i].calculateFillAmountAndFee(mining); */
+        /* } */
     }
 
-    /// @return Amount of ERC20 token that can be spent by this contract.
-    // TODO(daniel): there is another getSpendable in OrderHelper.
-    function getSpendable(
-        ITradeDelegate delegate,
-        address tokenAddress,
-        address tokenOwner,
-        address broker,
-        address brokerInterceptor
-        )
-        private
-        view
-        returns (uint spendable)
-    {
-        ERC20 token = ERC20(tokenAddress);
-        spendable = token.allowance(
-            tokenOwner,
-            address(delegate)
-        );
-        if (spendable == 0) {
-            return;
-        }
-        uint amount = token.balanceOf(tokenOwner);
-        if (amount < spendable) {
-            spendable = amount;
-            if (spendable == 0) {
-                return;
-            }
-        }
+    /* /// @return Amount of ERC20 token that can be spent by this contract. */
+    /* // TODO(daniel): there is another getSpendable in OrderHelper. */
+    /* function getSpendable( */
+    /*     ITradeDelegate delegate, */
+    /*     address tokenAddress, */
+    /*     address tokenOwner, */
+    /*     address broker, */
+    /*     address brokerInterceptor */
+    /*     ) */
+    /*     private */
+    /*     view */
+    /*     returns (uint spendable) */
+    /* { */
+    /*     ERC20 token = ERC20(tokenAddress); */
+    /*     spendable = token.allowance( */
+    /*         tokenOwner, */
+    /*         address(delegate) */
+    /*     ); */
+    /*     if (spendable == 0) { */
+    /*         return; */
+    /*     } */
+    /*     uint amount = token.balanceOf(tokenOwner); */
+    /*     if (amount < spendable) { */
+    /*         spendable = amount; */
+    /*         if (spendable == 0) { */
+    /*             return; */
+    /*         } */
+    /*     } */
 
-        if (brokerInterceptor != tokenOwner) {
-            amount = IBrokerInterceptor(brokerInterceptor).getAllowance(
-                tokenOwner,
-                broker,
-                tokenAddress
-            );
-            if (amount < spendable) {
-                spendable = amount;
-            }
-        }
-    }
+    /*     if (brokerInterceptor != tokenOwner) { */
+    /*         amount = IBrokerInterceptor(brokerInterceptor).getAllowance( */
+    /*             tokenOwner, */
+    /*             broker, */
+    /*             tokenAddress */
+    /*         ); */
+    /*         if (amount < spendable) { */
+    /*             spendable = amount; */
+    /*         } */
+    /*     } */
+    /* } */
 
 }

@@ -19,7 +19,8 @@
     "compile": "rm -rf build/contracts && truffle compile",
     "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
-    "testrpc": "ganache-cli"
+    "testrpc": "ganache-cli",
+    "truffle": "truffle"
   },
   "license": "ISC",
   "devDependencies": {
@@ -33,13 +34,13 @@
     "copyfiles": "^1.2.0",
     "dirty-chai": "^2.0.1",
     "ganache-cli": "^6.1.0",
-    "solc": "^0.4.24",
+    "mocha": "^5.2.0",
     "solium": "^1.1.7",
-    "truffle": "^4.1.11",
+    "truffle": "4.1.13",
     "tslint": "5.8.0",
     "typescript": "2.7.1",
-    "web3-typescript-typings": "0.0.3",
-    "webpack": "^4.11.1"
+    "web3-typescript-typings": "0.10.2",
+    "webpack": "^4.0.0"
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.30",
@@ -60,6 +61,6 @@
     "js-sha3": "^0.7.0",
     "lodash": "^4.17.5",
     "npm": "^6.1.0",
-    "web3": "0.20.2"
+    "web3": "0.20.6"
   }
 }

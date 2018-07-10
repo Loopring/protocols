@@ -24,23 +24,15 @@ import "../impl/Data.sol";
 /// @title An Implementation of IOrderbook.
 /// @author Daniel Wang - <daniel@loopring.org>.
 library MiningSpec {
+    function hasFeeRecipient(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & 0x1 != 0;
+    }
+
     function hasMiner(uint16 spec)
-        internal
-        pure
-        returns (bool)
-    {
-        return spec & 0x2 != 0;
-    }
-
-    function hasBroker(uint16 spec)
-        internal
-        pure
-        returns (bool)
-    {
-        return spec & 0x2 != 0;
-    }
-
-    function hasMinerInterceptor(uint16 spec)
         internal
         pure
         returns (bool)
@@ -53,6 +45,23 @@ library MiningSpec {
         pure
         returns (bool)
     {
-        return spec & 0x2 != 0;
+        return spec & 0x4 != 0;
     }
+
+    /* function hasBroker(uint16 spec) */
+    /*     internal */
+    /*     pure */
+    /*     returns (bool) */
+    /* { */
+    /*     return spec & 0x2 != 0; */
+    /* } */
+
+    /* function hasMinerInterceptor(uint16 spec) */
+    /*     internal */
+    /*     pure */
+    /*     returns (bool) */
+    /* { */
+    /*     return spec & 0x2 != 0; */
+    /* } */
+
 }

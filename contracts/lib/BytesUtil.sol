@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "./MemoryUtil.sol";
 
 /// @title Utility Functions for bytes
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -37,4 +38,56 @@ library BytesUtil {
         }
         return temp;
     }
+
+    function copyToUint16Array(bytes b, uint offset, uint arraySize)
+        internal
+        pure
+        returns (uint16[]) {
+        uint16[] memory resultArray = new uint16[](arraySize);
+        for (uint i = 0; i < arraySize; i++) {
+            resultArray[i] = uint16(MemoryUtil.bytesToUintX(b, offset + i * 2, 2));
+        }
+        return resultArray;
+    }
+
+    function copyToUint8ArrayList(bytes b, uint offset, uint[] innerArraySizeList)
+        internal
+        pure
+        returns (uint8[][] memory) {
+        uint arraySize = innerArraySizeList.length;
+        uint8[][] memory resultArray = new uint8[][](arraySize);
+        for (uint i = 0; i < arraySize; i++) {
+            uint len = innerArraySizeList[i];
+            uint8[] memory innerArray = new uint8[](len);
+            for (uint j = 0; j < len; j++) {
+                innerArray[j] = uint8(MemoryUtil.bytesToUintX(b, offset + j, 1));
+            }
+            resultArray[i] = innerArray;
+            offset += len;
+        }
+        return resultArray;
+    }
+
+    function copyToAddressArray(bytes b, uint offset, uint arraySize)
+        internal
+        pure
+        returns (address[]) {
+        address[] memory resultArray = new address[](arraySize);
+        for (uint i = 0; i < arraySize; i++) {
+            resultArray[i] = MemoryUtil.bytesToAddress(b, offset + i * 20);
+        }
+        return resultArray;
+    }
+
+    function copyToUintArray(bytes b, uint offset, uint arraySize)
+        internal
+        pure
+        returns (uint[]) {
+        uint[] memory resultArray = new uint[](arraySize);
+        for (uint i = 0; i < arraySize; i++) {
+            resultArray[i] = MemoryUtil.bytesToUint(b, offset + i * 32);
+        }
+        return resultArray;
+    }
+
 }

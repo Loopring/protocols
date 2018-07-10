@@ -1,9 +1,17 @@
 import { BigNumber } from "bignumber.js";
+import BN = require("bn.js");
 import promisify = require("es6-promisify");
+import abi = require("ethereumjs-abi");
+import ethUtil = require("ethereumjs-util");
 import * as _ from "lodash";
+import util = require("util");
+import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/artifacts";
-import { RingFactory } from "../util/ring_factory";
-import { OrderParams } from "../util/types";
+import { Bitstream } from "../util/bitstream";
+import { Ring } from "../util/ring";
+import { ringsInfoList } from "../util/rings_config";
+import { RingsGenerator } from "../util/rings_generator";
+import { OrderInfo, RingsInfo } from "../util/types";
 
 const {
   Exchange,
@@ -13,26 +21,17 @@ const {
 } = new Artifacts(artifacts);
 
 contract("Exchange", (accounts: string[]) => {
+  const miner = accounts[0];
+  const orderOwners = accounts.slice(5, 8); // 5 ~ 7
+
   let exchange: any;
   let tokenRegistry: any;
   let tradeDelegate: any;
+  let lrcAddress: string;
 
-  let currBlockTimeStamp: number;
-  let walletSplitPercentage: number;
-
-  let ringFactory: RingFactory;
-
-  const getTokenBalanceAsync = async (token: any, addr: string) => {
-    const tokenBalanceStr = await token.balanceOf(addr);
-    const balance = new BigNumber(tokenBalanceStr);
-    return balance;
-  };
-
-  const getEthBalanceAsync = async (addr: string) => {
-    const balanceStr = await promisify(web3.eth.getBalance)(addr);
-    const balance = new BigNumber(balanceStr);
-    return balance;
-  };
+  const tokenSymbolAddrMap = new Map();
+  const tokenInstanceMap = new Map();
+  const allTokenSymbols = tokenInfos.development.map((t) => t.symbol);
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, precision: number = 8) => {
     const numStr1 = (n1 / 1e18).toFixed(precision);
@@ -41,19 +40,62 @@ contract("Exchange", (accounts: string[]) => {
     return assert.equal(Number(numStr1), Number(numStr2));
   };
 
-  const clear = async (tokens: any[], addresses: string[]) => {
-    for (const token of tokens) {
-      for (const address of addresses) {
-        await token.setBalance(address, 0);
+  // const approve = async (tokens: any[], addresses: string[], amounts: number[]) => {
+  //   for (let i = 0; i < tokens.length; i++) {
+  //     await tokens[i].approve(TradeDelegate.address, 0, {from: addresses[i]});
+  //     await tokens[i].approve(TradeDelegate.address, amounts[i], {from: addresses[i]});
+  //   }
+  // };
+
+  const getEventsFromContract = async (contract: any, eventName: string, fromBlock: number) => {
+    return new Promise((resolve, reject) => {
+      if (!contract[eventName]) {
+        throw Error("TypeError: contract[eventName] is not a function: " + eventName);
       }
-    }
+
+      const events = contract[eventName]({}, { fromBlock, toBlock: "latest" });
+      events.watch();
+      events.get((error: any, event: any) => {
+        if (!error) {
+          resolve(event);
+        } else {
+          throw Error("Failed to find filtered event: " + error);
+        }
+      });
+      events.stopWatching();
+    });
   };
 
-  const approve = async (tokens: any[], addresses: string[], amounts: number[]) => {
-    for (let i = 0; i < tokens.length; i++) {
-      await tokens[i].approve(TradeDelegate.address, 0, {from: addresses[i]});
-      await tokens[i].approve(TradeDelegate.address, amounts[i], {from: addresses[i]});
+  const watchAndPrintEvent = async (contract: any, eventName: string) => {
+    const events: any = await getEventsFromContract(contract, eventName, 0);
+
+    events.forEach((e: any) => {
+      console.log("event:", util.inspect(e.args, false, null));
+    });
+  };
+
+  const setupOrder = async (order: OrderInfo, index: number) => {
+    const ownerIndex = index === 0 ? index : index % orderOwners.length;
+    const owner = orderOwners[ownerIndex];
+
+    const symbolS = order.tokenS;
+    const symbolB = order.tokenB;
+    const addrS = await tokenRegistry.getAddressBySymbol(symbolS);
+    const addrB = await tokenRegistry.getAddressBySymbol(symbolB);
+
+    order.owner = owner;
+    order.delegateContract = TradeDelegate.address;
+    order.tokenS = addrS;
+    order.tokenB = addrB;
+    if (!order.lrcFee) {
+      order.lrcFee = 1e18;
     }
+
+    // setup amount:
+    const orderTokenS = await DummyToken.at(addrS);
+    await orderTokenS.addBalance(order.owner, order.amountS);
+    const lrcToken = await DummyToken.at(lrcAddress);
+    await lrcToken.addBalance(order.owner, order.lrcFee);
   };
 
   before( async () => {
@@ -62,12 +104,49 @@ contract("Exchange", (accounts: string[]) => {
       TokenRegistry.deployed(),
       TradeDelegate.deployed(),
     ]);
+    lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
+
+    for (const sym of allTokenSymbols) {
+      const addr = await tokenRegistry.getAddressBySymbol(sym);
+      tokenSymbolAddrMap.set(sym, addr);
+      const token = await DummyToken.at(addr);
+      // approve once for all orders:
+      for (const orderOwner of orderOwners) {
+        await token.approve(TradeDelegate.address, 1e27, {from: orderOwner});
+      }
+    }
   });
 
   describe("submitRing", () => {
-    it("should be able to fill ring with 2 orders", async () => {
-      assert(true);
-    });
+    const currBlockTimeStamp = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+    const ringsGenerator = new RingsGenerator(TradeDelegate.address, currBlockTimeStamp);
+
+    for (const ringsInfo of ringsInfoList) {
+      // all configed testcases here:
+      it(ringsInfo.description, async () => {
+        for (const [i, order] of ringsInfo.orders.entries()) {
+          await setupOrder(order, i);
+        }
+
+        const bs = ringsGenerator.toSubmitableParam(ringsInfo);
+        // console.log("bs:", bs);
+
+        const tx = await exchange.submitRings(bs, {from: miner});
+        // console.log("tx:", tx);
+        // await watchAndPrintEvent(exchange, "LogInt16Arr");
+        // await watchAndPrintEvent(exchange, "LogIntArr");
+
+        // await exchange.bar("ab".repeat(16) + "xy".repeat(10), {from: miner});
+
+        // await watchAndPrintEvent(exchange, "LogUint8Arr");
+        // await watchAndPrintEvent(exchange, "LogIntArr");
+        // await watchAndPrintEvent(exchange, "LogAddrArr");
+        await watchAndPrintEvent(exchange, "LogOrderFields");
+        // await watchAndPrintEvent(exchange, "LogHash");
+
+        assert(true);
+      });
+    }
 
   });
 
