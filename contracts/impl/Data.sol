@@ -98,8 +98,8 @@ library Data {
         /* uint rateB; */
 
         /* // computed fields */
-        /* uint splitS; */
-        /* uint splitB; */
+        uint splitS;
+        uint splitB;
         uint lrcFee;
         // uint lrcReward;
         uint fillAmountS;

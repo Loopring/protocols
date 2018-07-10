@@ -58,16 +58,20 @@ library RingHelper {
             Data.Participation memory p = ring.participations[i];
             Data.Order memory order = p.order;
             p.fillAmountS = order.maxAmountS;
-            p.fillAmountB = order.maxAmountB;
+            // p.fillAmountB = order.maxAmountB;
         }
 
         uint smallest = 0;
 
         for (uint i = 0; i < ring.size; i++) {
-            smallest = calculateOrderFillAmounts(ring, i, smallest);
+            if (i == ring.size - 1 && smallest == 0) {
+                smallest = calculateOrderFillAmounts(ring, i, smallest, true);
+            } else {
+                smallest = calculateOrderFillAmounts(ring, i, smallest, false);
+            }
         }
 
-        for (uint i = 0; i < smallest; i++) {
+        for (uint i = 0; i < smallest ; i++) {
             calculateOrderFillAmounts(ring, i, smallest);
         }
 
@@ -81,7 +85,8 @@ library RingHelper {
     function calculateOrderFillAmounts(
         Data.Ring ring,
         uint i,
-        uint smallest
+        uint smallest,
+        bool last
         )
         internal
         pure
@@ -90,18 +95,18 @@ library RingHelper {
         // Default to the same smallest index
         smallest_ = smallest;
 
-        /* Data.Participation memory p = ring.participations[i]; */
-        /* if (p.calculateFillAmounts()) { */
-        /*     smallest_ = i; */
-        /* } */
+        Data.Participation memory p = ring.participations[i];
+        if (p.calculateFillAmounts()) {
+            smallest_ = i;
+        }
 
-        // uint j = (i + 1) % ring.size;
-        // Data.Participation memory nextP = ring.participations[j];
+        uint j = (i + 1) % ring.size;
+        Data.Participation memory nextP = ring.participations[j];
 
-        /* if (p.fillAmountB < nextP.fillAmountS) { */
-        /*     nextP.fillAmountS = p.fillAmountB; */
-        /* } else { */
-        /*     smallest_ = j; */
-        /* } */
+        if (p.fillAmountB < nextP.fillAmountS) {
+            nextP.fillAmountS = p.fillAmountB;
+        } else {
+            smallest_ = j;
+        }
     }
 }

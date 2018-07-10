@@ -354,9 +354,9 @@ contract Exchange is IExchange, NoDefaultFunc {
             emit LogOrderFields(orders[i].maxAmountS, orders[i].maxAmountLrcFee);
         }
 
-        for (uint i = 0; i < rings.length; i++){
-            rings[i].calculateFillAmountAndFee(mining);
-        }
+        /* for (uint i = 0; i < rings.length; i++){ */
+        /*     rings[i].calculateFillAmountAndFee(mining); */
+        /* } */
     }
 
     /* /// @return Amount of ERC20 token that can be spent by this contract. */

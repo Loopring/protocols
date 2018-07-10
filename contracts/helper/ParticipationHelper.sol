@@ -49,22 +49,17 @@ library ParticipationHelper {
         pure
         returns (bool thisOrderIsSmaller)
     {
-        thisOrderIsSmaller = true;
+        thisOrderIsSmaller = false;
 
         Data.Order memory order = p.order;
 
-        p.fillAmountB = p.fillAmountS.mul(order.amountB) / order.amountS;
-
-        if (order.limitByAmountB) {
-            if (p.fillAmountB > order.maxAmountB) {
-                p.fillAmountB = order.maxAmountB;
-                p.fillAmountS = p.fillAmountB.mul(order.amountS) / order.amountB;
-                thisOrderIsSmaller = true;
-            }
-            p.lrcFee = order.lrcFee.mul(p.fillAmountB) / order.amountB;
-        } else {
-            p.lrcFee = order.lrcFee.mul(p.fillAmountS) / order.amountS;
+        if (p.fillAmountS > order.maxAmountS) {
+            p.fillAmountS = order.maxAmountS;
+            thisOrderIsSmaller = true;
         }
+
+        p.fillAmountB = p.fillAmountS.mul(order.amountB) / order.amountS;
+        p.lrcFee = order.lrcFee.mul(p.fillAmountS) / order.amountS;
     }
 
     function calculateFeeAmounts(

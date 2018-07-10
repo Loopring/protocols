@@ -70,8 +70,8 @@ library RingSpecs {
                 /* pspec.marginSplitAsFee(), */
                 /* inputs.nextUint(), */
                 /* inputs.nextUint(), */
-                /* 0, // splitS */
-                /* 0, // splitB */
+                0, // splitS
+                0, // splitB
                 orders[pspec.orderIndex()].lrcFee, // lrcFee
                 /* 0, // lrcReward */
                 0, // fillAmountS
