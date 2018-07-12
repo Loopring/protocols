@@ -90,13 +90,7 @@ library OrderHelper {
 
         uint filled = ctx.delegate.filled(order.hash);
 
-        if (order.limitByAmountB) {
-            order.maxAmountB = order.amountB.sub(filled);
-            order.maxAmountS = order.amountS.mul(order.maxAmountB) / order.amountB;
-        } else {
-            order.maxAmountS = order.amountS.sub(filled);
-            order.maxAmountB = order.amountB.mul(order.maxAmountS) / order.amountB;
-        }
+        order.maxAmountS = order.amountS.sub(filled);
 
         uint spendableS = getSpendable(
             ctx.delegate,
@@ -112,7 +106,11 @@ library OrderHelper {
 
         if (order.tokenS == ctx.lrcTokenAddress) {
             order.sellLRC = true;
+            uint maxLrcFee = order.lrcFee.mul(filled) / order.amountS;
+            order.maxAmountS = order.maxAmountS.sub(maxLrcFee);
         }
+
+        order.maxAmountB = order.amountB.mul(order.maxAmountS) / order.amountS;
     }
 
     function checkBrokerSignature(

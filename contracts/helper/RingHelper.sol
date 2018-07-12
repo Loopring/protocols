@@ -64,16 +64,17 @@ library RingHelper {
         uint smallest = 0;
 
         for (uint i = 0; i < ring.size; i++) {
-            if (i == ring.size - 1 && smallest == 0) {
-                smallest = calculateOrderFillAmounts(ring, i, smallest, true);
-            } else {
-                smallest = calculateOrderFillAmounts(ring, i, smallest, false);
-            }
+            smallest = calculateOrderFillAmounts(ring, i, smallest);
         }
 
-        for (uint i = 0; i < smallest ; i++) {
+        for (uint i = 0; i < smallest; i++) {
             calculateOrderFillAmounts(ring, i, smallest);
         }
+
+        Data.Participation memory p = ring.participations[smallest];
+        uint newFillAmountS = p.fillAmountB.mul(p.order.amountS) / p.order.amountB;
+        p.splitS = newFillAmountS.sub(p.fillAmountS);
+        p.fillAmountS = newFillAmountS;
 
         for (uint i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
@@ -85,8 +86,7 @@ library RingHelper {
     function calculateOrderFillAmounts(
         Data.Ring ring,
         uint i,
-        uint smallest,
-        bool last
+        uint smallest
         )
         internal
         pure

@@ -59,7 +59,7 @@ library ParticipationHelper {
         }
 
         p.fillAmountB = p.fillAmountS.mul(order.amountB) / order.amountS;
-        p.lrcFee = order.lrcFee.mul(p.fillAmountS) / order.amountS;
+        p.lrcFee = order.lrcFee.mul(p.fillAmountB) / order.amountB;
     }
 
     function calculateFeeAmounts(
