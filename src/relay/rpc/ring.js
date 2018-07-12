@@ -177,7 +177,7 @@ function xorReduceStr (strArr)
     return Buffer.from(reduceRes.slice(2), 'hex');
 }
 
-function feeSelectionListToNumber (feeSelections)
+export function feeSelectionListToNumber (feeSelections)
 {
     let res = 0;
     for (let i = 0; i < feeSelections.length; i++)
