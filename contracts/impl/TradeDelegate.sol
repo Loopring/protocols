@@ -32,7 +32,6 @@ import "../lib/NoDefaultFunc.sol";
 contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
     using MathUint for uint;
 
-    uint8 public walletSplitPercentage = 0;
     bool  public suspended = false;
 
     mapping (address => uint)   private positionMap;
@@ -112,161 +111,202 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         emit AddressDeauthorized(addr);
     }
 
-    function batchUpdateHistoryAndTransferTokens(
-        address   lrcAddr,
-        address   miner,
-        address   feeRecipient,
-        bytes32[] historyBatch,
-        bytes32[] batch
+    function singleTransfer(
+        address tokenAddr,
+        address from,
+        address to,
+        uint amount
         )
         onlyAuthorized
         notSuspended
         external
     {
-        uint i;
-        for (i = 0; i < historyBatch.length / 2; i += 2) {
-            filled[historyBatch[i]] = filled[historyBatch[i]].add(
-                uint(historyBatch[i + 1])
-            );
-        }
-
-        address prevOwner = address(batch[batch.length - 9]);
-
-        for (i = 0; i < batch.length; i += 9) {
-            address owner = address(batch[i]);
-            address broker = address(batch[i + 1]);
-            address brokerInterceptor = address(batch[i + 2]);
-
-            // Pay token to previous order, or to feeRecipient as previous order's
-            // margin split or/and this order's margin split.
-            address token = address(batch[i + 3]);
-            uint amount;
-
-            // Here batch[i + 4] has been checked not to be 0.
-            require(owner != prevOwner, "self trading");
-            amount = uint(batch[i + 4]);
+        if (from != to && amount > 0){
             require(
-                ERC20(token).transferFrom(
-                    owner,
-                    prevOwner,
+                ERC20(tokenAddr).transferFrom(
+                    from,
+                    to,
                     amount
                 ),
                 "token transfer failure"
             );
+        }
+    }
 
-            if (brokerInterceptor != 0x0) {
+    function batchTransfer(bytes32[][] batch)
+        onlyAuthorized
+        notSuspended
+        external
+    {
+        for (uint i = 0; i < batch.length; i ++) {
+            require(batch[i].length % 4 == 0);
+            for (uint j = 0; j < batch[i].length; j += 4) {
                 require(
-                    IBrokerInterceptor(brokerInterceptor).onTokenSpent(
-                        owner,
-                        broker,
-                        token,
-                        amount
-                    ),
-                    "brokerInterceptor update failure"
-                );
-            }
-
-            // Miner pays LRC award to order owner
-            amount = uint(batch[i + 6]);
-            if (amount != 0 && miner != owner) {
-                require(
-                    ERC20(lrcAddr).transferFrom(
-                        miner,
-                        owner,
-                        amount
+                    ERC20(address(batch[i][j])).transferFrom(
+                        address(batch[i][j + 1]),
+                        address(batch[i][j + 2]),
+                        uint(batch[i][j + 3])
                     ),
                     "token transfer failure"
                 );
             }
-
-            // Split margin-split income between feeRecipient and wallet
-            splitPayFee(
-                token,
-                owner,
-                feeRecipient,
-                broker,
-                brokerInterceptor,
-                address(batch[i + 8]),
-                uint(batch[i + 5])
-            );
-
-            // Split LRC fee income between feeRecipient and wallet
-            splitPayFee(
-                lrcAddr,
-                owner,
-                feeRecipient,
-                broker,
-                brokerInterceptor,
-                address(batch[i + 8]),
-                uint(batch[i + 7])
-            );
-
-            prevOwner = owner;
         }
     }
 
-    function isAddressAuthorized(
-        address addr
-        )
-        public
-        view
-        returns (bool)
-    {
-        return positionMap[addr] > 0;
-    }
+    /* function batchUpdateHistoryAndTransferTokens( */
+    /*     address   lrcAddr, */
+    /*     address   feeRecipient, */
+    /*     bytes32[] historyBatch, */
+    /*     bytes32[] batch */
+    /*     ) */
+    /*     onlyAuthorized */
+    /*     notSuspended */
+    /*     external */
+    /* { */
+    /*     uint i; */
+    /*     for (i = 0; i < historyBatch.length / 2; i += 2) { */
+    /*         filled[historyBatch[i]] = filled[historyBatch[i]].add( */
+    /*             uint(historyBatch[i + 1]) */
+    /*         ); */
+    /*     } */
 
-    function splitPayFee(
-        address token,
-        address owner,
-        address feeRecipient,
-        address broker,
-        address brokerInterceptor,
-        address wallet,
-        uint    fee
-        )
-        internal
-    {
-        if (fee == 0) {
-            return;
-        }
+    /*     address prevOwner = address(batch[batch.length - 9]); */
 
-        uint walletFee = (wallet == 0x0) ? 0 : fee.mul(walletSplitPercentage) / 100;
-        uint feeRecipientFee = fee.sub(walletFee);
+    /*     for (i = 0; i < batch.length; i += 9) { */
+    /*         address owner = address(batch[i]); */
+    /*         address broker = address(batch[i + 1]); */
+    /*         address brokerInterceptor = address(batch[i + 2]); */
 
-        if (walletFee > 0 && wallet != owner) {
-            require(
-                ERC20(token).transferFrom(
-                    owner,
-                    wallet,
-                    walletFee
-                ),
-                "token transfer failure"
-            );
-        }
+    /*         // Pay token to previous order, or to feeRecipient as previous order's */
+    /*         // margin split or/and this order's margin split. */
+    /*         address token = address(batch[i + 3]); */
+    /*         uint amount; */
 
-        if (feeRecipientFee > 0 && feeRecipient != 0x0 && feeRecipient != owner) {
-            require(
-                ERC20(token).transferFrom(
-                    owner,
-                    feeRecipient,
-                    feeRecipientFee
-                ),
-                "token transfer failure"
-            );
-        }
+    /*         // Here batch[i + 4] has been checked not to be 0. */
+    /*         require(owner != prevOwner, "self trading"); */
+    /*         amount = uint(batch[i + 4]); */
+    /*         require( */
+    /*             ERC20(token).transferFrom( */
+    /*                 owner, */
+    /*                 prevOwner, */
+    /*                 amount */
+    /*             ), */
+    /*             "token transfer failure" */
+    /*         ); */
 
-        if (broker != 0x0) {
-            require(
-                IBrokerInterceptor(brokerInterceptor).onTokenSpent(
-                    owner,
-                    broker,
-                    token,
-                    fee
-                ),
-                "token transfer failure"
-            );
-        }
-    }
+    /*         if (brokerInterceptor != 0x0) { */
+    /*             require( */
+    /*                 IBrokerInterceptor(brokerInterceptor).onTokenSpent( */
+    /*                     owner, */
+    /*                     broker, */
+    /*                     token, */
+    /*                     amount */
+    /*                 ), */
+    /*                 "brokerInterceptor update failure" */
+    /*             ); */
+    /*         } */
+
+    /*         // Miner pays LRC award to order owner */
+    /*         amount = uint(batch[i + 6]); */
+    /*         if (amount != 0 && miner != owner) { */
+    /*             require( */
+    /*                 ERC20(lrcAddr).transferFrom( */
+    /*                     miner, */
+    /*                     owner, */
+    /*                     amount */
+    /*                 ), */
+    /*                 "token transfer failure" */
+    /*             ); */
+    /*         } */
+
+    /*         // Split margin-split income between feeRecipient and wallet */
+    /*         splitPayFee( */
+    /*             token, */
+    /*             owner, */
+    /*             feeRecipient, */
+    /*             broker, */
+    /*             brokerInterceptor, */
+    /*             address(batch[i + 8]), */
+    /*             uint(batch[i + 5]) */
+    /*         ); */
+
+    /*         // Split LRC fee income between feeRecipient and wallet */
+    /*         splitPayFee( */
+    /*             lrcAddr, */
+    /*             owner, */
+    /*             feeRecipient, */
+    /*             broker, */
+    /*             brokerInterceptor, */
+    /*             address(batch[i + 8]), */
+    /*             uint(batch[i + 7]) */
+    /*         ); */
+
+    /*         prevOwner = owner; */
+    /*     } */
+    /* } */
+
+    /* function isAddressAuthorized( */
+    /*     address addr */
+    /*     ) */
+    /*     public */
+    /*     view */
+    /*     returns (bool) */
+    /* { */
+    /*     return positionMap[addr] > 0; */
+    /* } */
+
+    /* function splitPayFee( */
+    /*     address token, */
+    /*     address owner, */
+    /*     address feeRecipient, */
+    /*     address broker, */
+    /*     address brokerInterceptor, */
+    /*     address wallet, */
+    /*     uint    fee */
+    /*     ) */
+    /*     internal */
+    /* { */
+    /*     if (fee == 0) { */
+    /*         return; */
+    /*     } */
+
+    /*     uint walletFee = (wallet == 0x0) ? 0 : fee.mul(walletSplitPercentage) / 100; */
+    /*     uint feeRecipientFee = fee.sub(walletFee); */
+
+    /*     if (walletFee > 0 && wallet != owner) { */
+    /*         require( */
+    /*             ERC20(token).transferFrom( */
+    /*                 owner, */
+    /*                 wallet, */
+    /*                 walletFee */
+    /*             ), */
+    /*             "token transfer failure" */
+    /*         ); */
+    /*     } */
+
+    /*     if (feeRecipientFee > 0 && feeRecipient != 0x0 && feeRecipient != owner) { */
+    /*         require( */
+    /*             ERC20(token).transferFrom( */
+    /*                 owner, */
+    /*                 feeRecipient, */
+    /*                 feeRecipientFee */
+    /*             ), */
+    /*             "token transfer failure" */
+    /*         ); */
+    /*     } */
+
+    /*     if (broker != 0x0) { */
+    /*         require( */
+    /*             IBrokerInterceptor(brokerInterceptor).onTokenSpent( */
+    /*                 owner, */
+    /*                 broker, */
+    /*                 token, */
+    /*                 fee */
+    /*             ), */
+    /*             "token transfer failure" */
+    /*         ); */
+    /*     } */
+    /* } */
 
     function setCancelled(
         address owner,

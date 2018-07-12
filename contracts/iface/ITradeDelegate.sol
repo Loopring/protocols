@@ -47,6 +47,8 @@ contract ITradeDelegate {
     // A map from address to its trading-pair cutoff timestamp.
     mapping (address => mapping (bytes20 => uint)) public tradingPairCutoffs;
 
+    uint8 public walletSplitPercentage = 0;
+
     /// @dev Add a Loopring protocol address.
     /// @param addr A loopring protocol address.
     function authorizeAddress(
@@ -61,14 +63,17 @@ contract ITradeDelegate {
         )
         external;
 
-    function batchUpdateHistoryAndTransferTokens(
-        address   lrcTokenAddress,
-        address   miner,
-        address   feeRecipient,
-        bytes32[] historyBatch,
-        bytes32[] transferBatch
-        )
+    function batchTransfer(bytes32[][] batch)
         external;
+
+    /* function batchUpdateHistoryAndTransferTokens( */
+    /*     address   lrcTokenAddress, */
+    /*     address   miner, */
+    /*     address   feeRecipient, */
+    /*     bytes32[] historyBatch, */
+    /*     bytes32[] transferBatch */
+    /*     ) */
+    /*     external; */
 
     function isAddressAuthorized(
         address addr
