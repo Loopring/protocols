@@ -63,17 +63,10 @@ contract ITradeDelegate {
         )
         external;
 
-    function batchTransfer(bytes32[][] batch)
+    function batchTransfer(
+        bytes32[] batch
+        )
         external;
-
-    /* function batchUpdateHistoryAndTransferTokens( */
-    /*     address   lrcTokenAddress, */
-    /*     address   miner, */
-    /*     address   feeRecipient, */
-    /*     bytes32[] historyBatch, */
-    /*     bytes32[] transferBatch */
-    /*     ) */
-    /*     external; */
 
     function isAddressAuthorized(
         address addr

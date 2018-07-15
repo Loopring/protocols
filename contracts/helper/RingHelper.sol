@@ -110,91 +110,104 @@ library RingHelper {
         }
     }
 
+    function calculateTransferBatchSize(
+        Data.Ring ring,
+        uint8 walletSplitPercentage
+        )
+        internal
+        returns (uint)
+    {
+        uint batchSize = 0;
+        for (uint i = 0; i < ring.size; i++) {
+            uint orderTransSize = 0;
+            Data.Participation memory p = ring.participations[i];
+
+            if (p.splitS > 0) {
+                orderTransSize ++;
+            }
+
+            if (p.lrcFee > 0) {
+                orderTransSize ++;
+            }
+
+            if (walletSplitPercentage > 0 && p.order.wallet != 0x0) {
+                orderTransSize = orderTransSize * 2;
+            }
+
+            orderTransSize += 1;
+            batchSize += orderTransSize;
+        }
+        return batchSize;
+    }
+
     function settleRing(Data.Ring ring, Data.Context ctx, Data.Mining mining)
         internal
     {
         uint8 walletSplitPercentage = ctx.delegate.walletSplitPercentage();
-        bytes32[][] memory batchList = new bytes32[][](ring.size);
+
+        uint batchSize = calculateTransferBatchSize(ring, walletSplitPercentage);
+        bytes32[] memory batch = new bytes32[](batchSize * 4);
+        uint batchIndex = 0;
         for (uint i = 0; i < ring.size; i++) {
             uint prevIndex = (i + ring.size - 1) % ring.size;
             Data.Participation memory p = ring.participations[i];
             Data.Participation memory prevP = ring.participations[prevIndex];
 
-            bytes32[] memory batch;
-            uint batchSize = 0;
-            if (p.splitS > 0) {
-                batchSize += 1;
-            }
-
-            if (p.lrcFee > 0) {
-                batchSize += 1;
-            }
-
-            if (walletSplitPercentage > 0 && p.order.wallet != 0x0) {
-                batchSize = batchSize * 2;
-            }
-
-            batchSize += 1;
-
-            batch = new bytes32[](batchSize);
-
-            batch[0] = bytes32(p.order.tokenS);
-            batch[1] = bytes32(p.order.owner);
-            batch[2] = bytes32(prevP.order.owner);
-            batch[3] = bytes32(p.fillAmountS);
-
-            uint index = 1;
+            batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
+            batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+            batch[2 + batchIndex * 4] = bytes32(prevP.order.owner);
+            batch[3 + batchIndex * 4] = bytes32(p.fillAmountS);
+            batchIndex ++;
             if (walletSplitPercentage > 0 && p.order.wallet != 0x0) {
                 if (p.lrcFee > 0) {
-                    batch[0 + index * 4] = bytes32(ctx.lrcTokenAddress);
-                    batch[1 + index * 4] = bytes32(p.order.owner);
-                    batch[2 + index * 4] = bytes32(mining.feeRecipient);
+                    batch[0 + batchIndex * 4] = bytes32(ctx.lrcTokenAddress);
+                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
                     uint minerFee = p.lrcFee.mul(walletSplitPercentage) / 100;
-                    batch[3 + index * 4] = bytes32(minerFee);
+                    batch[3 + batchIndex * 4] = bytes32(minerFee);
+                    batchIndex ++;
 
-                    index += 1;
-
-                    batch[0 + index * 4] = bytes32(ctx.lrcTokenAddress);
-                    batch[1 + index * 4] = bytes32(p.order.owner);
-                    batch[2 + index * 4] = bytes32(p.order.wallet);
-                    batch[3 + index * 4] = bytes32(p.lrcFee.sub(minerFee));
+                    batch[0 + batchIndex * 4] = bytes32(ctx.lrcTokenAddress);
+                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                    batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
+                    batch[3 + batchIndex * 4] = bytes32(p.lrcFee.sub(minerFee));
+                    batchIndex ++;
                 }
 
                 if (p.splitS > 0) {
-                    batch[0 + index * 4] = bytes32(p.order.tokenS);
-                    batch[1 + index * 4] = bytes32(p.order.owner);
-                    batch[2 + index * 4] = bytes32(mining.feeRecipient);
+                    batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
+                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
                     uint minerSplitS = p.fillAmountS.mul(walletSplitPercentage) / 100;
-                    batch[3 + index * 4] = bytes32(minerSplitS);
+                    batch[3 + batchIndex * 4] = bytes32(minerSplitS);
+                    batchIndex ++;
 
-                    index += 1;
-
-                    batch[0 + index * 4] = bytes32(p.order.tokenS);
-                    batch[1 + index * 4] = bytes32(p.order.owner);
-                    batch[2 + index * 4] = bytes32(p.order.wallet);
-                    batch[3 + index * 4] = bytes32(p.fillAmountS.sub(minerSplitS));
+                    batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
+                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                    batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
+                    batch[3 + batchIndex * 4] = bytes32(p.fillAmountS.sub(minerSplitS));
+                    batchIndex ++;
                 }
             } else {
                 if (p.lrcFee > 0) {
-                    batch[0 + index * 4] = bytes32(ctx.lrcTokenAddress);
-                    batch[1 + index * 4] = bytes32(p.order.owner);
-                    batch[2 + index * 4] = bytes32(mining.feeRecipient);
-                    batch[3 + index * 4] = bytes32(p.lrcFee);
-                    index += 1;
+                    batch[0 + batchIndex * 4] = bytes32(ctx.lrcTokenAddress);
+                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
+                    batch[3 + batchIndex * 4] = bytes32(p.lrcFee);
+                    batchIndex += 1;
                 }
 
                 if (p.splitS > 0) {
-                    batch[0 + index * 4] = bytes32(p.order.tokenS);
-                    batch[1 + index * 4] = bytes32(p.order.owner);
-                    batch[2 + index * 4] = bytes32(mining.feeRecipient);
-                    batch[3 + index * 4] = bytes32(p.fillAmountS);
+                    batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
+                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
+                    batch[3 + batchIndex * 4] = bytes32(p.fillAmountS);
+                    batchIndex ++;
                 }
             }
-
-            batchList[i] = batch;
         }
 
-        ctx.delegate.batchTransfer(batchList);
+        ctx.delegate.batchTransfer(batch);
     }
 
 }
