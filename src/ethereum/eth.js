@@ -42,7 +42,7 @@ export default class Eth
 
     call ({tx, tag})
     {
-        call(this.host, {tx, tag});
+      return  call(this.host, {tx, tag});
     }
 }
 
