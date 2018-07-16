@@ -21,7 +21,8 @@ const {
 } = new Artifacts(artifacts);
 
 contract("Exchange", (accounts: string[]) => {
-  const miner = accounts[0];
+  const deployer = accounts[0];
+  const miner = accounts[9];
   const orderOwners = accounts.slice(5, 8); // 5 ~ 7
 
   let exchange: any;
@@ -104,6 +105,8 @@ contract("Exchange", (accounts: string[]) => {
       TokenRegistry.deployed(),
       TradeDelegate.deployed(),
     ]);
+
+    await tradeDelegate.authorizeAddress(Exchange.address, {from: deployer});
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
 
     for (const sym of allTokenSymbols) {
@@ -141,7 +144,7 @@ contract("Exchange", (accounts: string[]) => {
         // await watchAndPrintEvent(exchange, "LogUint8Arr");
         // await watchAndPrintEvent(exchange, "LogIntArr");
         // await watchAndPrintEvent(exchange, "LogAddrArr");
-        await watchAndPrintEvent(exchange, "LogOrderFields");
+        await watchAndPrintEvent(exchange, "LogTrans");
         // await watchAndPrintEvent(exchange, "LogHash");
 
         assert(true);

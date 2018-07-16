@@ -140,6 +140,8 @@ library RingHelper {
         return batchSize;
     }
 
+    event LogTrans(address token, address from, address to, uint amount);
+
     function settleRing(Data.Ring ring, Data.Context ctx, Data.Mining mining)
         internal
     {
@@ -207,7 +209,22 @@ library RingHelper {
             }
         }
 
+        for (uint i = 0; i < batch.length; i += 4) {
+            emit LogTrans(
+                address(batch[i]),
+                address(batch[i + 1]),
+                address(batch[i + 2]),
+                uint(batch[i + 3])
+            );
+        }
+
         ctx.delegate.batchTransfer(batch);
+    }
+
+    function batchUpdateOrderFillAmount(Data.Ring ring, Data.Context ctx)
+        internal
+    {
+
     }
 
 }
