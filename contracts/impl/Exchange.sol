@@ -21,16 +21,16 @@ pragma experimental "ABIEncoderV2";
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IBrokerInterceptor.sol";
 import "../iface/IExchange.sol";
+import "../iface/IMinerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
-import "../iface/IMinerRegistry.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/BytesUtil.sol";
-import "../lib/MemoryUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
+import "../lib/MemoryUtil.sol";
 import "../lib/MultihashUtil.sol";
 import "../lib/NoDefaultFunc.sol";
 
@@ -45,6 +45,7 @@ import "../helper/RingHelper.sol";
 import "../helper/MiningHelper.sol";
 
 import "./Data.sol";
+import "./ExchangeDeserializer.sol";
 
 
 /// @title An Implementation of IExchange.
@@ -194,48 +195,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
-        uint16 encodeSpecsLen = uint16(MemoryUtil.bytesToUintX(data, 0, 2));
-        uint offset = 2;
-        uint16[] memory encodeSpecs = data.copyToUint16Array(offset, encodeSpecsLen);
-        offset += 2 * encodeSpecsLen;
-
-        uint16 miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
-        offset += 2;
-        uint16[] memory orderSpecs = data.copyToUint16Array(
-            offset,
-            encodeSpecs.orderSpecSize()
-        );
-        offset += 2 * encodeSpecs.orderSpecSize();
-
-        uint8[][] memory ringSpecs = data.copyToUint8ArrayList(offset, encodeSpecs.ringSpecSizeArray());
-        offset += 1 * encodeSpecs.ringSpecsDataLen();
-
-        address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
-        offset += 20 * encodeSpecs.addressListSize();
-
-        uint[] memory uintList =  data.copyToUintArray(offset, encodeSpecs.uintListSize());
-        offset += 32 * encodeSpecs.uintListSize();
-
-        submitRingsInternal(
-            miningSpec,
-            orderSpecs,
-            ringSpecs,
-            addressList,
-            uintList,
-            new bytes[](0)
-        );
-    }
-
-    function submitRingsInternal(
-        uint16 miningSpec,
-        uint16[] orderSpecs,
-        uint8[][] ringSpecs,
-        address[] addressList,
-        uint[] uintList,
-        bytes[] bytesList
-        )
-        internal
-    {
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
             ITokenRegistry(tokenRegistryAddress),
@@ -246,44 +205,10 @@ contract Exchange is IExchange, NoDefaultFunc {
             IMinerRegistry(minerRegistryAddress)
         );
 
-        Data.Inputs memory inputs = Data.Inputs(
-            addressList,
-            uintList,
-            bytesList,
-            0, 0, 0  // current indices of addressLists, uintList, and bytesList.
-        );
+        (Data.Mining  memory mining,
+            Data.Order[] memory orders,
+            Data.Ring[]  memory rings) = ExchangeDeserializer.deserialize(ctx, data);
 
-        Data.Mining memory mining = Data.Mining(
-            (miningSpec.hasFeeRecipient() ? inputs.nextAddress() : tx.origin),
-            (miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0)),
-            (miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0)),
-            bytes32(0x0), // hash
-            address(0x0)  // interceptor
-            /* getSpendable( */
-            /*     ctx.delegate, */
-            /*     ctx.lrcTokenAddress, */
-            /*     tx.origin, // TODO(daniel): pay from msg.sender? */
-            /*     0x0, // broker */
-            /*     0x0  // brokerInterceptor */
-            /* ) */
-        );
-
-        Data.Order[] memory orders = orderSpecs.assembleOrders(inputs);
-
-        Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
-
-        handleSubmitRings(ctx, mining, orders, rings);
-    }
-
-    event LogTrans(address token, address from, address to, uint amount);
-    function handleSubmitRings(
-        Data.Context ctx,
-        Data.Mining mining,
-        Data.Order[] orders,
-        Data.Ring[] rings
-        )
-        private
-    {
         for (uint i = 0; i < orders.length; i++) {
             orders[i].updateHash();
             /* orders[i].updateBrokerAndInterceptor(ctx); */
