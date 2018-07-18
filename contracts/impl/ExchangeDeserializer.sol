@@ -53,7 +53,6 @@ library ExchangeDeserializer {
     using InputsHelper    for Data.Inputs;
     using MiningHelper    for Data.Mining;
 
-    event LogAddrList(address[] addrList);
     /// @dev Submit a order-ring for validation and settlement.
     function deserialize(
         Data.Context ctx,
@@ -85,7 +84,6 @@ library ExchangeDeserializer {
 
         address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
         offset += 20 * encodeSpecs.addressListSize();
-        emit LogAddrList(addressList);
 
         uint[] memory uintList =  data.copyToUintArray(offset, encodeSpecs.uintListSize());
         offset += 32 * encodeSpecs.uintListSize();
@@ -133,17 +131,9 @@ library ExchangeDeserializer {
             (miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0)),
             bytes32(0x0), // hash
             address(0x0)  // interceptor
-            /* getSpendable( */
-            /*     ctx.delegate, */
-            /*     ctx.lrcTokenAddress, */
-            /*     tx.origin, // TODO(daniel): pay from msg.sender? */
-            /*     0x0, // broker */
-            /*     0x0  // brokerInterceptor */
-            /* ) */
         );
 
         Data.Order[] memory orders = orderSpecs.assembleOrders(inputs);
-        /* Data.Order memory o = orders[0]; */
         Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
 
         return (mining, orders, rings);

@@ -23,6 +23,7 @@ import "../impl/Data.sol";
 
 /// @title An Implementation of IOrderbook.
 /// @author Daniel Wang - <daniel@loopring.org>.
+/// @author Kongliang Zhong - <kongliang@loopring.org>.
 library OrderSpec {
     function hasDualAuth(uint16 spec)
         internal
@@ -88,12 +89,12 @@ library OrderSpec {
         return spec & (1 << 7) != 0;
     }
 
-    /* function hasBrokerInterceptor(uint16 spec) */
-    /*     internal */
-    /*     pure */
-    /*     returns (bool) */
-    /* { */
-    /*     return spec & (1 << 8) != 0; */
-    /* } */
+    function hasDualAuthSig(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 8) != 0;
+    }
 
 }

@@ -16,9 +16,9 @@ export interface OrderInfo {
   walletAddr?: string;              // spec value 1 << 3
   validSince?: number;              // spec value 1 << 4
   validUntil?: number;              // spec value 1 << 5
-  // buyNoMoreThanAmountB?: boolean;   // spec value 1 << 6
   allOrNone?: boolean;              // spec value 1 << 6
   sig?: string;                     // spec value 1 << 7
+  dualAuthSig?: string;             // spec value 1 << 8;
 
   // helper field
   maxAmountS?: number;

@@ -62,7 +62,7 @@ export class RingsGenerator {
   }
 
   private getOrderHash(order: OrderInfo) {
-    const MAX_UINT = new BN("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
+    const MAX_UINT = new BN("f".repeat(64), 16);
     const args = [
       order.owner,
       order.tokenS,
@@ -176,10 +176,6 @@ export class RingsGenerator {
       spec += 1 << 5;
       param.uintList.push(new BigNumber(order.validUntil));
     }
-    // if (order.buyNoMoreThanAmountB) {
-    //   spec += 1 << 6;
-    //   param.uintList.push(new BigNumber(1));
-    // }
     if (order.allOrNone) {
       spec += 1 << 6;
       param.uintList.push(new BigNumber(1));
@@ -190,10 +186,10 @@ export class RingsGenerator {
       param.bytesList.push(order.sig);
     }
 
-    // if (order.dualAuthSig) {
-    //   spec += 1 << 9;
-    //   param.bytesList.push(order.dualAuthSig);
-    // }
+    if (order.dualAuthSig) {
+      spec += 1 << 8;
+      param.bytesList.push(order.dualAuthSig);
+    }
 
     param.orderSpecs.push(spec);
   }
@@ -201,9 +197,9 @@ export class RingsGenerator {
   private submitParamToBytes(param: RingsSubmitParam, encodeSpecs: number[]) {
     // console.log("encodeSpecs:", encodeSpecs);
     // console.log("param.orderSpecs:", param.orderSpecs);
-    console.log("addrList:", param.addressList);
-    console.log("uintList:", param.uintList);
-    console.log("bytesList:", param.bytesList);
+    // console.log("addrList:", param.addressList);
+    // console.log("uintList:", param.uintList);
+    // console.log("bytesList:", param.bytesList);
     // console.log("param.orderSpecs:", param.orderSpecs);
     // console.log("param.ringSpecs:", param.ringSpecs);
 
@@ -212,7 +208,7 @@ export class RingsGenerator {
     stream.addNumber(param.miningSpec, 2);
     param.orderSpecs.forEach((i) => stream.addNumber(i, 2));
     const ringSpecsFlattened = [].concat(...param.ringSpecs);
-    console.log("ringSpecsFlattened:", ringSpecsFlattened);
+    // console.log("ringSpecsFlattened:", ringSpecsFlattened);
     ringSpecsFlattened.forEach((i) => stream.addNumber(i, 1));
     param.addressList.forEach((a) => stream.addAddress(a));
     param.uintList.forEach((bn) => stream.addBigNumber(bn));
