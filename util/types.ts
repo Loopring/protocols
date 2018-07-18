@@ -24,6 +24,10 @@ export interface OrderInfo {
   maxAmountS?: number;
   maxAmountB?: number;
   fillAmountS?: number;
+  fillAmountB?: number;
+  fillAmountLrcFee?: number;
+  splitS?: number;
+
   orderHashHex?: string;
   v?: number;
   r?: string;
@@ -49,4 +53,11 @@ export interface RingsInfo {
   sig?: string;          // spec value: 1 << 2
   rings: number[][];
   orders: OrderInfo[];
+}
+
+export interface TransferItem {
+  token: string;
+  from: string;
+  to: string;
+  amount: number;
 }
