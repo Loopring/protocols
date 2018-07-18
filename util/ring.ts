@@ -39,7 +39,7 @@ export class Ring {
       this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
     }
 
-    const smallestOrder = this.orders[smallest]
+    const smallestOrder = this.orders[smallest];
     const splitS = smallestOrder.fillAmountB * smallestOrder.amountS / smallestOrder.amountB -
       smallestOrder.fillAmountS;
     smallestOrder.splitS = splitS;
