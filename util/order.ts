@@ -1,22 +1,20 @@
 import fs = require("fs");
 import { OrderInfo } from "./types";
 
-export class Order {
+export class OrderUtil {
   public orderInfo: OrderInfo;
 
   private ERC20Contract: any;
   private DelegateContract: any;
 
-  constructor(orderInfo: OrderInfo) {
-    this.orderInfo = orderInfo;
-
+  constructor() {
     const erc20Abi = fs.readFileSync("ABI/latest/ERC20.abi", "ascii");
     const delegateAbi = fs.readFileSync("ABI/latest/ITradeDelegate.abi", "ascii");
     this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
     this.DelegateContract = web3.eth.contract(JSON.parse(delegateAbi));
   }
 
-  public async scaleBySpendableAmount() {
+  public async scaleBySpendableAmount(orderInfo: OrderInfo) {
     const spendableS = await this.getErc20SpendableAmount(this.orderInfo.tokenS,
                                                           this.orderInfo.owner,
                                                           this.orderInfo.delegateContract);

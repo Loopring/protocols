@@ -22,8 +22,8 @@ export interface OrderInfo {
   dualAuthSig?: string;             // spec value 1 << 9
 
   // helper field
-  scaledAmountS?: number;
-  scaledAmountB?: number;
+  maxAmountS?: number;
+  maxAmountB?: number;
   fillAmountS?: number;
   orderHashHex?: string;
   v?: number;

@@ -1,8 +1,9 @@
+import { OrderUtil } from "./order";
 import { OrderInfo } from "./types";
 
 export class Ring {
 
-  public orders: OrderInfo[];
+  public orders: Order[];
   public owner: string;
   public feeRecipient: string;
 
@@ -14,8 +15,10 @@ export class Ring {
     this.feeRecipient = feeRecipient;
   }
 
-  public calculateFillAmountSAndFee() {
-    // TODO
+  public async calculateFillAmountAndFee() {
+    for (const order of orders) {
+
+    }
   }
 
 }
