@@ -90,4 +90,22 @@ library BytesUtil {
         return resultArray;
     }
 
+    function copyToBytesArray(bytes b, uint offset, uint arraySize)
+        internal
+        pure
+        returns (bytes[]) {
+        bytes[] memory resultArray = new bytes[](arraySize);
+        for (uint i = 0; i < arraySize; i++) {
+            // TODO: get correct dynamic length
+            uint16 length = 67;
+            bytes memory data = new bytes(length);
+            for(uint j = 0; j < length; j++) {
+                data[j] = bytes1(MemoryUtil.bytesToUintX(b, offset, 1));
+                offset++;
+            }
+            resultArray[i] = data;
+        }
+        return resultArray;
+    }
+
 }

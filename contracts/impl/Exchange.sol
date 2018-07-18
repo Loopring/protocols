@@ -211,8 +211,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].updateHash();
-            /* orders[i].updateBrokerAndInterceptor(ctx); */
-            /* orders[i].checkBrokerSignature(ctx); */
+            orders[i].updateBrokerAndInterceptor(ctx);
+            orders[i].checkBrokerSignature(ctx);
         }
 
         /* for (uint i = 0; i < rings.length; i++) { */

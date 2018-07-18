@@ -75,7 +75,7 @@ contract("Exchange", (accounts: string[]) => {
     });
   };
 
-  const setupOrder = async (order: OrderInfo, index: number) => {
+  const setupOrder = async (order: OrderInfo, index: number, ringsGenerator: RingsGenerator) => {
     const ownerIndex = index === 0 ? index : index % orderOwners.length;
     const owner = orderOwners[ownerIndex];
 
@@ -97,6 +97,8 @@ contract("Exchange", (accounts: string[]) => {
     await orderTokenS.addBalance(order.owner, order.amountS);
     const lrcToken = await DummyToken.at(lrcAddress);
     await lrcToken.addBalance(order.owner, order.lrcFee);
+
+    await ringsGenerator.signAsync(order);
   };
 
   before( async () => {
@@ -128,7 +130,7 @@ contract("Exchange", (accounts: string[]) => {
       // all configed testcases here:
       it(ringsInfo.description, async () => {
         for (const [i, order] of ringsInfo.orders.entries()) {
-          await setupOrder(order, i);
+          await setupOrder(order, i, ringsGenerator);
         }
 
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);

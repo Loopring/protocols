@@ -56,7 +56,7 @@ library MultihashUtil {
                     ),
                     uint8(multihash[2]),
                     BytesUtil.bytesToBytes32(multihash, 3),
-                    BytesUtil.bytesToBytes32(multihash, 11)
+                    BytesUtil.bytesToBytes32(multihash, 3 + 32)
                 ),
                 "bad signature"
             );
