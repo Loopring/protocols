@@ -3,7 +3,7 @@ import { OrderInfo } from "./types";
 
 export class Ring {
 
-  public orders: Order[];
+  public orders: OrderInfo[];
   public owner: string;
   public feeRecipient: string;
 
@@ -16,8 +16,8 @@ export class Ring {
   }
 
   public async calculateFillAmountAndFee() {
-    for (const order of orders) {
-
+    for (const order of this.orders) {
+      //
     }
   }
 

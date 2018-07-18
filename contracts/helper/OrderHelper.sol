@@ -48,7 +48,6 @@ library OrderHelper {
                 order.wallet,
                 order.validSince,
                 order.validUntil,
-                order.limitByAmountB,
                 order.allOrNone
             )
         );

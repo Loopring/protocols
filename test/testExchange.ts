@@ -138,16 +138,7 @@ contract("Exchange", (accounts: string[]) => {
 
         const tx = await exchange.submitRings(bs, {from: miner});
         // console.log("tx:", tx);
-        // await watchAndPrintEvent(exchange, "LogInt16Arr");
-        // await watchAndPrintEvent(exchange, "LogIntArr");
-
-        // await exchange.bar("ab".repeat(16) + "xy".repeat(10), {from: miner});
-
-        // await watchAndPrintEvent(exchange, "LogUint8Arr");
-        // await watchAndPrintEvent(exchange, "LogIntArr");
-        // await watchAndPrintEvent(exchange, "LogAddrArr");
         await watchAndPrintEvent(exchange, "LogTrans");
-        // await watchAndPrintEvent(exchange, "LogHash");
 
         assert(true);
       });

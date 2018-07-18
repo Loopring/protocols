@@ -51,7 +51,7 @@ import "./ExchangeDeserializer.sol";
 /// @title An Implementation of IExchange.
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-///
+/// @author Brechtpd - <brecht@loopring.org>
 /// Recognized contributing developers from the community:
 ///     https://github.com/Brechtpd
 ///     https://github.com/rainydio
@@ -190,6 +190,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
     }
 
+    event LogTrans(address token, address from, address to, uint amount); // for debug
     function submitRings(
         bytes data
         )
@@ -210,6 +211,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             Data.Ring[]  memory rings) = ExchangeDeserializer.deserialize(ctx, data);
 
         for (uint i = 0; i < orders.length; i++) {
+            // emit LogOrder(orders[i].owner, orders[i].tokenS, orders[i].amountS);
+
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
             orders[i].checkBrokerSignature(ctx);

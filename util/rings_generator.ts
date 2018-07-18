@@ -5,7 +5,6 @@ import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import Web3 = require("web3");
 import { Bitstream } from "./bitstream";
-import { Order } from "./order";
 import { Ring } from "./ring";
 import { OrderInfo, RingsInfo, RingsSubmitParam } from "./types";
 
@@ -77,7 +76,6 @@ export class RingsGenerator {
       order.walletAddr ? order.walletAddr : "0x0",
       order.validSince ? order.validSince : this.toBN(0),
       order.validUntil ? order.validUntil : MAX_UINT,
-      order.buyNoMoreThanAmountB,
       order.allOrNone,
     ];
 
@@ -94,7 +92,6 @@ export class RingsGenerator {
       "address",
       "uint256",
       "uint256",
-      "bool",
       "bool",
     ];
     const orderHash = ABI.soliditySHA3(argTypes, args);
@@ -179,23 +176,24 @@ export class RingsGenerator {
       spec += 1 << 5;
       param.uintList.push(new BigNumber(order.validUntil));
     }
-    if (order.buyNoMoreThanAmountB) {
-      spec += 1 << 6;
-      param.uintList.push(new BigNumber(1));
-    }
+    // if (order.buyNoMoreThanAmountB) {
+    //   spec += 1 << 6;
+    //   param.uintList.push(new BigNumber(1));
+    // }
     if (order.allOrNone) {
-      spec += 1 << 7;
+      spec += 1 << 6;
       param.uintList.push(new BigNumber(1));
     }
 
     if (order.sig) {
-      spec += 1 << 8;
+      spec += 1 << 7;
       param.bytesList.push(order.sig);
     }
-    if (order.dualAuthSig) {
-      spec += 1 << 9;
-      param.bytesList.push(order.dualAuthSig);
-    }
+
+    // if (order.dualAuthSig) {
+    //   spec += 1 << 9;
+    //   param.bytesList.push(order.dualAuthSig);
+    // }
 
     param.orderSpecs.push(spec);
   }

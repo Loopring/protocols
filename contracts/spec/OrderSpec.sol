@@ -24,36 +24,12 @@ import "../impl/Data.sol";
 /// @title An Implementation of IOrderbook.
 /// @author Daniel Wang - <daniel@loopring.org>.
 library OrderSpec {
-    function limitByAmountB(uint16 spec)
-        internal
-        pure
-        returns (bool)
-    {
-        return spec & (1 << 6) != 0;
-    }
-
-    function allOrNone(uint16 spec)
-        internal
-        pure
-        returns (bool)
-    {
-        return spec & (1 << 7) != 0;
-    }
-
     function hasDualAuth(uint16 spec)
         internal
         pure
         returns (bool)
     {
         return spec & 0x1 != 0;
-    }
-
-    function hasSignature(uint16 spec)
-        internal
-        pure
-        returns (bool)
-    {
-        return spec & (1 << 8) != 0;
     }
 
     function hasBroker(uint16 spec)
@@ -64,12 +40,12 @@ library OrderSpec {
         return spec & (1 << 1) != 0;
     }
 
-    function hasBrokerInterceptor(uint16 spec)
+    function hasOrderInterceptor(uint16 spec)
         internal
         pure
         returns (bool)
     {
-        return spec & (1 << 10) != 0;
+        return spec & (1 << 2) != 0;
     }
 
     function hasWallet(uint16 spec)
@@ -96,11 +72,28 @@ library OrderSpec {
         return spec & (1 << 5) != 0;
     }
 
-    function hasOrderInterceptor(uint16 spec)
+    function allOrNone(uint16 spec)
         internal
         pure
         returns (bool)
     {
-        return spec & (1 << 2) != 0;
+        return spec & (1 << 6) != 0;
     }
+
+    function hasSignature(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 7) != 0;
+    }
+
+    /* function hasBrokerInterceptor(uint16 spec) */
+    /*     internal */
+    /*     pure */
+    /*     returns (bool) */
+    /* { */
+    /*     return spec & (1 << 8) != 0; */
+    /* } */
+
 }

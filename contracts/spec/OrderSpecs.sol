@@ -67,7 +67,6 @@ library OrderSpecs {
             spec.hasValidUntil() ? inputs.nextUint() : uint(0) - 1,
             spec.hasSignature() ? inputs.nextBytes() : new bytes(0),
             spec.hasDualAuth() ? inputs.nextBytes() : new bytes(0),
-            spec.limitByAmountB(),
             spec.allOrNone(),
             bytes32(0x0), // hash
             address(0x0), // orderBrokerInterceptor

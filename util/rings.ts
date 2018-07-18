@@ -4,7 +4,7 @@ import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import * as _ from "lodash";
 import Web3 = require("web3");
-import { Order } from "./order";
+import { OrderUtil } from "./order";
 import { RingsInfo } from "./types";
 
 export class Rings {

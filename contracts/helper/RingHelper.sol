@@ -41,7 +41,6 @@ library RingHelper {
                 abi.encodePacked(
                     ring.hash,
                     p.order.hash
-                    // p.marginSplitAsFee
                 )
             );
         }
@@ -58,7 +57,6 @@ library RingHelper {
             Data.Participation memory p = ring.participations[i];
             Data.Order memory order = p.order;
             p.fillAmountS = order.maxAmountS;
-            // p.fillAmountB = order.maxAmountB;
         }
 
         uint smallest = 0;
@@ -141,7 +139,6 @@ library RingHelper {
     }
 
     event LogTrans(address token, address from, address to, uint amount);
-
     function settleRing(Data.Ring ring, Data.Context ctx, Data.Mining mining)
         internal
     {

@@ -78,7 +78,6 @@ library Data {
         uint    validUntil;
         bytes   sig;
         bytes   dualAuthSig;
-        bool    limitByAmountB;
         bool    allOrNone;
 
         // computed fields

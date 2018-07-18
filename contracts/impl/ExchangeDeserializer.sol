@@ -53,14 +53,14 @@ library ExchangeDeserializer {
     using InputsHelper    for Data.Inputs;
     using MiningHelper    for Data.Mining;
 
-
+    event LogAddrList(address[] addrList);
     /// @dev Submit a order-ring for validation and settlement.
     function deserialize(
         Data.Context ctx,
         bytes data
         )
         internal
-        view
+        /* view */
         returns (
             Data.Mining  mining,
             Data.Order[] orders,
@@ -85,6 +85,7 @@ library ExchangeDeserializer {
 
         address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
         offset += 20 * encodeSpecs.addressListSize();
+        emit LogAddrList(addressList);
 
         uint[] memory uintList =  data.copyToUintArray(offset, encodeSpecs.uintListSize());
         offset += 32 * encodeSpecs.uintListSize();
