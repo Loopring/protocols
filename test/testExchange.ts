@@ -8,6 +8,7 @@ import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/artifacts";
 import { Bitstream } from "../util/bitstream";
+import { MultiHashUtil } from "../util/multihash";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
@@ -33,6 +34,8 @@ contract("Exchange", (accounts: string[]) => {
   const tokenSymbolAddrMap = new Map();
   const tokenInstanceMap = new Map();
   const allTokenSymbols = tokenInfos.development.map((t) => t.symbol);
+
+  const multiHashUtil = new MultiHashUtil();
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, precision: number = 8) => {
     const numStr1 = (n1 / 1e18).toFixed(precision);
@@ -75,7 +78,7 @@ contract("Exchange", (accounts: string[]) => {
     });
   };
 
-  const setupOrder = async (order: OrderInfo, index: number, ringsGenerator: RingsGenerator) => {
+  const setupOrder = async (order: OrderInfo, index: number) => {
     const ownerIndex = index === 0 ? index : index % orderOwners.length;
     const owner = orderOwners[ownerIndex];
 
@@ -98,7 +101,7 @@ contract("Exchange", (accounts: string[]) => {
     const lrcToken = await DummyToken.at(lrcAddress);
     await lrcToken.addBalance(order.owner, order.lrcFee);
 
-    await ringsGenerator.signAsync(order);
+    await multiHashUtil.signOrderAsync(order);
   };
 
   before( async () => {
@@ -130,7 +133,7 @@ contract("Exchange", (accounts: string[]) => {
       // all configed testcases here:
       it(ringsInfo.description, async () => {
         for (const [i, order] of ringsInfo.orders.entries()) {
-          await setupOrder(order, i, ringsGenerator);
+          await setupOrder(order, i);
         }
 
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);

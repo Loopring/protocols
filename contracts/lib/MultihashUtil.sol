@@ -29,6 +29,8 @@ import "./BytesUtil.sol";
 ///   - https://github.com/multiformats/js-multihash
 library MultihashUtil {
 
+    enum HashAlgorithm { Ethereum, EIP712 }
+
     string public constant SIG_PREFIX = "\x19Ethereum Signed Message:\n32";
 
     function verifySignature(
@@ -39,12 +41,11 @@ library MultihashUtil {
         internal
         pure
     {
-        uint8 algorithm = uint8(multihash[0]);
+        HashAlgorithm algorithm = HashAlgorithm(uint8(multihash[0]));
         uint8 size = uint8(multihash[1]);
         require(multihash.length == (2 + size), "bad multihash size");
 
-        // Currently we default 0 to be the Ethereum's default signature.
-        if (algorithm == 0) {
+        if (algorithm == HashAlgorithm.Ethereum) {
             require(size == 65, "bad multihash size");
             require(
                 signer == ecrecover(
@@ -61,7 +62,7 @@ library MultihashUtil {
                 "bad signature"
             );
         } else {
-            revert("unsupported algorithm");
+            revert("unsupported multihash algorithm");
         }
     }
 }

@@ -88,7 +88,7 @@ library ExchangeDeserializer {
         uint[] memory uintList =  data.copyToUintArray(offset, encodeSpecs.uintListSize());
         offset += 32 * encodeSpecs.uintListSize();
 
-        bytes[] memory bytesList =  data.copyToBytesArray(offset, encodeSpecs.bytesListSize());
+        bytes[] memory bytesList =  data.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
 
         return submitRingsInternal(
             ctx,

@@ -131,4 +131,17 @@ library EncodeSpec {
         return spec[ind];
     }
 
+    function bytesListSizeArray(uint16[] spec)
+        internal
+        pure
+        returns (uint[] memory) {
+        uint ringSpecLength = ringSpecSize(spec);
+        uint bytesListSize = bytesListSize(spec);
+        uint[] memory sizeArray = new uint[](bytesListSize);
+        for (uint i = 0; i < bytesListSize; i++) {
+            sizeArray[i] = uint(spec[5 + ringSpecLength + i]);
+        }
+        return sizeArray;
+    }
+
 }

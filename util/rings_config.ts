@@ -1,5 +1,5 @@
 import tokenInfos = require("../migrations/config/tokens.js");
-import { RingsInfo } from "../util/types";
+import { HashAlgorithm, RingsInfo } from "../util/types";
 
 const tokenSymbols = tokenInfos.development.map((t) => t.symbol);
 
@@ -14,6 +14,7 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[1],
         amountS: 3e18,
         amountB: 1e18,
+        sigAlgorithm: HashAlgorithm.Ethereum,
       },
       {
         index: 1,
