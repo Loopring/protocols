@@ -28,40 +28,36 @@ export class MultiHashUtil {
   }
 
   public async signRingsAsync(rings: RingsInfo, miner: string) {
+    // Calculate all ring hashes
     const ringHashes: string[] = [];
     for (const ring of rings.rings) {
       const orderHashes = new Bitstream();
       for (const order of ring) {
         orderHashes.addHex(rings.orders[order].orderHashHex);
       }
-      const args = [
-        Buffer.from(orderHashes.getData().slice(2), "hex"),
-      ];
-      const argTypes = [
-        "bytes",
-      ];
-      const ringHash = ABI.soliditySHA3(argTypes, args).toString("hex");
-      ringHashes.push(ringHash);
+      const ringHash = ABI.soliditySHA3(["bytes"], [Buffer.from(orderHashes.getData().slice(2), "hex")]);
+      ringHashes.push(ringHash.toString("hex"));
     }
 
-    let concatRingHashes = ringHashes[0];
+    // XOR ring hashes together for the mining hash
+    let ringHashesXOR = ringHashes[0];
     for (let i = 1; i < ringHashes.length; i++) {
-      concatRingHashes = this.xor(concatRingHashes, ringHashes[i], 32);
+      ringHashesXOR = this.xor(ringHashesXOR, ringHashes[i], 32);
     }
 
-    const args2 = [
+    // Calculate mining hash and signature
+    const args = [
       rings.feeRecipient ? rings.feeRecipient : miner,
       rings.miner ? rings.miner : "0x0",
-      concatRingHashes,
+      ringHashesXOR,
     ];
-
-    const argTypes2 = [
+    const argTypes = [
       "address",
       "address",
       "bytes32",
     ];
-    const minerHash = ABI.soliditySHA3(argTypes2, args2).toString("hex");
-    rings.sig = await this.signAsync(HashAlgorithm.Ethereum, minerHash, miner);
+    const miningHash = ABI.soliditySHA3(argTypes, args);
+    rings.sig = await this.signAsync(HashAlgorithm.Ethereum, miningHash, miner);
   }
 
   private async signAsync(requestedAlgorithm: HashAlgorithm, hash: Buffer, address: string) {
