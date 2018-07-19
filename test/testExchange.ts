@@ -136,6 +136,8 @@ contract("Exchange", (accounts: string[]) => {
           await setupOrder(order, i);
         }
 
+        // await multiHashUtil.signRingsAsync(ringsInfo, miner);
+
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
 

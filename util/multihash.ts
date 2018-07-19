@@ -22,31 +22,72 @@ export class MultiHashUtil {
   }
 
   public async signOrderAsync(order: OrderInfo) {
+    const hash = this.getOrderHash(order);
+    order.orderHashHex = hash.toString("hex");
+    order.sig = await this.signAsync(order.sigAlgorithm, hash, order.owner);
+  }
+
+  public async signRingsAsync(rings: RingsInfo, miner: string) {
+    const ringHashes: string[] = [];
+    for (const ring of rings.rings) {
+      const orderHashes = new Bitstream();
+      for (const order of ring) {
+        orderHashes.addHex(rings.orders[order].orderHashHex);
+      }
+      const args = [
+        Buffer.from(orderHashes.getData().slice(2), "hex"),
+      ];
+      const argTypes = [
+        "bytes",
+      ];
+      const ringHash = ABI.soliditySHA3(argTypes, args).toString("hex");
+      ringHashes.push(ringHash);
+    }
+
+    let concatRingHashes = ringHashes[0];
+    for (let i = 1; i < ringHashes.length; i++) {
+      concatRingHashes = this.xor(concatRingHashes, ringHashes[i], 32);
+    }
+
+    const args2 = [
+      rings.feeRecipient ? rings.feeRecipient : miner,
+      rings.miner ? rings.miner : "0x0",
+      concatRingHashes,
+    ];
+
+    const argTypes2 = [
+      "address",
+      "address",
+      "bytes32",
+    ];
+    const minerHash = ABI.soliditySHA3(argTypes2, args2).toString("hex");
+    rings.sig = await this.signAsync(HashAlgorithm.Ethereum, minerHash, miner);
+  }
+
+  private async signAsync(requestedAlgorithm: HashAlgorithm, hash: Buffer, address: string) {
     // Default to standard Ethereum signing
     let algorithm = HashAlgorithm.Ethereum;
-    if (order.sigAlgorithm) {
-      algorithm = order.sigAlgorithm;
+    if (requestedAlgorithm) {
+      algorithm = requestedAlgorithm;
     }
 
     const sig = new Bitstream();
     sig.addNumber(algorithm, 1);
     switch (+algorithm) {
       case HashAlgorithm.Ethereum:
-        await this.signOrderEthereumAsync(sig, order);
+        await this.signEthereumAsync(sig, hash, address);
         break;
       case HashAlgorithm.EIP712:
-        await this.signOrderEIP712Async(sig, order);
+        await this.signEIP712Async(sig, hash, address);
         break;
       default:
         throw Error("Unsupported hashing algorithm: " + algorithm);
     }
-    order.sig = sig.getData();
+    return sig.getData();
   }
 
-  public async signOrderEthereumAsync(sig: Bitstream, order: OrderInfo) {
-    const orderHash = this.getOrderHash(order);
-
-    const signature = await promisify(this.web3Instance.eth.sign)(order.owner, ethUtil.bufferToHex(orderHash));
+  private async signEthereumAsync(sig: Bitstream, hash: Buffer, address: string) {
+    const signature = await promisify(this.web3Instance.eth.sign)(address, ethUtil.bufferToHex(hash));
     const { v, r, s } = ethUtil.fromRpcSig(signature);
 
     sig.addNumber(1 + 32 + 32, 1);
@@ -56,7 +97,7 @@ export class MultiHashUtil {
   }
 
   // TODO: Actually implement this correctly, the standard is not widely supported yet
-  public async signOrderEIP712Async(sig: Bitstream, order: OrderInfo) {
+  private async signEIP712Async(sig: Bitstream, hash: Buffer, address: string) {
     throw Error("EIP712 signing currently not implemented.");
 
     /*const orderHash = this.getOrderHash(order);
@@ -121,4 +162,10 @@ export class MultiHashUtil {
     return new BN((new BigNumber(n)).toString(10), 10);
   }
 
+  private xor(s1: string, s2: string, numBytes: number) {
+    const x1 = new BN(s1.slice(0), 16);
+    const x2 = new BN(s2.slice(0), 16);
+    const result = x1.xor(x2);
+    return "0x" + result.toString(16, numBytes * 2);
+  }
 }

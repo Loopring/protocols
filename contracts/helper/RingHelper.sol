@@ -35,15 +35,15 @@ library RingHelper {
         internal
         pure
     {
+        bytes memory orderHashes = new bytes(32 * ring.size);
         for (uint i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
-            ring.hash = keccak256(
-                abi.encodePacked(
-                    ring.hash,
-                    p.order.hash
-                )
-            );
+            bytes32 orderHash = p.order.hash;
+            assembly {
+                 mstore(add(add(orderHashes, 0x20), mul(i, 0x20)), orderHash)
+            }
         }
+        ring.hash = keccak256(orderHashes);
     }
 
     function calculateFillAmountAndFee(

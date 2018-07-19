@@ -218,14 +218,13 @@ contract Exchange is IExchange, NoDefaultFunc {
             orders[i].checkBrokerSignature(ctx);
         }
 
-        /* for (uint i = 0; i < rings.length; i++) { */
-        /*     rings[i].updateHash(); */
-        /*     mining.hash ^= rings[i].hash; */
-        /* } */
+        for (uint i = 0; i < rings.length; i++) {
+            rings[i].updateHash();
+        }
 
-        /* mining.updateHash(); */
-        /* mining.updateMinerAndInterceptor(ctx); */
-        /* mining.checkMinerSignature(ctx); */
+        mining.updateHash(rings);
+        mining.updateMinerAndInterceptor(ctx);
+        mining.checkMinerSignature(ctx);
 
         /* for (uint i = 0; i < orders.length; i++) { */
         /*     orders[i].checkDualAuthSignature(mining.hash); */

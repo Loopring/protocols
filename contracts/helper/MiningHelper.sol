@@ -47,19 +47,25 @@ library MiningHelper {
     }
 
     function updateHash(
-        Data.Mining mining
+        Data.Mining mining,
+        Data.Ring[] rings
         )
         internal
         pure
     {
+        bytes32 ringHashes = rings[0].hash;
+        for (uint i = 1; i < rings.length; i++) {
+            ringHashes ^= rings[i].hash;
+        }
         mining.hash = keccak256(
             abi.encodePacked(
                 mining.feeRecipient,
                 mining.miner,
-                mining.hash
+                ringHashes
             )
         );
     }
+
     function checkMinerSignature(
         Data.Mining mining,
         Data.Context ctx
