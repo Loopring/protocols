@@ -1,11 +1,12 @@
 import tokenInfos = require("../migrations/config/tokens.js");
-import { HashAlgorithm, RingsInfo } from "../util/types";
+import { RingsInfo, SignAlgorithm } from "../util/types";
 
 const tokenSymbols = tokenInfos.development.map((t) => t.symbol);
 
 export const ringsInfoList: RingsInfo[] = [
   {
     description: "simple size 2 2-size rings.",
+    signAlgorithm: SignAlgorithm.Ethereum,
     rings: [[0, 1], [2, 3]],
     orders: [
       {
@@ -14,7 +15,7 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[1],
         amountS: 3e18,
         amountB: 1e18,
-        sigAlgorithm: HashAlgorithm.Ethereum,
+        signAlgorithm: SignAlgorithm.Ethereum,
       },
       {
         index: 1,
@@ -22,7 +23,7 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[0],
         amountS: 1e18,
         amountB: 3e18,
-        dualAuthSigAlgorithm: HashAlgorithm.Ethereum,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
       },
       {
         index: 2,

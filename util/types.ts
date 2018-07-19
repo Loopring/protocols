@@ -1,7 +1,7 @@
 import { BigNumber } from "bignumber.js";
 
 // Make sure to keep this in sync with the Multihash smart contract
-export enum HashAlgorithm {
+export enum SignAlgorithm {
   Ethereum = 0,   // Sign with web3.eth_sign
                   // Should be compatible with Trezor now (with latest firmware):
                   // https://github.com/ethereum/go-ethereum/issues/14794#issuecomment-392028942
@@ -44,8 +44,8 @@ export interface OrderInfo {
 
   index?: number;
   delegateContract?: string;
-  sigAlgorithm?: HashAlgorithm;
-  dualAuthSigAlgorithm?: HashAlgorithm;
+  signAlgorithm?: SignAlgorithm;
+  dualAuthSignAlgorithm?: SignAlgorithm;
 }
 
 export interface RingsSubmitParam {
@@ -65,6 +65,7 @@ export interface RingsInfo {
   rings: number[][];
   orders: OrderInfo[];
 
+  signAlgorithm?: SignAlgorithm;
   hash?: Buffer;
 }
 

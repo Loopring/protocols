@@ -12,7 +12,7 @@ import { MultiHashUtil } from "../util/multihash";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
-import { HashAlgorithm, OrderInfo, RingsInfo } from "../util/types";
+import { OrderInfo, RingsInfo } from "../util/types";
 
 const {
   Exchange,
@@ -114,7 +114,7 @@ contract("Exchange", (accounts: string[]) => {
     // Dual Authoring
     for (const order of ringsInfo.orders) {
       if (order.dualAuthAddr) {
-        await multiHashUtil.signAsync(order.dualAuthSigAlgorithm, ringsInfo.hash, order.dualAuthAddr);
+        await multiHashUtil.signAsync(order.dualAuthSignAlgorithm, ringsInfo.hash, order.dualAuthAddr);
       }
     }
   };

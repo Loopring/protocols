@@ -5,7 +5,7 @@ import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import Web3 = require("web3");
 import { Bitstream } from "./bitstream";
-import { HashAlgorithm, OrderInfo, RingsInfo } from "./types";
+import { OrderInfo, RingsInfo, SignAlgorithm } from "./types";
 
 export class MultiHashUtil {
 
@@ -24,7 +24,7 @@ export class MultiHashUtil {
   public async signOrderAsync(order: OrderInfo) {
     const hash = this.getOrderHash(order);
     order.orderHashHex = hash.toString("hex");
-    order.sig = await this.signAsync(order.sigAlgorithm, hash, order.owner);
+    order.sig = await this.signAsync(order.signAlgorithm, hash, order.owner);
   }
 
   public async signRingsAsync(rings: RingsInfo, transactionOrigin: string) {
@@ -61,20 +61,20 @@ export class MultiHashUtil {
 
     // Calculate mining signature
     const miner = rings.miner ? rings.miner : feeRecipient;
-    rings.sig = await this.signAsync(HashAlgorithm.Ethereum, rings.hash, miner);
+    rings.sig = await this.signAsync(rings.signAlgorithm, rings.hash, miner);
   }
 
-  public async signAsync(algorithm: HashAlgorithm, hash: Buffer, address: string) {
+  public async signAsync(algorithm: SignAlgorithm, hash: Buffer, address: string) {
     // Default to standard Ethereum signing
-    algorithm = Object.is(algorithm, undefined) ? HashAlgorithm.Ethereum : algorithm;
+    algorithm = Object.is(algorithm, undefined) ? SignAlgorithm.Ethereum : algorithm;
 
     const sig = new Bitstream();
     sig.addNumber(algorithm, 1);
     switch (+algorithm) {
-      case HashAlgorithm.Ethereum:
+      case SignAlgorithm.Ethereum:
         await this.signEthereumAsync(sig, hash, address);
         break;
-      case HashAlgorithm.EIP712:
+      case SignAlgorithm.EIP712:
         await this.signEIP712Async(sig, hash, address);
         break;
       default:
