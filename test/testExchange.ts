@@ -12,7 +12,7 @@ import { MultiHashUtil } from "../util/multihash";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
-import { OrderInfo, RingsInfo } from "../util/types";
+import { HashAlgorithm, OrderInfo, RingsInfo } from "../util/types";
 
 const {
   Exchange,
@@ -25,6 +25,8 @@ contract("Exchange", (accounts: string[]) => {
   const deployer = accounts[0];
   const miner = accounts[9];
   const orderOwners = accounts.slice(5, 8); // 5 ~ 7
+  const orderDualAuthAddr = accounts.slice(1, 4);
+  const transactionOrigin = /*miner*/ accounts[1];
 
   let exchange: any;
   let tokenRegistry: any;
@@ -94,6 +96,7 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.lrcFee) {
       order.lrcFee = 1e18;
     }
+    order.dualAuthAddr = orderDualAuthAddr[ownerIndex];
 
     // setup amount:
     const orderTokenS = await DummyToken.at(addrS);
@@ -102,6 +105,18 @@ contract("Exchange", (accounts: string[]) => {
     await lrcToken.addBalance(order.owner, order.lrcFee);
 
     await multiHashUtil.signOrderAsync(order);
+  };
+
+  const signRings = async (ringsInfo: RingsInfo) => {
+    // Sign rings
+    await multiHashUtil.signRingsAsync(ringsInfo, transactionOrigin);
+
+    // Dual Authoring
+    for (const order of ringsInfo.orders) {
+      if (order.dualAuthAddr) {
+        await multiHashUtil.signAsync(order.dualAuthSigAlgorithm, ringsInfo.hash, order.dualAuthAddr);
+      }
+    }
   };
 
   before( async () => {
@@ -136,12 +151,12 @@ contract("Exchange", (accounts: string[]) => {
           await setupOrder(order, i);
         }
 
-        await multiHashUtil.signRingsAsync(ringsInfo, miner);
+        await signRings(ringsInfo);
 
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
 
-        const tx = await exchange.submitRings(bs, {from: miner});
+        const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         // console.log("tx:", tx);
         await watchAndPrintEvent(exchange, "LogTrans");
 

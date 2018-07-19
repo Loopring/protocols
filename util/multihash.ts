@@ -27,7 +27,7 @@ export class MultiHashUtil {
     order.sig = await this.signAsync(order.sigAlgorithm, hash, order.owner);
   }
 
-  public async signRingsAsync(rings: RingsInfo, miner: string) {
+  public async signRingsAsync(rings: RingsInfo, transactionOrigin: string) {
     // Calculate all ring hashes
     const ringHashes: string[] = [];
     for (const ring of rings.rings) {
@@ -45,9 +45,10 @@ export class MultiHashUtil {
       ringHashesXOR = this.xor(ringHashesXOR, ringHashes[i], 32);
     }
 
-    // Calculate mining hash and signature
+    // Calculate mining hash
+    const feeRecipient = rings.feeRecipient ? rings.feeRecipient : transactionOrigin;
     const args = [
-      rings.feeRecipient ? rings.feeRecipient : miner,
+      feeRecipient,
       rings.miner ? rings.miner : "0x0",
       ringHashesXOR,
     ];
@@ -56,16 +57,16 @@ export class MultiHashUtil {
       "address",
       "bytes32",
     ];
-    const miningHash = ABI.soliditySHA3(argTypes, args);
-    rings.sig = await this.signAsync(HashAlgorithm.Ethereum, miningHash, miner);
+    rings.hash = ABI.soliditySHA3(argTypes, args);
+
+    // Calculate mining signature
+    const miner = rings.miner ? rings.miner : feeRecipient;
+    rings.sig = await this.signAsync(HashAlgorithm.Ethereum, rings.hash, miner);
   }
 
-  private async signAsync(requestedAlgorithm: HashAlgorithm, hash: Buffer, address: string) {
+  public async signAsync(algorithm: HashAlgorithm, hash: Buffer, address: string) {
     // Default to standard Ethereum signing
-    let algorithm = HashAlgorithm.Ethereum;
-    if (requestedAlgorithm) {
-      algorithm = requestedAlgorithm;
-    }
+    algorithm = Object.is(algorithm, undefined) ? HashAlgorithm.Ethereum : algorithm;
 
     const sig = new Bitstream();
     sig.addNumber(algorithm, 1);

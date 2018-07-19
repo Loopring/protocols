@@ -45,6 +45,7 @@ export interface OrderInfo {
   index?: number;
   delegateContract?: string;
   sigAlgorithm?: HashAlgorithm;
+  dualAuthSigAlgorithm?: HashAlgorithm;
 }
 
 export interface RingsSubmitParam {
@@ -63,6 +64,8 @@ export interface RingsInfo {
   sig?: string;          // spec value: 1 << 2
   rings: number[][];
   orders: OrderInfo[];
+
+  hash?: Buffer;
 }
 
 export interface TransferItem {
