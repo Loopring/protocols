@@ -1,3 +1,6 @@
+import { BigNumber } from "bignumber.js";
+import BN = require("bn.js");
+import ABI = require("ethereumjs-abi");
 import fs = require("fs");
 import { OrderInfo } from "./types";
 
@@ -14,13 +17,50 @@ export class OrderUtil {
     this.DelegateContract = web3.eth.contract(JSON.parse(delegateAbi));
   }
 
+  public getOrderHash(order: OrderInfo) {
+    const MAX_UINT = new BN("f".repeat(64), 16);
+    const args = [
+      order.owner,
+      order.tokenS,
+      order.tokenB,
+      this.toBN(order.amountS),
+      this.toBN(order.amountB),
+      this.toBN(order.lrcFee),
+      order.dualAuthAddr ? order.dualAuthAddr : "0x0",
+      order.broker ? order.broker : "0x0",
+      order.orderInterceptor ? order.orderInterceptor : "0x0",
+      order.walletAddr ? order.walletAddr : "0x0",
+      order.validSince ? order.validSince : this.toBN(0),
+      order.validUntil ? order.validUntil : MAX_UINT,
+      order.allOrNone,
+    ];
+
+    const argTypes = [
+      "address",
+      "address",
+      "address",
+      "uint256",
+      "uint256",
+      "uint256",
+      "address",
+      "address",
+      "address",
+      "address",
+      "uint256",
+      "uint256",
+      "bool",
+    ];
+    const orderHash = ABI.soliditySHA3(argTypes, args);
+    return orderHash;
+  }
+
   public async scaleBySpendableAmount(orderInfo: OrderInfo) {
     const spendableS = await this.getErc20SpendableAmount(this.orderInfo.tokenS,
                                                           this.orderInfo.owner,
                                                           this.orderInfo.delegateContract);
 
     const delegateContract = this.DelegateContract.at(this.orderInfo.delegateContract);
-    const filled = await delegateContract.filled(this.orderInfo.orderHashHex);
+    const filled = await delegateContract.filled(this.orderInfo.hash.toString("hex"));
     const remaining = this.orderInfo.amountS - filled;
 
     if (remaining <= 0) {
@@ -38,4 +78,7 @@ export class OrderUtil {
     return Math.min(balance, allowance);
   }
 
+  private toBN(n: number) {
+    return new BN((new BigNumber(n)).toString(10), 10);
+  }
 }

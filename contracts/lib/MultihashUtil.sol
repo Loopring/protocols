@@ -46,6 +46,7 @@ library MultihashUtil {
         require(multihash.length == (2 + size), "bad multihash size");
 
         if (algorithm == HashAlgorithm.Ethereum) {
+            require(signer != 0x0);
             require(size == 65, "bad multihash size");
             require(
                 signer == ecrecover(

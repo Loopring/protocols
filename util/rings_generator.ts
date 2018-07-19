@@ -5,6 +5,8 @@ import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import Web3 = require("web3");
 import { Bitstream } from "./bitstream";
+import { MultiHashUtil } from "./multihash";
+import { OrderUtil } from "./order";
 import { Ring } from "./ring";
 import { OrderInfo, RingsInfo, RingsSubmitParam } from "./types";
 
@@ -14,10 +16,63 @@ export class RingsGenerator {
 
   public web3Instance: Web3;
 
+  private multiHashUtil = new MultiHashUtil();
+  private orderUtil = new OrderUtil();
+
   constructor(delegateContractAddr: string,
               currBlockTimeStamp: number) {
     this.delegateContractAddr = delegateContractAddr;
     this.currBlockTimeStamp = currBlockTimeStamp;
+  }
+
+  public async setupRingsAsync(rings: RingsInfo, transactionOrigin: string) {
+    // Setup orders
+    for (const order of rings.orders) {
+      order.hash = this.orderUtil.getOrderHash(order);
+      await this.multiHashUtil.signOrderAsync(order);
+    }
+
+    // Calculate all ring hashes
+    const ringHashes: string[] = [];
+    for (const ring of rings.rings) {
+      const orderHashes = new Bitstream();
+      for (const order of ring) {
+        orderHashes.addHex(rings.orders[order].hash.toString("hex"));
+      }
+      const ringHash = ABI.soliditySHA3(["bytes"], [Buffer.from(orderHashes.getData().slice(2), "hex")]);
+      ringHashes.push(ringHash.toString("hex"));
+    }
+
+    // XOR ring hashes together for the mining hash
+    let ringHashesXOR = ringHashes[0];
+    for (let i = 1; i < ringHashes.length; i++) {
+      ringHashesXOR = this.xor(ringHashesXOR, ringHashes[i], 32);
+    }
+
+    // Calculate mining hash
+    const feeRecipient = rings.feeRecipient ? rings.feeRecipient : transactionOrigin;
+    const args = [
+      feeRecipient,
+      rings.miner ? rings.miner : "0x0",
+      ringHashesXOR,
+    ];
+    const argTypes = [
+      "address",
+      "address",
+      "bytes32",
+    ];
+    rings.hash = ABI.soliditySHA3(argTypes, args);
+
+    // Calculate mining signature
+    const miner = rings.miner ? rings.miner : feeRecipient;
+    rings.sig = await this.multiHashUtil.signAsync(rings.signAlgorithm, rings.hash, miner);
+
+    // Dual Authoring
+    for (const order of rings.orders) {
+      if (order.dualAuthAddr) {
+        await this.multiHashUtil.signAsync(order.dualAuthSignAlgorithm, rings.hash, order.dualAuthAddr);
+      }
+    }
   }
 
   public toSubmitableParam(rings: RingsInfo) {
@@ -151,5 +206,12 @@ export class RingsGenerator {
     param.bytesList.forEach((bs) => stream.addRawBytes(bs));
 
     return stream.getData();
+  }
+
+  private xor(s1: string, s2: string, numBytes: number) {
+    const x1 = new BN(s1.slice(0), 16);
+    const x2 = new BN(s2.slice(0), 16);
+    const result = x1.xor(x2);
+    return "0x" + result.toString(16, numBytes * 2);
   }
 }

@@ -103,20 +103,6 @@ contract("Exchange", (accounts: string[]) => {
     await orderTokenS.addBalance(order.owner, order.amountS);
     const lrcToken = await DummyToken.at(lrcAddress);
     await lrcToken.addBalance(order.owner, order.lrcFee);
-
-    await multiHashUtil.signOrderAsync(order);
-  };
-
-  const signRings = async (ringsInfo: RingsInfo) => {
-    // Sign rings
-    await multiHashUtil.signRingsAsync(ringsInfo, transactionOrigin);
-
-    // Dual Authoring
-    for (const order of ringsInfo.orders) {
-      if (order.dualAuthAddr) {
-        await multiHashUtil.signAsync(order.dualAuthSignAlgorithm, ringsInfo.hash, order.dualAuthAddr);
-      }
-    }
   };
 
   before( async () => {
@@ -151,7 +137,7 @@ contract("Exchange", (accounts: string[]) => {
           await setupOrder(order, i);
         }
 
-        await signRings(ringsInfo);
+        await ringsGenerator.setupRingsAsync(ringsInfo, transactionOrigin);
 
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);

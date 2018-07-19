@@ -37,7 +37,7 @@ export interface OrderInfo {
   fillAmountLrcFee?: number;
   splitS?: number;
 
-  orderHashHex?: string;
+  hash?: Buffer;
   v?: number;
   r?: string;
   s?: string;
