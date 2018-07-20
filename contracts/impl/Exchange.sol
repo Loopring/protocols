@@ -103,9 +103,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(_tokenRegistryAddress != 0x0);
         require(_delegateAddress != 0x0);
 
-        lrcTokenAddress            = _lrcTokenAddress;
-        tokenRegistryAddress       = _tokenRegistryAddress;
-        delegateAddress            = _delegateAddress;
+        lrcTokenAddress = _lrcTokenAddress;
+        tokenRegistryAddress = _tokenRegistryAddress;
+        delegateAddress = _delegateAddress;
     }
 
     function cancelOrders(
@@ -239,7 +239,12 @@ contract Exchange is IExchange, NoDefaultFunc {
             rings[i].calculateFillAmountAndFee(mining);
             /*IExchange.Fill[] memory fills = */
             rings[i].settleRing(ctx, mining);
-            emit RingMined(ctx.ringIndex++, 0x0, mining.feeRecipient/*, fills*/);
+            emit RingMined(
+                ctx.ringIndex++,
+                0x0,
+                mining.feeRecipient/*,
+                fills*/
+            );
         }
 
         ringIndex = ctx.ringIndex;

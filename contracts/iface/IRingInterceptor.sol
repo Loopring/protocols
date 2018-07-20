@@ -21,6 +21,7 @@ pragma experimental "ABIEncoderV2";
 
 /// @title IRingInterceptor
 /// @author Daniel Wang - <daniel@loopring.org>.
+// solium-disable-next-line no-empty-blocks
 contract IRingInterceptor {
 
 }

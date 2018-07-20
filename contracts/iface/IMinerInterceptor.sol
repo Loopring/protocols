@@ -20,6 +20,7 @@ pragma experimental "ABIEncoderV2";
 
 
 /// @title IMinerInterceptor
+// solium-disable-next-line no-empty-blocks
 contract IMinerInterceptor {
 
 }

@@ -76,7 +76,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         onlyOwner
         external
     {
-        require(0x0 !=addr, "bad address");
+        require(0x0 != addr, "bad address");
         require(
             0 == positionMap[addr],
             "address already exists"
