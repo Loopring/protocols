@@ -27,7 +27,7 @@ export class Ring {
     let smallest = 0;
     const ringSize = this.orders.length;
     for (let i = 0; i < ringSize; i++) {
-      const nextIndex = (i + 1) & ringSize;
+      const nextIndex = (i + 1) % ringSize;
       const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
       if (!isSmaller) {
         smallest = nextIndex;
@@ -35,7 +35,7 @@ export class Ring {
     }
 
     for (let i = 0; i < smallest; i++) {
-      const nextIndex = (i + 1) & ringSize;
+      const nextIndex = (i + 1) % ringSize;
       this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
     }
 

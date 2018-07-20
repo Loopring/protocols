@@ -5,8 +5,6 @@ import fs = require("fs");
 import { OrderInfo } from "./types";
 
 export class OrderUtil {
-  public orderInfo: OrderInfo;
-
   private ERC20Contract: any;
   private DelegateContract: any;
 
@@ -55,18 +53,18 @@ export class OrderUtil {
   }
 
   public async scaleBySpendableAmount(orderInfo: OrderInfo) {
-    const spendableS = await this.getErc20SpendableAmount(this.orderInfo.tokenS,
-                                                          this.orderInfo.owner,
-                                                          this.orderInfo.delegateContract);
+    const spendableS = await this.getErc20SpendableAmount(orderInfo.tokenS,
+                                                          orderInfo.owner,
+                                                          orderInfo.delegateContract);
 
-    const delegateContract = this.DelegateContract.at(this.orderInfo.delegateContract);
-    const filled = await delegateContract.filled(this.orderInfo.hash.toString("hex"));
-    const remaining = this.orderInfo.amountS - filled;
+    const delegateContract = this.DelegateContract.at(orderInfo.delegateContract);
+    const filled = await delegateContract.filled(orderInfo.hash.toString("hex"));
+    const remaining = orderInfo.amountS - filled;
 
     if (remaining <= 0) {
       throw new Error("order had been fully filled.");
     }
-    this.orderInfo.fillAmountS = Math.min(spendableS, remaining);
+    orderInfo.fillAmountS = Math.min(spendableS, remaining);
   }
 
   private async getErc20SpendableAmount(tokenAddr: string,

@@ -20,6 +20,6 @@ export class ProtocolSimulator {
     await ring.calculateFillAmountAndFee();
     const transferItems = ring.getRingTransferItems();
 
-    transferItems.forEach(console.log);
+    transferItems.forEach((item) => console.log(item));
   }
 }

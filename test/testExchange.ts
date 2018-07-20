@@ -9,6 +9,7 @@ import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/artifacts";
 import { Bitstream } from "../util/bitstream";
 import { MultiHashUtil } from "../util/multihash";
+import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
@@ -45,13 +46,6 @@ contract("Exchange", (accounts: string[]) => {
 
     return assert.equal(Number(numStr1), Number(numStr2));
   };
-
-  // const approve = async (tokens: any[], addresses: string[], amounts: number[]) => {
-  //   for (let i = 0; i < tokens.length; i++) {
-  //     await tokens[i].approve(TradeDelegate.address, 0, {from: addresses[i]});
-  //     await tokens[i].approve(TradeDelegate.address, amounts[i], {from: addresses[i]});
-  //   }
-  // };
 
   const getEventsFromContract = async (contract: any, eventName: string, fromBlock: number) => {
     return new Promise((resolve, reject) => {
@@ -135,14 +129,19 @@ contract("Exchange", (accounts: string[]) => {
     const currBlockTimeStamp = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
     const ringsGenerator = new RingsGenerator(TradeDelegate.address, currBlockTimeStamp);
 
+    const simulator = new ProtocolSimulator();
+
     for (const ringsInfo of ringsInfoList) {
       // all configed testcases here:
       it(ringsInfo.description, async () => {
+
         for (const [i, order] of ringsInfo.orders.entries()) {
           await setupOrder(order, i);
         }
 
         await ringsGenerator.setupRingsAsync(ringsInfo, transactionOrigin);
+
+        await simulator.simulateAndReport(ringsInfo);
 
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
