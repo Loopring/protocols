@@ -53,9 +53,12 @@ export class Ring {
       const token = this.orders[i].tokenS;
       const from = this.orders[i].owner;
       const to = this.orders[prevIndex].owner;
-      const value = this.orders[i].fillAmountS;
+      const amount = this.orders[i].fillAmountS;
 
+      transferItems.push({token, from , to, amount});
     }
+
+    return transferItems;
   }
 
   private isOrderSmallerThan(o1: OrderInfo, o2: OrderInfo) {
