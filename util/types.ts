@@ -39,14 +39,12 @@ export interface OrderInfo {
   splitS?: number;
 
   hash?: Buffer;
-  v?: number;
-  r?: string;
-  s?: string;
-
-  index?: number;
   delegateContract?: string;
   signAlgorithm?: SignAlgorithm;
   dualAuthSignAlgorithm?: SignAlgorithm;
+
+  index?: number;
+  lrcAddress?: string;
 }
 
 export interface RingsSubmitParam {

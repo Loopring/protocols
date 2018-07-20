@@ -45,7 +45,11 @@ export class Ring {
     smallestOrder.splitS = splitS;
   }
 
-  public getRingTransferItems() {
+  public getRingTransferItems(walletSplitPercentage: number) {
+    if (walletSplitPercentage > 100 && walletSplitPercentage < 0) {
+      throw new Error("invalid walletSplitPercentage:" + walletSplitPercentage);
+    }
+
     const ringSize = this.orders.length;
     const transferItems: TransferItem[] = [];
     for (let i = 0; i < ringSize; i++) {
@@ -56,6 +60,10 @@ export class Ring {
       const amount = this.orders[i].fillAmountS;
 
       transferItems.push({token, from , to, amount});
+
+      if (walletSplitPercentage > 0 && this.orders[i].walletAddr) {
+
+      }
     }
 
     return transferItems;

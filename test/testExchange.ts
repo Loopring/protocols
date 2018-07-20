@@ -33,6 +33,7 @@ contract("Exchange", (accounts: string[]) => {
   let tokenRegistry: any;
   let tradeDelegate: any;
   let lrcAddress: string;
+  let walletSplitPercentage: number;
 
   const tokenSymbolAddrMap = new Map();
   const tokenInstanceMap = new Map();
@@ -114,6 +115,9 @@ contract("Exchange", (accounts: string[]) => {
     await tradeDelegate.authorizeAddress(Exchange.address, {from: deployer});
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
 
+    const walletSplitPercentageBN = await tradeDelegate.walletSplitPercentage();
+    walletSplitPercentage = walletSplitPercentageBN.toNumber();
+
     for (const sym of allTokenSymbols) {
       const addr = await tokenRegistry.getAddressBySymbol(sym);
       tokenSymbolAddrMap.set(sym, addr);
@@ -129,7 +133,7 @@ contract("Exchange", (accounts: string[]) => {
     const currBlockTimeStamp = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
     const ringsGenerator = new RingsGenerator(TradeDelegate.address, currBlockTimeStamp);
 
-    const simulator = new ProtocolSimulator();
+    const simulator = new ProtocolSimulator(walletSplitPercentage);
 
     for (const ringsInfo of ringsInfoList) {
       // all configed testcases here:

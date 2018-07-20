@@ -65,6 +65,7 @@ export class OrderUtil {
       throw new Error("order had been fully filled.");
     }
     orderInfo.fillAmountS = Math.min(spendableS, remaining);
+    orderInfo.fillAmountLrcFee = orderInfo.lrcFee * orderInfo.fillAmountS / orderInfo.amountS;
   }
 
   private async getErc20SpendableAmount(tokenAddr: string,

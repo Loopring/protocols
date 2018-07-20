@@ -3,6 +3,12 @@ import { OrderInfo, RingsInfo, TransferItem } from "./types";
 
 export class ProtocolSimulator {
 
+  public walletSplitPercentage: number;
+
+  constructor(walletSplitPercentage: number) {
+    this.walletSplitPercentage = walletSplitPercentage;
+  }
+
   public async simulateAndReport(ringsInfo: RingsInfo) {
     for (const indexes of ringsInfo.rings) {
       const ringOrders: OrderInfo[] = [];
@@ -18,7 +24,7 @@ export class ProtocolSimulator {
 
   private async simulateAndReportSingle(ring: Ring) {
     await ring.calculateFillAmountAndFee();
-    const transferItems = ring.getRingTransferItems();
+    const transferItems = ring.getRingTransferItems(this.walletSplitPercentage);
 
     transferItems.forEach((item) => console.log(item));
   }

@@ -7,7 +7,7 @@ export const ringsInfoList: RingsInfo[] = [
   {
     description: "simple size 2 2-size rings.",
     signAlgorithm: SignAlgorithm.Ethereum,
-    rings: [[0, 1], [2, 3]],
+    rings: [[0, 1]],
     orders: [
       {
         index: 0,
@@ -24,21 +24,6 @@ export const ringsInfoList: RingsInfo[] = [
         amountS: 1e18,
         amountB: 3e18,
         dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
-      },
-      {
-        index: 2,
-        tokenS: tokenSymbols[1],
-        tokenB: tokenSymbols[2],
-        amountS: 2e17,
-        amountB: 1e18,
-        dualAuthSignAlgorithm: SignAlgorithm.None,
-      },
-      {
-        index: 3,
-        tokenS: tokenSymbols[2],
-        tokenB: tokenSymbols[1],
-        amountS: 1e18,
-        amountB: 2e17,
       },
     ],
   },
