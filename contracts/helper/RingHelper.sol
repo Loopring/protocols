@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/IExchange.sol";
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
@@ -141,16 +142,26 @@ library RingHelper {
     event LogTrans(address token, address from, address to, uint amount);
     function settleRing(Data.Ring ring, Data.Context ctx, Data.Mining mining)
         internal
+        returns (IExchange.Fill[] memory fills)
     {
         uint8 walletSplitPercentage = ctx.delegate.walletSplitPercentage();
 
+        fills = new IExchange.Fill[](ring.size);
         uint batchSize = calculateTransferBatchSize(ring, walletSplitPercentage);
         bytes32[] memory batch = new bytes32[](batchSize * 4);
         uint batchIndex = 0;
-        for (uint i = 0; i < ring.size; i++) {
+        uint i;
+        for (i = 0; i < ring.size; i++) {
             uint prevIndex = (i + ring.size - 1) % ring.size;
             Data.Participation memory p = ring.participations[i];
             Data.Participation memory prevP = ring.participations[prevIndex];
+
+            fills[i].orderHash = p.order.hash;
+            fills[i].owner = p.order.owner;
+            fills[i].tokenS = p.order.tokenS;
+            fills[i].amountS = p.fillAmountS;
+            fills[i].split = p.splitS > 0 ? int(p.splitS) : -int(p.splitB);
+            fills[i].lrcFee = p.lrcFee;
 
             batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
             batch[1 + batchIndex * 4] = bytes32(p.order.owner);
@@ -206,7 +217,7 @@ library RingHelper {
             }
         }
 
-        for (uint i = 0; i < batch.length; i += 4) {
+        for (i = 0; i < batch.length; i += 4) {
             emit LogTrans(
                 address(batch[i]),
                 address(batch[i + 1]),

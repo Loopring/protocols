@@ -44,6 +44,7 @@ library Data {
         IBrokerRegistry minerBrokerRegistry;
         IOrderRegistry  orderRegistry;
         IMinerRegistry  minerRegistry;
+        uint64 ringIndex;
     }
 
     struct Mining {

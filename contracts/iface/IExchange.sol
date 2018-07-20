@@ -32,15 +32,15 @@ contract IExchange {
         address     owner;
         address     tokenS;
         uint        amountS;
-        int         split;  // Positive number for splitS and negaive for splitB .
-        int         lrcFee;
+        int         split;  // Positive number for splitS and negative for splitB .
+        uint        lrcFee;
     }
 
     event RingMined(
         uint            _ringIndex,
-        address indexed _broker,
-        address indexed _feeRecipient,
-        Fill[]          _fills
+        address indexed _broker,        // TODO: broker is different for every order
+        address indexed _feeRecipient/*,
+        Fill[]          _fills*/        // Currently can't seem to get events with structs in js
     );
 
     event OrdersCancelled(

@@ -22,6 +22,10 @@ const {
   DummyToken,
 } = new Artifacts(artifacts);
 
+interface RingMinedEventData {
+  ringIndex: BigNumber;
+}
+
 contract("Exchange", (accounts: string[]) => {
   const deployer = accounts[0];
   const miner = accounts[9];
@@ -73,6 +77,32 @@ contract("Exchange", (accounts: string[]) => {
     events.forEach((e: any) => {
       console.log("event:", util.inspect(e.args, false, null));
     });
+  };
+
+  const getRingMinedEvents = async (fromBlock: number) => {
+    const ringMinedEvents: RingMinedEventData[] = [];
+    const eventArr: any = await getEventsFromContract(exchange, "RingMined", fromBlock);
+    const items = eventArr.map((eventObj: any) => {
+      const ringMined = {
+        ringIndex: eventObj.args._ringIndex,
+      };
+      ringMinedEvents.push(ringMined);
+    });
+    return ringMinedEvents;
+  };
+
+  const validateSubmitRings = async (tx: any, ringsInfo: RingsInfo) => {
+    // Validate RingMined events
+    const ringMinedEvents = await getRingMinedEvents(tx.receipt.blockNumber);
+    // Currently all rings should successfully get executed
+    assert(ringsInfo.rings.length === ringMinedEvents.length, "All rings should be mined");
+    // Ring index of all mined rings should get incremented by 1 for every additional ring
+    for (let i = 1; i < ringMinedEvents.length; i++) {
+      assert(
+        ringMinedEvents[i - 1].ringIndex.equals(ringMinedEvents[i].ringIndex.minus(1)),
+        "RingIndex should increment by 1",
+      );
+    }
   };
 
   const setupOrder = async (order: OrderInfo, index: number) => {
@@ -153,6 +183,8 @@ contract("Exchange", (accounts: string[]) => {
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         // console.log("tx:", tx);
         await watchAndPrintEvent(exchange, "LogTrans");
+
+        await validateSubmitRings(tx, ringsInfo);
 
         assert(true);
       });

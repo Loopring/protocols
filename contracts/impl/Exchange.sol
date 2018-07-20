@@ -203,7 +203,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             IBrokerRegistry(orderBrokerRegistryAddress),
             IBrokerRegistry(minerBrokerRegistryAddress),
             IOrderRegistry(orderRegistryAddress),
-            IMinerRegistry(minerRegistryAddress)
+            IMinerRegistry(minerRegistryAddress),
+            ringIndex
         );
 
         (Data.Mining  memory mining,
@@ -236,8 +237,12 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         for (uint i = 0; i < rings.length; i++){
             rings[i].calculateFillAmountAndFee(mining);
+            /*IExchange.Fill[] memory fills = */
             rings[i].settleRing(ctx, mining);
+            emit RingMined(ctx.ringIndex++, 0x0, mining.feeRecipient/*, fills*/);
         }
+
+        ringIndex = ctx.ringIndex;
     }
 
 }
