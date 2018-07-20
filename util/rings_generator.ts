@@ -42,7 +42,7 @@ export class RingsGenerator {
         orderHashes.addHex(rings.orders[order].hash.toString("hex"));
       }
       const ringHash = ABI.soliditySHA3(["bytes"], [Buffer.from(orderHashes.getData().slice(2), "hex")]);
-      ringHashes.push(ringHash.toString("hex"));
+      ringHashes.push("0x" + ringHash.toString("hex"));
     }
 
     // XOR ring hashes together for the mining hash
@@ -219,8 +219,8 @@ export class RingsGenerator {
   }
 
   private xor(s1: string, s2: string, numBytes: number) {
-    const x1 = new BN(s1.slice(0), 16);
-    const x2 = new BN(s2.slice(0), 16);
+    const x1 = new BN(s1.slice(2), 16);
+    const x2 = new BN(s2.slice(2), 16);
     const result = x1.xor(x2);
     return "0x" + result.toString(16, numBytes * 2);
   }

@@ -224,10 +224,10 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         mining.updateHash(rings);
         mining.updateMinerAndInterceptor(ctx);
-        // mining.checkMinerSignature(ctx); // TODO: Brecht, fix this.
+        mining.checkMinerSignature(ctx);
 
         for (uint i = 0; i < orders.length; i++) {
-            // orders[i].checkDualAuthSignature(mining.hash); // TODO: Brecht, fix this.
+            orders[i].checkDualAuthSignature(mining.hash);
         }
 
         for (uint i = 0; i < orders.length; i++) {
