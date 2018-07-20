@@ -2,6 +2,7 @@
     "extends": "solium:recommended",
     "rules":
     {
+        "no-experimental" : "off",
         "imports-on-top": 0,
         "variable-declarations": 0,
         "indentation": ["error", 4],
