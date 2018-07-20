@@ -8,7 +8,7 @@ import { Bitstream } from "./bitstream";
 import { MultiHashUtil } from "./multihash";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
-import { OrderInfo, RingsInfo, RingsSubmitParam } from "./types";
+import { OrderInfo, RingsInfo, RingsSubmitParam, SignAlgorithm } from "./types";
 
 export class RingsGenerator {
   public delegateContractAddr: string;
@@ -29,7 +29,9 @@ export class RingsGenerator {
     // Setup orders
     for (const order of rings.orders) {
       order.hash = this.orderUtil.getOrderHash(order);
-      await this.multiHashUtil.signOrderAsync(order);
+      if (order.sig === undefined) {
+        order.sig = await this.multiHashUtil.signOrderAsync(order);
+      }
     }
 
     // Calculate all ring hashes
@@ -64,13 +66,21 @@ export class RingsGenerator {
     rings.hash = ABI.soliditySHA3(argTypes, args);
 
     // Calculate mining signature
-    const miner = rings.miner ? rings.miner : feeRecipient;
-    rings.sig = await this.multiHashUtil.signAsync(rings.signAlgorithm, rings.hash, miner);
+    if (rings.sig === undefined) {
+      const miner = rings.miner ? rings.miner : feeRecipient;
+      rings.sig = await this.multiHashUtil.signAsync(rings.signAlgorithm, rings.hash, miner);
+    }
 
     // Dual Authoring
     for (const order of rings.orders) {
-      if (order.dualAuthAddr) {
-        await this.multiHashUtil.signAsync(order.dualAuthSignAlgorithm, rings.hash, order.dualAuthAddr);
+      if (order.dualAuthSig === undefined) {
+        if (order.dualAuthAddr) {
+          order.dualAuthSig = await this.multiHashUtil.signAsync(
+            order.dualAuthSignAlgorithm,
+            rings.hash,
+            order.dualAuthAddr,
+          );
+        }
       }
     }
   }

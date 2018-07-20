@@ -7,6 +7,7 @@ export enum SignAlgorithm {
                   // https://github.com/ethereum/go-ethereum/issues/14794#issuecomment-392028942
   EIP712 = 1,     // Sign with web3.eth.signTypedData
                   // EIP712: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
+  None = 255,     // Do not sign
 }
 
 export interface OrderInfo {

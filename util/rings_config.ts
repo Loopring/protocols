@@ -31,6 +31,7 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[2],
         amountS: 2e17,
         amountB: 1e18,
+        dualAuthSignAlgorithm: SignAlgorithm.None,
       },
       {
         index: 3,

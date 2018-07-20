@@ -12,7 +12,7 @@ import { MultiHashUtil } from "../util/multihash";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
-import { OrderInfo, RingsInfo } from "../util/types";
+import { OrderInfo, RingsInfo, SignAlgorithm } from "../util/types";
 
 const {
   Exchange,
@@ -96,7 +96,12 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.lrcFee) {
       order.lrcFee = 1e18;
     }
-    order.dualAuthAddr = orderDualAuthAddr[ownerIndex];
+    if (!order.dualAuthSignAlgorithm) {
+      order.dualAuthSignAlgorithm = SignAlgorithm.Ethereum;
+    }
+    if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== SignAlgorithm.None) {
+      order.dualAuthAddr = orderDualAuthAddr[ownerIndex];
+    }
 
     // setup amount:
     const orderTokenS = await DummyToken.at(addrS);

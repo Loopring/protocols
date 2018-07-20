@@ -22,7 +22,7 @@ export class MultiHashUtil {
   }
 
   public async signOrderAsync(order: OrderInfo) {
-    order.sig = await this.signAsync(order.signAlgorithm, order.hash, order.owner);
+    return await this.signAsync(order.signAlgorithm, order.hash, order.owner);
   }
 
   public async signAsync(algorithm: SignAlgorithm, hash: Buffer, address: string) {
@@ -34,14 +34,15 @@ export class MultiHashUtil {
     switch (+algorithm) {
       case SignAlgorithm.Ethereum:
         await this.signEthereumAsync(sig, hash, address);
-        break;
+        return sig.getData();
       case SignAlgorithm.EIP712:
         await this.signEIP712Async(sig, hash, address);
-        break;
+        return sig.getData();
+      case SignAlgorithm.None:
+        return null;
       default:
         throw Error("Unsupported hashing algorithm: " + algorithm);
     }
-    return sig.getData();
   }
 
   private async signEthereumAsync(sig: Bitstream, hash: Buffer, address: string) {
