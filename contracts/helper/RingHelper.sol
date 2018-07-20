@@ -70,10 +70,10 @@ library RingHelper {
             calculateOrderFillAmounts(ring, i, smallest);
         }
 
-        Data.Participation memory p = ring.participations[smallest];
-        uint newFillAmountS = p.fillAmountB.mul(p.order.amountS) / p.order.amountB;
-        p.splitS = newFillAmountS.sub(p.fillAmountS);
-        p.fillAmountS = newFillAmountS;
+        Data.Participation memory smallestP = ring.participations[smallest];
+        uint newFillAmountS = smallestP.fillAmountB.mul(smallestP.order.amountS) / smallestP.order.amountB;
+        smallestP.splitS = newFillAmountS.sub(smallestP.fillAmountS);
+        smallestP.fillAmountS = newFillAmountS;
 
         for (uint i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];

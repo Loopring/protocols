@@ -123,8 +123,8 @@ library EncodeSpec {
         pure
         returns (uint16)
     {
-        uint bytesListSize = bytesListSize(spec);
-        require(i < bytesListSize);
+        uint listSize = bytesListSize(spec);
+        require(i < listSize);
 
         uint ringSize = ringSpecSize(spec);
         uint ind = 6 + ringSize + i;
@@ -136,9 +136,9 @@ library EncodeSpec {
         pure
         returns (uint[] memory) {
         uint ringSpecLength = ringSpecSize(spec);
-        uint bytesListSize = bytesListSize(spec);
-        uint[] memory sizeArray = new uint[](bytesListSize);
-        for (uint i = 0; i < bytesListSize; i++) {
+        uint listSize = bytesListSize(spec);
+        uint[] memory sizeArray = new uint[](listSize);
+        for (uint i = 0; i < listSize; i++) {
             sizeArray[i] = uint(spec[5 + ringSpecLength + i]);
         }
         return sizeArray;

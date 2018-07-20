@@ -113,9 +113,9 @@ library ExchangeDeserializer {
         internal
         view
         returns (
-            Data.Mining  mining,
-            Data.Order[] orders,
-            Data.Ring[]  rings
+            Data.Mining,
+            Data.Order[],
+            Data.Ring[]
         )
     {
         Data.Inputs memory inputs = Data.Inputs(
