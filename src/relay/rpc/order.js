@@ -1,7 +1,7 @@
 import request, {id} from '../../common/request';
 import Response from '../../common/response';
 import code from '../../common/code';
-import {soliditySHA3} from 'ethereumjs-abi';
+import {soliditySHA3, solidityPack} from 'ethereumjs-abi';
 import validator from '../validator';
 import {toBN} from '../../common/formatter';
 
