@@ -72,11 +72,12 @@ library MiningHelper {
         )
         internal
         view
+        returns (bool)
     {
         if (mining.sig.length == 0) {
-            require(tx.origin == mining.miner);
+            return (tx.origin == mining.miner);
         } else {
-            MultihashUtil.verifySignature(
+            return MultihashUtil.verifySignature(
                 mining.miner,
                 mining.hash,
                 mining.sig

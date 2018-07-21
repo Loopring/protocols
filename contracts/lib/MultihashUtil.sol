@@ -40,30 +40,28 @@ library MultihashUtil {
         )
         internal
         pure
+        returns (bool)
     {
         HashAlgorithm algorithm = HashAlgorithm(uint8(multihash[0]));
         uint8 size = uint8(multihash[1]);
         require(multihash.length == (2 + size), "bad multihash size");
 
         if (algorithm == HashAlgorithm.Ethereum) {
-            require(signer != 0x0);
+            require(signer != 0x0, "invalid signer address");
             require(size == 65, "bad multihash size");
-            require(
-                signer == ecrecover(
-                    keccak256(
-                        abi.encodePacked(
-                            SIG_PREFIX,
-                            plaintext
-                        )
-                    ),
-                    uint8(multihash[2]),
-                    BytesUtil.bytesToBytes32(multihash, 3),
-                    BytesUtil.bytesToBytes32(multihash, 3 + 32)
+            return signer == ecrecover(
+                keccak256(
+                    abi.encodePacked(
+                        SIG_PREFIX,
+                        plaintext
+                    )
                 ),
-                "bad signature"
+                uint8(multihash[2]),
+                BytesUtil.bytesToBytes32(multihash, 3),
+                BytesUtil.bytesToBytes32(multihash, 3 + 32)
             );
         } else {
-            revert("unsupported multihash algorithm");
+            return false;
         }
     }
 }

@@ -87,7 +87,8 @@ library RingSpecs {
         return Data.Ring(
           size,
           parts,
-          bytes32(0x0) // hash
+          bytes32(0x0), // hash
+          true          // valid
         );
     }
 }

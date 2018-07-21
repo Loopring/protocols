@@ -82,6 +82,22 @@ library RingHelper {
         }
     }
 
+    function checkOrdersValid(
+        Data.Ring ring
+        )
+        internal
+        pure
+        returns (bool)
+    {
+        for (uint i = 0; i < ring.size; i++) {
+            Data.Participation memory p = ring.participations[i];
+            if (!p.order.valid) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     function calculateOrderFillAmounts(
         Data.Ring ring,
         uint i,

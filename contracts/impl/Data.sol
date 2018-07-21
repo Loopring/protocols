@@ -88,6 +88,7 @@ library Data {
         uint    maxAmountS;
         uint    maxAmountB;
         bool    sellLRC;
+        bool    valid;
     }
 
     struct Participation {
@@ -110,5 +111,6 @@ library Data {
         uint size;
         Participation[] participations;
         bytes32 hash;
+        bool valid;
     }
 }

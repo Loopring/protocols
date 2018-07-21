@@ -216,7 +216,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
-            orders[i].checkBrokerSignature(ctx);
+            orders[i].valid = orders[i].valid && orders[i].checkBrokerSignature(ctx);
         }
 
         for (uint i = 0; i < rings.length; i++) {
@@ -225,10 +225,10 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         mining.updateHash(rings);
         mining.updateMinerAndInterceptor(ctx);
-        mining.checkMinerSignature(ctx);
+        require(mining.checkMinerSignature(ctx), "Invalid miner signature");
 
         for (uint i = 0; i < orders.length; i++) {
-            orders[i].checkDualAuthSignature(mining.hash);
+            orders[i].valid = orders[i].valid && orders[i].checkDualAuthSignature(mining.hash);
         }
 
         for (uint i = 0; i < orders.length; i++) {
@@ -236,15 +236,21 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
 
         for (uint i = 0; i < rings.length; i++){
-            rings[i].calculateFillAmountAndFee(mining);
-            /*IExchange.Fill[] memory fills = */
-            rings[i].settleRing(ctx, mining);
-            emit RingMined(
-                ctx.ringIndex++,
-                0x0,
-                mining.feeRecipient/*,
-                fills*/
-            );
+            rings[i].valid = rings[i].valid && rings[i].checkOrdersValid();
+            // Only settle rings we have checked to be valid
+            if (rings[i].valid) {
+                // Only adjust order states if the ring actually gets settled
+                rings[i].calculateFillAmountAndFee(mining);
+
+                /*IExchange.Fill[] memory fills = */
+                rings[i].settleRing(ctx, mining);
+                emit RingMined(
+                    ctx.ringIndex++,
+                    0x0,
+                    mining.feeRecipient/*,
+                    fills*/
+                );
+            }
         }
 
         ringIndex = ctx.ringIndex;

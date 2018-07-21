@@ -118,17 +118,15 @@ library OrderHelper {
         )
         internal
         view
+        returns (bool)
     {
         if (order.sig.length == 0) {
-            require(
-                ctx.orderRegistry.isOrderHashRegistered(
-                    order.broker,
-                    order.hash
-                ),
-                "order unauthorized"
+            return ctx.orderRegistry.isOrderHashRegistered(
+                order.broker,
+                order.hash
             );
         } else {
-            MultihashUtil.verifySignature(
+            return MultihashUtil.verifySignature(
                 order.broker,
                 order.hash,
                 order.sig
@@ -142,13 +140,16 @@ library OrderHelper {
         )
         internal
         pure
+        returns (bool)
     {
         if (order.dualAuthSig.length != 0) {
-            MultihashUtil.verifySignature(
+            return MultihashUtil.verifySignature(
                 order.dualAuthAddr,
                 miningHash,
                 order.dualAuthSig
             );
+        } else {
+            return true;
         }
     }
 
