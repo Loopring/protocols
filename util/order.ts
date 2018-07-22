@@ -2,17 +2,55 @@ import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import ABI = require("ethereumjs-abi");
 import fs = require("fs");
+import { MultiHashUtil } from "./multihash";
 import { OrderInfo } from "./types";
 
 export class OrderUtil {
   private ERC20Contract: any;
   private DelegateContract: any;
+  private OrderRegistryContract: any;
+  private BrokerRegistryContract: any;
+
+  private multiHashUtil = new MultiHashUtil();
 
   constructor() {
     const erc20Abi = fs.readFileSync("ABI/latest/ERC20.abi", "ascii");
     const delegateAbi = fs.readFileSync("ABI/latest/ITradeDelegate.abi", "ascii");
+    const orderRegistryAbi = fs.readFileSync("ABI/latest/IOrderRegistry.abi", "ascii");
+    const brokerRegistryAbi = fs.readFileSync("ABI/latest/IBrokerRegistry.abi", "ascii");
     this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
     this.DelegateContract = web3.eth.contract(JSON.parse(delegateAbi));
+    this.OrderRegistryContract = web3.eth.contract(JSON.parse(orderRegistryAbi));
+    this.BrokerRegistryContract = web3.eth.contract(JSON.parse(brokerRegistryAbi));
+  }
+
+  public updateBrokerAndInterceptor(order: OrderInfo) {
+    if (!order.broker) {
+      order.broker = order.owner;
+    } else {
+      const [registered, brokerInterceptor] = this.BrokerRegistryContract.getBroker(
+        order.owner,
+        order.broker,
+      );
+      assert(registered, "broker unregistered");
+      order.brokerInterceptor = brokerInterceptor;
+    }
+  }
+
+  public checkBrokerSignature(order: OrderInfo) {
+    if (!order.sig) {
+      return this.OrderRegistryContract.isOrderHashRegistered(order.broker, order.hash);
+    } else {
+      return this.multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
+    }
+  }
+
+  public checkDualAuthSignature(order: OrderInfo, miningHash: Buffer) {
+    if (order.dualAuthSig) {
+      return this.multiHashUtil.verifySignature(order.dualAuthAddr, miningHash, order.dualAuthSig);
+    } else {
+      return true;
+    }
   }
 
   public getOrderHash(order: OrderInfo) {

@@ -3,8 +3,11 @@ import { BigNumber } from "bignumber.js";
 export class Bitstream {
   private data: string;
 
-  constructor() {
-    this.data = "";
+  constructor(private initialData: string = "") {
+    this.data = initialData;
+    if (this.data.startsWith("0x")) {
+      this.data = this.data.slice(2);
+    }
   }
 
   public getData() {
@@ -39,6 +42,29 @@ export class Bitstream {
     const bsHex = web3.toHex(bs);
     console.log("bsHex:", bsHex);
     this.data += bsHex.slice(2);
+  }
+
+  public extractUint8(index: number) {
+    return parseInt(this.extractBytes1(index).toString("hex"), 16);
+  }
+
+  public extractBytes1(index: number) {
+    return this.extractBytesX(index, 1);
+  }
+
+  public extractBytes32(index: number) {
+    return this.extractBytesX(index, 32);
+  }
+
+  public extractBytesX(index: number, length: number) {
+    const start = index * 2;
+    const end = start + length * 2;
+    return new Buffer(this.data.substring(start, end), "hex");
+  }
+
+  // Returns the number of bytes of data
+  public length() {
+    return this.data.length / 2;
   }
 
   private padString(x: string, targetLength: number) {

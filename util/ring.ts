@@ -1,3 +1,5 @@
+import ABI = require("ethereumjs-abi");
+import { Bitstream } from "./bitstream";
 import { OrderUtil } from "./order";
 import { OrderInfo, TransferItem } from "./types";
 
@@ -6,6 +8,7 @@ export class Ring {
   public orders: OrderInfo[];
   public owner: string;
   public feeRecipient: string;
+  public hash?: Buffer;
 
   private orderUtil: OrderUtil;
 
@@ -17,6 +20,14 @@ export class Ring {
     this.feeRecipient = feeRecipient;
 
     this.orderUtil = new OrderUtil();
+  }
+
+  public updateHash() {
+    const orderHashes = new Bitstream();
+    for (const order of this.orders) {
+      orderHashes.addHex(order.hash.toString("hex"));
+    }
+    this.hash = ABI.soliditySHA3(["bytes"], [Buffer.from(orderHashes.getData().slice(2), "hex")]);
   }
 
   public async calculateFillAmountAndFee() {
@@ -62,7 +73,7 @@ export class Ring {
       transferItems.push({token, from , to, amount});
 
       if (walletSplitPercentage > 0 && this.orders[i].walletAddr) {
-
+        // empty
       }
     }
 

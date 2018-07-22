@@ -175,10 +175,10 @@ contract("Exchange", (accounts: string[]) => {
 
         await ringsGenerator.setupRingsAsync(ringsInfo, transactionOrigin);
 
-        await simulator.simulateAndReport(ringsInfo);
-
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
+
+        await simulator.simulateAndReport(ringsInfo, transactionOrigin);
 
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         // console.log("tx:", tx);

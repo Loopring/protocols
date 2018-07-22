@@ -37,6 +37,8 @@ export interface OrderInfo {
   fillAmountB?: number;
   fillAmountLrcFee?: number;
   splitS?: number;
+  brokerInterceptor?: string;
+  valid?: boolean;
 
   hash?: Buffer;
   delegateContract?: string;
