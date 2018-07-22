@@ -1,12 +1,14 @@
+import { BigNumber } from "bignumber.js";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
-import { OrderInfo, RingsInfo, TransferItem } from "./types";
+import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, TransferItem } from "./types";
 
 export class ProtocolSimulator {
 
   public walletSplitPercentage: number;
 
+  private ringIndex: number = 0;
   private orderUtil = new OrderUtil();
 
   constructor(walletSplitPercentage: number) {
@@ -50,9 +52,19 @@ export class ProtocolSimulator {
       order.valid = order.valid && this.orderUtil.checkDualAuthSignature(order, mining.hash);
     }
 
+    const ringMinedEvents: RingMinedEvent[] = [];
     for (const ring of rings) {
-      await this.simulateAndReportSingle(ring);
+      ring.valid = ring.valid && ring.checkOrdersValid();
+      if (ring.valid) {
+        const ringMinedEvent = await this.simulateAndReportSingle(ring);
+        ringMinedEvents.push(ringMinedEvent);
+      }
     }
+
+    const simulatorReport: SimulatorReport = {
+      ringMinedEvents,
+    };
+    return simulatorReport;
   }
 
   private async simulateAndReportSingle(ring: Ring) {
@@ -60,5 +72,10 @@ export class ProtocolSimulator {
     const transferItems = ring.getRingTransferItems(this.walletSplitPercentage);
 
     transferItems.forEach((item) => console.log(item));
+
+    const ringMinedEvent: RingMinedEvent = {
+      ringIndex: new BigNumber(this.ringIndex++),
+    };
+    return ringMinedEvent;
   }
 }

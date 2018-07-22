@@ -9,6 +9,7 @@ export class Ring {
   public owner: string;
   public feeRecipient: string;
   public hash?: Buffer;
+  public valid: boolean;
 
   private orderUtil: OrderUtil;
 
@@ -18,6 +19,7 @@ export class Ring {
     this.orders = orders;
     this.owner = owner;
     this.feeRecipient = feeRecipient;
+    this.valid = true;
 
     this.orderUtil = new OrderUtil();
   }
@@ -28,6 +30,15 @@ export class Ring {
       orderHashes.addHex(order.hash.toString("hex"));
     }
     this.hash = ABI.soliditySHA3(["bytes"], [Buffer.from(orderHashes.getData().slice(2), "hex")]);
+  }
+
+  public checkOrdersValid() {
+    for (const order of this.orders) {
+      if (!order.valid) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public async calculateFillAmountAndFee() {

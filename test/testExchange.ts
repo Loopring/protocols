@@ -13,7 +13,7 @@ import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
-import { OrderInfo, RingsInfo, SignAlgorithm } from "../util/types";
+import { OrderInfo, RingMinedEvent, RingsInfo, SignAlgorithm, SimulatorReport } from "../util/types";
 
 const {
   Exchange,
@@ -21,10 +21,6 @@ const {
   TradeDelegate,
   DummyToken,
 } = new Artifacts(artifacts);
-
-interface RingMinedEventData {
-  ringIndex: BigNumber;
-}
 
 contract("Exchange", (accounts: string[]) => {
   const deployer = accounts[0];
@@ -80,7 +76,7 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const getRingMinedEvents = async (fromBlock: number) => {
-    const ringMinedEvents: RingMinedEventData[] = [];
+    const ringMinedEvents: RingMinedEvent[] = [];
     const eventArr: any = await getEventsFromContract(exchange, "RingMined", fromBlock);
     const items = eventArr.map((eventObj: any) => {
       const ringMined = {
@@ -91,11 +87,16 @@ contract("Exchange", (accounts: string[]) => {
     return ringMinedEvents;
   };
 
-  const validateSubmitRings = async (tx: any, ringsInfo: RingsInfo) => {
+  const validateSubmitRings = async (tx: any, ringsInfo: RingsInfo, simulatorReport: SimulatorReport) => {
     // Validate RingMined events
     const ringMinedEvents = await getRingMinedEvents(tx.receipt.blockNumber);
-    // Currently all rings should successfully get executed
-    assert(ringsInfo.rings.length === ringMinedEvents.length, "All rings should be mined");
+    assert(ringMinedEvents.length === simulatorReport.ringMinedEvents.length, "Different number of RingMined events");
+    /*for (let i = 0; i < ringMinedEvents.length; i++) {
+      assert(
+        ringMinedEvents[i].ringIndex.equals(simulatorReport.ringMinedEvents[i].ringIndex),
+        "RingMined event ring indices should match",
+      );
+    }*/
     // Ring index of all mined rings should get incremented by 1 for every additional ring
     for (let i = 1; i < ringMinedEvents.length; i++) {
       assert(
@@ -178,13 +179,14 @@ contract("Exchange", (accounts: string[]) => {
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
 
-        await simulator.simulateAndReport(ringsInfo, transactionOrigin);
+        const simulatorReport = await simulator.simulateAndReport(ringsInfo, transactionOrigin);
 
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         // console.log("tx:", tx);
+        console.log("Rings mined: ", simulatorReport.ringMinedEvents.length);
         await watchAndPrintEvent(exchange, "LogTrans");
 
-        await validateSubmitRings(tx, ringsInfo);
+        await validateSubmitRings(tx, ringsInfo, simulatorReport);
 
         assert(true);
       });

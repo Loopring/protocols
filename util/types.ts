@@ -70,9 +70,17 @@ export interface RingsInfo {
   hash?: Buffer;
 }
 
+export interface SimulatorReport {
+  ringMinedEvents: RingMinedEvent[];
+}
+
 export interface TransferItem {
   token: string;
   from: string;
   to: string;
   amount: number;
+}
+
+export interface RingMinedEvent {
+  ringIndex: BigNumber;
 }
