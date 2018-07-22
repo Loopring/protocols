@@ -179,7 +179,12 @@ contract("Exchange", (accounts: string[]) => {
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
 
-        const simulatorReport = await simulator.simulateAndReport(ringsInfo, transactionOrigin);
+        const simulatorReport = await simulator.simulateAndReport(
+          ringsInfo,
+          bs,
+          transactionOrigin,
+          TradeDelegate.address,
+        );
 
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         // console.log("tx:", tx);

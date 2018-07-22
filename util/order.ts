@@ -66,8 +66,8 @@ export class OrderUtil {
       order.broker ? order.broker : "0x0",
       order.orderInterceptor ? order.orderInterceptor : "0x0",
       order.walletAddr ? order.walletAddr : "0x0",
-      order.validSince ? order.validSince : this.toBN(0),
-      order.validUntil ? order.validUntil : MAX_UINT,
+      order.validSince ? this.toBN(order.validSince) : this.toBN(0),
+      order.validUntil ? this.toBN(order.validUntil) : MAX_UINT,
       order.allOrNone,
     ];
 

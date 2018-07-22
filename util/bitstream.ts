@@ -44,22 +44,83 @@ export class Bitstream {
     this.data += bsHex.slice(2);
   }
 
-  public extractUint8(index: number) {
-    return parseInt(this.extractBytes1(index).toString("hex"), 16);
+  public extractUint8(offset: number) {
+    return parseInt(this.extractBytes1(offset).toString("hex"), 16);
   }
 
-  public extractBytes1(index: number) {
-    return this.extractBytesX(index, 1);
+  public extractUint16(offset: number) {
+    return parseInt(this.extractBytesX(offset, 2).toString("hex"), 16);
   }
 
-  public extractBytes32(index: number) {
-    return this.extractBytesX(index, 32);
+  public extractUint(offset: number) {
+    return new BigNumber(this.extractBytesX(offset, 32).toString("hex"), 16);
   }
 
-  public extractBytesX(index: number, length: number) {
-    const start = index * 2;
+  public extractAddress(offset: number) {
+    return "0x" + this.extractBytesX(offset, 20).toString("hex");
+  }
+
+  public extractBytes1(offset: number) {
+    return this.extractBytesX(offset, 1);
+  }
+
+  public extractBytes32(offset: number) {
+    return this.extractBytesX(offset, 32);
+  }
+
+  public extractBytesX(offset: number, length: number) {
+    const start = offset * 2;
     const end = start + length * 2;
     return new Buffer(this.data.substring(start, end), "hex");
+  }
+
+  public copyToUint16Array(offset: number, arraySize: number) {
+    const resultArray: number[] = [];
+    for (let i = 0; i < arraySize; i++) {
+      resultArray.push(this.extractUint16(offset + i * 2));
+    }
+    return resultArray;
+  }
+
+  public copyToUint8ArrayList(offset: number, innerArraySizeList: number[]) {
+    const arraySize = innerArraySizeList.length;
+    const resultArray: number[][] = [];
+    for (let i = 0; i < arraySize; i++) {
+      const len = innerArraySizeList[i];
+      resultArray[i] = [];
+      for (let j = 0; j < len; j++) {
+        resultArray[i].push(this.extractUint8(offset + j));
+      }
+      offset += len;
+    }
+    return resultArray;
+  }
+
+  public copyToAddressArray(offset: number, arraySize: number) {
+    const resultArray: string[] = [];
+    for (let i = 0; i < arraySize; i++) {
+      resultArray.push(this.extractAddress(offset + i * 20));
+    }
+    return resultArray;
+  }
+
+  public copyToUintArray(offset: number, arraySize: number) {
+    const resultArray: BigNumber[] = [];
+    for (let i = 0; i < arraySize; i++) {
+      resultArray.push(this.extractUint(offset + i * 32));
+    }
+    return resultArray;
+  }
+
+  public copyToBytesArray(offset: number, innerBytesSizeList: number[]) {
+    const arraySize = innerBytesSizeList.length;
+    const resultArray: string[] = [];
+    for (let i = 0; i < arraySize; i++) {
+      const len = innerBytesSizeList[i];
+      resultArray[i] = "0x" + this.extractBytesX(offset, len).toString("hex");
+      offset += len;
+    }
+    return resultArray;
   }
 
   // Returns the number of bytes of data

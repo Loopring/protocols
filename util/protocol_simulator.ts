@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import { ExchangeDeserializer } from "./exchange_deserializer";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
@@ -15,14 +16,27 @@ export class ProtocolSimulator {
     this.walletSplitPercentage = walletSplitPercentage;
   }
 
-  public async simulateAndReport(ringsInfo: RingsInfo, transactionOrigin: string) {
+  public async simulateAndReport(
+    ringsInfo: RingsInfo,
+    data: string,
+    transactionOrigin: string,
+    delegateContract: string) {
 
-    for (const order of ringsInfo.orders) {
-      order.valid = true;
-      order.hash = this.orderUtil.getOrderHash(order);
-      this.orderUtil.updateBrokerAndInterceptor(order);
-      order.valid = order.valid && this.orderUtil.checkBrokerSignature(order);
-    }
+    /*const exchangeDeserializer = new ExchangeDeserializer();
+    const [mining, orders, rings] = exchangeDeserializer.deserialize(data, transactionOrigin);
+
+    // Current JS implementation depends on this being set
+    for (const order of orders) {
+      order.delegateContract = delegateContract;
+    }*/
+
+    const mining = new Mining(
+      ringsInfo.feeRecipient ? ringsInfo.feeRecipient : transactionOrigin,
+      ringsInfo.miner,
+      ringsInfo.sig,
+    );
+
+    const orders = ringsInfo.orders;
 
     const rings: Ring[] = [];
     for (const indexes of ringsInfo.rings) {
@@ -35,20 +49,22 @@ export class ProtocolSimulator {
       rings.push(ring);
     }
 
+    for (const order of orders) {
+      order.valid = true;
+      order.hash = this.orderUtil.getOrderHash(order);
+      this.orderUtil.updateBrokerAndInterceptor(order);
+      order.valid = order.valid && this.orderUtil.checkBrokerSignature(order);
+    }
+
     for (const ring of rings) {
       ring.updateHash();
     }
 
-    const mining = new Mining(
-      ringsInfo.feeRecipient ? ringsInfo.feeRecipient : transactionOrigin,
-      ringsInfo.miner,
-      ringsInfo.sig,
-    );
     mining.updateHash(rings);
     mining.updateMinerAndInterceptor();
     assert(mining.checkMinerSignature(transactionOrigin) === true, "Invalid miner signature");
 
-    for (const order of ringsInfo.orders) {
+    for (const order of orders) {
       order.valid = order.valid && this.orderUtil.checkDualAuthSignature(order, mining.hash);
     }
 
