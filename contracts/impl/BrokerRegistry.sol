@@ -147,7 +147,7 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
         );
     }
 
-    function unregisterAllBroker(
+    function unregisterAllBrokers(
         )
         external
     {
