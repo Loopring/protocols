@@ -26,7 +26,7 @@ export class OrderUtil {
 
   public updateBrokerAndInterceptor(order: OrderInfo) {
     if (!order.broker) {
-      order.broker = order.owner;
+      // order.broker = order.owner;
     } else {
       const [registered, brokerInterceptor] = this.BrokerRegistryContract.getBroker(
         order.owner,

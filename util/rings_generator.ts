@@ -156,6 +156,7 @@ export class RingsGenerator {
       spec += 1;
       param.addressList.push(order.dualAuthAddr);
     }
+
     if (order.broker) {
       spec += 1 << 1;
       param.addressList.push(order.broker);
