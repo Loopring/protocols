@@ -137,13 +137,15 @@ contract("Exchange", (accounts: string[]) => {
 
     for (const ringsInfo of ringsInfoList) {
       // all configed testcases here:
+      ringsInfo.transactionOrigin = transactionOrigin;
+
       it(ringsInfo.description, async () => {
 
         for (const [i, order] of ringsInfo.orders.entries()) {
           await setupOrder(order, i);
         }
 
-        await ringsGenerator.setupRingsAsync(ringsInfo, transactionOrigin);
+        await ringsGenerator.setupRingsAsync(ringsInfo);
 
         await simulator.simulateAndReport(ringsInfo);
 
@@ -153,6 +155,7 @@ contract("Exchange", (accounts: string[]) => {
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         // console.log("tx:", tx);
         await watchAndPrintEvent(exchange, "LogTrans");
+        await watchAndPrintEvent(exchange, "LogAddress");
 
         assert(true);
       });

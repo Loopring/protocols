@@ -63,8 +63,8 @@ export class ProtocolSimulator {
 
     mining.updateHash(rings);
     mining.updateMinerAndInterceptor();
-    assert(mining.checkMinerSignature(ringsInfo.transactionOrigin) === true,
-           "Invalid miner signature");
+    // assert(mining.checkMinerSignature(ringsInfo.transactionOrigin) === true,
+    //        "Invalid miner signature");
 
     for (const order of orders) {
       order.valid = order.valid && this.orderUtil.checkDualAuthSignature(order, mining.hash);

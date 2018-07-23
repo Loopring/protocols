@@ -25,7 +25,7 @@ export class RingsGenerator {
     this.currBlockTimeStamp = currBlockTimeStamp;
   }
 
-  public async setupRingsAsync(rings: RingsInfo, transactionOrigin: string) {
+  public async setupRingsAsync(rings: RingsInfo) {
     // Setup orders
     for (const order of rings.orders) {
       order.hash = this.orderUtil.getOrderHash(order);
@@ -52,7 +52,7 @@ export class RingsGenerator {
     }
 
     // Calculate mining hash
-    const feeRecipient = rings.feeRecipient ? rings.feeRecipient : transactionOrigin;
+    const feeRecipient = rings.feeRecipient ? rings.feeRecipient : rings.transactionOrigin;
     const args = [
       feeRecipient,
       rings.miner ? rings.miner : "0x0",

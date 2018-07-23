@@ -191,6 +191,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     event LogTrans(address token, address from, address to, uint amount); // for debug
+    event LogAddress(address addr);
     function submitRings(
         bytes data
         )
@@ -215,7 +216,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             // emit LogOrder(orders[i].owner, orders[i].tokenS, orders[i].amountS);
 
             orders[i].updateHash();
-            orders[i].updateBrokerAndInterceptor(ctx);
+            emit LogAddress(orders[i].broker);
+            // orders[i].updateBrokerAndInterceptor(ctx);
             orders[i].valid = orders[i].valid && orders[i].checkBrokerSignature(ctx);
         }
 
@@ -224,34 +226,34 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
 
         mining.updateHash(rings);
-        mining.updateMinerAndInterceptor(ctx);
-        require(mining.checkMinerSignature(ctx), "Invalid miner signature");
+        /* mining.updateMinerAndInterceptor(ctx); */
+        /* require(mining.checkMinerSignature(ctx), "Invalid miner signature"); */
 
-        for (uint i = 0; i < orders.length; i++) {
-            orders[i].valid = orders[i].valid && orders[i].checkDualAuthSignature(mining.hash);
-        }
+        /* for (uint i = 0; i < orders.length; i++) { */
+        /*     orders[i].valid = orders[i].valid && orders[i].checkDualAuthSignature(mining.hash); */
+        /* } */
 
-        for (uint i = 0; i < orders.length; i++) {
-            orders[i].updateStates(ctx);
-        }
+        /* for (uint i = 0; i < orders.length; i++) { */
+        /*     orders[i].updateStates(ctx); */
+        /* } */
 
-        for (uint i = 0; i < rings.length; i++){
-            rings[i].valid = rings[i].valid && rings[i].checkOrdersValid();
-            // Only settle rings we have checked to be valid
-            if (rings[i].valid) {
-                // Only adjust order states if the ring actually gets settled
-                rings[i].calculateFillAmountAndFee(mining);
+        /* for (uint i = 0; i < rings.length; i++){ */
+        /*     rings[i].valid = rings[i].valid && rings[i].checkOrdersValid(); */
+        /*     // Only settle rings we have checked to be valid */
+        /*     if (rings[i].valid) { */
+        /*         // Only adjust order states if the ring actually gets settled */
+        /*         rings[i].calculateFillAmountAndFee(mining); */
 
-                /*IExchange.Fill[] memory fills = */
-                rings[i].settleRing(ctx, mining);
-                emit RingMined(
-                    ctx.ringIndex++,
-                    0x0,
-                    mining.feeRecipient/*,
-                    fills*/
-                );
-            }
-        }
+        /*         /\*IExchange.Fill[] memory fills = *\/ */
+        /*         rings[i].settleRing(ctx, mining); */
+        /*         emit RingMined( */
+        /*             ctx.ringIndex++, */
+        /*             0x0, */
+        /*             mining.feeRecipient/\*, */
+        /*             fills*\/ */
+        /*         ); */
+        /*     } */
+        /* } */
 
         ringIndex = ctx.ringIndex;
     }
