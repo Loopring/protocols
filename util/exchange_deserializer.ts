@@ -25,7 +25,7 @@ export class ExchangeDeserializer {
     // empty
   }
 
-  public deserialize(data: string, transactionOrigin: string): [Mining, OrderInfo[], Ring[]] {
+  public deserialize(data: string): [Mining, OrderInfo[], number[][]] {
 
     const bitstream = new Bitstream(data);
 
@@ -44,26 +44,20 @@ export class ExchangeDeserializer {
 
     this.addressList = bitstream.copyToAddressArray(offset, encodeSpecs.addressListSize());
     offset += 20 * encodeSpecs.addressListSize();
-    // console.log("addressList: " + this.addressList);
 
     this.uintList = bitstream.copyToUintArray(offset, encodeSpecs.uintListSize());
     offset += 32 * encodeSpecs.uintListSize();
-    // console.log("uintList: " + this.uintList);
 
     this.bytesList = bitstream.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
-    // console.log("bytesList: " + this.bytesList);
 
     const mining = new Mining(
-      (miningSpec.hasFeeRecipient() ? this.nextAddress() : transactionOrigin),
+      (miningSpec.hasFeeRecipient() ? this.nextAddress() : undefined),
       (miningSpec.hasMiner() ? this.nextAddress() : undefined),
       (miningSpec.hasSignature() ? this.nextBytes() : undefined),
     );
-    // console.log(mining);
 
     const orders = this.assembleOrders(orderSpecs);
-    // orders.forEach((o) => console.log(o));
     const rings = this.assembleRings(ringSpecs, orders);
-    // rings.forEach((o) => console.log(o));
 
     return [mining, orders, rings];
   }
@@ -78,7 +72,6 @@ export class ExchangeDeserializer {
   }
 
   private assembleOrder(specData: number) {
-    const MAX_UINT = new BigNumber("f".repeat(64), 16);
     const spec = new OrderSpec(specData);
     const order: OrderInfo = {
       owner: this.nextAddress(),
@@ -91,9 +84,8 @@ export class ExchangeDeserializer {
       broker: spec.hasBroker() ? this.nextAddress() : undefined,
       orderInterceptor: spec.hasOrderInterceptor() ? this.nextAddress() : undefined,
       walletAddr: spec.hasWallet() ? this.nextAddress() : undefined,
-      validSince: spec.hasValidSince() ? this.nextUint().toNumber() : 0,
-      // TODO: validUntil needs to be BigNumber to store MAX_UINT, but is now just number
-      validUntil: spec.hasValidUntil() ? this.nextUint().toNumber() : /*MAX_UINT.toNumber()*/undefined,
+      validSince: spec.hasValidSince() ? this.nextUint().toNumber() : undefined,
+      validUntil: spec.hasValidUntil() ? this.nextUint().toNumber() : undefined,
       sig: spec.hasSignature() ? this.nextBytes() : undefined,
       dualAuthSig: spec.hasDualAuthSig() ? this.nextBytes() : undefined,
       allOrNone: spec.allOrNone(),
@@ -103,7 +95,7 @@ export class ExchangeDeserializer {
 
   private assembleRings(specs: number[][], orders: OrderInfo[]) {
     const size = specs.length;
-    const rings: Ring[] = [];
+    const rings: number[][] = [];
     for (let i = 0; i < size; i++) {
       rings.push(this.assembleRing(specs[i], orders));
     }
@@ -114,8 +106,7 @@ export class ExchangeDeserializer {
     const size = pspecs.length;
     assert(size > 1 && size <= 8, "bad ring size");
 
-    // TODO: create participation struct like in Solidity
-    const ringOrders: OrderInfo[] = [];
+    const ring: number[] = [];
     let prevTokenS: string;
     for (let i = 0; i < size; i++) {
       const pspec = new ParticipationSpec(pspecs[i]);
@@ -123,10 +114,9 @@ export class ExchangeDeserializer {
 
       order.tokenB = prevTokenS;
       prevTokenS = order.tokenS;
-      ringOrders.push(order);
+      ring.push(pspec.orderIndex());
     }
-    ringOrders[0].tokenB = prevTokenS;
-    const ring = new Ring(ringOrders, undefined, undefined);
+    orders[ring[0]].tokenB = prevTokenS;
     return ring;
   }
 

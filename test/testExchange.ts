@@ -8,7 +8,6 @@ import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/artifacts";
 import { Bitstream } from "../util/bitstream";
-import { MultiHashUtil } from "../util/multihash";
 import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
@@ -38,8 +37,6 @@ contract("Exchange", (accounts: string[]) => {
   const tokenSymbolAddrMap = new Map();
   const tokenInstanceMap = new Map();
   const allTokenSymbols = tokenInfos.development.map((t) => t.symbol);
-
-  const multiHashUtil = new MultiHashUtil();
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, precision: number = 8) => {
     const numStr1 = (n1 / 1e18).toFixed(precision);
@@ -97,12 +94,56 @@ contract("Exchange", (accounts: string[]) => {
     if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== SignAlgorithm.None) {
       order.dualAuthAddr = orderDualAuthAddr[ownerIndex];
     }
+    if (!order.allOrNone) {
+      order.allOrNone = false;
+    }
 
     // setup amount:
     const orderTokenS = await DummyToken.at(addrS);
     await orderTokenS.addBalance(order.owner, order.amountS);
     const lrcToken = await DummyToken.at(lrcAddress);
     await lrcToken.addBalance(order.owner, order.lrcFee);
+  };
+
+  const assertEqualsRingsInfo = (ringsInfoA: RingsInfo, ringsInfoB: RingsInfo) => {
+    // Blacklist properties we don't want to check.
+    // We don't whitelist because we might forget to add them here otherwise.
+    const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash"];
+    const orderPropertiesToSkip = [
+      "maxAmountS", "maxAmountB", "fillAmountS", "fillAmountB", "fillAmountLrcFee", "splitS", "brokerInterceptor",
+      "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
+    ];
+    // Make sure to get the keys from both objects to make sure we get all keys defined in both
+    for (const key of [...Object.keys(ringsInfoA), ...Object.keys(ringsInfoB)]) {
+      if (ringsInfoPropertiesToSkip.every((x) => x !== key)) {
+        if (key === "rings") {
+          assert(ringsInfoA.rings.length === ringsInfoB.rings.length,
+                 "Number of rings does not match");
+          for (let r = 0; r < ringsInfoA.rings.length; r++) {
+            assert(ringsInfoA.rings[r].length === ringsInfoB.rings[r].length,
+                   "Number of orders in rings does not match");
+            for (let o = 0; o < ringsInfoA.rings[r].length; o++) {
+              assert(ringsInfoA.rings[r][o] === ringsInfoB.rings[r][o],
+                     "Order indices in rings do not match");
+            }
+          }
+        } else if (key === "orders") {
+          assert(ringsInfoA.orders.length === ringsInfoB.orders.length,
+                 "Number of orders does not match");
+          for (let o = 0; o < ringsInfoA.orders.length; o++) {
+            for (const orderKey of [...Object.keys(ringsInfoA.orders[o]), ...Object.keys(ringsInfoB.orders[o])]) {
+              if (orderPropertiesToSkip.every((x) => x !== orderKey)) {
+                assert(ringsInfoA.orders[o][orderKey] === ringsInfoB.orders[o][orderKey],
+                       "Order property '" + orderKey + "' does not match");
+              }
+            }
+          }
+        } else {
+            assert(ringsInfoA[key] === ringsInfoB[key],
+                   "RingInfo property '" + key + "' does not match");
+        }
+      }
+    }
   };
 
   before( async () => {
@@ -155,7 +196,10 @@ contract("Exchange", (accounts: string[]) => {
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         // console.log("tx:", tx);
         await watchAndPrintEvent(exchange, "LogTrans");
-        await watchAndPrintEvent(exchange, "LogAddress");
+        // await watchAndPrintEvent(exchange, "LogAddress");
+
+        const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin, TradeDelegate.address);
+        assertEqualsRingsInfo(ringsInfo, deserializedRingsInfo);
 
         assert(true);
       });

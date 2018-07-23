@@ -16,18 +16,26 @@ export class ProtocolSimulator {
     this.walletSplitPercentage = walletSplitPercentage;
   }
 
-  public async deserialize(data: string,
-                           transactionOrigin: string,
-                           delegateContract: string) {
-    /*const exchangeDeserializer = new ExchangeDeserializer();
-      const [mining, orders, rings] = exchangeDeserializer.deserialize(data, transactionOrigin);
+  public deserialize(data: string,
+                     transactionOrigin: string,
+                     delegateContract: string) {
+    const exchangeDeserializer = new ExchangeDeserializer();
+    const [mining, orders, rings] = exchangeDeserializer.deserialize(data);
 
-      // Current JS implementation depends on this being set
-      for (const order of orders) {
+    // Current JS implementation depends on this being set
+    for (const order of orders) {
       order.delegateContract = delegateContract;
-      }*/
+    }
 
-    // return RingsInfo
+    const ringsInfo: RingsInfo = {
+      rings,
+      orders,
+      feeRecipient: mining.feeRecipient,
+      miner: mining.miner,
+      sig: mining.sig,
+      transactionOrigin,
+    };
+    return ringsInfo;
   }
 
   public async simulateAndReport(ringsInfo: RingsInfo) {

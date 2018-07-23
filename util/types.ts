@@ -47,6 +47,8 @@ export interface OrderInfo {
 
   index?: number;
   lrcAddress?: string;
+
+  [key: string]: any;
 }
 
 export interface RingsSubmitParam {
@@ -69,6 +71,8 @@ export interface RingsInfo {
   signAlgorithm?: SignAlgorithm;
   hash?: Buffer;
   transactionOrigin?: string;
+
+  [key: string]: any;
 }
 
 export interface SimulatorReport {
