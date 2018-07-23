@@ -68,10 +68,12 @@ export interface RingsInfo {
 
   signAlgorithm?: SignAlgorithm;
   hash?: Buffer;
+  transactionOrigin?: string;
 }
 
 export interface SimulatorReport {
   ringMinedEvents: RingMinedEvent[];
+  transferItems: TransferItem[];
 }
 
 export interface TransferItem {

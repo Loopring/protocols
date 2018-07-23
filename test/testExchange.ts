@@ -13,7 +13,7 @@ import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
-import { OrderInfo, RingMinedEvent, RingsInfo, SignAlgorithm, SimulatorReport } from "../util/types";
+import { OrderInfo, RingsInfo, SignAlgorithm } from "../util/types";
 
 const {
   Exchange,
@@ -73,37 +73,6 @@ contract("Exchange", (accounts: string[]) => {
     events.forEach((e: any) => {
       console.log("event:", util.inspect(e.args, false, null));
     });
-  };
-
-  const getRingMinedEvents = async (fromBlock: number) => {
-    const ringMinedEvents: RingMinedEvent[] = [];
-    const eventArr: any = await getEventsFromContract(exchange, "RingMined", fromBlock);
-    const items = eventArr.map((eventObj: any) => {
-      const ringMined = {
-        ringIndex: eventObj.args._ringIndex,
-      };
-      ringMinedEvents.push(ringMined);
-    });
-    return ringMinedEvents;
-  };
-
-  const validateSubmitRings = async (tx: any, ringsInfo: RingsInfo, simulatorReport: SimulatorReport) => {
-    // Validate RingMined events
-    const ringMinedEvents = await getRingMinedEvents(tx.receipt.blockNumber);
-    assert(ringMinedEvents.length === simulatorReport.ringMinedEvents.length, "Different number of RingMined events");
-    /*for (let i = 0; i < ringMinedEvents.length; i++) {
-      assert(
-        ringMinedEvents[i].ringIndex.equals(simulatorReport.ringMinedEvents[i].ringIndex),
-        "RingMined event ring indices should match",
-      );
-    }*/
-    // Ring index of all mined rings should get incremented by 1 for every additional ring
-    for (let i = 1; i < ringMinedEvents.length; i++) {
-      assert(
-        ringMinedEvents[i - 1].ringIndex.equals(ringMinedEvents[i].ringIndex.minus(1)),
-        "RingIndex should increment by 1",
-      );
-    }
   };
 
   const setupOrder = async (order: OrderInfo, index: number) => {
@@ -176,22 +145,14 @@ contract("Exchange", (accounts: string[]) => {
 
         await ringsGenerator.setupRingsAsync(ringsInfo, transactionOrigin);
 
+        await simulator.simulateAndReport(ringsInfo);
+
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
 
-        const simulatorReport = await simulator.simulateAndReport(
-          ringsInfo,
-          bs,
-          transactionOrigin,
-          TradeDelegate.address,
-        );
-
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         // console.log("tx:", tx);
-        console.log("Rings mined: ", simulatorReport.ringMinedEvents.length);
         await watchAndPrintEvent(exchange, "LogTrans");
-
-        await validateSubmitRings(tx, ringsInfo, simulatorReport);
 
         assert(true);
       });

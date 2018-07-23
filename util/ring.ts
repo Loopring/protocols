@@ -76,16 +76,35 @@ export class Ring {
     const transferItems: TransferItem[] = [];
     for (let i = 0; i < ringSize; i++) {
       const prevIndex = (i + ringSize - 1) % ringSize;
-      const token = this.orders[i].tokenS;
-      const from = this.orders[i].owner;
+      const currOrder = this.orders[i];
+      const token = currOrder.tokenS;
+      const from = currOrder.owner;
       const to = this.orders[prevIndex].owner;
-      const amount = this.orders[i].fillAmountS;
+      const amount = currOrder.fillAmountS;
 
       transferItems.push({token, from , to, amount});
 
-      if (walletSplitPercentage > 0 && this.orders[i].walletAddr) {
-        // empty
+      if (walletSplitPercentage > 0 && currOrder.walletAddr) {
+        if (currOrder.fillAmountLrcFee > 0) {
+          const lrcFeeToMiner = Math.floor(currOrder.fillAmountLrcFee * walletSplitPercentage / 100);
+          const lrcFeeToWallet = currOrder.fillAmountLrcFee - lrcFeeToMiner;
+          transferItems.push({token, from , to: this.feeRecipient, amount: lrcFeeToMiner});
+          transferItems.push({token, from , to: currOrder.walletAddr, amount: lrcFeeToMiner});
+        }
+
+        if (currOrder.splitS > 0) {
+          const splitSToMiner = Math.floor(currOrder.splitS * walletSplitPercentage / 100);
+          const splitSToWallet = currOrder.splitS - splitSToMiner;
+          transferItems.push({token, from , to: this.feeRecipient, amount: splitSToMiner});
+          transferItems.push({token, from , to: currOrder.walletAddr, amount: splitSToWallet});
+        }
+      } else {
+        transferItems.push({token, from , to: this.feeRecipient, amount: currOrder.fillAmountLrcFee});
+        if (currOrder.splitS > 0) {
+          transferItems.push({token, from , to: this.feeRecipient, amount: currOrder.splitS});
+        }
       }
+
     }
 
     return transferItems;

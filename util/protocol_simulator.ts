@@ -16,22 +16,23 @@ export class ProtocolSimulator {
     this.walletSplitPercentage = walletSplitPercentage;
   }
 
-  public async simulateAndReport(
-    ringsInfo: RingsInfo,
-    data: string,
-    transactionOrigin: string,
-    delegateContract: string) {
-
+  public async deserialize(data: string,
+                           transactionOrigin: string,
+                           delegateContract: string) {
     /*const exchangeDeserializer = new ExchangeDeserializer();
-    const [mining, orders, rings] = exchangeDeserializer.deserialize(data, transactionOrigin);
+      const [mining, orders, rings] = exchangeDeserializer.deserialize(data, transactionOrigin);
 
-    // Current JS implementation depends on this being set
-    for (const order of orders) {
+      // Current JS implementation depends on this being set
+      for (const order of orders) {
       order.delegateContract = delegateContract;
-    }*/
+      }*/
 
+    // return RingsInfo
+  }
+
+  public async simulateAndReport(ringsInfo: RingsInfo) {
     const mining = new Mining(
-      ringsInfo.feeRecipient ? ringsInfo.feeRecipient : transactionOrigin,
+      ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin,
       ringsInfo.miner,
       ringsInfo.sig,
     );
@@ -62,23 +63,27 @@ export class ProtocolSimulator {
 
     mining.updateHash(rings);
     mining.updateMinerAndInterceptor();
-    assert(mining.checkMinerSignature(transactionOrigin) === true, "Invalid miner signature");
+    assert(mining.checkMinerSignature(ringsInfo.transactionOrigin) === true,
+           "Invalid miner signature");
 
     for (const order of orders) {
       order.valid = order.valid && this.orderUtil.checkDualAuthSignature(order, mining.hash);
     }
 
     const ringMinedEvents: RingMinedEvent[] = [];
+    const transferItems: TransferItem[] = [];
     for (const ring of rings) {
       ring.valid = ring.valid && ring.checkOrdersValid();
       if (ring.valid) {
-        const ringMinedEvent = await this.simulateAndReportSingle(ring);
-        ringMinedEvents.push(ringMinedEvent);
+        const ringReport = await this.simulateAndReportSingle(ring);
+        ringMinedEvents.push(ringReport.ringMinedEvent);
+        transferItems.push(...ringReport.transferItems);
       }
     }
 
     const simulatorReport: SimulatorReport = {
       ringMinedEvents,
+      transferItems,
     };
     return simulatorReport;
   }
@@ -92,6 +97,6 @@ export class ProtocolSimulator {
     const ringMinedEvent: RingMinedEvent = {
       ringIndex: new BigNumber(this.ringIndex++),
     };
-    return ringMinedEvent;
+    return {ringMinedEvent, transferItems};
   }
 }
