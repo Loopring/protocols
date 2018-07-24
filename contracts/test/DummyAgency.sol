@@ -43,4 +43,12 @@ contract DummyAgency {
         ITokenRegistry(tokenRegistryAddress).registerToken(addr, symbol);
     }
 
+    function unregisterToken(
+        address addr
+        )
+        external
+    {
+        ITokenRegistry(tokenRegistryAddress).unregisterToken(addr);
+    }
+
 }

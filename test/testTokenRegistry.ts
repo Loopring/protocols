@@ -40,6 +40,17 @@ contract("TokenRegistry", (accounts: string[]) => {
       assert.equal(isRegistered, true, "token should be registered");
     });
 
+    it("should not be able to register the same token twice", async () => {
+      const isRegistered = await tokenRegistry.areAllTokensRegistered([testTokenAddr]);
+      assert.equal(isRegistered, true, "token should be registered");
+      // Same address and symbol
+      await expectThrow(tokenRegistry.registerToken(testTokenAddr, "TEST", {from: owner}));
+      // Only the same address
+      await expectThrow(tokenRegistry.registerToken(testTokenAddr, "XXX", {from: owner}));
+      // Only the same symbol
+      await expectThrow(tokenRegistry.registerToken(user, "TEST", {from: owner}));
+    });
+
     it("should be able to unregister a token", async () => {
       let isRegistered = await tokenRegistry.areAllTokensRegistered([testTokenAddr]);
       let addressBySymbol = await tokenRegistry.getAddressBySymbol("TEST");
@@ -64,6 +75,7 @@ contract("TokenRegistry", (accounts: string[]) => {
     });
 
     it("should be able to register an agency", async () => {
+      await expectThrow(tokenRegistry.agencies(0));
       await tokenRegistry.registerAgency(dummyAgency.address, {from: owner});
       const registeredAgency = await tokenRegistry.agencies(0);
       assert.equal(registeredAgency, dummyAgency.address, "agency address should be added to agencies array");
@@ -110,16 +122,24 @@ contract("TokenRegistry", (accounts: string[]) => {
       assert.equal(isRegisteredAfter, true, "token should be registered");
     });
 
+    it("should not be allowed to unregister a token even if registered", async () => {
+      await expectThrow(dummyAgency.unregisterToken(testTokenAddr, {from: user}));
+      await tokenRegistry.unregisterToken(testTokenAddr, {from: owner});
+    });
+
     // TODO: more tests
 
   });
 
   describe("other users", () => {
     it("should not be able to register a token", async () => {
+      const isRegisteredBefore = await tokenRegistry.areAllTokensRegistered([testTokenAddr]);
+      assert.equal(isRegisteredBefore, false, "token should not be registered");
       await expectThrow(tokenRegistry.registerToken(testTokenAddr, "TEST", {from: user}));
     });
 
     it("should not be able to register an agency", async () => {
+      await tokenRegistry.unregisterAllAgencies({from: owner});
       await expectThrow(tokenRegistry.registerAgency(dummyAgency.address, {from: user}));
     });
 
