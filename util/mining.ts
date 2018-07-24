@@ -9,6 +9,7 @@ import { OrderInfo, TransferItem } from "./types";
 export class Mining {
 
   public feeRecipient: string;
+  public brokerRegistryAddress: string;
 
   public miner?: string;
   public sig?: string;
@@ -17,30 +18,36 @@ export class Mining {
   public interceptor?: string;
 
   private BrokerRegistryContract: any;
+  private brokerRegistryInstance: any;
 
   private multiHashUtil = new MultiHashUtil();
 
   constructor(feeRecipient: string,
+              brokerRegistryAddress: string,
               miner: string,
               sig: string) {
     this.feeRecipient = feeRecipient;
     this.miner = miner;
     this.sig = sig;
+    this.brokerRegistryAddress = brokerRegistryAddress;
 
     const brokerRegistryAbi = fs.readFileSync("ABI/latest/IBrokerRegistry.abi", "ascii");
     this.BrokerRegistryContract = web3.eth.contract(JSON.parse(brokerRegistryAbi));
+    this.brokerRegistryInstance = this.BrokerRegistryContract.at(this.brokerRegistryAddress);
   }
 
-  public updateMinerAndInterceptor() {
+  public async updateMinerAndInterceptor() {
     if (!this.miner) {
       this.miner = this.feeRecipient;
     } else {
-      const [registered, interceptor] = this.BrokerRegistryContract.getBroker(
+      const [registered, interceptor] = await this.brokerRegistryInstance.getBroker(
         this.feeRecipient,
         this.miner,
       );
-      assert(registered, "miner unregistered");
-      this.interceptor = interceptor;
+      // assert(registered, "miner unregistered");
+      if (registered) {
+        this.interceptor = interceptor;
+      }
     }
   }
 

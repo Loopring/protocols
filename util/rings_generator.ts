@@ -11,19 +11,8 @@ import { Ring } from "./ring";
 import { OrderInfo, RingsInfo, RingsSubmitParam, SignAlgorithm } from "./types";
 
 export class RingsGenerator {
-  public delegateContractAddr: string;
-  public currBlockTimeStamp: number;
-
-  public web3Instance: Web3;
-
   private multiHashUtil = new MultiHashUtil();
   private orderUtil = new OrderUtil();
-
-  constructor(delegateContractAddr: string,
-              currBlockTimeStamp: number) {
-    this.delegateContractAddr = delegateContractAddr;
-    this.currBlockTimeStamp = currBlockTimeStamp;
-  }
 
   public async setupRingsAsync(rings: RingsInfo) {
     // Setup orders

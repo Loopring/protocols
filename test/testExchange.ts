@@ -8,6 +8,7 @@ import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/artifacts";
 import { Bitstream } from "../util/bitstream";
+import { Context } from "../util/context";
 import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
@@ -17,6 +18,7 @@ import { OrderInfo, RingsInfo, SignAlgorithm } from "../util/types";
 const {
   Exchange,
   TokenRegistry,
+  BrokerRegistry,
   TradeDelegate,
   DummyToken,
 } = new Artifacts(artifacts);
@@ -37,6 +39,7 @@ contract("Exchange", (accounts: string[]) => {
   const tokenSymbolAddrMap = new Map();
   const tokenInstanceMap = new Map();
   const allTokenSymbols = tokenInfos.development.map((t) => t.symbol);
+  const allTokens: any[] = [];
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, precision: number = 8) => {
     const numStr1 = (n1 / 1e18).toFixed(precision);
@@ -62,6 +65,19 @@ contract("Exchange", (accounts: string[]) => {
       });
       events.stopWatching();
     });
+  };
+
+  const getTransferEvents = async (tokens: any[], fromBlock: number) => {
+    let transferItems: Array<[string, string, number]> = [];
+    for (const tokenContractInstance of tokens) {
+      const eventArr: any = await getEventsFromContract(tokenContractInstance, "Transfer", fromBlock);
+      const items = eventArr.map((eventObj: any) => {
+        return [eventObj.args.from, eventObj.args.to, eventObj.args.value.toNumber()];
+      });
+      transferItems = transferItems.concat(items);
+    }
+
+    return transferItems;
   };
 
   const watchAndPrintEvent = async (contract: any, eventName: string) => {
@@ -163,6 +179,7 @@ contract("Exchange", (accounts: string[]) => {
       const addr = await tokenRegistry.getAddressBySymbol(sym);
       tokenSymbolAddrMap.set(sym, addr);
       const token = await DummyToken.at(addr);
+      allTokens.push(token);
       // approve once for all orders:
       for (const orderOwner of orderOwners) {
         await token.approve(TradeDelegate.address, 1e27, {from: orderOwner});
@@ -172,13 +189,19 @@ contract("Exchange", (accounts: string[]) => {
 
   describe("submitRing", () => {
     const currBlockTimeStamp = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
-    const ringsGenerator = new RingsGenerator(TradeDelegate.address, currBlockTimeStamp);
+    const ringsGenerator = new RingsGenerator();
+    let eventFromBlock: number = 0;
 
-    const simulator = new ProtocolSimulator(walletSplitPercentage);
+    const context = new Context(TokenRegistry.address,
+                                BrokerRegistry.address,
+                                TradeDelegate.address);
+    const simulator = new ProtocolSimulator(walletSplitPercentage, context);
 
     for (const ringsInfo of ringsInfoList) {
       // all configed testcases here:
       ringsInfo.transactionOrigin = transactionOrigin;
+      ringsInfo.miner = miner;
+      ringsInfo.feeRecipient = miner;
 
       it(ringsInfo.description, async () => {
 
@@ -193,14 +216,16 @@ contract("Exchange", (accounts: string[]) => {
 
         const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin, TradeDelegate.address);
         assertEqualsRingsInfo(ringsInfo, deserializedRingsInfo);
-        await simulator.simulateAndReport(deserializedRingsInfo);
+        const report = await simulator.simulateAndReport(deserializedRingsInfo);
 
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
-        // console.log("tx:", tx);
-        await watchAndPrintEvent(exchange, "LogTrans");
-        // await watchAndPrintEvent(exchange, "LogAddress");
+        const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
 
-        assert(true);
+        console.log("transferEvents:", transferEvents);
+        // console.log("tx:", tx);
+        // await watchAndPrintEvent(exchange, "LogTrans");
+        // await watchAndPrintEvent(exchange, "LogAddress");
+        eventFromBlock = web3.eth.blockNumber + 1;
       });
     }
 

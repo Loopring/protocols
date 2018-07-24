@@ -11,6 +11,8 @@ import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, TransferItem } f
 
 export class ExchangeDeserializer {
 
+  public brokerRegistryAddress: string;
+
   private data: string;
 
   private addressList?: string[];
@@ -21,8 +23,8 @@ export class ExchangeDeserializer {
   private uintListIdx: number = 0;
   private bytesListIdx: number = 0;
 
-  constructor() {
-    // empty
+  constructor(brokerRegistryAddress: string) {
+    this.brokerRegistryAddress = brokerRegistryAddress;
   }
 
   public deserialize(data: string): [Mining, OrderInfo[], number[][]] {
@@ -52,6 +54,7 @@ export class ExchangeDeserializer {
 
     const mining = new Mining(
       (miningSpec.hasFeeRecipient() ? this.nextAddress() : undefined),
+      this.brokerRegistryAddress,
       (miningSpec.hasMiner() ? this.nextAddress() : undefined),
       (miningSpec.hasSignature() ? this.nextBytes() : undefined),
     );

@@ -19,8 +19,9 @@ contract("BrokerRegistry", (accounts: string[]) => {
   describe("any user", () => {
     it("should be able to register a broker", async () => {
       await brokerRegistry.registerBroker(broker, interceptor, {from: user});
-      const res = await brokerRegistry.getBroker(user, broker);
-      console.log("res:", res);
+      const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
+      assert(isRegistered, "interceptor should be registered.");
+      assert.equal(interceptor, interceptorFromContract, "get wrong interceptor");
     });
 
   });

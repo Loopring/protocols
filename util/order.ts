@@ -28,12 +28,12 @@ export class OrderUtil {
     if (!order.broker) {
       // order.broker = order.owner;
     } else {
-      const [registered, brokerInterceptor] = this.BrokerRegistryContract.getBroker(
-        order.owner,
-        order.broker,
-      );
-      assert(registered, "broker unregistered");
-      order.brokerInterceptor = brokerInterceptor;
+      // const [registered, brokerInterceptor] = this.BrokerRegistryContract.getBroker(
+      //   order.owner,
+      //   order.broker,
+      // );
+      // assert(registered, "broker unregistered");
+      // order.brokerInterceptor = brokerInterceptor;
     }
   }
 
