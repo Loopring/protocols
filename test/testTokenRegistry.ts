@@ -4,6 +4,7 @@ import { expectThrow } from "../util/expectThrow";
 const {
   TokenRegistry,
   DummyToken,
+  DummyAgency,
 } = new Artifacts(artifacts);
 
 contract("TokenRegistry", (accounts: string[]) => {
@@ -13,8 +14,8 @@ contract("TokenRegistry", (accounts: string[]) => {
   const emptyAddr = "0x0000000000000000000000000000000000000000";
 
   let tokenRegistry: any;
+  let dummyAgency: any;
   let testTokenAddr: string;
-  let testAgencyAddr: string;
   let lrcAddress: string;
   let eosAddress: string;
   let rdnAddress: string;
@@ -22,14 +23,13 @@ contract("TokenRegistry", (accounts: string[]) => {
 
   before(async () => {
     tokenRegistry = await TokenRegistry.deployed();
+    dummyAgency = await DummyAgency.deployed();
     testTokenAddr = "0x8d01f9bcca92e63a1b2752b22d16e1962aa3c920";
 
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
     eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
     rdnAddress = await tokenRegistry.getAddressBySymbol("RDN");
     gtoAddress = await tokenRegistry.getAddressBySymbol("GTO");
-
-    testAgencyAddr = gtoAddress;
   });
 
   describe("owner", () => {
@@ -64,22 +64,22 @@ contract("TokenRegistry", (accounts: string[]) => {
     });
 
     it("should be able to register an agency", async () => {
-      await tokenRegistry.registerAgency(testAgencyAddr, {from: owner});
+      await tokenRegistry.registerAgency(dummyAgency.address, {from: owner});
       const registeredAgency = await tokenRegistry.agencies(0);
-      assert.equal(registeredAgency, testAgencyAddr, "agency address should be added to agencies array");
+      assert.equal(registeredAgency, dummyAgency.address, "agency address should be added to agencies array");
     });
 
     it("should be able to unregister an agency", async () => {
       const registeredAgency = await tokenRegistry.agencies(0);
-      assert.equal(registeredAgency, testAgencyAddr, "agency should be registered on start");
+      assert.equal(registeredAgency, dummyAgency.address, "agency should be registered on start");
       await tokenRegistry.unregisterAgency(registeredAgency, {from: owner});
       await expectThrow(tokenRegistry.agencies(0));
     });
 
     it("should be able to unregister all agencies", async () => {
-      await tokenRegistry.registerAgency(testAgencyAddr, {from: owner});
+      await tokenRegistry.registerAgency(dummyAgency.address, {from: owner});
       const registeredAgency = await tokenRegistry.agencies(0);
-      assert.equal(registeredAgency, testAgencyAddr, "agency address should be added to agencies array");
+      assert.equal(registeredAgency, dummyAgency.address, "agency address should be added to agencies array");
 
       await tokenRegistry.unregisterAllAgencies({from: owner});
       await expectThrow(tokenRegistry.agencies(0));
@@ -93,19 +93,21 @@ contract("TokenRegistry", (accounts: string[]) => {
 
   describe("agency", () => {
 
-    it("should be able to register a token if registered", async () => {
+    it("should not be able to register a token if not registered", async () => {
       const isRegisteredBefore = await tokenRegistry.areAllTokensRegistered([testTokenAddr]);
       assert.equal(isRegisteredBefore, false, "token should not be registered");
       await expectThrow(tokenRegistry.agencies(0));
-      // await expectThrow(tokenRegistry.registerToken(testTokenAddr, "TEST", {from: testAgencyAddr}));
+      await expectThrow(dummyAgency.registerToken(testTokenAddr, "TEST", {from: user}));
+    });
 
-      // await tokenRegistry.registerAgency(testAgencyAddr, {from: owner});
-      // const registeredAgency = await tokenRegistry.agencies(0);
-      // assert.equal(registeredAgency, testAgencyAddr, "agency address should be added to agencies array");
+    it("should be able to register a token if registered", async () => {
+      await tokenRegistry.registerAgency(dummyAgency.address, {from: owner});
+      const registeredAgency = await tokenRegistry.agencies(0);
+      assert.equal(registeredAgency, dummyAgency.address, "agency address should be added to agencies array");
 
-      // await tokenRegistry.registerToken(testTokenAddr, "TEST", {from: testAgencyAddr});
-      // const isRegisteredAfter = await tokenRegistry.areAllTokensRegistered([testTokenAddr]);
-      // assert.equal(isRegisteredAfter, true, "token should be registered");
+      await dummyAgency.registerToken(testTokenAddr, "TEST", {from: user});
+      const isRegisteredAfter = await tokenRegistry.areAllTokensRegistered([testTokenAddr]);
+      assert.equal(isRegisteredAfter, true, "token should be registered");
     });
 
     // TODO: more tests
@@ -118,7 +120,7 @@ contract("TokenRegistry", (accounts: string[]) => {
     });
 
     it("should not be able to register an agency", async () => {
-      await expectThrow(tokenRegistry.registerAgency(testAgencyAddr, {from: user}));
+      await expectThrow(tokenRegistry.registerAgency(dummyAgency.address, {from: user}));
     });
 
     // TODO: more tests
