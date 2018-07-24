@@ -13,7 +13,7 @@ import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
-import { OrderInfo, RingsInfo, SignAlgorithm } from "../util/types";
+import { OrderInfo, RingsInfo, SignAlgorithm, TransferItem } from "../util/types";
 
 const {
   Exchange,
@@ -159,6 +159,35 @@ contract("Exchange", (accounts: string[]) => {
                    "RingInfo property '" + key + "' does not match");
         }
       }
+    }
+  };
+
+  const assertTransfers = (tranferEvents: Array<[string, string, number]>, transferList: TransferItem[]) => {
+    const transfersFromSimulator: Array<[string, string, number]> = [];
+    transferList.forEach((item) => transfersFromSimulator.push([item.from, item.to, item.amount]));
+    const sorter = (a: [string, string, number], b: [string, string, number]) => {
+      if (a[0] === b[0]) {
+        if (a[1] === b[1]) {
+          return a[2] - b[2];
+        } else {
+          return a[1] > b[1] ? 1 : -1;
+        }
+      } else {
+        return a[0] > b[0] ? 1 : -1;
+      }
+    };
+
+    transfersFromSimulator.sort(sorter);
+    tranferEvents.sort(sorter);
+    // console.log("transfersFromSimulator:", transfersFromSimulator);
+    // console.log("tranferEvents from testrpc:", tranferEvents);
+    assert.equal(tranferEvents.length, transfersFromSimulator.length, "transfer amounts not match");
+    for (let i = 0; i < tranferEvents.length; i++) {
+      const transferFromEvent = tranferEvents[i];
+      const transferFromSimulator = transfersFromSimulator[i];
+      assert.equal(transferFromEvent[0], transferFromSimulator[0]);
+      assert.equal(transferFromEvent[1], transferFromSimulator[1]);
+      assertNumberEqualsWithPrecision(transferFromEvent[2], transferFromSimulator[2]);
     }
   };
 
