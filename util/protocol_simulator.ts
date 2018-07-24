@@ -58,7 +58,12 @@ export class ProtocolSimulator {
         const orderInfo = ringsInfo.orders[orderIndex];
         ringOrders.push(orderInfo);
       }
-      const ring = new Ring(ringOrders, ringsInfo.miner, ringsInfo.feeRecipient);
+      const ring = new Ring(
+        ringOrders,
+        ringsInfo.miner,
+        ringsInfo.feeRecipient,
+        this.context.tokenRegistryAddress,
+      );
       rings.push(ring);
     }
 
@@ -87,6 +92,7 @@ export class ProtocolSimulator {
     const transferItems: TransferItem[] = [];
     for (const ring of rings) {
       ring.valid = ring.valid && ring.checkOrdersValid();
+      ring.valid = ring.valid && ring.checkTokensRegistered();
       // console.log("~~~~~~~~~~~ring.valid:", ring.valid);
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring);

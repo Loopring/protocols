@@ -98,6 +98,25 @@ library RingHelper {
         return true;
     }
 
+    function checkTokensRegistered(
+        Data.Ring ring,
+        Data.Context ctx
+        )
+        internal
+        view
+        returns (bool)
+    {
+        // Extract the token addresses
+        address[] memory tokens = new address[](ring.size);
+        for (uint i = 0; i < ring.size; i++) {
+            Data.Participation memory p = ring.participations[i];
+            tokens[i] = p.order.tokenS;
+        }
+
+        // Test all token addresses at once
+        return ctx.tokenRegistry.areAllTokensRegistered(tokens);
+    }
+
     function calculateOrderFillAmounts(
         Data.Ring ring,
         uint i,

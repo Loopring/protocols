@@ -236,14 +236,16 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
 
         for (uint i = 0; i < rings.length; i++){
-            rings[i].valid = rings[i].valid && rings[i].checkOrdersValid();
+            Data.Ring memory ring = rings[i];
+            ring.valid = ring.valid && ring.checkOrdersValid();
+            ring.valid = ring.valid && ring.checkTokensRegistered(ctx);
             // Only settle rings we have checked to be valid
-            if (rings[i].valid) {
+            if (ring.valid) {
                 // Only adjust order states if the ring actually gets settled
-                rings[i].calculateFillAmountAndFee(mining);
+                ring.calculateFillAmountAndFee(mining);
 
                 /*IExchange.Fill[] memory fills = */
-                rings[i].settleRing(ctx, mining);
+                ring.settleRing(ctx, mining);
                 emit RingMined(
                     ctx.ringIndex++,
                     0x0,

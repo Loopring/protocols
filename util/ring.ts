@@ -1,4 +1,5 @@
 import ABI = require("ethereumjs-abi");
+import fs = require("fs");
 import { Bitstream } from "./bitstream";
 import { OrderUtil } from "./order";
 import { OrderInfo, TransferItem } from "./types";
@@ -13,13 +14,21 @@ export class Ring {
 
   private orderUtil: OrderUtil;
 
+  private tokenRegistryInstance: any;
+
   constructor(orders: OrderInfo[],
               owner: string,
-              feeRecipient: string) {
+              feeRecipient: string,
+              tokenRegistryAddress: string,
+              ) {
     this.orders = orders;
     this.owner = owner;
     this.feeRecipient = feeRecipient;
     this.valid = true;
+
+    const tokenRegistryAbi = fs.readFileSync("ABI/latest/ITokenRegistry.abi", "ascii");
+    const TokenRegistryContract = web3.eth.contract(JSON.parse(tokenRegistryAbi));
+    this.tokenRegistryInstance = TokenRegistryContract.at(tokenRegistryAddress);
 
     this.orderUtil = new OrderUtil();
   }
@@ -39,6 +48,14 @@ export class Ring {
       }
     }
     return true;
+  }
+
+  public checkTokensRegistered() {
+    const tokens: string[] = [];
+    for (const order of this.orders) {
+      tokens.push(order.tokenS);
+    }
+    return this.tokenRegistryInstance.areAllTokensRegistered(tokens);
   }
 
   public async calculateFillAmountAndFee() {
