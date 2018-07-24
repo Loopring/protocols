@@ -188,18 +188,17 @@ contract("Exchange", (accounts: string[]) => {
 
         await ringsGenerator.setupRingsAsync(ringsInfo);
 
-        await simulator.simulateAndReport(ringsInfo);
-
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
+
+        const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin, TradeDelegate.address);
+        assertEqualsRingsInfo(ringsInfo, deserializedRingsInfo);
+        await simulator.simulateAndReport(deserializedRingsInfo);
 
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         // console.log("tx:", tx);
         await watchAndPrintEvent(exchange, "LogTrans");
         // await watchAndPrintEvent(exchange, "LogAddress");
-
-        const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin, TradeDelegate.address);
-        assertEqualsRingsInfo(ringsInfo, deserializedRingsInfo);
 
         assert(true);
       });
