@@ -12,23 +12,19 @@ export class ProtocolSimulator {
   public context: Context;
 
   private ringIndex: number = 0;
-  private orderUtil = new OrderUtil();
+  private orderUtil: OrderUtil;
 
   constructor(walletSplitPercentage: number, context: Context) {
     this.walletSplitPercentage = walletSplitPercentage;
     this.context = context;
+    this.orderUtil = new OrderUtil(context);
   }
 
   public deserialize(data: string,
                      transactionOrigin: string,
                      delegateContract: string) {
-    const exchangeDeserializer = new ExchangeDeserializer(this.context.minerBrokerRegistryAddress);
+    const exchangeDeserializer = new ExchangeDeserializer(this.context);
     const [mining, orders, rings] = exchangeDeserializer.deserialize(data);
-
-    // Current JS implementation depends on this being set
-    for (const order of orders) {
-      order.delegateContract = delegateContract;
-    }
 
     const ringsInfo: RingsInfo = {
       rings,
@@ -43,8 +39,8 @@ export class ProtocolSimulator {
 
   public async simulateAndReport(ringsInfo: RingsInfo) {
     const mining = new Mining(
+      this.context,
       ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin,
-      this.context.minerBrokerRegistryAddress,
       ringsInfo.miner,
       ringsInfo.sig,
     );
@@ -59,10 +55,10 @@ export class ProtocolSimulator {
         ringOrders.push(orderInfo);
       }
       const ring = new Ring(
+        this.context,
         ringOrders,
         ringsInfo.miner,
         ringsInfo.feeRecipient,
-        this.context.tokenRegistryAddress,
       );
       rings.push(ring);
     }
@@ -70,8 +66,8 @@ export class ProtocolSimulator {
     for (const order of orders) {
       order.valid = true;
       order.hash = this.orderUtil.getOrderHash(order);
-      this.orderUtil.updateBrokerAndInterceptor(order);
-      // order.valid = order.valid && this.orderUtil.checkBrokerSignature(order);
+      await this.orderUtil.updateBrokerAndInterceptor(order);
+      // order.valid = order.valid && await this.orderUtil.checkBrokerSignature(order);
     }
 
     for (const ring of rings) {
@@ -92,7 +88,7 @@ export class ProtocolSimulator {
     const transferItems: TransferItem[] = [];
     for (const ring of rings) {
       ring.valid = ring.valid && ring.checkOrdersValid();
-      ring.valid = ring.valid && ring.checkTokensRegistered();
+      ring.valid = ring.valid && await ring.checkTokensRegistered();
       // console.log("~~~~~~~~~~~ring.valid:", ring.valid);
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring);

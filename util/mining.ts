@@ -1,6 +1,6 @@
 import BN = require("bn.js");
 import ABI = require("ethereumjs-abi");
-import fs = require("fs");
+import { Context } from "./context";
 import { MultiHashUtil } from "./multihash";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
@@ -9,7 +9,6 @@ import { OrderInfo, TransferItem } from "./types";
 export class Mining {
 
   public feeRecipient: string;
-  public brokerRegistryAddress: string;
 
   public miner?: string;
   public sig?: string;
@@ -17,30 +16,25 @@ export class Mining {
   public hash?: Buffer;
   public interceptor?: string;
 
-  private BrokerRegistryContract: any;
-  private brokerRegistryInstance: any;
+  private context: Context;
 
   private multiHashUtil = new MultiHashUtil();
 
-  constructor(feeRecipient: string,
-              brokerRegistryAddress: string,
+  constructor(context: Context,
+              feeRecipient: string,
               miner: string,
               sig: string) {
+    this.context = context;
     this.feeRecipient = feeRecipient;
     this.miner = miner;
     this.sig = sig;
-    this.brokerRegistryAddress = brokerRegistryAddress;
-
-    const brokerRegistryAbi = fs.readFileSync("ABI/latest/IBrokerRegistry.abi", "ascii");
-    this.BrokerRegistryContract = web3.eth.contract(JSON.parse(brokerRegistryAbi));
-    this.brokerRegistryInstance = this.BrokerRegistryContract.at(this.brokerRegistryAddress);
   }
 
   public async updateMinerAndInterceptor() {
     if (!this.miner) {
       this.miner = this.feeRecipient;
     } else {
-      const [registered, interceptor] = await this.brokerRegistryInstance.getBroker(
+      const [registered, interceptor] = await this.context.minerBrokerRegistry.getBroker(
         this.feeRecipient,
         this.miner,
       );

@@ -5,6 +5,7 @@ import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import Web3 = require("web3");
 import { Bitstream } from "./bitstream";
+import { Context } from "./context";
 import { MultiHashUtil } from "./multihash";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
@@ -12,7 +13,11 @@ import { OrderInfo, RingsInfo, RingsSubmitParam, SignAlgorithm } from "./types";
 
 export class RingsGenerator {
   private multiHashUtil = new MultiHashUtil();
-  private orderUtil = new OrderUtil();
+  private orderUtil: OrderUtil;
+
+  constructor(context: Context) {
+    this.orderUtil = new OrderUtil(context);
+  }
 
   public async setupRingsAsync(rings: RingsInfo) {
     // Setup orders

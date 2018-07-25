@@ -1,30 +1,20 @@
 import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import ABI = require("ethereumjs-abi");
-import fs = require("fs");
+import { Context } from "./context";
 import { MultiHashUtil } from "./multihash";
 import { OrderInfo } from "./types";
 
 export class OrderUtil {
-  private ERC20Contract: any;
-  private DelegateContract: any;
-  private OrderRegistryContract: any;
-  private BrokerRegistryContract: any;
 
+  private context: Context;
   private multiHashUtil = new MultiHashUtil();
 
-  constructor() {
-    const erc20Abi = fs.readFileSync("ABI/latest/ERC20.abi", "ascii");
-    const delegateAbi = fs.readFileSync("ABI/latest/ITradeDelegate.abi", "ascii");
-    const orderRegistryAbi = fs.readFileSync("ABI/latest/IOrderRegistry.abi", "ascii");
-    const brokerRegistryAbi = fs.readFileSync("ABI/latest/IBrokerRegistry.abi", "ascii");
-    this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
-    this.DelegateContract = web3.eth.contract(JSON.parse(delegateAbi));
-    this.OrderRegistryContract = web3.eth.contract(JSON.parse(orderRegistryAbi));
-    this.BrokerRegistryContract = web3.eth.contract(JSON.parse(brokerRegistryAbi));
+  constructor(context: Context) {
+    this.context = context;
   }
 
-  public updateBrokerAndInterceptor(order: OrderInfo) {
+  public async updateBrokerAndInterceptor(order: OrderInfo) {
     if (!order.broker) {
       // order.broker = order.owner;
     } else {
@@ -37,9 +27,9 @@ export class OrderUtil {
     }
   }
 
-  public checkBrokerSignature(order: OrderInfo) {
+  public async checkBrokerSignature(order: OrderInfo) {
     if (!order.sig) {
-      return this.OrderRegistryContract.isOrderHashRegistered(order.broker, order.hash);
+      return this.context.orderRegistry.isOrderHashRegistered(order.broker, order.hash);
     } else {
       return this.multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
     }
@@ -93,10 +83,9 @@ export class OrderUtil {
   public async scaleBySpendableAmount(orderInfo: OrderInfo) {
     const spendableS = await this.getErc20SpendableAmount(orderInfo.tokenS,
                                                           orderInfo.owner,
-                                                          orderInfo.delegateContract);
+                                                          this.context.tradeDelegate.address);
 
-    const delegateContract = this.DelegateContract.at(orderInfo.delegateContract);
-    const filled = await delegateContract.filled(orderInfo.hash.toString("hex"));
+    const filled = await this.context.tradeDelegate.filled(orderInfo.hash.toString("hex"));
     const remaining = orderInfo.amountS - filled;
 
     if (remaining <= 0) {
@@ -109,7 +98,7 @@ export class OrderUtil {
   private async getErc20SpendableAmount(tokenAddr: string,
                                         owner: string,
                                         spender: string) {
-    const token = this.ERC20Contract.at(tokenAddr);
+    const token = this.context.ERC20Contract.at(tokenAddr);
     const balance = await token.balanceOf(owner);
     const allowance = await token.allowance(owner, spender);
     return Math.min(balance, allowance);

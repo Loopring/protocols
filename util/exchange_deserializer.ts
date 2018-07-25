@@ -1,5 +1,6 @@
 import { BigNumber } from "bignumber.js";
 import { Bitstream } from "./bitstream";
+import { Context } from "./context";
 import { EncodeSpec } from "./encode_spec";
 import { Mining } from "./mining";
 import { MiningSpec } from "./mining_spec";
@@ -11,7 +12,7 @@ import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, TransferItem } f
 
 export class ExchangeDeserializer {
 
-  public brokerRegistryAddress: string;
+  private context: Context;
 
   private data: string;
 
@@ -23,8 +24,8 @@ export class ExchangeDeserializer {
   private uintListIdx: number = 0;
   private bytesListIdx: number = 0;
 
-  constructor(brokerRegistryAddress: string) {
-    this.brokerRegistryAddress = brokerRegistryAddress;
+  constructor(context: Context) {
+    this.context = context;
   }
 
   public deserialize(data: string): [Mining, OrderInfo[], number[][]] {
@@ -53,8 +54,8 @@ export class ExchangeDeserializer {
     this.bytesList = bitstream.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
 
     const mining = new Mining(
+      this.context,
       (miningSpec.hasFeeRecipient() ? this.nextAddress() : undefined),
-      this.brokerRegistryAddress,
       (miningSpec.hasMiner() ? this.nextAddress() : undefined),
       (miningSpec.hasSignature() ? this.nextBytes() : undefined),
     );

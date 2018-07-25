@@ -104,7 +104,6 @@ contract("Exchange", (accounts: string[]) => {
     const addrB = await tokenRegistry.getAddressBySymbol(symbolB);
 
     order.owner = owner;
-    order.delegateContract = TradeDelegate.address;
     order.tokenS = addrS;
     order.tokenB = addrB;
     if (!order.lrcFee) {
@@ -234,7 +233,6 @@ contract("Exchange", (accounts: string[]) => {
 
   describe("submitRing", () => {
     const currBlockTimeStamp = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
-    const ringsGenerator = new RingsGenerator();
     let eventFromBlock: number = 0;
 
     for (const ringsInfo of ringsInfoList) {
@@ -259,6 +257,7 @@ contract("Exchange", (accounts: string[]) => {
           await setupOrder(order, i);
         }
 
+        const ringsGenerator = new RingsGenerator(context);
         await ringsGenerator.setupRingsAsync(ringsInfo);
 
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);

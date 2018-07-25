@@ -41,7 +41,6 @@ export interface OrderInfo {
   valid?: boolean;
 
   hash?: Buffer;
-  delegateContract?: string;
   signAlgorithm?: SignAlgorithm;
   dualAuthSignAlgorithm?: SignAlgorithm;
 
