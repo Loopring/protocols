@@ -198,6 +198,14 @@ contract("Exchange", (accounts: string[]) => {
       TradeDelegate.deployed(),
     ]);
 
+    // Get the different brokers from the exchange
+    const orderBrokerRegistryAddress = await exchange.orderBrokerRegistryAddress();
+    const minerBrokerRegistryAddress = await exchange.minerBrokerRegistryAddress();
+
+    // Dummy data
+    const minerBrokerRegistry = BrokerRegistry.at(minerBrokerRegistryAddress);
+    await minerBrokerRegistry.registerBroker(miner, "0x0", {from: miner});
+
     await tradeDelegate.authorizeAddress(Exchange.address, {from: deployer});
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
 
@@ -222,7 +230,7 @@ contract("Exchange", (accounts: string[]) => {
     let eventFromBlock: number = 0;
 
     const context = new Context(TokenRegistry.address,
-                                BrokerRegistry.address,
+                                BrokerRegistry.address, // TODO: fix with different brokers
                                 TradeDelegate.address);
     const simulator = new ProtocolSimulator(walletSplitPercentage, context);
 
