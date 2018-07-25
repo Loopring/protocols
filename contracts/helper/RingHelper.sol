@@ -87,15 +87,11 @@ library RingHelper {
         )
         internal
         pure
-        returns (bool)
     {
         for (uint i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
-            if (!p.order.valid) {
-                return false;
-            }
+            ring.valid = ring.valid && p.order.valid;
         }
-        return true;
     }
 
     function checkTokensRegistered(
@@ -104,7 +100,6 @@ library RingHelper {
         )
         internal
         view
-        returns (bool)
     {
         // Extract the token addresses
         address[] memory tokens = new address[](ring.size);
@@ -114,7 +109,7 @@ library RingHelper {
         }
 
         // Test all token addresses at once
-        return ctx.tokenRegistry.areAllTokensRegistered(tokens);
+        ring.valid = ring.valid && ctx.tokenRegistry.areAllTokensRegistered(tokens);
     }
 
     function calculateOrderFillAmounts(

@@ -228,7 +228,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
-            orders[i].valid = orders[i].valid && orders[i].checkBrokerSignature(ctx);
+            orders[i].checkBrokerSignature(ctx);
         }
 
         for (uint i = 0; i < rings.length; i++) {
@@ -240,7 +240,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(mining.checkMinerSignature(ctx), "Invalid miner signature");
 
         for (uint i = 0; i < orders.length; i++) {
-            orders[i].valid = orders[i].valid && orders[i].checkDualAuthSignature(mining.hash);
+            orders[i].checkDualAuthSignature(mining.hash);
         }
 
         for (uint i = 0; i < orders.length; i++) {
@@ -249,8 +249,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         for (uint i = 0; i < rings.length; i++){
             Data.Ring memory ring = rings[i];
-            ring.valid = ring.valid && ring.checkOrdersValid();
-            ring.valid = ring.valid && ring.checkTokensRegistered(ctx);
+            ring.checkOrdersValid();
+            ring.checkTokensRegistered(ctx);
             // Only settle rings we have checked to be valid
             if (ring.valid) {
                 // Only adjust order states if the ring actually gets settled

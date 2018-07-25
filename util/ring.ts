@@ -39,11 +39,8 @@ export class Ring {
 
   public checkOrdersValid() {
     for (const order of this.orders) {
-      if (!order.valid) {
-        return false;
-      }
+      this.valid = this.valid && order.valid;
     }
-    return true;
   }
 
   public async checkTokensRegistered() {
@@ -51,7 +48,8 @@ export class Ring {
     for (const order of this.orders) {
       tokens.push(order.tokenS);
     }
-    return this.context.tokenRegistry.areAllTokensRegistered(tokens);
+    const tokensRegistered = await this.context.tokenRegistry.areAllTokensRegistered(tokens);
+    this.valid = this.valid && tokensRegistered;
   }
 
   public async calculateFillAmountAndFee() {

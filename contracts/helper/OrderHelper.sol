@@ -118,15 +118,14 @@ library OrderHelper {
         )
         internal
         view
-        returns (bool)
     {
         if (order.sig.length == 0) {
-            return ctx.orderRegistry.isOrderHashRegistered(
+            order.valid = order.valid && ctx.orderRegistry.isOrderHashRegistered(
                 order.broker,
                 order.hash
             );
         } else {
-            return MultihashUtil.verifySignature(
+            order.valid = order.valid && MultihashUtil.verifySignature(
                 order.broker,
                 order.hash,
                 order.sig
@@ -140,16 +139,13 @@ library OrderHelper {
         )
         internal
         pure
-        returns (bool)
     {
         if (order.dualAuthSig.length != 0) {
-            return MultihashUtil.verifySignature(
+            order.valid = order.valid && MultihashUtil.verifySignature(
                 order.dualAuthAddr,
                 miningHash,
                 order.dualAuthSig
             );
-        } else {
-            return true;
         }
     }
 

@@ -16,7 +16,7 @@ export class OrderUtil {
 
   public async updateBrokerAndInterceptor(order: OrderInfo) {
     if (!order.broker) {
-      // order.broker = order.owner;
+       order.broker = order.owner;
     } else {
       // const [registered, brokerInterceptor] = this.BrokerRegistryContract.getBroker(
       //   order.owner,
@@ -28,18 +28,19 @@ export class OrderUtil {
   }
 
   public async checkBrokerSignature(order: OrderInfo) {
+    let signatureValid = true;
     if (!order.sig) {
-      return this.context.orderRegistry.isOrderHashRegistered(order.broker, order.hash);
+      signatureValid = await this.context.orderRegistry.isOrderHashRegistered(order.broker, order.hash);
     } else {
-      return this.multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
+      signatureValid = this.multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
     }
+    order.valid = order.valid && signatureValid;
   }
 
   public checkDualAuthSignature(order: OrderInfo, miningHash: Buffer) {
     if (order.dualAuthSig) {
-      return this.multiHashUtil.verifySignature(order.dualAuthAddr, miningHash, order.dualAuthSig);
-    } else {
-      return true;
+      const signatureValid = this.multiHashUtil.verifySignature(order.dualAuthAddr, miningHash, order.dualAuthSig);
+      order.valid = order.valid && signatureValid;
     }
   }
 

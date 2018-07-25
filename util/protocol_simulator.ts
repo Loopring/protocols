@@ -67,7 +67,7 @@ export class ProtocolSimulator {
       order.valid = true;
       order.hash = this.orderUtil.getOrderHash(order);
       await this.orderUtil.updateBrokerAndInterceptor(order);
-      // order.valid = order.valid && await this.orderUtil.checkBrokerSignature(order);
+      await this.orderUtil.checkBrokerSignature(order);
     }
 
     for (const ring of rings) {
@@ -76,19 +76,19 @@ export class ProtocolSimulator {
 
     mining.updateHash(rings);
     await mining.updateMinerAndInterceptor();
-    // assert(mining.checkMinerSignature(ringsInfo.transactionOrigin) === true,
-    //        "Invalid miner signature");
+    assert(mining.checkMinerSignature(ringsInfo.transactionOrigin) === true,
+           "Invalid miner signature");
 
-    // for (const order of orders) {
-    //   order.valid = order.valid && this.orderUtil.checkDualAuthSignature(order, mining.hash);
-    //   console.log("order.valid:", order.valid);
-    // }
+    for (const order of orders) {
+      this.orderUtil.checkDualAuthSignature(order, mining.hash);
+      // console.log("order.valid:", order.valid);
+    }
 
     const ringMinedEvents: RingMinedEvent[] = [];
     const transferItems: TransferItem[] = [];
     for (const ring of rings) {
-      ring.valid = ring.valid && ring.checkOrdersValid();
-      ring.valid = ring.valid && await ring.checkTokensRegistered();
+      ring.checkOrdersValid();
+      await ring.checkTokensRegistered();
       // console.log("~~~~~~~~~~~ring.valid:", ring.valid);
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring);
