@@ -39,6 +39,19 @@ contract MinerRegistry is IMinerRegistry, NoDefaultFunc {
         return (positionMap[feeRecipient][miner] > 0);
     }
 
+    function getMiners(
+        address feeRecipient,
+        uint    start,
+        uint    count
+        )
+        external
+        view
+        returns (address[] miners)
+    {
+        require(false, "not implemented");
+        return;
+    }
+
     function registerMiner(
         address miner
         )

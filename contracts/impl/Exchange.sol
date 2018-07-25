@@ -97,7 +97,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         address _tokenRegistryAddress,
         address _delegateAddress,
         address _orderBrokerRegistryAddress,
-        address _minerBrokerRegistryAddress
+        address _minerBrokerRegistryAddress,
+        address _orderRegistryAddress,
+        address _minerRegistryAddress
         )
         public
     {
@@ -106,12 +108,16 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(_delegateAddress != 0x0);
         require(_orderBrokerRegistryAddress != 0x0);
         require(_minerBrokerRegistryAddress != 0x0);
+        require(_orderRegistryAddress != 0x0);
+        require(_minerRegistryAddress != 0x0);
 
         lrcTokenAddress = _lrcTokenAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         delegateAddress = _delegateAddress;
         orderBrokerRegistryAddress = _orderBrokerRegistryAddress;
         minerBrokerRegistryAddress = _minerBrokerRegistryAddress;
+        orderRegistryAddress = _orderRegistryAddress;
+        minerRegistryAddress = _minerRegistryAddress;
     }
 
     function cancelOrders(

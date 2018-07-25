@@ -19,6 +19,8 @@ const {
   Exchange,
   TokenRegistry,
   BrokerRegistry,
+  OrderRegistry,
+  MinerRegistry,
   TradeDelegate,
   DummyToken,
 } = new Artifacts(artifacts);
@@ -33,6 +35,8 @@ contract("Exchange", (accounts: string[]) => {
   let exchange: any;
   let tokenRegistry: any;
   let tradeDelegate: any;
+  let orderRegistry: any;
+  let minerRegistry: any;
   let orderBrokerRegistryAddress: string;
   let minerBrokerRegistryAddress: string;
   let lrcAddress: string;
@@ -194,10 +198,12 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   before( async () => {
-    [exchange, tokenRegistry, tradeDelegate] = await Promise.all([
+    [exchange, tokenRegistry, tradeDelegate, orderRegistry, minerRegistry] = await Promise.all([
       Exchange.deployed(),
       TokenRegistry.deployed(),
       TradeDelegate.deployed(),
+      OrderRegistry.deployed(),
+      MinerRegistry.deployed(),
     ]);
 
     // Get the different brokers from the exchange
@@ -245,8 +251,8 @@ contract("Exchange", (accounts: string[]) => {
                                     TradeDelegate.address,
                                     orderBrokerRegistryAddress,
                                     minerBrokerRegistryAddress,
-                                    "0x0",
-                                    "0x0");
+                                    OrderRegistry.address,
+                                    MinerRegistry.address);
         const simulator = new ProtocolSimulator(walletSplitPercentage, context);
 
         for (const [i, order] of ringsInfo.orders.entries()) {
