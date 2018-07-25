@@ -33,6 +33,8 @@ contract("Exchange", (accounts: string[]) => {
   let exchange: any;
   let tokenRegistry: any;
   let tradeDelegate: any;
+  let orderBrokerRegistryAddress: string;
+  let minerBrokerRegistryAddress: string;
   let lrcAddress: string;
   let walletSplitPercentage: number;
 
@@ -199,8 +201,8 @@ contract("Exchange", (accounts: string[]) => {
     ]);
 
     // Get the different brokers from the exchange
-    const orderBrokerRegistryAddress = await exchange.orderBrokerRegistryAddress();
-    const minerBrokerRegistryAddress = await exchange.minerBrokerRegistryAddress();
+    orderBrokerRegistryAddress = await exchange.orderBrokerRegistryAddress();
+    minerBrokerRegistryAddress = await exchange.minerBrokerRegistryAddress();
 
     // Dummy data
     const minerBrokerRegistry = BrokerRegistry.at(minerBrokerRegistryAddress);
@@ -229,11 +231,6 @@ contract("Exchange", (accounts: string[]) => {
     const ringsGenerator = new RingsGenerator();
     let eventFromBlock: number = 0;
 
-    const context = new Context(TokenRegistry.address,
-                                BrokerRegistry.address, // TODO: fix with different brokers
-                                TradeDelegate.address);
-    const simulator = new ProtocolSimulator(walletSplitPercentage, context);
-
     for (const ringsInfo of ringsInfoList) {
       // all configed testcases here:
       ringsInfo.transactionOrigin = transactionOrigin;
@@ -241,6 +238,16 @@ contract("Exchange", (accounts: string[]) => {
       ringsInfo.feeRecipient = miner;
 
       it(ringsInfo.description, async () => {
+
+        // before() is async, so any dependency we have on before() having run needs
+        // to be done in async tests (see mocha docs)
+        const context = new Context(TokenRegistry.address,
+                                    TradeDelegate.address,
+                                    orderBrokerRegistryAddress,
+                                    minerBrokerRegistryAddress,
+                                    "0x0",
+                                    "0x0");
+        const simulator = new ProtocolSimulator(walletSplitPercentage, context);
 
         for (const [i, order] of ringsInfo.orders.entries()) {
           await setupOrder(order, i);

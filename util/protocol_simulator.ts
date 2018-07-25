@@ -22,7 +22,7 @@ export class ProtocolSimulator {
   public deserialize(data: string,
                      transactionOrigin: string,
                      delegateContract: string) {
-    const exchangeDeserializer = new ExchangeDeserializer(this.context.brokerRegistryAddress);
+    const exchangeDeserializer = new ExchangeDeserializer(this.context.minerBrokerRegistryAddress);
     const [mining, orders, rings] = exchangeDeserializer.deserialize(data);
 
     // Current JS implementation depends on this being set
@@ -44,7 +44,7 @@ export class ProtocolSimulator {
   public async simulateAndReport(ringsInfo: RingsInfo) {
     const mining = new Mining(
       ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin,
-      this.context.brokerRegistryAddress,
+      this.context.minerBrokerRegistryAddress,
       ringsInfo.miner,
       ringsInfo.sig,
     );

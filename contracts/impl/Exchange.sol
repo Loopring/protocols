@@ -230,7 +230,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
 
         mining.updateHash(rings);
-        /* mining.updateMinerAndInterceptor(ctx); */ // TODO: need to be fixed.
+        mining.updateMinerAndInterceptor(ctx);
         require(mining.checkMinerSignature(ctx), "Invalid miner signature");
 
         for (uint i = 0; i < orders.length; i++) {

@@ -37,12 +37,14 @@ library MiningHelper {
         if (mining.miner == 0x0) {
             mining.miner = mining.feeRecipient;
         } else {
-            bool registered;
-            (registered, mining.interceptor) = ctx.minerBrokerRegistry.getBroker(
+            (bool registered, address interceptor) = ctx.minerBrokerRegistry.getBroker(
                 mining.feeRecipient,
                 mining.miner
             );
-            require(registered, "miner unregistered");
+            // require(registered, "miner unregistered");
+            if (registered) {
+                mining.interceptor = interceptor;
+            }
         }
     }
 
