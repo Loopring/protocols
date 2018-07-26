@@ -21,6 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "../iface/IExchange.sol";
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
+import "../lib/ERC20.sol";
 import "../lib/MultihashUtil.sol";
 import "./ParticipationHelper.sol";
 
@@ -54,7 +55,8 @@ library RingHelper {
         internal
         view
     {
-        for (uint i = 0; i < ring.size; i++) {
+        uint i;
+        for (i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             Data.Order memory order = p.order;
             p.fillAmountS = order.maxAmountS;
@@ -62,23 +64,56 @@ library RingHelper {
 
         uint smallest = 0;
 
-        for (uint i = 0; i < ring.size; i++) {
+        for (i = 0; i < ring.size; i++) {
             smallest = calculateOrderFillAmounts(ring, i, smallest);
         }
 
-        for (uint i = 0; i < smallest; i++) {
+        for (i = 0; i < smallest; i++) {
             calculateOrderFillAmounts(ring, i, smallest);
         }
 
+        uint smallestPrev = (smallest + ring.size - 1) % ring.size;
         Data.Participation memory smallestP = ring.participations[smallest];
-        uint newFillAmountS = smallestP.fillAmountB.mul(smallestP.order.amountS) / smallestP.order.amountB;
-        smallestP.splitS = newFillAmountS.sub(smallestP.fillAmountS);
-        smallestP.fillAmountS = newFillAmountS;
+        Data.Participation memory smallestPrevP = ring.participations[smallestPrev];
+        smallestP.fillAmountS = smallestP.fillAmountB.mul(smallestP.order.amountS) /
+            smallestP.order.amountB;
+        uint prevFillAmountS = smallestP.fillAmountS.mul(smallestPrevP.order.amountS) /
+            smallestPrevP.order.amountB;
+        smallestPrevP.splitS = prevFillAmountS.sub(smallestPrevP.fillAmountS);
+        smallestPrevP.lrcFee = smallestPrevP.order.lrcFee.mul(smallestP.fillAmountS) /
+            smallestPrevP.order.amountB;
 
-        for (uint i = 0; i < ring.size; i++) {
+        for (i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             // p.calculateFeeAmounts(mining);
             p.adjustOrderState();
+        }
+    }
+
+    function calculateOrderFillAmounts(
+        Data.Ring ring,
+        uint i,
+        uint smallest
+        )
+        internal
+        pure
+        returns (uint smallest_)
+    {
+        // Default to the same smallest index
+        smallest_ = smallest;
+
+        Data.Participation memory p = ring.participations[i];
+        if (p.calculateFillAmounts()) {
+            smallest_ = i;
+        }
+
+        uint j = (i + 1) % ring.size;
+        Data.Participation memory nextP = ring.participations[j];
+
+        if (p.fillAmountB < nextP.fillAmountS) {
+            nextP.fillAmountS = p.fillAmountB;
+        } else {
+            smallest_ = j;
         }
     }
 
@@ -112,33 +147,6 @@ library RingHelper {
         ring.valid = ring.valid && ctx.tokenRegistry.areAllTokensRegistered(tokens);
     }
 
-    function calculateOrderFillAmounts(
-        Data.Ring ring,
-        uint i,
-        uint smallest
-        )
-        internal
-        pure
-        returns (uint smallest_)
-    {
-        // Default to the same smallest index
-        smallest_ = smallest;
-
-        Data.Participation memory p = ring.participations[i];
-        if (p.calculateFillAmounts()) {
-            smallest_ = i;
-        }
-
-        uint j = (i + 1) % ring.size;
-        Data.Participation memory nextP = ring.participations[j];
-
-        if (p.fillAmountB < nextP.fillAmountS) {
-            nextP.fillAmountS = p.fillAmountB;
-        } else {
-            smallest_ = j;
-        }
-    }
-
     function calculateTransferBatchSize(
         Data.Ring ring,
         uint8 walletSplitPercentage
@@ -147,8 +155,9 @@ library RingHelper {
         returns (uint)
     {
         uint batchSize = 0;
+        uint orderTransSize;
         for (uint i = 0; i < ring.size; i++) {
-            uint orderTransSize = 0;
+            orderTransSize = 0;
             Data.Participation memory p = ring.participations[i];
 
             if (p.splitS > 0) {
@@ -169,7 +178,7 @@ library RingHelper {
         return batchSize;
     }
 
-    event LogTrans(address token, address from, address to, uint amount);
+    event LogTrans(address token, address from, address to, uint amount, uint spendable);
     function settleRing(Data.Ring ring, Data.Context ctx, Data.Mining mining)
         internal
         returns (IExchange.Fill[] memory fills)
@@ -218,14 +227,14 @@ library RingHelper {
                     batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
                     batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    uint minerSplitS = p.fillAmountS.mul(walletSplitPercentage) / 100;
+                    uint minerSplitS = p.splitS.mul(walletSplitPercentage) / 100;
                     batch[3 + batchIndex * 4] = bytes32(minerSplitS);
                     batchIndex ++;
 
                     batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
                     batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
-                    batch[3 + batchIndex * 4] = bytes32(p.fillAmountS.sub(minerSplitS));
+                    batch[3 + batchIndex * 4] = bytes32(p.splitS.sub(minerSplitS));
                     batchIndex ++;
                 }
             } else {
@@ -241,22 +250,50 @@ library RingHelper {
                     batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
                     batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    batch[3 + batchIndex * 4] = bytes32(p.fillAmountS);
+                    batch[3 + batchIndex * 4] = bytes32(p.splitS);
                     batchIndex ++;
                 }
             }
         }
 
-        for (i = 0; i < batch.length; i += 4) {
+        // logTrans(batch, address(ctx.delegate));
+        ctx.delegate.batchTransfer(batch);
+    }
+
+    function logTrans(bytes32[] batch, address delegateAddress)
+        internal
+    {
+        for (uint i = 0; i < batch.length; i += 4) {
+            uint spendable = getSpendable(
+                address(batch[i]),
+                address(batch[i + 1]),
+                delegateAddress
+            );
             emit LogTrans(
                 address(batch[i]),
                 address(batch[i + 1]),
                 address(batch[i + 2]),
-                uint(batch[i + 3])
+                uint(batch[i + 3]),
+                spendable
             );
         }
+    }
 
-        ctx.delegate.batchTransfer(batch);
+    function getSpendable(
+        address token,
+        address owner,
+        address spender)
+        internal
+        view
+        returns (uint amount)
+    {
+        uint allowance = ERC20(token).allowance(owner, spender);
+        uint balance = ERC20(token).balanceOf(owner);
+        if (balance > allowance) {
+            amount = allowance;
+        } else {
+            amount = balance;
+        }
     }
 
     function batchUpdateOrderFillAmount(Data.Ring ring, Data.Context ctx)
@@ -264,5 +301,4 @@ library RingHelper {
     {
 
     }
-
 }

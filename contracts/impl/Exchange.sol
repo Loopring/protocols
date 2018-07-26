@@ -202,7 +202,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
     }
 
-    event LogTrans(address token, address from, address to, uint amount); // for debug
+    event LogTrans(address token, address from, address to, uint amount, uint spendable); // for debug
     function submitRings(
         bytes data
         )

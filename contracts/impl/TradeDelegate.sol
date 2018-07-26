@@ -117,7 +117,6 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         external
     {
         require(batch.length % 4 == 0);
-
         for (uint i = 0; i < batch.length; i += 4) {
             require(
                 ERC20(address(batch[i])).transferFrom(
@@ -248,4 +247,5 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         owner = 0x0;
         emit OwnershipTransferred(owner, 0x0);
     }
+
 }

@@ -25,7 +25,7 @@ library AddressUtil {
     function isContract(
         address addr
         )
-        internal
+        public
         view
         returns (bool)
     {

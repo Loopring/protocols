@@ -107,9 +107,6 @@ export class ProtocolSimulator {
   private async simulateAndReportSingle(ring: Ring) {
     await ring.calculateFillAmountAndFee();
     const transferItems = ring.getRingTransferItems(this.walletSplitPercentage);
-
-    transferItems.forEach((item) => console.log(item));
-
     const ringMinedEvent: RingMinedEvent = {
       ringIndex: new BigNumber(this.ringIndex++),
     };

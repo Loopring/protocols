@@ -184,8 +184,8 @@ contract("Exchange", (accounts: string[]) => {
 
     transfersFromSimulator.sort(sorter);
     tranferEvents.sort(sorter);
-    // console.log("transfersFromSimulator:", transfersFromSimulator);
-    // console.log("tranferEvents from testrpc:", tranferEvents);
+    console.log("transfersFromSimulator:", transfersFromSimulator);
+    console.log("tranferEvents from contract:", tranferEvents);
     assert.equal(tranferEvents.length, transfersFromSimulator.length, "transfer amounts not match");
     for (let i = 0; i < tranferEvents.length; i++) {
       const transferFromEvent = tranferEvents[i];
@@ -226,7 +226,7 @@ contract("Exchange", (accounts: string[]) => {
       allTokens.push(token);
       // approve once for all orders:
       for (const orderOwner of orderOwners) {
-        await token.approve(TradeDelegate.address, 1e27, {from: orderOwner});
+        await token.approve(TradeDelegate.address, 1e32, {from: orderOwner});
       }
     }
   });
@@ -269,9 +269,10 @@ contract("Exchange", (accounts: string[]) => {
 
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
+        assertTransfers(transferEvents, report.transferItems);
 
-        console.log("transferEvents:", transferEvents);
         // console.log("tx:", tx);
+        // await watchAndPrintEvent(tradeDelegate, "LogTrans");
         // await watchAndPrintEvent(exchange, "LogTrans");
         // await watchAndPrintEvent(exchange, "LogAddress");
         eventFromBlock = web3.eth.blockNumber + 1;
