@@ -211,30 +211,30 @@ library RingHelper {
                 if (p.lrcFee > 0) {
                     batch[0 + batchIndex * 4] = bytes32(ctx.lrcTokenAddress);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    uint minerFee = p.lrcFee.mul(walletSplitPercentage) / 100;
-                    batch[3 + batchIndex * 4] = bytes32(minerFee);
+                    batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
+                    uint walletFee = p.lrcFee.mul(walletSplitPercentage) / 100;
+                    batch[3 + batchIndex * 4] = bytes32(walletFee);
                     batchIndex ++;
 
                     batch[0 + batchIndex * 4] = bytes32(ctx.lrcTokenAddress);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
-                    batch[3 + batchIndex * 4] = bytes32(p.lrcFee.sub(minerFee));
+                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
+                    batch[3 + batchIndex * 4] = bytes32(p.lrcFee.sub(walletFee));
                     batchIndex ++;
                 }
 
                 if (p.splitS > 0) {
                     batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    uint minerSplitS = p.splitS.mul(walletSplitPercentage) / 100;
-                    batch[3 + batchIndex * 4] = bytes32(minerSplitS);
+                    batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
+                    uint walletSplitS = p.splitS.mul(walletSplitPercentage) / 100;
+                    batch[3 + batchIndex * 4] = bytes32(walletSplitS);
                     batchIndex ++;
 
                     batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
-                    batch[3 + batchIndex * 4] = bytes32(p.splitS.sub(minerSplitS));
+                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
+                    batch[3 + batchIndex * 4] = bytes32(p.splitS.sub(walletSplitS));
                     batchIndex ++;
                 }
             } else {
