@@ -50,20 +50,24 @@ export class MultiHashUtil {
     assert(bitstream.length() >= 2, "invalid multihash format");
     const algorithm = bitstream.extractUint8(0);
     const size = bitstream.extractUint8(1);
-    assert(bitstream.length() === (2 + size), "bad multihash size");
+    assert.equal(bitstream.length(), (2 + size), "bad multihash size");
 
     if (algorithm === SignAlgorithm.Ethereum) {
-      assert(signer !== "0x0", "invalid signer address");
-      assert(size === 65, "bad Ethereum multihash size");
+      assert.notEqual(signer, "0x0", "invalid signer address");
+      assert.equal(size, 65, "bad Ethereum multihash size");
 
       const v = bitstream.extractUint8(2);
       const r = bitstream.extractBytes32(3);
       const s = bitstream.extractBytes32(3 + 32);
 
-      const msgHash = ethUtil.hashPersonalMessage(hash);
-      const pub = ethUtil.ecrecover(msgHash, v, r, s);
-      const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
-      return signer === recoveredAddress;
+      try {
+        const msgHash = ethUtil.hashPersonalMessage(hash);
+        const pub = ethUtil.ecrecover(msgHash, v, r, s);
+        const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
+        return signer === recoveredAddress;
+      } catch {
+        return false;
+      }
     } else {
       return false;
     }

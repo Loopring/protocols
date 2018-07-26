@@ -138,30 +138,30 @@ contract("Exchange", (accounts: string[]) => {
     for (const key of [...Object.keys(ringsInfoA), ...Object.keys(ringsInfoB)]) {
       if (ringsInfoPropertiesToSkip.every((x) => x !== key)) {
         if (key === "rings") {
-          assert(ringsInfoA.rings.length === ringsInfoB.rings.length,
-                 "Number of rings does not match");
+          assert.equal(ringsInfoA.rings.length, ringsInfoB.rings.length,
+                       "Number of rings does not match");
           for (let r = 0; r < ringsInfoA.rings.length; r++) {
-            assert(ringsInfoA.rings[r].length === ringsInfoB.rings[r].length,
-                   "Number of orders in rings does not match");
+            assert.equal(ringsInfoA.rings[r].length, ringsInfoB.rings[r].length,
+                         "Number of orders in rings does not match");
             for (let o = 0; o < ringsInfoA.rings[r].length; o++) {
-              assert(ringsInfoA.rings[r][o] === ringsInfoB.rings[r][o],
-                     "Order indices in rings do not match");
+              assert.equal(ringsInfoA.rings[r][o], ringsInfoB.rings[r][o],
+                           "Order indices in rings do not match");
             }
           }
         } else if (key === "orders") {
-          assert(ringsInfoA.orders.length === ringsInfoB.orders.length,
-                 "Number of orders does not match");
+          assert.equal(ringsInfoA.orders.length, ringsInfoB.orders.length,
+                       "Number of orders does not match");
           for (let o = 0; o < ringsInfoA.orders.length; o++) {
             for (const orderKey of [...Object.keys(ringsInfoA.orders[o]), ...Object.keys(ringsInfoB.orders[o])]) {
               if (orderPropertiesToSkip.every((x) => x !== orderKey)) {
-                assert(ringsInfoA.orders[o][orderKey] === ringsInfoB.orders[o][orderKey],
-                       "Order property '" + orderKey + "' does not match");
+                assert.equal(ringsInfoA.orders[o][orderKey], ringsInfoB.orders[o][orderKey],
+                             "Order property '" + orderKey + "' does not match");
               }
             }
           }
         } else {
-            assert(ringsInfoA[key] === ringsInfoB[key],
-                   "RingInfo property '" + key + "' does not match");
+            assert.equal(ringsInfoA[key], ringsInfoB[key],
+                         "RingInfo property '" + key + "' does not match");
         }
       }
     }
@@ -264,7 +264,7 @@ contract("Exchange", (accounts: string[]) => {
         // console.log("bs:", bs);
 
         const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin, TradeDelegate.address);
-        assertEqualsRingsInfo(ringsInfo, deserializedRingsInfo);
+        assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
         const report = await simulator.simulateAndReport(deserializedRingsInfo);
 
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
