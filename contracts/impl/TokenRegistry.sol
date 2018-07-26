@@ -42,7 +42,7 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         onlyOwner
         external
     {
-        // require(agency.isContract(), "agency is not a contract");
+        require(isContract(agency), "agency is not a contract");
         require(
             0 == agencyPosMap[agency],
             "agency already exists"
@@ -178,5 +178,24 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         return addressToSymbolMap[addr];
     }
 
+    // Currently here to work around InternalCompilerErrors when implemented
+    // in a library. Because extcodesize is used the function cannot be pure,
+    // so view is used which sometimes gives InternalCompilerErrors when
+    // combined with internal.
+    function isContract(
+        address addr
+        )
+        public
+        view
+        returns (bool)
+    {
+        if (addr == 0x0) {
+            return false;
+        } else {
+            uint size;
+            assembly { size := extcodesize(addr) }
+            return size > 0;
+        }
+    }
 
 }
