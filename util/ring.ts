@@ -72,10 +72,34 @@ export class Ring {
       this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
     }
 
-    const smallestOrder = this.orders[smallest];
-    const splitS = smallestOrder.fillAmountB * smallestOrder.amountS / smallestOrder.amountB -
-      smallestOrder.fillAmountS;
-    smallestOrder.splitS = splitS;
+    // TODO: check if this is always correct
+    for (let i = 0; i < ringSize; i++) {
+      const order = this.orders[i];
+      const nextOrder = this.orders[(i + 1) % ringSize];
+
+      // Calculate fillAmountS of the next order at the target rate
+      const nextFillAmountSAtTargetRate = nextOrder.fillAmountB * nextOrder.amountS / nextOrder.amountB;
+
+      // The margin is the difference between the target rate and the actual rate
+      const margin = nextFillAmountSAtTargetRate - nextOrder.fillAmountS;
+
+      // Convert margin to tokenS for the current order for splitS
+      order.splitS = margin * order.amountS / order.amountB;
+
+      // Set the new fillAmountS of the target rate
+      nextOrder.fillAmountS = nextFillAmountSAtTargetRate;
+
+      // Calculate LRC fee on the complete amount of tokenS sold
+      order.fillAmountLrcFee = order.lrcFee * (order.fillAmountS + order.splitS) / order.amountS;
+    }
+    // Solidity version:
+    /*const smallestPrev = (smallest + ringSize - 1) % ringSize;
+    const smallestP = this.orders[smallest];
+    const smallestPrevP = this.orders[smallestPrev];
+    smallestP.fillAmountS = smallestP.fillAmountB * smallestP.amountS / smallestP.amountB;
+    const prevFillAmountS = smallestP.fillAmountS * smallestPrevP.amountS / smallestPrevP.amountB;
+    smallestPrevP.splitS = prevFillAmountS - smallestPrevP.fillAmountS;
+    smallestPrevP.fillAmountLrcFee = smallestPrevP.fillAmountLrcFee * smallestP.fillAmountS / smallestPrevP.amountB;*/
   }
 
   public getRingTransferItems(walletSplitPercentage: number) {
@@ -92,6 +116,17 @@ export class Ring {
       const from = currOrder.owner;
       const to = this.orders[prevIndex].owner;
       const amount = currOrder.fillAmountS;
+
+      // Sanity checks
+      assert(currOrder.fillAmountS >= 0, "fillAmountS should be positive");
+      assert(currOrder.splitS >= 0, "splitS should be positive");
+      assert(currOrder.fillAmountLrcFee >= 0, "fillAmountLrcFee should be positive");
+      assert((currOrder.fillAmountS + currOrder.splitS) <= currOrder.amountS, "fillAmountS + splitS <= amountS");
+      assert(currOrder.fillAmountS <= currOrder.amountS, "fillAmountS <= amountS");
+      assert(currOrder.fillAmountLrcFee <= currOrder.lrcFee, "fillAmountLrcFee <= lrcFee");
+      // TODO: can fail if not exactly equal, check with lesser precision
+      // assert(currOrder.amountS / currOrder.amountB
+      //        === currOrder.fillAmountS / currOrder.fillAmountB, "fill rates need to match order rate");
 
       transferItems.push({token, from , to, amount});
 
