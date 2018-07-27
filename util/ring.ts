@@ -72,34 +72,22 @@ export class Ring {
       this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
     }
 
-    // TODO: check if this is always correct
-    for (let i = 0; i < ringSize; i++) {
-      const order = this.orders[i];
-      const nextOrder = this.orders[(i + 1) % ringSize];
+    const prevSmallest = (smallest + ringSize - 1) % ringSize;
+    const smallestOrder = this.orders[smallest];
+    const prevSmallestOrder = this.orders[prevSmallest];
 
-      // Calculate fillAmountS of the next order at the target rate
-      const nextFillAmountSAtTargetRate = nextOrder.fillAmountB * nextOrder.amountS / nextOrder.amountB;
+    smallestOrder.fillAmountS = Math.floor(smallestOrder.fillAmountB * smallestOrder.amountS /
+                                           smallestOrder.amountB);
+    prevSmallestOrder.fillAmountB = smallestOrder.fillAmountS;
+    const newFillAmountS = Math.floor(prevSmallestOrder.fillAmountB * prevSmallestOrder.amountS /
+                                      prevSmallestOrder.amountB);
+    prevSmallestOrder.splitS = newFillAmountS - prevSmallestOrder.fillAmountS;
 
-      // The margin is the difference between the target rate and the actual rate
-      const margin = nextFillAmountSAtTargetRate - nextOrder.fillAmountS;
-
-      // Convert margin to tokenS for the current order for splitS
-      order.splitS = margin * order.amountS / order.amountB;
-
-      // Set the new fillAmountS of the target rate
-      nextOrder.fillAmountS = nextFillAmountSAtTargetRate;
-
-      // Calculate LRC fee on the complete amount of tokenS sold
-      order.fillAmountLrcFee = order.lrcFee * (order.fillAmountS + order.splitS) / order.amountS;
+    for (const orderInfo of this.orders) {
+      orderInfo.fillAmountLrcFee = Math.floor(orderInfo.lrcFee * orderInfo.fillAmountB /
+                                              orderInfo.amountB);
     }
-    // Solidity version:
-    /*const smallestPrev = (smallest + ringSize - 1) % ringSize;
-    const smallestP = this.orders[smallest];
-    const smallestPrevP = this.orders[smallestPrev];
-    smallestP.fillAmountS = smallestP.fillAmountB * smallestP.amountS / smallestP.amountB;
-    const prevFillAmountS = smallestP.fillAmountS * smallestPrevP.amountS / smallestPrevP.amountB;
-    smallestPrevP.splitS = prevFillAmountS - smallestPrevP.fillAmountS;
-    smallestPrevP.fillAmountLrcFee = smallestPrevP.fillAmountLrcFee * smallestP.fillAmountS / smallestPrevP.amountB;*/
+
   }
 
   public getRingTransferItems(walletSplitPercentage: number) {
@@ -117,6 +105,9 @@ export class Ring {
       const to = this.orders[prevIndex].owner;
       const amount = currOrder.fillAmountS;
 
+      if (!currOrder.splitS) { // if undefined, then assigned to 0;
+        currOrder.splitS = 0;
+      }
       // Sanity checks
       assert(currOrder.fillAmountS >= 0, "fillAmountS should be positive");
       assert(currOrder.splitS >= 0, "splitS should be positive");
@@ -157,7 +148,7 @@ export class Ring {
   }
 
   private isOrderSmallerThan(o1: OrderInfo, o2: OrderInfo) {
-    o1.fillAmountB = o1.fillAmountS * o1.amountB / o1.amountS;
+    o1.fillAmountB = Math.floor(o1.fillAmountS * o1.amountB / o1.amountS);
     if (o1.fillAmountB < o2.fillAmountS) {
       o2.fillAmountS = o1.fillAmountB;
       return true;

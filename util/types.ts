@@ -50,6 +50,14 @@ export interface OrderInfo {
   [key: string]: any;
 }
 
+export interface Participation {
+  order: OrderInfo;
+  splitS?: number;
+  lrcFee?: number;
+  fillAmountS?: number;
+  fillAmountB?: number;
+}
+
 export interface RingsSubmitParam {
   miningSpec: number;
   orderSpecs: number[];

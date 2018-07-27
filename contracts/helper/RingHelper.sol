@@ -77,10 +77,11 @@ library RingHelper {
         Data.Participation memory smallestPrevP = ring.participations[smallestPrev];
         smallestP.fillAmountS = smallestP.fillAmountB.mul(smallestP.order.amountS) /
             smallestP.order.amountB;
-        uint prevFillAmountS = smallestP.fillAmountS.mul(smallestPrevP.order.amountS) /
+        smallestPrevP.fillAmountB = smallestP.fillAmountS;
+        uint newPrevFillAmountS = smallestPrevP.fillAmountB.mul(smallestPrevP.order.amountS) /
             smallestPrevP.order.amountB;
-        smallestPrevP.splitS = prevFillAmountS.sub(smallestPrevP.fillAmountS);
-        smallestPrevP.lrcFee = smallestPrevP.order.lrcFee.mul(smallestP.fillAmountS) /
+        smallestPrevP.splitS = newPrevFillAmountS.sub(smallestPrevP.fillAmountS);
+        smallestPrevP.lrcFee = smallestPrevP.order.lrcFee.mul(smallestPrevP.fillAmountB) /
             smallestPrevP.order.amountB;
 
         for (i = 0; i < ring.size; i++) {
