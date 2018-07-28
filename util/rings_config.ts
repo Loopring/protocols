@@ -4,7 +4,7 @@ import { RingsInfo, SignAlgorithm } from "../util/types";
 const tokenSymbols = tokenInfos.development.map((t) => t.symbol);
 
 export const ringsInfoList: RingsInfo[] = [
-  {
+  /*{
     description: "single 2-size ring, prices exactly match.",
     signAlgorithm: SignAlgorithm.Ethereum,
     rings: [[0, 1]],
@@ -26,9 +26,9 @@ export const ringsInfoList: RingsInfo[] = [
         dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
       },
     ],
-  },
+  },*/
 
-  {
+  /*{
     description: "simple single 2-size ring, with price gap.",
     signAlgorithm: SignAlgorithm.Ethereum,
     rings: [[0, 1]],
@@ -47,6 +47,38 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[2],
         amountS: 5e18,
         amountB: 45e18,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+      },
+    ],
+  },*/
+
+  {
+    description: "simple single 3-size ring, prices exactly match.",
+    signAlgorithm: SignAlgorithm.Ethereum,
+    rings: [[0, 1, 2]],
+    orders: [
+      {
+        index: 0,
+        tokenB: tokenSymbols[1],
+        tokenS: tokenSymbols[2],
+        amountB: 10e18,
+        amountS: 100e18,
+        signAlgorithm: SignAlgorithm.Ethereum,
+      },
+      {
+        index: 1,
+        tokenB: tokenSymbols[2],
+        tokenS: tokenSymbols[3],
+        amountB: 100e18,
+        amountS: 5e18,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+      },
+      {
+        index: 2,
+        tokenB: tokenSymbols[3],
+        tokenS: tokenSymbols[1],
+        amountB: 5e18,
+        amountS: 10e18,
         dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
       },
     ],

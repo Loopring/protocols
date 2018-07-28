@@ -59,6 +59,8 @@ export class Ring {
 
     let smallest = 0;
     const ringSize = this.orders.length;
+    // TODO: scaling to the smallest order for 3 order rings seems wrong.
+    // I think isOrderSmallerThan() confuses next/prev order in o2.fillAmountS = o1.fillAmountB
     for (let i = 0; i < ringSize; i++) {
       const nextIndex = (i + 1) % ringSize;
       const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
@@ -78,6 +80,7 @@ export class Ring {
 
     smallestOrder.fillAmountS = Math.floor(smallestOrder.fillAmountB * smallestOrder.amountS /
                                            smallestOrder.amountB);
+    // TODO: I think the following line is incorrect though I'm not sure yet.
     prevSmallestOrder.fillAmountB = smallestOrder.fillAmountS;
     const newFillAmountS = Math.floor(prevSmallestOrder.fillAmountB * prevSmallestOrder.amountS /
                                       prevSmallestOrder.amountB);
@@ -108,6 +111,11 @@ export class Ring {
       if (!currOrder.splitS) { // if undefined, then assigned to 0;
         currOrder.splitS = 0;
       }
+
+      console.log("currOrder.fillAmountB:      " + currOrder.fillAmountB);
+      console.log("currOrder.fillAmountS:      " + currOrder.fillAmountS);
+      console.log("currOrder.splitS:           " + currOrder.splitS);
+
       // Sanity checks
       assert(currOrder.fillAmountS >= 0, "fillAmountS should be positive");
       assert(currOrder.splitS >= 0, "splitS should be positive");
