@@ -59,8 +59,6 @@ export class Ring {
 
     let smallest = 0;
     const ringSize = this.orders.length;
-    // TODO: scaling to the smallest order for 3 order rings seems wrong.
-    // I think isOrderSmallerThan() confuses next/prev order in o2.fillAmountS = o1.fillAmountB
     for (let i = 0; i < ringSize; i++) {
       const nextIndex = (i + 1) % ringSize;
       const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
@@ -74,6 +72,22 @@ export class Ring {
       this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
     }
 
+    // This loop could maybe be optimized, but I don't want to pre-optimize it and introduce bugs
+    for (let i = 0; i < ringSize; i++) {
+      const order = this.orders[i];
+      const nextOrder = this.orders[(i + 1) % ringSize];
+      if (nextOrder.fillAmountB > order.fillAmountS) {
+        // This ring cannot be settled because this order cannot be fulfilled at the requested rate
+        this.valid = false;
+      } else {
+        // We can still decide what we want to do with these extra tokens,
+        // but let's give them all to the miner for now
+        order.splitS = order.fillAmountS - nextOrder.fillAmountB;
+        order.fillAmountS = nextOrder.fillAmountB;
+        order.fillAmountLrcFee = Math.floor(order.lrcFee * order.fillAmountB / order.amountB);
+      }
+    }
+/*
     const prevSmallest = (smallest + ringSize - 1) % ringSize;
     const smallestOrder = this.orders[smallest];
     const prevSmallestOrder = this.orders[prevSmallest];
@@ -90,12 +104,16 @@ export class Ring {
       orderInfo.fillAmountLrcFee = Math.floor(orderInfo.lrcFee * orderInfo.fillAmountB /
                                               orderInfo.amountB);
     }
-
+*/
   }
 
   public getRingTransferItems(walletSplitPercentage: number) {
     if (walletSplitPercentage > 100 && walletSplitPercentage < 0) {
       throw new Error("invalid walletSplitPercentage:" + walletSplitPercentage);
+    }
+    if (!this.valid) {
+      console.log("Ring cannot be settled!");
+      return [];
     }
 
     const ringSize = this.orders.length;
@@ -112,9 +130,15 @@ export class Ring {
         currOrder.splitS = 0;
       }
 
-      console.log("currOrder.fillAmountB:      " + currOrder.fillAmountB);
-      console.log("currOrder.fillAmountS:      " + currOrder.fillAmountS);
-      console.log("currOrder.splitS:           " + currOrder.splitS);
+      console.log("order.amountB:          " + currOrder.amountB);
+      console.log("order.amountS:          " + currOrder.amountS);
+      console.log("order expected rate:    " + currOrder.amountS / currOrder.amountB);
+      console.log("order.fillAmountB:      " + currOrder.fillAmountB);
+      console.log("order.fillAmountS:      " + currOrder.fillAmountS);
+      console.log("order.splitS:           " + currOrder.splitS);
+      console.log("order actual rate:      " + (currOrder.fillAmountS + currOrder.splitS) / currOrder.fillAmountB);
+      console.log("order.fillAmountLrcFee: " + currOrder.fillAmountLrcFee);
+      console.log("----------------------------------------------");
 
       // Sanity checks
       assert(currOrder.fillAmountS >= 0, "fillAmountS should be positive");
@@ -154,11 +178,22 @@ export class Ring {
 
     return transferItems;
   }
-
+/*
   private isOrderSmallerThan(o1: OrderInfo, o2: OrderInfo) {
     o1.fillAmountB = Math.floor(o1.fillAmountS * o1.amountB / o1.amountS);
     if (o1.fillAmountB < o2.fillAmountS) {
       o2.fillAmountS = o1.fillAmountB;
+      return true;
+    } else {
+      return false;
+    }
+  }
+*/
+  private isOrderSmallerThan(current: OrderInfo, next: OrderInfo) {
+    next.fillAmountB = next.fillAmountS * next.amountB / next.amountS;
+    if (next.fillAmountB > current.fillAmountS) {
+      next.fillAmountB = current.fillAmountS;
+      next.fillAmountS = Math.floor(next.fillAmountB * next.amountS / next.amountB);
       return true;
     } else {
       return false;
