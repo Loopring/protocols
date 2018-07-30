@@ -72,6 +72,8 @@ library OrderSpecs {
             address(0x0), // orderBrokerInterceptor
             0,  // spendableLRC
             0,  // maxAmountS
+            0,  // filledAmountS
+            0,  // tobeFilledAmountS
             0,  // maxAmountB,
             false, // sellLRC
             true   // valid

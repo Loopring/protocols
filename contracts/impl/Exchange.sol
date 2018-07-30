@@ -270,4 +270,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         ringIndex = ctx.ringIndex;
     }
 
+    function updateOrdersStats(Data.Order[] orders) internal {
+
+    }
+
 }

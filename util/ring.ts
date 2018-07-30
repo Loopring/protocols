@@ -52,6 +52,45 @@ export class Ring {
     this.valid = this.valid && tokensRegistered;
   }
 
+  // TODO: to be continued...
+  private doMerge(vitualOrder: OrderInfo, mergedOrder: OrderInfo) {
+    if (virtualOrder.tokenS === mergedOrder.tokenB &&
+        virtualOrder.tokenB === mergedOrder.tokenS) {
+      // calculate the final fillAmountS in mergedOrder. and calculate spiltS.
+    } else {
+      const newVirtualOrder = {
+        tokenS: vitualOrder.tokenS,
+        tokenB: mergedOrder.tokenB,
+        amountS: vitualOrder.amountS * mergedOrder.amountS;
+        amountB: vitualOrder.amountB * mergedOrder.amountB;
+      };
+
+
+    }
+
+    return undefined;
+  }
+
+  private mergeOrder(prevOrder: OrderInfo,
+                     virtualOrder: OrderInfo,
+                     nextOrder: OrderInfo) {
+    const rate1 = prevOrder.amountS * virtualOrder.amountS /
+      (prevOrder.amountB * virtualOrder.amountB);
+    const rate2 = nextOrder.amountS * virtualOrder.amountS /
+      (nextOrder.amountB * virtualOrder.amountB);
+
+    let mergePrev = false;
+    let newVitualOrder: OrderInfo;
+    if (rate1 < rate2) {
+      newVitualOrder = doMerge(prevOrder, virtualOrder);
+      mergePrev = true;
+    } else {
+      newVitualOrder = doMerge(virtualOrder, nextOrder); // merge next order.
+    }
+
+    return [newVitualOrder, mergePrev];
+  }
+
   public async calculateFillAmountAndFee() {
     for (const orderInfo of this.orders) {
       await this.orderUtil.scaleBySpendableAmount(orderInfo);
@@ -59,34 +98,53 @@ export class Ring {
 
     let smallest = 0;
     const ringSize = this.orders.length;
-    for (let i = 0; i < ringSize; i++) {
-      const nextIndex = (i + 1) % ringSize;
-      const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
-      if (!isSmaller) {
-        smallest = nextIndex;
-      }
-    }
 
-    for (let i = 0; i < smallest; i++) {
+    let j = ringSize;
+    for (let i = 0; i < j; ) {
+      const prevIndex = (i + ringSize - 1) % ringSize;
       const nextIndex = (i + 1) % ringSize;
-      this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
-    }
-
-    // This loop could maybe be optimized, but I don't want to pre-optimize it and introduce bugs
-    for (let i = 0; i < ringSize; i++) {
-      const order = this.orders[i];
-      const nextOrder = this.orders[(i + 1) % ringSize];
-      if (nextOrder.fillAmountB > order.fillAmountS) {
-        // This ring cannot be settled because this order cannot be fulfilled at the requested rate
-        this.valid = false;
+      if (prevIndex === nextIndex) {
+        this.doMerge(this.orders[i], this.orders[nextIndex]);
       } else {
-        // We can still decide what we want to do with these extra tokens,
-        // but let's give them all to the miner for now
-        order.splitS = order.fillAmountS - nextOrder.fillAmountB;
-        order.fillAmountS = nextOrder.fillAmountB;
-        order.fillAmountLrcFee = Math.floor(order.lrcFee * order.fillAmountB / order.amountB);
+        const [virtualOrder, mergePrev] = this.mergeOrder(this.orders[prevIndex],
+                                                          this.orders[i],
+                                                          this.orders[nextIndex]);
+      }
+      if (mergePrev) {
+        j --;
+      } else {
+        i ++;
       }
     }
+
+    // for (let i = 0; i < ringSize; i++) {
+    //   const nextIndex = (i + 1) % ringSize;
+    //   const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
+    //   if (!isSmaller) {
+    //     smallest = nextIndex;
+    //   }
+    // }
+
+    // for (let i = 0; i < smallest; i++) {
+    //   const nextIndex = (i + 1) % ringSize;
+    //   this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
+    // }
+
+    // // This loop could maybe be optimized, but I don't want to pre-optimize it and introduce bugs
+    // for (let i = 0; i < ringSize; i++) {
+    //   const order = this.orders[i];
+    //   const nextOrder = this.orders[(i + 1) % ringSize];
+    //   if (nextOrder.fillAmountB > order.fillAmountS) {
+    //     // This ring cannot be settled because this order cannot be fulfilled at the requested rate
+    //     this.valid = false;
+    //   } else {
+    //     // We can still decide what we want to do with these extra tokens,
+    //     // but let's give them all to the miner for now
+    //     order.splitS = order.fillAmountS - nextOrder.fillAmountB;
+    //     order.fillAmountS = nextOrder.fillAmountB;
+    //     order.fillAmountLrcFee = Math.floor(order.lrcFee * order.fillAmountB / order.amountB);
+    //   }
+    // }
 /*
     const prevSmallest = (smallest + ringSize - 1) % ringSize;
     const smallestOrder = this.orders[smallest];

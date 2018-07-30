@@ -86,6 +86,8 @@ library Data {
         address brokerInterceptor;
         uint    maxAmountLrcFee;
         uint    maxAmountS;
+        uint    filledAmountS;
+        uint    tobeFilledAmountS;
         uint    maxAmountB;
         bool    sellLRC;
         bool    valid;
