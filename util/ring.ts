@@ -52,45 +52,6 @@ export class Ring {
     this.valid = this.valid && tokensRegistered;
   }
 
-  // TODO: to be continued...
-  private doMerge(vitualOrder: OrderInfo, mergedOrder: OrderInfo) {
-    if (virtualOrder.tokenS === mergedOrder.tokenB &&
-        virtualOrder.tokenB === mergedOrder.tokenS) {
-      // calculate the final fillAmountS in mergedOrder. and calculate spiltS.
-    } else {
-      const newVirtualOrder = {
-        tokenS: vitualOrder.tokenS,
-        tokenB: mergedOrder.tokenB,
-        amountS: vitualOrder.amountS * mergedOrder.amountS;
-        amountB: vitualOrder.amountB * mergedOrder.amountB;
-      };
-
-
-    }
-
-    return undefined;
-  }
-
-  private mergeOrder(prevOrder: OrderInfo,
-                     virtualOrder: OrderInfo,
-                     nextOrder: OrderInfo) {
-    const rate1 = prevOrder.amountS * virtualOrder.amountS /
-      (prevOrder.amountB * virtualOrder.amountB);
-    const rate2 = nextOrder.amountS * virtualOrder.amountS /
-      (nextOrder.amountB * virtualOrder.amountB);
-
-    let mergePrev = false;
-    let newVitualOrder: OrderInfo;
-    if (rate1 < rate2) {
-      newVitualOrder = doMerge(prevOrder, virtualOrder);
-      mergePrev = true;
-    } else {
-      newVitualOrder = doMerge(virtualOrder, nextOrder); // merge next order.
-    }
-
-    return [newVitualOrder, mergePrev];
-  }
-
   public async calculateFillAmountAndFee() {
     for (const orderInfo of this.orders) {
       await this.orderUtil.scaleBySpendableAmount(orderInfo);
@@ -98,37 +59,30 @@ export class Ring {
 
     let smallest = 0;
     const ringSize = this.orders.length;
+    let rate = 1;
+    for (let i = 0; i < ringSize; i++) {
+      rate = rate * this.orders[i].amountS / this.orders[i].amountB;
+    }
 
-    let j = ringSize;
-    for (let i = 0; i < j; ) {
-      const prevIndex = (i + ringSize - 1) % ringSize;
+    for (let i = 0; i < ringSize; i++) {
       const nextIndex = (i + 1) % ringSize;
-      if (prevIndex === nextIndex) {
-        this.doMerge(this.orders[i], this.orders[nextIndex]);
-      } else {
-        const [virtualOrder, mergePrev] = this.mergeOrder(this.orders[prevIndex],
-                                                          this.orders[i],
-                                                          this.orders[nextIndex]);
-      }
-      if (mergePrev) {
-        j --;
-      } else {
-        i ++;
+      const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex], rate);
+      if (!isSmaller) {
+        smallest = nextIndex;
       }
     }
 
-    // for (let i = 0; i < ringSize; i++) {
-    //   const nextIndex = (i + 1) % ringSize;
-    //   const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
-    //   if (!isSmaller) {
-    //     smallest = nextIndex;
-    //   }
-    // }
+    for (let i = 0; i < smallest; i++) {
+      const nextIndex = (i + 1) % ringSize;
+      this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex], rate);
+    }
 
-    // for (let i = 0; i < smallest; i++) {
-    //   const nextIndex = (i + 1) % ringSize;
-    //   this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex]);
-    // }
+    for (let i = 0; i < ringSize; i++) {
+      const current = this.orders[i];
+      current.fillAmountLrcFee = current.lrcFee * (current.fillAmountS + current.splitS) /
+        current.amountS;
+      current.fillAmountLrcFee = Math.floor(current.fillAmountLrcFee);
+    }
 
     // // This loop could maybe be optimized, but I don't want to pre-optimize it and introduce bugs
     // for (let i = 0; i < ringSize; i++) {
@@ -236,25 +190,25 @@ export class Ring {
 
     return transferItems;
   }
-/*
-  private isOrderSmallerThan(o1: OrderInfo, o2: OrderInfo) {
-    o1.fillAmountB = Math.floor(o1.fillAmountS * o1.amountB / o1.amountS);
-    if (o1.fillAmountB < o2.fillAmountS) {
-      o2.fillAmountS = o1.fillAmountB;
-      return true;
+
+  private isOrderSmallerThan(current: OrderInfo, next: OrderInfo, rate: number) {
+    let ret = false;
+    current.fillAmountB = current.fillAmountS * current.amountB / current.amountS;
+    const currentScaledFillAmountB = current.fillAmountS * rate * current.amountB / current.amountS;
+    const currentFillAmountB = Math.max(current.fillAmountB, currentScaledFillAmountB);
+    if (next.fillAmountS >= currentFillAmountB) {
+      next.fillAmountS = current.fillAmountB;
+      if (currentScaledFillAmountB > current.fillAmountB) {
+        next.splitS = currentScaledFillAmountB - current.fillAmountB;
+      }
+
+      ret = true;
     } else {
-      return false;
+      ret = false;
     }
-  }
-*/
-  private isOrderSmallerThan(current: OrderInfo, next: OrderInfo) {
-    next.fillAmountB = next.fillAmountS * next.amountB / next.amountS;
-    if (next.fillAmountB > current.fillAmountS) {
-      next.fillAmountB = current.fillAmountS;
-      next.fillAmountS = Math.floor(next.fillAmountB * next.amountS / next.amountB);
-      return true;
-    } else {
-      return false;
+
+    if (!current.splitS) {
+      current.splitS = 0;
     }
   }
 
