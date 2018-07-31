@@ -6,16 +6,16 @@ This document lays out the design requirements and the resulting design of the f
 
 Fee calculations were very limited in protocol V1. For protocol V2 we aim to achieve the following:
 
-- The fee calculation should should be made as flexible as possible
+- The fee calculation should be made as flexible as possible
 - Fees should be able to be payed in one or a combination of the following
-    1) LRC (and WETH? This doesn't realy matter for the protocol)
+    1) LRC (and WETH? This doesn't really matter for the protocol)
     2) amountS
     3) amountB
     4) margin
     
-  The order in which the fees are paid can be important (e.g. first LRC and than amountS, or first margin and then amountB), so should be customizable if possible.
+  The order in which the fees are paid can be important (e.g. first LRC and then amountS, or first margin and then amountB), so should be customizable if possible.
 - Every order can request its own fee calculation
-- Miners should be able to incentivize  orders (for example market maker orders). These orders should be able to pay less fees (or even be payed some fees).
+- Miners should be able to incentivize orders (for example market maker orders). These orders should be able to pay less fees (or even be payed some fees).
 - The miner should be able to configure the minimum fee percentage it wants
 - The wallet should be able to configure the minimum fee percentage it wants
 - Wallets should be able to further share its fees with additional addresses
@@ -25,7 +25,7 @@ Fee calculations were very limited in protocol V1. For protocol V2 we aim to ach
 
 Extra requirements not directly related to the fee calculations:
 
-- The buyer can provide an address where the tokens he bought should be transfered to (which could be a contract)
+- The buyer can provide an address where the tokens he bought should be transferred to (which could be a contract)
 - The seller should be able to transfer tokens to a contract from which the buyer can collect his tokens when the contract allows
 
 ## Fee calculation requirements imposed by the Loopring protocol
@@ -38,7 +38,7 @@ With that being said, the loopring protocol will enforce the following requireme
 - Fees can be payed to any addresses, as long as the miner gets its requested fee percentage on every fee payment
 - Fees should be payed in one of the fee payment methods listed in the requirments
 - Orders can never be settled at amounts higher than calculated by the loopring protocol.
-- Fee amounts should be less than 100% of the amount of tokens bought/sold.
+- Fee amounts should be less than 100% of the number of tokens bought/sold.
 - If orders should be done in fixed units, the fee payments should keep the buy/sell amounts intact
 - To give value to the LRC token, all fee contracts should still provide a benefit by using LRC. Maybe we could force at least paying a certain percentage of all fees in LRC (not sure about the economics of this)?
 
@@ -84,17 +84,17 @@ IFeeAlgorithm {
 
 The fee algorithm may also want to share some of the fees with an address different than the miner (e.g. a wallet address). How big a part of the fees it wants can be configured and can be queried by the Loopring protocol by calling ```getMinimumFeePercentage()```. This allows the protocol to check if the miner is happy to split this this much of his fees with the fee algorithm.
 
-Futhermore, when submitting the orders to the Loopring protocol, the miner can insert an additional fee percentage factor for every order independently. This fee percentage factor will be applied to the original fee amounts calculated by the fee algorithm. This not only allows the miner to reduce the fees that need to paid by the owner (or even completely reduce them to zero), but even allows the miner to pay out the fees to the owner of the order. When the order owner gets paid fees for the order, these will come from the part of the miner, not from the part of e.g. the wallet.
+Furthermore, when submitting the orders to the Loopring protocol, the miner can insert an additional fee percentage factor for every order independently. This fee percentage factor will be applied to the original fee amounts calculated by the fee algorithm. This not only allows the miner to reduce the fees that need to paid by the owner (or even completely reduce them to zero), but even allows the miner to pay out the fees to the owner of the order. When the order owner gets paid fees for the order, these will come from the part of the miner, not from the part of e.g. the wallet.
 
 The payments returned should at least contain the payment to actually settle the order. All other payments are considered fee payments. For every fee payment we do 2 token transfers:
 - A transfer going to the original receiving address given by the fee algorithm, but with the amount reduced by the miner fee percentage.
-- A transfer going the the miner to pay its share of the fees.
+- A transfer going the miner to pay its share of the fees.
 
 This allows the fee algorithm to pay fees to as many addresses it wants, while ensuring the miner gets its split on every one of those fee payments.
 
 ### Custom token transfers
 
-To support non-standard token transfers it is possible to do the token transfers using a contract implementing the TokenTransfer interface:
+To support non-standard token transfers, it is possible to do the token transfers using a contract implementing the TokenTransfer interface:
 ```
 ITokenTransfer {
     // For now, the same transferFrom function parameters as ERC20
@@ -111,7 +111,7 @@ Another option would be to use the custom transfer contract as the 'token' that 
 
 The following are just a few of the possible fee payment algorithms possible in the design.
 
-#### Priority Algorithm: Pay fees using a priorized list of fee payment methods
+#### Priority Algorithm: Pay fees using a prioritized list of fee payment methods
 Order defines as many as it wants of the following:
 - max LRC fee
 - max amountS fee percentage
@@ -155,7 +155,7 @@ Order defines as many as it wants of the following:
 - max amountB fee percentage
 - if margin can be used
 
-All max fee amounts given can be used: i.e. for a completed order all LRC fee can be used + all amountS fee percentage can be used + all amountB fee percentage can be used. Total fee payments can be reduces equally if margin can be used.
+All max fee amounts given can be used: i.e. for a completed order all LRC fee can be used + all amountS fee percentage can be used + all amountB fee percentage can be used. Total fee payments can be reduced equally if margin can be used.
 
 ```
 percentage of all used fees together should add up to 100%).
@@ -259,7 +259,7 @@ This is a fee algorithm that specifically can be used for buying from ICOs on Lo
     
     function calculateFees(Order order, bytes customFeeData) public returns Payment[]
     {	
-        // Buy default, does not pay any fees for this order.
+        // By default, does not pay any fees for this order.
         // Should not mess with paying fees in fillAmountB or fillAmountS to ensure the original rate 
 	// is kept intact (to support fixed units)
 	// Should also simply disregard all margin so it gets all tokens at the expected ratio.
@@ -303,7 +303,7 @@ TODO: Can the existing OrderBroker functionality be used for this?
 #### Order buying from ICO tokens
 Here the order is created with the ICO Buyer Algorithm.
 
-Note: This order shouldn't really have to pay any fees, the sell order of the ICO should pay enough fees that this shouldn't be needed. However, this order could pay additional fees so miners are incentivize to process it earlier than other buy orders. If this is unwanted, a possible solution for this would be to force ICO orders to be processed FIFO.
+Note: This order shouldn't really have to pay any fees, the sell order of the ICO should pay enough fees that this shouldn't be needed. However, this order could pay additional fees so miners are incentivized to process it earlier than other buy orders. If this is unwanted, a possible solution for this would be to force ICO orders to be processed FIFO.
 
 TODO: Is this correct?
 
@@ -313,7 +313,7 @@ TODO: Is this correct?
 
 #### Miners should be able to predict how much fee he will get
 
-The miner cannot easily know how much fee it is going to get, so he doesn't know if it's worth the gas cost to settle a ring. Maybe we need enforce a minimum amount of fees that needs to be paid that the miner that he can easily figure out? Or maybe it's not too expensive for the miner to execute the fee conract locally and check the results?
+The miner cannot easily know how much fee it is going to get, so he doesn't know if it's worth the gas cost to settle a ring. Maybe we need enforce a minimum amount of fees that needs to be paid that the miner that he can easily figure out? Or maybe it's not too expensive for the miner to execute the fee contract locally and check the results?
 
 #### When fee algorithms are implemented in contracts they can do fee payments without the Loopring protocol knowing
 
@@ -321,11 +321,11 @@ The miner should get its part of all fee payments, but we can only impose this i
 
 #### Fee algorithms can use 100% of the available LRC balance of the fee payer
 
-While we can limit the amount of tokenS and tokenB payed as fees because we know the order size, the Loopring protocol does not know what the maximum LRC amount is that can be used as fees for the order. In the worst case the fee algorithm decides to use all LRC avaible, even if this was not allowed.
+While we can limit the number of tokenS and tokenB payed as fees because we know the order size, the Loopring protocol does not know what the maximum LRC amount is that can be used as fees for the order. In the worst case the fee algorithm decides to use all LRC available, even if this was not wanted.
 
 ## Overview of the fee calculation design using different contracts for the fee calculations
 
-The following high level implementation is only done to test the design. It is not meant to be actually implemented this way.
+The following high-level implementation is only done to test the design. It is not meant to be actually implemented this way.
 
 ```
 //
