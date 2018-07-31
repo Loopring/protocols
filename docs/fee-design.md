@@ -50,23 +50,23 @@ The fee calculation algorithm can do anything it wants as long as it respects th
 
 The fee calculation should be as flexible as possible, so we don't want to enforce a single way of doing the fee calculation.
 For example, fees can be calculated in the following ways (NOT a complete list!):
-- In the Loopring protocal itself
+- In the Loopring protocol itself
 - In an external contract
 - In a simple language laying out the rules how the fees should be payed
 - ...
 
-To make the fee design compatible with any of the above and more, we will encode the fee data stored in the order in a way similar to Multihash:
+To make the fee design compatible with any of the above and more, the data needed for the fee calculation will be stored in the order in a way similar to Multihash:
 - First byte: The fee calculation method
 - Second byte: Payload size
 - Following bytes: The payload
 
-The fee calculation mode can be any way to calculate the fees above (internal algorithm embedded in Loopring, external contract, ...).
+The fee calculation method can be any way to calculate the fees above (internal algorithm embedded in Loopring, external contract, ...).
 For example, if we want to calculate the fees using an internal fee calculation algorithm, we could set the fee calculation method to '0'. In the payload we can encode how many LRC tokens we want to pay as fees.
 Another example would be to pay the fees using an external contract. Here we could set the fee calculation mode to '1'. The payload would contain the address of the fee calculation contract and all data needed to run that contract.
 
 ### Fee algorithm
 
-The fee algorithm of course needs to have data about the order it needs to calculate fees for, but it may also need some (algorithm specific) data to correctly calculate it. The fee algorithm can also decide to give a part of the fees to someone else than the miner (e.g. a wallet).
+The fee algorithm is responsible for generating a list of payments for an order. To do this, the algorithm will of course need access to some data. The fee algorithm needs to have data about the order it needs to calculate fees for, but it may also need some algorithm specific data to calculate it.
 
 We should keep the interface as flexible as possible. The interface looks as follows:
 ```
@@ -82,7 +82,7 @@ IFeeAlgorithm {
 }
 ```
 
-The fee algorithm may also want to share some of the fees with address different than the miner (e.g. a wallet address). This fee share can be configured and can be queried by the Loopring protocol by calling ```getMinimumFeePercentage()```. This allows the protocol to check if the miner is happy to split this part of its fees with this fee algorithm.
+The fee algorithm may also want to share some of the fees with an address different than the miner (e.g. a wallet address). How big a part of the fees it wants can be configured and can be queried by the Loopring protocol by calling ```getMinimumFeePercentage()```. This allows the protocol to check if the miner is happy to split this this much of his fees with the fee algorithm.
 
 Futhermore, when submitting the orders to the Loopring protocol, the miner can insert an additional fee percentage factor for every order independently. This fee percentage factor will be applied to the original fee amounts calculated by the fee algorithm. This not only allows the miner to reduce the fees that need to paid by the owner (or even completely reduce them to zero), but even allows the miner to pay out the fees to the owner of the order. When the order owner gets paid fees for the order, these will come from the part of the miner, not from the part of e.g. the wallet.
 
@@ -102,10 +102,10 @@ ITokenTransfer {
 }
 ```
 
-This allows tokens to be transferred in many ways. Using an ICO as an example, tokens might not actually be transferred directly to the buyer, but are locked in the ICO contract. A custom contract implementing the TokenTransfer interface can be made that can correctly interact with the ICO contract. By using this interface, the Loopring protocol is still aware of all token transfers that happen.
+This allows tokens to be transferred in many ways. Using an ICO as an example, tokens might not actually be transferred directly to the buyer, but stay locked in the ICO contract. A custom contract implementing the TokenTransfer interface can be made that can correctly interact with the ICO contract. By using this interface, the Loopring protocol is still aware of all token transfers that happen.
 
 This custom token transfer contract can be added as an optional parameter in the order selling the tokens. The order buying the tokens should specifically allow the use of this custom token transfer contract so this cannot be misused. 
-Another more advanced option would be to use the custom transfer contract as the 'token' that is bought. This would create a market specifically for this contract.
+Another option would be to use the custom transfer contract as the 'token' that is bought. This would create a market specifically for this contract.
 
 ## Example fee algorithms
 
@@ -286,7 +286,7 @@ Order uses the Priority Algorithm. Passes that the margin can be used first, as 
 The order uses the Wallet Algorithm. Currently the wallet can decide what fee payment options are allowed. If we integrate the wallet functionality inside the Loopring protocol the order can use any fee algorithm it wants.
 
 #### Miner wants an order to only pay 50% of its fees
-An order was submitted using any fee algorithm. The miner will send an additional percentage factor of 50% for the order when submitting it to the Loopring protocol for settling. Whatever fees should have been payed by the order are now reduced to 50%.
+An order was submitted using any fee algorithm. The miner will send an additional fee percentage factor of 50% for the order when submitting it to the Loopring protocol for settling. Whatever fees would normally have been payed by the order are now reduced to 50%.
 
 #### Order selling ICO tokens
 - Create and deploy a contract implementing the TokenTransfer interface
@@ -307,7 +307,7 @@ Note: This order shouldn't really have to pay any fees, the sell order of the IC
 
 TODO: Is this correct?
 
-#### TODO: More cases
+#### More cases to be added...
 
 ## Possible problems
 
@@ -355,7 +355,7 @@ struct Payment
 {
     token,
     from,
-    to,			(can be an address to a TokenReceiver contract)
+    to,
     amount,
 }
 
