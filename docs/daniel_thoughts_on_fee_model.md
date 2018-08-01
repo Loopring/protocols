@@ -42,14 +42,28 @@ bFee * bSplit * (1 - marginDiscount) &
 lFee * lSplit * (1 - marginDiscount)
 ```
 
-And the the followng was send back to the order owner (not the miner)
-
-```
-margin * marginSplit* marginDiscount & 
-sFee * sSplit * sDiscount & 
-bFee * bSplit * bDiscount & 
-lFee * lSplit * lDiscount
-```
-
 The same rules apply to the miner. All discount parameters should by default be 0. If it is `1`, means all fees are waived.
 One principle is that miner cannot waive fees paying to wallet, and vice versa. 
+
+
+## General Parameters to FeeModel and Per-Model parameters
+
+For each order, a fee model method or smart contract should have access to the following informaiton:
+
+- tokenS: address of token to sell
+- tokenB: address of token to sell
+- lrcAddress: LRC token smart contract address
+- margin: amount of tokenS as margin
+- sFee: amount of tokenS as fee
+- bFee: amount of tokenB as fee
+- lFee: amount of LRC as fee
+- owner: owning address of this order (where tokenS will be transfered from)
+- receiveFrom: the next order's owner address in the ring
+- sendTo: the previous order's owner address in the ring
+- miner: miner address
+- wallet: wallet address
+- feeModelMethod: fee model method (integer), 0 means the next parameter (bytes) containts a fee model smart contract address at the very begining.
+- bytes: model-specific address (optioanl) and parameters
+
+
+
