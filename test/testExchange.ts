@@ -184,8 +184,10 @@ contract("Exchange", (accounts: string[]) => {
 
     transfersFromSimulator.sort(sorter);
     tranferEvents.sort(sorter);
-    console.log("transfersFromSimulator:", transfersFromSimulator);
-    console.log("tranferEvents from contract:", tranferEvents);
+    console.log("transfer items from simulator:");
+    transfersFromSimulator.forEach((t) => console.log(t[0], "->", t[1], ":", t[2] / 1e18));
+    console.log("transfer items from contract:");
+    tranferEvents.forEach((t) => console.log(t[0], "->", t[1], ":", t[2] / 1e18));
     assert.equal(tranferEvents.length, transfersFromSimulator.length, "transfer amounts not match");
     for (let i = 0; i < tranferEvents.length; i++) {
       const transferFromEvent = tranferEvents[i];

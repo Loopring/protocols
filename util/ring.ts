@@ -76,47 +76,6 @@ export class Ring {
       const nextIndex = (i + 1) % ringSize;
       this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex], rate);
     }
-
-    for (let i = 0; i < ringSize; i++) {
-      const current = this.orders[i];
-      current.fillAmountLrcFee = current.lrcFee * (current.fillAmountS + current.splitS) /
-        current.amountS;
-      current.fillAmountLrcFee = Math.floor(current.fillAmountLrcFee);
-    }
-
-    // // This loop could maybe be optimized, but I don't want to pre-optimize it and introduce bugs
-    // for (let i = 0; i < ringSize; i++) {
-    //   const order = this.orders[i];
-    //   const nextOrder = this.orders[(i + 1) % ringSize];
-    //   if (nextOrder.fillAmountB > order.fillAmountS) {
-    //     // This ring cannot be settled because this order cannot be fulfilled at the requested rate
-    //     this.valid = false;
-    //   } else {
-    //     // We can still decide what we want to do with these extra tokens,
-    //     // but let's give them all to the miner for now
-    //     order.splitS = order.fillAmountS - nextOrder.fillAmountB;
-    //     order.fillAmountS = nextOrder.fillAmountB;
-    //     order.fillAmountLrcFee = Math.floor(order.lrcFee * order.fillAmountB / order.amountB);
-    //   }
-    // }
-/*
-    const prevSmallest = (smallest + ringSize - 1) % ringSize;
-    const smallestOrder = this.orders[smallest];
-    const prevSmallestOrder = this.orders[prevSmallest];
-
-    smallestOrder.fillAmountS = Math.floor(smallestOrder.fillAmountB * smallestOrder.amountS /
-                                           smallestOrder.amountB);
-    // TODO: I think the following line is incorrect though I'm not sure yet.
-    prevSmallestOrder.fillAmountB = smallestOrder.fillAmountS;
-    const newFillAmountS = Math.floor(prevSmallestOrder.fillAmountB * prevSmallestOrder.amountS /
-                                      prevSmallestOrder.amountB);
-    prevSmallestOrder.splitS = newFillAmountS - prevSmallestOrder.fillAmountS;
-
-    for (const orderInfo of this.orders) {
-      orderInfo.fillAmountLrcFee = Math.floor(orderInfo.lrcFee * orderInfo.fillAmountB /
-                                              orderInfo.amountB);
-    }
-*/
   }
 
   public getRingTransferItems(walletSplitPercentage: number) {
@@ -196,12 +155,11 @@ export class Ring {
     current.fillAmountB = current.fillAmountS * current.amountB / current.amountS;
     const currentScaledFillAmountB = current.fillAmountS * rate * current.amountB / current.amountS;
     const currentFillAmountB = Math.max(current.fillAmountB, currentScaledFillAmountB);
-    if (next.fillAmountS >= currentFillAmountB) {
+    if (next.fillAmountS > currentFillAmountB) {
       next.fillAmountS = current.fillAmountB;
       if (currentScaledFillAmountB > current.fillAmountB) {
         next.splitS = currentScaledFillAmountB - current.fillAmountB;
       }
-
       ret = true;
     } else {
       ret = false;
@@ -210,6 +168,10 @@ export class Ring {
     if (!current.splitS) {
       current.splitS = 0;
     }
+
+    current.fillAmountLrcFee = Math.floor(current.lrcFee * (current.fillAmountS + current.splitS) /
+                                          current.amountS);
+    return ret;
   }
 
 }
