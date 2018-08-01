@@ -11,7 +11,7 @@ Fee calculations were very limited in protocol V1. For protocol V2 we aim to ach
     1) LRC (and WETH? This doesn't really matter for the protocol)
     2) amountS
     3) amountB
-    4) margin
+    4) margin (in terms of amountS or amountB)
     
   The order in which the fees are paid can be important (e.g. first LRC and then amountS, or first margin and then amountB), so should be customizable if possible.
 - Every order can request its own fee calculation
@@ -22,6 +22,7 @@ Fee calculations were very limited in protocol V1. For protocol V2 we aim to ach
 - If miner fee percentage + wallet fee percentage < 100%, we should maintain the requested ratio when scaling up to 100%
 - It should be possible to buy integral units of tokens at a fixed price, without the fee payment still taking a part of the tokens bought/sold.
 - (Fee calculation should be 'fair' per order in a ring. Loopring should not give all margin to a single order, but should spread out the margin over all orders.)
+> Daniel: I assume all margin should be paid to miner and walelt by default, but miners can choose to share it or part of it with order owners.
 
 Extra requirements not directly related to the fee calculations:
 
@@ -41,6 +42,9 @@ With that being said, the loopring protocol will enforce the following requireme
 - Fee amounts should be less than 100% of the number of tokens bought/sold.
 - If orders should be done in fixed units, the fee payments should keep the buy/sell amounts intact
 - To give value to the LRC token, all fee contracts should still provide a benefit by using LRC. Maybe we could force at least paying a certain percentage of all fees in LRC (not sure about the economics of this)?
+> Maybe certain fee-paying options, such as paying 5% of tokenB, are only available if the actual LRC fee is greater than for example 0.1%, otherwise the match would fail.
+
+> Another possible requirement is that miners makde decisions for themselves, but not for wallets. If miners wants to give a 50% discount of all types of fees, this will only affect the income of the miner, but not the wallet. Wallets can also do discount for themselves.
 
 The fee calculation algorithm can do anything it wants as long as it respects the above rules. The loopring protocol will check these requirements before doing the token transfers.
 
