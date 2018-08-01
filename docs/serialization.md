@@ -48,3 +48,68 @@ library OrderStateSerialization extends AutoBytesSerialization {
 }
 ```
 
+## Array-aware 
+Sometimes we want to decode a bytes array into a array of objects, we can specify do it this way:
+
+
+```
+serializable OrderState {
+  required address owner;
+  required address tokenS;
+  required address wallet;
+  optional address authAddr;
+  required uint amountS;
+  required uint amountB;
+  required uint lrcFee;
+  bytes32 optional sig;
+  optional uint validSince;
+  optional uint validUntil = "0 - 1";
+}
+
+```
+
+Given the following input, such a program should generate the following data structure:
+
+```
+ arrayaware OrderState {
+  required address owner;
+  required address tokenS;
+  required address wallet;
+  optional address authAddr;
+  required uint amountS;
+  required uint amountB;
+  required uint lrcFee;
+  bytes32 optional sig;
+  optional uint validSince;
+  optional uint validUntil = "0 - 1";
+}
+
+```
+
+```
+library OrderStateSerialization extends AutoBytesSerialization {
+    struct OrderState {
+            address owner;
+            address tokenS;
+            address wallet;
+            address authAddr;
+            uint    amountS;
+            uint    amountB;
+            uint    lrcFee;
+            uint    rateS;
+            bytes32 sig;
+            uint    validSince;
+            uint    validUntil;
+        }
+    }
+    
+    function deseralizeArray(memory bytes input) returns (bool ok, OrderState[] _orderState) {
+       // auto generated code
+    }
+
+    function seralizeArray(memory OrderState[] input) returns (bool ok, bytes _bytes) {
+       // auto generated code
+    }
+}
+```
+
