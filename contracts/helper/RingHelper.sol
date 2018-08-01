@@ -56,33 +56,25 @@ library RingHelper {
         view
     {
         uint i;
+        uint rateMolecular = 1;
+        uint rateDenominator = 1;
         for (i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             Data.Order memory order = p.order;
             p.fillAmountS = order.maxAmountS;
+            rateMolecular = rateMolecular * order.amountS;
+            rateDenominator = rateDenominator * order.amountB;
         }
 
         uint smallest = 0;
 
         for (i = 0; i < ring.size; i++) {
-            smallest = calculateOrderFillAmounts(ring, i, smallest);
+            smallest = calculateOrderFillAmounts(ring, i, smallest, rateMolecular, rateDenominator);
         }
 
         for (i = 0; i < smallest; i++) {
-            calculateOrderFillAmounts(ring, i, smallest);
+            calculateOrderFillAmounts(ring, i, smallest, rateMolecular, rateDenominator);
         }
-
-        uint smallestPrev = (smallest + ring.size - 1) % ring.size;
-        Data.Participation memory smallestP = ring.participations[smallest];
-        Data.Participation memory smallestPrevP = ring.participations[smallestPrev];
-        smallestP.fillAmountS = smallestP.fillAmountB.mul(smallestP.order.amountS) /
-            smallestP.order.amountB;
-        smallestPrevP.fillAmountB = smallestP.fillAmountS;
-        uint newPrevFillAmountS = smallestPrevP.fillAmountB.mul(smallestPrevP.order.amountS) /
-            smallestPrevP.order.amountB;
-        smallestPrevP.splitS = newPrevFillAmountS.sub(smallestPrevP.fillAmountS);
-        smallestPrevP.lrcFee = smallestPrevP.order.lrcFee.mul(smallestPrevP.fillAmountB) /
-            smallestPrevP.order.amountB;
 
         for (i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
@@ -94,7 +86,9 @@ library RingHelper {
     function calculateOrderFillAmounts(
         Data.Ring ring,
         uint i,
-        uint smallest
+        uint smallest,
+        uint rateMolecular,
+        uint rateDenominator
         )
         internal
         pure
@@ -104,18 +98,21 @@ library RingHelper {
         smallest_ = smallest;
 
         Data.Participation memory p = ring.participations[i];
-        if (p.calculateFillAmounts()) {
-            smallest_ = i;
-        }
-
         uint j = (i + 1) % ring.size;
         Data.Participation memory nextP = ring.participations[j];
 
-        if (p.fillAmountB < nextP.fillAmountS) {
+        p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;
+        uint scaledFillAmountB = p.fillAmountB.mul(rateMolecular) / rateDenominator;
+        if (nextP.fillAmountS > scaledFillAmountB) {
             nextP.fillAmountS = p.fillAmountB;
+            if (scaledFillAmountB > p.fillAmountB) {
+                nextP.splitS = scaledFillAmountB - p.fillAmountB;
+            }
         } else {
             smallest_ = j;
         }
+
+        p.lrcFee = p.order.lrcFee.mul(p.fillAmountS.add(p.splitS)) / p.order.amountS;
     }
 
     function checkOrdersValid(

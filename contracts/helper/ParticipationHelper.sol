@@ -42,26 +42,6 @@ library ParticipationHelper {
         }
     }
 
-    function calculateFillAmounts(
-        Data.Participation p
-        )
-        internal
-        pure
-        returns (bool thisOrderIsSmaller)
-    {
-        thisOrderIsSmaller = false;
-
-        Data.Order memory order = p.order;
-
-        if (p.fillAmountS > order.maxAmountS) {
-            p.fillAmountS = order.maxAmountS;
-            thisOrderIsSmaller = true;
-        }
-
-        p.fillAmountB = p.fillAmountS.mul(order.amountB) / order.amountS;
-        p.lrcFee = order.lrcFee.mul(p.fillAmountB) / order.amountB;
-    }
-
     function calculateFeeAmounts(
         Data.Participation p,
         Data.Mining mining
