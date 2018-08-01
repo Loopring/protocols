@@ -329,6 +329,8 @@ The miner should get its part of all fee payments, but we can only impose this i
 
 While we can limit the number of tokenS and tokenB payed as fees because we know the order size, the Loopring protocol does not know what the maximum LRC amount is that can be used as fees for the order. In the worst case the fee algorithm decides to use all LRC available, even if this was not wanted.
 
+> The protocol acutally knows what's the max amount of LRC an order can use as fee, this is denoated by the 'lrcFEE' field of the order. If the order is fully filled, lrcFee is the amount of LRC to pay.
+
 ## Overview of the fee calculation design using different contracts for the fee calculations
 
 The following high-level implementation is only done to test the design. It is not meant to be actually implemented this way.
