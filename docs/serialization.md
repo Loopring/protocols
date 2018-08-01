@@ -38,11 +38,11 @@ struct OrderState {
     }
 }
 
-function deseralize(memory bytes input) returns (OrderState) {
+function deseralize(memory bytes input) returns (bool ok, OrderState _orderState) {
    // auto generated code
 }
 
-function seralize(memory OrderState input) returns (OrderState orderState) {
+function seralize(memory OrderState input) returns (bool ok, bytes _bytes) {
    // auto generated code
 }
 ```
