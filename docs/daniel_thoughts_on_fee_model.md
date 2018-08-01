@@ -67,3 +67,7 @@ For each order, a fee model method or smart contract should have access to the f
 - feeModelMethod: fee model method (integer), 0 means the next parameter (bytes) containts a fee model smart contract address at the very begining.
 - bytes: model-specific address (optioanl) and parameters
 
+
+## Thought on Fee Percentage as basic points
+we can use a number to represent the basic points, not percentage. Thus 1% is expressed as 100, and 100% is expressed as 100000. Thus a uint16 is good enough to express a percentage.
+0.00001525902x
