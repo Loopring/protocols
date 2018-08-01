@@ -325,11 +325,13 @@ The miner cannot easily know how much fee it is going to get, so he doesn't know
 
 The miner should get its part of all fee payments, but we can only impose this if the Loopring knows all fee payments that are done. This a problem if we want anyone to be able to make fee algorithm contracts. Unless we check the byte code of the contract inside the Loopring protocol, we cannot know if some payments are done in the ```calculateFees``` function. We could work around this by having some control about which fee contracts are allowed to be used (like whitelisting them in a FeeContractRegistry).
 
+> Daniel: I guess  whitelisting is the only way, otherwise the fee transfer will be totally out of control.
+
 #### Fee algorithms can use 100% of the available LRC balance of the fee payer
 
 While we can limit the number of tokenS and tokenB payed as fees because we know the order size, the Loopring protocol does not know what the maximum LRC amount is that can be used as fees for the order. In the worst case the fee algorithm decides to use all LRC available, even if this was not wanted.
 
-> The protocol acutally knows what's the max amount of LRC an order can use as fee, this is denoated by the 'lrcFEE' field of the order. If the order is fully filled, lrcFee is the amount of LRC to pay.
+> Daniel: The protocol acutally knows the max amount of LRC an order can use as fee, this is denoated by the 'lrcFee' field of the order. If the order is fully filled, lrcFee is the amount of LRC to pay accumulatively.
 
 ## Overview of the fee calculation design using different contracts for the fee calculations
 
