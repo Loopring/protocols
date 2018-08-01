@@ -111,16 +111,17 @@ export class ExchangeDeserializer {
     assert(size > 1 && size <= 8, "bad ring size");
 
     const ring: number[] = [];
-    let prevTokenS: string;
     for (let i = 0; i < size; i++) {
       const pspec = new ParticipationSpec(pspecs[i]);
       const order = orders[pspec.orderIndex()];
-
-      order.tokenB = prevTokenS;
-      prevTokenS = order.tokenS;
       ring.push(pspec.orderIndex());
     }
-    orders[ring[0]].tokenB = prevTokenS;
+
+    // Set tokenB of orders using the tokenS from the next order
+    for (let i = 0; i < size; i++) {
+      orders[i].tokenB = orders[(i + 1) % size].tokenS;
+    }
+
     return ring;
   }
 

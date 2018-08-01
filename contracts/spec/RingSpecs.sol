@@ -61,8 +61,6 @@ library RingSpecs {
         require(size > 1 && size <= 8, "bad ring size");
 
         Data.Participation[] memory parts = new Data.Participation[](size);
-        address prevTokenS = address(0x0);
-
         for (uint i = 0; i < size; i++) {
             uint8 pspec = pspecs[i];
             parts[i] = Data.Participation(
@@ -77,12 +75,12 @@ library RingSpecs {
                 0, // fillAmountS
                 0  // fillAmountB
             );
-
-            parts[i].order.tokenB = prevTokenS;
-            prevTokenS = parts[i].order.tokenS;
         }
 
-        parts[0].order.tokenB = prevTokenS;
+        // Set tokenB of orders using the tokenS from the next order
+        for (uint i = 0; i < size; i++) {
+            parts[i].order.tokenB = parts[(i + 1) % size].order.tokenS;
+        }
 
         return Data.Ring(
           size,
