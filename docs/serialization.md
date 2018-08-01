@@ -41,10 +41,6 @@ library OrderStateSerialization extends AutoBytesSerialization {
     function deseralize(memory bytes input) returns (bool ok, OrderState _orderState) {
        // auto generated code
     }
-
-    function seralize(memory OrderState input) returns (bool ok, bytes _bytes) {
-       // auto generated code
-    }
 }
 ```
 
@@ -104,10 +100,6 @@ library OrderStateSerialization extends AutoBytesSerialization {
     }
     
     function deseralizeArray(memory bytes input) returns (bool ok, OrderState[] _orderState) {
-       // auto generated code
-    }
-
-    function seralizeArray(memory OrderState[] input) returns (bool ok, bytes _bytes) {
        // auto generated code
     }
 }
