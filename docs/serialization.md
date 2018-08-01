@@ -23,27 +23,28 @@ Given the following input, such a program should generate the following data str
 
 ```
 library OrderStateSerialization extends AutoBytesSerialization {
-struct OrderState {
-        address owner;
-        address tokenS;
-        address wallet;
-        address authAddr;
-        uint    amountS;
-        uint    amountB;
-        uint    lrcFee;
-        uint    rateS;
-        bytes32 sig;
-        uint    validSince;
-        uint    validUntil;
+    struct OrderState {
+            address owner;
+            address tokenS;
+            address wallet;
+            address authAddr;
+            uint    amountS;
+            uint    amountB;
+            uint    lrcFee;
+            uint    rateS;
+            bytes32 sig;
+            uint    validSince;
+            uint    validUntil;
+        }
     }
-}
 
-function deseralize(memory bytes input) returns (bool ok, OrderState _orderState) {
-   // auto generated code
-}
+    function deseralize(memory bytes input) returns (bool ok, OrderState _orderState) {
+       // auto generated code
+    }
 
-function seralize(memory OrderState input) returns (bool ok, bytes _bytes) {
-   // auto generated code
+    function seralize(memory OrderState input) returns (bool ok, bytes _bytes) {
+       // auto generated code
+    }
 }
 ```
 
