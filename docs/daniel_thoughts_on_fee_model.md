@@ -45,6 +45,16 @@ lFee * lSplit * (1 - marginDiscount)
 The same rules apply to the miner. All discount parameters should by default be 0. If it is `1`, means all fees are waived.
 One principle is that miner cannot waive fees paying to wallet, and vice versa. 
 
+## Why People have to use LRC as fee?
+If we allow sFee, bFee, and margin, why would users ever use LRC as fee at all? There are two ways to encourage people to use/hold LRC:
+
+1. If order owner address holds at least X LRC, then margin/sFee/bFee becomes available;
+2. if lFee >= Y LRC, then margin/sFee/bFee becomes available;
+
+where X and Y can be adjusted accordingly by the protocol or the foundation.
+
+A variation is to send LRC fees to a burning address (0x0000) instead of miners/wallets.
+
 
 ## General Parameters to FeeModel and Per-Model parameters
 
