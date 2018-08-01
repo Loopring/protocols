@@ -38,7 +38,7 @@ library OrderStateSerialization extends AutoBytesSerialization {
         }
     }
 
-    function deseralize(memory bytes input) returns (bool ok, OrderState _orderState) {
+    function deseralize(memory bytes input, uint offset) returns (bool ok, OrderState _orderState) {
        // auto generated code
     }
 }
@@ -99,8 +99,26 @@ library OrderStateSerialization extends AutoBytesSerialization {
         }
     }
     
-    function deseralizeArray(memory bytes input) returns (bool ok, OrderState[] _orderState) {
+    function deseralize(memory bytes input, uint offset) returns (bool ok, uint newOffset, OrderState _orderState) {
        // auto generated code
+    }
+    function deseralizeArray(memory bytes input, uint offset) returns (bool ok, uint newOffset, OrderState[] _orderState) {
+       ok = false;
+       uint size = getArraySize() // assuming this is 1 byte so we can have 2^7-1 = 255 element in the array
+       _orderState = new OrderState[size];
+       uint newOffset = offset + 1;
+       if (newOffset > bytes.size) {
+            return;
+       }
+       for (uint i = 0; i < size; i++) {
+          bool _ok;
+          (_ok, newOffset, _orderStates[i]) = deseralize(bytes, newOffset)
+          if (!_ok) {
+            return;
+          }
+       }
+       ok = true;
+       newOffset = _newOffset
     }
 }
 ```
