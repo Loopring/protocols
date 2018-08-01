@@ -111,6 +111,8 @@ This allows tokens to be transferred in many ways. Using an ICO as an example, t
 This custom token transfer contract can be added as an optional parameter in the order selling the tokens. The order buying the tokens should specifically allow the use of this custom token transfer contract so this cannot be misused. 
 Another option would be to use the custom transfer contract as the 'token' that is bought. This would create a market specifically for this contract.
 
+> Daniel's question: I think this ITokenTransfer address parameter should only be used to transfer token between orders, not between order and miner/wallet, right? The challanging part is that the wallet can provide a mallicious implementation of this interface and will cause the taker to lose all money.
+
 ## Example fee algorithms
 
 The following are just a few of the possible fee payment algorithms possible in the design.
