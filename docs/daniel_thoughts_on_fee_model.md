@@ -6,6 +6,7 @@ These thoughts are based on this [article](https://github.com/Loopring/protocol2
 **Especially:**
 
 A order will potentially send:
+
     - tokenS to the previous order (fillAmountS, which is exactly the same as the previous order's fillAmountB)
     - tokenS to the miner/wallet as margin (margin)
     - a percentage of tokenB as one type of fee (bFee)
