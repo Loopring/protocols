@@ -154,3 +154,23 @@ library OrderStateSerialization extends AutoBytesSerialization {
 
 In a struct, if multiple fields are small integer values, we can determine how many bytes to get from the input bytes, for example, if a field is in [0-100], then we can use `get1ByteAsInt64` if its possible value is in the rage of [0-400] then we can use `get2BytesAsUint64`.
 
+
+## AutoBytesSerialization
+
+This smart contract should provide byte array based basic operations such as:
+
+```
+function getByte(bytes input, uint offset) returns (bool ok, uint newoffset, byte result);
+function get1ByteAsUint64(bytes input, uint offset) returns (bool ok, uint newoffset, uint64 result);
+function get2BytesAsUint64(bytes input, uint offset) returns (bool ok, uint newoffset, uint64 result);
+function get3BytesAsUint64(bytes input, uint offset) returns (bool ok, uint newoffset, uint64 result);
+function get4BytesAsUint64(bytes input, uint offset) returns (bool ok, uint newoffset, uint64 result);
+function get5ByteAsUint64(bytes input, uint offset) returns (bool ok, uint newoffset, uint64 result);
+function get6BytesAsUint64(bytes input, uint offset) returns (bool ok, uint newoffset, uint64 result);
+function get7BytesAsUint64(bytes input, uint offset) returns (bool ok, uint newoffset, uint64 result);
+function get8BytesAsUint64(bytes input, uint offset) returns (bool ok, uint newoffset, uint64 result);
+function getAddress(bytes input, uint offset) returns (bool ok, uint newoffset, address result);
+function getString(bytes input, uint offset, uint size) returns (bool ok, uint newoffset, uint64 result);
+function getBytes(bytes input, uint offset, uint size) returns (bool ok, uint newoffset, bytes result);
+function getBooleanAtBytePos(byte input, uint pos) returns (bool ok, boolean result);
+```
