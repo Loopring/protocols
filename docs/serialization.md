@@ -21,7 +21,7 @@ serializable OrderState {
 
 Given the following input, such a program should generate the following data structure:
 
-```
+```javascript
 library OrderStateSerialization extends AutoBytesSerialization {
     struct OrderState {
             address owner;
@@ -82,7 +82,7 @@ Given the following input, such a program should generate the following data str
 
 ```
 
-```
+```javascript
 library OrderStateSerialization extends AutoBytesSerialization {
     struct OrderState {
             address owner;
