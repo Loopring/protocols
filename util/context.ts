@@ -2,6 +2,9 @@ import fs = require("fs");
 
 export class Context {
 
+  public blockNumber: number;
+  public blockTimestamp: number;
+
   public ERC20Contract: any;
   public TokenRegistryContract: any;
   public TradeDelegateContract: any;
@@ -16,13 +19,18 @@ export class Context {
   public orderRegistry: any;
   public minerRegistry: any;
 
-  constructor(tokenRegistryAddress: string,
+  constructor(blockNumber: number,
+              blockTimestamp: number,
+              tokenRegistryAddress: string,
               tradeDelegateAddress: string,
               orderBrokerRegistryAddress: string,
               minerBrokerRegistryAddress: string,
               orderRegistryAddress: string,
               minerRegistryAddress: string,
               ) {
+    this.blockNumber = blockNumber;
+    this.blockTimestamp = blockTimestamp;
+
     const ABIPath = "ABI/latest/";
     const erc20Abi = fs.readFileSync(ABIPath + "ERC20.abi", "ascii");
     const tokenRegistryAbi = fs.readFileSync(ABIPath + "ITokenRegistry.abi", "ascii");

@@ -115,6 +115,23 @@ library OrderHelper {
         order.maxAmountB = order.amountB.mul(order.maxAmountS) / order.amountS;
     }
 
+    function validateInfo(Data.Order order)
+        internal
+        view
+    {
+        bool valid = true;
+        valid = valid && (order.owner != 0x0); // invalid order owner
+        valid = valid && (order.tokenS != 0x0); // invalid order tokenS
+        valid = valid && (order.tokenB != 0x0); // invalid order tokenB
+        valid = valid && (order.amountS != 0); // invalid order amountS
+        valid = valid && (order.amountB != 0); // invalid order amountB
+
+        valid = valid && (order.validSince <= block.timestamp); // order is too early to match
+        valid = valid && (order.validUntil > block.timestamp);  // order is expired
+
+        order.valid = order.valid && valid;
+    }
+
     function checkBrokerSignature(
         Data.Order order,
         Data.Context ctx

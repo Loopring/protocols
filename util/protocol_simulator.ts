@@ -66,6 +66,7 @@ export class ProtocolSimulator {
 
     for (const order of orders) {
       order.valid = true;
+      await this.orderUtil.validateInfo(order);
       order.hash = this.orderUtil.getOrderHash(order);
       await this.orderUtil.updateBrokerAndInterceptor(order);
       await this.orderUtil.checkBrokerSignature(order);

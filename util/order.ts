@@ -27,6 +27,21 @@ export class OrderUtil {
     }
   }
 
+  public async validateInfo(order: OrderInfo) {
+    let valid = true;
+    valid = valid && (order.owner ? true : false); // invalid order owner
+    valid = valid && (order.tokenS ? true : false); // invalid order tokenS
+    valid = valid && (order.tokenB ? true : false); // invalid order tokenB
+    valid = valid && (order.amountS !== 0); // invalid order amountS
+    valid = valid && (order.amountB !== 0); // invalid order amountB
+
+    const blockTimestamp = this.context.blockTimestamp;
+    valid = valid && (order.validSince ? order.validSince <= blockTimestamp : true); // order is too early to match
+    valid = valid && (order.validUntil ? order.validUntil > blockTimestamp : true);  // order is expired
+
+    order.valid = order.valid && valid;
+  }
+
   public async checkBrokerSignature(order: OrderInfo) {
     let signatureValid = true;
     if (!order.sig) {

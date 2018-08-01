@@ -226,6 +226,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         for (uint i = 0; i < orders.length; i++) {
             // emit LogOrder(orders[i].owner, orders[i].tokenS, orders[i].amountS);
 
+            orders[i].validateInfo();
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
             orders[i].checkBrokerSignature(ctx);

@@ -234,7 +234,8 @@ contract("Exchange", (accounts: string[]) => {
   });
 
   describe("submitRing", () => {
-    const currBlockTimeStamp = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+    const currBlockNumber = web3.eth.blockNumber;
+    const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
     let eventFromBlock: number = 0;
 
     for (const ringsInfo of ringsInfoList) {
@@ -247,7 +248,10 @@ contract("Exchange", (accounts: string[]) => {
 
         // before() is async, so any dependency we have on before() having run needs
         // to be done in async tests (see mocha docs)
-        const context = new Context(TokenRegistry.address,
+        // Pass in the block number and the block time stamp so we can more accurately reproduce transactions
+        const context = new Context(currBlockNumber,
+                                    currBlockTimestamp,
+                                    TokenRegistry.address,
                                     TradeDelegate.address,
                                     orderBrokerRegistryAddress,
                                     minerBrokerRegistryAddress,
