@@ -1,4 +1,4 @@
-# Fee design for Loopring protocol V2
+# Fee Design for Loopring protocol V2
 
 This document lays out the design requirements and the resulting design of the fee calculations in Loopring protocol V2.
 
