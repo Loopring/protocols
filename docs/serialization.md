@@ -22,6 +22,7 @@ serializable OrderState {
 Given the following input, such a program should generate the following data structure:
 
 ```
+library OrderStateSerialization extends AutoBytesSerialization {
 struct OrderState {
         address owner;
         address tokenS;
@@ -35,6 +36,14 @@ struct OrderState {
         uint    validSince;
         uint    validUntil;
     }
+}
+
+function deseralize(memory bytes input) returns (OrderState) {
+   // auto generated code
+}
+
+function seralize(memory OrderState input) returns (OrderState orderState) {
+   // auto generated code
+}
 ```
 
-and generate a `deseralizeOrderState(memory bytes input) returns (OrderState)` method and a `seralizeOrderState(memory OrderState input) returns (OrderState orderState)` method.
