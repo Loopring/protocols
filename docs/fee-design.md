@@ -1,4 +1,4 @@
-# Fee design for Loopring protocol V2
+# Fee Design for Loopring protocol V2
 
 This document lays out the design requirements and the resulting design of the fee calculations in Loopring protocol V2.
 
@@ -110,6 +110,8 @@ This allows tokens to be transferred in many ways. Using an ICO as an example, t
 
 This custom token transfer contract can be added as an optional parameter in the order selling the tokens. The order buying the tokens should specifically allow the use of this custom token transfer contract so this cannot be misused. 
 Another option would be to use the custom transfer contract as the 'token' that is bought. This would create a market specifically for this contract.
+
+> Daniel's question: I think this ITokenTransfer address parameter should only be used to transfer token between orders, not between order and miner/wallet, right? The challanging part is that the wallet can provide a mallicious implementation of this interface and will cause the taker to lose all money. One solution to this is the foundation acts as a gate keeper to whitelist all ITokenTransfer implementation addresses.
 
 ## Example fee algorithms
 
@@ -323,9 +325,13 @@ The miner cannot easily know how much fee it is going to get, so he doesn't know
 
 The miner should get its part of all fee payments, but we can only impose this if the Loopring knows all fee payments that are done. This a problem if we want anyone to be able to make fee algorithm contracts. Unless we check the byte code of the contract inside the Loopring protocol, we cannot know if some payments are done in the ```calculateFees``` function. We could work around this by having some control about which fee contracts are allowed to be used (like whitelisting them in a FeeContractRegistry).
 
+> Daniel: I guess  whitelisting is the only way, otherwise the fee transfer will be totally out of control.
+
 #### Fee algorithms can use 100% of the available LRC balance of the fee payer
 
 While we can limit the number of tokenS and tokenB payed as fees because we know the order size, the Loopring protocol does not know what the maximum LRC amount is that can be used as fees for the order. In the worst case the fee algorithm decides to use all LRC available, even if this was not wanted.
+
+> Daniel: The protocol acutally knows the max amount of LRC an order can use as fee, this is denoated by the 'lrcFee' field of the order. If the order is fully filled, lrcFee is the amount of LRC to pay accumulatively.
 
 ## Overview of the fee calculation design using different contracts for the fee calculations
 
