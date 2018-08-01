@@ -47,6 +47,8 @@ One principle is that miner cannot waive fees paying to wallet, and vice versa.
 
 ## Why people want to use LRC as fee?
 
+If we remove LRC from the picture, the fee model also works. So why people want to use LRC then?
+
 
 ## General Parameters to FeeModel and Per-Model parameters
 
