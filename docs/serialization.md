@@ -101,6 +101,32 @@ library OrderStateSerialization extends AutoBytesSerialization {
     
     function deseralize(memory bytes input, uint offset) returns (bool ok, uint newOffset, OrderState _orderState) {
        // auto generated code
+       // step 1: populate all requird fields
+       
+       // step 2: pupulated all optional fields that doesn't depend on the value of other fields;
+       // we can use a byte32 to indicate whether a field is provided,
+       // if the n-th optional field is provided, the n-th bit should be set to `1`.
+       (uint32 mask, offset) = getUint32();
+       if ((mask >> 0) & 1 == 0) {
+          _orderState.optionalField1 = 0x0; // address default
+       } else {
+         (_orderState.optionalField1, offset) = getAddress();
+       }
+       
+       if ((mask >> 1) & 1 == 0) {
+          _orderState.optionalField2 = 0; // uint256 default
+       } else {
+         (_orderState.optionalField2, offset) = getUint256();
+       }
+       
+       if ((mask >> 2) & 1 == 0) {
+          _orderState.optionalField3 = 0x0; // bytes default
+       } else {
+         (uint size, offset) = getUint32();
+         (_orderState.optionalField3, offset) = getBytes(size);
+       }
+       
+       // step 3: populate all fields that depends on other fields. (compulted fields)
     }
     function deseralizeArray(memory bytes input, uint offset) returns (bool ok, uint newOffset, OrderState[] _orderState) {
        ok = false;
