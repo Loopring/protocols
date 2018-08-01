@@ -112,7 +112,8 @@ contract ITradeDelegate {
         uint[]    validSince
         )
         external
-        view;
+        view
+        returns (uint);
 
     function suspend()
         external;

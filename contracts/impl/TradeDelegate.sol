@@ -205,21 +205,21 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         )
         external
         view
+        returns (uint)
     {
         uint len = owners.length;
         require(len == tradingPairs.length);
         require(len == validSince.length);
+        require(len <= 256);
 
+        uint cutoffsValid = 0;
         for (uint i = 0; i < len; i++) {
-            require(
-                validSince[i] > tradingPairCutoffs[owners[i]][tradingPairs[i]],
-                "order cancelled"
-            );
-            require(
-                validSince[i] > cutoffs[owners[i]],
-                "order cancelled"
-            );
+            bool valid = validSince[i] > tradingPairCutoffs[owners[i]][tradingPairs[i]];
+            valid = valid && validSince[i] > cutoffs[owners[i]];
+            cutoffsValid |= valid ? (1 << i) : 0;
         }
+
+        return cutoffsValid;
     }
 
     function suspend()

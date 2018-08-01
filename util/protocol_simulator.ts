@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import BN = require("bn.js");
 import { Context } from "./context";
 import { ExchangeDeserializer } from "./exchange_deserializer";
 import { Mining } from "./mining";
@@ -69,6 +70,7 @@ export class ProtocolSimulator {
       await this.orderUtil.updateBrokerAndInterceptor(order);
       await this.orderUtil.checkBrokerSignature(order);
     }
+    // await this.checkCutoffsOrders(orders);
 
     for (const ring of rings) {
       ring.updateHash();
@@ -111,5 +113,33 @@ export class ProtocolSimulator {
       ringIndex: new BigNumber(this.ringIndex++),
     };
     return {ringMinedEvent, transferItems};
+  }
+
+  private async checkCutoffsOrders(orders: OrderInfo[]) {
+    const owners: string[] = [];
+    const tradingPairs: Buffer[] = [];
+    const validSince: number[] = [];
+
+    for (const order of orders) {
+        owners.push(order.owner);
+        tradingPairs.push(new Buffer(this.xor(order.tokenS, order.tokenB, 20).slice(2), "hex"));
+        validSince.push(order.validSince);
+    }
+
+    const cutoffsValid = await this.context.tradeDelegate.checkCutoffsBatch(owners, tradingPairs, validSince);
+    console.log(cutoffsValid);
+    console.log(cutoffsValid.toString(16));
+
+    const bits = new BN(cutoffsValid.toString(16), 16);
+    for (const [i, order] of orders.entries()) {
+        order.valid = order.valid && bits.testn(i);
+    }
+  }
+
+  private xor(s1: string, s2: string, numBytes: number) {
+    const x1 = new BN(s1.slice(2), 16);
+    const x2 = new BN(s2.slice(2), 16);
+    const result = x1.xor(x2);
+    return "0x" + result.toString(16, numBytes * 2);
   }
 }
