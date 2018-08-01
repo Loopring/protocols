@@ -45,10 +45,6 @@ lFee * lSplit * (1 - marginDiscount)
 The same rules apply to the miner. All discount parameters should by default be 0. If it is `1`, means all fees are waived.
 One principle is that miner cannot waive fees paying to wallet, and vice versa. 
 
-## Why people want to use LRC as fee?
-
-If we remove LRC from the picture, the fee model also works. So why people want to use LRC then?
-
 
 ## General Parameters to FeeModel and Per-Model parameters
 
@@ -73,3 +69,22 @@ For each order, a fee model method or smart contract should have access to the f
 ## Thought on Fee Percentage as basic points
 we can use a number to represent the basic points, not percentage. Thus 1% is expressed as 100, and 100% is expressed as 100000. Thus a uint16 is good enough to express a percentage.
 0.00001525902x
+
+## Why people want to use LRC as fee?
+
+If we remove LRC from the picture, the fee model also works. So why people want to use LRC then?
+
+**MAYBE THE BEST TOKEN ECONOMY FOR LOOPRING IS STILL THE SAME AS PROTOCOL V1**:
+
+if an order is willing and able to pay x LRC and the margin is y tokenS/tokenB, the miner can choose:
+
+1. receive x LRC but giving all margin to the order;
+2. receive y tokenS/tokenB but send x LRC to the order.
+
+miners decide which of (x LRC) and (margin - x LRC) has a greater value.
+
+
+
+
+
+
