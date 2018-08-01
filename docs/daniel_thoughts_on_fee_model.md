@@ -78,11 +78,12 @@ If we remove LRC from the picture, the fee model also works. So why people want 
 
 if an order is willing and able to pay x LRC and the margin is y tokenS/tokenB, the miner can choose:
 
-1. receive x LRC but giving all margin to the order;
-2. receive y tokenS/tokenB but send x LRC to the order.
+1. receive x LRC but giving all margin to the order, only if x > 0;
+2. receive y tokenS/tokenB but send x LRC to the order, if x is smaller or x == 0;
 
-miners decide which of (x LRC) and (margin - x LRC) has a greater value.
+miners decide which of (x LRC) and (margin - x LRC) has a greater value. If order has no LRC, then all margin goes to the miner/wallet; If order has 0 margin, then LRC is the only income for miner/wallet. 
 
+Allowing sFee or bFee will make less LRC useful.
 
 
 
