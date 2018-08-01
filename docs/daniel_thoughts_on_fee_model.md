@@ -85,6 +85,9 @@ miners decide which of (x LRC) and (margin - x LRC) has a greater value. If orde
 
 Allowing sFee or bFee will make less LRC useful.
 
+### Refuce 0-LRC settlement
+We can even enforce all orders to have a non-zero LRC fee payment during settlement; otherwise, the margin will be send to an address owned by the foundation.
+
 
 
 
