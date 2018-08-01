@@ -21,7 +21,7 @@ Fee calculations were very limited in protocol V1. For protocol V2 we aim to ach
 - Wallets should be able to further share its fees with additional addresses
 - If miner fee percentage + wallet fee percentage < 100%, we should maintain the requested ratio when scaling up to 100%
 - It should be possible to buy integral units of tokens at a fixed price, without the fee payment still taking a part of the tokens bought/sold.
-- (Fee calculation should be 'fair' per order in a ring. Loopring should not give all margin to a single order, but should spread out the margin over all orders.)
+- (Fee calculation should be 'fair' per order in a ring. Loopring should not give all margin to a single order, but should spread out the margin over all orders.) daniel: I assume all margin should be paid to miners by default, but miners can choose to share it or part of it with orders...
 
 Extra requirements not directly related to the fee calculations:
 
