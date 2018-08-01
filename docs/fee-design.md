@@ -11,7 +11,7 @@ Fee calculations were very limited in protocol V1. For protocol V2 we aim to ach
     1) LRC (and WETH? This doesn't really matter for the protocol)
     2) amountS
     3) amountB
-    4) margin
+    4) margin (in terms of amountS or amountB)
     
   The order in which the fees are paid can be important (e.g. first LRC and then amountS, or first margin and then amountB), so should be customizable if possible.
 - Every order can request its own fee calculation
