@@ -31,6 +31,8 @@ library RingHelper {
     using MathUint for uint;
     using ParticipationHelper for Data.Participation;
 
+    uint private constant RATE_PERCISION = 10 ** 8;
+
     function updateHash(
         Data.Ring ring
         )
@@ -56,24 +58,22 @@ library RingHelper {
         view
     {
         uint i;
-        uint rateMolecular = 1;
-        uint rateDenominator = 1;
+        uint totalRate = 1;
         for (i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             Data.Order memory order = p.order;
             p.fillAmountS = order.maxAmountS;
-            rateMolecular = rateMolecular * order.amountS;
-            rateDenominator = rateDenominator * order.amountB;
+            totalRate = totalRate.mul(order.amountS).mul(RATE_PERCISION) / order.amountB;
         }
 
         uint smallest = 0;
 
         for (i = 0; i < ring.size; i++) {
-            smallest = calculateOrderFillAmounts(ring, i, smallest, rateMolecular, rateDenominator);
+            smallest = calculateOrderFillAmounts(ring, i, smallest, totalRate);
         }
 
         for (i = 0; i < smallest; i++) {
-            calculateOrderFillAmounts(ring, i, smallest, rateMolecular, rateDenominator);
+            calculateOrderFillAmounts(ring, i, smallest, totalRate);
         }
 
         for (i = 0; i < ring.size; i++) {
@@ -87,8 +87,7 @@ library RingHelper {
         Data.Ring ring,
         uint i,
         uint smallest,
-        uint rateMolecular,
-        uint rateDenominator
+        uint totalRate
         )
         internal
         pure
@@ -102,11 +101,11 @@ library RingHelper {
         Data.Participation memory nextP = ring.participations[j];
 
         p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;
-        uint scaledFillAmountB = p.fillAmountB.mul(rateMolecular) / rateDenominator;
-        if (nextP.fillAmountS > scaledFillAmountB) {
+        uint scaledFillAmountB = p.fillAmountB.mul(totalRate) / RATE_PERCISION;
+        if (nextP.fillAmountS >= scaledFillAmountB) {
             nextP.fillAmountS = p.fillAmountB;
             if (scaledFillAmountB > p.fillAmountB) {
-                nextP.splitS = scaledFillAmountB - p.fillAmountB;
+                nextP.splitS = scaledFillAmountB.sub(p.fillAmountB);
             }
         } else {
             smallest_ = j;

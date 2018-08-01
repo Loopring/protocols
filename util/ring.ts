@@ -155,7 +155,8 @@ export class Ring {
     current.fillAmountB = current.fillAmountS * current.amountB / current.amountS;
     const currentScaledFillAmountB = current.fillAmountS * rate * current.amountB / current.amountS;
     const currentFillAmountB = Math.max(current.fillAmountB, currentScaledFillAmountB);
-    if (next.fillAmountS > currentFillAmountB) {
+    console.log("xxxxxxxxxx", next.fillAmountS / 1e18, current.fillAmountB / 1e18, currentScaledFillAmountB / 1e18);
+    if (next.fillAmountS >= currentFillAmountB) {
       next.fillAmountS = current.fillAmountB;
       if (currentScaledFillAmountB > current.fillAmountB) {
         next.splitS = currentScaledFillAmountB - current.fillAmountB;
@@ -168,7 +169,6 @@ export class Ring {
     if (!current.splitS) {
       current.splitS = 0;
     }
-
     current.fillAmountLrcFee = Math.floor(current.lrcFee * (current.fillAmountS + current.splitS) /
                                           current.amountS);
     return ret;

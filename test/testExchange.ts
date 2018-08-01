@@ -269,6 +269,8 @@ contract("Exchange", (accounts: string[]) => {
         assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
         const report = await simulator.simulateAndReport(deserializedRingsInfo);
 
+        console.log("report.transferItems:", report.transferItems);
+
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
         assertTransfers(transferEvents, report.transferItems);
