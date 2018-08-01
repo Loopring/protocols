@@ -128,6 +128,7 @@ library OrderStateSerialization extends AutoBytesSerialization {
        
        // step 3: populate all fields that depends on other fields. (compulted fields)
     }
+   
     function deseralizeArray(memory bytes input, uint offset) returns (bool ok, uint newOffset, OrderState[] _orderState) {
        ok = false;
        uint size = getArraySize() // assuming this is 1 byte so we can have 2^7-1 = 255 element in the array
@@ -148,4 +149,8 @@ library OrderStateSerialization extends AutoBytesSerialization {
     }
 }
 ```
+
+## Optimize Space for small int values
+
+In a struct, if multiple fields are small integer values, we can determine how many bytes to get from the input bytes, for example, if a field is in [0-100], then we can use `get1ByteAsInt64` if its possible value is in the rage of [0-400] then we can use `get2BytesAsUint64`.
 
