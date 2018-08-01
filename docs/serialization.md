@@ -1,4 +1,40 @@
 # Serializationa nd Deserialization
 
-## The Need
-In v1, there are a lot of optional parameters that a order or a ring can have. We can either manually program solidity to handle these cases or define the data in a thrift/protobuf like language and write a program to generate serialization/deserialization code in solidity to reduce our workload.
+## The Demand
+In v2, there will be a lot more optional parameters that a order or a ring can have. We can either manually program solidity to handle these cases or define the data in a thrift/protobuf like language and write a program to generate serialization/deserialization code in solidity to reduce error.
+
+```
+serializable OrderState {
+  required address owner;
+  required address tokenS;
+  required address wallet;
+  optional address authAddr;
+  required uint amountS;
+  required uint amountB;
+  required uint lrcFee;
+  bytes32 optional sig;
+  optional uint validSince;
+  optional uint validUntil = "0 - 1";
+}
+
+```
+
+Given the following input, such a program should generate the following data structure:
+
+```
+struct OrderState {
+        address owner;
+        address tokenS;
+        address wallet;
+        address authAddr;
+        uint    amountS;
+        uint    amountB;
+        uint    lrcFee;
+        uint    rateS;
+        bytes32 sig;
+        uint    validSince;
+        uint    validUntil;
+    }
+```
+
+and generate a `deseralizeOrderState(memory bytes input) returns (OrderState)` method and a `seralizeOrderState(memory OrderState input) returns (OrderState orderState)` method.
