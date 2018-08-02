@@ -232,7 +232,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             orders[i].updateBrokerAndInterceptor(ctx);
             orders[i].checkBrokerSignature(ctx);
         }
-        // checkCutoffsOrders(ctx, orders);
+        checkCutoffsAndCancelledOrders(ctx, orders);
 
         for (uint i = 0; i < rings.length; i++) {
             rings[i].updateHash();
@@ -277,23 +277,25 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     }
 
-    function checkCutoffsOrders(Data.Context ctx, Data.Order[] orders) internal {
+    function checkCutoffsAndCancelledOrders(Data.Context ctx, Data.Order[] orders) internal {
         address[] memory owners = new address[](orders.length);
         bytes20[] memory tradingPairs = new bytes20[](orders.length);
         uint[] memory validSince = new uint[](orders.length);
+        bytes32[] memory hashes = new bytes32[](orders.length);
 
         for (uint i = 0; i < orders.length; i++) {
             Data.Order memory order = orders[i];
             owners[i] = order.owner;
             tradingPairs[i] = bytes20(order.tokenS) ^ bytes20(order.tokenB);
             validSince[i] = order.validSince;
+            hashes[i] = order.hash;
         }
 
-        uint cutoffsValid = ctx.delegate.checkCutoffsBatch(owners, tradingPairs, validSince);
+        uint ordersValid = ctx.delegate.checkCutoffsAndCancelledBatch(owners, tradingPairs, validSince, hashes);
 
         for (uint i = 0; i < orders.length; i++) {
             Data.Order memory order = orders[i];
-            order.valid = order.valid && ((cutoffsValid >> i) & 1) != 0;
+            order.valid = order.valid && ((ordersValid >> i) & 1) != 0;
         }
     }
 

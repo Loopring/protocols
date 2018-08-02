@@ -71,7 +71,7 @@ export class ProtocolSimulator {
       await this.orderUtil.updateBrokerAndInterceptor(order);
       await this.orderUtil.checkBrokerSignature(order);
     }
-    // await this.checkCutoffsOrders(orders);
+    await this.checkCutoffsAndCancelledOrders(orders);
 
     for (const ring of rings) {
       ring.updateHash();
@@ -116,22 +116,23 @@ export class ProtocolSimulator {
     return {ringMinedEvent, transferItems};
   }
 
-  private async checkCutoffsOrders(orders: OrderInfo[]) {
+  private async checkCutoffsAndCancelledOrders(orders: OrderInfo[]) {
     const owners: string[] = [];
-    const tradingPairs: Buffer[] = [];
+    const tradingPairs: BigNumber[] = [];
     const validSince: number[] = [];
+    const hashes: BigNumber[] = [];
 
     for (const order of orders) {
         owners.push(order.owner);
-        tradingPairs.push(new Buffer(this.xor(order.tokenS, order.tokenB, 20).slice(2), "hex"));
+        tradingPairs.push(new BigNumber(this.xor(order.tokenS, order.tokenB, 20).slice(2), 16));
         validSince.push(order.validSince);
+        hashes.push(new BigNumber(order.hash.toString("hex"), 16));
     }
 
-    const cutoffsValid = await this.context.tradeDelegate.checkCutoffsBatch(owners, tradingPairs, validSince);
-    console.log(cutoffsValid);
-    console.log(cutoffsValid.toString(16));
+    const ordersValid = await this.context.tradeDelegate.checkCutoffsAndCancelledBatch(
+      owners, tradingPairs, validSince, hashes);
 
-    const bits = new BN(cutoffsValid.toString(16), 16);
+    const bits = new BN(ordersValid.toString(16), 16);
     for (const [i, order] of orders.entries()) {
         order.valid = order.valid && bits.testn(i);
     }

@@ -201,10 +201,11 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         tradingPairCutoffs[owner][tokenPair] = cutoff;
     }
 
-    function checkCutoffsBatch(
+    function checkCutoffsAndCancelledBatch(
         address[] owners,
         bytes20[] tradingPairs,
-        uint[]    validSince
+        uint[]    validSince,
+        bytes32[] orderHashes
         )
         external
         view
@@ -213,11 +214,13 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         uint len = owners.length;
         require(len == tradingPairs.length);
         require(len == validSince.length);
+        require(len == orderHashes.length);
         require(len <= 256);
 
         uint cutoffsValid = 0;
         for (uint i = 0; i < len; i++) {
-            bool valid = validSince[i] > tradingPairCutoffs[owners[i]][tradingPairs[i]];
+            bool valid = !cancelled[owners[i]][orderHashes[i]];
+            valid = valid && validSince[i] > tradingPairCutoffs[owners[i]][tradingPairs[i]];
             valid = valid && validSince[i] > cutoffs[owners[i]];
             cutoffsValid |= valid ? (1 << i) : 0;
         }
