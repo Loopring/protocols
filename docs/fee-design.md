@@ -113,6 +113,8 @@ Another option would be to use the custom transfer contract as the 'token' that 
 
 > Daniel's question: I think this ITokenTransfer address parameter should only be used to transfer token between orders, not between order and miner/wallet, right? The challanging part is that the wallet can provide a mallicious implementation of this interface and will cause the taker to lose all money. One solution to this is the foundation acts as a gate keeper to whitelist all ITokenTransfer implementation addresses.
 
+> Brecht: Yes, the ITokenTransfer address should not be used to pay fees. The ITokenTransfer function would be part of the order selling the ICO tokens, so the seller should be trusted (well, as trused as the ICO I guess) and he signs the order data, which contains the TokenTransfer function (and with [EIP712](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md) you could actually see the data you sign! So the software responsible for creating the order can't just replace data behind your back). But yeah, this is a special case which the buyer really needs to give permission for, so maybe the same TokenTransfer address should also be stored in the order of the buyer and the protocol would only allow the transfer if they match.
+
 ## Example fee algorithms
 
 The following are just a few of the possible fee payment algorithms possible in the design.
@@ -332,6 +334,8 @@ The miner should get its part of all fee payments, but we can only impose this i
 While we can limit the number of tokenS and tokenB payed as fees because we know the order size, the Loopring protocol does not know what the maximum LRC amount is that can be used as fees for the order. In the worst case the fee algorithm decides to use all LRC available, even if this was not wanted.
 
 > Daniel: The protocol acutally knows the max amount of LRC an order can use as fee, this is denoated by the 'lrcFee' field of the order. If the order is fully filled, lrcFee is the amount of LRC to pay accumulatively.
+
+> Brecht: Currently it is indeed part of the order data. But in the most general case this wouldn't be stored directly in the order because some fee algorithms would not use it. The algorithms that do use it would store it in the custom fee data.
 
 ## Overview of the fee calculation design using different contracts for the fee calculations
 
