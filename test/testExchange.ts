@@ -261,7 +261,8 @@ contract("Exchange", (accounts: string[]) => {
                                     orderBrokerRegistryAddress,
                                     minerBrokerRegistryAddress,
                                     OrderRegistry.address,
-                                    MinerRegistry.address);
+                                    MinerRegistry.address,
+                                    lrcAddress);
         const simulator = new ProtocolSimulator(walletSplitPercentage, context);
 
         for (const [i, order] of ringsInfo.orders.entries()) {
@@ -285,7 +286,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // console.log("tx:", tx);
         // await watchAndPrintEvent(tradeDelegate, "LogTrans");
-        // await watchAndPrintEvent(exchange, "LogTrans");
+        // await watchAndPrintEvent(exchange, "LogUint3");
         // await watchAndPrintEvent(exchange, "LogAddress");
         eventFromBlock = web3.eth.blockNumber + 1;
       });

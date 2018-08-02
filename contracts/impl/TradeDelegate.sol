@@ -118,6 +118,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
     {
         require(batch.length % 4 == 0);
         for (uint i = 0; i < batch.length; i += 4) {
+            if (uint(batch[i + 3]) < 1000) { // if transfer value < 1000, ignore.
+                continue;
+            }
             require(
                 ERC20(address(batch[i])).transferFrom(
                     address(batch[i + 1]),

@@ -134,12 +134,13 @@ export class Ring {
 
       transferItems.push({token, from , to, amount});
 
+      const lrcAddress = this.context.lrcAddress;
       if (walletSplitPercentage > 0 && currOrder.walletAddr) {
         if (currOrder.fillAmountLrcFee > 0) {
           const lrcFeeToWallet = Math.floor(currOrder.fillAmountLrcFee * walletSplitPercentage / 100);
           const lrcFeeToMiner = currOrder.fillAmountLrcFee - lrcFeeToWallet;
-          transferItems.push({token, from , to: this.feeRecipient, amount: lrcFeeToMiner});
-          transferItems.push({token, from , to: currOrder.walletAddr, amount: lrcFeeToMiner});
+          transferItems.push({token: lrcAddress, from , to: this.feeRecipient, amount: lrcFeeToMiner});
+          transferItems.push({token: lrcAddress, from , to: currOrder.walletAddr, amount: lrcFeeToMiner});
         }
 
         if (currOrder.splitS > 0) {
@@ -149,7 +150,7 @@ export class Ring {
           transferItems.push({token, from , to: currOrder.walletAddr, amount: splitSToWallet});
         }
       } else {
-        transferItems.push({token, from , to: this.feeRecipient, amount: currOrder.fillAmountLrcFee});
+        transferItems.push({token: lrcAddress, from , to: this.feeRecipient, amount: currOrder.fillAmountLrcFee});
         if (currOrder.splitS > 0) {
           transferItems.push({token, from , to: this.feeRecipient, amount: currOrder.splitS});
         }

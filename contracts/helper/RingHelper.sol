@@ -31,8 +31,8 @@ library RingHelper {
     using MathUint for uint;
     using ParticipationHelper for Data.Participation;
 
-    uint private constant RATE_PERCISION = 10 ** 8;
-    uint private constant IGNORE_DEVIATION = 10000;
+    uint private constant RATE_PERCISION = 10 ** 18;
+    uint private constant DUST = 1000;
 
     function updateHash(
         Data.Ring ring
@@ -59,12 +59,12 @@ library RingHelper {
         view
     {
         uint i;
-        uint totalRate = 1;
+        uint totalRate = RATE_PERCISION;
         for (i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             Data.Order memory order = p.order;
             p.fillAmountS = order.maxAmountS;
-            totalRate = totalRate.mul(order.amountS).mul(RATE_PERCISION) / order.amountB;
+            totalRate = totalRate.mul(order.amountS) / order.amountB;
         }
 
         uint smallest = 0;
