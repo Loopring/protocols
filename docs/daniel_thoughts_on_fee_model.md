@@ -97,7 +97,7 @@ Lets assume the fair market price of 1 unit of amountS, *f* is know to the miner
 
 This might be a way to calculate a moving average price for amountS in a decentralized way.
 
-### Suport WETH and other Token as fee
+### Suport WETH as fee
 
 If we want to support a order to pay WETH as fee, we can set up a Kyber style decentralized market maker, to buy WETH with LRC. If the current market price of WETH in terms of LRC is 2000, then we can offer a buy order with price 1000LRC per WETH. Then the protocol will enforce all WETH fee to be sold to the market maker and pay all LRC to the miner/wallet.
 
