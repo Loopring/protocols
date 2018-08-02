@@ -16,8 +16,8 @@ npm run compile
 ```
 
 ## Deployment on Ethereum Mainnet:
-- LRC - https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md#protocol-token---lrc
-- Protocol deployments: https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md#protocol
+- LRC - https://etherscan.io/address/0xEF68e7C694F40c8202821eDF525dE3782458639f
+- Protocol deployments: https://github.com/Loopring/docs/blob/master/docs/deployment/ethereum/protocol-deployment.md#v151-livemainnet
    
 ## Run Unit Tests  
 * run `npm run testrpc` from project's root directory in terminal.  
