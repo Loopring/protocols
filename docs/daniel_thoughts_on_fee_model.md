@@ -85,7 +85,7 @@ If the oder is supposed to pay **X** LRC but only have **Y** (Y < X) LRC, then:
 
 we credit **M*Y/X** margin to the order and remain **M*(X-Y)/X** margin to address **f**;
 
-- if miner choose LRC as fee, he will get **Y** LRC from the owner, and **f** get **M*(X-Y)/X** margin;
+- if miner choose LRC as fee, he will get **Y** LRC from the owner, and **f** get M*(X-Y)/X margin;
 - if miner choose margin as fee, he will have to pay **Y** LRC to the owner and get **M*Y/X** margin, assuming the miner has at least **T** LRC; if he only has **Z** (Z < Y) LRC, he will pay **Z** LRC to order owner, and get **M*Z/X** margin.
 
 In other words, margin is split between **f**, the order, and the miner/wallet.
