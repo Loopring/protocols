@@ -74,21 +74,15 @@ we can use a number to represent the basic points, not percentage. Thus 1% is ex
 
 If we remove LRC from the picture, the fee model also works. So why people want to use LRC then?
 
-**MAYBE THE BEST TOKEN ECONOMY FOR LOOPRING IS STILL THE SAME AS PROTOCOL V1**:
-
-if an order is willing and able to pay x LRC and the margin is y tokenS/tokenB, the miner can choose:
-
-1. receive x LRC but giving all margin to the order, only if x > 0;
-2. receive y tokenS/tokenB but send x LRC to the order, if x is smaller or x == 0;
-
-miners decide which of (x LRC) and (margin - x LRC) has a greater value. If order has no LRC, then all margin goes to the miner/wallet; If order has 0 margin, then LRC is the only income for miner/wallet. 
-
-Allowing sFee or bFee will make less LRC useful.
-
-###  0-LRC order handling
-We can even enforce all orders to have a non-zero LRC fee payment during settlement; otherwise, the margin will be send to an address owned by the foundation.
+**MAYBE THE BEST TOKEN ECONOMY FOR LOOPRING IS STILL THE SAME AS PROTOCOL V1, with modifications**:
 
 
+Suppose during a settlemnt for orderA, its owner is supposed to pay 5 LRC and the margin is 0.1WETH.
+
+1. if miner choose LRC fee, and order owner has 5 LRC or more, then owner pays 5LRC to miner and wallet, 0.1WETH margin is transfered to order owner;
+1. if miner choose LRC fee, and order owner has less than 5 LRC (4 for example), then owner pays 4LRC and 0.1WETH margin to miner.
+1. if miner choose margin, and miner has 5 LRC or more, then owner gets 5LRC from miner, and pays 0.1WETH to miner/wallet.
+1. if miner choose margin, and has only 4 LRC, then it is forced to get whatever LRC fee the order own can offer, all margin goes to order owner.
 
 
 
