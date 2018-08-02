@@ -142,6 +142,7 @@ export class RingsGenerator {
     param.uintList.push(new BigNumber(order.amountS));
     param.uintList.push(new BigNumber(order.amountB));
     param.uintList.push(new BigNumber(order.lrcFee));
+    param.uintList.push(new BigNumber(order.validSince));
 
     // param.addressList.push(order.delegateContract);
 
@@ -164,26 +165,22 @@ export class RingsGenerator {
       param.addressList.push(order.walletAddr);
     }
 
-    if (order.validSince) {
-      spec += 1 << 4;
-      param.uintList.push(new BigNumber(order.validSince));
-    }
     if (order.validUntil) {
-      spec += 1 << 5;
+      spec += 1 << 4;
       param.uintList.push(new BigNumber(order.validUntil));
     }
     if (order.allOrNone) {
-      spec += 1 << 6;
+      spec += 1 << 5;
       param.uintList.push(new BigNumber(1));
     }
 
     if (order.sig) {
-      spec += 1 << 7;
+      spec += 1 << 6;
       param.bytesList.push(order.sig);
     }
 
     if (order.dualAuthSig) {
-      spec += 1 << 8;
+      spec += 1 << 7;
       param.bytesList.push(order.dualAuthSig);
     }
 

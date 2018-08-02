@@ -69,13 +69,13 @@ library Data {
         uint    amountS;
         uint    amountB;
         uint    lrcFee;
+        uint    validSince;
 
         // optional fields
         address dualAuthAddr;
         address broker;
         address orderInterceptor;
         address wallet;
-        uint    validSince;
         uint    validUntil;
         bytes   sig;
         bytes   dualAuthSig;

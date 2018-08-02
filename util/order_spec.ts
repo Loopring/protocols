@@ -23,23 +23,19 @@ export class OrderSpec {
     return (this.data & (1 << 3)) !== 0;
   }
 
-  public hasValidSince() {
+  public hasValidUntil() {
     return (this.data & (1 << 4)) !== 0;
   }
 
-  public hasValidUntil() {
+  public allOrNone() {
     return (this.data & (1 << 5)) !== 0;
   }
 
-  public allOrNone() {
+  public hasSignature() {
     return (this.data & (1 << 6)) !== 0;
   }
 
-  public hasSignature() {
-    return (this.data & (1 << 7)) !== 0;
-  }
-
   public hasDualAuthSig() {
-    return (this.data & (1 << 8)) !== 0;
+    return (this.data & (1 << 7)) !== 0;
   }
 }

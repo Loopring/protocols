@@ -36,7 +36,7 @@ export class OrderUtil {
     valid = valid && (order.amountB !== 0); // invalid order amountB
 
     const blockTimestamp = this.context.blockTimestamp;
-    valid = valid && (order.validSince ? order.validSince <= blockTimestamp : true); // order is too early to match
+    valid = valid && (order.validSince <= blockTimestamp); // order is too early to match
     valid = valid && (order.validUntil ? order.validUntil > blockTimestamp : true);  // order is expired
 
     order.valid = order.valid && valid;

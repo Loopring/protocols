@@ -118,6 +118,10 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.allOrNone) {
       order.allOrNone = false;
     }
+    if (!order.validSince) {
+      // Set the order validSince time to a bit before the current timestamp;
+      order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
+    }
 
     // setup amount:
     const orderTokenS = await DummyToken.at(addrS);

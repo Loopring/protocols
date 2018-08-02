@@ -57,7 +57,7 @@ library OrderSpec {
         return spec & (1 << 3) != 0;
     }
 
-    function hasValidSince(uint16 spec)
+    function hasValidUntil(uint16 spec)
         internal
         pure
         returns (bool)
@@ -65,7 +65,7 @@ library OrderSpec {
         return spec & (1 << 4) != 0;
     }
 
-    function hasValidUntil(uint16 spec)
+    function allOrNone(uint16 spec)
         internal
         pure
         returns (bool)
@@ -73,7 +73,7 @@ library OrderSpec {
         return spec & (1 << 5) != 0;
     }
 
-    function allOrNone(uint16 spec)
+    function hasSignature(uint16 spec)
         internal
         pure
         returns (bool)
@@ -81,20 +81,12 @@ library OrderSpec {
         return spec & (1 << 6) != 0;
     }
 
-    function hasSignature(uint16 spec)
-        internal
-        pure
-        returns (bool)
-    {
-        return spec & (1 << 7) != 0;
-    }
-
     function hasDualAuthSig(uint16 spec)
         internal
         pure
         returns (bool)
     {
-        return spec & (1 << 8) != 0;
+        return spec & (1 << 7) != 0;
     }
 
 }

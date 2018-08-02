@@ -18,13 +18,13 @@ export interface OrderInfo {
   amountS: number;
   amountB: number;
   lrcFee?: number;
+  validSince?: number;
 
   // optional fields
   dualAuthAddr?: string;            // spec value 1
   broker?: string;                  // spec value 1 << 1
   orderInterceptor?: string;        // spec value 1 << 2
   walletAddr?: string;              // spec value 1 << 3
-  validSince?: number;              // spec value 1 << 4
   validUntil?: number;              // spec value 1 << 5
   allOrNone?: boolean;              // spec value 1 << 6
   sig?: string;                     // spec value 1 << 7

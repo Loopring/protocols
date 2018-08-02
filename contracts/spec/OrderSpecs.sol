@@ -59,11 +59,11 @@ library OrderSpecs {
             inputs.nextUint(),    // amountS
             inputs.nextUint(),    // amountB
             inputs.nextUint(),    // lrcFee
+            inputs.nextUint(),    // validSince
             spec.hasDualAuth() ? inputs.nextAddress() : address(0x0),
             spec.hasBroker() ? inputs.nextAddress() : address(0x0),
             spec.hasOrderInterceptor() ? inputs.nextAddress() : address(0x0),
             spec.hasWallet() ? inputs.nextAddress() : address(0x0),
-            spec.hasValidSince() ? inputs.nextUint() : 0,
             spec.hasValidUntil() ? inputs.nextUint() : uint(0) - 1,
             spec.hasSignature() ? inputs.nextBytes() : new bytes(0),
             spec.hasDualAuthSig() ? inputs.nextBytes() : new bytes(0),
