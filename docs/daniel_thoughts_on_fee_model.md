@@ -121,9 +121,11 @@ The number of LRC to burn is tricky. We can use `totalSupply - balanceOf(0x0)` a
 
 `(totalSupply - balanceOf(0x0))/(2^25)` which is roughly 4 LRC. This should be expensive but not too expensive.
 
-#### Penalty
-If the user is supposted to pay 4 LRC but is only able pay 3LRC, then beside charging the 3 LRC, the protocol will send (4-3)/4 * 1% of fillAmountS as a panelty to the miner/wallet or burning address (0x0).
+We can also use modifierable parameter and allow the community to vote for changes.
 
-This penalty implies that without using any LRC, the actual fee is 1% of fillAmountS, paid either to the miner/wallet or burned.
+#### Penalty
+If the user is supposted to pay 4 LRC but is only able pay 3LRC, then beside charging the 3 LRC, the protocol will send (4-3)/4 * 0.5% of fillAmountS as a panelty to the miner/wallet or the burning address (0x0).
+
+This penalty implies that without using any LRC, the actual fee is 0.5% of fillAmountS, paid either to the miner/wallet or burned.
 
 
