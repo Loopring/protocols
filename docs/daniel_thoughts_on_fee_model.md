@@ -80,9 +80,11 @@ If we remove LRC from the picture, the fee model also works. So why people want 
 
 In case the miner doesn't have any LRC to pay
 
-### 0-LRC Penalty
+### Zero-LRC-Fee Penalty
 
 If for a order, the actual LRC fee or reward is 0, the order's tokenS will be charged a 1% fee by the protocol to a special address controlled by the foundation. This is to disencourage using the protocol without valuing LRC.
+
+In the zero-lrc-fee senario, order will lose all margin as miner will for sure pay 0 LRC and get all margin instead of receiving 0 LRC fee, and will also lose a 1% tokenS.
 
 ### Price Movement Indicator
 
