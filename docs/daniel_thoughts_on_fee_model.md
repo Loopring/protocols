@@ -1,9 +1,39 @@
 
 # Daniel's Thoughts on Fee Modelling
 
-These thoughts are based on this [article](https://github.com/Loopring/protocol2/blob/master/docs/rate_and_margin_calculation.md#what-you-can-learn-from-this-simulation).
+### NEW IDEAS
 
-**Especially:**
+#### All Margin goes to Miner
+
+Since in Protocol 2, miners can put more than 1 ring in one transaction, that gives miner the way to inserts his own orders to get all margin, therefore the margin no long need to be split between users and miners. We simply give all margin to miners so they don't have to 'cheat' the system to get all margin. This will also reduce the transaction size and cost.
+
+Unlike in Protocol 1, miners don't need to pay LRC to buy the margin. This will further reduce the tx gas.
+
+#### LRC Utilitis
+We can use LRC in 2 different ways: 1) as a way of matching fee, and 2) as a way to buy other fee model.
+
+If a order specifis another fee model (other than the default LRC-fee model), we burn a constant LRC fee from the user's address (sent to address 0x0).  Only order owners need to pay this, wallets/miners don't.
+
+The number of LRC to burn is tricky. We can use `totalSupply - balanceOf(0x0)` as a parameter to do the math. For example, use 
+
+`(totalSupply - balanceOf(0x0))/(2^25)` which is roughly 4 LRC. This should be expensive but not too expensive.
+
+We can also use modifierable parameter and allow the community to vote for changes.
+
+#### Penalty
+If the user is supposted to pay 4 LRC but is only able pay 3LRC, then beside charging the 3 LRC, the protocol will send (4-3)/4 * 0.5% of fillAmountS as a panelty to the miner/wallet or the burning address (0x0).
+
+This penalty implies that without using any LRC, the actual fee is 0.5% of fillAmountS, paid either to the miner/wallet or burned.
+
+### Suport AnyToken as fee
+
+If we want to support a order to pay WETH or any ERC20 token as fee, we can set up a Kyber style decentralized market maker or use Kyber directly, to buy WETH with LRC. Then the protocol will enforce all WETH fee to be sold to the market maker and pay all LRC to the miner/wallet.
+
+
+
+
+-----
+-----
 
 A order will potentially send:
     - tokenS to the previous order (fillAmountS, which is exactly the same as the previous order's fillAmountB)
@@ -96,34 +126,5 @@ Lets assume the fair market price of 1 unit of amountS, *f* is know to the miner
 - choose LRC fee, then price(1 amountS) <= **2x/y** LRC
 
 This might be a way to calculate a moving average price for amountS in a decentralized way.
-
-
-### NEW IDEAS
-
-#### All Margin goes to Miner
-
-Since in Protocol 2, miners can put more than 1 ring in one transaction, that gives miner the way to inserts his own orders to get all margin, therefore the margin no long need to be split between users and miners. We simply give all margin to miners so they don't have to 'cheat' the system to get all margin. This will also reduce the transaction size and cost.
-
-Unlike in Protocol 1, miners don't need to pay LRC to buy the margin. This will further reduce the tx gas.
-
-#### LRC Utilitis
-We can use LRC in 2 different ways: 1) as a way of matching fee, and 2) as a way to buy other fee model.
-
-If a order specifis another fee model (other than the default LRC-fee model), we burn a constant LRC fee from the user's address (sent to address 0x0).  Only order owners need to pay this, wallets/miners don't.
-
-The number of LRC to burn is tricky. We can use `totalSupply - balanceOf(0x0)` as a parameter to do the math. For example, use 
-
-`(totalSupply - balanceOf(0x0))/(2^25)` which is roughly 4 LRC. This should be expensive but not too expensive.
-
-We can also use modifierable parameter and allow the community to vote for changes.
-
-#### Penalty
-If the user is supposted to pay 4 LRC but is only able pay 3LRC, then beside charging the 3 LRC, the protocol will send (4-3)/4 * 0.5% of fillAmountS as a panelty to the miner/wallet or the burning address (0x0).
-
-This penalty implies that without using any LRC, the actual fee is 0.5% of fillAmountS, paid either to the miner/wallet or burned.
-
-### Suport AnyToken as fee
-
-If we want to support a order to pay WETH or any ERC20 token as fee, we can set up a Kyber style decentralized market maker or use Kyber directly, to buy WETH with LRC. Then the protocol will enforce all WETH fee to be sold to the market maker and pay all LRC to the miner/wallet.
 
 
