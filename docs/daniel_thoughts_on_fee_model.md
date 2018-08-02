@@ -78,7 +78,7 @@ If we remove LRC from the picture, the fee model also works. So why people want 
 
 "miner either choose LRC as fee, or choose margin as fee but has to pay the same amount of LRC to order owner."
 
-We can refer the latter one as "miner buys the margin with LRC". What's the buy price? Lets assume the LRC fee is *x* and the amount of margin is *y*, the price is actually *2x/y*.
+We can refer the latter one as "miner buys the margin with LRC". What's the buy price? Lets assume the LRC fee is *x* and the   margin is *y* amountS, the price is actually *2x/y* per 1 unit of amountS in terms of LRC.
 
 
 
