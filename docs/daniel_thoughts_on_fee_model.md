@@ -78,6 +78,11 @@ If we remove LRC from the picture, the fee model also works. So why people want 
 
 "miner either choose LRC as fee, or choose margin as fee but has to pay the same amount of LRC to order owner."
 
+In case the miner doesn't have any LRC to pay
+
+*** 0-LRC Penalty
+
+If for a order, the actual LRC fee or reward is 0, the order's tokenS will be charged a 1% fee by the protocol.
 
 
 We can refer the latter one as "miner buys the margin with LRC". What's the buy price? Lets assume the LRC fee is *x* and the   margin is *y* amountS, the price is actually *2x/y* per 1 unit of amountS in terms of LRC.
