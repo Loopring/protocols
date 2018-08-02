@@ -80,10 +80,11 @@ If we remove LRC from the picture, the fee model also works. So why people want 
 
 In case the miner doesn't have any LRC to pay
 
-*** 0-LRC Penalty
+### 0-LRC Penalty
 
 If for a order, the actual LRC fee or reward is 0, the order's tokenS will be charged a 1% fee by the protocol.
 
+### Price Movement Indicator
 
 We can refer the latter one as "miner buys the margin with LRC". What's the buy price? Lets assume the LRC fee is *x* and the   margin is *y* amountS, the price is actually *2x/y* per 1 unit of amountS in terms of LRC.
 
