@@ -74,15 +74,11 @@ we can use a number to represent the basic points, not percentage. Thus 1% is ex
 
 If we remove LRC from the picture, the fee model also works. So why people want to use LRC then?
 
-**MAYBE THE BEST TOKEN ECONOMY FOR LOOPRING IS STILL THE SAME AS PROTOCOL V1, with modifications**:
+**MAYBE THE BEST TOKEN ECONOMY FOR LOOPRING IS STILL THE SAME AS PROTOCOL V1**:
 
+"miner either choose LRC as fee, or choose margin as fee but has to pay the same amount of LRC to order owner."
 
-Suppose during a settlemnt for orderA, its owner is supposed to pay 5 LRC and the margin is 0.1WETH.
-
-1. if miner choose LRC fee, and order owner has 5 LRC or more, then owner pays 5LRC to miner and wallet, 0.1WETH margin is transfered to order owner;
-1. if miner choose LRC fee, and order owner has less than 5 LRC (4 for example), then owner pays 4LRC and 0.1WETH margin to miner.
-1. if miner choose margin, and miner has 5 LRC or more, then owner gets 5LRC from miner, and pays 0.1WETH to miner/wallet.
-1. if miner choose margin, and has only 4 LRC, then it is forced to get whatever LRC fee the order own can offer, all margin goes to order owner.
+We can refer the latter one as "miner buys the margin with LRC". What's the buy price? Lets assume the LRC fee is *x* and the amount of margin is *y*, the price is actually *2x/y*.
 
 
 
