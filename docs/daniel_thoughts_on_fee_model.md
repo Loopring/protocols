@@ -102,4 +102,4 @@ This might be a way to calculate a moving average price for amountS in a decentr
 If we want to support a order to pay WETH as fee, we can set up a Kyber style decentralized market maker, to buy WETH with LRC. If the current market price of WETH in terms of LRC is 2000, then we can offer a buy order with price 1000LRC per WETH. Then the protocol will enforce all WETH fee to be sold to the market maker and pay all LRC to the miner/wallet.
 
 
-
+We can even help users to buy some extra LRC for the future. If in a prevous order, the user has to pay x LRC as fee, we can help them to buy 10x LRC automatically.
