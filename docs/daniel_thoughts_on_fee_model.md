@@ -119,7 +119,7 @@ If a order specifis another fee model (other than the default LRC-fee model), we
 
 The number of LRC to burn is tricky. We can use `totalSupply - balanceOf(0x0)` as a parameter to do the math. For example, use 
 
-`(totalSupply - balanceOf(0x0))/(2^25)` which is roughly 4 LRC.
+`(totalSupply - balanceOf(0x0))/(2^25)` which is roughly 4 LRC. This should be expensive but not too expensive.
 
 #### Penalty
 If the user is supposted to pay 4 LRC but is only able pay 3LRC, then beside charging the 3 LRC, the protocol will send (4-3)/4 * 1% of fillAmountS as a panelty to the miner/wallet or burning address (0x0).
