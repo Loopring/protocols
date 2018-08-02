@@ -103,3 +103,25 @@ If we want to support a order to pay WETH as fee, we can set up a Kyber style de
 
 
 We can even help users to buy some extra LRC for the future. If in a prevous order, the user has to pay x LRC as fee, we can help them to buy 10x LRC automatically.
+
+### NEW IDEAS
+
+#### All Margin goes to Miner
+
+Since in Protocol 2, miners can put more than 1 ring in one transaction, that gives miner the way to inserts his own orders to get all margin, therefore the margin no long need to be split between users and miners. We simply give all margin to miners so they don't have to 'cheat' the system to get all margin. This will also reduce the transaction size and cost.
+
+Unlike in Protocol 1, miners don't need to pay LRC to buy the margin. This will further reduce the tx gas.
+
+#### LRC Utilitis
+We can use LRC in 2 different ways: 1) as a way of matching fee, and 2) as a way to buy other fee model.
+
+If a order specifis another fee model (other than the default LRC-fee model), we burn a constant LRC fee from the user's address (sent to address 0x0).  Only order owners need to pay this, wallets/miners don't.
+
+The number of LRC to burn is tricky. We can use `totalSupply - balanceOf(0x0)` as a parameter to do the math. For example, use 
+
+`(totalSupply - balanceOf(0x0))/(2^25)` which is roughly 4 LRC.
+
+#### Penalty
+If the user is supposted to pay 4 LRC but is only able pay 3LRC, then beside charging the 3 LRC, the protocol will send (4-3)/4 * 1% of fillAmountS as a panelty to the miner/wallet or burning address (0x0).
+
+
