@@ -74,11 +74,11 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const getTransferEvents = async (tokens: any[], fromBlock: number) => {
-    let transferItems: Array<[string, string, number]> = [];
+    let transferItems: Array<[string, string, string, number]> = [];
     for (const tokenContractInstance of tokens) {
       const eventArr: any = await getEventsFromContract(tokenContractInstance, "Transfer", fromBlock);
       const items = eventArr.map((eventObj: any) => {
-        return [eventObj.args.from, eventObj.args.to, eventObj.args.value.toNumber()];
+        return [tokenContractInstance.address, eventObj.args.from, eventObj.args.to, eventObj.args.value.toNumber()];
       });
       transferItems = transferItems.concat(items);
     }
@@ -167,13 +167,17 @@ contract("Exchange", (accounts: string[]) => {
     }
   };
 
-  const assertTransfers = (tranferEvents: Array<[string, string, number]>, transferList: TransferItem[]) => {
-    const transfersFromSimulator: Array<[string, string, number]> = [];
-    transferList.forEach((item) => transfersFromSimulator.push([item.from, item.to, item.amount]));
-    const sorter = (a: [string, string, number], b: [string, string, number]) => {
+  const assertTransfers = (tranferEvents: Array<[string, string, string, number]>, transferList: TransferItem[]) => {
+    const transfersFromSimulator: Array<[string, string, string, number]> = [];
+    transferList.forEach((item) => transfersFromSimulator.push([item.token, item.from, item.to, item.amount]));
+    const sorter = (a: [string, string, string, number], b: [string, string, string, number]) => {
       if (a[0] === b[0]) {
         if (a[1] === b[1]) {
-          return a[2] - b[2];
+          if (a[2] === b[2]) {
+            return a[3] - b[3];
+          } else {
+            return a[2] > b[2] ? 1 : -1;
+          }
         } else {
           return a[1] > b[1] ? 1 : -1;
         }
@@ -185,16 +189,17 @@ contract("Exchange", (accounts: string[]) => {
     transfersFromSimulator.sort(sorter);
     tranferEvents.sort(sorter);
     console.log("transfer items from simulator:");
-    transfersFromSimulator.forEach((t) => console.log(t[0], "->", t[1], ":", t[2] / 1e18));
+    transfersFromSimulator.forEach((t) => console.log(t[0], ":" , t[1], "->", t[2], ":", t[3] / 1e18));
     console.log("transfer items from contract:");
-    tranferEvents.forEach((t) => console.log(t[0], "->", t[1], ":", t[2] / 1e18));
+    tranferEvents.forEach((t) => console.log(t[0], ":" , t[1], "->", t[2], ":", t[3] / 1e18));
     assert.equal(tranferEvents.length, transfersFromSimulator.length, "transfer amounts not match");
     for (let i = 0; i < tranferEvents.length; i++) {
       const transferFromEvent = tranferEvents[i];
       const transferFromSimulator = transfersFromSimulator[i];
       assert.equal(transferFromEvent[0], transferFromSimulator[0]);
       assert.equal(transferFromEvent[1], transferFromSimulator[1]);
-      assertNumberEqualsWithPrecision(transferFromEvent[2], transferFromSimulator[2]);
+      assert.equal(transferFromEvent[2], transferFromSimulator[2]);
+      assertNumberEqualsWithPrecision(transferFromEvent[3], transferFromSimulator[3]);
     }
   };
 
@@ -272,8 +277,7 @@ contract("Exchange", (accounts: string[]) => {
         const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin, TradeDelegate.address);
         assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
         const report = await simulator.simulateAndReport(deserializedRingsInfo);
-
-        console.log("report.transferItems:", report.transferItems);
+        // console.log("report.transferItems:", report.transferItems);
 
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         const transferEvents = await getTransferEvents(allTokens, eventFromBlock);

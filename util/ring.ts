@@ -64,6 +64,8 @@ export class Ring {
       rate = rate * this.orders[i].amountS / this.orders[i].amountB;
     }
 
+    assert(rate >= 1, "ring total rate should be >= 1");
+
     for (let i = 0; i < ringSize; i++) {
       const nextIndex = (i + 1) % ringSize;
       const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex], rate);
@@ -75,6 +77,14 @@ export class Ring {
     for (let i = 0; i < smallest; i++) {
       const nextIndex = (i + 1) % ringSize;
       this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex], rate);
+    }
+
+    for (let i = 0; i < ringSize; i++) {
+      const nextIndex = (i + 1) % ringSize;
+      if (this.orders[nextIndex].fillAmountS > this.orders[i].fillAmountB) {
+        this.orders[nextIndex].splitS = this.orders[nextIndex].fillAmountS - this.orders[i].fillAmountB;
+        this.orders[nextIndex].fillAmountS = this.orders[i].fillAmountB;
+      }
     }
   }
 
@@ -151,16 +161,16 @@ export class Ring {
   }
 
   private isOrderSmallerThan(current: OrderInfo, next: OrderInfo, rate: number) {
-    let ret = false;
+    let ret = true;
     current.fillAmountB = current.fillAmountS * current.amountB / current.amountS;
-    const currentScaledFillAmountB = current.fillAmountS * rate * current.amountB / current.amountS;
-    const currentFillAmountB = Math.max(current.fillAmountB, currentScaledFillAmountB);
+    const currentScaledFillAmountB = current.fillAmountB * rate;
     console.log("xxxxxxxxxx", next.fillAmountS / 1e18, current.fillAmountB / 1e18, currentScaledFillAmountB / 1e18);
-    if (next.fillAmountS >= currentFillAmountB) {
-      next.fillAmountS = current.fillAmountB;
-      if (currentScaledFillAmountB > current.fillAmountB) {
-        next.splitS = currentScaledFillAmountB - current.fillAmountB;
-      }
+    if (next.fillAmountS >= currentScaledFillAmountB) {
+      next.fillAmountS = currentScaledFillAmountB;
+      // if (currentScaledFillAmountB > current.fillAmountB) {
+      //   next.splitS = currentScaledFillAmountB - current.fillAmountB;
+      // }
+
       ret = true;
     } else {
       ret = false;
@@ -169,8 +179,7 @@ export class Ring {
     if (!current.splitS) {
       current.splitS = 0;
     }
-    current.fillAmountLrcFee = Math.floor(current.lrcFee * (current.fillAmountS + current.splitS) /
-                                          current.amountS);
+    current.fillAmountLrcFee = Math.floor(current.lrcFee * current.fillAmountS / current.amountS);
     return ret;
   }
 
