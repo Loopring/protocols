@@ -82,7 +82,7 @@ In case the miner doesn't have any LRC to pay
 
 ### 0-LRC Penalty
 
-If for a order, the actual LRC fee or reward is 0, the order's tokenS will be charged a 1% fee by the protocol.
+If for a order, the actual LRC fee or reward is 0, the order's tokenS will be charged a 1% fee by the protocol to a special address controlled by the foundation. This is to disencourage using the protocol without valuing LRC.
 
 ### Price Movement Indicator
 
