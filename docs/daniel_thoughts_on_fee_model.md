@@ -78,6 +78,22 @@ If we remove LRC from the picture, the fee model also works. So why people want 
 
 "miner either choose LRC as fee, or choose margin as fee but has to pay the same amount of LRC to order owner."
 
+but in V2, we may choose this variation:
+
+lets assume all margin **M** by default is not owned by the owner, but by an address **f** controlled by the foundation.
+If the oder is supposed to pay **X** LRC but only have **Y** (Y < X) LRC, then:
+
+we credit **M*Y/X** margin to the order and remain **M*(X-Y)/X** margin to address **f**;
+
+- if miner choose LRC as fee, he will get **Y** LRC from the owner, and **f** get **M*(X-Y)/X** margin;
+- if miner choose margin as fee, he will have to pay **Y** LRC to the owner and get **M*Y/X** margin, assuming the miner has at least **T** LRC; if he only has **Z** (Z < Y) LRC, he will pay **Z** LRC to order owner, and get **M*Z/X** margin.
+
+In other words, margin is split between **f**, the order, and the miner/wallet.
+
+## Price Monitoring
+
+
+
 We can refer the latter one as "miner buys the margin with LRC". What's the buy price? Lets assume the LRC fee is *x* and the   margin is *y* amountS, the price is actually *2x/y* per 1 unit of amountS in terms of LRC.
 
 Lets assume the fair market price of 1 unit of amountS, *f* is know to the miner, then if *2x/y* is smaller than *f*, miner will choose margin, otherwise it will choose LRC fee. We can have:
