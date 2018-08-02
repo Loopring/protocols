@@ -80,5 +80,12 @@ If we remove LRC from the picture, the fee model also works. So why people want 
 
 We can refer the latter one as "miner buys the margin with LRC". What's the buy price? Lets assume the LRC fee is *x* and the   margin is *y* amountS, the price is actually *2x/y* per 1 unit of amountS in terms of LRC.
 
+Lets assume the fair market price of 1 unit of amountS, *f* is know to the miner, then if *2x/y* is smaller than *f*, miner will choose margin, otherwise it will choose LRC fee. We can have:
+
+- choose margin,then price(1 amountS) >= **2x/y** LRC
+- choose LRC fee, then price(1 amountS) <= **2x/y** LRC
+
+This might be a way to calculate a moving average price for amountS in a decentralized way.
+
 
 
