@@ -97,12 +97,6 @@ Lets assume the fair market price of 1 unit of amountS, *f* is know to the miner
 
 This might be a way to calculate a moving average price for amountS in a decentralized way.
 
-### Suport WETH as fee
-
-If we want to support a order to pay WETH as fee, we can set up a Kyber style decentralized market maker, to buy WETH with LRC. If the current market price of WETH in terms of LRC is 2000, then we can offer a buy order with price 1000LRC per WETH. Then the protocol will enforce all WETH fee to be sold to the market maker and pay all LRC to the miner/wallet.
-
-
-We can even help users to buy some extra LRC for the future. If in a prevous order, the user has to pay x LRC as fee, we can help them to buy 10x LRC automatically.
 
 ### NEW IDEAS
 
@@ -127,5 +121,9 @@ We can also use modifierable parameter and allow the community to vote for chang
 If the user is supposted to pay 4 LRC but is only able pay 3LRC, then beside charging the 3 LRC, the protocol will send (4-3)/4 * 0.5% of fillAmountS as a panelty to the miner/wallet or the burning address (0x0).
 
 This penalty implies that without using any LRC, the actual fee is 0.5% of fillAmountS, paid either to the miner/wallet or burned.
+
+### Suport AnyToken as fee
+
+If we want to support a order to pay WETH or any ERC20 token as fee, we can set up a Kyber style decentralized market maker or use Kyber directly, to buy WETH with LRC. Then the protocol will enforce all WETH fee to be sold to the market maker and pay all LRC to the miner/wallet.
 
 
