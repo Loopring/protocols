@@ -6,6 +6,7 @@ import { Mining } from "./mining";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
 import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, TransferItem } from "./types";
+import { xor } from "./xor";
 
 export class ProtocolSimulator {
 
@@ -22,8 +23,7 @@ export class ProtocolSimulator {
   }
 
   public deserialize(data: string,
-                     transactionOrigin: string,
-                     delegateContract: string) {
+                     transactionOrigin: string) {
     const exchangeDeserializer = new ExchangeDeserializer(this.context);
     const [mining, orders, rings] = exchangeDeserializer.deserialize(data);
 
@@ -124,7 +124,7 @@ export class ProtocolSimulator {
 
     for (const order of orders) {
         owners.push(order.owner);
-        tradingPairs.push(new BigNumber(this.xor(order.tokenS, order.tokenB, 20).slice(2), 16));
+        tradingPairs.push(new BigNumber(xor(order.tokenS, order.tokenB, 20).slice(2), 16));
         validSince.push(order.validSince);
         hashes.push(new BigNumber(order.hash.toString("hex"), 16));
     }
@@ -136,12 +136,5 @@ export class ProtocolSimulator {
     for (const [i, order] of orders.entries()) {
         order.valid = order.valid && bits.testn(i);
     }
-  }
-
-  private xor(s1: string, s2: string, numBytes: number) {
-    const x1 = new BN(s1.slice(2), 16);
-    const x2 = new BN(s2.slice(2), 16);
-    const result = x1.xor(x2);
-    return "0x" + result.toString(16, numBytes * 2);
   }
 }

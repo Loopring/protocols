@@ -14,6 +14,7 @@ import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
 import { OrderInfo, RingsInfo, SignAlgorithm, TransferItem } from "../util/types";
+import { xor } from "../util/xor";
 
 const {
   Exchange,
@@ -92,6 +93,39 @@ contract("Exchange", (accounts: string[]) => {
     events.forEach((e: any) => {
       console.log("event:", util.inspect(e.args, false, null));
     });
+  };
+
+  const getDefaultContext = () => {
+    const currBlockNumber = web3.eth.blockNumber;
+    const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
+    // Pass in the block number and the block time stamp so we can more accurately reproduce transactions
+    const context = new Context(currBlockNumber,
+                                currBlockTimestamp,
+                                TokenRegistry.address,
+                                tradeDelegate.address,
+                                orderBrokerRegistryAddress,
+                                minerBrokerRegistryAddress,
+                                OrderRegistry.address,
+                                MinerRegistry.address,
+                                lrcAddress);
+    return context;
+  };
+
+  const submitRingsAndSimulate = async (context: Context, ringsInfo: RingsInfo, eventFromBlock: number) => {
+    const ringsGenerator = new RingsGenerator(context);
+    await ringsGenerator.setupRingsAsync(ringsInfo);
+    const bs = ringsGenerator.toSubmitableParam(ringsInfo);
+
+    const simulator = new ProtocolSimulator(walletSplitPercentage, context);
+    const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin);
+    assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
+    const report = await simulator.simulateAndReport(deserializedRingsInfo);
+
+    const tx = await exchange.submitRings(bs, {from: transactionOrigin});
+    const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
+    assertTransfers(transferEvents, report.transferItems);
+
+    return {tx, report};
   };
 
   const setupOrder = async (order: OrderInfo, index: number) => {
@@ -207,6 +241,60 @@ contract("Exchange", (accounts: string[]) => {
     }
   };
 
+  const assertOrdersValid = async (orders: OrderInfo[], expectedValidValues: boolean[]) => {
+    assert.equal(orders.length, expectedValidValues.length, "Array sizes need to match");
+
+    const owners: string[] = [];
+    const tradingPairs: BigNumber[] = [];
+    const validSince: number[] = [];
+    const hashes: BigNumber[] = [];
+
+    for (const order of orders) {
+        owners.push(order.owner);
+        tradingPairs.push(new BigNumber(xor(order.tokenS, order.tokenB, 20).slice(2), 16));
+        validSince.push(order.validSince);
+        hashes.push(new BigNumber(order.hash.toString("hex"), 16));
+    }
+
+    const ordersValid = await tradeDelegate.checkCutoffsAndCancelledBatch(
+      owners, tradingPairs, validSince, hashes);
+
+    const bits = new BN(ordersValid.toString(16), 16);
+    for (const [i, order] of orders.entries()) {
+        assert.equal(bits.testn(i), expectedValidValues[i], "Order cancelled status incorrect");
+    }
+  };
+
+  const cleanTradeHistory = async () => {
+    // This will re-deploy the TradeDelegate contract (and thus the Exchange contract as well)
+    // so all trade history is reset
+    tradeDelegate = await TradeDelegate.new(walletSplitPercentage);
+    exchange = await Exchange.new(
+      lrcAddress,
+      TokenRegistry.address,
+      tradeDelegate.address,
+      orderBrokerRegistryAddress,
+      minerBrokerRegistryAddress,
+      OrderRegistry.address,
+      MinerRegistry.address,
+    );
+    await initializeTradeDelegate();
+  };
+
+  const initializeTradeDelegate = async () => {
+    await tradeDelegate.authorizeAddress(exchange.address, {from: deployer});
+
+    const walletSplitPercentageBN = await tradeDelegate.walletSplitPercentage();
+    walletSplitPercentage = walletSplitPercentageBN.toNumber();
+
+    for (const token of allTokens) {
+      // approve once for all orders:
+      for (const orderOwner of orderOwners) {
+        await token.approve(tradeDelegate.address, 1e32, {from: orderOwner});
+      }
+    }
+  };
+
   before( async () => {
     [exchange, tokenRegistry, tradeDelegate, orderRegistry, minerRegistry] = await Promise.all([
       Exchange.deployed(),
@@ -216,6 +304,8 @@ contract("Exchange", (accounts: string[]) => {
       MinerRegistry.deployed(),
     ]);
 
+    lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
+
     // Get the different brokers from the exchange
     orderBrokerRegistryAddress = await exchange.orderBrokerRegistryAddress();
     minerBrokerRegistryAddress = await exchange.minerBrokerRegistryAddress();
@@ -224,29 +314,25 @@ contract("Exchange", (accounts: string[]) => {
     const minerBrokerRegistry = BrokerRegistry.at(minerBrokerRegistryAddress);
     await minerBrokerRegistry.registerBroker(miner, "0x0", {from: miner});
 
-    await tradeDelegate.authorizeAddress(Exchange.address, {from: deployer});
-    lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
-
-    const walletSplitPercentageBN = await tradeDelegate.walletSplitPercentage();
-    walletSplitPercentage = walletSplitPercentageBN.toNumber();
-
     for (const sym of allTokenSymbols) {
       const addr = await tokenRegistry.getAddressBySymbol(sym);
       tokenSymbolAddrMap.set(sym, addr);
       const token = await DummyToken.at(addr);
       allTokens.push(token);
-      // approve once for all orders:
-      for (const orderOwner of orderOwners) {
-        await token.approve(TradeDelegate.address, 1e32, {from: orderOwner});
-      }
     }
+
+    await initializeTradeDelegate();
   });
 
   describe("submitRing", () => {
-    const currBlockNumber = web3.eth.blockNumber;
-    const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
-    let eventFromBlock: number = 0;
 
+    // We don't want to reset the trading history between each test here, so do it once at the beginning
+    // to make sure no order is cancelled
+    before(async () => {
+      await cleanTradeHistory();
+    });
+
+    let eventFromBlock: number = web3.eth.blockNumber;
     for (const ringsInfo of ringsInfoList) {
       // all configed testcases here:
       ringsInfo.transactionOrigin = transactionOrigin;
@@ -257,17 +343,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // before() is async, so any dependency we have on before() having run needs
         // to be done in async tests (see mocha docs)
-        // Pass in the block number and the block time stamp so we can more accurately reproduce transactions
-        const context = new Context(currBlockNumber,
-                                    currBlockTimestamp,
-                                    TokenRegistry.address,
-                                    TradeDelegate.address,
-                                    orderBrokerRegistryAddress,
-                                    minerBrokerRegistryAddress,
-                                    OrderRegistry.address,
-                                    MinerRegistry.address,
-                                    lrcAddress);
-        const simulator = new ProtocolSimulator(walletSplitPercentage, context);
+        const context = getDefaultContext();
 
         for (const [i, order] of ringsInfo.orders.entries()) {
           await setupOrder(order, i);
@@ -275,11 +351,11 @@ contract("Exchange", (accounts: string[]) => {
 
         const ringsGenerator = new RingsGenerator(context);
         await ringsGenerator.setupRingsAsync(ringsInfo);
-
         const bs = ringsGenerator.toSubmitableParam(ringsInfo);
         // console.log("bs:", bs);
 
-        const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin, TradeDelegate.address);
+        const simulator = new ProtocolSimulator(walletSplitPercentage, context);
+        const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin);
         assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
         const report = await simulator.simulateAndReport(deserializedRingsInfo);
         // console.log("report.transferItems:", report.transferItems);
@@ -295,6 +371,166 @@ contract("Exchange", (accounts: string[]) => {
         eventFromBlock = web3.eth.blockNumber + 1;
       });
     }
+
+  });
+
+  // Added '.skip' here so these tests are NOT run by default because they take quite
+  // a bit of extra time to run. Remove it once development on submitRings is less frequent.
+  describe.skip("Cancelling orders", () => {
+
+    // Start each test case with a clean trade history otherwise state changes
+    // would persist between test cases which would be hard to keep track of and
+    // could potentially hide bugs
+    beforeEach(async () => {
+      await cleanTradeHistory();
+    });
+
+    it("should be able to cancel an order", async () => {
+      const ringsInfo: RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: allTokenSymbols[0],
+            tokenB: allTokenSymbols[1],
+            amountS: 35e17,
+            amountB: 22e17,
+          },
+          {
+            tokenS: allTokenSymbols[1],
+            tokenB: allTokenSymbols[0],
+            amountS: 23e17,
+            amountB: 31e17,
+          },
+        ],
+        transactionOrigin,
+        miner,
+        feeRecipient: miner,
+      };
+
+      for (const [i, order] of ringsInfo.orders.entries()) {
+        await setupOrder(order, i);
+      }
+
+      const context = getDefaultContext();
+
+      // Setup the ring so we have access to the calculated hashes
+      const ringsGenerator = new RingsGenerator(context);
+      await ringsGenerator.setupRingsAsync(ringsInfo);
+
+      // Cancel the second order in the ring
+      const orderToCancelIdx = 1;
+      const orderToCancel = ringsInfo.orders[orderToCancelIdx];
+      const hashes = new Bitstream();
+      hashes.addHex(orderToCancel.hash.toString("hex"));
+      const cancelTx = await exchange.cancelOrders(orderToCancel.owner, hashes.getData());
+
+      // Check the TradeDelegate contract to see if the order is indeed cancelled
+      const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
+      assertOrdersValid(ringsInfo.orders, expectedValidValues);
+
+      // Now submit the ring to make sure it behaves as expected (should NOT throw)
+      const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+
+      // Make sure no tokens got transferred
+      assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+    });
+
+    it("should be able to cancel all orders of a trading pair of an owner", async () => {
+      const ringsInfo: RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: allTokenSymbols[2],
+            tokenB: allTokenSymbols[1],
+            amountS: 41e17,
+            amountB: 20e17,
+          },
+          {
+            tokenS: allTokenSymbols[1],
+            tokenB: allTokenSymbols[2],
+            amountS: 23e17,
+            amountB: 10e17,
+          },
+        ],
+        transactionOrigin,
+        miner,
+        feeRecipient: miner,
+      };
+
+      for (const [i, order] of ringsInfo.orders.entries()) {
+        await setupOrder(order, i);
+      }
+
+      const context = getDefaultContext();
+
+      // Setup the ring so we have access to the calculated hashes
+      const ringsGenerator = new RingsGenerator(context);
+      await ringsGenerator.setupRingsAsync(ringsInfo);
+
+      // Cancel the first order using trading pairs
+      const orderToCancelIdx = 0;
+      const orderToCancel = ringsInfo.orders[orderToCancelIdx];
+      const cancelTx = await exchange.cancelAllOrdersForTradingPair(
+        orderToCancel.owner, orderToCancel.tokenS, orderToCancel.tokenB, orderToCancel.validSince + 500);
+
+      // Check the TradeDelegate contract to see if the order is indeed cancelled
+      const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
+      assertOrdersValid(ringsInfo.orders, expectedValidValues);
+
+      // Now submit the ring to make sure it behaves as expected (should NOT throw)
+      const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+
+      // Make sure no tokens got transferred
+      assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+    });
+
+    it("should be able to cancel all orders of an owner", async () => {
+      const ringsInfo: RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: allTokenSymbols[2],
+            tokenB: allTokenSymbols[1],
+            amountS: 57e17,
+            amountB: 35e17,
+          },
+          {
+            tokenS: allTokenSymbols[1],
+            tokenB: allTokenSymbols[2],
+            amountS: 12e17,
+            amountB: 8e17,
+          },
+        ],
+        transactionOrigin,
+        miner,
+        feeRecipient: miner,
+      };
+
+      for (const [i, order] of ringsInfo.orders.entries()) {
+        await setupOrder(order, i);
+      }
+
+      const context = getDefaultContext();
+
+      // Setup the ring so we have access to the calculated hashes
+      const ringsGenerator = new RingsGenerator(context);
+      await ringsGenerator.setupRingsAsync(ringsInfo);
+
+      // Cancel the first order using trading pairs
+      const orderToCancelIdx = 1;
+      const orderToCancel = ringsInfo.orders[orderToCancelIdx];
+      const cancelTx = await exchange.cancelAllOrders(orderToCancel.owner, orderToCancel.validSince + 500);
+
+      // Check the TradeDelegate contract to see if the order is indeed cancelled
+      const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
+      assertOrdersValid(ringsInfo.orders, expectedValidValues);
+
+      // Now submit the ring to make sure it behaves as expected (should NOT throw)
+      const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+
+      // Make sure no tokens got transferred
+      assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+    });
 
   });
 
