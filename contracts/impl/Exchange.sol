@@ -203,7 +203,6 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     event LogTrans(address token, address from, address to, uint amount, uint spendable); // for debug
-    event LogUint3(uint n1, uint n2, uint n3);
     function submitRings(
         bytes data
         )

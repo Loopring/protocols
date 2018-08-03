@@ -79,7 +79,7 @@ library RingHelper {
 
         uint nextIndex = 0;
         for (i = 0; i < ring.size; i++) {
-            nextIndex = (i + ring.size - 1) % ring.size;
+            nextIndex = (i + 1) % ring.size;
             Data.Participation memory p = ring.participations[i];
             Data.Participation memory nextP = ring.participations[nextIndex];
             if (nextP.fillAmountS > p.fillAmountB) {
