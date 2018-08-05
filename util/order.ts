@@ -18,12 +18,13 @@ export class OrderUtil {
     if (!order.broker) {
        order.broker = order.owner;
     } else {
-      // const [registered, brokerInterceptor] = this.BrokerRegistryContract.getBroker(
-      //   order.owner,
-      //   order.broker,
-      // );
-      // assert(registered, "broker unregistered");
-      // order.brokerInterceptor = brokerInterceptor;
+      const [registered, brokerInterceptor] = await this.context.orderBrokerRegistry.getBroker(
+        order.owner,
+        order.broker,
+      );
+      order.valid = order.valid && registered;
+      order.brokerInterceptor =
+        (brokerInterceptor === "0x0000000000000000000000000000000000000000") ? undefined : brokerInterceptor;
     }
   }
 
@@ -99,7 +100,9 @@ export class OrderUtil {
   public async scaleBySpendableAmount(orderInfo: OrderInfo) {
     const spendableS = await this.getErc20SpendableAmount(orderInfo.tokenS,
                                                           orderInfo.owner,
-                                                          this.context.tradeDelegate.address);
+                                                          this.context.tradeDelegate.address,
+                                                          orderInfo.broker,
+                                                          orderInfo.brokerInterceptor);
 
     const filled = await this.context.tradeDelegate.filled(orderInfo.hash.toString("hex"));
     const remaining = orderInfo.amountS - filled;
@@ -113,11 +116,26 @@ export class OrderUtil {
 
   private async getErc20SpendableAmount(tokenAddr: string,
                                         owner: string,
-                                        spender: string) {
+                                        spender: string,
+                                        broker: string,
+                                        brokerInterceptor: string) {
     const token = this.context.ERC20Contract.at(tokenAddr);
     const balance = await token.balanceOf(owner);
     const allowance = await token.allowance(owner, spender);
-    return Math.min(balance, allowance);
+    let spendable = Math.min(balance, allowance);
+
+    if (brokerInterceptor && broker !== owner) {
+      const amount = await this.context.BrokerInterceptorContract.at(brokerInterceptor).getAllowance(
+          owner,
+          broker,
+          tokenAddr,
+      );
+      if (amount < spendable) {
+          spendable = amount;
+      }
+    }
+
+    return spendable;
   }
 
   private toBN(n: number) {

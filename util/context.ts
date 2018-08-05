@@ -12,6 +12,7 @@ export class Context {
   public BrokerRegistryContract: any;
   public OrderRegistryContract: any;
   public MinerRegistryContract: any;
+  public BrokerInterceptorContract: any;
 
   public tokenRegistry: any;
   public tradeDelegate: any;
@@ -41,6 +42,7 @@ export class Context {
     const brokerRegistryAbi = fs.readFileSync(ABIPath + "IBrokerRegistry.abi", "ascii");
     const orderRegistryAbi = fs.readFileSync(ABIPath + "IOrderRegistry.abi", "ascii");
     const minerRegistryAbi = fs.readFileSync(ABIPath + "IMinerRegistry.abi", "ascii");
+    const brokerInterceptorAbi = fs.readFileSync(ABIPath + "IBrokerInterceptor.abi", "ascii");
 
     this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
     this.TokenRegistryContract = web3.eth.contract(JSON.parse(tokenRegistryAbi));
@@ -48,6 +50,7 @@ export class Context {
     this.BrokerRegistryContract = web3.eth.contract(JSON.parse(brokerRegistryAbi));
     this.OrderRegistryContract = web3.eth.contract(JSON.parse(orderRegistryAbi));
     this.MinerRegistryContract = web3.eth.contract(JSON.parse(minerRegistryAbi));
+    this.BrokerInterceptorContract = web3.eth.contract(JSON.parse(brokerInterceptorAbi));
 
     this.tokenRegistry = this.TokenRegistryContract.at(tokenRegistryAddress);
     this.tradeDelegate = this.TradeDelegateContract.at(tradeDelegateAddress);

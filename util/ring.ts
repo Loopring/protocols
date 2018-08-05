@@ -132,6 +132,11 @@ export class Ring {
       // assert(currOrder.amountS / currOrder.amountB
       //        === currOrder.fillAmountS / currOrder.fillAmountB, "fill rates need to match order rate");
 
+      // If the transfer amount is 0 nothing will get transferred
+      if (amount === 0) {
+        continue;
+      }
+
       transferItems.push({token, from , to, amount});
 
       const lrcAddress = this.context.lrcAddress;

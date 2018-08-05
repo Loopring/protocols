@@ -100,6 +100,10 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
             "broker already exists"
         );
 
+        if (interceptor != 0x0) {
+            require(isContract(interceptor), "interceptor is not a contract");
+        }
+
         Broker[] storage brokers = brokersMap[msg.sender];
         Broker memory b = Broker(
             msg.sender,
@@ -159,5 +163,25 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
         delete brokersMap[msg.sender];
 
         emit AllBrokersUnregistered(msg.sender);
+    }
+
+    // Currently here to work around InternalCompilerErrors when implemented
+    // in a library. Because extcodesize is used the function cannot be pure,
+    // so view is used which sometimes gives InternalCompilerErrors when
+    // combined with internal.
+    function isContract(
+        address addr
+        )
+        public
+        view
+        returns (bool)
+    {
+        if (addr == 0x0) {
+            return false;
+        } else {
+            uint size;
+            assembly { size := extcodesize(addr) }
+            return size > 0;
+        }
     }
 }

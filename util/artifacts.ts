@@ -8,6 +8,7 @@ export class Artifacts {
   public MinerRegistry: any;
   public DummyToken: any;
   public DummyAgency: any;
+  public DummyBrokerInterceptor: any;
   constructor(artifacts: any) {
     this.TokenRegistry = artifacts.require("impl/TokenRegistry");
     this.Exchange = artifacts.require("impl/Exchange");
@@ -17,5 +18,6 @@ export class Artifacts {
     this.MinerRegistry = artifacts.require("impl/MinerRegistry");
     this.DummyToken = artifacts.require("test/DummyToken");
     this.DummyAgency = artifacts.require("test/DummyAgency");
+    this.DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");
   }
 }

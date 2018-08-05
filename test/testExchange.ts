@@ -24,6 +24,7 @@ const {
   MinerRegistry,
   TradeDelegate,
   DummyToken,
+  DummyBrokerInterceptor,
 } = new Artifacts(artifacts);
 
 contract("Exchange", (accounts: string[]) => {
@@ -32,12 +33,14 @@ contract("Exchange", (accounts: string[]) => {
   const orderOwners = accounts.slice(5, 8); // 5 ~ 7
   const orderDualAuthAddr = accounts.slice(1, 4);
   const transactionOrigin = /*miner*/ accounts[1];
+  const broker = accounts[1];
 
   let exchange: any;
   let tokenRegistry: any;
   let tradeDelegate: any;
   let orderRegistry: any;
   let minerRegistry: any;
+  let dummyBrokerInterceptor: any;
   let orderBrokerRegistryAddress: string;
   let minerBrokerRegistryAddress: string;
   let lrcAddress: string;
@@ -296,12 +299,14 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   before( async () => {
-    [exchange, tokenRegistry, tradeDelegate, orderRegistry, minerRegistry] = await Promise.all([
+    [exchange, tokenRegistry, tradeDelegate, orderRegistry,
+      minerRegistry, dummyBrokerInterceptor] = await Promise.all([
       Exchange.deployed(),
       TokenRegistry.deployed(),
       TradeDelegate.deployed(),
       OrderRegistry.deployed(),
       MinerRegistry.deployed(),
+      DummyBrokerInterceptor.deployed(),
     ]);
 
     lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
@@ -530,6 +535,140 @@ contract("Exchange", (accounts: string[]) => {
 
       // Make sure no tokens got transferred
       assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+    });
+
+  });
+
+  // Added '.skip' here so these tests are NOT run by default because they take quite
+  // a bit of extra time to run. Remove it once development on submitRings is less frequent.
+  describe.skip("Broker", () => {
+
+    // Start each test case with a clean trade history otherwise state changes
+    // would persist between test cases which would be hard to keep track of and
+    // could potentially hide bugs
+    beforeEach(async () => {
+      await cleanTradeHistory();
+    });
+
+    it("should be able for an order to use a broker without an interceptor", async () => {
+      const ringsInfo: RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: allTokenSymbols[0],
+            tokenB: allTokenSymbols[1],
+            amountS: 35e17,
+            amountB: 22e17,
+            broker,
+          },
+          {
+            tokenS: allTokenSymbols[1],
+            tokenB: allTokenSymbols[0],
+            amountS: 23e17,
+            amountB: 31e17,
+          },
+        ],
+        transactionOrigin,
+        miner,
+        feeRecipient: miner,
+      };
+
+      for (const [i, order] of ringsInfo.orders.entries()) {
+        await setupOrder(order, i);
+      }
+
+      const owner = ringsInfo.orders[0].owner;
+      const context = getDefaultContext();
+      const emptyAddr = "0x0000000000000000000000000000000000000000";
+
+      // Broker not registered: submitRings should NOT throw, but no transactions should happen
+      {
+        const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+        assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+      }
+
+      // Register the broker without interceptor
+      const orderBrokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
+      await orderBrokerRegistry.registerBroker(broker, emptyAddr, {from: owner});
+      // Check if the registration is successful
+      const [isRegistered, interceptorFromContract] = await orderBrokerRegistry.getBroker(owner, broker);
+      assert(isRegistered, "interceptor should be registered.");
+      assert.equal(emptyAddr, interceptorFromContract, "get wrong interceptor");
+
+      // Broker registered: transactions should happen
+      {
+        const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+        assert(report.transferItems.length > 0, "Tokens should be transfered");
+      }
+
+      // Unregister the broker
+      orderBrokerRegistry.unregisterBroker(broker, {from: owner});
+    });
+
+    it("should be able to for an order to use a broker with an interceptor", async () => {
+      const ringsInfo: RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: allTokenSymbols[0],
+            tokenB: allTokenSymbols[1],
+            amountS: 35e17,
+            amountB: 22e17,
+          },
+          {
+            tokenS: allTokenSymbols[1],
+            tokenB: allTokenSymbols[0],
+            amountS: 23e17,
+            amountB: 31e17,
+            broker,
+          },
+        ],
+        transactionOrigin,
+        miner,
+        feeRecipient: miner,
+      };
+
+      for (const [i, order] of ringsInfo.orders.entries()) {
+        await setupOrder(order, i);
+      }
+
+      const owner = ringsInfo.orders[1].owner;
+      const context = getDefaultContext();
+
+      // Broker not registered: submitRings should NOT throw, but no transactions should happen
+      {
+        const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+        assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+      }
+
+      // Register the broker without interceptor
+      const orderBrokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
+      await orderBrokerRegistry.registerBroker(broker, dummyBrokerInterceptor.address, {from: owner});
+      // Check if the registration is successful
+      const [isRegistered, interceptorFromContract] = await orderBrokerRegistry.getBroker(owner, broker);
+      assert(isRegistered, "interceptor should be registered.");
+      assert.equal(dummyBrokerInterceptor.address, interceptorFromContract, "get wrong interceptor");
+
+      // Make sure allowance is set to 0
+      await dummyBrokerInterceptor.setAllowance(0);
+
+      // Broker registered, but allowance is set to 0 so no transactions should happen
+      {
+        const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+        assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+      }
+
+      // Now set the allowance to a large number
+      await dummyBrokerInterceptor.setAllowance(1e32);
+
+      // Broker registered and allowance set to a high value: transactions should happen
+      {
+        const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+        assert(report.transferItems.length > 0, "Tokens should be transfered");
+      }
+
+      // Unregister the broker
+      orderBrokerRegistry.unregisterBroker(broker, {from: owner});
     });
 
   });

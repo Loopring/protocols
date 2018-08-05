@@ -22,7 +22,8 @@ export class MultiHashUtil {
   }
 
   public async signOrderAsync(order: OrderInfo) {
-    return await this.signAsync(order.signAlgorithm, order.hash, order.owner);
+    const signer = order.broker ? order.broker : order.owner;
+    return await this.signAsync(order.signAlgorithm, order.hash, signer);
   }
 
   public async signAsync(algorithm: SignAlgorithm, hash: Buffer, address: string) {

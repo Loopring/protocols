@@ -68,7 +68,7 @@ library OrderHelper {
                 order.owner,
                 order.broker
             );
-            require(registered, "broker unregistered");
+            order.valid = order.valid && registered;
         }
     }
 
@@ -197,7 +197,7 @@ library OrderHelper {
             }
         }
 
-        if (brokerInterceptor != 0x0 && brokerInterceptor != tokenOwner) {
+        if (brokerInterceptor != 0x0 && broker != tokenOwner) {
             amount = IBrokerInterceptor(brokerInterceptor).getAllowance(
                 tokenOwner,
                 broker,
