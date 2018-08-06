@@ -272,12 +272,20 @@ contract Exchange is IExchange, NoDefaultFunc {
                 );
             }
         }
+        updateOrdersStats(ctx, orders);
 
         ringIndex = ctx.ringIndex;
     }
 
-    function updateOrdersStats(Data.Order[] orders) internal {
-
+    function updateOrdersStats(Data.Context ctx, Data.Order[] orders) internal {
+        bytes32[] memory ordersFilledInfo = new bytes32[](orders.length * 2);
+        for (uint i = 0; i < orders.length; i++){
+            Data.Order memory order = orders[i];
+            uint totalFilled = order.amountS.sub(order.maxAmountS);
+            ordersFilledInfo[i*2] = order.hash;
+            ordersFilledInfo[i*2 + 1] = bytes32(totalFilled);
+        }
+        ctx.delegate.batchUpdateFilled(ordersFilledInfo);
     }
 
     function checkCutoffsAndCancelledOrders(Data.Context ctx, Data.Order[] orders) internal {

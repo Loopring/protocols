@@ -373,10 +373,11 @@ contract("Exchange", (accounts: string[]) => {
         }
 
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
+        console.log("gas used: ", tx.receipt.gasUsed);
+
         const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
         assertTransfers(transferEvents, report.transferItems);
 
-        // console.log("tx:", tx);
         // await watchAndPrintEvent(tradeDelegate, "LogTrans");
         // await watchAndPrintEvent(exchange, "LogUint3");
         // await watchAndPrintEvent(exchange, "LogAddress");

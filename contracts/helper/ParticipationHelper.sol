@@ -25,7 +25,7 @@ import "../lib/MathUint.sol";
 /// @title ParticipationHelper
 /// @author Daniel Wang - <daniel@loopring.org>.
 library ParticipationHelper {
-    using MathUint      for uint;
+    using MathUint for uint;
 
     function adjustOrderState(
         Data.Participation p
@@ -42,14 +42,4 @@ library ParticipationHelper {
         }
     }
 
-    function calculateFeeAmounts(
-        Data.Participation p,
-        Data.Mining mining
-        )
-        internal
-        pure
-    {
-        Data.Order memory order = p.order;
-
-    }
 }

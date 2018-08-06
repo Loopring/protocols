@@ -68,6 +68,11 @@ contract ITradeDelegate {
         )
         external;
 
+    function batchUpdateFilled(
+        bytes32[] filledInfo
+        )
+        external;
+
     function isAddressAuthorized(
         address addr
         )

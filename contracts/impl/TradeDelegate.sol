@@ -33,10 +33,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
     using MathUint for uint;
 
     bool  public suspended = false;
-
-    mapping (address => uint)   private positionMap;
-    mapping (address => string) private addressToSymbolMap;
-    mapping (string => address) private symbolToAddressMap;
+    mapping (address => uint) private positionMap;
 
     struct AuthorizedAddress {
         uint    pos;
@@ -129,6 +126,17 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
                 ),
                 "token transfer failure"
             );
+        }
+    }
+
+    function batchUpdateFilled(bytes32[] filledInfo)
+        onlyAuthorized
+        notSuspended
+        external
+    {
+        require(filledInfo.length % 2 == 0);
+        for (uint i = 0; i < filledInfo.length; i += 2) {
+            filled[filledInfo[i]] = uint(filledInfo[i + 1]);
         }
     }
 

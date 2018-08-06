@@ -87,11 +87,7 @@ library OrderHelper {
             order.brokerInterceptor
         );
 
-        if (order.filledAmountS == 0) {
-            order.filledAmountS = ctx.delegate.filled(order.hash);
-        }
-        uint filled = order.filledAmountS.add(order.tobeFilledAmountS);
-
+        uint filled = ctx.delegate.filled(order.hash);
         order.maxAmountS = order.amountS.sub(filled);
 
         uint spendableS = getSpendable(
