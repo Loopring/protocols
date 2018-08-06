@@ -67,28 +67,31 @@ library RingHelper {
             p.fillAmountS = order.maxAmountS;
             totalRate = totalRate.mul(order.amountS) / order.amountB;
         }
+        if (totalRate < RATE_PERCISION) {
+            ring.valid = false;
+        } else {
+            uint smallest = 0;
 
-        uint smallest = 0;
-
-        for (i = 0; i < ring.size; i++) {
-            smallest = calculateOrderFillAmounts(ring, i, smallest, totalRate);
-        }
-
-        for (i = 0; i < smallest; i++) {
-            calculateOrderFillAmounts(ring, i, smallest, totalRate);
-        }
-
-        uint nextIndex = 0;
-        for (i = 0; i < ring.size; i++) {
-            nextIndex = (i + 1) % ring.size;
-            Data.Participation memory p = ring.participations[i];
-            Data.Participation memory nextP = ring.participations[nextIndex];
-            if (nextP.fillAmountS > p.fillAmountB) {
-                nextP.splitS = nextP.fillAmountS - p.fillAmountB;
-                nextP.fillAmountS = p.fillAmountB;
+            for (i = 0; i < ring.size; i++) {
+                smallest = calculateOrderFillAmounts(ring, i, smallest, totalRate);
             }
-            // p.calculateFeeAmounts(mining);
-            p.adjustOrderState();
+
+            for (i = 0; i < smallest; i++) {
+                calculateOrderFillAmounts(ring, i, smallest, totalRate);
+            }
+
+            uint nextIndex = 0;
+            for (i = 0; i < ring.size; i++) {
+                nextIndex = (i + 1) % ring.size;
+                Data.Participation memory p = ring.participations[i];
+                Data.Participation memory nextP = ring.participations[nextIndex];
+                if (nextP.fillAmountS > p.fillAmountB) {
+                    nextP.splitS = nextP.fillAmountS - p.fillAmountB;
+                    nextP.fillAmountS = p.fillAmountB;
+                }
+                // p.calculateFeeAmounts(mining);
+                p.adjustOrderState();
+            }
         }
     }
 

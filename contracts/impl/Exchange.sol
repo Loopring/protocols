@@ -259,11 +259,9 @@ contract Exchange is IExchange, NoDefaultFunc {
             Data.Ring memory ring = rings[i];
             ring.checkOrdersValid();
             ring.checkTokensRegistered(ctx);
-            // Only settle rings we have checked to be valid
+            ring.calculateFillAmountAndFee(mining);
             if (ring.valid) {
-                // Only adjust order states if the ring actually gets settled
-                ring.calculateFillAmountAndFee(mining);
-
+                // Only settle rings we have checked to be valid
                 /*IExchange.Fill[] memory fills = */
                 ring.settleRing(ctx, mining);
                 emit RingMined(
