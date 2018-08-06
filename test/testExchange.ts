@@ -9,6 +9,7 @@ import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/artifacts";
 import { Bitstream } from "../util/bitstream";
 import { Context } from "../util/context";
+import { expectThrow } from "../util/expectThrow";
 import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
@@ -641,7 +642,7 @@ contract("Exchange", (accounts: string[]) => {
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
       }
 
-      // Register the broker without interceptor
+      // Register the broker with interceptor
       const orderBrokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
       await orderBrokerRegistry.registerBroker(broker, dummyBrokerInterceptor.address, {from: owner});
       // Check if the registration is successful
@@ -666,6 +667,108 @@ contract("Exchange", (accounts: string[]) => {
         const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
         assert(report.transferItems.length > 0, "Tokens should be transfered");
       }
+
+      // Unregister the broker
+      orderBrokerRegistry.unregisterBroker(broker, {from: owner});
+    });
+
+  });
+
+  // Added '.skip' here so these tests are NOT run by default because they take quite
+  // a bit of extra time to run. Remove it once development on submitRings is less frequent.
+  describe.skip("Security", () => {
+
+    beforeEach(async () => {
+      await cleanTradeHistory();
+    });
+
+    it("Reentrancy attack", async () => {
+      const ringsInfo: RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: allTokenSymbols[0],
+            tokenB: allTokenSymbols[1],
+            amountS: 35e17,
+            amountB: 22e17,
+            broker,
+          },
+          {
+            tokenS: allTokenSymbols[1],
+            tokenB: allTokenSymbols[0],
+            amountS: 23e17,
+            amountB: 31e17,
+          },
+        ],
+        transactionOrigin,
+        miner,
+        feeRecipient: miner,
+      };
+
+      // A ring without callbacks so submitRings doesn't get into an infinite loop
+      // in a reentrancy scenario
+      const ringsInfoAttack: RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: allTokenSymbols[0],
+            tokenB: allTokenSymbols[1],
+            amountS: 35e17,
+            amountB: 25e17,
+          },
+          {
+            tokenS: allTokenSymbols[1],
+            tokenB: allTokenSymbols[0],
+            amountS: 23e17,
+            amountB: 32e17,
+          },
+        ],
+        transactionOrigin,
+        miner,
+        feeRecipient: miner,
+      };
+
+      for (const [i, order] of ringsInfo.orders.entries()) {
+        await setupOrder(order, i);
+      }
+
+      for (const [i, order] of ringsInfoAttack.orders.entries()) {
+        await setupOrder(order, i);
+      }
+
+      const owner = ringsInfo.orders[0].owner;
+      const context = getDefaultContext();
+
+      const attackBrokerInterceptor = await DummyBrokerInterceptor.new(exchange.address);
+
+      // Register the broker with interceptor
+      const orderBrokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
+      await orderBrokerRegistry.registerBroker(broker, attackBrokerInterceptor.address, {from: owner});
+      // Check if the registration is successful
+      const [isRegistered, interceptorFromContract] = await orderBrokerRegistry.getBroker(owner, broker);
+      assert(isRegistered, "interceptor should be registered.");
+      assert.equal(attackBrokerInterceptor.address, interceptorFromContract, "get wrong interceptor");
+
+      // Set the allowance to a large number
+      await attackBrokerInterceptor.setAllowance(1e32);
+
+      // Enable the Reentrancy attack
+      // Create a valid ring that can be submitted by the interceptor
+      {
+        const ringsGeneratorAttack = new RingsGenerator(context);
+        await ringsGeneratorAttack.setupRingsAsync(ringsInfoAttack);
+        const bsAttack = ringsGeneratorAttack.toSubmitableParam(ringsInfoAttack);
+        // Enable the reentrancy attack on the interceptor
+        await attackBrokerInterceptor.setReentrancyAttackEnabled(true, bsAttack);
+      }
+
+      // Setup the ring
+      const ringsGenerator = new RingsGenerator(context);
+      await ringsGenerator.setupRingsAsync(ringsInfo);
+      const bs = ringsGenerator.toSubmitableParam(ringsInfo);
+
+      // submitRings should throw
+      await expectThrow(exchange.submitRings(bs, {from: transactionOrigin}));
 
       // Unregister the broker
       orderBrokerRegistry.unregisterBroker(broker, {from: owner});

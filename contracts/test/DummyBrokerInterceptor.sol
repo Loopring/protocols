@@ -19,6 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IBrokerInterceptor.sol";
+import "../iface/IExchange.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract DummyBrokerInterceptor is IBrokerInterceptor {
@@ -26,13 +27,16 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
     address public exchangeAddress = 0x0;
     uint public allowance = 0;
 
+    bool public doReentrancyAttack = false;
+    bytes public submitRingsData;
+
     constructor(
-        // address _tokenRegistryAddress
+        address _exchangeAddress
         )
         public
     {
-        // require(_tokenRegistryAddress != 0x0);
-        // tokenRegistryAddress = _tokenRegistryAddress;
+        require(_exchangeAddress != 0x0, "Exchange address needs to be valid");
+        exchangeAddress = _exchangeAddress;
     }
 
     function getAllowance(
@@ -56,6 +60,9 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         public
         returns (bool ok)
     {
+        if (doReentrancyAttack) {
+            IExchange(exchangeAddress).submitRings(submitRingsData);
+        }
         ok = true;
     }
 
@@ -65,6 +72,19 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         public
     {
         allowance = _allowance;
+    }
+
+    function setReentrancyAttackEnabled(
+        bool _enable,
+        bytes _submitRingsData
+        )
+        public
+    {
+        doReentrancyAttack = _enable;
+        submitRingsData = new bytes(_submitRingsData.length);
+        for (uint i = 0; i < _submitRingsData.length; i++) {
+            submitRingsData[i] = _submitRingsData[i];
+        }
     }
 
 }

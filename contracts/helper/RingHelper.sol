@@ -19,6 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IExchange.sol";
+import "../iface/IBrokerInterceptor.sol";
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
 import "../lib/ERC20.sol";
@@ -192,9 +193,10 @@ library RingHelper {
         bytes32[] memory batch = new bytes32[](batchSize * 4);
         uint batchIndex = 0;
         uint i;
+        Data.Participation memory p;
         for (i = 0; i < ring.size; i++) {
             uint prevIndex = (i + ring.size - 1) % ring.size;
-            Data.Participation memory p = ring.participations[i];
+            p = ring.participations[i];
             Data.Participation memory prevP = ring.participations[prevIndex];
 
             fills[i].orderHash = p.order.hash;
@@ -260,6 +262,19 @@ library RingHelper {
 
         // logTrans(batch, address(ctx.delegate));
         ctx.delegate.batchTransfer(batch);
+
+        for (i = 0; i < ring.size; i++) {
+            p = ring.participations[i];
+            if (p.order.brokerInterceptor != 0x0) {
+                IBrokerInterceptor(p.order.brokerInterceptor).onTokenSpent(
+                    p.order.owner,
+                    p.order.broker,
+                    p.order.tokenS,
+                    p.fillAmountS
+                );
+                // Might want to add LRC and/or other fee payment here as well
+            }
+        }
     }
 
     function logTrans(bytes32[] batch, address delegateAddress)

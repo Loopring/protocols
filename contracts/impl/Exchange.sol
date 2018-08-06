@@ -219,6 +219,12 @@ contract Exchange is IExchange, NoDefaultFunc {
             ringIndex
         );
 
+        // Check if the highest bit of ringIndex is '1'
+        require((ctx.ringIndex >> 63) == 0, "attempted to re-enter submitRings");
+
+        // Set the highest bit of ringIndex to '1' (IN STORAGE!)
+        ringIndex = ctx.ringIndex | (1 << 63);
+
         (Data.Mining  memory mining,
             Data.Order[] memory orders,
             Data.Ring[]  memory rings) = ExchangeDeserializer.deserialize(ctx, data);
