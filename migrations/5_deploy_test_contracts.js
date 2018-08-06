@@ -14,15 +14,10 @@ module.exports = function(deployer, network, accounts) {
         TokenRegistry.deployed(),
       ]);
     }).then((contracts) => {
-      deployer.deploy(
-        DummyBrokerInterceptor,
-        Exchange.address,
-      );
-      return deployer.deploy(
-        DummyAgency,
-        TokenRegistry.address,
-      );
+      return Promise.all([
+        deployer.deploy(DummyBrokerInterceptor, Exchange.address),
+        deployer.deploy(DummyAgency, TokenRegistry.address),
+      ]);
     });
-
   }
 };

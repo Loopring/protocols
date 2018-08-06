@@ -41,13 +41,11 @@ contract ITokenRegistry {
     );
 
     event TokenRegistered(
-        address indexed addr,
-        string          symbol
+        address indexed addr
     );
 
     event TokenUnregistered(
-        address indexed addr,
-        string          symbol
+        address indexed addr
     );
 
     function registerAgency(
@@ -65,8 +63,7 @@ contract ITokenRegistry {
         external;
 
     function registerToken(
-        address addr,
-        string  symbol
+        address addr
         )
         external;
 
@@ -81,18 +78,4 @@ contract ITokenRegistry {
         external
         view
         returns (bool);
-
-    function getAddressBySymbol(
-        string symbol
-        )
-        external
-        view
-        returns (address);
-
-    function getSymbolByAddress(
-        address addr
-        )
-        external
-        view
-        returns (string);
 }

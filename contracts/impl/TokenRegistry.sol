@@ -33,8 +33,6 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
 
     mapping (address => uint)   private agencyPosMap;
     mapping (address => uint)   private tokenPosMap;
-    mapping (string => address) private  symbolToAddressMap;
-    mapping (address => string) public  addressToSymbolMap;
 
     function registerAgency(
         address agency
@@ -92,8 +90,7 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
     }
 
     function registerToken(
-        address addr,
-        string  symbol
+        address addr
         )
         external
     {
@@ -103,16 +100,14 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         );
 
         require(0x0 != addr, "bad address");
-        require(bytes(symbol).length > 0, "empty symbol");
-        require(0x0 == symbolToAddressMap[symbol], "symbol registered");
-        require(0 == bytes(addressToSymbolMap[addr]).length, "address registered");
+
+        uint pos = tokenPosMap[addr];
+        require(pos == 0, "token already registered");
 
         tokens.push(addr);
         tokenPosMap[addr] = tokens.length;
-        addressToSymbolMap[addr] = symbol;
-        symbolToAddressMap[symbol] = addr;
 
-        emit TokenRegistered(addr, symbol);
+        emit TokenRegistered(addr);
     }
 
     function unregisterToken(
@@ -134,13 +129,9 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         }
         tokens.length -= 1;
 
-        string storage symbol = addressToSymbolMap[addr];
-
-        delete symbolToAddressMap[symbol];
-        delete addressToSymbolMap[addr];
         delete tokenPosMap[addr];
 
-        emit TokenUnregistered(addr, symbol);
+        emit TokenUnregistered(addr);
     }
 
     function areAllTokensRegistered(
@@ -156,26 +147,6 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
             }
         }
         return true;
-    }
-
-    function getAddressBySymbol(
-        string symbol
-        )
-        external
-        view
-        returns (address)
-    {
-        return symbolToAddressMap[symbol];
-    }
-
-    function getSymbolByAddress(
-        address addr
-        )
-        external
-        view
-        returns (string)
-    {
-        return addressToSymbolMap[addr];
     }
 
     // Currently here to work around InternalCompilerErrors when implemented

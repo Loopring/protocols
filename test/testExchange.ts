@@ -20,6 +20,7 @@ import { xor } from "../util/xor";
 const {
   Exchange,
   TokenRegistry,
+  SymbolRegistry,
   BrokerRegistry,
   OrderRegistry,
   MinerRegistry,
@@ -38,6 +39,7 @@ contract("Exchange", (accounts: string[]) => {
 
   let exchange: any;
   let tokenRegistry: any;
+  let symbolRegistry: any;
   let tradeDelegate: any;
   let orderRegistry: any;
   let minerRegistry: any;
@@ -138,8 +140,8 @@ contract("Exchange", (accounts: string[]) => {
 
     const symbolS = order.tokenS;
     const symbolB = order.tokenB;
-    const addrS = await tokenRegistry.getAddressBySymbol(symbolS);
-    const addrB = await tokenRegistry.getAddressBySymbol(symbolB);
+    const addrS = await symbolRegistry.getAddressBySymbol(symbolS);
+    const addrB = await symbolRegistry.getAddressBySymbol(symbolB);
 
     order.owner = owner;
     order.tokenS = addrS;
@@ -300,17 +302,18 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   before( async () => {
-    [exchange, tokenRegistry, tradeDelegate, orderRegistry,
+    [exchange, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
       minerRegistry, dummyBrokerInterceptor] = await Promise.all([
       Exchange.deployed(),
       TokenRegistry.deployed(),
+      SymbolRegistry.deployed(),
       TradeDelegate.deployed(),
       OrderRegistry.deployed(),
       MinerRegistry.deployed(),
       DummyBrokerInterceptor.deployed(),
     ]);
 
-    lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
+    lrcAddress = await symbolRegistry.getAddressBySymbol("LRC");
 
     // Get the different brokers from the exchange
     orderBrokerRegistryAddress = await exchange.orderBrokerRegistryAddress();
@@ -321,7 +324,7 @@ contract("Exchange", (accounts: string[]) => {
     await minerBrokerRegistry.registerBroker(miner, "0x0", {from: miner});
 
     for (const sym of allTokenSymbols) {
-      const addr = await tokenRegistry.getAddressBySymbol(sym);
+      const addr = await symbolRegistry.getAddressBySymbol(sym);
       tokenSymbolAddrMap.set(sym, addr);
       const token = await DummyToken.at(addr);
       allTokens.push(token);

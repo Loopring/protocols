@@ -1,5 +1,6 @@
 var TradeDelegate = artifacts.require("./impl/TradeDelegate");
 var TokenRegistry = artifacts.require("./impl/TokenRegistry");
+var SymbolRegistry = artifacts.require("./impl/SymbolRegistry");
 var BrokerRegistry = artifacts.require("./impl/BrokerRegistry");
 var OrderRegistry = artifacts.require("./impl/OrderRegistry");
 var MinerRegistry = artifacts.require("./impl/MinerRegistry");
@@ -12,6 +13,7 @@ module.exports = function(deployer, network, accounts) {
   } else {
     deployer.then(() => {
       return Promise.all([
+        SymbolRegistry.deployed(),
         TokenRegistry.deployed(),
         TradeDelegate.deployed(),
         BrokerRegistry.deployed(),
@@ -19,11 +21,11 @@ module.exports = function(deployer, network, accounts) {
         MinerRegistry.deployed(),
       ]);
     }).then((contracts) => {
-      var [tokenRegistry] = contracts;
+      var [symbolRegistry] = contracts;
       return Promise.all([
         BrokerRegistry.new(),
         BrokerRegistry.new(),
-        tokenRegistry.getAddressBySymbol("LRC"),
+        symbolRegistry.getAddressBySymbol("LRC"),
       ]);
     }).then(addresses => {
       var [orderBrokerRegistry, minerBrokerRegistry, lrcAddr] = addresses;

@@ -64,7 +64,7 @@ contract TokenFactoryImpl is ITokenFactory, NoDefaultFunc {
         );
 
         addr = address(token);
-        ITokenRegistry(tokenRegistry).registerToken(addr, symbol);
+        ITokenRegistry(tokenRegistry).registerToken(addr);
 
         emit TokenCreated(
             addr,

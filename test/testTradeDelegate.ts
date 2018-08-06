@@ -5,7 +5,7 @@ import { expectThrow } from "../util/expectThrow";
 
 const {
   TradeDelegate,
-  TokenRegistry,
+  SymbolRegistry,
   DummyToken,
 } = new Artifacts(artifacts);
 
@@ -17,7 +17,7 @@ contract("TradeDelegate", (accounts: string[]) => {
   const orderOwner2 = accounts[6];
 
   let tradeDelegate: any;
-  let tokenRegistry: any;
+  let symbolRegistry: any;
   let lrcAddress: string;
   let eosAddress: string;
   let rdnAddress: string;
@@ -25,12 +25,12 @@ contract("TradeDelegate", (accounts: string[]) => {
 
   before(async () => {
     tradeDelegate = await TradeDelegate.deployed();
-    tokenRegistry = await TokenRegistry.deployed();
+    symbolRegistry = await SymbolRegistry.deployed();
 
-    lrcAddress = await tokenRegistry.getAddressBySymbol("LRC");
-    eosAddress = await tokenRegistry.getAddressBySymbol("EOS");
-    rdnAddress = await tokenRegistry.getAddressBySymbol("RDN");
-    gtoAddress = await tokenRegistry.getAddressBySymbol("GTO");
+    lrcAddress = await symbolRegistry.getAddressBySymbol("LRC");
+    eosAddress = await symbolRegistry.getAddressBySymbol("EOS");
+    rdnAddress = await symbolRegistry.getAddressBySymbol("RDN");
+    gtoAddress = await symbolRegistry.getAddressBySymbol("GTO");
   });
 
   beforeEach(async () => {

@@ -3,6 +3,7 @@ var Bluebird                = require("bluebird");
 var _                       = require("lodash");
 var DummyToken              = artifacts.require("./test/DummyToken");
 var TokenRegistry           = artifacts.require("./impl/TokenRegistry");
+var SymbolRegistry          = artifacts.require("./impl/SymbolRegistry");
 
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {
@@ -11,8 +12,12 @@ module.exports = function(deployer, network, accounts) {
     var devTokenInfos = tokenInfo.development;
     var totalSupply = 1e+26;
     deployer.then(() => {
-      return TokenRegistry.deployed();
-    }).then((tokenRegistry) => {
+      return Promise.all([
+        TokenRegistry.deployed(),
+        SymbolRegistry.deployed(),
+      ]);
+    }).then((contracts) => {
+      const [tokenRegistry, symbolRegistry] = contracts;
       return Bluebird.each(devTokenInfos.map(token => DummyToken.new(
         token.name,
         token.symbol,
@@ -21,7 +26,10 @@ module.exports = function(deployer, network, accounts) {
       )), _.noop).then(dummyTokens => {
         return Bluebird.each(dummyTokens.map((tokenContract, i) => {
           var token = devTokenInfos[i];
-          return tokenRegistry.registerToken(tokenContract.address, token.symbol);
+          return Promise.all([
+            tokenRegistry.registerToken(tokenContract.address),
+            symbolRegistry.registerSymbol(tokenContract.address, token.symbol),
+          ]);
         }), _.noop);
       });
 

@@ -18,36 +18,44 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/ITokenRegistry.sol";
 
+/// @title ISymbolRegistry
+/// @dev This contract maintains a mapping between tokens and their symbol.
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DummyAgency {
+contract ISymbolRegistry {
 
-    address public tokenRegistryAddress = 0x0;
+    event SymbolRegistered(
+        address indexed addr,
+        string          symbol
+    );
 
-    constructor(
-        address _tokenRegistryAddress
+    event SymbolUnregistered(
+        address indexed addr,
+        string          symbol
+    );
+
+    function registerSymbol(
+        address addr,
+        string  symbol
         )
-        public
-    {
-        require(_tokenRegistryAddress != 0x0);
-        tokenRegistryAddress = _tokenRegistryAddress;
-    }
+        external;
 
-    function registerToken(
+    function unregisterSymbol(
+        address addr
+        )
+        external;
+
+    function getAddressBySymbol(
+        string symbol
+        )
+        external
+        view
+        returns (address);
+
+    function getSymbolByAddress(
         address addr
         )
         external
-    {
-        ITokenRegistry(tokenRegistryAddress).registerToken(addr);
-    }
-
-    function unregisterToken(
-        address addr
-        )
-        external
-    {
-        ITokenRegistry(tokenRegistryAddress).unregisterToken(addr);
-    }
-
+        view
+        returns (string);
 }
