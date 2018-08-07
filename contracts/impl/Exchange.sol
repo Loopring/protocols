@@ -289,20 +289,16 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function checkCutoffsAndCancelledOrders(Data.Context ctx, Data.Order[] orders) internal {
-        address[] memory owners = new address[](orders.length);
-        bytes20[] memory tradingPairs = new bytes20[](orders.length);
-        uint[] memory validSince = new uint[](orders.length);
-        bytes32[] memory hashes = new bytes32[](orders.length);
-
+        bytes32[] memory ordersInfo = new bytes32[](orders.length * 4);
         for (uint i = 0; i < orders.length; i++) {
             Data.Order memory order = orders[i];
-            owners[i] = order.owner;
-            tradingPairs[i] = bytes20(order.tokenS) ^ bytes20(order.tokenB);
-            validSince[i] = order.validSince;
-            hashes[i] = order.hash;
+            ordersInfo[i*4 + 0] = bytes32(order.owner);
+            ordersInfo[i*4 + 1] = order.hash;
+            ordersInfo[i*4 + 2] = bytes32(order.validSince);
+            ordersInfo[i*4 + 3] = bytes32(bytes20(order.tokenS) ^ bytes20(order.tokenB));
         }
 
-        uint ordersValid = ctx.delegate.checkCutoffsAndCancelledBatch(owners, tradingPairs, validSince, hashes);
+        uint ordersValid = ctx.delegate.batchCheckCutoffsAndCancelled(ordersInfo);
 
         for (uint i = 0; i < orders.length; i++) {
             Data.Order memory order = orders[i];

@@ -111,11 +111,8 @@ contract ITradeDelegate {
         )
         external;
 
-    function checkCutoffsAndCancelledBatch(
-        address[] owners,
-        bytes20[] tradingPairs,
-        uint[]    validSince,
-        bytes32[] orderHashes
+    function batchCheckCutoffsAndCancelled(
+        bytes32[] orderInfo
         )
         external
         view

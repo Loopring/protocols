@@ -209,28 +209,22 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         tradingPairCutoffs[owner][tokenPair] = cutoff;
     }
 
-    function checkCutoffsAndCancelledBatch(
-        address[] owners,
-        bytes20[] tradingPairs,
-        uint[]    validSince,
-        bytes32[] orderHashes
+    function batchCheckCutoffsAndCancelled(
+        bytes32[] batch
         )
         external
         view
         returns (uint)
     {
-        uint len = owners.length;
-        require(len == tradingPairs.length);
-        require(len == validSince.length);
-        require(len == orderHashes.length);
-        require(len <= 256);
+        require(batch.length % 4 == 0);
+        require(batch.length <= 256 * 4);
 
         uint cutoffsValid = 0;
-        for (uint i = 0; i < len; i++) {
-            bool valid = !cancelled[owners[i]][orderHashes[i]];
-            valid = valid && validSince[i] > tradingPairCutoffs[owners[i]][tradingPairs[i]];
-            valid = valid && validSince[i] > cutoffs[owners[i]];
-            cutoffsValid |= valid ? (1 << i) : 0;
+        for (uint i = 0; i < batch.length; i += 4) {
+            bool valid = !cancelled[address(batch[i])][batch[i + 1]];
+            valid = valid && uint(batch[i + 2]) > tradingPairCutoffs[address(batch[i])][bytes20(batch[i + 3])];
+            valid = valid && uint(batch[i + 2]) > cutoffs[address(batch[i])];
+            cutoffsValid |= valid ? (1 << (i >> 2)) : 0;
         }
 
         return cutoffsValid;

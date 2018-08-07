@@ -18,6 +18,15 @@ export class Bitstream {
     }
   }
 
+  public getBytes32Array() {
+    if (this.data.length === 0) {
+      return [];
+    } else {
+      assert.equal(this.length() % 32, 0, "Bitstream not compatible with bytes32[]");
+      return this.data.match(/.{1,64}/g).map((element) => "0x" + element);
+    }
+  }
+
   public addBigNumber(x: BigNumber, numBytes = 32) {
     this.data += this.padString(web3.toHex(x).slice(2), numBytes * 2);
   }
@@ -40,7 +49,7 @@ export class Bitstream {
 
   public addRawBytes(bs: string) {
     const bsHex = web3.toHex(bs);
-    console.log("bsHex:", bsHex);
+    // console.log("bsHex:", bsHex);
     this.data += bsHex.slice(2);
   }
 

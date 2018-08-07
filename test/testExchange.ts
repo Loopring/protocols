@@ -250,20 +250,16 @@ contract("Exchange", (accounts: string[]) => {
   const assertOrdersValid = async (orders: OrderInfo[], expectedValidValues: boolean[]) => {
     assert.equal(orders.length, expectedValidValues.length, "Array sizes need to match");
 
-    const owners: string[] = [];
-    const tradingPairs: BigNumber[] = [];
-    const validSince: number[] = [];
-    const hashes: BigNumber[] = [];
-
+    const bitstream = new Bitstream();
     for (const order of orders) {
-        owners.push(order.owner);
-        tradingPairs.push(new BigNumber(xor(order.tokenS, order.tokenB, 20).slice(2), 16));
-        validSince.push(order.validSince);
-        hashes.push(new BigNumber(order.hash.toString("hex"), 16));
+      bitstream.addAddress(order.owner, 32);
+      bitstream.addHex(order.hash.toString("hex"));
+      bitstream.addNumber(order.validSince, 32);
+      bitstream.addHex(xor(order.tokenS, order.tokenB, 20).slice(2));
+      bitstream.addNumber(0, 12);
     }
 
-    const ordersValid = await tradeDelegate.checkCutoffsAndCancelledBatch(
-      owners, tradingPairs, validSince, hashes);
+    const ordersValid = await tradeDelegate.batchCheckCutoffsAndCancelled(bitstream.getBytes32Array());
 
     const bits = new BN(ordersValid.toString(16), 16);
     for (const [i, order] of orders.entries()) {
