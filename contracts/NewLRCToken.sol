@@ -185,7 +185,7 @@ contract StandardToken is ERC20, BasicToken {
     }
 }
 
-contract LREToken is StandardToken {
+contract LRCToken is StandardToken {
     using SafeMath for uint256;
 
     string     public name = "New Loopring token on ethereum";
