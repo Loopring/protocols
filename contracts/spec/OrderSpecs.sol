@@ -31,6 +31,7 @@ library OrderSpecs {
 
     function assembleOrders(
         uint16[] specs,
+        Data.Context ctx,
         Data.Inputs inputs
         )
         internal
@@ -40,11 +41,12 @@ library OrderSpecs {
         uint size = specs.length;
         orders = new Data.Order[](size);
         for (uint i = 0; i < size; i++) {
-            orders[i] = assembleOrder(specs[i], inputs);
+            orders[i] = assembleOrder(ctx, specs[i], inputs);
         }
     }
 
     function assembleOrder(
+        Data.Context ctx,
         uint16 spec,
         Data.Inputs inputs
         )
@@ -58,18 +60,23 @@ library OrderSpecs {
             address(0x0),         // tokenB
             inputs.nextUint(),    // amountS
             inputs.nextUint(),    // amountB
-            inputs.nextUint(),    // lrcFee
             inputs.nextUint(),    // validSince
-            spec.hasDualAuth() ? inputs.nextAddress() : address(0x0),
-            spec.hasBroker() ? inputs.nextAddress() : address(0x0),
-            spec.hasOrderInterceptor() ? inputs.nextAddress() : address(0x0),
-            spec.hasWallet() ? inputs.nextAddress() : address(0x0),
+            spec.hasDualAuth() ? inputs.nextAddress() : 0x0,
+            spec.hasBroker() ? inputs.nextAddress() : 0x0,
+            spec.hasOrderInterceptor() ? inputs.nextAddress() : 0x0,
+            spec.hasWallet() ? inputs.nextAddress() : 0x0,
             spec.hasValidUntil() ? inputs.nextUint() : uint(0) - 1,
             spec.hasSignature() ? inputs.nextBytes() : new bytes(0),
             spec.hasDualAuthSig() ? inputs.nextBytes() : new bytes(0),
             spec.allOrNone(),
+            spec.hasFeeToken() ? inputs.nextAddress() : ctx.lrcTokenAddress,
+            spec.hasFeeAmount() ? inputs.nextUint() : 0,
+            spec.hasFeePercentage() ? uint16(inputs.nextUint()) : 0,
+            spec.hasWaiveFeePercentage() ? uint16(inputs.nextUint()) : 0,
+            spec.hasTokenSFeePercentage() ? uint16(inputs.nextUint()) : 0,
+            spec.hasTokenBFeePercentage() ? uint16(inputs.nextUint()) : 0,
             bytes32(0x0), // hash
-            address(0x0), // orderBrokerInterceptor
+            0x0, // orderBrokerInterceptor
             0,  // spendableLRC
             0,  // maxAmountS
             0,  // maxAmountB,

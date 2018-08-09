@@ -83,7 +83,6 @@ export class ExchangeDeserializer {
       tokenB: null,
       amountS: this.nextUint().toNumber(),
       amountB: this.nextUint().toNumber(),
-      lrcFee: this.nextUint().toNumber(),
       validSince: this.nextUint().toNumber(),
       dualAuthAddr: spec.hasDualAuth() ? this.nextAddress() : undefined,
       broker: spec.hasBroker() ? this.nextAddress() : undefined,
@@ -93,6 +92,12 @@ export class ExchangeDeserializer {
       sig: spec.hasSignature() ? this.nextBytes() : undefined,
       dualAuthSig: spec.hasDualAuthSig() ? this.nextBytes() : undefined,
       allOrNone: spec.allOrNone(),
+      feeToken: spec.hasFeeToken() ? this.nextAddress() : undefined,
+      feeAmount: spec.hasFeeAmount() ? this.nextUint().toNumber() : undefined,
+      feePercentage: spec.hasFeePercentage() ? this.nextUint().toNumber() : undefined,
+      waiveFeePercentage: spec.hasWaiveFeePercentage() ? this.nextUint().toNumber() : undefined,
+      tokenSFeePercentage: spec.hasTokenSFeePercentage() ? this.nextUint().toNumber() : undefined,
+      tokenBFeePercentage: spec.hasTokenBFeePercentage() ? this.nextUint().toNumber() : undefined,
     };
     return order;
   }

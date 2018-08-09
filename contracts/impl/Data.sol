@@ -68,7 +68,6 @@ library Data {
         address tokenB;
         uint    amountS;
         uint    amountB;
-        uint    lrcFee;
         uint    validSince;
 
         // optional fields
@@ -80,14 +79,20 @@ library Data {
         bytes   sig;
         bytes   dualAuthSig;
         bool    allOrNone;
+        address feeToken;
+        uint    feeAmount;
+        uint16  feePercentage;
+        uint16  waiveFeePercentage;
+        uint16  tokenSFeePercentage;
+        uint16  tokenBFeePercentage;
 
         // computed fields
         bytes32 hash;
         address brokerInterceptor;
-        uint    maxAmountLrcFee;
+        uint    maxAmountFee;
         uint    maxAmountS;
         uint    maxAmountB;
-        bool    sellLRC;
+        bool    sellFeeToken;
         bool    valid;
     }
 
@@ -101,7 +106,7 @@ library Data {
         /* // computed fields */
         uint splitS;
         uint splitB;
-        uint lrcFee;
+        uint feeAmount;
         // uint lrcReward;
         uint fillAmountS;
         uint fillAmountB;

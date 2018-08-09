@@ -62,13 +62,12 @@ export class OrderUtil {
 
   public getOrderHash(order: OrderInfo) {
     const MAX_UINT = new BN("f".repeat(64), 16);
-    const args = [
+    const argsPart1 = [
       order.owner,
       order.tokenS,
       order.tokenB,
       this.toBN(order.amountS),
       this.toBN(order.amountB),
-      this.toBN(order.lrcFee),
       order.dualAuthAddr ? order.dualAuthAddr : "0x0",
       order.broker ? order.broker : "0x0",
       order.orderInterceptor ? order.orderInterceptor : "0x0",
@@ -77,12 +76,10 @@ export class OrderUtil {
       order.validUntil ? this.toBN(order.validUntil) : MAX_UINT,
       order.allOrNone,
     ];
-
-    const argTypes = [
+    const argTypesPart1 = [
       "address",
       "address",
       "address",
-      "uint256",
       "uint256",
       "uint256",
       "address",
@@ -92,6 +89,32 @@ export class OrderUtil {
       "uint256",
       "uint256",
       "bool",
+    ];
+    const orderHashPart1 = ABI.soliditySHA3(argTypesPart1, argsPart1);
+
+    const argsPart2 = [
+      order.feeToken ? order.feeToken : this.context.lrcAddress,
+      order.feeAmount ? this.toBN(order.feeAmount) : this.toBN(0),
+      order.feePercentage ? this.toBN(order.feePercentage) : this.toBN(0),
+      order.tokenSFeePercentage ? this.toBN(order.tokenSFeePercentage) : this.toBN(0),
+      order.tokenBFeePerdentage ? this.toBN(order.tokenBFeePerdentage) : this.toBN(0),
+    ];
+    const argTypesPart2 = [
+      "address",
+      "uint256",
+      "uint16",
+      "uint16",
+      "uint16",
+    ];
+    const orderHashPart2 = ABI.soliditySHA3(argTypesPart2, argsPart2);
+
+    const args = [
+      orderHashPart1,
+      orderHashPart2,
+    ];
+    const argTypes = [
+      "bytes32",
+      "bytes32",
     ];
     const orderHash = ABI.soliditySHA3(argTypes, args);
     return orderHash;
@@ -111,7 +134,7 @@ export class OrderUtil {
       throw new Error("order had been fully filled.");
     }
     orderInfo.fillAmountS = Math.min(spendableS, remaining);
-    orderInfo.fillAmountLrcFee = orderInfo.lrcFee * orderInfo.fillAmountS / orderInfo.amountS;
+    orderInfo.fillAmountFee = orderInfo.feeAmount * orderInfo.fillAmountS / orderInfo.amountS;
   }
 
   private async getErc20SpendableAmount(tokenAddr: string,

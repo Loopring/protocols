@@ -38,4 +38,29 @@ export class OrderSpec {
   public hasDualAuthSig() {
     return (this.data & (1 << 7)) !== 0;
   }
+
+  public hasFeeToken() {
+    return (this.data & (1 << 8)) !== 0;
+  }
+
+  public hasFeeAmount() {
+    return (this.data & (1 << 9)) !== 0;
+  }
+
+  public hasFeePercentage() {
+    return (this.data & (1 << 10)) !== 0;
+  }
+
+  public hasWaiveFeePercentage() {
+    return (this.data & (1 << 11)) !== 0;
+  }
+
+  public hasTokenSFeePercentage() {
+    return (this.data & (1 << 12)) !== 0;
+  }
+
+  public hasTokenBFeePercentage() {
+    return (this.data & (1 << 13)) !== 0;
+  }
+
 }

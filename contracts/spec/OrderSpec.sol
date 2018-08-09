@@ -89,4 +89,52 @@ library OrderSpec {
         return spec & (1 << 7) != 0;
     }
 
+    function hasFeeToken(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 8) != 0;
+    }
+
+    function hasFeeAmount(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 9) != 0;
+    }
+
+    function hasFeePercentage(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 10) != 0;
+    }
+
+    function hasWaiveFeePercentage(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 11) != 0;
+    }
+
+    function hasTokenSFeePercentage(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 12) != 0;
+    }
+
+    function hasTokenBFeePercentage(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 13) != 0;
+    }
+
 }

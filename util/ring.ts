@@ -111,28 +111,28 @@ export class Ring {
         currOrder.splitS = 0;
       }
 
-      console.log("order.amountB:          " + currOrder.amountB);
       console.log("order.amountS:          " + currOrder.amountS);
+      console.log("order.amountB:          " + currOrder.amountB);
       console.log("order expected rate:    " + currOrder.amountS / currOrder.amountB);
-      console.log("order.fillAmountB:      " + currOrder.fillAmountB);
       console.log("order.fillAmountS:      " + currOrder.fillAmountS);
+      console.log("order.fillAmountB:      " + currOrder.fillAmountB);
       console.log("order.splitS:           " + currOrder.splitS);
       console.log("order actual rate:      " + (currOrder.fillAmountS + currOrder.splitS) / currOrder.fillAmountB);
-      console.log("order.fillAmountLrcFee: " + currOrder.fillAmountLrcFee);
+      console.log("order.fillAmountFee:    " + currOrder.fillAmountFee);
       console.log("----------------------------------------------");
 
       // Sanity checks
       assert(currOrder.fillAmountS >= 0, "fillAmountS should be positive");
       assert(currOrder.splitS >= 0, "splitS should be positive");
-      assert(currOrder.fillAmountLrcFee >= 0, "fillAmountLrcFee should be positive");
+      assert(currOrder.fillAmountFee >= 0, "fillAmountFee should be positive");
       assert((currOrder.fillAmountS + currOrder.splitS) <= currOrder.amountS, "fillAmountS + splitS <= amountS");
       assert(currOrder.fillAmountS <= currOrder.amountS, "fillAmountS <= amountS");
-      assert(currOrder.fillAmountLrcFee <= currOrder.lrcFee, "fillAmountLrcFee <= lrcFee");
+      assert(currOrder.fillAmountFee <= currOrder.feeAmount, "fillAmountFee <= feeAmount");
       // TODO: can fail if not exactly equal, check with lesser precision
       // assert(currOrder.amountS / currOrder.amountB
       //        === currOrder.fillAmountS / currOrder.fillAmountB, "fill rates need to match order rate");
 
-      // If the transfer amount is 0 nothing will get transferred
+      // If the transfer amount is 0 nothing will get transfered
       if (amount === 0) {
         continue;
       }
@@ -141,9 +141,9 @@ export class Ring {
 
       const lrcAddress = this.context.lrcAddress;
       if (walletSplitPercentage > 0 && currOrder.walletAddr) {
-        if (currOrder.fillAmountLrcFee > 0) {
-          const lrcFeeToWallet = Math.floor(currOrder.fillAmountLrcFee * walletSplitPercentage / 100);
-          const lrcFeeToMiner = currOrder.fillAmountLrcFee - lrcFeeToWallet;
+        if (currOrder.fillAmountFee > 0) {
+          const lrcFeeToWallet = Math.floor(currOrder.fillAmountFee * walletSplitPercentage / 100);
+          const lrcFeeToMiner = currOrder.fillAmountFee - lrcFeeToWallet;
           transferItems.push({token: lrcAddress, from , to: this.feeRecipient, amount: lrcFeeToMiner});
           transferItems.push({token: lrcAddress, from , to: currOrder.walletAddr, amount: lrcFeeToMiner});
         }
@@ -155,7 +155,7 @@ export class Ring {
           transferItems.push({token, from , to: currOrder.walletAddr, amount: splitSToWallet});
         }
       } else {
-        transferItems.push({token: lrcAddress, from , to: this.feeRecipient, amount: currOrder.fillAmountLrcFee});
+        transferItems.push({token: lrcAddress, from , to: this.feeRecipient, amount: currOrder.fillAmountFee});
         if (currOrder.splitS > 0) {
           transferItems.push({token, from , to: this.feeRecipient, amount: currOrder.splitS});
         }
@@ -185,7 +185,7 @@ export class Ring {
     if (!current.splitS) {
       current.splitS = 0;
     }
-    current.fillAmountLrcFee = Math.floor(current.lrcFee * current.fillAmountS / current.amountS);
+    current.fillAmountFee = Math.floor(current.feeAmount * current.fillAmountS / current.amountS);
     return ret;
   }
 

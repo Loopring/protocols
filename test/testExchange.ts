@@ -146,8 +146,11 @@ contract("Exchange", (accounts: string[]) => {
     order.owner = owner;
     order.tokenS = addrS;
     order.tokenB = addrB;
-    if (!order.lrcFee) {
-      order.lrcFee = 1e18;
+    if (!order.feeToken) {
+      order.feeToken = lrcAddress;
+    }
+    if (!order.feeAmount) {
+      order.feeAmount = 1e18;
     }
     if (!order.dualAuthSignAlgorithm) {
       order.dualAuthSignAlgorithm = SignAlgorithm.Ethereum;
@@ -166,8 +169,8 @@ contract("Exchange", (accounts: string[]) => {
     // setup amount:
     const orderTokenS = await DummyToken.at(addrS);
     await orderTokenS.addBalance(order.owner, order.amountS);
-    const lrcToken = await DummyToken.at(lrcAddress);
-    await lrcToken.addBalance(order.owner, order.lrcFee);
+    const feeToken = await DummyToken.at(order.feeToken);
+    await feeToken.addBalance(order.owner, order.feeAmount);
   };
 
   const assertEqualsRingsInfo = (ringsInfoA: RingsInfo, ringsInfoB: RingsInfo) => {
@@ -175,7 +178,7 @@ contract("Exchange", (accounts: string[]) => {
     // We don't whitelist because we might forget to add them here otherwise.
     const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash"];
     const orderPropertiesToSkip = [
-      "maxAmountS", "maxAmountB", "fillAmountS", "fillAmountB", "fillAmountLrcFee", "splitS", "brokerInterceptor",
+      "maxAmountS", "maxAmountB", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
     ];
     // Make sure to get the keys from both objects to make sure we get all keys defined in both

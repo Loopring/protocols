@@ -34,14 +34,16 @@ library OrderHelper {
         internal
         pure
     {
-        order.hash = keccak256(
+        // 'Stack too deep' errors when hashing all parameters at once in keccak256,
+        // so currently hashed in 2 parts.
+        // TODO: once order data is finalized this can be optimized using assembly
+        bytes32 hashPart1 = keccak256(
             abi.encodePacked(
                 order.owner,
                 order.tokenS,
                 order.tokenB,
                 order.amountS,
                 order.amountB,
-                order.lrcFee,
                 order.dualAuthAddr,
                 order.broker,
                 order.orderInterceptor,
@@ -49,6 +51,21 @@ library OrderHelper {
                 order.validSince,
                 order.validUntil,
                 order.allOrNone
+            )
+        );
+        bytes32 hashPart2 = keccak256(
+            abi.encodePacked(
+                order.feeToken,
+                order.feeAmount,
+                order.feePercentage,
+                order.tokenSFeePercentage,
+                order.tokenBFeePercentage
+            )
+        );
+        order.hash = keccak256(
+            abi.encodePacked(
+                hashPart1,
+                hashPart2
             )
         );
     }
@@ -79,9 +96,9 @@ library OrderHelper {
         internal
         view
     {
-        order.maxAmountLrcFee = getSpendable(
+        order.maxAmountFee = getSpendable(
             ctx.delegate,
-            ctx.lrcTokenAddress,
+            order.feeToken,
             order.owner,
             order.broker,
             order.brokerInterceptor
@@ -102,10 +119,10 @@ library OrderHelper {
             order.maxAmountS = spendableS;
         }
 
-        if (order.tokenS == ctx.lrcTokenAddress) {
-            order.sellLRC = true;
-            uint maxLrcFee = order.lrcFee.mul(filled) / order.amountS;
-            order.maxAmountS = order.maxAmountS.sub(maxLrcFee);
+        if (order.tokenS == order.feeToken) {
+            order.sellFeeToken = true;
+            uint maxFeeAmount = order.feeAmount.mul(filled) / order.amountS;
+            order.maxAmountS = order.maxAmountS.sub(maxFeeAmount);
         }
 
         order.maxAmountB = order.amountB.mul(order.maxAmountS) / order.amountS;
@@ -121,6 +138,7 @@ library OrderHelper {
         valid = valid && (order.tokenB != 0x0); // invalid order tokenB
         valid = valid && (order.amountS != 0); // invalid order amountS
         valid = valid && (order.amountB != 0); // invalid order amountB
+        valid = valid && (order.feeToken != 0x0); // invalid fee token
 
         valid = valid && (order.validSince <= block.timestamp); // order is too early to match
         valid = valid && (order.validUntil > block.timestamp);  // order is expired

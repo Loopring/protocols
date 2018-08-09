@@ -35,10 +35,10 @@ library ParticipationHelper {
     {
         p.order.maxAmountS = p.order.maxAmountS.sub(p.fillAmountS);
         p.order.maxAmountB = p.order.maxAmountB.sub(p.fillAmountB);
-        p.order.maxAmountLrcFee = p.order.maxAmountLrcFee.sub(p.lrcFee);
+        p.order.maxAmountFee = p.order.maxAmountFee.sub(p.feeAmount);
 
-        if (p.order.sellLRC) {
-            p.order.maxAmountLrcFee = p.order.maxAmountLrcFee.sub(p.fillAmountS);
+        if (p.order.sellFeeToken) {
+            p.order.maxAmountFee = p.order.maxAmountFee.sub(p.fillAmountS);
         }
     }
 

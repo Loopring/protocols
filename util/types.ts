@@ -17,7 +17,6 @@ export interface OrderInfo {
   tokenB: string;
   amountS: number;
   amountB: number;
-  lrcFee?: number;
   validSince?: number;
 
   // optional fields
@@ -25,17 +24,23 @@ export interface OrderInfo {
   broker?: string;                  // spec value 1 << 1
   orderInterceptor?: string;        // spec value 1 << 2
   walletAddr?: string;              // spec value 1 << 3
-  validUntil?: number;              // spec value 1 << 5
-  allOrNone?: boolean;              // spec value 1 << 6
-  sig?: string;                     // spec value 1 << 7
-  dualAuthSig?: string;             // spec value 1 << 8;
+  validUntil?: number;              // spec value 1 << 4
+  allOrNone?: boolean;              // spec value 1 << 5
+  sig?: string;                     // spec value 1 << 6
+  dualAuthSig?: string;             // spec value 1 << 7
+  feeToken?: string;                // spec value 1 << 8
+  feeAmount?: number;               // spec value 1 << 9
+  feePercentage?: number;           // spec value 1 << 10
+  waiveFeePercentage?: number;      // spec value 1 << 11
+  tokenSFeePercentage?: number;     // spec value 1 << 12
+  tokenBFeePercentage?: number;     // spec value 1 << 13
 
   // helper field
   maxAmountS?: number;
   maxAmountB?: number;
   fillAmountS?: number;
   fillAmountB?: number;
-  fillAmountLrcFee?: number;
+  fillAmountFee?: number;
   splitS?: number;
   brokerInterceptor?: string;
   valid?: boolean;
@@ -45,7 +50,6 @@ export interface OrderInfo {
   dualAuthSignAlgorithm?: SignAlgorithm;
 
   index?: number;
-  lrcAddress?: string;
 
   [key: string]: any;
 }
@@ -53,7 +57,7 @@ export interface OrderInfo {
 export interface Participation {
   order: OrderInfo;
   splitS?: number;
-  lrcFee?: number;
+  feeAmount?: number;
   fillAmountS?: number;
   fillAmountB?: number;
 }

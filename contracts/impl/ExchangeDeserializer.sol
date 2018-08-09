@@ -133,7 +133,7 @@ library ExchangeDeserializer {
             address(0x0)  // interceptor
         );
 
-        Data.Order[] memory orders = orderSpecs.assembleOrders(inputs);
+        Data.Order[] memory orders = orderSpecs.assembleOrders(ctx, inputs);
         Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
 
         return (mining, orders, rings);

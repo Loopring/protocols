@@ -33,7 +33,7 @@ contract IExchange {
         address     tokenS;
         uint        amountS;
         int         split;  // Positive number for splitS and negative for splitB .
-        uint        lrcFee;
+        uint        feeAmount;
     }
 
     event RingMined(

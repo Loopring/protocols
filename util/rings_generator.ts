@@ -141,7 +141,6 @@ export class RingsGenerator {
     // param.addressList.push(order.tokenB);
     param.uintList.push(new BigNumber(order.amountS));
     param.uintList.push(new BigNumber(order.amountB));
-    param.uintList.push(new BigNumber(order.lrcFee));
     param.uintList.push(new BigNumber(order.validSince));
 
     // param.addressList.push(order.delegateContract);
@@ -182,6 +181,36 @@ export class RingsGenerator {
     if (order.dualAuthSig) {
       spec += 1 << 7;
       param.bytesList.push(order.dualAuthSig);
+    }
+
+    if (order.feeToken) {
+      spec += 1 << 8;
+      param.addressList.push(order.feeToken);
+    }
+
+    if (order.feeAmount) {
+      spec += 1 << 9;
+      param.uintList.push(new BigNumber(order.feeAmount));
+    }
+
+    if (order.feePercentage) {
+      spec += 1 << 10;
+      param.uintList.push(new BigNumber(order.feePercentage));
+    }
+
+    if (order.waiveFeePercentage) {
+      spec += 1 << 11;
+      param.uintList.push(new BigNumber(order.waiveFeePercentage));
+    }
+
+    if (order.tokenSFeePercentage) {
+      spec += 1 << 12;
+      param.uintList.push(new BigNumber(order.tokenSFeePercentage));
+    }
+
+    if (order.tokenBFeePercentage) {
+      spec += 1 << 13;
+      param.uintList.push(new BigNumber(order.tokenBFeePercentage));
     }
 
     param.orderSpecs.push(spec);

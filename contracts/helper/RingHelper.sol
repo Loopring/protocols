@@ -120,7 +120,7 @@ library RingHelper {
             smallest_ = j;
         }
 
-        p.lrcFee = p.order.lrcFee.mul(p.fillAmountS) / p.order.amountS;
+        p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
     }
 
     function checkOrdersValid(
@@ -170,7 +170,7 @@ library RingHelper {
                 orderTransSize ++;
             }
 
-            if (p.lrcFee > 0) {
+            if (p.feeAmount > 0) {
                 orderTransSize ++;
             }
 
@@ -207,7 +207,7 @@ library RingHelper {
             fills[i].tokenS = p.order.tokenS;
             fills[i].amountS = p.fillAmountS;
             fills[i].split = p.splitS > 0 ? int(p.splitS) : -int(p.splitB);
-            fills[i].lrcFee = p.lrcFee;
+            fills[i].feeAmount = p.feeAmount;
 
             batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
             batch[1 + batchIndex * 4] = bytes32(p.order.owner);
@@ -215,18 +215,18 @@ library RingHelper {
             batch[3 + batchIndex * 4] = bytes32(p.fillAmountS);
             batchIndex ++;
             if (walletSplitPercentage > 0 && p.order.wallet != 0x0) {
-                if (p.lrcFee > 0) {
-                    batch[0 + batchIndex * 4] = bytes32(ctx.lrcTokenAddress);
+                if (p.feeAmount > 0) {
+                    batch[0 + batchIndex * 4] = bytes32(p.order.feeToken);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
                     batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
-                    uint walletFee = p.lrcFee.mul(walletSplitPercentage) / 100;
+                    uint walletFee = p.feeAmount.mul(walletSplitPercentage) / 100;
                     batch[3 + batchIndex * 4] = bytes32(walletFee);
                     batchIndex ++;
 
-                    batch[0 + batchIndex * 4] = bytes32(ctx.lrcTokenAddress);
+                    batch[0 + batchIndex * 4] = bytes32(p.order.feeToken);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
                     batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    batch[3 + batchIndex * 4] = bytes32(p.lrcFee.sub(walletFee));
+                    batch[3 + batchIndex * 4] = bytes32(p.feeAmount.sub(walletFee));
                     batchIndex ++;
                 }
 
@@ -245,11 +245,11 @@ library RingHelper {
                     batchIndex ++;
                 }
             } else {
-                if (p.lrcFee > 0) {
-                    batch[0 + batchIndex * 4] = bytes32(ctx.lrcTokenAddress);
+                if (p.feeAmount > 0) {
+                    batch[0 + batchIndex * 4] = bytes32(p.order.feeToken);
                     batch[1 + batchIndex * 4] = bytes32(p.order.owner);
                     batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    batch[3 + batchIndex * 4] = bytes32(p.lrcFee);
+                    batch[3 + batchIndex * 4] = bytes32(p.feeAmount);
                     batchIndex += 1;
                 }
 
