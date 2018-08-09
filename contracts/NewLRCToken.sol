@@ -72,7 +72,7 @@ contract BasicToken is ERC20Basic {
      * @param _value The amount to be transferred.
      */
     function transfer(address _to, uint256 _value) public returns (bool) {
-        require(_to != address(0));
+        require(_to != 0x0);
         require(_value <= balances[msg.sender]);
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -115,7 +115,7 @@ contract StandardToken is ERC20, BasicToken {
      * @param _value uint256 the amount of tokens to be transferred
      */
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
-        require(_to != address(0));
+        require(_to != 0x0);
         require(_value <= balances[_from]);
         require(_value <= allowed[_from][msg.sender]);
         balances[_from] = balances[_from].sub(_value);
@@ -201,6 +201,7 @@ contract LRCToken is StandardToken {
         balances[burner] = balances[burner].sub(_value);
         totalSupply_ = totalSupply_.sub(_value);
         emit Burn(burner, _value);
+        emit Transfer(burner, 0x0, _value);
         return true;
     }
 
@@ -214,12 +215,13 @@ contract LRCToken is StandardToken {
         totalSupply_ = totalSupply_.sub(_value);
 
         emit Burn(_owner, _value);
+        emit Transfer(_owner, 0x0, _value);
         return true;
     }
 
     constructor() public {
-        // totalSupply = originalLRC.totalSupply - balanceOf(0x0)
-        totalSupply_ = 1375076042523857892274603099;
+        // @See https://etherscan.io/address/0xEF68e7C694F40c8202821eDF525dE3782458639f#readContract
+        totalSupply_ = 1395076054523857892274603100;
 
         balances[msg.sender] = totalSupply_;
     }
