@@ -1,0 +1,24 @@
+{
+  "name": "vite",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "compile": "./node_modules/.bin/truffle compile",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "vite",
+    "ethereum",
+    "erc20"
+  ],
+  "author": "kongliangzhong",
+  "license": "ISC",
+  "dependencies": {
+    "truffle": "4.1.5",
+    "zeppelin-solidity": "^1.8.0"
+  }
+}
