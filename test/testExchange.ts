@@ -148,6 +148,8 @@ contract("Exchange", (accounts: string[]) => {
     order.tokenB = addrB;
     if (!order.feeToken) {
       order.feeToken = lrcAddress;
+    } else {
+      order.feeToken = await symbolRegistry.getAddressBySymbol(order.feeToken);
     }
     if (!order.feeAmount) {
       order.feeAmount = 1e18;
