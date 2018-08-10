@@ -22,6 +22,7 @@ import "../iface/IBrokerInterceptor.sol";
 import "../iface/ITradeDelegate.sol";
 import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
+import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
@@ -31,6 +32,7 @@ import "../lib/NoDefaultFunc.sol";
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
 contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
     using MathUint for uint;
+    using ERC20SafeTransfer for address;
 
     bool  public suspended = false;
     mapping (address => uint) private positionMap;
@@ -119,7 +121,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
                 continue;
             }
             require(
-                ERC20(address(batch[i])).transferFrom(
+                address(batch[i]).safeTransferFrom(
                     address(batch[i + 1]),
                     address(batch[i + 2]),
                     uint(batch[i + 3])
