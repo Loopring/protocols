@@ -19,7 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../impl/Data.sol";
-import "../iface/IBrokerInterceptor.sol";
+import "../impl/BrokerInterceptorProxy.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
@@ -29,6 +29,7 @@ import "../lib/MultihashUtil.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 library OrderHelper {
     using MathUint      for uint;
+    using BrokerInterceptorProxy for address;
 
     function updateHash(Data.Order order)
         internal
@@ -94,7 +95,6 @@ library OrderHelper {
         Data.Context ctx
         )
         internal
-        view
     {
         order.maxAmountFee = getSpendable(
             ctx.delegate,
@@ -192,7 +192,6 @@ library OrderHelper {
         address brokerInterceptor
         )
         private
-        view
         returns (uint spendable)
     {
         ERC20 token = ERC20(tokenAddress);
@@ -212,7 +211,7 @@ library OrderHelper {
         }
 
         if (brokerInterceptor != 0x0 && broker != tokenOwner) {
-            amount = IBrokerInterceptor(brokerInterceptor).getAllowance(
+            amount = brokerInterceptor.getAllowanceSafe(
                 tokenOwner,
                 broker,
                 tokenAddress

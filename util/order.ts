@@ -148,11 +148,16 @@ export class OrderUtil {
     let spendable = Math.min(balance, allowance);
 
     if (brokerInterceptor && broker !== owner) {
-      const amount = await this.context.BrokerInterceptorContract.at(brokerInterceptor).getAllowance(
-          owner,
-          broker,
-          tokenAddr,
-      );
+      let amount = 0;
+      try {
+        amount = await this.context.BrokerInterceptorContract.at(brokerInterceptor).getAllowance(
+            owner,
+            broker,
+            tokenAddr,
+        );
+      } catch {
+        amount = 0;
+      }
       if (amount < spendable) {
           spendable = amount;
       }

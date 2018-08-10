@@ -35,7 +35,7 @@ contract("Exchange", (accounts: string[]) => {
   const orderOwners = accounts.slice(5, 8); // 5 ~ 7
   const orderDualAuthAddr = accounts.slice(1, 4);
   const transactionOrigin = /*miner*/ accounts[1];
-  const broker = accounts[1];
+  const broker1 = accounts[1];
 
   let exchange: any;
   let tokenRegistry: any;
@@ -270,6 +270,31 @@ contract("Exchange", (accounts: string[]) => {
     for (const [i, order] of orders.entries()) {
         assert.equal(bits.testn(i), expectedValidValues[i], "Order cancelled status incorrect");
     }
+  };
+
+  const registerBrokerChecked = async (user: string, broker: string, interceptor: string) => {
+    const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
+    await brokerRegistry.registerBroker(broker, interceptor, {from: user});
+    await assertRegistered(user, broker, interceptor);
+  };
+
+  const unregisterBrokerChecked = async (user: string, broker: string) => {
+    const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
+    await brokerRegistry.unregisterBroker(broker, {from: user});
+    assertNotRegistered(user, broker);
+  };
+
+  const assertRegistered = async (user: string, broker: string, interceptor: string) => {
+    const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
+    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
+    assert(isRegistered, "interceptor should be registered.");
+    assert.equal(interceptor, interceptorFromContract, "get wrong interceptor");
+  };
+
+  const assertNotRegistered = async (user: string, broker: string) => {
+    const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
+    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
+    assert(!isRegistered, "interceptor should not be registered.");
   };
 
   const cleanTradeHistory = async () => {
@@ -571,7 +596,7 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: allTokenSymbols[1],
             amountS: 35e17,
             amountB: 22e17,
-            broker,
+            broker: broker1,
           },
           {
             tokenS: allTokenSymbols[1],
@@ -600,12 +625,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Register the broker without interceptor
-      const orderBrokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
-      await orderBrokerRegistry.registerBroker(broker, emptyAddr, {from: owner});
-      // Check if the registration is successful
-      const [isRegistered, interceptorFromContract] = await orderBrokerRegistry.getBroker(owner, broker);
-      assert(isRegistered, "interceptor should be registered.");
-      assert.equal(emptyAddr, interceptorFromContract, "get wrong interceptor");
+      registerBrokerChecked(owner, broker1, emptyAddr);
 
       // Broker registered: transactions should happen
       {
@@ -614,7 +634,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Unregister the broker
-      orderBrokerRegistry.unregisterBroker(broker, {from: owner});
+      unregisterBrokerChecked(owner, broker1);
     });
 
     it("should be able to for an order to use a broker with an interceptor", async () => {
@@ -632,7 +652,7 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: allTokenSymbols[0],
             amountS: 23e17,
             amountB: 31e17,
-            broker,
+            broker: broker1,
           },
         ],
         transactionOrigin,
@@ -654,12 +674,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Register the broker with interceptor
-      const orderBrokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
-      await orderBrokerRegistry.registerBroker(broker, dummyBrokerInterceptor.address, {from: owner});
-      // Check if the registration is successful
-      const [isRegistered, interceptorFromContract] = await orderBrokerRegistry.getBroker(owner, broker);
-      assert(isRegistered, "interceptor should be registered.");
-      assert.equal(dummyBrokerInterceptor.address, interceptorFromContract, "get wrong interceptor");
+      registerBrokerChecked(owner, broker1, dummyBrokerInterceptor.address);
 
       // Make sure allowance is set to 0
       await dummyBrokerInterceptor.setAllowance(0);
@@ -680,7 +695,71 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Unregister the broker
-      orderBrokerRegistry.unregisterBroker(broker, {from: owner});
+      unregisterBrokerChecked(owner, broker1);
+    });
+
+    it("an order using a broker with an invalid interceptor should not fail the transaction", async () => {
+      const ringsInfo: RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: allTokenSymbols[0],
+            tokenB: allTokenSymbols[1],
+            amountS: 35e17,
+            amountB: 22e17,
+          },
+          {
+            tokenS: allTokenSymbols[1],
+            tokenB: allTokenSymbols[0],
+            amountS: 23e17,
+            amountB: 31e17,
+            broker: broker1,
+          },
+        ],
+        transactionOrigin,
+        miner,
+        feeRecipient: miner,
+      };
+
+      for (const [i, order] of ringsInfo.orders.entries()) {
+        await setupOrder(order, i);
+      }
+
+      const owner = ringsInfo.orders[1].owner;
+      const context = getDefaultContext();
+      const invalidInterceptorAddress = TokenRegistry.address;
+
+      // Register the broker with interceptor
+      /*registerBrokerChecked(owner, broker1, invalidInterceptorAddress);
+
+      // Broker registered with invalid interceptor, should NOT throw but allowance will be set to 0
+      // so no transactions should happen
+      {
+        const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+        assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+      }
+
+      // Unregister the broker
+      unregisterBrokerChecked(owner, broker1);*/
+
+      // Register the broker with interceptor
+      registerBrokerChecked(owner, broker1, dummyBrokerInterceptor.address);
+
+      // Now set the allowance to a large number
+      await dummyBrokerInterceptor.setAllowance(1e32);
+
+      // Let all functions fail
+      await dummyBrokerInterceptor.setFailAllFunctions(true);
+
+      // Broker registered with interceptor functions erroring out, should NOT throw but allowance will be set to 0
+      // so no transactions should happen
+      {
+        const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+        assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+      }
+
+      // Unregister the broker
+      unregisterBrokerChecked(owner, broker1);
     });
 
   });
@@ -702,7 +781,7 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: allTokenSymbols[1],
             amountS: 35e17,
             amountB: 22e17,
-            broker,
+            broker: broker1,
           },
           {
             tokenS: allTokenSymbols[1],
@@ -753,12 +832,7 @@ contract("Exchange", (accounts: string[]) => {
       const attackBrokerInterceptor = await DummyBrokerInterceptor.new(exchange.address);
 
       // Register the broker with interceptor
-      const orderBrokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
-      await orderBrokerRegistry.registerBroker(broker, attackBrokerInterceptor.address, {from: owner});
-      // Check if the registration is successful
-      const [isRegistered, interceptorFromContract] = await orderBrokerRegistry.getBroker(owner, broker);
-      assert(isRegistered, "interceptor should be registered.");
-      assert.equal(attackBrokerInterceptor.address, interceptorFromContract, "get wrong interceptor");
+      registerBrokerChecked(owner, broker1, attackBrokerInterceptor.address);
 
       // Set the allowance to a large number
       await attackBrokerInterceptor.setAllowance(1e32);
@@ -782,7 +856,7 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(exchange.submitRings(bs, {from: transactionOrigin}));
 
       // Unregister the broker
-      orderBrokerRegistry.unregisterBroker(broker, {from: owner});
+      unregisterBrokerChecked(owner, broker1);
     });
 
   });

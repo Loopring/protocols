@@ -30,6 +30,8 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
     bool public doReentrancyAttack = false;
     bytes public submitRingsData;
 
+    bool public doFailAllFunctions = false;
+
     constructor(
         address _exchangeAddress
         )
@@ -48,6 +50,9 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         view
         returns (uint)
     {
+        if (doFailAllFunctions) {
+            assert(owner == 0x0);
+        }
         return allowance;
     }
 
@@ -60,6 +65,9 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         public
         returns (bool ok)
     {
+        if (doFailAllFunctions) {
+            require(owner == 0x0, "Fake check");
+        }
         if (doReentrancyAttack) {
             IExchange(exchangeAddress).submitRings(submitRingsData);
         }
@@ -85,6 +93,14 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         for (uint i = 0; i < _submitRingsData.length; i++) {
             submitRingsData[i] = _submitRingsData[i];
         }
+    }
+
+    function setFailAllFunctions(
+        bool _doFailAllFunctions
+        )
+        public
+    {
+        doFailAllFunctions = _doFailAllFunctions;
     }
 
 }

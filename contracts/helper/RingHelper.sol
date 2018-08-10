@@ -19,7 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IExchange.sol";
-import "../iface/IBrokerInterceptor.sol";
+import "../impl/BrokerInterceptorProxy.sol";
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
 import "../lib/ERC20.sol";
@@ -31,6 +31,7 @@ import "./ParticipationHelper.sol";
 library RingHelper {
     using MathUint for uint;
     using ParticipationHelper for Data.Participation;
+    using BrokerInterceptorProxy for address;
 
     uint private constant RATE_PERCISION = 10 ** 18;
     uint private constant DUST = 1000;
@@ -269,7 +270,7 @@ library RingHelper {
         for (i = 0; i < ring.size; i++) {
             p = ring.participations[i];
             if (p.order.brokerInterceptor != 0x0) {
-                IBrokerInterceptor(p.order.brokerInterceptor).onTokenSpent(
+                p.order.brokerInterceptor.onTokenSpentSafe(
                     p.order.owner,
                     p.order.broker,
                     p.order.tokenS,
