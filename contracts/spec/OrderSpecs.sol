@@ -71,10 +71,10 @@ library OrderSpecs {
             spec.allOrNone(),
             spec.hasFeeToken() ? inputs.nextAddress() : ctx.lrcTokenAddress,
             spec.hasFeeAmount() ? inputs.nextUint() : 0,
-            spec.hasFeePercentage() ? uint16(inputs.nextUint()) : 0,
-            spec.hasWaiveFeePercentage() ? uint16(inputs.nextUint()) : 0,
-            spec.hasTokenSFeePercentage() ? uint16(inputs.nextUint()) : 0,
-            spec.hasTokenBFeePercentage() ? uint16(inputs.nextUint()) : 0,
+            spec.hasFeePercentage() ? inputs.nextUint16() : 0,
+            spec.hasWaiveFeePercentage() ? inputs.nextUint16() : 0,
+            spec.hasTokenSFeePercentage() ? inputs.nextUint16() : 0,
+            spec.hasTokenBFeePercentage() ? inputs.nextUint16() : 0,
             bytes32(0x0), // hash
             0x0, // orderBrokerInterceptor
             0,  // spendableLRC

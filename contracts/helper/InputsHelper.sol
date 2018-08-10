@@ -32,7 +32,7 @@ library InputsHelper {
         pure
         returns (address)
     {
-        return inputs.addressList[inputs.i++];
+        return inputs.addressList[inputs.addressIndex++];
     }
 
     function nextUint(
@@ -42,7 +42,17 @@ library InputsHelper {
         pure
         returns (uint)
     {
-        return inputs.uintList[inputs.j++];
+        return inputs.uintList[inputs.uintIndex++];
+    }
+
+    function nextUint16(
+        Data.Inputs inputs
+        )
+        internal
+        pure
+        returns (uint16)
+    {
+        return inputs.uint16List[inputs.uint16Index++];
     }
 
     function nextBytes(
@@ -52,6 +62,6 @@ library InputsHelper {
         pure
         returns (bytes)
     {
-        return inputs.bytesList[inputs.k++];
+        return inputs.bytesList[inputs.bytesIndex++];
     }
 }

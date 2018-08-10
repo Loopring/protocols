@@ -61,9 +61,9 @@ library ExchangeDeserializer {
         internal
         /* view */
         returns (
-            Data.Mining  mining,
-            Data.Order[] orders,
-            Data.Ring[]  rings
+            Data.Mining,
+            Data.Order[],
+            Data.Ring[]
         )
     {
         uint16 encodeSpecsLen = uint16(MemoryUtil.bytesToUintX(data, 0, 2));
@@ -82,22 +82,25 @@ library ExchangeDeserializer {
         uint8[][] memory ringSpecs = data.copyToUint8ArrayList(offset, encodeSpecs.ringSpecSizeArray());
         offset += 1 * encodeSpecs.ringSpecsDataLen();
 
-        address[] memory addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
+        Data.Inputs memory inputs;
+
+        inputs.addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
         offset += 20 * encodeSpecs.addressListSize();
 
-        uint[] memory uintList = data.copyToUintArray(offset, encodeSpecs.uintListSize());
+        inputs.uintList = data.copyToUintArray(offset, encodeSpecs.uintListSize());
         offset += 32 * encodeSpecs.uintListSize();
 
-        bytes[] memory bytesList = data.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
+        inputs.uint16List = data.copyToUint16Array(offset, encodeSpecs.uint16ListSize());
+        offset += 2 * encodeSpecs.uint16ListSize();
+
+        inputs.bytesList = data.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
 
         return submitRingsInternal(
             ctx,
             miningSpec,
             orderSpecs,
             ringSpecs,
-            addressList,
-            uintList,
-            bytesList
+            inputs
         );
     }
 
@@ -106,9 +109,7 @@ library ExchangeDeserializer {
         uint16 miningSpec,
         uint16[] orderSpecs,
         uint8[][] ringSpecs,
-        address[] addressList,
-        uint[] uintList,
-        bytes[] bytesList
+        Data.Inputs inputs
         )
         internal
         view
@@ -118,13 +119,6 @@ library ExchangeDeserializer {
             Data.Ring[]
         )
     {
-        Data.Inputs memory inputs = Data.Inputs(
-            addressList,
-            uintList,
-            bytesList,
-            0, 0, 0  // current indices of addressLists, uintList, and bytesList.
-        );
-
         Data.Mining memory mining = Data.Mining(
             (miningSpec.hasFeeRecipient() ? inputs.nextAddress() : tx.origin),
             (miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0)),

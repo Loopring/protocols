@@ -30,10 +30,12 @@ library Data {
     struct Inputs {
         address[] addressList;
         uint[] uintList;
+        uint16[] uint16List;
         bytes[] bytesList;
-        uint i;
-        uint j;
-        uint k;
+        uint addressIndex;
+        uint uintIndex;
+        uint uint16Index;
+        uint bytesIndex;
     }
 
     struct Context {

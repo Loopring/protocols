@@ -18,10 +18,12 @@ export class ExchangeDeserializer {
 
   private addressList?: string[];
   private uintList?: BigNumber[];
+  private uint16List?: number[];
   private bytesList?: string[];
 
   private addressListIdx: number = 0;
   private uintListIdx: number = 0;
+  private uint16ListIdx: number = 0;
   private bytesListIdx: number = 0;
 
   constructor(context: Context) {
@@ -50,6 +52,9 @@ export class ExchangeDeserializer {
 
     this.uintList = bitstream.copyToUintArray(offset, encodeSpecs.uintListSize());
     offset += 32 * encodeSpecs.uintListSize();
+
+    this.uint16List = bitstream.copyToUint16Array(offset, encodeSpecs.uint16ListSize());
+    offset += 2 * encodeSpecs.uint16ListSize();
 
     this.bytesList = bitstream.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
 
@@ -94,10 +99,10 @@ export class ExchangeDeserializer {
       allOrNone: spec.allOrNone(),
       feeToken: spec.hasFeeToken() ? this.nextAddress() : undefined,
       feeAmount: spec.hasFeeAmount() ? this.nextUint().toNumber() : undefined,
-      feePercentage: spec.hasFeePercentage() ? this.nextUint().toNumber() : undefined,
-      waiveFeePercentage: spec.hasWaiveFeePercentage() ? this.nextUint().toNumber() : undefined,
-      tokenSFeePercentage: spec.hasTokenSFeePercentage() ? this.nextUint().toNumber() : undefined,
-      tokenBFeePercentage: spec.hasTokenBFeePercentage() ? this.nextUint().toNumber() : undefined,
+      feePercentage: spec.hasFeePercentage() ? this.nextUint16() : undefined,
+      waiveFeePercentage: spec.hasWaiveFeePercentage() ? this.nextUint16() : undefined,
+      tokenSFeePercentage: spec.hasTokenSFeePercentage() ? this.nextUint16() : undefined,
+      tokenBFeePercentage: spec.hasTokenBFeePercentage() ? this.nextUint16() : undefined,
     };
     return order;
   }
@@ -136,6 +141,10 @@ export class ExchangeDeserializer {
 
   private nextUint() {
     return this.uintList[this.uintListIdx++];
+  }
+
+  private nextUint16() {
+    return this.uint16List[this.uint16ListIdx++];
   }
 
   private nextBytes() {

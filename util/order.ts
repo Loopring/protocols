@@ -97,7 +97,7 @@ export class OrderUtil {
       order.feeAmount ? this.toBN(order.feeAmount) : this.toBN(0),
       order.feePercentage ? this.toBN(order.feePercentage) : this.toBN(0),
       order.tokenSFeePercentage ? this.toBN(order.tokenSFeePercentage) : this.toBN(0),
-      order.tokenBFeePerdentage ? this.toBN(order.tokenBFeePerdentage) : this.toBN(0),
+      order.tokenBFeePercentage ? this.toBN(order.tokenBFeePercentage) : this.toBN(0),
     ];
     const argTypesPart2 = [
       "address",

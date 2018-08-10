@@ -68,6 +68,7 @@ export interface RingsSubmitParam {
   ringSpecs: number[][];
   addressList: string[];
   uintList: BigNumber[];
+  uint16List: number[];
   bytesList: string[];
 }
 

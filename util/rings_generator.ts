@@ -83,12 +83,13 @@ export class RingsGenerator {
     const param = this.ringsToParam(rings);
 
     const encodeSpecs: number[] = [];
-    const len = 5 + param.ringSpecs.length + param.bytesList.length;
+    const len = 6 + param.ringSpecs.length + param.bytesList.length;
     encodeSpecs.push(len);
     encodeSpecs.push(param.orderSpecs.length);
     encodeSpecs.push(param.ringSpecs.length);
     encodeSpecs.push(param.addressList.length);
     encodeSpecs.push(param.uintList.length);
+    encodeSpecs.push(param.uint16List.length);
     encodeSpecs.push(param.bytesList.length);
     param.ringSpecs.forEach((rs) => encodeSpecs.push(rs.length));
     // Bytes arrays start with 0x and have 2 characters/byte
@@ -104,6 +105,7 @@ export class RingsGenerator {
       ringSpecs: [],
       addressList: [],
       uintList: [],
+      uint16List: [],
       bytesList: [],
     };
 
@@ -195,22 +197,22 @@ export class RingsGenerator {
 
     if (order.feePercentage) {
       spec += 1 << 10;
-      param.uintList.push(new BigNumber(order.feePercentage));
+      param.uint16List.push(order.feePercentage);
     }
 
     if (order.waiveFeePercentage) {
       spec += 1 << 11;
-      param.uintList.push(new BigNumber(order.waiveFeePercentage));
+      param.uint16List.push(order.waiveFeePercentage);
     }
 
     if (order.tokenSFeePercentage) {
       spec += 1 << 12;
-      param.uintList.push(new BigNumber(order.tokenSFeePercentage));
+      param.uint16List.push(order.tokenSFeePercentage);
     }
 
     if (order.tokenBFeePercentage) {
       spec += 1 << 13;
-      param.uintList.push(new BigNumber(order.tokenBFeePercentage));
+      param.uint16List.push(order.tokenBFeePercentage);
     }
 
     param.orderSpecs.push(spec);
@@ -234,6 +236,7 @@ export class RingsGenerator {
     ringSpecsFlattened.forEach((i) => stream.addNumber(i, 1));
     param.addressList.forEach((a) => stream.addAddress(a));
     param.uintList.forEach((bn) => stream.addBigNumber(bn));
+    param.uint16List.forEach((n) => stream.addNumber(n, 2));
     param.bytesList.forEach((bs) => stream.addRawBytes(bs));
 
     return stream.getData();

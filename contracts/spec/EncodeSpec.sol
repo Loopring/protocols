@@ -33,11 +33,13 @@ import "../impl/Data.sol";
 /// --------------------------------
 /// | 3        | uintList length   |
 /// --------------------------------
-/// | 4        | bytesList length  |
+/// | 4        | uint16List length  |
 /// --------------------------------
-/// | 5 ~ 5+i  | ringSpecs i length|
+/// | 5        | bytesList length  |
 /// --------------------------------
-/// | 5+i+j ~  | bytes[j] length   |
+/// | 6 ~ 6+i  | ringSpecs i length|
+/// --------------------------------
+/// | 6+i+j ~  | bytes[j] length   |
 /// --------------------------------
 /// @title Encode spec for SumitRings parameters.
 /// @author Kongliang - <kongliang@loopring.org>.
@@ -66,7 +68,7 @@ library EncodeSpec {
     {
         uint ringSize = ringSpecSize(spec);
         require(i < ringSize);
-        uint ind = 5 + i;
+        uint ind = 6 + i;
         return spec[ind];
     }
 
@@ -77,7 +79,7 @@ library EncodeSpec {
         uint arrayLen = spec[1];
         uint[] memory sizeArray = new uint[](arrayLen);
         for (uint i = 0; i < arrayLen; i++) {
-            sizeArray[i] = uint(spec[5 + i]);
+            sizeArray[i] = uint(spec[6 + i]);
         }
         return sizeArray;
     }
@@ -110,12 +112,20 @@ library EncodeSpec {
         return spec[3];
     }
 
-    function bytesListSize(uint16[] spec)
+    function uint16ListSize(uint16[] spec)
         internal
         pure
         returns (uint16)
     {
         return spec[4];
+    }
+
+    function bytesListSize(uint16[] spec)
+        internal
+        pure
+        returns (uint16)
+    {
+        return spec[5];
     }
 
     function bytesListSizeI(uint16[] spec, uint i)
@@ -139,7 +149,7 @@ library EncodeSpec {
         uint listSize = bytesListSize(spec);
         uint[] memory sizeArray = new uint[](listSize);
         for (uint i = 0; i < listSize; i++) {
-            sizeArray[i] = uint(spec[5 + ringSpecLength + i]);
+            sizeArray[i] = uint(spec[6 + ringSpecLength + i]);
         }
         return sizeArray;
     }
