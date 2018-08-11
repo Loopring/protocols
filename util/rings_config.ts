@@ -110,32 +110,32 @@ export const ringsInfoList: RingsInfo[] = [
     ],
   },
 
-  {
-    description: "simple single 3-size ring that cannot be settled",
-    signAlgorithm: SignAlgorithm.Ethereum,
-    rings: [[0, 1, 2]],
-    orders: [
-      {
-        index: 0,
-        tokenS: tokenSymbols[1],
-        tokenB: tokenSymbols[2],
-        amountS: 100e18,
-        amountB: 10e18,
-      },
-      {
-        index: 1,
-        tokenS: tokenSymbols[2],
-        tokenB: tokenSymbols[3],
-        amountS: 5e18,
-        amountB: 45e18,
-      },
-      {
-        index: 2,
-        tokenS: tokenSymbols[3],
-        tokenB: tokenSymbols[1],
-        amountS: 2e18,
-        amountB: 3e18,
-      },
-    ],
-  },
+  // {
+  //   description: "simple single 3-size ring that cannot be settled",
+  //   signAlgorithm: SignAlgorithm.Ethereum,
+  //   rings: [[0, 1, 2]],
+  //   orders: [
+  //     {
+  //       index: 0,
+  //       tokenS: tokenSymbols[1],
+  //       tokenB: tokenSymbols[2],
+  //       amountS: 100e18,
+  //       amountB: 10e18,
+  //     },
+  //     {
+  //       index: 1,
+  //       tokenS: tokenSymbols[2],
+  //       tokenB: tokenSymbols[3],
+  //       amountS: 5e18,
+  //       amountB: 45e18,
+  //     },
+  //     {
+  //       index: 2,
+  //       tokenS: tokenSymbols[3],
+  //       tokenB: tokenSymbols[1],
+  //       amountS: 2e18,
+  //       amountB: 3e18,
+  //     },
+  //   ],
+  // },
 ];

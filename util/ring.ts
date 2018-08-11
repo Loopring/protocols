@@ -64,26 +64,38 @@ export class Ring {
       rate = rate * this.orders[i].amountS / this.orders[i].amountB;
     }
 
-    assert(rate >= 1, "ring total rate should be >= 1");
+    for (let i = ringSize - 1; i >= 0; i--) {
+      smallest = this.resize(i, smallest);
+    }
+
+    for (let i = ringSize - 1; i >= smallest; i--) {
+      this.resize(i, smallest);
+    }
+    // assert(rate >= 1, "ring total rate should be >= 1");
+
+    // for (let i = 0; i < ringSize; i++) {
+    //   const nextIndex = (i + 1) % ringSize;
+    //   const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex], rate);
+    //   if (!isSmaller) {
+    //     smallest = nextIndex;
+    //   }
+    // }
+
+    // for (let i = 0; i < smallest; i++) {
+    //   const nextIndex = (i + 1) % ringSize;
+    //   this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex], rate);
+    // }
 
     for (let i = 0; i < ringSize; i++) {
       const nextIndex = (i + 1) % ringSize;
-      const isSmaller = this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex], rate);
-      if (!isSmaller) {
-        smallest = nextIndex;
-      }
-    }
 
-    for (let i = 0; i < smallest; i++) {
-      const nextIndex = (i + 1) % ringSize;
-      this.isOrderSmallerThan(this.orders[i], this.orders[nextIndex], rate);
-    }
-
-    for (let i = 0; i < ringSize; i++) {
-      const nextIndex = (i + 1) % ringSize;
-      if (this.orders[nextIndex].fillAmountS > this.orders[i].fillAmountB) {
+      if (this.orders[nextIndex].fillAmountS >= this.orders[i].fillAmountB) {
         this.orders[nextIndex].splitS = this.orders[nextIndex].fillAmountS - this.orders[i].fillAmountB;
         this.orders[nextIndex].fillAmountS = this.orders[i].fillAmountB;
+      } else {
+        console.log("xxxx", this.orders[nextIndex].fillAmountS, this.orders[i].fillAmountB);
+        this.valid = false;
+        throw new Error("unsettleable ring.");
       }
     }
   }
@@ -165,27 +177,43 @@ export class Ring {
     return transferItems;
   }
 
-  private isOrderSmallerThan(current: OrderInfo, next: OrderInfo, rate: number) {
-    let ret = true;
-    current.fillAmountB = current.fillAmountS * current.amountB / current.amountS;
-    const currentScaledFillAmountB = current.fillAmountB * rate;
-    console.log("xxxxxxxxxx", next.fillAmountS / 1e18, current.fillAmountB / 1e18, currentScaledFillAmountB / 1e18);
-    if (next.fillAmountS >= currentScaledFillAmountB) {
-      next.fillAmountS = currentScaledFillAmountB;
-      // if (currentScaledFillAmountB > current.fillAmountB) {
-      //   next.splitS = currentScaledFillAmountB - current.fillAmountB;
-      // }
+  private resize(i: number, smallest: number) {
+    let newSmallest = smallest;
+    const j = (i + this.orders.length - 1) % this.orders.length;
+    const order = this.orders[i];
+    const prevOrder = this.orders[j];
 
-      ret = true;
-    } else {
-      ret = false;
+    if (prevOrder.fillAmountB > order.fillAmountS) {
+      newSmallest = i;
+      prevOrder.fillAmountB = order.fillAmountS;
+      prevOrder.fillAmountS = prevOrder.fillAmountB * prevOrder.amountS / prevOrder.amountB;
+      prevOrder.fillAmountFee = prevOrder.feeAmount * prevOrder.fillAmountS / prevOrder.amountS;
     }
 
-    if (!current.splitS) {
-      current.splitS = 0;
-    }
-    current.fillAmountFee = Math.floor(current.feeAmount * current.fillAmountS / current.amountS);
-    return ret;
+    return newSmallest;
   }
+
+  // private isOrderSmallerThan(current: OrderInfo, next: OrderInfo, rate: number) {
+  //   let ret = true;
+  //   current.fillAmountB = current.fillAmountS * current.amountB / current.amountS;
+  //   const currentScaledFillAmountB = current.fillAmountB * rate;
+  //   console.log("xxxxxxxxxx", next.fillAmountS / 1e18, current.fillAmountB / 1e18, currentScaledFillAmountB / 1e18);
+  //   if (next.fillAmountS >= currentScaledFillAmountB) {
+  //     next.fillAmountS = currentScaledFillAmountB;
+  //     // if (currentScaledFillAmountB > current.fillAmountB) {
+  //     //   next.splitS = currentScaledFillAmountB - current.fillAmountB;
+  //     // }
+
+  //     ret = true;
+  //   } else {
+  //     ret = false;
+  //   }
+
+  //   if (!current.splitS) {
+  //     current.splitS = 0;
+  //   }
+  //   current.fillAmountFee = Math.floor(current.feeAmount * current.fillAmountS / current.amountS);
+  //   return ret;
+  // }
 
 }

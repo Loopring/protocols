@@ -134,6 +134,7 @@ export class OrderUtil {
       throw new Error("order had been fully filled.");
     }
     orderInfo.fillAmountS = Math.min(spendableS, remaining);
+    orderInfo.fillAmountB = orderInfo.fillAmountS * orderInfo.amountB / orderInfo.amountS;
     orderInfo.fillAmountFee = orderInfo.feeAmount * orderInfo.fillAmountS / orderInfo.amountS;
   }
 
