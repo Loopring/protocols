@@ -85,7 +85,7 @@ export class Ring {
     }
   }
 
-  public getRingTransferItems(walletSplitPercentage: number) {
+  public async getRingTransferItems(walletSplitPercentage: number, feeBalances: { [id: string]: any; }) {
     if (walletSplitPercentage > 100 && walletSplitPercentage < 0) {
       throw new Error("invalid walletSplitPercentage:" + walletSplitPercentage);
     }
@@ -143,32 +143,40 @@ export class Ring {
         transferItems.push({token, from , to: feeHolder, amount: currOrder.splitS});
       }
 
-      /*
       if (walletSplitPercentage > 0 && currOrder.walletAddr) {
         if (currOrder.fillAmountFee > 0) {
           const feeToWallet = Math.floor(currOrder.fillAmountFee * walletSplitPercentage / 100);
           const feeToMiner = currOrder.fillAmountFee - feeToWallet;
-          transferItems.push({token: currOrder.feeToken, from , to: this.feeRecipient, amount: feeToMiner});
-          transferItems.push({token: currOrder.feeToken, from , to: currOrder.walletAddr, amount: feeToMiner});
+          await this.addFeeBalance(feeBalances, currOrder.feeToken, currOrder.walletAddr, feeToWallet);
+          await this.addFeeBalance(feeBalances, currOrder.feeToken, this.feeRecipient, feeToMiner);
         }
-
         if (currOrder.splitS > 0) {
           const splitSToWallet = Math.floor(currOrder.splitS * walletSplitPercentage / 100);
           const splitSToMiner = currOrder.splitS - splitSToWallet;
-          transferItems.push({token, from , to: this.feeRecipient, amount: splitSToMiner});
-          transferItems.push({token, from , to: currOrder.walletAddr, amount: splitSToWallet});
+          await this.addFeeBalance(feeBalances, token, currOrder.walletAddr, splitSToWallet);
+          await this.addFeeBalance(feeBalances, token, this.feeRecipient, splitSToMiner);
         }
       } else {
-        transferItems.push({token: currOrder.feeToken, from , to: this.feeRecipient, amount: currOrder.fillAmountFee});
+        if (currOrder.fillAmountFee > 0) {
+          await this.addFeeBalance(feeBalances, currOrder.feeToken, this.feeRecipient, currOrder.fillAmountFee);
+        }
         if (currOrder.splitS > 0) {
-          transferItems.push({token, from , to: this.feeRecipient, amount: currOrder.splitS});
+          await this.addFeeBalance(feeBalances, token, this.feeRecipient, currOrder.splitS);
         }
       }
-      */
-
     }
 
     return transferItems;
+  }
+
+  private async addFeeBalance(feeBalances: { [id: string]: any; }, token: string, owner: string, amount: number) {
+    if (!feeBalances[token]) {
+      feeBalances[token] = {};
+    }
+    if (!feeBalances[token][this.feeRecipient]) {
+      feeBalances[token][this.feeRecipient] = await this.context.feeHolder.feeBalances(token, owner).toNumber();
+    }
+    feeBalances[token][this.feeRecipient] += amount;
   }
 
   private resize(i: number, smallest: number) {

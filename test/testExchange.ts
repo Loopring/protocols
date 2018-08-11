@@ -133,6 +133,7 @@ contract("Exchange", (accounts: string[]) => {
     const tx = await exchange.submitRings(bs, {from: transactionOrigin});
     const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
     assertTransfers(transferEvents, report.transferItems);
+    await assertFeeBalances(report.feeBalances);
 
     return {tx, report};
   };
@@ -252,6 +253,19 @@ contract("Exchange", (accounts: string[]) => {
       assert.equal(transferFromEvent[1], transferFromSimulator[1]);
       assert.equal(transferFromEvent[2], transferFromSimulator[2]);
       assertNumberEqualsWithPrecision(transferFromEvent[3], transferFromSimulator[3]);
+    }
+  };
+
+  const assertFeeBalances = async (feeBalances: { [id: string]: any; }) => {
+    console.log("Fee balances:");
+    for (const token of Object.keys(feeBalances)) {
+      for (const owner of Object.keys(feeBalances[token])) {
+        const balanceFromSimulator = feeBalances[token][owner];
+        const balanceFromContract = await feeHolder.feeBalances(token, owner);
+        console.log("Token: " + token + ", Owner: " + owner + "': " +
+          balanceFromContract + " == " + balanceFromSimulator);
+        assertNumberEqualsWithPrecision(balanceFromContract, balanceFromSimulator);
+      }
     }
   };
 
@@ -403,7 +417,7 @@ contract("Exchange", (accounts: string[]) => {
           // console.log("report.transferItems:", report.transferItems);
         } catch (err) {
           console.log("simulator error:", err);
-          report = {ringMinedEvents: [], transferItems: []};
+          report = {ringMinedEvents: [], transferItems: [], feeBalances: {}};
         }
 
         const eventFromBlock: number = web3.eth.blockNumber;
@@ -412,6 +426,7 @@ contract("Exchange", (accounts: string[]) => {
 
         const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
         assertTransfers(transferEvents, report.transferItems);
+        await assertFeeBalances(report.feeBalances);
 
         // await watchAndPrintEvent(tradeDelegate, "LogTrans");
         // await watchAndPrintEvent(exchange, "LogUint3");

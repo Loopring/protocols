@@ -90,6 +90,7 @@ export interface RingsInfo {
 export interface SimulatorReport {
   ringMinedEvents: RingMinedEvent[];
   transferItems: TransferItem[];
+  feeBalances: { [id: string]: any; };
 }
 
 export interface TransferItem {

@@ -90,12 +90,13 @@ export class ProtocolSimulator {
 
     const ringMinedEvents: RingMinedEvent[] = [];
     const transferItems: TransferItem[] = [];
+    const feeBalances: { [id: string]: any; } = {};
     for (const ring of rings) {
       ring.checkOrdersValid();
       await ring.checkTokensRegistered();
       // console.log("~~~~~~~~~~~ring.valid:", ring.valid);
       if (ring.valid) {
-        const ringReport = await this.simulateAndReportSingle(ring);
+        const ringReport = await this.simulateAndReportSingle(ring, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);
         transferItems.push(...ringReport.transferItems);
       }
@@ -104,13 +105,14 @@ export class ProtocolSimulator {
     const simulatorReport: SimulatorReport = {
       ringMinedEvents,
       transferItems,
+      feeBalances,
     };
     return simulatorReport;
   }
 
-  private async simulateAndReportSingle(ring: Ring) {
+  private async simulateAndReportSingle(ring: Ring, feeBalances: { [id: string]: any; }) {
     await ring.calculateFillAmountAndFee();
-    const transferItems = ring.getRingTransferItems(this.walletSplitPercentage);
+    const transferItems = await ring.getRingTransferItems(this.walletSplitPercentage, feeBalances);
     const ringMinedEvent: RingMinedEvent = {
       ringIndex: new BigNumber(this.ringIndex++),
     };

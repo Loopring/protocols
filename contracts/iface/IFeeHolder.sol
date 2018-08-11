@@ -21,7 +21,7 @@ pragma experimental "ABIEncoderV2";
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract IFeeHolder {
 
-    mapping(address => mapping(address => uint)) feeBalances;
+    mapping(address => mapping(address => uint)) public feeBalances;
 
     function batchAddFeeBalances(bytes32[] batch)
         external;
