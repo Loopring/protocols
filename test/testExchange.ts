@@ -25,6 +25,7 @@ const {
   OrderRegistry,
   MinerRegistry,
   TradeDelegate,
+  FeeHolder,
   DummyToken,
   DummyBrokerInterceptor,
 } = new Artifacts(artifacts);
@@ -309,6 +310,7 @@ contract("Exchange", (accounts: string[]) => {
       minerBrokerRegistryAddress,
       OrderRegistry.address,
       MinerRegistry.address,
+      FeeHolder.address,
     );
     await initializeTradeDelegate();
   };
