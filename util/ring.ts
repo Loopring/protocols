@@ -103,6 +103,7 @@ export class Ring {
       const from = currOrder.owner;
       const to = this.orders[prevIndex].owner;
       const amount = currOrder.fillAmountS;
+      const feeHolder = this.context.feeHolder.address;
 
       if (!currOrder.splitS) { // if undefined, then assigned to 0;
         currOrder.splitS = 0;
@@ -135,7 +136,14 @@ export class Ring {
       }
 
       transferItems.push({token, from , to, amount});
+      if (currOrder.fillAmountFee > 0) {
+        transferItems.push({token: currOrder.feeToken, from , to: feeHolder, amount: currOrder.fillAmountFee});
+      }
+      if (currOrder.splitS > 0) {
+        transferItems.push({token, from , to: feeHolder, amount: currOrder.splitS});
+      }
 
+      /*
       if (walletSplitPercentage > 0 && currOrder.walletAddr) {
         if (currOrder.fillAmountFee > 0) {
           const feeToWallet = Math.floor(currOrder.fillAmountFee * walletSplitPercentage / 100);
@@ -156,6 +164,7 @@ export class Ring {
           transferItems.push({token, from , to: this.feeRecipient, amount: currOrder.splitS});
         }
       }
+      */
 
     }
 

@@ -13,6 +13,7 @@ export class Context {
   public OrderRegistryContract: any;
   public MinerRegistryContract: any;
   public BrokerInterceptorContract: any;
+  public FeeHolderContract: any;
 
   public tokenRegistry: any;
   public tradeDelegate: any;
@@ -20,6 +21,7 @@ export class Context {
   public minerBrokerRegistry: any;
   public orderRegistry: any;
   public minerRegistry: any;
+  public feeHolder: any;
 
   constructor(blockNumber: number,
               blockTimestamp: number,
@@ -29,6 +31,7 @@ export class Context {
               minerBrokerRegistryAddress: string,
               orderRegistryAddress: string,
               minerRegistryAddress: string,
+              feeHolderAddress: string,
               lrcAddress: string,
               ) {
     this.blockNumber = blockNumber;
@@ -43,6 +46,7 @@ export class Context {
     const orderRegistryAbi = fs.readFileSync(ABIPath + "IOrderRegistry.abi", "ascii");
     const minerRegistryAbi = fs.readFileSync(ABIPath + "IMinerRegistry.abi", "ascii");
     const brokerInterceptorAbi = fs.readFileSync(ABIPath + "IBrokerInterceptor.abi", "ascii");
+    const feeHolderAbi = fs.readFileSync(ABIPath + "IFeeHolder.abi", "ascii");
 
     this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
     this.TokenRegistryContract = web3.eth.contract(JSON.parse(tokenRegistryAbi));
@@ -50,14 +54,16 @@ export class Context {
     this.BrokerRegistryContract = web3.eth.contract(JSON.parse(brokerRegistryAbi));
     this.OrderRegistryContract = web3.eth.contract(JSON.parse(orderRegistryAbi));
     this.MinerRegistryContract = web3.eth.contract(JSON.parse(minerRegistryAbi));
+    this.FeeHolderContract = web3.eth.contract(JSON.parse(feeHolderAbi));
     this.BrokerInterceptorContract = web3.eth.contract(JSON.parse(brokerInterceptorAbi));
 
     this.tokenRegistry = this.TokenRegistryContract.at(tokenRegistryAddress);
     this.tradeDelegate = this.TradeDelegateContract.at(tradeDelegateAddress);
     this.orderBrokerRegistry = this.BrokerRegistryContract.at(orderBrokerRegistryAddress);
     this.minerBrokerRegistry = this.BrokerRegistryContract.at(minerBrokerRegistryAddress);
-    this.orderRegistry = this.TokenRegistryContract.at(orderRegistryAddress);
-    this.minerRegistry = this.TokenRegistryContract.at(minerRegistryAddress);
+    this.orderRegistry = this.OrderRegistryContract.at(orderRegistryAddress);
+    this.minerRegistry = this.MinerRegistryContract.at(minerRegistryAddress);
+    this.feeHolder = this.FeeHolderContract.at(feeHolderAddress);
   }
 
 }

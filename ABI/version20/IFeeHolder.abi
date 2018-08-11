@@ -1,0 +1,1 @@
+[{"constant":false,"inputs":[{"name":"batch","type":"bytes32[]"}],"name":"batchAddFeeBalances","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"token","type":"address"},{"name":"value","type":"uint256"}],"name":"withdrawToken","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]

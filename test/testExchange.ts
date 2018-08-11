@@ -44,6 +44,7 @@ contract("Exchange", (accounts: string[]) => {
   let tradeDelegate: any;
   let orderRegistry: any;
   let minerRegistry: any;
+  let feeHolder: any;
   let dummyBrokerInterceptor: any;
   let orderBrokerRegistryAddress: string;
   let minerBrokerRegistryAddress: string;
@@ -114,6 +115,7 @@ contract("Exchange", (accounts: string[]) => {
                                 minerBrokerRegistryAddress,
                                 OrderRegistry.address,
                                 MinerRegistry.address,
+                                feeHolder.address,
                                 lrcAddress);
     return context;
   };
@@ -302,6 +304,7 @@ contract("Exchange", (accounts: string[]) => {
     // This will re-deploy the TradeDelegate contract (and thus the Exchange contract as well)
     // so all trade history is reset
     tradeDelegate = await TradeDelegate.new(walletSplitPercentage);
+    feeHolder = await FeeHolder.new(tradeDelegate.address);
     exchange = await Exchange.new(
       lrcAddress,
       TokenRegistry.address,
@@ -310,7 +313,7 @@ contract("Exchange", (accounts: string[]) => {
       minerBrokerRegistryAddress,
       OrderRegistry.address,
       MinerRegistry.address,
-      FeeHolder.address,
+      feeHolder.address,
     );
     await initializeTradeDelegate();
   };
@@ -331,13 +334,14 @@ contract("Exchange", (accounts: string[]) => {
 
   before( async () => {
     [exchange, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
-      minerRegistry, dummyBrokerInterceptor] = await Promise.all([
+      minerRegistry, feeHolder, dummyBrokerInterceptor] = await Promise.all([
       Exchange.deployed(),
       TokenRegistry.deployed(),
       SymbolRegistry.deployed(),
       TradeDelegate.deployed(),
       OrderRegistry.deployed(),
       MinerRegistry.deployed(),
+      FeeHolder.deployed(),
       DummyBrokerInterceptor.deployed(),
     ]);
 
@@ -369,7 +373,6 @@ contract("Exchange", (accounts: string[]) => {
       await cleanTradeHistory();
     });
 
-    let eventFromBlock: number = web3.eth.blockNumber;
     for (const ringsInfo of ringsInfoList) {
       // all configed testcases here:
       ringsInfo.transactionOrigin = transactionOrigin;
@@ -403,6 +406,7 @@ contract("Exchange", (accounts: string[]) => {
           report = {ringMinedEvents: [], transferItems: []};
         }
 
+        const eventFromBlock: number = web3.eth.blockNumber;
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});
         console.log("gas used: ", tx.receipt.gasUsed);
 
@@ -412,7 +416,6 @@ contract("Exchange", (accounts: string[]) => {
         // await watchAndPrintEvent(tradeDelegate, "LogTrans");
         // await watchAndPrintEvent(exchange, "LogUint3");
         // await watchAndPrintEvent(exchange, "LogAddress");
-        eventFromBlock = web3.eth.blockNumber + 1;
       });
     }
 
