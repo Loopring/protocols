@@ -23,6 +23,7 @@ import "../iface/IOrderRegistry.sol";
 import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 import "../iface/IMinerRegistry.sol";
+import "../iface/IFeeHolder.sol";
 
 
 library Data {
@@ -46,6 +47,7 @@ library Data {
         IBrokerRegistry minerBrokerRegistry;
         IOrderRegistry  orderRegistry;
         IMinerRegistry  minerRegistry;
+        IFeeHolder feeHolder;
         uint64 ringIndex;
     }
 

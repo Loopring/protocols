@@ -32,7 +32,7 @@ contract IExchange {
         address     owner;
         address     tokenS;
         uint        amountS;
-        int         split;  // Positive number for splitS and negative for splitB .
+        uint        split;  // splitS
         uint        feeAmount;
     }
 

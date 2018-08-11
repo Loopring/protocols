@@ -59,7 +59,7 @@ library ExchangeDeserializer {
         bytes data
         )
         internal
-        /* view */
+        view
         returns (
             Data.Mining,
             Data.Order[],

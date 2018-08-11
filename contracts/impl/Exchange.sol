@@ -25,6 +25,7 @@ import "../iface/IMinerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
+import "../iface/IFeeHolder.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/BytesUtil.sol";
@@ -77,6 +78,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     address public  minerBrokerRegistryAddress  = 0x0;
     address public  orderRegistryAddress        = 0x0;
     address public  minerRegistryAddress        = 0x0;
+    address public  feeHolderAddress            = 0x0;
 
     uint64  public  ringIndex                   = 0;
 
@@ -99,7 +101,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         address _orderBrokerRegistryAddress,
         address _minerBrokerRegistryAddress,
         address _orderRegistryAddress,
-        address _minerRegistryAddress
+        address _minerRegistryAddress,
+        address _feeHolderAddress
         )
         public
     {
@@ -110,6 +113,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(_minerBrokerRegistryAddress != 0x0);
         require(_orderRegistryAddress != 0x0);
         require(_minerRegistryAddress != 0x0);
+        require(_feeHolderAddress != 0x0);
 
         lrcTokenAddress = _lrcTokenAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
@@ -118,6 +122,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         minerBrokerRegistryAddress = _minerBrokerRegistryAddress;
         orderRegistryAddress = _orderRegistryAddress;
         minerRegistryAddress = _minerRegistryAddress;
+        feeHolderAddress = _feeHolderAddress;
     }
 
     function cancelOrders(
@@ -216,6 +221,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             IBrokerRegistry(minerBrokerRegistryAddress),
             IOrderRegistry(orderRegistryAddress),
             IMinerRegistry(minerRegistryAddress),
+            IFeeHolder(feeHolderAddress),
             ringIndex
         );
 
@@ -288,7 +294,10 @@ contract Exchange is IExchange, NoDefaultFunc {
         ctx.delegate.batchUpdateFilled(ordersFilledInfo);
     }
 
-    function checkCutoffsAndCancelledOrders(Data.Context ctx, Data.Order[] orders) internal {
+    function checkCutoffsAndCancelledOrders(Data.Context ctx, Data.Order[] orders)
+        internal
+        view
+    {
         bytes32[] memory ordersInfo = new bytes32[](orders.length * 4);
         for (uint i = 0; i < orders.length; i++) {
             Data.Order memory order = orders[i];

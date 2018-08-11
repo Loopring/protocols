@@ -57,7 +57,7 @@ library RingHelper {
         Data.Mining mining
         )
         internal
-        view
+        pure
     {
         uint i;
         for (i = 0; i < ring.size; i++) {
@@ -156,30 +156,30 @@ library RingHelper {
         uint8 walletSplitPercentage
         )
         internal
-        returns (uint)
+        pure
+        returns (uint batchSize, uint feeTransSize)
     {
-        uint batchSize = 0;
-        uint orderTransSize;
+        uint orderFeeTransSize;
         for (uint i = 0; i < ring.size; i++) {
-            orderTransSize = 0;
+            orderFeeTransSize = 0;
             Data.Participation memory p = ring.participations[i];
 
             if (p.splitS > 0) {
-                orderTransSize ++;
+                orderFeeTransSize ++;
             }
 
             if (p.feeAmount > 0) {
-                orderTransSize ++;
+                orderFeeTransSize ++;
             }
+
+            batchSize += orderFeeTransSize;
+            batchSize += 1; // order trade transfer.
 
             if (walletSplitPercentage > 0 && p.order.wallet != 0x0) {
-                orderTransSize = orderTransSize * 2;
+                orderFeeTransSize = orderFeeTransSize * 2;
             }
-
-            orderTransSize += 1;
-            batchSize += orderTransSize;
+            feeTransSize += orderFeeTransSize;
         }
-        return batchSize;
     }
 
     event LogTrans(address token, address from, address to, uint amount, uint spendable);
@@ -187,24 +187,125 @@ library RingHelper {
         internal
         returns (IExchange.Fill[] memory fills)
     {
+        uint batchSize;
+        uint feeTransSize;
         uint8 walletSplitPercentage = ctx.delegate.walletSplitPercentage();
+        (batchSize, feeTransSize) = calculateTransferBatchSize(ring, walletSplitPercentage);
 
-        fills = new IExchange.Fill[](ring.size);
-        uint batchSize = calculateTransferBatchSize(ring, walletSplitPercentage);
+        bytes32[] memory batch;
+        (fills, batch) = generateBatchTransferData(ring, ctx, batchSize);
+        // logTrans(batch, address(ctx.delegate));
+        ctx.delegate.batchTransfer(batch);
+
+        bytes32[] memory feeTransInfo;
+        feeTransInfo = generateBatchFeeInfos(
+            ring,
+            mining,
+            feeTransSize,
+            walletSplitPercentage
+        );
+        ctx.feeHolder.batchAddFeeBalances(feeTransInfo);
+
+        /* for (i = 0; i < ring.size; i++) { */
+        /*     p = ring.participations[i]; */
+        /*     if (p.order.brokerInterceptor != 0x0) { */
+        /*         p.order.brokerInterceptor.onTokenSpentSafe( */
+        /*             p.order.owner, */
+        /*             p.order.broker, */
+        /*             p.order.tokenS, */
+        /*             p.fillAmountS */
+        /*         ); */
+        /*         // Might want to add LRC and/or other fee payment here as well */
+        /*     } */
+        /* } */
+    }
+
+    function generateBatchFeeInfos(
+        Data.Ring ring,
+        Data.Mining mining,
+        uint feeTransSize,
+        uint8 walletSplitPercentage)
+        internal
+        pure
+        returns (bytes32[] memory feeInfoBatch)
+    {
+        feeInfoBatch = new bytes32[](feeTransSize * 3);
+        uint batchIndex = 0;
+        Data.Participation memory p;
+        for (uint i = 0; i < ring.size; i++) {
+            p = ring.participations[i];
+            if (walletSplitPercentage > 0 && p.order.wallet != 0x0) {
+                if (p.feeAmount > 0) {
+                    feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.feeToken);
+                    feeInfoBatch[1 + batchIndex * 3] = bytes32(p.order.wallet);
+                    uint walletFee = p.feeAmount.mul(walletSplitPercentage) / 100;
+                    feeInfoBatch[2 + batchIndex * 3] = bytes32(walletFee);
+                    batchIndex ++;
+
+                    feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.feeToken);
+                    feeInfoBatch[1 + batchIndex * 3] = bytes32(mining.feeRecipient);
+                    feeInfoBatch[2 + batchIndex * 3] = bytes32(p.feeAmount.sub(walletFee));
+                    batchIndex ++;
+                }
+
+                if (p.splitS > 0) {
+                    feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.tokenS);
+                    feeInfoBatch[1 + batchIndex * 3] = bytes32(p.order.wallet);
+                    uint walletSplitS = p.splitS.mul(walletSplitPercentage) / 100;
+                    feeInfoBatch[2 + batchIndex * 3] = bytes32(walletSplitS);
+                    batchIndex ++;
+
+                    feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.tokenS);
+                    feeInfoBatch[1 + batchIndex * 3] = bytes32(mining.feeRecipient);
+                    feeInfoBatch[2 + batchIndex * 3] = bytes32(p.splitS.sub(walletSplitS));
+                    batchIndex ++;
+                }
+            } else {
+                if (p.feeAmount > 0) {
+                    feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.feeToken);
+                    feeInfoBatch[1 + batchIndex * 3] = bytes32(mining.feeRecipient);
+                    feeInfoBatch[2 + batchIndex * 3] = bytes32(p.feeAmount);
+                    batchIndex += 1;
+                }
+
+                if (p.splitS > 0) {
+                    feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.tokenS);
+                    feeInfoBatch[1 + batchIndex * 3] = bytes32(mining.feeRecipient);
+                    feeInfoBatch[2 + batchIndex * 3] = bytes32(p.splitS);
+                    batchIndex ++;
+                }
+            }
+        }
+
+        return feeInfoBatch;
+    }
+
+    function generateBatchTransferData(
+        Data.Ring ring,
+        Data.Context ctx,
+        uint batchSize)
+        internal
+        pure
+        returns (IExchange.Fill[], bytes32[])
+    {
+        IExchange.Fill[] memory fills = new IExchange.Fill[](ring.size);
+
         bytes32[] memory batch = new bytes32[](batchSize * 4);
         uint batchIndex = 0;
         uint i;
+        uint prevIndex;
         Data.Participation memory p;
+        Data.Participation memory prevP;
         for (i = 0; i < ring.size; i++) {
-            uint prevIndex = (i + ring.size - 1) % ring.size;
+            prevIndex = (i + ring.size - 1) % ring.size;
             p = ring.participations[i];
-            Data.Participation memory prevP = ring.participations[prevIndex];
+            prevP = ring.participations[prevIndex];
 
             fills[i].orderHash = p.order.hash;
             fills[i].owner = p.order.owner;
             fills[i].tokenS = p.order.tokenS;
             fills[i].amountS = p.fillAmountS;
-            fills[i].split = p.splitS > 0 ? int(p.splitS) : -int(p.splitB);
+            fills[i].split = p.splitS;
             fills[i].feeAmount = p.feeAmount;
 
             batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
@@ -212,70 +313,25 @@ library RingHelper {
             batch[2 + batchIndex * 4] = bytes32(prevP.order.owner);
             batch[3 + batchIndex * 4] = bytes32(p.fillAmountS);
             batchIndex ++;
-            if (walletSplitPercentage > 0 && p.order.wallet != 0x0) {
-                if (p.feeAmount > 0) {
-                    batch[0 + batchIndex * 4] = bytes32(p.order.feeToken);
-                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
-                    uint walletFee = p.feeAmount.mul(walletSplitPercentage) / 100;
-                    batch[3 + batchIndex * 4] = bytes32(walletFee);
-                    batchIndex ++;
 
-                    batch[0 + batchIndex * 4] = bytes32(p.order.feeToken);
-                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    batch[3 + batchIndex * 4] = bytes32(p.feeAmount.sub(walletFee));
-                    batchIndex ++;
-                }
+            if (p.feeAmount > 0) {
+                batch[0 + batchIndex * 4] = bytes32(p.order.feeToken);
+                batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                batch[2 + batchIndex * 4] = bytes32(address(ctx.feeHolder));
+                batch[3 + batchIndex * 4] = bytes32(p.feeAmount);
+                batchIndex += 1;
+            }
 
-                if (p.splitS > 0) {
-                    batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
-                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(p.order.wallet);
-                    uint walletSplitS = p.splitS.mul(walletSplitPercentage) / 100;
-                    batch[3 + batchIndex * 4] = bytes32(walletSplitS);
-                    batchIndex ++;
-
-                    batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
-                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    batch[3 + batchIndex * 4] = bytes32(p.splitS.sub(walletSplitS));
-                    batchIndex ++;
-                }
-            } else {
-                if (p.feeAmount > 0) {
-                    batch[0 + batchIndex * 4] = bytes32(p.order.feeToken);
-                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    batch[3 + batchIndex * 4] = bytes32(p.feeAmount);
-                    batchIndex += 1;
-                }
-
-                if (p.splitS > 0) {
-                    batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
-                    batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-                    batch[2 + batchIndex * 4] = bytes32(mining.feeRecipient);
-                    batch[3 + batchIndex * 4] = bytes32(p.splitS);
-                    batchIndex ++;
-                }
+            if (p.splitS > 0) {
+                batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
+                batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                batch[2 + batchIndex * 4] = bytes32(address(ctx.feeHolder));
+                batch[3 + batchIndex * 4] = bytes32(p.splitS);
+                batchIndex ++;
             }
         }
 
-        // logTrans(batch, address(ctx.delegate));
-        ctx.delegate.batchTransfer(batch);
-
-        for (i = 0; i < ring.size; i++) {
-            p = ring.participations[i];
-            if (p.order.brokerInterceptor != 0x0) {
-                p.order.brokerInterceptor.onTokenSpentSafe(
-                    p.order.owner,
-                    p.order.broker,
-                    p.order.tokenS,
-                    p.fillAmountS
-                );
-                // Might want to add LRC and/or other fee payment here as well
-            }
-        }
+        return (fills, batch);
     }
 
     function logTrans(bytes32[] batch, address delegateAddress)
@@ -314,9 +370,9 @@ library RingHelper {
         }
     }
 
-    function batchUpdateOrderFillAmount(Data.Ring ring, Data.Context ctx)
-        internal
-    {
+    /* function batchUpdateOrderFillAmount(Data.Ring ring, Data.Context ctx) */
+    /*     internal */
+    /* { */
 
-    }
+    /* } */
 }
