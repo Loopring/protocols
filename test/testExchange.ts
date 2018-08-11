@@ -262,7 +262,7 @@ contract("Exchange", (accounts: string[]) => {
       for (const owner of Object.keys(feeBalances[token])) {
         const balanceFromSimulator = feeBalances[token][owner];
         const balanceFromContract = await feeHolder.feeBalances(token, owner);
-        console.log("Token: " + token + ", Owner: " + owner + "': " +
+        console.log("Token: " + token + ", Owner: " + owner + ": " +
           balanceFromContract + " == " + balanceFromSimulator);
         assertNumberEqualsWithPrecision(balanceFromContract, balanceFromSimulator);
       }
@@ -298,7 +298,7 @@ contract("Exchange", (accounts: string[]) => {
   const unregisterBrokerChecked = async (user: string, broker: string) => {
     const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
     await brokerRegistry.unregisterBroker(broker, {from: user});
-    assertNotRegistered(user, broker);
+    await assertNotRegistered(user, broker);
   };
 
   const assertRegistered = async (user: string, broker: string, interceptor: string) => {
@@ -645,7 +645,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Register the broker without interceptor
-      registerBrokerChecked(owner, broker1, emptyAddr);
+      await registerBrokerChecked(owner, broker1, emptyAddr);
 
       // Broker registered: transactions should happen
       {
@@ -654,7 +654,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Unregister the broker
-      unregisterBrokerChecked(owner, broker1);
+      await unregisterBrokerChecked(owner, broker1);
     });
 
     it("should be able to for an order to use a broker with an interceptor", async () => {
@@ -694,7 +694,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Register the broker with interceptor
-      registerBrokerChecked(owner, broker1, dummyBrokerInterceptor.address);
+      await registerBrokerChecked(owner, broker1, dummyBrokerInterceptor.address);
 
       // Make sure allowance is set to 0
       await dummyBrokerInterceptor.setAllowance(0);
@@ -706,7 +706,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Now set the allowance to a large number
-      await dummyBrokerInterceptor.setAllowance(1e32);
+      await dummyBrokerInterceptor.setAllowance(23e17);
 
       // Broker registered and allowance set to a high value: transactions should happen
       {
@@ -715,7 +715,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Unregister the broker
-      unregisterBrokerChecked(owner, broker1);
+      await unregisterBrokerChecked(owner, broker1);
     });
 
     it("an order using a broker with an invalid interceptor should not fail the transaction", async () => {
@@ -750,7 +750,7 @@ contract("Exchange", (accounts: string[]) => {
       const invalidInterceptorAddress = TokenRegistry.address;
 
       // Register the broker with interceptor
-      /*registerBrokerChecked(owner, broker1, invalidInterceptorAddress);
+      await registerBrokerChecked(owner, broker1, invalidInterceptorAddress);
 
       // Broker registered with invalid interceptor, should NOT throw but allowance will be set to 0
       // so no transactions should happen
@@ -760,10 +760,10 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Unregister the broker
-      unregisterBrokerChecked(owner, broker1);*/
+      await unregisterBrokerChecked(owner, broker1);
 
       // Register the broker with interceptor
-      registerBrokerChecked(owner, broker1, dummyBrokerInterceptor.address);
+      await registerBrokerChecked(owner, broker1, dummyBrokerInterceptor.address);
 
       // Now set the allowance to a large number
       await dummyBrokerInterceptor.setAllowance(1e32);
@@ -779,7 +779,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Unregister the broker
-      unregisterBrokerChecked(owner, broker1);
+      await unregisterBrokerChecked(owner, broker1);
     });
 
   });
@@ -852,7 +852,7 @@ contract("Exchange", (accounts: string[]) => {
       const attackBrokerInterceptor = await DummyBrokerInterceptor.new(exchange.address);
 
       // Register the broker with interceptor
-      registerBrokerChecked(owner, broker1, attackBrokerInterceptor.address);
+      await registerBrokerChecked(owner, broker1, attackBrokerInterceptor.address);
 
       // Set the allowance to a large number
       await attackBrokerInterceptor.setAllowance(1e32);
@@ -876,7 +876,7 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(exchange.submitRings(bs, {from: transactionOrigin}));
 
       // Unregister the broker
-      unregisterBrokerChecked(owner, broker1);
+      await unregisterBrokerChecked(owner, broker1);
     });
 
   });

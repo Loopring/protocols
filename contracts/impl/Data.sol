@@ -93,6 +93,7 @@ library Data {
         // computed fields
         bytes32 hash;
         address brokerInterceptor;
+        uint    filledAmountS;
         uint    maxAmountFee;
         uint    maxAmountS;
         uint    maxAmountB;
@@ -109,7 +110,6 @@ library Data {
 
         /* // computed fields */
         uint splitS;
-        uint splitB;
         uint feeAmount;
         // uint lrcReward;
         uint fillAmountS;

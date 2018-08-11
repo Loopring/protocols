@@ -87,6 +87,7 @@ library RingHelper {
             Data.Participation memory p = ring.participations[i];
             Data.Participation memory nextP = ring.participations[nextIndex];
             if (nextP.fillAmountS >= p.fillAmountB) {
+                nextP.feeAmount = nextP.order.feeAmount.mul(nextP.fillAmountS) / nextP.order.amountS;
                 nextP.splitS = nextP.fillAmountS - p.fillAmountB;
                 nextP.fillAmountS = p.fillAmountB;
             } else {
@@ -94,7 +95,13 @@ library RingHelper {
                 break;
             }
             // p.calculateFeeAmounts(mining);
-            p.adjustOrderState();
+        }
+
+        if (ring.valid) {
+            for (i = 0; i < ring.size; i++) {
+                Data.Participation memory p = ring.participations[i];
+                p.adjustOrderState();
+            }
         }
     }
 
@@ -117,7 +124,6 @@ library RingHelper {
             smallest_ = i;
             prevP.fillAmountB = p.fillAmountS;
             prevP.fillAmountS = prevP.fillAmountB.mul(prevP.order.amountS) / prevP.order.amountB;
-            prevP.feeAmount = prevP.order.feeAmount.mul(prevP.fillAmountS) / prevP.order.amountS;
         }
     }
 

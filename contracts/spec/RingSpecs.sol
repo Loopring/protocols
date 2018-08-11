@@ -69,7 +69,6 @@ library RingSpecs {
                 /* inputs.nextUint(), */
                 /* inputs.nextUint(), */
                 0, // splitS
-                0, // splitB
                 orders[pspec.orderIndex()].feeAmount, // feeAmount
                 /* 0, // lrcReward */
                 0, // fillAmountS

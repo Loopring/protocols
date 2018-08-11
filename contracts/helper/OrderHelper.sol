@@ -104,8 +104,8 @@ library OrderHelper {
             order.brokerInterceptor
         );
 
-        uint filled = ctx.delegate.filled(order.hash);
-        order.maxAmountS = order.amountS.sub(filled);
+        order.filledAmountS = ctx.delegate.filled(order.hash);
+        order.maxAmountS = order.amountS.sub(order.filledAmountS);
 
         uint spendableS = getSpendable(
             ctx.delegate,
@@ -121,7 +121,7 @@ library OrderHelper {
 
         if (order.tokenS == order.feeToken) {
             order.sellFeeToken = true;
-            uint maxFeeAmount = order.feeAmount.mul(filled) / order.amountS;
+            uint maxFeeAmount = order.feeAmount.mul(order.filledAmountS) / order.amountS;
             order.maxAmountS = order.maxAmountS.sub(maxFeeAmount);
         }
 

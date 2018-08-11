@@ -76,6 +76,8 @@ export class Ring {
       const nextIndex = (i + 1) % ringSize;
 
       if (this.orders[nextIndex].fillAmountS >= this.orders[i].fillAmountB) {
+        this.orders[nextIndex].fillAmountFee = this.orders[nextIndex].feeAmount *
+          this.orders[nextIndex].fillAmountS / this.orders[nextIndex].amountS;
         this.orders[nextIndex].splitS = this.orders[nextIndex].fillAmountS - this.orders[i].fillAmountB;
         this.orders[nextIndex].fillAmountS = this.orders[i].fillAmountB;
       } else {
@@ -189,7 +191,6 @@ export class Ring {
       newSmallest = i;
       prevOrder.fillAmountB = order.fillAmountS;
       prevOrder.fillAmountS = prevOrder.fillAmountB * prevOrder.amountS / prevOrder.amountB;
-      prevOrder.fillAmountFee = prevOrder.feeAmount * prevOrder.fillAmountS / prevOrder.amountS;
     }
 
     return newSmallest;

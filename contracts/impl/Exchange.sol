@@ -287,9 +287,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes32[] memory ordersFilledInfo = new bytes32[](orders.length * 2);
         for (uint i = 0; i < orders.length; i++){
             Data.Order memory order = orders[i];
-            uint totalFilled = order.amountS.sub(order.maxAmountS);
             ordersFilledInfo[i*2] = order.hash;
-            ordersFilledInfo[i*2 + 1] = bytes32(totalFilled);
+            ordersFilledInfo[i*2 + 1] = bytes32(order.filledAmountS);
         }
         ctx.delegate.batchUpdateFilled(ordersFilledInfo);
     }

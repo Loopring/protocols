@@ -33,6 +33,7 @@ library ParticipationHelper {
         internal
         pure
     {
+        p.order.filledAmountS += p.fillAmountS + p.splitS;
         p.order.maxAmountS = p.order.maxAmountS.sub(p.fillAmountS);
         p.order.maxAmountB = p.order.maxAmountB.sub(p.fillAmountB);
         p.order.maxAmountFee = p.order.maxAmountFee.sub(p.feeAmount);
