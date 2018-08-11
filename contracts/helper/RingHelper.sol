@@ -33,8 +33,7 @@ library RingHelper {
     using ParticipationHelper for Data.Participation;
     using BrokerInterceptorProxy for address;
 
-    uint private constant RATE_PERCISION = 10 ** 18;
-    uint private constant DUST = 1000;
+    uint private constant DUST = 1000; // if a transfer's amount < 1000, ignore it.
 
     function updateHash(
         Data.Ring ring
@@ -61,46 +60,48 @@ library RingHelper {
         view
     {
         uint i;
-        uint totalRate = RATE_PERCISION;
         for (i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             Data.Order memory order = p.order;
             p.fillAmountS = order.maxAmountS;
-            totalRate = totalRate.mul(order.amountS) / order.amountB;
+            p.fillAmountB = p.fillAmountS.mul(order.amountB) / order.amountS;
         }
-        if (totalRate < RATE_PERCISION) {
-            ring.valid = false;
-        } else {
-            uint smallest = 0;
 
-            for (i = 0; i < ring.size; i++) {
-                smallest = calculateOrderFillAmounts(ring, i, smallest, totalRate);
+        uint smallest = 0;
+        for (i = ring.size - 1; i >= 0; i--) {
+            smallest = calculateOrderFillAmounts(ring, i, smallest);
+            if (i == 0) { // when i == 0, i-- will becomes the MAX_VALUE.
+                break;
             }
+        }
+        for (i = ring.size - 1; i >= smallest; i--) {
+            calculateOrderFillAmounts(ring, i, smallest);
+            if (i == smallest) {
+                break;
+            }
+        }
 
-            for (i = 0; i < smallest; i++) {
-                calculateOrderFillAmounts(ring, i, smallest, totalRate);
+        uint nextIndex = 0;
+        for (i = 0; i < ring.size; i++) {
+            nextIndex = (i + 1) % ring.size;
+            Data.Participation memory p = ring.participations[i];
+            Data.Participation memory nextP = ring.participations[nextIndex];
+            if (nextP.fillAmountS >= p.fillAmountB) {
+                nextP.splitS = nextP.fillAmountS - p.fillAmountB;
+                nextP.fillAmountS = p.fillAmountB;
+            } else {
+                ring.valid = false;
+                break;
             }
-
-            uint nextIndex = 0;
-            for (i = 0; i < ring.size; i++) {
-                nextIndex = (i + 1) % ring.size;
-                Data.Participation memory p = ring.participations[i];
-                Data.Participation memory nextP = ring.participations[nextIndex];
-                if (nextP.fillAmountS > p.fillAmountB) {
-                    nextP.splitS = nextP.fillAmountS - p.fillAmountB;
-                    nextP.fillAmountS = p.fillAmountB;
-                }
-                // p.calculateFeeAmounts(mining);
-                p.adjustOrderState();
-            }
+            // p.calculateFeeAmounts(mining);
+            p.adjustOrderState();
         }
     }
 
     function calculateOrderFillAmounts(
         Data.Ring ring,
         uint i,
-        uint smallest,
-        uint totalRate
+        uint smallest
         )
         internal
         pure
@@ -110,18 +111,14 @@ library RingHelper {
         smallest_ = smallest;
 
         Data.Participation memory p = ring.participations[i];
-        uint j = (i + 1) % ring.size;
-        Data.Participation memory nextP = ring.participations[j];
-
-        p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;
-        uint scaledFillAmountB = p.fillAmountB.mul(totalRate) / RATE_PERCISION;
-        if (nextP.fillAmountS >= scaledFillAmountB) {
-            nextP.fillAmountS = scaledFillAmountB;
-        } else {
-            smallest_ = j;
+        uint j = (i + ring.size - 1) % ring.size;
+        Data.Participation memory prevP = ring.participations[j];
+        if (prevP.fillAmountB > p.fillAmountS) {
+            smallest_ = i;
+            prevP.fillAmountB = p.fillAmountS;
+            prevP.fillAmountS = prevP.fillAmountB.mul(prevP.order.amountS) / prevP.order.amountB;
+            prevP.feeAmount = prevP.order.feeAmount.mul(prevP.fillAmountS) / prevP.order.amountS;
         }
-
-        p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
     }
 
     function checkOrdersValid(
