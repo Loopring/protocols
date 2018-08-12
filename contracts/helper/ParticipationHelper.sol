@@ -34,12 +34,12 @@ library ParticipationHelper {
         pure
     {
         p.order.filledAmountS += p.fillAmountS + p.splitS;
-        p.order.maxAmountS = p.order.maxAmountS.sub(p.fillAmountS);
+        p.order.maxAmountS = p.order.maxAmountS.sub(p.fillAmountS + p.splitS);
         p.order.maxAmountB = p.order.maxAmountB.sub(p.fillAmountB);
         p.order.maxAmountFee = p.order.maxAmountFee.sub(p.feeAmount);
 
-        if (p.order.sellFeeToken) {
-            p.order.maxAmountFee = p.order.maxAmountFee.sub(p.fillAmountS);
+        if (p.order.tokenS == p.order.feeToken) {
+            p.order.maxAmountFee = p.order.maxAmountFee.sub(p.fillAmountS + p.splitS);
         }
     }
 

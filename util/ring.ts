@@ -53,8 +53,9 @@ export class Ring {
   }
 
   public async calculateFillAmountAndFee() {
-    for (const orderInfo of this.orders) {
-      await this.orderUtil.scaleBySpendableAmount(orderInfo);
+    for (const order of this.orders) {
+      order.fillAmountS = order.maxAmountS;
+      order.fillAmountB = order.fillAmountS * order.amountB / order.amountS;
     }
 
     let smallest = 0;
@@ -135,6 +136,15 @@ export class Ring {
       // If the transfer amount is 0 nothing will get transfered
       if (amount === 0) {
         continue;
+      }
+
+      // AdjustOrders
+      currOrder.filledAmountS += amount + currOrder.splitS;
+      currOrder.maxAmountS -= amount + currOrder.splitS;
+      currOrder.maxAmountB -= currOrder.fillAmountB;
+      currOrder.maxAmountFee -= currOrder.feeAmount;
+      if (currOrder.tokenS === currOrder.feeToken) {
+        currOrder.maxAmountFee -= amount + currOrder.splitS;
       }
 
       transferItems.push({token, from , to, amount});

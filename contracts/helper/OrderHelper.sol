@@ -119,13 +119,7 @@ library OrderHelper {
             order.maxAmountS = spendableS;
         }
 
-        if (order.tokenS == order.feeToken) {
-            order.sellFeeToken = true;
-            uint maxFeeAmount = order.feeAmount.mul(order.filledAmountS) / order.amountS;
-            order.maxAmountS = order.maxAmountS.sub(maxFeeAmount);
-        }
-
-        order.maxAmountB = order.amountB.mul(order.maxAmountS) / order.amountS;
+        order.maxAmountB = order.maxAmountS.mul(order.amountB) / order.amountS;
     }
 
     function validateInfo(Data.Order order)

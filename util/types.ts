@@ -36,6 +36,7 @@ export interface OrderInfo {
   tokenBFeePercentage?: number;     // spec value 1 << 13
 
   // helper field
+  filledAmountS?: number;
   maxAmountS?: number;
   maxAmountB?: number;
   fillAmountS?: number;
@@ -91,6 +92,7 @@ export interface SimulatorReport {
   ringMinedEvents: RingMinedEvent[];
   transferItems: TransferItem[];
   feeBalances: { [id: string]: any; };
+  filledAmounts: { [hash: string]: number; };
 }
 
 export interface TransferItem {

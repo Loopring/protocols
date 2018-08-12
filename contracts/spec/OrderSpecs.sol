@@ -81,7 +81,6 @@ library OrderSpecs {
             0,  // spendableLRC
             0,  // maxAmountS
             0,  // maxAmountB,
-            false, // sellLRC
             true   // valid
         );
     }

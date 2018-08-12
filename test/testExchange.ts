@@ -134,6 +134,7 @@ contract("Exchange", (accounts: string[]) => {
     const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
     assertTransfers(transferEvents, report.transferItems);
     await assertFeeBalances(report.feeBalances);
+    await assertFilledAmounts(context, report.filledAmounts);
 
     return {tx, report};
   };
@@ -266,6 +267,16 @@ contract("Exchange", (accounts: string[]) => {
           balanceFromContract + " == " + balanceFromSimulator);
         assertNumberEqualsWithPrecision(balanceFromContract, balanceFromSimulator);
       }
+    }
+  };
+
+  const assertFilledAmounts = async (context: Context, filledAmounts: { [hash: string]: number; }) => {
+    console.log("Filled amounts:");
+    for (const hash of Object.keys(filledAmounts)) {
+      const filledFromSimulator = filledAmounts[hash];
+      const filledFromContract = await context.tradeDelegate.filled("0x" + hash).toNumber();
+      console.log(hash + ": " + filledFromContract + " == " + filledFromSimulator);
+      assertNumberEqualsWithPrecision(filledFromContract, filledFromSimulator);
     }
   };
 
@@ -417,7 +428,7 @@ contract("Exchange", (accounts: string[]) => {
           // console.log("report.transferItems:", report.transferItems);
         } catch (err) {
           console.log("simulator error:", err);
-          report = {ringMinedEvents: [], transferItems: [], feeBalances: {}};
+          report = {ringMinedEvents: [], transferItems: [], feeBalances: {}, filledAmounts: {}};
         }
 
         const eventFromBlock: number = web3.eth.blockNumber;
@@ -427,6 +438,7 @@ contract("Exchange", (accounts: string[]) => {
         const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
         assertTransfers(transferEvents, report.transferItems);
         await assertFeeBalances(report.feeBalances);
+        await assertFilledAmounts(context, report.filledAmounts);
 
         // await watchAndPrintEvent(tradeDelegate, "LogTrans");
         // await watchAndPrintEvent(exchange, "LogUint3");
@@ -662,14 +674,14 @@ contract("Exchange", (accounts: string[]) => {
         rings: [[0, 1]],
         orders: [
           {
-            tokenS: allTokenSymbols[0],
-            tokenB: allTokenSymbols[1],
+            tokenS: allTokenSymbols[1],
+            tokenB: allTokenSymbols[2],
             amountS: 35e17,
             amountB: 22e17,
           },
           {
-            tokenS: allTokenSymbols[1],
-            tokenB: allTokenSymbols[0],
+            tokenS: allTokenSymbols[2],
+            tokenB: allTokenSymbols[1],
             amountS: 23e17,
             amountB: 31e17,
             broker: broker1,
@@ -684,7 +696,9 @@ contract("Exchange", (accounts: string[]) => {
         await setupOrder(order, i);
       }
 
-      const owner = ringsInfo.orders[1].owner;
+      const orderIndex = 1;
+      const owner = ringsInfo.orders[orderIndex].owner;
+      const amountS = ringsInfo.orders[orderIndex].amountS;
       const context = getDefaultContext();
 
       // Broker not registered: submitRings should NOT throw, but no transactions should happen
@@ -697,7 +711,7 @@ contract("Exchange", (accounts: string[]) => {
       await registerBrokerChecked(owner, broker1, dummyBrokerInterceptor.address);
 
       // Make sure allowance is set to 0
-      await dummyBrokerInterceptor.setAllowance(0);
+      await dummyBrokerInterceptor.setAllowance(0e17);
 
       // Broker registered, but allowance is set to 0 so no transactions should happen
       {
@@ -705,8 +719,17 @@ contract("Exchange", (accounts: string[]) => {
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
       }
 
-      // Now set the allowance to a large number
-      await dummyBrokerInterceptor.setAllowance(23e17);
+      // Set allowance to something less than amountS
+      await dummyBrokerInterceptor.setAllowance(amountS / 3);
+
+      // Broker registered, allowance is set to non-zero so transactions should happen
+      {
+        const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+        assert(report.transferItems.length > 0, "Tokens should be transfered");
+      }
+
+      // Now set the allowance large enough so that the complete order can be fulfilled
+      await dummyBrokerInterceptor.setAllowance(amountS);
 
       // Broker registered and allowance set to a high value: transactions should happen
       {
@@ -872,8 +895,8 @@ contract("Exchange", (accounts: string[]) => {
       await ringsGenerator.setupRingsAsync(ringsInfo);
       const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
-      // submitRings should throw
-      await expectThrow(exchange.submitRings(bs, {from: transactionOrigin}));
+      // submitRings currently does not throw because external calls cannot fail the transaction
+      exchange.submitRings(bs, {from: transactionOrigin});
 
       // Unregister the broker
       await unregisterBrokerChecked(owner, broker1);

@@ -88,6 +88,10 @@ export class ProtocolSimulator {
       // console.log("order.valid:", order.valid);
     }
 
+    for (const order of orders) {
+      await this.orderUtil.updateStates(order);
+    }
+
     const ringMinedEvents: RingMinedEvent[] = [];
     const transferItems: TransferItem[] = [];
     const feeBalances: { [id: string]: any; } = {};
@@ -102,10 +106,16 @@ export class ProtocolSimulator {
       }
     }
 
+    const filledAmounts: { [hash: string]: number; } = {};
+    for (const order of orders) {
+      filledAmounts[order.hash.toString("hex")] = order.filledAmountS ? order.filledAmountS : 0;
+    }
+
     const simulatorReport: SimulatorReport = {
       ringMinedEvents,
       transferItems,
       feeBalances,
+      filledAmounts,
     };
     return simulatorReport;
   }

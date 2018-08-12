@@ -120,22 +120,24 @@ export class OrderUtil {
     return orderHash;
   }
 
-  public async scaleBySpendableAmount(orderInfo: OrderInfo) {
+  public async updateStates(orderInfo: OrderInfo) {
     const spendableS = await this.getErc20SpendableAmount(orderInfo.tokenS,
                                                           orderInfo.owner,
                                                           this.context.tradeDelegate.address,
                                                           orderInfo.broker,
                                                           orderInfo.brokerInterceptor);
 
-    const filled = await this.context.tradeDelegate.filled(orderInfo.hash.toString("hex"));
-    const remaining = orderInfo.amountS - filled;
+    orderInfo.filledAmountS = await this.context.tradeDelegate.filled("0x" + orderInfo.hash.toString("hex")).toNumber();
+    const remaining = orderInfo.amountS - orderInfo.filledAmountS;
 
-    if (remaining <= 0) {
-      throw new Error("order had been fully filled.");
-    }
-    orderInfo.fillAmountS = Math.min(spendableS, remaining);
-    orderInfo.fillAmountB = orderInfo.fillAmountS * orderInfo.amountB / orderInfo.amountS;
-    orderInfo.fillAmountFee = orderInfo.feeAmount * orderInfo.fillAmountS / orderInfo.amountS;
+    orderInfo.maxAmountS = Math.min(spendableS, remaining);
+    orderInfo.maxAmountB = orderInfo.maxAmountS * orderInfo.amountB / orderInfo.amountS;
+
+    orderInfo.maxAmountFee = await this.getErc20SpendableAmount(orderInfo.feeToken,
+                                                                orderInfo.owner,
+                                                                this.context.tradeDelegate.address,
+                                                                orderInfo.broker,
+                                                                orderInfo.brokerInterceptor);
   }
 
   private async getErc20SpendableAmount(tokenAddr: string,

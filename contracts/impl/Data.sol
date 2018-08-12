@@ -97,7 +97,6 @@ library Data {
         uint    maxAmountFee;
         uint    maxAmountS;
         uint    maxAmountB;
-        bool    sellFeeToken;
         bool    valid;
     }
 
