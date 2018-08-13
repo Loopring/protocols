@@ -30,20 +30,13 @@ import "../helper/OrderHelper.sol";
 contract OrderBook is IOrderBook, NoDefaultFunc {
     using OrderHelper     for Data.Order;
 
-    mapping(bytes32 => OrderData) public orders;
-
-    struct OrderData {
-        address[3] addressArray;
-        uint[5] uintArray;
-        bool allOrNone;
-    }
-
     function submitOrder(
         address[3] addressArray, // tokenS, tokenB, broker
         uint[5] uintArray, // amountS, amountB, validSince, validUntil, lrcFeeAmount
         bool allOrNone
     )
     external
+    returns (bytes32)
     {
         Data.Order memory order = Data.Order(
             msg.sender,
@@ -86,6 +79,9 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
         );
 
         orders[order.hash] = orderData;
+        emit OrderSubmitted(msg.sender, order.hash);
+
+        return order.hash;
     }
 
 }

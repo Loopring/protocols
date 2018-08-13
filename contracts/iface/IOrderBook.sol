@@ -25,6 +25,16 @@ pragma experimental "ABIEncoderV2";
 contract IOrderBook {
     mapping(bytes32 => bool) public orderSubmitted;
 
+    mapping(bytes32 => OrderData) public orders;
+
+    struct OrderData {
+        address[3] addressArray;
+        uint[5] uintArray;
+        bool allOrNone;
+    }
+
+    event OrderSubmitted(address owner, bytes32 orderHash);
+
     /// order's owner is msg.sender, so no signature needed.
     /// order's owner can be a contract's address.
     /// only support LRC as fee for now.
@@ -34,5 +44,6 @@ contract IOrderBook {
         uint[5] uintArray, // amountS, amountB, validSince, validUntil, lrcFeeAmount
         bool allOrNone
     )
-        external;
+        external
+        returns (bytes32);
 }
