@@ -20,17 +20,72 @@ pragma experimental "ABIEncoderV2";
 
 import "../iface/IOrderBook.sol";
 import "../lib/NoDefaultFunc.sol";
+import "../impl/Data.sol";
+import "../helper/OrderHelper.sol";
 
 
 /// @title An Implementation of IOrderbook.
 /// @author Daniel Wang - <daniel@loopring.org>.
+/// @author Kongliang Zhong - <kongliang@loopring.org>.
 contract OrderBook is IOrderBook, NoDefaultFunc {
+    using OrderHelper     for Data.Order;
+
+    mapping(bytes32 => OrderData) public orders;
+
+    struct OrderData {
+        address[3] addressArray;
+        uint[5] uintArray;
+        bool allOrNone;
+    }
 
     function submitOrder(
-        address owner
+        address[3] addressArray, // tokenS, tokenB, broker
+        uint[5] uintArray, // amountS, amountB, validSince, validUntil, lrcFeeAmount
+        bool allOrNone
     )
     external
     {
+        Data.Order memory order = Data.Order(
+            msg.sender,
+            addressArray[0],
+            addressArray[1],
+            uintArray[0],
+            uintArray[1],
+            uintArray[2],
+            0x0,
+            addressArray[2],
+            0x0,
+            0x0,
+            uintArray[3],
+            new bytes(0),
+            new bytes(0),
+            allOrNone,
+            0x0,
+            uintArray[4],
+            0,
+            0,
+            0,
+            0,
+            bytes32(0x0),
+            0x0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            true
+        );
 
+        order.updateHash();
+        require(!orderSubmitted[order.hash]);
+        orderSubmitted[order.hash] = true;
+        OrderData memory orderData = OrderData(
+            addressArray,
+            uintArray,
+            allOrNone
+        );
+
+        orders[order.hash] = orderData;
     }
+
 }
