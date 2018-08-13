@@ -37,6 +37,7 @@ contract("Exchange", (accounts: string[]) => {
   const orderDualAuthAddr = accounts.slice(1, 4);
   const transactionOrigin = /*miner*/ accounts[1];
   const broker1 = accounts[1];
+  const wallet1 = accounts[3];
 
   let exchange: any;
   let tokenRegistry: any;
@@ -174,6 +175,9 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.validSince) {
       // Set the order validSince time to a bit before the current timestamp;
       order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
+    }
+    if (!order.walletAddr && index > 0) {
+      order.walletAddr = wallet1;
     }
 
     // setup amount:

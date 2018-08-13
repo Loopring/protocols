@@ -234,10 +234,10 @@ export class Ring {
     if (!feeBalances[token]) {
       feeBalances[token] = {};
     }
-    if (!feeBalances[token][this.feeRecipient]) {
-      feeBalances[token][this.feeRecipient] = await this.context.feeHolder.feeBalances(token, owner).toNumber();
+    if (!feeBalances[token][owner]) {
+      feeBalances[token][owner] = await this.context.feeHolder.feeBalances(token, owner).toNumber();
     }
-    feeBalances[token][this.feeRecipient] += amount;
+    feeBalances[token][owner] += amount;
   }
 
   private resize(i: number, smallest: number) {
