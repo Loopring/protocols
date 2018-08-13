@@ -11,6 +11,7 @@ export class Artifacts {
   public DummyAgency: any;
   public DummyBrokerInterceptor: any;
   public FeeHolder: any;
+  public OrderBook: any;
   constructor(artifacts: any) {
     this.TokenRegistry = artifacts.require("impl/TokenRegistry");
     this.SymbolRegistry = artifacts.require("impl/SymbolRegistry");
@@ -23,5 +24,6 @@ export class Artifacts {
     this.DummyAgency = artifacts.require("test/DummyAgency");
     this.DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");
     this.FeeHolder = artifacts.require("impl/FeeHolder");
+    this.OrderBook = artifacts.require("impl/OrderBook");
   }
 }
