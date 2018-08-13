@@ -78,7 +78,8 @@ library OrderSpecs {
             bytes32(0x0), // hash
             0x0, // orderBrokerInterceptor
             0,  // filledAmountS
-            0,  // spendableLRC
+            0,  // spendableS
+            0,  // spendableFee
             0,  // maxAmountS
             0,  // maxAmountB,
             true   // valid

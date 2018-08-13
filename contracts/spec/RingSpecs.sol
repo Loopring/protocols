@@ -65,12 +65,10 @@ library RingSpecs {
             uint8 pspec = pspecs[i];
             parts[i] = Data.Participation(
                 orders[pspec.orderIndex()],
-                /* pspec.marginSplitAsFee(), */
-                /* inputs.nextUint(), */
-                /* inputs.nextUint(), */
                 0, // splitS
                 orders[pspec.orderIndex()].feeAmount, // feeAmount
-                /* 0, // lrcReward */
+                0, // tokenSFeePercentage
+                0, // tokenBFeePercentage
                 0, // fillAmountS
                 0  // fillAmountB
             );
@@ -85,6 +83,7 @@ library RingSpecs {
           size,
           parts,
           bytes32(0x0), // hash
+          false,        // P2P
           true          // valid
         );
     }

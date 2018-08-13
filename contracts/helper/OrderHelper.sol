@@ -96,7 +96,7 @@ library OrderHelper {
         )
         internal
     {
-        order.maxAmountFee = getSpendable(
+        order.spendableFee = getSpendable(
             ctx.delegate,
             order.feeToken,
             order.owner,
@@ -107,7 +107,7 @@ library OrderHelper {
         order.filledAmountS = ctx.delegate.filled(order.hash);
         order.maxAmountS = order.amountS.sub(order.filledAmountS);
 
-        uint spendableS = getSpendable(
+        order.spendableS = getSpendable(
             ctx.delegate,
             order.tokenS,
             order.owner,
@@ -115,8 +115,8 @@ library OrderHelper {
             order.brokerInterceptor
         );
 
-        if (order.maxAmountS > spendableS) {
-            order.maxAmountS = spendableS;
+        if (order.maxAmountS > order.spendableS) {
+            order.maxAmountS = order.spendableS;
         }
 
         order.maxAmountB = order.maxAmountS.mul(order.amountB) / order.amountS;

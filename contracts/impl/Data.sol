@@ -85,16 +85,17 @@ library Data {
         bool    allOrNone;
         address feeToken;
         uint    feeAmount;
-        uint16  feePercentage;
+        uint16  feePercentage;         // Post-trading
         uint16  waiveFeePercentage;
-        uint16  tokenSFeePercentage;
-        uint16  tokenBFeePercentage;
+        uint16  tokenSFeePercentage;    // Pre-trading
+        uint16  tokenBFeePercentage;   // Post-trading
 
         // computed fields
         bytes32 hash;
         address brokerInterceptor;
         uint    filledAmountS;
-        uint    maxAmountFee;
+        uint    spendableS;
+        uint    spendableFee;
         uint    maxAmountS;
         uint    maxAmountB;
         bool    valid;
@@ -103,14 +104,12 @@ library Data {
     struct Participation {
         // required fields
         Order order;
-        /* bool marginSplitAsFee; */
-        /* uint rateS; */
-        /* uint rateB; */
 
-        /* // computed fields */
+        // computed fields
         uint splitS;
         uint feeAmount;
-        // uint lrcReward;
+        uint16 tokenSFeePercentage;
+        uint16 tokenBFeePercentage;
         uint fillAmountS;
         uint fillAmountB;
     }
@@ -119,6 +118,7 @@ library Data {
         uint size;
         Participation[] participations;
         bytes32 hash;
+        bool P2P;
         bool valid;
     }
 }

@@ -33,13 +33,16 @@ library ParticipationHelper {
         internal
         pure
     {
-        p.order.filledAmountS += p.fillAmountS + p.splitS;
-        p.order.maxAmountS = p.order.maxAmountS.sub(p.fillAmountS + p.splitS);
+        uint totalAmountS = p.fillAmountS + p.splitS;
+        p.order.filledAmountS += totalAmountS;
+        p.order.maxAmountS = p.order.maxAmountS.sub(totalAmountS);
         p.order.maxAmountB = p.order.maxAmountB.sub(p.fillAmountB);
-        p.order.maxAmountFee = p.order.maxAmountFee.sub(p.feeAmount);
 
+        p.order.spendableS = p.order.spendableS.sub(totalAmountS);
+        p.order.spendableFee = p.order.spendableFee.sub(p.feeAmount);
         if (p.order.tokenS == p.order.feeToken) {
-            p.order.maxAmountFee = p.order.maxAmountFee.sub(p.fillAmountS + p.splitS);
+            p.order.spendableS = p.order.spendableS.sub(p.feeAmount);
+            p.order.spendableFee = p.order.spendableFee.sub(totalAmountS);
         }
     }
 

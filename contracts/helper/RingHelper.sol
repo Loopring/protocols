@@ -88,6 +88,24 @@ library RingHelper {
             Data.Participation memory nextP = ring.participations[nextIndex];
             if (nextP.fillAmountS >= p.fillAmountB) {
                 nextP.feeAmount = nextP.order.feeAmount.mul(nextP.fillAmountS) / nextP.order.amountS;
+                if (ring.P2P) {
+                    // TODO: tokenS is pre-trading so we'll probably have to scale the ring
+                    // keeping this percentage in mind.
+                    // If we do a simple percentage on top of fillAmountS we could go above spendableS
+                    nextP.tokenSFeePercentage = nextP.order.tokenSFeePercentage;
+                    nextP.tokenBFeePercentage = nextP.order.tokenBFeePercentage;
+                }
+                // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
+                uint totalAmountFeeToken = nextP.feeAmount;
+                if (nextP.order.feeToken == nextP.order.tokenS) {
+                    totalAmountFeeToken = totalAmountFeeToken.add(nextP.fillAmountS);
+                }
+                if (totalAmountFeeToken > nextP.order.spendableFee) {
+                    // TODO: safe math for uint16
+                    nextP.tokenBFeePercentage += nextP.order.feePercentage;
+                    nextP.feeAmount = 0;
+                }
+
                 nextP.splitS = nextP.fillAmountS - p.fillAmountB;
                 nextP.fillAmountS = p.fillAmountB;
             } else {
@@ -178,6 +196,10 @@ library RingHelper {
                 orderFeeTransSize ++;
             }
 
+            if (p.tokenBFeePercentage > 0) {
+                orderFeeTransSize ++;
+            }
+
             batchSize += orderFeeTransSize;
             batchSize += 1; // order trade transfer.
 
@@ -254,6 +276,21 @@ library RingHelper {
                     batchIndex ++;
                 }
 
+                if (p.tokenBFeePercentage > 0) {
+                    uint feeAmountB = p.fillAmountB.mul(p.tokenBFeePercentage) / 10000;
+
+                    feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.tokenB);
+                    feeInfoBatch[1 + batchIndex * 3] = bytes32(p.order.wallet);
+                    uint walletFee = feeAmountB.mul(walletSplitPercentage) / 100;
+                    feeInfoBatch[2 + batchIndex * 3] = bytes32(walletFee);
+                    batchIndex ++;
+
+                    feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.tokenB);
+                    feeInfoBatch[1 + batchIndex * 3] = bytes32(mining.feeRecipient);
+                    feeInfoBatch[2 + batchIndex * 3] = bytes32(feeAmountB.sub(walletFee));
+                    batchIndex ++;
+                }
+
                 if (p.splitS > 0) {
                     feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.tokenS);
                     feeInfoBatch[1 + batchIndex * 3] = bytes32(p.order.wallet);
@@ -272,6 +309,14 @@ library RingHelper {
                     feeInfoBatch[1 + batchIndex * 3] = bytes32(mining.feeRecipient);
                     feeInfoBatch[2 + batchIndex * 3] = bytes32(p.feeAmount);
                     batchIndex += 1;
+                }
+
+                if (p.tokenBFeePercentage > 0) {
+                    uint feeAmountB = p.fillAmountB.mul(p.tokenBFeePercentage) / 10000;
+                    feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.tokenB);
+                    feeInfoBatch[1 + batchIndex * 3] = bytes32(mining.feeRecipient);
+                    feeInfoBatch[2 + batchIndex * 3] = bytes32(feeAmountB);
+                    batchIndex ++;
                 }
 
                 if (p.splitS > 0) {
@@ -314,11 +359,29 @@ library RingHelper {
             fills[i].split = p.splitS;
             fills[i].feeAmount = p.feeAmount;
 
-            batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
-            batch[1 + batchIndex * 4] = bytes32(p.order.owner);
-            batch[2 + batchIndex * 4] = bytes32(prevP.order.owner);
-            batch[3 + batchIndex * 4] = bytes32(p.fillAmountS);
-            batchIndex ++;
+            // If the buyer needs to pay fees in tokenB, the seller needs
+            // to send the tokenS amount to the fee holder contract
+            if (prevP.tokenBFeePercentage > 0) {
+                uint feeAmountB = p.fillAmountS.mul(prevP.tokenBFeePercentage) / 10000;
+
+                batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
+                batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                batch[2 + batchIndex * 4] = bytes32(address(ctx.feeHolder));
+                batch[3 + batchIndex * 4] = bytes32(feeAmountB);
+                batchIndex ++;
+
+                batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
+                batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                batch[2 + batchIndex * 4] = bytes32(prevP.order.owner);
+                batch[3 + batchIndex * 4] = bytes32(p.fillAmountS.sub(feeAmountB));
+                batchIndex ++;
+            } else {
+                batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
+                batch[1 + batchIndex * 4] = bytes32(p.order.owner);
+                batch[2 + batchIndex * 4] = bytes32(prevP.order.owner);
+                batch[3 + batchIndex * 4] = bytes32(p.fillAmountS);
+                batchIndex ++;
+            }
 
             if (p.feeAmount > 0) {
                 batch[0 + batchIndex * 4] = bytes32(p.order.feeToken);
