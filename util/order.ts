@@ -121,19 +121,19 @@ export class OrderUtil {
   }
 
   public async updateStates(orderInfo: OrderInfo) {
-    const spendableS = await this.getErc20SpendableAmount(orderInfo.tokenS,
-                                                          orderInfo.owner,
-                                                          this.context.tradeDelegate.address,
-                                                          orderInfo.broker,
-                                                          orderInfo.brokerInterceptor);
+    orderInfo.spendableS = await this.getErc20SpendableAmount(orderInfo.tokenS,
+                                                              orderInfo.owner,
+                                                              this.context.tradeDelegate.address,
+                                                              orderInfo.broker,
+                                                              orderInfo.brokerInterceptor);
 
     orderInfo.filledAmountS = await this.context.tradeDelegate.filled("0x" + orderInfo.hash.toString("hex")).toNumber();
     const remaining = orderInfo.amountS - orderInfo.filledAmountS;
 
-    orderInfo.maxAmountS = Math.min(spendableS, remaining);
+    orderInfo.maxAmountS = Math.min(orderInfo.spendableS, remaining);
     orderInfo.maxAmountB = orderInfo.maxAmountS * orderInfo.amountB / orderInfo.amountS;
 
-    orderInfo.maxAmountFee = await this.getErc20SpendableAmount(orderInfo.feeToken,
+    orderInfo.spendableFee = await this.getErc20SpendableAmount(orderInfo.feeToken,
                                                                 orderInfo.owner,
                                                                 this.context.tradeDelegate.address,
                                                                 orderInfo.broker,

@@ -10,6 +10,7 @@ export class Ring {
   public owner: string;
   public feeRecipient: string;
   public hash?: Buffer;
+  public P2P: boolean;
   public valid: boolean;
 
   private context: Context;
@@ -24,6 +25,7 @@ export class Ring {
     this.orders = orders;
     this.owner = owner;
     this.feeRecipient = feeRecipient;
+    this.P2P = false;
     this.valid = true;
 
     this.orderUtil = new OrderUtil(context);
@@ -75,15 +77,36 @@ export class Ring {
 
     for (let i = 0; i < ringSize; i++) {
       const nextIndex = (i + 1) % ringSize;
+      const order = this.orders[i];
+      const nextOrder = this.orders[nextIndex];
 
-      if (this.orders[nextIndex].fillAmountS >= this.orders[i].fillAmountB) {
-        this.orders[nextIndex].fillAmountFee = this.orders[nextIndex].feeAmount *
-          this.orders[nextIndex].fillAmountS / this.orders[nextIndex].amountS;
-        this.orders[nextIndex].splitS = this.orders[nextIndex].fillAmountS - this.orders[i].fillAmountB;
-        this.orders[nextIndex].fillAmountS = this.orders[i].fillAmountB;
+      if (nextOrder.fillAmountS >= order.fillAmountB) {
+        nextOrder.fillAmountFee = nextOrder.feeAmount * nextOrder.fillAmountS / nextOrder.amountS;
+
+        if (this.P2P) {
+          // TODO: tokenS is pre-trading so we'll probably have to scale the ring
+          // keeping this percentage in mind.
+          // If we do a simple percentage on top of fillAmountS we could go above spendableS
+          nextOrder.fillTokenSFeePercentage = nextOrder.tokenSFeePercentage;
+          nextOrder.fillTokenBFeePercentage = nextOrder.tokenBFeePercentage;
+        } else {
+          nextOrder.fillTokenSFeePercentage = 0;
+          nextOrder.fillTokenBFeePercentage = 0;
+        }
+        // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
+        let totalAmountFeeToken = nextOrder.fillAmountFee;
+        if (nextOrder.feeToken === nextOrder.tokenS) {
+          totalAmountFeeToken += nextOrder.fillAmountS;
+        }
+        if (totalAmountFeeToken > nextOrder.spendableFee) {
+            nextOrder.fillTokenBFeePercentage += nextOrder.feePercentage;
+            nextOrder.fillAmountFee = 0;
+        }
+
+        nextOrder.splitS = nextOrder.fillAmountS - order.fillAmountB;
+        nextOrder.fillAmountS = order.fillAmountB;
       } else {
         this.valid = false;
-        throw new Error("unsettleable ring.");
       }
     }
   }
@@ -102,9 +125,10 @@ export class Ring {
     for (let i = 0; i < ringSize; i++) {
       const prevIndex = (i + ringSize - 1) % ringSize;
       const currOrder = this.orders[i];
+      const prevOrder = this.orders[prevIndex];
       const token = currOrder.tokenS;
       const from = currOrder.owner;
-      const to = this.orders[prevIndex].owner;
+      const to = prevOrder.owner;
       const amount = currOrder.fillAmountS;
       const feeHolder = this.context.feeHolder.address;
 
@@ -112,14 +136,14 @@ export class Ring {
         currOrder.splitS = 0;
       }
 
-      console.log("order.amountS:          " + currOrder.amountS);
-      console.log("order.amountB:          " + currOrder.amountB);
+      console.log("order.amountS:          " + currOrder.amountS / 1e18);
+      console.log("order.amountB:          " + currOrder.amountB / 1e18);
       console.log("order expected rate:    " + currOrder.amountS / currOrder.amountB);
-      console.log("order.fillAmountS:      " + currOrder.fillAmountS);
-      console.log("order.fillAmountB:      " + currOrder.fillAmountB);
-      console.log("order.splitS:           " + currOrder.splitS);
+      console.log("order.fillAmountS:      " + currOrder.fillAmountS / 1e18);
+      console.log("order.fillAmountB:      " + currOrder.fillAmountB / 1e18);
+      console.log("order.splitS:           " + currOrder.splitS / 1e18);
       console.log("order actual rate:      " + (currOrder.fillAmountS + currOrder.splitS) / currOrder.fillAmountB);
-      console.log("order.fillAmountFee:    " + currOrder.fillAmountFee);
+      console.log("order.fillAmountFee:    " + currOrder.fillAmountFee / 1e18);
       console.log("----------------------------------------------");
 
       // Sanity checks
@@ -129,6 +153,7 @@ export class Ring {
       assert((currOrder.fillAmountS + currOrder.splitS) <= currOrder.amountS, "fillAmountS + splitS <= amountS");
       assert(currOrder.fillAmountS <= currOrder.amountS, "fillAmountS <= amountS");
       assert(currOrder.fillAmountFee <= currOrder.feeAmount, "fillAmountFee <= feeAmount");
+      assert.equal(currOrder.fillAmountS, prevOrder.fillAmountB, "fillAmountS == prev.fillAmountB");
       // TODO: can fail if not exactly equal, check with lesser precision
       // assert(currOrder.amountS / currOrder.amountB
       //        === currOrder.fillAmountS / currOrder.fillAmountB, "fill rates need to match order rate");
@@ -139,15 +164,28 @@ export class Ring {
       }
 
       // AdjustOrders
-      currOrder.filledAmountS += amount + currOrder.splitS;
-      currOrder.maxAmountS -= amount + currOrder.splitS;
+      const totalAmountS = amount + currOrder.splitS;
+      currOrder.filledAmountS += totalAmountS;
+      currOrder.maxAmountS -= totalAmountS;
       currOrder.maxAmountB -= currOrder.fillAmountB;
-      currOrder.maxAmountFee -= currOrder.feeAmount;
+
+      currOrder.spendableS -= totalAmountS;
+      currOrder.spendableFee -= currOrder.fillAmountFee;
       if (currOrder.tokenS === currOrder.feeToken) {
-        currOrder.maxAmountFee -= amount + currOrder.splitS;
+        currOrder.spendableS -= currOrder.fillAmountFee;
+        currOrder.spendableFee -= totalAmountS;
       }
 
-      transferItems.push({token, from , to, amount});
+      // If the buyer needs to pay fees in tokenB, the seller needs
+      // to send the tokenS amount to the fee holder contract
+      if (prevOrder.fillTokenBFeePercentage > 0) {
+        const feeAmountB = Math.floor(prevOrder.fillAmountB * prevOrder.fillTokenBFeePercentage) / 1000;
+        const amountToBuyer = amount - feeAmountB;
+        transferItems.push({token, from, to: feeHolder, amount: feeAmountB});
+        transferItems.push({token, from, to, amount: amountToBuyer});
+      } else {
+        transferItems.push({token, from, to, amount});
+      }
       if (currOrder.fillAmountFee > 0) {
         transferItems.push({token: currOrder.feeToken, from , to: feeHolder, amount: currOrder.fillAmountFee});
       }
@@ -162,6 +200,13 @@ export class Ring {
           await this.addFeeBalance(feeBalances, currOrder.feeToken, currOrder.walletAddr, feeToWallet);
           await this.addFeeBalance(feeBalances, currOrder.feeToken, this.feeRecipient, feeToMiner);
         }
+        if (currOrder.fillTokenBFeePercentage > 0) {
+          const feeAmountB = Math.floor(currOrder.fillAmountB * currOrder.fillTokenBFeePercentage) / 1000;
+          const feeToWallet = Math.floor(feeAmountB * walletSplitPercentage / 100);
+          const feeToMiner = feeAmountB - feeToWallet;
+          await this.addFeeBalance(feeBalances, currOrder.tokenB, currOrder.walletAddr, feeToWallet);
+          await this.addFeeBalance(feeBalances, currOrder.tokenB, this.feeRecipient, feeToMiner);
+        }
         if (currOrder.splitS > 0) {
           const splitSToWallet = Math.floor(currOrder.splitS * walletSplitPercentage / 100);
           const splitSToMiner = currOrder.splitS - splitSToWallet;
@@ -171,6 +216,10 @@ export class Ring {
       } else {
         if (currOrder.fillAmountFee > 0) {
           await this.addFeeBalance(feeBalances, currOrder.feeToken, this.feeRecipient, currOrder.fillAmountFee);
+        }
+        if (currOrder.fillTokenBFeePercentage > 0) {
+          const feeAmountB = Math.floor(currOrder.fillAmountB * currOrder.fillTokenBFeePercentage) / 1000;
+          await this.addFeeBalance(feeBalances, currOrder.tokenB, this.feeRecipient, feeAmountB);
         }
         if (currOrder.splitS > 0) {
           await this.addFeeBalance(feeBalances, token, this.feeRecipient, currOrder.splitS);

@@ -139,7 +139,7 @@ contract("Exchange", (accounts: string[]) => {
     return {tx, report};
   };
 
-  const setupOrder = async (order: OrderInfo, index: number) => {
+  const setupOrder = async (order: OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
     const ownerIndex = index === 0 ? index : index % orderOwners.length;
     const owner = orderOwners[ownerIndex];
 
@@ -159,6 +159,9 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.feeAmount) {
       order.feeAmount = 1e18;
     }
+    if (!order.feePercentage) {
+      order.feePercentage = 20;  // == 2.0%
+    }
     if (!order.dualAuthSignAlgorithm) {
       order.dualAuthSignAlgorithm = SignAlgorithm.Ethereum;
     }
@@ -176,8 +179,10 @@ contract("Exchange", (accounts: string[]) => {
     // setup amount:
     const orderTokenS = await DummyToken.at(addrS);
     await orderTokenS.addBalance(order.owner, order.amountS);
-    const feeToken = await DummyToken.at(order.feeToken);
-    await feeToken.addBalance(order.owner, order.feeAmount);
+    if (!limitFeeTokenAmount) {
+      const feeToken = await DummyToken.at(order.feeToken);
+      await feeToken.addBalance(order.owner, order.feeAmount);
+    }
   };
 
   const assertEqualsRingsInfo = (ringsInfoA: RingsInfo, ringsInfoB: RingsInfo) => {
@@ -264,7 +269,7 @@ contract("Exchange", (accounts: string[]) => {
         const balanceFromSimulator = feeBalances[token][owner];
         const balanceFromContract = await feeHolder.feeBalances(token, owner);
         console.log("Token: " + token + ", Owner: " + owner + ": " +
-          balanceFromContract + " == " + balanceFromSimulator);
+          balanceFromContract  / 1e18 + " == " + balanceFromSimulator  / 1e18);
         assertNumberEqualsWithPrecision(balanceFromContract, balanceFromSimulator);
       }
     }
@@ -275,7 +280,7 @@ contract("Exchange", (accounts: string[]) => {
     for (const hash of Object.keys(filledAmounts)) {
       const filledFromSimulator = filledAmounts[hash];
       const filledFromContract = await context.tradeDelegate.filled("0x" + hash).toNumber();
-      console.log(hash + ": " + filledFromContract + " == " + filledFromSimulator);
+      console.log(hash + ": " + filledFromContract / 1e18 + " == " + filledFromSimulator / 1e18);
       assertNumberEqualsWithPrecision(filledFromContract, filledFromSimulator);
     }
   };
@@ -446,6 +451,26 @@ contract("Exchange", (accounts: string[]) => {
       });
     }
 
+  });
+
+  describe.skip("submitRing with insufficient feeAmount (will use feePercentage)", () => {
+    before(async () => {
+      await cleanTradeHistory();
+    });
+
+    for (const ringsInfo of ringsInfoList) {
+      ringsInfo.transactionOrigin = transactionOrigin;
+      ringsInfo.miner = miner;
+      ringsInfo.feeRecipient = miner;
+
+      it(ringsInfo.description, async () => {
+        for (const [i, order] of ringsInfo.orders.entries()) {
+          await setupOrder(order, i, true);
+        }
+        const context = getDefaultContext();
+        await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+      });
+    }
   });
 
   // Added '.skip' here so these tests are NOT run by default because they take quite

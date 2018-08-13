@@ -37,8 +37,12 @@ export interface OrderInfo {
 
   // helper field
   filledAmountS?: number;
+  spendableS?: number;
+  spendableFee?: number;
   maxAmountS?: number;
   maxAmountB?: number;
+  fillTokenSFeePercentage?: number;
+  fillTokenBFeePercentage?: number;
   fillAmountS?: number;
   fillAmountB?: number;
   fillAmountFee?: number;

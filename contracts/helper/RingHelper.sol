@@ -277,7 +277,7 @@ library RingHelper {
                 }
 
                 if (p.tokenBFeePercentage > 0) {
-                    uint feeAmountB = p.fillAmountB.mul(p.tokenBFeePercentage) / 10000;
+                    uint feeAmountB = p.fillAmountB.mul(p.tokenBFeePercentage) / 1000;
 
                     feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.tokenB);
                     feeInfoBatch[1 + batchIndex * 3] = bytes32(p.order.wallet);
@@ -312,7 +312,7 @@ library RingHelper {
                 }
 
                 if (p.tokenBFeePercentage > 0) {
-                    uint feeAmountB = p.fillAmountB.mul(p.tokenBFeePercentage) / 10000;
+                    uint feeAmountB = p.fillAmountB.mul(p.tokenBFeePercentage) / 1000;
                     feeInfoBatch[0 + batchIndex * 3] = bytes32(p.order.tokenB);
                     feeInfoBatch[1 + batchIndex * 3] = bytes32(mining.feeRecipient);
                     feeInfoBatch[2 + batchIndex * 3] = bytes32(feeAmountB);
@@ -362,7 +362,7 @@ library RingHelper {
             // If the buyer needs to pay fees in tokenB, the seller needs
             // to send the tokenS amount to the fee holder contract
             if (prevP.tokenBFeePercentage > 0) {
-                uint feeAmountB = p.fillAmountS.mul(prevP.tokenBFeePercentage) / 10000;
+                uint feeAmountB = p.fillAmountS.mul(prevP.tokenBFeePercentage) / 1000;
 
                 batch[0 + batchIndex * 4] = bytes32(p.order.tokenS);
                 batch[1 + batchIndex * 4] = bytes32(p.order.owner);
