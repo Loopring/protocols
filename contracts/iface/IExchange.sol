@@ -23,9 +23,8 @@ pragma experimental "ABIEncoderV2";
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract IExchange {
-    uint8   public constant MARGIN_SPLIT_PERCENTAGE_BASE = 100;
-    uint8   public constant OPTION_MASK_CAP_BY_AMOUNTB = 0x01;
-    uint8   public constant OPTION_MASK_ALL_OR_NONE    = 0x02;
+    uint16  public constant FEE_PERCENTAGE_BASE = 1000;
+    uint8   public constant OPTION_MASK_ALL_OR_NONE = 0x01;
 
     struct Fill {
         bytes32     orderHash;
@@ -107,12 +106,6 @@ contract IExchange {
 
     /// @dev Submit a order-ring for validation and settlement.
     function submitRings(
-        /* uint16 miningSpec, */
-        /* uint16[] orderSpecs, */
-        /* // uint8[][] ringSpecs, */
-        /* address[] addressList, */
-        /* uint[] uintList, */
-        /* bytes[] bytesList */
         bytes data
         )
         public;

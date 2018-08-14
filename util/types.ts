@@ -41,11 +41,11 @@ export interface OrderInfo {
   spendableFee?: number;
   maxAmountS?: number;
   maxAmountB?: number;
-  fillTokenSFeePercentage?: number;
-  fillTokenBFeePercentage?: number;
   fillAmountS?: number;
   fillAmountB?: number;
   fillAmountFee?: number;
+  fillAmountFeeS?: number;
+  fillAmountFeeB?: number;
   splitS?: number;
   brokerInterceptor?: string;
   valid?: boolean;

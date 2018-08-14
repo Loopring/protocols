@@ -265,6 +265,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             Data.Ring memory ring = rings[i];
             ring.checkOrdersValid();
             ring.checkTokensRegistered(ctx);
+            ring.checkP2P(mining);
             ring.calculateFillAmountAndFee(mining);
             if (ring.valid) {
                 // Only settle rings we have checked to be valid

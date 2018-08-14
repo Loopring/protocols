@@ -108,8 +108,8 @@ library Data {
         // computed fields
         uint splitS;
         uint feeAmount;
-        uint16 tokenSFeePercentage;
-        uint16 tokenBFeePercentage;
+        uint feeAmountS;
+        uint feeAmountB;
         uint fillAmountS;
         uint fillAmountB;
     }

@@ -98,6 +98,7 @@ export class ProtocolSimulator {
     for (const ring of rings) {
       ring.checkOrdersValid();
       await ring.checkTokensRegistered();
+      ring.checkP2P(mining);
       // console.log("~~~~~~~~~~~ring.valid:", ring.valid);
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring, feeBalances);

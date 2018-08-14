@@ -9,7 +9,7 @@ const {
   TradeDelegate,
 } = new Artifacts(artifacts);
 
-contract("TokenRegistry", (accounts: string[]) => {
+contract("FeeHolder", (accounts: string[]) => {
   const deployer = accounts[0];
   const mockedExchangeAddress = accounts[1];
 

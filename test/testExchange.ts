@@ -163,6 +163,12 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.feePercentage) {
       order.feePercentage = 20;  // == 2.0%
     }
+    if (!order.tokenSFeePercentage) {
+      order.tokenSFeePercentage = 15;  // == 1.5%
+    }
+    if (!order.tokenBFeePercentage) {
+      order.tokenBFeePercentage = 25;  // == 2.5%
+    }
     if (!order.dualAuthSignAlgorithm) {
       order.dualAuthSignAlgorithm = SignAlgorithm.Ethereum;
     }
@@ -456,7 +462,7 @@ contract("Exchange", (accounts: string[]) => {
     }
 
   });
-
+/*
   describe.skip("submitRing with insufficient feeAmount (will use feePercentage)", () => {
     before(async () => {
       await cleanTradeHistory();
@@ -477,6 +483,27 @@ contract("Exchange", (accounts: string[]) => {
     }
   });
 
+  describe.skip("submitRing in P2P scenario", () => {
+    before(async () => {
+      await cleanTradeHistory();
+    });
+
+    for (const ringsInfo of ringsInfoList) {
+      it(ringsInfo.description, async () => {
+        for (const [i, order] of ringsInfo.orders.entries()) {
+          await setupOrder(order, i, true);
+        }
+        const ringMiner = ringsInfo.orders[0].owner;
+        ringsInfo.transactionOrigin = transactionOrigin;
+        ringsInfo.miner = ringMiner;
+        ringsInfo.feeRecipient = ringMiner;
+
+        const context = getDefaultContext();
+        await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+      });
+    }
+  });
+*/
   // Added '.skip' here so these tests are NOT run by default because they take quite
   // a bit of extra time to run. Remove it once development on submitRings is less frequent.
   describe.skip("Cancelling orders", () => {
