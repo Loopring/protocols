@@ -12,4 +12,4 @@ We have performed several smart contract gas usage optimization with very good r
 
 ## Deployments
 
-Please visit [this](https://loopring.github.io/deployments/) site for various versions of the protocol deployed on top of Ethereum mainnet and testnets, as well as ERC20 tokens that can be traded with Loopring.
+Please visit [this](https://loopring.github.io/docs/) site for various versions of the protocol deployed on top of Ethereum mainnet and testnets, as well as ERC20 tokens that can be traded with Loopring.
