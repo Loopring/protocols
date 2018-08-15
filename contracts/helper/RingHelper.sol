@@ -545,7 +545,7 @@ library RingHelper {
 
             // If the buyer needs to pay fees in tokenB, the seller needs
             // to send the tokenS amount to the fee holder contract
-            amountSToBuyer = p.fillAmountS.sub(prevP.feeAmountB);
+            amountSToBuyer = p.fillAmountS.sub(prevP.feeAmountB).sub(prevP.taxB);
             amountSToFeeHolder = p.splitS.add(p.feeAmountS).add(p.taxS).add(prevP.feeAmountB).add(prevP.taxB);
             amountFeeToFeeHolder = p.feeAmount + p.taxFee;
             if (p.order.tokenS == p.order.feeToken) {

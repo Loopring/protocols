@@ -251,11 +251,14 @@ export class Ring {
       //        === currOrder.fillAmountS / currOrder.fillAmountB, "fill rates need to match order rate");
 
       // AdjustOrders
-      const totalAmountS = order.fillAmountS + order.splitS + order.taxS;
+      const filledAmountS = order.fillAmountS + order.splitS;
+      const totalAmountS = filledAmountS + order.taxS;
       const totalAmountFee = order.fillAmountFee + order.taxFee;
-      order.filledAmountS += totalAmountS;
-      order.maxAmountS -= totalAmountS;
-
+      order.filledAmountS += filledAmountS;
+      order.maxAmountS -= filledAmountS;
+      if (order.maxAmountS > order.spendableS) {
+        order.maxAmountS = order.spendableS;
+      }
       // Update spendables
       order.spendableS -= totalAmountS;
       order.spendableFee -= totalAmountFee;
@@ -263,11 +266,15 @@ export class Ring {
         order.spendableS -= totalAmountFee;
         order.spendableFee -= totalAmountS;
       }
+      assert(order.spendableS >= 0, "spendableS should be positive");
+      assert(order.spendableFee >= 0, "spendableFee should be positive");
+      assert(order.maxAmountS >= 0, "maxAmountS should be positive");
+      assert(order.filledAmountS <= order.amountS, "filledAmountS <= amountS");
 
       // Transfers
       // If the buyer needs to pay fees in a percentage of tokenB, the seller needs
       // to send that amount of tokenS to the fee holder contract.
-      const amountSToBuyer = order.fillAmountS - prevOrder.fillAmountFeeB;
+      const amountSToBuyer = order.fillAmountS - prevOrder.fillAmountFeeB - prevOrder.taxB;
       let amountSToFeeHolder = order.splitS + order.fillAmountFeeS + order.taxS +
                                prevOrder.fillAmountFeeB + prevOrder.taxB;
       let amountFeeToFeeHolder = order.fillAmountFee + order.taxFee;
