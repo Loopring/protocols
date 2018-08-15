@@ -41,6 +41,7 @@ library Data {
 
     struct Context {
         address lrcTokenAddress;
+        address wethTokenAddress;
         ITokenRegistry  tokenRegistry;
         ITradeDelegate  delegate;
         IBrokerRegistry orderBrokerRegistry;
@@ -62,7 +63,6 @@ library Data {
         // computed fields
         bytes32 hash;
         address interceptor;
-        /* uint    spendableLRC; */  // no lrc reward, so this field is unused.
     }
 
     struct Order {
@@ -86,7 +86,7 @@ library Data {
         address feeToken;
         uint    feeAmount;
         uint16  feePercentage;         // Post-trading
-        uint16  waiveFeePercentage;
+        int16   waiveFeePercentage;
         uint16  tokenSFeePercentage;    // Pre-trading
         uint16  tokenBFeePercentage;   // Post-trading
 
@@ -97,7 +97,6 @@ library Data {
         uint    spendableS;
         uint    spendableFee;
         uint    maxAmountS;
-        uint    maxAmountB;
         bool    valid;
     }
 
@@ -110,6 +109,9 @@ library Data {
         uint feeAmount;
         uint feeAmountS;
         uint feeAmountB;
+        uint taxFee;
+        uint taxS;
+        uint taxB;
         uint fillAmountS;
         uint fillAmountB;
     }
@@ -119,6 +121,16 @@ library Data {
         Participation[] participations;
         bytes32 hash;
         bool P2P;
+        uint minerFeesToOrdersPercentage;
         bool valid;
+    }
+
+    struct FeeContext {
+        bytes32[] data;
+        uint offset;
+        Data.Ring ring;
+        Data.Context ctx;
+        Data.Mining mining;
+        uint8 walletSplitPercentage;
     }
 }

@@ -118,8 +118,6 @@ library OrderHelper {
         if (order.maxAmountS > order.spendableS) {
             order.maxAmountS = order.spendableS;
         }
-
-        order.maxAmountB = order.maxAmountS.mul(order.amountB) / order.amountS;
     }
 
     function validateInfo(Data.Order order)

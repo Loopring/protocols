@@ -131,7 +131,6 @@ export class OrderUtil {
     const remaining = orderInfo.amountS - orderInfo.filledAmountS;
 
     orderInfo.maxAmountS = Math.min(orderInfo.spendableS, remaining);
-    orderInfo.maxAmountB = orderInfo.maxAmountS * orderInfo.amountB / orderInfo.amountS;
 
     orderInfo.spendableFee = await this.getErc20SpendableAmount(orderInfo.feeToken,
                                                                 orderInfo.owner,

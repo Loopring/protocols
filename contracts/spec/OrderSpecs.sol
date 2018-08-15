@@ -72,7 +72,7 @@ library OrderSpecs {
             spec.hasFeeToken() ? inputs.nextAddress() : ctx.lrcTokenAddress,
             spec.hasFeeAmount() ? inputs.nextUint() : 0,
             spec.hasFeePercentage() ? inputs.nextUint16() : 0,
-            spec.hasWaiveFeePercentage() ? inputs.nextUint16() : 0,
+            spec.hasWaiveFeePercentage() ? int16(inputs.nextUint16()) : 0,
             spec.hasTokenSFeePercentage() ? inputs.nextUint16() : 0,
             spec.hasTokenBFeePercentage() ? inputs.nextUint16() : 0,
             bytes32(0x0), // hash
@@ -81,7 +81,6 @@ library OrderSpecs {
             0,  // spendableS
             0,  // spendableFee
             0,  // maxAmountS
-            0,  // maxAmountB,
             true   // valid
         );
     }

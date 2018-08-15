@@ -28,12 +28,14 @@ module.exports = function(deployer, network, accounts) {
         BrokerRegistry.new(),
         BrokerRegistry.new(),
         symbolRegistry.getAddressBySymbol("LRC"),
+        symbolRegistry.getAddressBySymbol("WETH"),
       ]);
     }).then(addresses => {
-      var [orderBrokerRegistry, minerBrokerRegistry, lrcAddr] = addresses;
+      var [orderBrokerRegistry, minerBrokerRegistry, lrcAddr, wethAddr] = addresses;
       return deployer.deploy(
         Exchange,
         lrcAddr,
+        wethAddr,
         TokenRegistry.address,
         TradeDelegate.address,
         orderBrokerRegistry.address,

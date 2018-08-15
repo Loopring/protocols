@@ -35,6 +35,8 @@ library RingHelper {
 
     uint private constant DUST = 1000; // if a transfer's amount < 1000, ignore it.
 
+    enum TokenType { LRC, ETH, Other }
+
     function updateHash(
         Data.Ring ring
         )
@@ -54,7 +56,7 @@ library RingHelper {
 
     function calculateFillAmountAndFee(
         Data.Ring ring,
-        Data.Mining mining
+        Data.Context ctx
         )
         internal
         pure
@@ -98,45 +100,11 @@ library RingHelper {
             Data.Participation memory p = ring.participations[i];
             Data.Participation memory nextP = ring.participations[nextIndex];
             if (nextP.fillAmountS >= p.fillAmountB) {
-                if (ring.P2P) {
-                    // Calculate P2P fees
-                    nextP.feeAmount = 0;
-                    if (nextP.order.wallet != 0x0) {
-                        nextP.feeAmountS = nextP.fillAmountS.mul(
-                            1000) / (1000 - nextP.order.tokenSFeePercentage) - nextP.fillAmountS;
-                        nextP.feeAmountB = nextP.fillAmountB.mul(nextP.order.tokenBFeePercentage) / 1000;
-                    } else {
-                        nextP.feeAmountS = 0;
-                        nextP.feeAmountB = 0;
-                    }
-
-                    // The taker gets the margin
-                    nextP.splitS = 0;
-                } else {
-                    // Calculate matching fees
-                    nextP.feeAmount = nextP.order.feeAmount * nextP.fillAmountS / nextP.order.amountS;
-                    nextP.feeAmountS = 0;
-                    nextP.feeAmountB = 0;
-
-                    // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
-                    uint totalAmountFeeToken = nextP.feeAmount;
-                    if (nextP.order.feeToken == nextP.order.tokenS) {
-                        totalAmountFeeToken += nextP.fillAmountS;
-                    }
-                    if (totalAmountFeeToken > nextP.order.spendableFee) {
-                        nextP.feeAmountB = nextP.fillAmountB.mul(nextP.order.feePercentage) / 1000;
-                        nextP.feeAmount = 0;
-                    }
-
-                    // The miner/wallet gets the margin
-                    nextP.splitS = nextP.fillAmountS - p.fillAmountB;
-                    nextP.fillAmountS = p.fillAmountB;
-                }
+                calculateOrderFees(ring, ctx, p, nextP);
             } else {
                 ring.valid = false;
                 break;
             }
-            // p.calculateFeeAmounts(mining);
         }
 
         if (ring.valid) {
@@ -145,6 +113,74 @@ library RingHelper {
                 p.adjustOrderState();
             }
         }
+    }
+
+    function calculateOrderFees(
+        Data.Ring ring,
+        Data.Context ctx,
+        Data.Participation p,
+        Data.Participation nextP
+        )
+        internal
+        pure
+    {
+        if (ring.P2P) {
+            // Calculate P2P fees
+            nextP.feeAmount = 0;
+            if (nextP.order.wallet != 0x0) {
+                nextP.feeAmountS = nextP.fillAmountS.mul(
+                    1000) / (1000 - nextP.order.tokenSFeePercentage) - nextP.fillAmountS;
+                nextP.feeAmountB = nextP.fillAmountB.mul(nextP.order.tokenBFeePercentage) / 1000;
+            } else {
+                nextP.feeAmountS = 0;
+                nextP.feeAmountB = 0;
+            }
+
+            // The taker gets the margin
+            nextP.splitS = 0;
+        } else {
+            // Calculate matching fees
+            nextP.feeAmount = nextP.order.feeAmount * nextP.fillAmountS / nextP.order.amountS;
+            nextP.feeAmountS = 0;
+            nextP.feeAmountB = 0;
+
+            // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
+            uint feeTaxRate = getTaxRate(ctx, nextP.order.feeToken, false, ring.P2P);
+            uint feeAmountTax = nextP.feeAmount.mul(feeTaxRate) / 1000;
+            uint totalAmountFeeToken = nextP.feeAmount + feeAmountTax;
+            if (nextP.order.feeToken == nextP.order.tokenS) {
+                totalAmountFeeToken += nextP.fillAmountS;
+            }
+            if (totalAmountFeeToken > nextP.order.spendableFee) {
+                nextP.feeAmountB = nextP.fillAmountB.mul(nextP.order.feePercentage) / 1000;
+                nextP.feeAmount = 0;
+            }
+
+            // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
+            if (nextP.order.waiveFeePercentage > 0) {
+                uint waiveFeePercentage = uint(nextP.order.waiveFeePercentage);
+                nextP.feeAmount = nextP.feeAmount.mul(1000 - waiveFeePercentage) / 1000;
+                nextP.feeAmountB = nextP.feeAmountB.mul(1000 - waiveFeePercentage) / 1000;
+                // fillAmountFeeS is always 0
+            } else if (nextP.order.waiveFeePercentage < 0) {
+                ring.minerFeesToOrdersPercentage += uint(-nextP.order.waiveFeePercentage);
+                // No fees need to be paid by this order
+                nextP.feeAmount = 0;
+                nextP.feeAmountB = 0;
+            }
+
+            // The miner/wallet gets the margin
+            nextP.splitS = nextP.fillAmountS - p.fillAmountB;
+            nextP.fillAmountS = p.fillAmountB;
+        }
+
+        // Calculate consumer taxes. These are applied on top of the calculated fees
+        uint feeTokenRate = getTaxRate(ctx, nextP.order.feeToken, false, ring.P2P);
+        nextP.taxFee = nextP.feeAmount.mul(feeTokenRate) / 1000;
+        uint tokenSRate = getTaxRate(ctx, nextP.order.tokenS, false, ring.P2P);
+        nextP.taxS = nextP.feeAmountS.mul(tokenSRate) / 1000;
+        uint tokenBRate = getTaxRate(ctx, nextP.order.tokenB, false, ring.P2P);
+        nextP.taxB = nextP.feeAmountB.mul(tokenBRate) / 1000;
     }
 
     function calculateOrderFillAmounts(
@@ -216,7 +252,7 @@ library RingHelper {
         }
     }
 
-    function calculateTransferBatchSize(
+    /*function calculateTransferBatchSize(
         Data.Ring ring,
         uint8 walletSplitPercentage
         )
@@ -273,20 +309,24 @@ library RingHelper {
                 feeTransSize *= 2;
             }
         }
-    }
+    }*/
 
     event LogTrans(address token, address from, address to, uint amount, uint spendable);
     function settleRing(Data.Ring ring, Data.Context ctx, Data.Mining mining)
         internal
         // returns (IExchange.Fill[] memory fills)
     {
-        uint batchSize;
+        doTokenTransfers(ring, ctx);
+        doFeePayments(ring, ctx, mining);
+
+
+        /*uint batchSize;
         uint feeTransSize;
         uint8 walletSplitPercentage = ctx.delegate.walletSplitPercentage();
         (batchSize, feeTransSize) = calculateTransferBatchSize(ring, walletSplitPercentage);
 
         bytes32[] memory batch;
-        (/*fills, */batch) = generateBatchTransferData(ring, address(ctx.feeHolder), batchSize);
+        (/*fills, *//*batch) = generateBatchTransferData(ring, address(ctx.feeHolder), batchSize);
         // logTrans(batch, address(ctx.delegate));
         ctx.delegate.batchTransfer(batch);
 
@@ -297,7 +337,7 @@ library RingHelper {
             feeTransSize,
             walletSplitPercentage
         );
-        ctx.feeHolder.batchAddFeeBalances(feeTransInfo);
+        ctx.feeHolder.batchAddFeeBalances(feeTransInfo);*/
 
         /* for (i = 0; i < ring.size; i++) { */
         /*     p = ring.participations[i]; */
@@ -313,7 +353,7 @@ library RingHelper {
         /* } */
     }
 
-    function generateBatchFeeInfos(
+    /*function generateBatchFeeInfos(
         Data.Ring ring,
         Data.Mining mining,
         uint feeTransSize,
@@ -403,15 +443,15 @@ library RingHelper {
         }
 
         return feeInfoBatch;
-    }
+    }*/
 
-    function generateBatchTransferData(
+    /*function generateBatchTransferData(
         Data.Ring ring,
         address feeHolder,
         uint batchSize)
         internal
         // pure
-        returns (/*IExchange.Fill[],*/ bytes32[])
+        returns (/*IExchange.Fill[],*//* bytes32[])
     {
         //IExchange.Fill[] memory fills = new IExchange.Fill[](ring.size);
 
@@ -436,7 +476,7 @@ library RingHelper {
 
             // If the buyer needs to pay fees in tokenB, the seller needs
             // to send the tokenS amount to the fee holder contract
-            amountSToBuyer = p.fillAmountS.sub(prevP.feeAmountB);
+            /*amountSToBuyer = p.fillAmountS.sub(prevP.feeAmountB);
             amountSToFeeHolder = p.splitS.add(p.feeAmountS).add(prevP.feeAmountB);
             amountFeeToFeeHolder = p.feeAmount;
             if (p.order.tokenS == p.order.feeToken) {
@@ -468,7 +508,226 @@ library RingHelper {
             }
         }
 
-        return (/*fills, */batch);
+        return (/*fills, *//*batch);
+    }*/
+
+
+    function doTokenTransfers(
+        Data.Ring ring,
+        Data.Context ctx
+        )
+        internal
+        // returns (IExchange.Fill[])
+    {
+        //IExchange.Fill[] memory fills = new IExchange.Fill[](ring.size);
+
+        // Maximum number of transfers for now. Will fix this using assembly.
+        // (in assembly we don't need to specify the size of the array, we can just fetch
+        // the free memory pointer and start storing data)
+        bytes32[] memory data = new bytes32[](ring.size * 3 * 4);
+        uint offset = 0;
+        Data.Participation memory p;
+        Data.Participation memory prevP;
+        uint amountSToBuyer;
+        uint amountSToFeeHolder;
+        uint amountFeeToFeeHolder;
+        address feeHolder = address(ctx.feeHolder);
+        for (uint i = 0; i < ring.size; i++) {
+            p = ring.participations[i];
+            prevP = ring.participations[(i + ring.size - 1) % ring.size];
+
+            /*fills[i].orderHash = p.order.hash;
+            fills[i].owner = p.order.owner;
+            fills[i].tokenS = p.order.tokenS;
+            fills[i].amountS = p.fillAmountS;
+            fills[i].split = p.splitS;
+            fills[i].feeAmount = p.feeAmount;*/
+
+            // If the buyer needs to pay fees in tokenB, the seller needs
+            // to send the tokenS amount to the fee holder contract
+            amountSToBuyer = p.fillAmountS.sub(prevP.feeAmountB);
+            amountSToFeeHolder = p.splitS.add(p.feeAmountS).add(p.taxS).add(prevP.feeAmountB).add(prevP.taxB);
+            amountFeeToFeeHolder = p.feeAmount + p.taxFee;
+            if (p.order.tokenS == p.order.feeToken) {
+                amountSToFeeHolder += amountFeeToFeeHolder;
+                amountFeeToFeeHolder = 0;
+            }
+
+            // Transfers
+            offset = addTokenTransfer(data, offset, p.order.tokenS, p.order.owner, prevP.order.owner, amountSToBuyer);
+            offset = addTokenTransfer(data, offset, p.order.tokenS, p.order.owner, feeHolder, amountSToFeeHolder);
+            offset = addTokenTransfer(data, offset, p.order.feeToken, p.order.owner, feeHolder, amountFeeToFeeHolder);
+        }
+        // For now, just patch the length so that the data is in the expected format
+        assembly {
+            mstore(data, offset)
+        }
+        ctx.delegate.batchTransfer(data);
+    }
+
+    function addTokenTransfer(bytes32[] data, uint offset, address token, address from, address to, uint amount)
+        internal
+        pure
+        returns (uint)
+    {
+        if (amount == 0) {
+            return offset;
+        } else {
+            data[0 + offset] = bytes32(token);
+            data[1 + offset] = bytes32(from);
+            data[2 + offset] = bytes32(to);
+            data[3 + offset] = bytes32(amount);
+            return offset + 4;
+        }
+    }
+
+    function doFeePayments(
+        Data.Ring ring,
+        Data.Context ctx,
+        Data.Mining mining
+        )
+        internal
+    {
+        // Large number of fee payments for now. Will fix this using assembly.
+        // (in assembly we don't need to specify the size of the array, we can just fetch
+        // the free memory pointer and start storing data)
+        bytes32[] memory data = new bytes32[](ring.size * 3 * 9);
+        uint8 walletSplitPercentage = ring.P2P ? 100 : ctx.delegate.walletSplitPercentage();
+
+        Data.FeeContext memory feeCtx = Data.FeeContext(
+            data,
+            0,
+            ring,
+            ctx,
+            mining,
+            walletSplitPercentage
+        );
+
+        Data.Participation memory p;
+        for (uint i = 0; i < ring.size; i++) {
+            p = ring.participations[i];
+            uint feeInTokenS = p.feeAmountS + p.splitS;
+            payFeesAndTaxes(feeCtx, p.order.feeToken, p.feeAmount, p.taxFee, p.order.wallet);
+            payFeesAndTaxes(feeCtx, p.order.tokenS, feeInTokenS, p.taxS, p.order.wallet);
+            payFeesAndTaxes(feeCtx, p.order.tokenB, p.feeAmountB, p.taxB, p.order.wallet);
+        }
+        // For now, just patch the length so that the data is in the expected format
+        uint offset = feeCtx.offset;
+        assembly {
+            mstore(data, offset)
+        }
+        ctx.feeHolder.batchAddFeeBalances(data);
+    }
+
+    function payFeesAndTaxes(
+        Data.FeeContext memory feeCtx,
+        address token,
+        uint amount,
+        uint consumerTax,
+        address wallet
+        )
+        internal
+        pure
+    {
+        if (amount == 0) {
+            return;
+        }
+
+        uint incomeTaxRate = getTaxRate(feeCtx.ctx, token, true, feeCtx.ring.P2P);
+        uint incomeTax = amount.mul(incomeTaxRate) / 1000;
+        uint incomeAfterTax = amount - incomeTax;
+
+        uint feeToWallet = 0;
+        if (wallet != 0x0) {
+            feeToWallet = incomeAfterTax.mul(feeCtx.walletSplitPercentage) / 100;
+        }
+        uint minerFee = incomeAfterTax - feeToWallet;
+        if (feeCtx.ring.P2P) {
+            minerFee = 0;
+        }
+
+        uint feeToMiner = minerFee;
+        // Fees can be paid out in different tokens so we can't easily accumulate the total fee
+        // that needs to be paid out to order owners. So we pay out each part out here to all orders that need it.
+        if (feeCtx.ring.minerFeesToOrdersPercentage > 0) {
+            // Subtract all fees the miner pays to the orders
+            feeToMiner = minerFee.mul(1000 - feeCtx.ring.minerFeesToOrdersPercentage) / 1000;
+            // Pay out the fees to the orders
+            distributeMinerFeeToOwners(feeCtx, token, feeToMiner);
+        }
+        feeCtx.offset = payFee(feeCtx.data, feeCtx.offset, token, wallet, feeToWallet);
+        feeCtx.offset = payFee(feeCtx.data, feeCtx.offset, token, feeCtx.mining.feeRecipient, feeToMiner);
+        // Pay the tax with the feeHolder as owner
+        feeCtx.offset = payFee(
+            feeCtx.data, feeCtx.offset, token, address(feeCtx.ctx.feeHolder), consumerTax + incomeTax
+        );
+    }
+
+    function distributeMinerFeeToOwners(Data.FeeContext memory feeCtx, address token, uint minerFee)
+        internal
+        pure
+    {
+        for (uint i = 0; i < feeCtx.ring.size; i++) {
+            Data.Participation memory p = feeCtx.ring.participations[i];
+            if (p.order.waiveFeePercentage < 0) {
+                uint feeToOwner = minerFee.mul(uint(-p.order.waiveFeePercentage)) / 1000;
+                feeCtx.offset = payFee(feeCtx.data, feeCtx.offset, token, p.order.owner, feeToOwner);
+            }
+        }
+    }
+
+    function payFee(bytes32[] data, uint offset, address token, address owner, uint amount)
+        internal
+        pure
+        returns (uint)
+    {
+        if (amount == 0) {
+            return offset;
+        } else {
+            data[0 + offset] = bytes32(token);
+            data[1 + offset] = bytes32(owner);
+            data[2 + offset] = bytes32(amount);
+            return offset + 3;
+        }
+    }
+
+    function getTokenType(Data.Context ctx, address token)
+        internal
+        pure
+        returns (TokenType)
+    {
+        if (token == ctx.lrcTokenAddress) {
+            return TokenType.LRC;
+        } else if (token == ctx.wethTokenAddress) {
+            return TokenType.ETH;
+        } else {
+            return TokenType.Other;
+        }
+    }
+
+    function getTaxRate(Data.Context ctx, address token, bool income, bool P2P)
+        internal
+        pure
+        returns (uint)
+    {
+        TokenType tokenType = getTokenType(ctx, token);
+        if (P2P) {
+            if (income) {
+                uint[3] memory taxes = [uint(0), 0, 0];
+                return taxes[uint(tokenType)];
+            } else {
+                uint[3] memory taxes = [uint(10), 20, 20];
+                return taxes[uint(tokenType)];
+            }
+        } else {
+            if (income) {
+                uint[3] memory taxes = [uint(10), 100, 200];
+                return taxes[uint(tokenType)];
+            } else {
+                uint[3] memory taxes = [uint(10), 500, 1000];
+                return taxes[uint(tokenType)];
+            }
+        }
     }
 
     function logTrans(bytes32[] batch, address delegateAddress)

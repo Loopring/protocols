@@ -72,6 +72,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     using MiningHelper    for Data.Mining;
 
     address public  lrcTokenAddress             = 0x0;
+    address public  wethTokenAddress            = 0x0;
     address public  tokenRegistryAddress        = 0x0;
     address public  delegateAddress             = 0x0;
     address public  orderBrokerRegistryAddress  = 0x0;
@@ -96,6 +97,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     constructor(
         address _lrcTokenAddress,
+        address _wethTokenAddress,
         address _tokenRegistryAddress,
         address _delegateAddress,
         address _orderBrokerRegistryAddress,
@@ -107,6 +109,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         public
     {
         require(_lrcTokenAddress != 0x0);
+        require(_wethTokenAddress != 0x0);
         require(_tokenRegistryAddress != 0x0);
         require(_delegateAddress != 0x0);
         require(_orderBrokerRegistryAddress != 0x0);
@@ -116,6 +119,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(_feeHolderAddress != 0x0);
 
         lrcTokenAddress = _lrcTokenAddress;
+        wethTokenAddress = _wethTokenAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         delegateAddress = _delegateAddress;
         orderBrokerRegistryAddress = _orderBrokerRegistryAddress;
@@ -215,6 +219,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
+            wethTokenAddress,
             ITokenRegistry(tokenRegistryAddress),
             ITradeDelegate(delegateAddress),
             IBrokerRegistry(orderBrokerRegistryAddress),
@@ -266,7 +271,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             ring.checkOrdersValid();
             ring.checkTokensRegistered(ctx);
             ring.checkP2P(mining);
-            ring.calculateFillAmountAndFee(mining);
+            ring.calculateFillAmountAndFee(ctx);
             if (ring.valid) {
                 // Only settle rings we have checked to be valid
                 /*IExchange.Fill[] memory fills = */

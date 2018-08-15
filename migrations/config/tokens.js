@@ -26,6 +26,11 @@ module.exports = {
       name: "gifto",
       symbol: "GTO",
     },
+    {
+      decimals: 18,
+      name: "Wrapper Ether",
+      symbol: "WETH",
+    },
   ],
 
   live: [ ],

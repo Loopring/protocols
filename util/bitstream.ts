@@ -32,6 +32,10 @@ export class Bitstream {
   }
 
   public addNumber(x: number, numBytes = 4) {
+    // Check if we need to encode this number as negative
+    if (x < 0) {
+      x = -x | (1 << (numBytes * 8 - 1));
+    }
     this.addBigNumber(new BigNumber(x), numBytes);
   }
 

@@ -50,6 +50,7 @@ contract("Exchange", (accounts: string[]) => {
   let orderBrokerRegistryAddress: string;
   let minerBrokerRegistryAddress: string;
   let lrcAddress: string;
+  let wethAddress: string;
   let walletSplitPercentage: number;
 
   const tokenSymbolAddrMap = new Map();
@@ -117,7 +118,8 @@ contract("Exchange", (accounts: string[]) => {
                                 OrderRegistry.address,
                                 MinerRegistry.address,
                                 feeHolder.address,
-                                lrcAddress);
+                                lrcAddress,
+                                wethAddress);
     return context;
   };
 
@@ -185,13 +187,16 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.walletAddr && index > 0) {
       order.walletAddr = wallet1;
     }
+    /*if (!order.waiveFeePercentage && index > 0) {
+      order.waiveFeePercentage = -250;
+    }*/
 
     // setup amount:
     const orderTokenS = await DummyToken.at(addrS);
-    await orderTokenS.addBalance(order.owner, order.amountS);
+    await orderTokenS.addBalance(order.owner, order.amountS * 2);
     if (!limitFeeTokenAmount) {
       const feeToken = await DummyToken.at(order.feeToken);
-      await feeToken.addBalance(order.owner, order.feeAmount);
+      await feeToken.addBalance(order.owner, order.feeAmount * 2);
     }
   };
 
@@ -200,7 +205,7 @@ contract("Exchange", (accounts: string[]) => {
     // We don't whitelist because we might forget to add them here otherwise.
     const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash"];
     const orderPropertiesToSkip = [
-      "maxAmountS", "maxAmountB", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
+      "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
     ];
     // Make sure to get the keys from both objects to make sure we get all keys defined in both
@@ -347,6 +352,7 @@ contract("Exchange", (accounts: string[]) => {
     feeHolder = await FeeHolder.new(tradeDelegate.address);
     exchange = await Exchange.new(
       lrcAddress,
+      wethAddress,
       TokenRegistry.address,
       tradeDelegate.address,
       orderBrokerRegistryAddress,
@@ -386,6 +392,7 @@ contract("Exchange", (accounts: string[]) => {
     ]);
 
     lrcAddress = await symbolRegistry.getAddressBySymbol("LRC");
+    wethAddress = await symbolRegistry.getAddressBySymbol("WETH");
 
     // Get the different brokers from the exchange
     orderBrokerRegistryAddress = await exchange.orderBrokerRegistryAddress();

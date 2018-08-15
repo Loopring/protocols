@@ -100,7 +100,7 @@ export class ExchangeDeserializer {
       feeToken: spec.hasFeeToken() ? this.nextAddress() : undefined,
       feeAmount: spec.hasFeeAmount() ? this.nextUint().toNumber() : undefined,
       feePercentage: spec.hasFeePercentage() ? this.nextUint16() : undefined,
-      waiveFeePercentage: spec.hasWaiveFeePercentage() ? this.nextUint16() : undefined,
+      waiveFeePercentage: spec.hasWaiveFeePercentage() ? this.toInt16(this.nextUint16()) : undefined,
       tokenSFeePercentage: spec.hasTokenSFeePercentage() ? this.nextUint16() : undefined,
       tokenBFeePercentage: spec.hasTokenBFeePercentage() ? this.nextUint16() : undefined,
     };
@@ -151,4 +151,11 @@ export class ExchangeDeserializer {
     return this.bytesList[this.bytesListIdx++];
   }
 
+  private toInt16(x: number) {
+    // Check if negative
+    if (x >> 15 === 1) {
+      x = -(x & 0x7FFF);
+    }
+    return x;
+  }
 }

@@ -5,6 +5,7 @@ export class Context {
   public blockNumber: number;
   public blockTimestamp: number;
   public lrcAddress: string;
+  public wethAddress: string;
 
   public ERC20Contract: any;
   public TokenRegistryContract: any;
@@ -33,10 +34,12 @@ export class Context {
               minerRegistryAddress: string,
               feeHolderAddress: string,
               lrcAddress: string,
+              wethAddress: string,
               ) {
     this.blockNumber = blockNumber;
     this.blockTimestamp = blockTimestamp;
     this.lrcAddress = lrcAddress;
+    this.wethAddress = wethAddress;
 
     const ABIPath = "ABI/latest/";
     const erc20Abi = fs.readFileSync(ABIPath + "ERC20.abi", "ascii");
