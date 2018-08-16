@@ -129,11 +129,12 @@ contract("Exchange", (accounts: string[]) => {
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
     const simulator = new ProtocolSimulator(walletSplitPercentage, context);
-    const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin);
+    const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin : transactionOrigin;
+    const deserializedRingsInfo = simulator.deserialize(bs, txOrigin);
     assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
     const report = await simulator.simulateAndReport(deserializedRingsInfo);
 
-    const tx = await exchange.submitRings(bs, {from: transactionOrigin});
+    const tx = await exchange.submitRings(bs, {from: txOrigin});
     const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
     assertTransfers(transferEvents, report.transferItems);
     await assertFeeBalances(report.feeBalances);
@@ -146,17 +147,16 @@ contract("Exchange", (accounts: string[]) => {
     const ownerIndex = index === 0 ? index : index % orderOwners.length;
     const owner = orderOwners[ownerIndex];
 
-    const symbolS = order.tokenS;
-    const symbolB = order.tokenB;
-    const addrS = await symbolRegistry.getAddressBySymbol(symbolS);
-    const addrB = await symbolRegistry.getAddressBySymbol(symbolB);
-
     order.owner = owner;
-    order.tokenS = addrS;
-    order.tokenB = addrB;
+    if (!order.tokenS.startsWith("0x")) {
+      order.tokenS = await symbolRegistry.getAddressBySymbol(order.tokenS);
+    }
+    if (!order.tokenB.startsWith("0x")) {
+      order.tokenB = await symbolRegistry.getAddressBySymbol(order.tokenB);
+    }
     if (!order.feeToken) {
       order.feeToken = lrcAddress;
-    } else {
+    } else if (!order.feeToken.startsWith("0x")) {
       order.feeToken = await symbolRegistry.getAddressBySymbol(order.feeToken);
     }
     if (!order.feeAmount) {
@@ -192,7 +192,7 @@ contract("Exchange", (accounts: string[]) => {
     }*/
 
     // setup amount:
-    const orderTokenS = await DummyToken.at(addrS);
+    const orderTokenS = await DummyToken.at(order.tokenS);
     await orderTokenS.addBalance(order.owner, order.amountS * 2);
     if (!limitFeeTokenAmount) {
       const feeToken = await DummyToken.at(order.feeToken);
@@ -469,7 +469,7 @@ contract("Exchange", (accounts: string[]) => {
     }
 
   });
-/*
+
   describe.skip("submitRing with insufficient feeAmount (will use feePercentage)", () => {
     before(async () => {
       await cleanTradeHistory();
@@ -501,7 +501,7 @@ contract("Exchange", (accounts: string[]) => {
           await setupOrder(order, i, true);
         }
         const ringMiner = ringsInfo.orders[0].owner;
-        ringsInfo.transactionOrigin = transactionOrigin;
+        ringsInfo.transactionOrigin = ringMiner;
         ringsInfo.miner = ringMiner;
         ringsInfo.feeRecipient = ringMiner;
 
@@ -510,7 +510,7 @@ contract("Exchange", (accounts: string[]) => {
       });
     }
   });
-*/
+
   // Added '.skip' here so these tests are NOT run by default because they take quite
   // a bit of extra time to run. Remove it once development on submitRings is less frequent.
   describe.skip("Cancelling orders", () => {
