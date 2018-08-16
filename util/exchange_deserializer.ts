@@ -130,8 +130,8 @@ export class ExchangeDeserializer {
     }
 
     // Set tokenB of orders using the tokenS from the next order
-    for (let i = 0; i < size; i++) {
-      orders[i].tokenB = orders[(i + 1) % size].tokenS;
+    for (let i = 0; i < ring.length; i++) {
+      orders[ring[i]].tokenB = orders[ring[(i + 1) % ring.length]].tokenS;
     }
 
     return ring;
