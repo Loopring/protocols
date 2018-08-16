@@ -35,7 +35,7 @@ export const ringsInfoList: RingsInfo[] = [
     orders: [
       {
         index: 0,
-        tokenS: tokenSymbols[2],  // use symbol for address, while replace with actual address later.
+        tokenS: tokenSymbols[2],
         tokenB: tokenSymbols[1],
         amountS: 100e18,
         amountB: 10e18,
@@ -47,6 +47,46 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[2],
         amountS: 5e18,
         amountB: 45e18,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+      },
+    ],
+  },
+
+  {
+    description: "multiple 2-size ring, prices exactly match.",
+    signAlgorithm: SignAlgorithm.Ethereum,
+    rings: [[0, 1], [2, 3]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 3e18,
+        amountB: 1e18,
+        signAlgorithm: SignAlgorithm.Ethereum,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 3e18,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[3],
+        amountS: 100e18,
+        amountB: 10e18,
+        signAlgorithm: SignAlgorithm.Ethereum,
+      },
+      {
+        index: 3,
+        tokenS: tokenSymbols[3],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 50e18,
         dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
       },
     ],
