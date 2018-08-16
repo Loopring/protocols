@@ -244,7 +244,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             IMinerRegistry(minerRegistryAddress),
             IFeeHolder(feeHolderAddress),
             ringIndex,
-            tax
+            tax,
+            FEE_PERCENTAGE_BASE
         );
 
         // Check if the highest bit of ringIndex is '1'
@@ -260,7 +261,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         for (uint i = 0; i < orders.length; i++) {
             // emit LogOrder(orders[i].owner, orders[i].tokenS, orders[i].amountS);
 
-            orders[i].validateInfo();
+            orders[i].validateInfo(ctx);
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
             orders[i].checkBrokerSignature(ctx);

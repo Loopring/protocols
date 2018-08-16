@@ -69,9 +69,10 @@ library RingHelper {
                 // We have to make sure the order owner can pay that percentage, otherwise we'll have to sell
                 // less tokenS. We have to calculate totalAmountS here so that
                 // fillAmountS := totalAmountS - (totalAmountS * tokenSFeePercentage)
-                uint totalAmountS = p.fillAmountS.mul(1000) / (1000 - p.order.tokenSFeePercentage);
+                uint totalAmountS = p.fillAmountS.mul(
+                    ctx.feePercentageBase) / (ctx.feePercentageBase - p.order.tokenSFeePercentage);
                 if (totalAmountS > p.order.spendableS) {
-                    uint maxFeeAmountS = p.order.spendableS.mul(p.order.tokenSFeePercentage) / 1000;
+                    uint maxFeeAmountS = p.order.spendableS.mul(p.order.tokenSFeePercentage) / ctx.feePercentageBase;
                     p.fillAmountS = p.order.spendableS - maxFeeAmountS;
                 }
             }
@@ -91,7 +92,7 @@ library RingHelper {
             Data.Participation memory p = ring.participations[i];
             Data.Participation memory nextP = ring.participations[nextIndex];
             if (nextP.fillAmountS >= p.fillAmountB) {
-                nextP.calculateFeesAndTaxes(p, ctx.tax, ring.P2P);
+                nextP.calculateFeesAndTaxes(p, ctx, ring.P2P);
                 if (nextP.order.waiveFeePercentage < 0) {
                     ring.minerFeesToOrdersPercentage += uint(-nextP.order.waiveFeePercentage);
                 }
@@ -100,6 +101,8 @@ library RingHelper {
                 break;
             }
         }
+        // Miner can only distribute 100% of its fees to all orders combined
+        ring.valid = ring.valid && ring.minerFeesToOrdersPercentage <= ctx.feePercentageBase;
     }
 
     function calculateOrderFillAmounts(
@@ -309,7 +312,7 @@ library RingHelper {
         internal
     {
         // It only costs 3 gas/word for extra memory, so just create the maximum array size needed
-        bytes32[] memory data = new bytes32[]((ring.size * ring.size + ring.size) * 3 * 3);
+        bytes32[] memory data = new bytes32[]((ring.size + 3) * ring.size * 3);
         Data.FeeContext memory feeCtx = Data.FeeContext(
             data,
             0,
@@ -365,7 +368,8 @@ library RingHelper {
         // that needs to be paid out to order owners. So we pay out each part out here to all orders that need it.
         if (feeCtx.ring.minerFeesToOrdersPercentage > 0) {
             // Subtract all fees the miner pays to the orders
-            feeToMiner = minerFee.mul(1000 - feeCtx.ring.minerFeesToOrdersPercentage) / 1000;
+            feeToMiner = minerFee.mul(
+                feeCtx.ctx.feePercentageBase - feeCtx.ring.minerFeesToOrdersPercentage) / feeCtx.ctx.feePercentageBase;
             // Pay out the fees to the orders
             distributeMinerFeeToOwners(feeCtx, token, minerFee);
         }
@@ -384,7 +388,7 @@ library RingHelper {
         for (uint i = 0; i < feeCtx.ring.size; i++) {
             Data.Participation memory p = feeCtx.ring.participations[i];
             if (p.order.waiveFeePercentage < 0) {
-                uint feeToOwner = minerFee.mul(uint(-p.order.waiveFeePercentage)) / 1000;
+                uint feeToOwner = minerFee.mul(uint(-p.order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
                 feeCtx.offset = payFee(feeCtx.data, feeCtx.offset, token, p.order.owner, feeToOwner);
             }
         }

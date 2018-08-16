@@ -69,6 +69,7 @@ library Data {
         IFeeHolder feeHolder;
         uint64 ringIndex;
         Tax tax;
+        uint16 feePercentageBase;
     }
 
     struct Mining {

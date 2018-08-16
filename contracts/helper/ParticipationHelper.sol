@@ -32,7 +32,7 @@ library ParticipationHelper {
     function calculateFeesAndTaxes(
         Data.Participation p,
         Data.Participation prevP,
-        Data.Tax tax,
+        Data.Context ctx,
         bool P2P
         )
         internal
@@ -42,8 +42,9 @@ library ParticipationHelper {
             // Calculate P2P fees
             p.feeAmount = 0;
             if (p.order.wallet != 0x0) {
-                p.feeAmountS = p.fillAmountS.mul(1000) / (1000 - p.order.tokenSFeePercentage) - p.fillAmountS;
-                p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / 1000;
+                p.feeAmountS = p.fillAmountS.mul(
+                    ctx.feePercentageBase) / (ctx.feePercentageBase - p.order.tokenSFeePercentage) - p.fillAmountS;
+                p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / ctx.feePercentageBase;
             } else {
                 p.feeAmountS = 0;
                 p.feeAmountB = 0;
@@ -58,20 +59,22 @@ library ParticipationHelper {
             p.feeAmountB = 0;
 
             // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
-            uint feeAmountTax = tax.calculateTax(p.order.feeToken, false, P2P, p.feeAmount);
+            uint feeAmountTax = ctx.tax.calculateTax(p.order.feeToken, false, P2P, p.feeAmount);
             uint totalAmountFeeToken = p.feeAmount + feeAmountTax;
             if (p.order.feeToken == p.order.tokenS) {
                 totalAmountFeeToken += p.fillAmountS;
             }
             if (totalAmountFeeToken > p.order.spendableFee) {
-                p.feeAmountB = p.fillAmountB.mul(p.order.feePercentage) / 1000;
+                p.feeAmountB = p.fillAmountB.mul(p.order.feePercentage) / ctx.feePercentageBase;
                 p.feeAmount = 0;
             }
 
             // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
             if (p.order.waiveFeePercentage > 0) {
-                p.feeAmount = p.feeAmount.mul(1000 - uint(p.order.waiveFeePercentage)) / 1000;
-                p.feeAmountB = p.feeAmountB.mul(1000 - uint(p.order.waiveFeePercentage)) / 1000;
+                p.feeAmount = p.feeAmount.mul(
+                    ctx.feePercentageBase - uint(p.order.waiveFeePercentage)) / ctx.feePercentageBase;
+                p.feeAmountB = p.feeAmountB.mul(
+                    ctx.feePercentageBase - uint(p.order.waiveFeePercentage)) / ctx.feePercentageBase;
                 // fillAmountFeeS is always 0
             } else if (p.order.waiveFeePercentage < 0) {
                 // No fees need to be paid by this order
@@ -85,9 +88,9 @@ library ParticipationHelper {
         }
 
         // Calculate consumer taxes. These are applied on top of the calculated fees
-        p.taxFee = tax.calculateTax(p.order.feeToken, false, P2P, p.feeAmount);
-        p.taxS = tax.calculateTax(p.order.tokenS, false, P2P, p.feeAmountS);
-        p.taxB = tax.calculateTax(p.order.tokenB, false, P2P, p.feeAmountB);
+        p.taxFee = ctx.tax.calculateTax(p.order.feeToken, false, P2P, p.feeAmount);
+        p.taxS = ctx.tax.calculateTax(p.order.tokenS, false, P2P, p.feeAmountS);
+        p.taxB = ctx.tax.calculateTax(p.order.tokenB, false, P2P, p.feeAmountB);
     }
 
     function adjustOrderState(

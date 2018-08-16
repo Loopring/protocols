@@ -120,7 +120,7 @@ library OrderHelper {
         }
     }
 
-    function validateInfo(Data.Order order)
+    function validateInfo(Data.Order order, Data.Context ctx)
         internal
         view
     {
@@ -131,6 +131,11 @@ library OrderHelper {
         valid = valid && (order.amountS != 0); // invalid order amountS
         valid = valid && (order.amountB != 0); // invalid order amountB
         valid = valid && (order.feeToken != 0x0); // invalid fee token
+        valid = valid && (order.feePercentage <= ctx.feePercentageBase); // invalid fee percentage
+        valid = valid && (order.waiveFeePercentage <= int16(ctx.feePercentageBase)); // invalid waive percentage
+        valid = valid && (order.waiveFeePercentage >= -int16(ctx.feePercentageBase)); // invalid waive percentage
+        valid = valid && (order.tokenSFeePercentage <= ctx.feePercentageBase); // invalid tokenS percentage
+        valid = valid && (order.tokenBFeePercentage <= ctx.feePercentageBase); // invalid tokenB percentage
 
         valid = valid && (order.validSince <= block.timestamp); // order is too early to match
         valid = valid && (order.validUntil > block.timestamp);  // order is expired
