@@ -3,7 +3,7 @@ import { Bitstream } from "./bitstream";
 import { Context } from "./context";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
-import { OrderInfo, TokenType, TransferItem } from "./types";
+import { OrderInfo, TransferItem } from "./types";
 
 export class Ring {
 
@@ -80,9 +80,11 @@ export class Ring {
         // We have to make sure the order owner can pay that percentage, otherwise we'll have to sell
         // less tokenS. We have to calculate totalAmountS here so that
         // fillAmountS := totalAmountS - (totalAmountS * tokenSFeePercentage)
-        const totalAmountS = Math.floor((order.fillAmountS * 1000) / (1000 - order.tokenSFeePercentage));
+        const totalAmountS = Math.floor((order.fillAmountS * this.context.feePercentageBase) /
+                                        (this.context.feePercentageBase - order.tokenSFeePercentage));
         if (totalAmountS > order.spendableS) {
-          const maxFeeAmountS = Math.floor(order.spendableS * order.tokenSFeePercentage) / 1000;
+          const maxFeeAmountS = Math.floor(order.spendableS * order.tokenSFeePercentage) /
+                                this.context.feePercentageBase;
           order.fillAmountS = order.spendableS - maxFeeAmountS;
         }
       }
@@ -110,72 +112,104 @@ export class Ring {
       const nextOrder = this.orders[nextIndex];
 
       if (nextOrder.fillAmountS >= order.fillAmountB) {
-        if (this.P2P) {
-          // Calculate P2P fees
-          nextOrder.fillAmountFee = 0;
-          if (nextOrder.walletAddr) {
-            nextOrder.fillAmountFeeS =
-              Math.floor((nextOrder.fillAmountS * 1000) / (1000 - nextOrder.tokenSFeePercentage))
-              - nextOrder.fillAmountS;
-            nextOrder.fillAmountFeeB = Math.floor(nextOrder.fillAmountB * nextOrder.tokenBFeePercentage) / 1000;
-          } else {
-            nextOrder.fillAmountFeeS = 0;
-            nextOrder.fillAmountFeeB = 0;
-          }
-
-          // The taker gets the margin
-          nextOrder.splitS = 0;
-        } else {
-          // Calculate matching fees
-          nextOrder.fillAmountFee = nextOrder.feeAmount * nextOrder.fillAmountS / nextOrder.amountS;
-          nextOrder.fillAmountFeeS = 0;
-          nextOrder.fillAmountFeeB = 0;
-
-          // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
-          const feeTaxRate = this.getTaxRate(nextOrder.feeToken, false, this.P2P);
-          const feeAmountTax = Math.floor(nextOrder.fillAmountFee * feeTaxRate) / 100;
-          let totalAmountFeeToken = nextOrder.fillAmountFee + feeAmountTax;
-          if (nextOrder.feeToken === nextOrder.tokenS) {
-            totalAmountFeeToken += nextOrder.fillAmountS;
-          }
-          // nextOrder.feeToken == nextOrder.tokenB and the order doesn't have the necessary tokenB amount
-          // we use feePercentage instead, which should give similar results if the data is set correctly
-          // in the order
-          if (totalAmountFeeToken > nextOrder.spendableFee) {
-              nextOrder.fillAmountFeeB += Math.floor(nextOrder.fillAmountB * nextOrder.feePercentage) / 1000;
-              // fillAmountB still contains fillAmountFeeB! This makes the subsequent calculations easier.
-              nextOrder.fillAmountFee = 0;
-          }
-
-          // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
-          if (nextOrder.waiveFeePercentage > 0) {
-            const waiveFeePercentage = nextOrder.waiveFeePercentage;
-            nextOrder.fillAmountFee = Math.floor(nextOrder.fillAmountFee * (1000 - waiveFeePercentage)) / 1000;
-            nextOrder.fillAmountFeeB = Math.floor(nextOrder.fillAmountFeeB * (1000 - waiveFeePercentage)) / 1000;
-            // fillAmountFeeS is always 0
-          } else if (nextOrder.waiveFeePercentage < 0) {
-            this.minerFeesToOrdersPercentage += -nextOrder.waiveFeePercentage;
-            // No fees need to be paid by this order
-            nextOrder.fillAmountFee = 0;
-            nextOrder.fillAmountFeeB = 0;
-          }
-
-          // The miner/wallet gets the margin
-          nextOrder.splitS = nextOrder.fillAmountS - order.fillAmountB;
-          nextOrder.fillAmountS = order.fillAmountB;
+        this.calculateFeesAndTaxes(nextOrder, order, this.P2P);
+        if (nextOrder.waiveFeePercentage < 0) {
+          this.minerFeesToOrdersPercentage += -nextOrder.waiveFeePercentage;
         }
-
-        // Calculate consumer taxes. These are applied on top of the calculated fees
-        const feeTokenRate = this.getTaxRate(nextOrder.feeToken, false, this.P2P);
-        nextOrder.taxFee = Math.floor(nextOrder.fillAmountFee * feeTokenRate) / 100;
-        const tokenSRate = this.getTaxRate(nextOrder.tokenS, false, this.P2P);
-        nextOrder.taxS = Math.floor(nextOrder.fillAmountFeeS * tokenSRate) / 100;
-        const tokenBRate = this.getTaxRate(nextOrder.tokenB, false, this.P2P);
-        nextOrder.taxB = Math.floor(nextOrder.fillAmountFeeB * tokenBRate) / 100;
       } else {
         this.valid = false;
       }
     }
+    // Miner can only distribute 100% of its fees to all orders combined
+    this.valid = this.valid && this.minerFeesToOrdersPercentage <= this.context.feePercentageBase;
+  }
+
+  public calculateFeesAndTaxes(order: OrderInfo, prevOrder: OrderInfo, P2P: boolean) {
+    if (this.P2P) {
+      // Calculate P2P fees
+      order.fillAmountFee = 0;
+      if (order.walletAddr) {
+        order.fillAmountFeeS = Math.floor((order.fillAmountS * this.context.feePercentageBase) /
+                                          (this.context.feePercentageBase - order.tokenSFeePercentage)) -
+                               order.fillAmountS;
+        order.fillAmountFeeB = Math.floor(order.fillAmountB * order.tokenBFeePercentage) /
+                               this.context.feePercentageBase;
+      } else {
+        order.fillAmountFeeS = 0;
+        order.fillAmountFeeB = 0;
+      }
+
+      // The taker gets the margin
+      order.splitS = 0;
+    } else {
+      // Calculate matching fees
+      order.fillAmountFee = order.feeAmount * order.fillAmountS / order.amountS;
+      order.fillAmountFeeS = 0;
+      order.fillAmountFeeB = 0;
+
+      // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
+      const feeAmountTax = this.context.tax.calculateTax(order.feeToken, false, this.P2P, order.fillAmountFee);
+      let totalAmountFeeToken = order.fillAmountFee + feeAmountTax;
+      if (order.feeToken === order.tokenS) {
+        totalAmountFeeToken += order.fillAmountS;
+      }
+      // nextOrder.feeToken == nextOrder.tokenB and the order doesn't have the necessary tokenB amount
+      // we use feePercentage instead, which should give similar results if the data is set correctly
+      // in the order
+      if (totalAmountFeeToken > order.spendableFee) {
+          order.fillAmountFeeB += Math.floor(order.fillAmountB * order.feePercentage) / this.context.feePercentageBase;
+          // fillAmountB still contains fillAmountFeeB! This makes the subsequent calculations easier.
+          order.fillAmountFee = 0;
+      }
+
+      // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
+      if (order.waiveFeePercentage > 0) {
+        const waiveFeePercentage = order.waiveFeePercentage;
+        order.fillAmountFee = Math.floor(order.fillAmountFee *
+                                        (this.context.feePercentageBase - waiveFeePercentage)) /
+                              this.context.feePercentageBase;
+        order.fillAmountFeeB = Math.floor(order.fillAmountFeeB *
+                                         (this.context.feePercentageBase - waiveFeePercentage)) /
+                               this.context.feePercentageBase;
+        // fillAmountFeeS is always 0
+      } else if (order.waiveFeePercentage < 0) {
+        // No fees need to be paid by this order
+        order.fillAmountFee = 0;
+        order.fillAmountFeeB = 0;
+      }
+
+      // The miner/wallet gets the margin
+      order.splitS = order.fillAmountS - prevOrder.fillAmountB;
+      order.fillAmountS = prevOrder.fillAmountB;
+    }
+
+    // Calculate consumer taxes. These are applied on top of the calculated fees
+    order.taxFee = this.context.tax.calculateTax(order.feeToken, false, this.P2P, order.fillAmountFee);
+    order.taxS = this.context.tax.calculateTax(order.tokenS, false, this.P2P, order.fillAmountFeeS);
+    order.taxB = this.context.tax.calculateTax(order.tokenB, false, this.P2P, order.fillAmountFeeB);
+  }
+
+  public adjustOrderState(order: OrderInfo) {
+    const filledAmountS = order.fillAmountS + order.splitS;
+    const totalAmountS = filledAmountS + order.taxS;
+    const totalAmountFee = order.fillAmountFee + order.taxFee;
+    order.filledAmountS += filledAmountS;
+    order.maxAmountS -= filledAmountS;
+    if (order.maxAmountS > order.spendableS) {
+      order.maxAmountS = order.spendableS;
+    }
+    // Update spendables
+    order.spendableS -= totalAmountS;
+    order.spendableFee -= totalAmountFee;
+    if (order.tokenS === order.feeToken) {
+      order.spendableS -= totalAmountFee;
+      order.spendableFee -= totalAmountS;
+    }
+    // Checks
+    assert(order.spendableS >= 0, "spendableS should be positive");
+    assert(order.spendableFee >= 0, "spendableFee should be positive");
+    assert(order.maxAmountS >= 0, "maxAmountS should be positive");
+    assert(order.filledAmountS <= order.amountS, "filledAmountS <= amountS");
   }
 
   public async getRingTransferItems(walletSplitPercentage: number, feeBalances: { [id: string]: any; }) {
@@ -188,90 +222,29 @@ export class Ring {
       return [];
     }
 
+    // Validate how the ring is settled
+    this.validateSettlement();
+
+    const transferItems = await this.transferTokens();
+    await this.payFees(feeBalances);
+
+    // Adjust orders
+    for (const order of this.orders) {
+      this.adjustOrderState(order);
+    }
+
+    return transferItems;
+  }
+
+  private transferTokens() {
     const ringSize = this.orders.length;
     const transferItems: TransferItem[] = [];
     for (let i = 0; i < ringSize; i++) {
       const prevIndex = (i + ringSize - 1) % ringSize;
       const order = this.orders[i];
       const prevOrder = this.orders[prevIndex];
-      const token = order.tokenS;
-      const from = order.owner;
-      const to = prevOrder.owner;
-      const amount = order.fillAmountS;
       const feeHolder = this.context.feeHolder.address;
 
-      console.log("order.spendableS:       " + order.spendableS / 1e18);
-      console.log("order.spendableFee:     " + order.spendableFee / 1e18);
-      console.log("order.amountS:          " + order.amountS / 1e18);
-      console.log("order.amountB:          " + order.amountB / 1e18);
-      console.log("order.feeAmount:        " + order.feeAmount / 1e18);
-      console.log("order expected rate:    " + order.amountS / order.amountB);
-      console.log("order.fillAmountS:      " + order.fillAmountS / 1e18);
-      console.log("order.fillAmountB:      " + order.fillAmountB / 1e18);
-      console.log("order.splitS:           " + order.splitS / 1e18);
-      console.log("order actual rate:      " + (order.fillAmountS + order.splitS) / order.fillAmountB);
-      console.log("order.fillAmountFee:    " + order.fillAmountFee / 1e18);
-      console.log("order.fillAmountFeeS:   " + order.fillAmountFeeS / 1e18);
-      console.log("order.fillAmountFeeB:   " + order.fillAmountFeeB / 1e18);
-      console.log("order.taxFee:           " + order.taxFee / 1e18);
-      console.log("order.taxS:             " + order.taxS / 1e18);
-      console.log("order.taxB:             " + order.taxB / 1e18);
-      console.log("tokenS percentage:      " + (this.P2P ? order.tokenSFeePercentage : 0) / 1000);
-      // tokenSFeePercentage is pre-trading so the percentage is on the total tokenS paid
-      console.log("tokenS real percentage: " + order.fillAmountFeeS /
-                                               (order.fillAmountS + order.fillAmountFeeS));
-      console.log("tokenB percentage:      " +
-        (this.P2P ? order.tokenBFeePercentage : order.feePercentage) / 1000);
-      console.log("tokenB real percentage: " + order.fillAmountFeeB / order.fillAmountB);
-      console.log("----------------------------------------------");
-
-      // Sanity checks
-      assert(order.fillAmountS >= 0, "fillAmountS should be positive");
-      assert(order.splitS >= 0, "splitS should be positive");
-      assert(order.fillAmountFee >= 0, "fillAmountFee should be positive");
-      assert(order.fillAmountFeeS >= 0, "fillAmountFeeS should be positive");
-      assert(order.fillAmountFeeB >= 0, "fillAmountFeeB should be positive");
-      assert(order.taxFee >= 0, "taxFee should be positive");
-      assert(order.taxS >= 0, "taxS should be positive");
-      assert(order.taxB >= 0, "taxB should be positive");
-      assert((order.fillAmountS + order.splitS) <= order.amountS, "fillAmountS + splitS <= amountS");
-      assert((order.fillAmountS + order.splitS + order.fillAmountFeeS) <= order.spendableS + 10000,
-             "fillAmountS + splitS + fillAmountFeeS <= spendableS");
-      assert(order.fillAmountS <= order.amountS, "fillAmountS <= amountS");
-      assert(order.fillAmountFee <= order.feeAmount, "fillAmountFee <= feeAmount");
-      if (this.P2P) {
-        // Taker gets all margin
-        assert(order.fillAmountS >= prevOrder.fillAmountB, "fillAmountS >= prev.fillAmountB");
-      } else {
-        // Miner gets all margin
-        assert.equal(order.fillAmountS, prevOrder.fillAmountB, "fillAmountS == prev.fillAmountB");
-      }
-      // TODO: can fail if not exactly equal, check with lesser precision
-      // assert(currOrder.amountS / currOrder.amountB
-      //        === currOrder.fillAmountS / currOrder.fillAmountB, "fill rates need to match order rate");
-
-      // AdjustOrders
-      const filledAmountS = order.fillAmountS + order.splitS;
-      const totalAmountS = filledAmountS + order.taxS;
-      const totalAmountFee = order.fillAmountFee + order.taxFee;
-      order.filledAmountS += filledAmountS;
-      order.maxAmountS -= filledAmountS;
-      if (order.maxAmountS > order.spendableS) {
-        order.maxAmountS = order.spendableS;
-      }
-      // Update spendables
-      order.spendableS -= totalAmountS;
-      order.spendableFee -= totalAmountFee;
-      if (order.tokenS === order.feeToken) {
-        order.spendableS -= totalAmountFee;
-        order.spendableFee -= totalAmountS;
-      }
-      assert(order.spendableS >= 0, "spendableS should be positive");
-      assert(order.spendableFee >= 0, "spendableFee should be positive");
-      assert(order.maxAmountS >= 0, "maxAmountS should be positive");
-      assert(order.filledAmountS <= order.amountS, "filledAmountS <= amountS");
-
-      // Transfers
       // If the buyer needs to pay fees in a percentage of tokenB, the seller needs
       // to send that amount of tokenS to the fee holder contract.
       const amountSToBuyer = order.fillAmountS - prevOrder.fillAmountFeeB - prevOrder.taxB;
@@ -282,54 +255,28 @@ export class Ring {
         amountSToFeeHolder += amountFeeToFeeHolder;
         amountFeeToFeeHolder = 0;
       }
-      if (amountSToBuyer > 0) {
-        transferItems.push({token, from, to, amount: amountSToBuyer});
-      }
-      if (amountSToFeeHolder > 0) {
-        transferItems.push({token, from, to: feeHolder, amount: amountSToFeeHolder});
-      }
-      if (amountFeeToFeeHolder > 0) {
-        transferItems.push({token: order.feeToken, from, to: feeHolder, amount: amountFeeToFeeHolder});
-      }
 
-      // Update fee balances
+      this.addTokenTransfer(transferItems, order.tokenS, order.owner, prevOrder.owner, amountSToBuyer);
+      this.addTokenTransfer(transferItems, order.tokenS, order.owner, feeHolder, amountSToFeeHolder);
+      this.addTokenTransfer(transferItems, order.feeToken, order.owner, feeHolder, amountFeeToFeeHolder);
+    }
+    return transferItems;
+  }
+
+  private addTokenTransfer(transferItems: TransferItem[], token: string, from: string, to: string, amount: number) {
+    if (amount > 0) {
+      transferItems.push({token, from, to, amount});
+    }
+  }
+
+  private async payFees(feeBalances: { [id: string]: any; }) {
+    const ringSize = this.orders.length;
+    for (let i = 0; i < ringSize; i++) {
+      const order = this.orders[i];
       const feeInTokenS = order.fillAmountFeeS + order.splitS;
       await this.payFeesAndTaxes(feeBalances, order.feeToken, order.fillAmountFee, order.taxFee, order.walletAddr);
       await this.payFeesAndTaxes(feeBalances, order.tokenS, feeInTokenS, order.taxS, order.walletAddr);
       await this.payFeesAndTaxes(feeBalances, order.tokenB, order.fillAmountFeeB, order.taxB, order.walletAddr);
-    }
-
-    return transferItems;
-  }
-
-  private getTokenType(token: string) {
-    if (token === this.context.lrcAddress) {
-      return TokenType.LRC;
-    } else if (token === this.context.wethAddress) {
-      return TokenType.ETH;
-    } else {
-      return TokenType.Other;
-    }
-  }
-
-  private getTaxRate(token: string, income: boolean, P2P: boolean) {
-    const tokenType = this.getTokenType(token);
-    if (P2P) {
-      if (income) {
-        const taxes = [0, 0, 0];
-        return taxes[tokenType];
-      } else {
-        const taxes = [1, 2, 2];
-        return taxes[tokenType];
-      }
-    } else {
-      if (income) {
-        const taxes = [1, 10, 20];
-        return taxes[tokenType];
-      } else {
-        const taxes = [1, 50, 100];
-        return taxes[tokenType];
-      }
     }
   }
 
@@ -339,32 +286,30 @@ export class Ring {
       assert.equal(consumerTax, 0, "If fee == 0 no tax should be paid");
       return;
     }
+    if (this.P2P && !wallet) {
+      assert.equal(amount, 0, "In a P2P ring no fees should be paid when no wallet is provided");
+    }
 
-    const walletPercentage = this.P2P ? 100 : this.walletSplitPercentage;
+    const walletPercentage = this.P2P ? 100 :
+                             (wallet ? this.walletSplitPercentage : 0);
 
-    const incomeTaxRate = this.getTaxRate(token, true, this.P2P);
-    const incomeTax = Math.floor(amount * incomeTaxRate / 100);
+    const incomeTax = this.context.tax.calculateTax(token, true, this.P2P, amount);
     const incomeAfterTax = amount - incomeTax;
 
-    let feeToWallet = 0;
-    if (wallet) {
-      feeToWallet = Math.floor(incomeAfterTax * walletPercentage / 100);
-    }
-    let minerFee = incomeAfterTax - feeToWallet;
-    if (this.P2P) {
-        minerFee = 0;
-    }
+    const feeToWallet = Math.floor(incomeAfterTax * walletPercentage / 100);
+    const minerFee = incomeAfterTax - feeToWallet;
 
     let feeToMiner = minerFee;
     // Fees can be paid out in different tokens so we can't easily accumulate the total fee
     // that needs to be paid out to order owners. So we pay out each part out here to all orders that need it.
     if (this.minerFeesToOrdersPercentage > 0) {
       // Subtract all fees the miner pays to the orders
-      feeToMiner = Math.floor(minerFee * (1000 - this.minerFeesToOrdersPercentage) / 1000);
+      feeToMiner = Math.floor(minerFee * (this.context.feePercentageBase - this.minerFeesToOrdersPercentage) /
+                              this.context.feePercentageBase);
       // Pay out the fees to the orders
       for (const order of this.orders) {
         if (order.waiveFeePercentage < 0) {
-          const feeToOwner = Math.floor(minerFee * (-order.waiveFeePercentage) / 1000);
+          const feeToOwner = Math.floor(minerFee * (-order.waiveFeePercentage) / this.context.feePercentageBase);
           await this.payFee(feeBalances, token, order.owner, feeToOwner);
         }
       }
@@ -401,6 +346,66 @@ export class Ring {
     }
 
     return newSmallest;
+  }
+
+  private validateSettlement() {
+    const ringSize = this.orders.length;
+    for (let i = 0; i < ringSize; i++) {
+      const prevIndex = (i + ringSize - 1) % ringSize;
+      const order = this.orders[i];
+      const prevOrder = this.orders[prevIndex];
+
+      console.log("order.spendableS:       " + order.spendableS / 1e18);
+      console.log("order.spendableFee:     " + order.spendableFee / 1e18);
+      console.log("order.amountS:          " + order.amountS / 1e18);
+      console.log("order.amountB:          " + order.amountB / 1e18);
+      console.log("order.feeAmount:        " + order.feeAmount / 1e18);
+      console.log("order expected rate:    " + order.amountS / order.amountB);
+      console.log("order.fillAmountS:      " + order.fillAmountS / 1e18);
+      console.log("order.fillAmountB:      " + order.fillAmountB / 1e18);
+      console.log("order.splitS:           " + order.splitS / 1e18);
+      console.log("order actual rate:      " + (order.fillAmountS + order.splitS) / order.fillAmountB);
+      console.log("order.fillAmountFee:    " + order.fillAmountFee / 1e18);
+      console.log("order.fillAmountFeeS:   " + order.fillAmountFeeS / 1e18);
+      console.log("order.fillAmountFeeB:   " + order.fillAmountFeeB / 1e18);
+      console.log("order.taxFee:           " + order.taxFee / 1e18);
+      console.log("order.taxS:             " + order.taxS / 1e18);
+      console.log("order.taxB:             " + order.taxB / 1e18);
+      console.log("tokenS percentage:      " + (this.P2P ? order.tokenSFeePercentage : 0) /
+                                               this.context.feePercentageBase);
+      // tokenSFeePercentage is pre-trading so the percentage is on the total tokenS paid
+      console.log("tokenS real percentage: " + order.fillAmountFeeS /
+                                               (order.fillAmountS + order.fillAmountFeeS));
+      console.log("tokenB percentage:      " +
+        (this.P2P ? order.tokenBFeePercentage : order.feePercentage) / this.context.feePercentageBase);
+      console.log("tokenB real percentage: " + order.fillAmountFeeB / order.fillAmountB);
+      console.log("----------------------------------------------");
+
+      // Sanity checks
+      assert(order.fillAmountS >= 0, "fillAmountS should be positive");
+      assert(order.splitS >= 0, "splitS should be positive");
+      assert(order.fillAmountFee >= 0, "fillAmountFee should be positive");
+      assert(order.fillAmountFeeS >= 0, "fillAmountFeeS should be positive");
+      assert(order.fillAmountFeeB >= 0, "fillAmountFeeB should be positive");
+      assert(order.taxFee >= 0, "taxFee should be positive");
+      assert(order.taxS >= 0, "taxS should be positive");
+      assert(order.taxB >= 0, "taxB should be positive");
+      assert((order.fillAmountS + order.splitS) <= order.amountS, "fillAmountS + splitS <= amountS");
+      assert((order.fillAmountS + order.splitS + order.fillAmountFeeS) <= order.spendableS + 10000,
+             "fillAmountS + splitS + fillAmountFeeS <= spendableS");
+      assert(order.fillAmountS <= order.amountS, "fillAmountS <= amountS");
+      assert(order.fillAmountFee <= order.feeAmount, "fillAmountFee <= feeAmount");
+      if (this.P2P) {
+        // Taker gets all margin
+        assert(order.fillAmountS >= prevOrder.fillAmountB, "fillAmountS >= prev.fillAmountB");
+      } else {
+        // Miner gets all margin
+        assert.equal(order.fillAmountS, prevOrder.fillAmountB, "fillAmountS == prev.fillAmountB");
+      }
+      // TODO: can fail if not exactly equal, check with lesser precision
+      // assert(currOrder.amountS / currOrder.amountB
+      //        === currOrder.fillAmountS / currOrder.fillAmountB, "fill rates need to match order rate");
+    }
   }
 
 }

@@ -10,12 +10,6 @@ export enum SignAlgorithm {
   None = 255,     // Do not sign
 }
 
-export enum TokenType {
-  LRC = 0,
-  ETH = 1,
-  Other = 2,
-}
-
 export interface OrderInfo {
   // required fields in contract
   owner?: string;

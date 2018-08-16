@@ -1,11 +1,13 @@
 import fs = require("fs");
+import { Tax } from "./tax";
 
 export class Context {
 
   public blockNumber: number;
   public blockTimestamp: number;
   public lrcAddress: string;
-  public wethAddress: string;
+  public tax: Tax;
+  public feePercentageBase: number;
 
   public ERC20Contract: any;
   public TokenRegistryContract: any;
@@ -34,12 +36,13 @@ export class Context {
               minerRegistryAddress: string,
               feeHolderAddress: string,
               lrcAddress: string,
-              wethAddress: string,
-              ) {
+              tax: Tax,
+              feePercentageBase: number) {
     this.blockNumber = blockNumber;
     this.blockTimestamp = blockTimestamp;
     this.lrcAddress = lrcAddress;
-    this.wethAddress = wethAddress;
+    this.tax = tax;
+    this.feePercentageBase = feePercentageBase;
 
     const ABIPath = "ABI/latest/";
     const erc20Abi = fs.readFileSync(ABIPath + "ERC20.abi", "ascii");

@@ -359,9 +359,6 @@ library RingHelper {
             feeToWallet = 0;
         }
         uint minerFee = incomeAfterTax - feeToWallet;
-        if (feeCtx.ring.P2P) {
-            minerFee = 0;
-        }
 
         uint feeToMiner = minerFee;
         // Fees can be paid out in different tokens so we can't easily accumulate the total fee

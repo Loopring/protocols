@@ -14,6 +14,7 @@ import { ProtocolSimulator } from "../util/protocol_simulator";
 import { Ring } from "../util/ring";
 import { ringsInfoList } from "../util/rings_config";
 import { RingsGenerator } from "../util/rings_generator";
+import { Tax } from "../util/tax";
 import { OrderInfo, RingsInfo, SignAlgorithm, TransferItem } from "../util/types";
 import { xor } from "../util/xor";
 
@@ -52,6 +53,8 @@ contract("Exchange", (accounts: string[]) => {
   let lrcAddress: string;
   let wethAddress: string;
   let walletSplitPercentage: number;
+  let feePercentageBase: number;
+  let tax: Tax;
 
   const tokenSymbolAddrMap = new Map();
   const tokenInstanceMap = new Map();
@@ -119,7 +122,8 @@ contract("Exchange", (accounts: string[]) => {
                                 MinerRegistry.address,
                                 feeHolder.address,
                                 lrcAddress,
-                                wethAddress);
+                                tax,
+                                feePercentageBase);
     return context;
   };
 
@@ -408,6 +412,23 @@ contract("Exchange", (accounts: string[]) => {
       const token = await DummyToken.at(addr);
       allTokens.push(token);
     }
+
+    feePercentageBase = await exchange.FEE_PERCENTAGE_BASE();
+    tax = new Tax(await exchange.TAX_MATCHING_CONSUMER_LRC(),
+                  await exchange.TAX_MATCHING_CONSUMER_ETH(),
+                  await exchange.TAX_MATCHING_CONSUMER_OTHER(),
+                  await exchange.TAX_MATCHING_INCOME_LRC(),
+                  await exchange.TAX_MATCHING_INCOME_ETH(),
+                  await exchange.TAX_MATCHING_INCOME_OTHER(),
+                  await exchange.TAX_P2P_CONSUMER_LRC(),
+                  await exchange.TAX_P2P_CONSUMER_ETH(),
+                  await exchange.TAX_P2P_CONSUMER_OTHER(),
+                  await exchange.TAX_P2P_INCOME_LRC(),
+                  await exchange.TAX_P2P_INCOME_ETH(),
+                  await exchange.TAX_P2P_INCOME_OTHER(),
+                  await exchange.TAX_PERCENTAGE_BASE(),
+                  lrcAddress,
+                  wethAddress);
 
     await initializeTradeDelegate();
   });
