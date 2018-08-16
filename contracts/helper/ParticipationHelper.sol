@@ -20,12 +20,75 @@ pragma experimental "ABIEncoderV2";
 
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
+import "./TaxHelper.sol";
 
 
 /// @title ParticipationHelper
 /// @author Daniel Wang - <daniel@loopring.org>.
 library ParticipationHelper {
     using MathUint for uint;
+    using TaxHelper for Data.Tax;
+
+    function calculateFeesAndTaxes(
+        Data.Participation p,
+        Data.Participation prevP,
+        Data.Tax tax,
+        bool P2P
+        )
+        internal
+        pure
+    {
+        if (P2P) {
+            // Calculate P2P fees
+            p.feeAmount = 0;
+            if (p.order.wallet != 0x0) {
+                p.feeAmountS = p.fillAmountS.mul(1000) / (1000 - p.order.tokenSFeePercentage) - p.fillAmountS;
+                p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / 1000;
+            } else {
+                p.feeAmountS = 0;
+                p.feeAmountB = 0;
+            }
+
+            // The taker gets the margin
+            p.splitS = 0;
+        } else {
+            // Calculate matching fees
+            p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
+            p.feeAmountS = 0;
+            p.feeAmountB = 0;
+
+            // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
+            uint feeAmountTax = tax.calculateTax(p.order.feeToken, false, P2P, p.feeAmount);
+            uint totalAmountFeeToken = p.feeAmount + feeAmountTax;
+            if (p.order.feeToken == p.order.tokenS) {
+                totalAmountFeeToken += p.fillAmountS;
+            }
+            if (totalAmountFeeToken > p.order.spendableFee) {
+                p.feeAmountB = p.fillAmountB.mul(p.order.feePercentage) / 1000;
+                p.feeAmount = 0;
+            }
+
+            // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
+            if (p.order.waiveFeePercentage > 0) {
+                p.feeAmount = p.feeAmount.mul(1000 - uint(p.order.waiveFeePercentage)) / 1000;
+                p.feeAmountB = p.feeAmountB.mul(1000 - uint(p.order.waiveFeePercentage)) / 1000;
+                // fillAmountFeeS is always 0
+            } else if (p.order.waiveFeePercentage < 0) {
+                // No fees need to be paid by this order
+                p.feeAmount = 0;
+                p.feeAmountB = 0;
+            }
+
+            // The miner/wallet gets the margin
+            p.splitS = p.fillAmountS - prevP.fillAmountB;
+            p.fillAmountS = prevP.fillAmountB;
+        }
+
+        // Calculate consumer taxes. These are applied on top of the calculated fees
+        p.taxFee = tax.calculateTax(p.order.feeToken, false, P2P, p.feeAmount);
+        p.taxS = tax.calculateTax(p.order.tokenS, false, P2P, p.feeAmountS);
+        p.taxB = tax.calculateTax(p.order.tokenB, false, P2P, p.feeAmountB);
+    }
 
     function adjustOrderState(
         Data.Participation p

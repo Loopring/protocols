@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import abi = require("ethereumjs-abi");
 
 export class Bitstream {
   private data: string;
@@ -34,9 +35,12 @@ export class Bitstream {
   public addNumber(x: number, numBytes = 4) {
     // Check if we need to encode this number as negative
     if (x < 0) {
-      x = -x | (1 << (numBytes * 8 - 1));
+        const encoded = abi.rawEncode(["int256"], [x.toString(10)]);
+        const hex = encoded.toString("hex").slice(-(numBytes * 2));
+        this.addHex(hex);
+    } else {
+      this.addBigNumber(new BigNumber(x), numBytes);
     }
-    this.addBigNumber(new BigNumber(x), numBytes);
   }
 
   public addAddress(x: string, numBytes = 20) {

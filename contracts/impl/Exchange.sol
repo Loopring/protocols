@@ -217,9 +217,25 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
+        Data.Tax memory tax = Data.Tax(
+            TAX_MATCHING_CONSUMER_LRC,
+            TAX_MATCHING_CONSUMER_ETH,
+            TAX_MATCHING_CONSUMER_OTHER,
+            TAX_MATCHING_INCOME_LRC,
+            TAX_MATCHING_INCOME_ETH,
+            TAX_MATCHING_INCOME_OTHER,
+            TAX_P2P_CONSUMER_LRC,
+            TAX_P2P_CONSUMER_ETH,
+            TAX_P2P_CONSUMER_OTHER,
+            TAX_P2P_INCOME_LRC,
+            TAX_P2P_INCOME_ETH,
+            TAX_P2P_INCOME_OTHER,
+            TAX_PERCENTAGE_BASE,
+            lrcTokenAddress,
+            wethTokenAddress
+        );
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
-            wethTokenAddress,
             ITokenRegistry(tokenRegistryAddress),
             ITradeDelegate(delegateAddress),
             IBrokerRegistry(orderBrokerRegistryAddress),
@@ -227,7 +243,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             IOrderRegistry(orderRegistryAddress),
             IMinerRegistry(minerRegistryAddress),
             IFeeHolder(feeHolderAddress),
-            ringIndex
+            ringIndex,
+            tax
         );
 
         // Check if the highest bit of ringIndex is '1'
@@ -274,8 +291,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             ring.calculateFillAmountAndFee(ctx);
             if (ring.valid) {
                 // Only settle rings we have checked to be valid
-                /*IExchange.Fill[] memory fills = */
                 ring.settleRing(ctx, mining);
+                // IExchange.Fill[] memory fills = ring.generateFills();
                 emit RingMined(
                     ctx.ringIndex++,
                     0x0,

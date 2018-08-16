@@ -133,7 +133,7 @@ export class Ring {
 
           // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
           const feeTaxRate = this.getTaxRate(nextOrder.feeToken, false, this.P2P);
-          const feeAmountTax = Math.floor(nextOrder.fillAmountFee * feeTaxRate) / 1000;
+          const feeAmountTax = Math.floor(nextOrder.fillAmountFee * feeTaxRate) / 100;
           let totalAmountFeeToken = nextOrder.fillAmountFee + feeAmountTax;
           if (nextOrder.feeToken === nextOrder.tokenS) {
             totalAmountFeeToken += nextOrder.fillAmountS;
@@ -167,11 +167,11 @@ export class Ring {
 
         // Calculate consumer taxes. These are applied on top of the calculated fees
         const feeTokenRate = this.getTaxRate(nextOrder.feeToken, false, this.P2P);
-        nextOrder.taxFee = Math.floor(nextOrder.fillAmountFee * feeTokenRate) / 1000;
+        nextOrder.taxFee = Math.floor(nextOrder.fillAmountFee * feeTokenRate) / 100;
         const tokenSRate = this.getTaxRate(nextOrder.tokenS, false, this.P2P);
-        nextOrder.taxS = Math.floor(nextOrder.fillAmountFeeS * tokenSRate) / 1000;
+        nextOrder.taxS = Math.floor(nextOrder.fillAmountFeeS * tokenSRate) / 100;
         const tokenBRate = this.getTaxRate(nextOrder.tokenB, false, this.P2P);
-        nextOrder.taxB = Math.floor(nextOrder.fillAmountFeeB * tokenBRate) / 1000;
+        nextOrder.taxB = Math.floor(nextOrder.fillAmountFeeB * tokenBRate) / 100;
       } else {
         this.valid = false;
       }
@@ -319,15 +319,15 @@ export class Ring {
         const taxes = [0, 0, 0];
         return taxes[tokenType];
       } else {
-        const taxes = [10, 20, 20];
+        const taxes = [1, 2, 2];
         return taxes[tokenType];
       }
     } else {
       if (income) {
-        const taxes = [10, 100, 200];
+        const taxes = [1, 10, 20];
         return taxes[tokenType];
       } else {
-        const taxes = [10, 500, 1000];
+        const taxes = [1, 50, 100];
         return taxes[tokenType];
       }
     }
@@ -343,7 +343,7 @@ export class Ring {
     const walletPercentage = this.P2P ? 100 : this.walletSplitPercentage;
 
     const incomeTaxRate = this.getTaxRate(token, true, this.P2P);
-    const incomeTax = Math.floor(amount * incomeTaxRate / 1000);
+    const incomeTax = Math.floor(amount * incomeTaxRate / 100);
     const incomeAfterTax = amount - incomeTax;
 
     let feeToWallet = 0;

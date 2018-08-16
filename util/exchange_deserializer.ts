@@ -1,4 +1,6 @@
 import { BigNumber } from "bignumber.js";
+import BN = require("bn.js");
+import abi = require("ethereumjs-abi");
 import { Bitstream } from "./bitstream";
 import { Context } from "./context";
 import { EncodeSpec } from "./encode_spec";
@@ -152,10 +154,12 @@ export class ExchangeDeserializer {
   }
 
   private toInt16(x: number) {
-    // Check if negative
+    // Check if the number is negative
     if (x >> 15 === 1) {
-      x = -(x & 0x7FFF);
+      const decoded = abi.rawDecode(["int16"], new Buffer("F".repeat(60) + x.toString(16), "hex"));
+      return decoded.toString();
+    } else {
+      return x;
     }
-    return x;
   }
 }
