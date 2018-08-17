@@ -160,20 +160,19 @@ export class Ring {
       // we use feePercentage instead, which should give similar results if the data is set correctly
       // in the order
       if (totalAmountFeeToken > order.spendableFee) {
-          order.fillAmountFeeB += Math.floor(order.fillAmountB * order.feePercentage) / this.context.feePercentageBase;
+          order.fillAmountFeeB += Math.floor(order.fillAmountB * order.feePercentage / this.context.feePercentageBase);
           // fillAmountB still contains fillAmountFeeB! This makes the subsequent calculations easier.
           order.fillAmountFee = 0;
       }
 
       // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
       if (order.waiveFeePercentage > 0) {
-        const waiveFeePercentage = order.waiveFeePercentage;
         order.fillAmountFee = Math.floor(order.fillAmountFee *
-                                        (this.context.feePercentageBase - waiveFeePercentage)) /
-                              this.context.feePercentageBase;
+                                         (this.context.feePercentageBase - order.waiveFeePercentage) /
+                                         this.context.feePercentageBase);
         order.fillAmountFeeB = Math.floor(order.fillAmountFeeB *
-                                         (this.context.feePercentageBase - waiveFeePercentage)) /
-                               this.context.feePercentageBase;
+                                          (this.context.feePercentageBase - order.waiveFeePercentage) /
+                                          this.context.feePercentageBase);
         // fillAmountFeeS is always 0
       } else if (order.waiveFeePercentage < 0) {
         // No fees need to be paid by this order
@@ -384,6 +383,8 @@ export class Ring {
       console.log("tokenB real percentage: " + order.fillAmountFeeB / order.fillAmountB);
       console.log("----------------------------------------------");
 
+      const epsilon = 1000;
+
       // Sanity checks
       assert(order.fillAmountS >= 0, "fillAmountS should be positive");
       assert(order.splitS >= 0, "splitS should be positive");
@@ -393,22 +394,103 @@ export class Ring {
       assert(order.taxFee >= 0, "taxFee should be positive");
       assert(order.taxS >= 0, "taxS should be positive");
       assert(order.taxB >= 0, "taxB should be positive");
+
+      // General fill requirements
       assert((order.fillAmountS + order.splitS) <= order.amountS, "fillAmountS + splitS <= amountS");
-      assert((order.fillAmountS + order.splitS + order.fillAmountFeeS) <= order.spendableS + 10000,
-             "fillAmountS + splitS + fillAmountFeeS <= spendableS");
-      assert(order.fillAmountS <= order.amountS, "fillAmountS <= amountS");
+      assert(order.fillAmountB <= order.amountB, "fillAmountB <= amountB");
       assert(order.fillAmountFee <= order.feeAmount, "fillAmountFee <= feeAmount");
+      {
+        const orderRate = order.amountS / order.amountB;
+        const rate = (order.fillAmountS + order.splitS) / order.fillAmountB;
+        this.assertNumberEqualsWithPrecision(rate, orderRate, "fill rates need to match order rate");
+      }
+
+      // Check who gets the margin
       if (this.P2P) {
         // Taker gets all margin
         assert(order.fillAmountS >= prevOrder.fillAmountB, "fillAmountS >= prev.fillAmountB");
+        assert.equal(order.splitS, 0, "splitS should be 0 in P2P ring");
       } else {
         // Miner gets all margin
         assert.equal(order.fillAmountS, prevOrder.fillAmountB, "fillAmountS == prev.fillAmountB");
       }
-      // TODO: can fail if not exactly equal, check with lesser precision
-      // assert(currOrder.amountS / currOrder.amountB
-      //        === currOrder.fillAmountS / currOrder.fillAmountB, "fill rates need to match order rate");
+
+      // Spendable limitations
+      {
+        const totalAmountTokenS = order.fillAmountS + order.splitS + order.fillAmountFeeS + order.taxS;
+        const totalAmountTokenFee = order.fillAmountFee + order.taxFee;
+        if (order.tokenS === order.feeToken) {
+          assert.equal(order.spendableS, order.spendableFee,
+                       "Spendable amounts should match when tokenS == tokenFee");
+          assert(totalAmountTokenS + totalAmountTokenFee <= order.spendableS + epsilon,
+                 "totalAmountTokenS + totalAmountTokenFee <= spendableS");
+        } else {
+          assert(totalAmountTokenS <= order.spendableS + epsilon, "totalAmountTokenS <= spendableS");
+          assert(totalAmountTokenFee <= order.spendableFee + epsilon, "totalAmountTokenFee <= spendableFee");
+        }
+      }
+
+      // Ensure fees are calculated correctly
+      if (this.P2P) {
+        // Fee cannot be paid in tokenFee
+        assert.equal(order.fillAmountFee, 0, "Cannot pay in tokenFee in P2P ring");
+        // Check if fees were calculated correctly for the expected rate
+        if (order.walletAddr) {
+          // fees in tokenS
+          {
+            const rate = order.fillAmountFeeS / (order.fillAmountS + order.fillAmountFeeS);
+            this.assertNumberEqualsWithPrecision(rate, order.tokenSFeePercentage,
+                                                 "tokenS fee rate needs to match given rate");
+          }
+          // fees in tokenB
+          {
+            const rate = order.fillAmountFeeB / order.fillAmountB;
+            this.assertNumberEqualsWithPrecision(rate, order.tokenBFeePercentage,
+                                                 "tokenB fee rate needs to match given rate");
+          }
+        } else {
+          // No fees need to be paid when no wallet is given
+          assert.equal(order.fillAmountFeeS, 0, "No fees need to paid without wallet in a P2P ring");
+          assert.equal(order.fillAmountFeeB, 0, "No fees need to paid without wallet in a P2P ring");
+        }
+      } else {
+        // Fee cannot be paid in tokenS
+        assert.equal(order.fillAmountFeeS, 0, "Cannot pay in tokenS");
+        // Fees need to be paid either in feeToken OR tokenB, never both at the same time
+        assert(!(order.fillAmountFee > 0 && order.fillAmountFeeB > 0), "fees should be paid in tokenFee OR tokenB");
+
+        if (order.waiveFeePercentage < 0) {
+          // If the miner waives the fees for this order all fees need to be 0
+          assert.equal(order.fillAmountFee,  0, "No fees need to be paid if miner waives fees");
+          assert.equal(order.fillAmountFeeB, 0, "No fees need to be paid if miner waives fees");
+        } else {
+          if (order.fillAmountFeeB > 0) {
+            const rate = order.fillAmountFeeB / order.fillAmountB;
+            const feePercentageAfterMinerReduction = order.feePercentage *
+              (this.context.feePercentageBase - order.waiveFeePercentage) / this.context.feePercentageBase;
+            this.assertNumberEqualsWithPrecision(rate, feePercentageAfterMinerReduction,
+                                                 "tokenB fee should match feePercentageBase after miner reduction");
+          }
+          if (order.fillAmountFee > 0) {
+            const filledPercentage = (order.fillAmountS + order.splitS) / order.amountS;
+            const rate = order.fillAmountFee / order.feeAmount;
+            const filledPercentageAfterMinerReduction = filledPercentage *
+              (this.context.feePercentageBase - order.waiveFeePercentage) / this.context.feePercentageBase;
+            this.assertNumberEqualsWithPrecision(rate, filledPercentageAfterMinerReduction,
+                                                 "feeAmount rate should match filledPercentage after miner reduction");
+          }
+        }
+      }
+
+      // Ensure fees in tokenB can be paid with the amount bought
+      assert(prevOrder.fillAmountFeeB + prevOrder.taxB <= order.fillAmountS + epsilon,
+             "Can't pay more in tokenB fees than what was bought");
     }
   }
 
+  private assertNumberEqualsWithPrecision(n1: number, n2: number, description: string, precision: number = 8) {
+    const numStr1 = (n1 / 1e18).toFixed(precision);
+    const numStr2 = (n2 / 1e18).toFixed(precision);
+    return assert.equal(Number(numStr1), Number(numStr2), description);
+  }
 }
