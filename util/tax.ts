@@ -63,17 +63,7 @@ export class Tax {
     return Math.floor(amount * taxRate / this.percentageBase);
   }
 
-  private getTokenType(token: string) {
-    if (token === this.lrcTokenAddress) {
-      return TokenType.LRC;
-    } else if (token === this.wethTokenAddress) {
-      return TokenType.ETH;
-    } else {
-      return TokenType.Other;
-    }
-  }
-
-  private getTaxRate(token: string, income: boolean, P2P: boolean) {
+  public getTaxRate(token: string, income: boolean, P2P: boolean) {
     const tokenType = this.getTokenType(token);
     if (P2P) {
       if (income) {
@@ -93,4 +83,15 @@ export class Tax {
       }
     }
   }
+
+  private getTokenType(token: string) {
+    if (token === this.lrcTokenAddress) {
+      return TokenType.LRC;
+    } else if (token === this.wethTokenAddress) {
+      return TokenType.ETH;
+    } else {
+      return TokenType.Other;
+    }
+  }
+
 }

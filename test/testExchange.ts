@@ -197,10 +197,10 @@ contract("Exchange", (accounts: string[]) => {
 
     // setup amount:
     const orderTokenS = await DummyToken.at(order.tokenS);
-    await orderTokenS.addBalance(order.owner, order.amountS * 2);
+    await orderTokenS.addBalance(order.owner, order.amountS);
     if (!limitFeeTokenAmount) {
       const feeToken = await DummyToken.at(order.feeToken);
-      await feeToken.addBalance(order.owner, order.feeAmount * 2);
+      await feeToken.addBalance(order.owner, order.feeAmount);
     }
   };
 

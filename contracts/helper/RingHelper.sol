@@ -61,18 +61,25 @@ library RingHelper {
         internal
         pure
     {
-        for (uint i = 0; i < ring.size; i++) {
+        uint i;
+        int j;
+
+        for (i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             p.fillAmountS = p.order.maxAmountS;
             if (ring.P2P) {
                 // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to the wallet
                 // We have to make sure the order owner can pay that percentage, otherwise we'll have to sell
                 // less tokenS. We have to calculate totalAmountS here so that
-                // fillAmountS := totalAmountS - (totalAmountS * tokenSFeePercentage)
+                // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
+                uint taxRateTokenS = ctx.tax.getTaxRate(p.order.tokenS, false, true);
+                // TODO: actual scale between tax and fees correctly using the variables
+                // (they should probably use the same base to make this easy)
+                uint totalAddedPercentage = p.order.tokenSFeePercentage + taxRateTokenS * 10;
                 uint totalAmountS = p.fillAmountS.mul(
-                    ctx.feePercentageBase) / (ctx.feePercentageBase - p.order.tokenSFeePercentage);
+                    ctx.feePercentageBase) / (ctx.feePercentageBase - totalAddedPercentage);
                 if (totalAmountS > p.order.spendableS) {
-                    uint maxFeeAmountS = p.order.spendableS.mul(p.order.tokenSFeePercentage) / ctx.feePercentageBase;
+                    uint maxFeeAmountS = p.order.spendableS.mul(totalAddedPercentage) / ctx.feePercentageBase;
                     p.fillAmountS = p.order.spendableS - maxFeeAmountS;
                 }
             }
@@ -80,14 +87,14 @@ library RingHelper {
         }
 
         uint smallest = 0;
-        for (int i = int(ring.size) - 1; i >= 0; i--) {
-            smallest = calculateOrderFillAmounts(ring, uint(i), smallest);
+        for (j = int(ring.size) - 1; j >= 0; j--) {
+            smallest = calculateOrderFillAmounts(ring, uint(j), smallest);
         }
-        for (int i = int(ring.size) - 1; i >= int(smallest); i--) {
-            calculateOrderFillAmounts(ring, uint(i), smallest);
+        for (j = int(ring.size) - 1; j >= int(smallest); j--) {
+            calculateOrderFillAmounts(ring, uint(j), smallest);
         }
 
-        for (uint i = 0; i < ring.size; i++) {
+        for (i = 0; i < ring.size; i++) {
             uint nextIndex = (i + 1) % ring.size;
             Data.Participation memory p = ring.participations[i];
             Data.Participation memory nextP = ring.participations[nextIndex];

@@ -79,11 +79,14 @@ export class Ring {
         // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to the wallet
         // We have to make sure the order owner can pay that percentage, otherwise we'll have to sell
         // less tokenS. We have to calculate totalAmountS here so that
-        // fillAmountS := totalAmountS - (totalAmountS * tokenSFeePercentage)
+        // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
+        const taxRateTokenS = this.context.tax.getTaxRate(order.tokenS, false, true);
+        // TODO: correct scaling between tax percentage base and fee percentage base
+        const totalAddedPercentage = order.tokenSFeePercentage + taxRateTokenS * 10;
         const totalAmountS = Math.floor((order.fillAmountS * this.context.feePercentageBase) /
-                                        (this.context.feePercentageBase - order.tokenSFeePercentage));
+                                        (this.context.feePercentageBase - totalAddedPercentage));
         if (totalAmountS > order.spendableS) {
-          const maxFeeAmountS = Math.floor(order.spendableS * order.tokenSFeePercentage) /
+          const maxFeeAmountS = Math.floor(order.spendableS * totalAddedPercentage) /
                                 this.context.feePercentageBase;
           order.fillAmountS = order.spendableS - maxFeeAmountS;
         }
