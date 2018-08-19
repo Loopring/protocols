@@ -1,6 +1,7 @@
 import ABI = require("ethereumjs-abi");
 import { Bitstream } from "./bitstream";
 import { Context } from "./context";
+import { ensure } from "./ensure";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
 import { OrderInfo, TransferItem } from "./types";
@@ -47,7 +48,7 @@ export class Ring {
 
   public checkOrdersValid() {
     for (const order of this.orders) {
-      this.valid = this.valid && order.valid;
+      this.valid = this.valid && ensure(order.valid, "ring contains invalid order");
     }
   }
 
@@ -57,7 +58,7 @@ export class Ring {
       tokens.push(order.tokenS);
     }
     const tokensRegistered = await this.context.tokenRegistry.areAllTokensRegistered(tokens);
-    this.valid = this.valid && tokensRegistered;
+    this.valid = this.valid && ensure(tokensRegistered, "ring uses unregistered tokens");
   }
 
   public checkP2P(mining: Mining) {
@@ -122,11 +123,12 @@ export class Ring {
           this.minerFeesToOrdersPercentage += -nextOrder.waiveFeePercentage;
         }
       } else {
-        this.valid = false;
+        this.valid = ensure(false, "ring cannot be settled");
       }
     }
     // Miner can only distribute 100% of its fees to all orders combined
-    this.valid = this.valid && this.minerFeesToOrdersPercentage <= this.context.feePercentageBase;
+    this.valid = this.valid && ensure(this.minerFeesToOrdersPercentage <= this.context.feePercentageBase,
+                                      "miner distributes more than 100% of its fees to order owners");
   }
 
   public calculateFeesAndTaxes(order: OrderInfo, prevOrder: OrderInfo, P2P: boolean) {
@@ -571,7 +573,7 @@ export class Ring {
         this.assertNumberEqualsWithPrecision(incomeAfterTax, totalFee,
                                              "Total income distributed needs to match paid fees after tax");
         this.assertNumberEqualsWithPrecision(consumerTaxes[token] + totalIncomeTax, totalTax,
-                                              "Total tax distributed needs to match consu;er tax + income tax");
+                                             "Total tax distributed needs to match consumer tax + income tax");
       }
     }
   }

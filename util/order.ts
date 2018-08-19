@@ -2,6 +2,7 @@ import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import ABI = require("ethereumjs-abi");
 import { Context } from "./context";
+import { ensure } from "./ensure";
 import { MultiHashUtil } from "./multihash";
 import { OrderInfo } from "./types";
 
@@ -22,7 +23,7 @@ export class OrderUtil {
         order.owner,
         order.broker,
       );
-      order.valid = order.valid && registered;
+      order.valid = order.valid && ensure(registered, "order broker is not registered");
       order.brokerInterceptor =
         (brokerInterceptor === "0x0000000000000000000000000000000000000000") ? undefined : brokerInterceptor;
     }
@@ -30,15 +31,15 @@ export class OrderUtil {
 
   public async validateInfo(order: OrderInfo) {
     let valid = true;
-    valid = valid && (order.owner ? true : false); // invalid order owner
-    valid = valid && (order.tokenS ? true : false); // invalid order tokenS
-    valid = valid && (order.tokenB ? true : false); // invalid order tokenB
-    valid = valid && (order.amountS !== 0); // invalid order amountS
-    valid = valid && (order.amountB !== 0); // invalid order amountB
+    valid = valid && ensure(order.owner ? true : false, "invalid order owner");
+    valid = valid && ensure(order.tokenS ? true : false, "invalid order tokenS");
+    valid = valid && ensure(order.tokenB ? true : false, "invalid order tokenB");
+    valid = valid && ensure(order.amountS !== 0, "invalid order amountS");
+    valid = valid && ensure(order.amountB !== 0, "invalid order amountB");
 
     const blockTimestamp = this.context.blockTimestamp;
-    valid = valid && (order.validSince <= blockTimestamp); // order is too early to match
-    valid = valid && (order.validUntil ? order.validUntil > blockTimestamp : true);  // order is expired
+    valid = valid && ensure(order.validSince <= blockTimestamp, "order is too early to match");
+    valid = valid && ensure(order.validUntil ? order.validUntil > blockTimestamp : true, "order is expired");
 
     order.valid = order.valid && valid;
   }
@@ -50,13 +51,13 @@ export class OrderUtil {
     } else {
       signatureValid = this.multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
     }
-    order.valid = order.valid && signatureValid;
+    order.valid = order.valid && ensure(signatureValid, "invalid order signature");
   }
 
   public checkDualAuthSignature(order: OrderInfo, miningHash: Buffer) {
     if (order.dualAuthSig) {
       const signatureValid = this.multiHashUtil.verifySignature(order.dualAuthAddr, miningHash, order.dualAuthSig);
-      order.valid = order.valid && signatureValid;
+      order.valid = order.valid && ensure(signatureValid, "invalid order dual auth signature");
     }
   }
 

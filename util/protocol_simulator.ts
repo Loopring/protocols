@@ -2,6 +2,7 @@ import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import { Bitstream } from "./bitstream";
 import { Context } from "./context";
+import { ensure } from "./ensure";
 import { ExchangeDeserializer } from "./exchange_deserializer";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
@@ -144,7 +145,7 @@ export class ProtocolSimulator {
 
     const bits = new BN(ordersValid.toString(16), 16);
     for (const [i, order] of orders.entries()) {
-        order.valid = order.valid && bits.testn(i);
+        order.valid = order.valid && ensure(bits.testn(i), "order is cancelled or cut off");
     }
   }
 }
