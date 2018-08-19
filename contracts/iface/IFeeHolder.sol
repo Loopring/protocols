@@ -19,6 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
+/// @title IFeeHolder - A contract holding fees and taxes .
 contract IFeeHolder {
 
     mapping(address => mapping(address => uint)) public feeBalances;
@@ -27,6 +28,11 @@ contract IFeeHolder {
         external;
 
     function withdrawToken(address token, uint value)
-        external;
+        external
+        returns (bool success);
 
+    event TokenWithdrawn(
+        address owner,
+        address token,
+        uint value);
 }

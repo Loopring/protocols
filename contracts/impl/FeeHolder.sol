@@ -22,11 +22,10 @@ pragma experimental "ABIEncoderV2";
 import "../iface/IFeeHolder.sol";
 import "../iface/ITradeDelegate.sol";
 import "../lib/Claimable.sol";
-import "../lib/NoDefaultFunc.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
+import "../lib/NoDefaultFunc.sol";
 
-/// @title A contract holding fees and taxes .
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract FeeHolder is IFeeHolder, NoDefaultFunc {
     using MathUint for uint;
@@ -38,7 +37,7 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
         delegateAddress = _delegateAddress;
     }
 
-    modifier onlyAuthorizedInDelegate() {
+    modifier onlyAuthorized() {
         ITradeDelegate delegate = ITradeDelegate(delegateAddress);
         bool isAuthorized = delegate.isAddressAuthorized(msg.sender);
         require(isAuthorized, "unauthorized address");
@@ -46,9 +45,10 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
     }
 
     function batchAddFeeBalances(bytes32[] batch)
-        onlyAuthorizedInDelegate
+        onlyAuthorized
         external
     {
+        require(batch.length % 3 == 0, "invalid array length");
         for (uint i = 0; i < batch.length; i += 3) {
             address token = address(batch[i]);
             address owner = address(batch[i + 1]);
@@ -59,11 +59,12 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
 
     function withdrawToken(address token, uint value)
         external
+        returns (bool success)
     {
-        require(token != 0x0);
         require(feeBalances[token][msg.sender] >= value);
         feeBalances[token][msg.sender] = feeBalances[token][msg.sender].sub(value);
-        ERC20(token).transfer(msg.sender, value);
+        success = ERC20(token).transfer(msg.sender, value);
+        emit TokenWithdrawn(msg.sender, token, value);
     }
 
 }
