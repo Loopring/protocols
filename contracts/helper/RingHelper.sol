@@ -21,8 +21,8 @@ pragma experimental "ABIEncoderV2";
 import "../iface/IExchange.sol";
 import "../impl/BrokerInterceptorProxy.sol";
 import "../impl/Data.sol";
-import "../lib/MathUint.sol";
 import "../lib/ERC20.sol";
+import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
 import "./ParticipationHelper.sol";
 import "./TaxHelper.sol";
@@ -33,10 +33,8 @@ library RingHelper {
     using MathUint for uint;
     using ParticipationHelper for Data.Participation;
     using TaxHelper for Data.Tax;
+
     using BrokerInterceptorProxy for address;
-
-    uint private constant DUST = 1000; // if a transfer's amount < 1000, ignore it.
-
     function updateHash(
         Data.Ring ring
         )
@@ -48,7 +46,10 @@ library RingHelper {
             Data.Participation memory p = ring.participations[i];
             bytes32 orderHash = p.order.hash;
             assembly {
-                 mstore(add(add(orderHashes, 0x20), mul(i, 0x20)), orderHash)
+                mstore(
+                    add(add(orderHashes, 0x20), mul(i, 0x20)),
+                    orderHash
+                )
             }
         }
         ring.hash = keccak256(orderHashes);
@@ -68,18 +69,28 @@ library RingHelper {
             Data.Participation memory p = ring.participations[i];
             p.fillAmountS = p.order.maxAmountS;
             if (ring.P2P) {
-                // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to the wallet
-                // We have to make sure the order owner can pay that percentage, otherwise we'll have to sell
-                // less tokenS. We have to calculate totalAmountS here so that
+                // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to
+                // the wallet. We have to make sure the order owner can pay that percentage,
+                // otherwise we'll have to sell less tokenS. We have to calculate totalAmountS here
+                // so that:
                 // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
-                uint taxRateTokenS = ctx.tax.getTaxRate(p.order.tokenS, false, true);
+                uint taxRateTokenS = ctx.tax.getTaxRate(
+                    p.order.tokenS,
+                    false,
+                    true
+                );
+
                 // TODO: actual scale between tax and fees correctly using the variables
                 // (they should probably use the same base to make this easy)
                 uint totalAddedPercentage = p.order.tokenSFeePercentage + taxRateTokenS * 10;
+
                 uint totalAmountS = p.fillAmountS.mul(
                     ctx.feePercentageBase) / (ctx.feePercentageBase - totalAddedPercentage);
+
                 if (totalAmountS > p.order.spendableS) {
-                    uint maxFeeAmountS = p.order.spendableS.mul(totalAddedPercentage) / ctx.feePercentageBase;
+                    uint maxFeeAmountS = p.order.spendableS
+                        .mul(totalAddedPercentage) / ctx.feePercentageBase;
+
                     p.fillAmountS = p.order.spendableS - maxFeeAmountS;
                 }
             }
@@ -88,10 +99,18 @@ library RingHelper {
 
         uint smallest = 0;
         for (j = int(ring.size) - 1; j >= 0; j--) {
-            smallest = calculateOrderFillAmounts(ring, uint(j), smallest);
+            smallest = calculateOrderFillAmounts(
+                ring,
+                uint(j),
+                smallest
+            );
         }
         for (j = int(ring.size) - 1; j >= int(smallest); j--) {
-            calculateOrderFillAmounts(ring, uint(j), smallest);
+            calculateOrderFillAmounts(
+                ring,
+                uint(j),
+                smallest
+            );
         }
 
         for (i = 0; i < ring.size; i++) {
@@ -130,7 +149,8 @@ library RingHelper {
         if (prevP.fillAmountB > p.fillAmountS) {
             smallest_ = i;
             prevP.fillAmountB = p.fillAmountS;
-            prevP.fillAmountS = prevP.fillAmountB.mul(prevP.order.amountS) / prevP.order.amountB;
+            prevP.fillAmountS = prevP.fillAmountB
+                .mul(prevP.order.amountS) / prevP.order.amountB;
         }
     }
 
@@ -181,8 +201,12 @@ library RingHelper {
         }
     }
 
-    event LogTrans(address token, address from, address to, uint amount, uint spendable);
-    function settleRing(Data.Ring ring, Data.Context ctx, Data.Mining mining)
+
+    function settleRing(
+        Data.Ring ring,
+        Data.Context ctx,
+        Data.Mining mining
+        )
         internal
     {
         transferTokens(ring, ctx);
@@ -234,26 +258,62 @@ library RingHelper {
 
             // If the buyer needs to pay fees in tokenB, the seller needs
             // to send the tokenS amount to the fee holder contract
-            uint amountSToBuyer = p.fillAmountS.sub(prevP.feeAmountB).sub(prevP.taxB);
-            uint amountSToFeeHolder = p.splitS.add(p.feeAmountS).add(p.taxS).add(prevP.feeAmountB).add(prevP.taxB);
+            uint amountSToBuyer = p.fillAmountS
+                .sub(prevP.feeAmountB)
+                .sub(prevP.taxB);
+
+            uint amountSToFeeHolder = p.splitS
+                .add(p.feeAmountS)
+                .add(p.taxS)
+                .add(prevP.feeAmountB)
+                .add(prevP.taxB);
+
             uint amountFeeToFeeHolder = p.feeAmount.add(p.taxFee);
+
             if (p.order.tokenS == p.order.feeToken) {
                 amountSToFeeHolder += amountFeeToFeeHolder;
                 amountFeeToFeeHolder = 0;
             }
 
             // Transfers
-            offset = addTokenTransfer(data, offset, p.order.tokenS, p.order.owner, prevP.order.owner, amountSToBuyer);
-            offset = addTokenTransfer(data, offset, p.order.tokenS, p.order.owner, feeHolder, amountSToFeeHolder);
-            offset = addTokenTransfer(data, offset, p.order.feeToken, p.order.owner, feeHolder, amountFeeToFeeHolder);
+            offset = addTokenTransfer(
+                data,
+                offset,
+                p.order.tokenS,
+                p.order.owner,
+                prevP.order.owner,
+                amountSToBuyer
+            );
+            offset = addTokenTransfer(
+                data,
+                offset,
+                p.order.tokenS,
+                p.order.owner,
+                feeHolder,
+                amountSToFeeHolder
+            );
+            offset = addTokenTransfer(
+                data,
+                offset,
+                p.order.feeToken,
+                p.order.owner,
+                feeHolder,
+                amountFeeToFeeHolder
+            );
 
             // onTokenSpent broker callbacks
             onTokenSpent(
-                p.order.brokerInterceptor, p.order.owner, p.order.broker, p.order.tokenS,
+                p.order.brokerInterceptor,
+                p.order.owner,
+                p.order.broker,
+                p.order.tokenS,
                 amountSToBuyer + amountSToFeeHolder
             );
             onTokenSpent(
-                p.order.brokerInterceptor, p.order.owner, p.order.broker, p.order.feeToken,
+                p.order.brokerInterceptor,
+                p.order.owner,
+                p.order.broker,
+                p.order.feeToken,
                 amountFeeToFeeHolder
             );
         }
@@ -332,9 +392,27 @@ library RingHelper {
         for (uint i = 0; i < ring.size; i++) {
             p = ring.participations[i];
             uint feeInTokenS = p.feeAmountS + p.splitS;
-            payFeesAndTaxes(feeCtx, p.order.feeToken, p.feeAmount, p.taxFee, p.order.wallet);
-            payFeesAndTaxes(feeCtx, p.order.tokenS, feeInTokenS, p.taxS, p.order.wallet);
-            payFeesAndTaxes(feeCtx, p.order.tokenB, p.feeAmountB, p.taxB, p.order.wallet);
+            payFeesAndTaxes(
+                feeCtx,
+                p.order.feeToken,
+                p.feeAmount,
+                p.taxFee,
+                p.order.wallet
+            );
+            payFeesAndTaxes(
+                feeCtx,
+                p.order.tokenS,
+                feeInTokenS,
+                p.taxS,
+                p.order.wallet
+            );
+            payFeesAndTaxes(
+                feeCtx,
+                p.order.tokenB,
+                p.feeAmountB,
+                p.taxB,
+                p.order.wallet
+            );
         }
         // Patch in the correct length of the data array
         uint offset = feeCtx.offset;
@@ -358,7 +436,13 @@ library RingHelper {
             return;
         }
 
-        uint incomeTax = feeCtx.ctx.tax.calculateTax(token, true, feeCtx.ring.P2P, amount);
+        uint incomeTax = feeCtx.ctx.tax.calculateTax(
+            token,
+            true,
+            feeCtx.ring.P2P,
+            amount
+        );
+
         uint incomeAfterTax = amount - incomeTax;
 
         uint feeToWallet = incomeAfterTax.mul(feeCtx.walletSplitPercentage) / 100;
@@ -369,36 +453,75 @@ library RingHelper {
 
         uint feeToMiner = minerFee;
         // Fees can be paid out in different tokens so we can't easily accumulate the total fee
-        // that needs to be paid out to order owners. So we pay out each part out here to all orders that need it.
+        // that needs to be paid out to order owners. So we pay out each part out here to all
+        // orders that need it.
         if (feeCtx.ring.minerFeesToOrdersPercentage > 0) {
             // Subtract all fees the miner pays to the orders
             feeToMiner = minerFee.mul(
-                feeCtx.ctx.feePercentageBase - feeCtx.ring.minerFeesToOrdersPercentage) / feeCtx.ctx.feePercentageBase;
+                feeCtx.ctx.feePercentageBase - feeCtx.ring.minerFeesToOrdersPercentage)
+                / feeCtx.ctx.feePercentageBase;
             // Pay out the fees to the orders
-            distributeMinerFeeToOwners(feeCtx, token, minerFee);
+            distributeMinerFeeToOwners(
+                feeCtx,
+                token,
+                minerFee
+            );
         }
-        feeCtx.offset = payFee(feeCtx.data, feeCtx.offset, token, wallet, feeToWallet);
-        feeCtx.offset = payFee(feeCtx.data, feeCtx.offset, token, feeCtx.mining.feeRecipient, feeToMiner);
+        feeCtx.offset = payFee(
+            feeCtx.data,
+            feeCtx.offset,
+            token,
+            wallet,
+            feeToWallet
+        );
+        feeCtx.offset = payFee(
+            feeCtx.data,
+            feeCtx.offset,
+            token,
+            feeCtx.mining.feeRecipient,
+            feeToMiner
+        );
         // Pay the tax with the feeHolder as owner
         feeCtx.offset = payFee(
-            feeCtx.data, feeCtx.offset, token, address(feeCtx.ctx.feeHolder), consumerTax + incomeTax
+            feeCtx.data,
+            feeCtx.offset,
+            token,
+            address(feeCtx.ctx.feeHolder),
+            consumerTax + incomeTax
         );
     }
 
-    function distributeMinerFeeToOwners(Data.FeeContext memory feeCtx, address token, uint minerFee)
+    function distributeMinerFeeToOwners(
+        Data.FeeContext memory feeCtx,
+        address token,
+        uint minerFee
+        )
         internal
         pure
     {
         for (uint i = 0; i < feeCtx.ring.size; i++) {
             Data.Participation memory p = feeCtx.ring.participations[i];
             if (p.order.waiveFeePercentage < 0) {
-                uint feeToOwner = minerFee.mul(uint(-p.order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
-                feeCtx.offset = payFee(feeCtx.data, feeCtx.offset, token, p.order.owner, feeToOwner);
+                uint feeToOwner = minerFee
+                    .mul(uint(-p.order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
+
+                feeCtx.offset = payFee(
+                    feeCtx.data,
+                    feeCtx.offset,
+                    token,
+                    p.order.owner,
+                    feeToOwner);
             }
         }
     }
 
-    function payFee(bytes32[] data, uint offset, address token, address owner, uint amount)
+    function payFee(
+        bytes32[] data,
+        uint offset,
+        address token,
+        address owner,
+        uint amount
+        )
         internal
         pure
         returns (uint)
@@ -416,7 +539,17 @@ library RingHelper {
         }
     }
 
-    function logTrans(bytes32[] batch, address delegateAddress)
+    event LogTrans(
+        address token,
+        address from,
+        address to,
+        uint amount,
+        uint spendable);
+
+    function logTrans(
+        bytes32[] batch,
+        address delegateAddress
+        )
         internal
     {
         for (uint i = 0; i < batch.length; i += 4) {
@@ -438,7 +571,8 @@ library RingHelper {
     function getSpendable(
         address token,
         address owner,
-        address spender)
+        address spender
+        )
         internal
         view
         returns (uint amount)
