@@ -21,29 +21,29 @@ pragma experimental "ABIEncoderV2";
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IBrokerInterceptor.sol";
 import "../iface/IExchange.sol";
+import "../iface/IFeeHolder.sol";
 import "../iface/IMinerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
-import "../iface/IFeeHolder.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/BytesUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/MemoryUtil.sol";
-import "../lib/MultihashUtil.sol";
 import "../lib/NoDefaultFunc.sol";
+import "../lib/MultihashUtil.sol";
 
 import "../spec/EncodeSpec.sol";
-import "../spec/OrderSpecs.sol";
 import "../spec/MiningSpec.sol";
+import "../spec/OrderSpecs.sol";
 import "../spec/RingSpecs.sol";
 
 import "../helper/InputsHelper.sol";
+import "../helper/MiningHelper.sol";
 import "../helper/OrderHelper.sol";
 import "../helper/RingHelper.sol";
-import "../helper/MiningHelper.sol";
 
 import "./Data.sol";
 import "./ExchangeDeserializer.sol";
@@ -54,7 +54,6 @@ import "./ExchangeDeserializer.sol";
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 /// @author Brechtpd - <brecht@loopring.org>
 /// Recognized contributing developers from the community:
-///     https://github.com/Brechtpd
 ///     https://github.com/rainydio
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
@@ -94,6 +93,14 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint[]      uintList;
         bytes[]     bytesList;
     }
+
+    event LogTrans(
+        address token,
+        address from,
+        address to,
+        uint amount,
+        uint spendable
+    ); // for debug
 
     constructor(
         address _lrcTokenAddress,
@@ -170,7 +177,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         // verifyAuthenticationGetInterceptor(owner, tx.origin);
 
-        uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
+        uint t = (cutoff == 0) ? block.timestamp : cutoff;
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
 
@@ -200,7 +207,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         /*     tx.origin */
         /* ); */
 
-        uint t = (cutoff == 0 || cutoff >= block.timestamp) ? block.timestamp : cutoff;
+        uint t = (cutoff == 0) ? block.timestamp : cutoff;
 
         ITradeDelegate(delegateAddress).setCutoffs(owner, t);
 
@@ -211,7 +218,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
     }
 
-    event LogTrans(address token, address from, address to, uint amount, uint spendable); // for debug
     function submitRings(
         bytes data
         )
@@ -300,6 +306,8 @@ contract Exchange is IExchange, NoDefaultFunc {
                     mining.feeRecipient/*,
                     fills*/
                 );
+            } else {
+                // todo(kongliang): We need to log bad rings?
             }
         }
         updateOrdersStats(ctx, orders);
@@ -311,8 +319,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes32[] memory ordersFilledInfo = new bytes32[](orders.length * 2);
         for (uint i = 0; i < orders.length; i++){
             Data.Order memory order = orders[i];
-            ordersFilledInfo[i*2] = order.hash;
-            ordersFilledInfo[i*2 + 1] = bytes32(order.filledAmountS);
+            ordersFilledInfo[i * 2] = order.hash;
+            ordersFilledInfo[i * 2 + 1] = bytes32(order.filledAmountS);
         }
         ctx.delegate.batchUpdateFilled(ordersFilledInfo);
     }
@@ -324,10 +332,10 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes32[] memory ordersInfo = new bytes32[](orders.length * 4);
         for (uint i = 0; i < orders.length; i++) {
             Data.Order memory order = orders[i];
-            ordersInfo[i*4 + 0] = bytes32(order.owner);
-            ordersInfo[i*4 + 1] = order.hash;
-            ordersInfo[i*4 + 2] = bytes32(order.validSince);
-            ordersInfo[i*4 + 3] = bytes32(bytes20(order.tokenS) ^ bytes20(order.tokenB));
+            ordersInfo[i * 4 + 0] = bytes32(order.owner);
+            ordersInfo[i * 4 + 1] = order.hash;
+            ordersInfo[i * 4 + 2] = bytes32(order.validSince);
+            ordersInfo[i * 4 + 3] = bytes32(bytes20(order.tokenS) ^ bytes20(order.tokenB));
         }
 
         uint ordersValid = ctx.delegate.batchCheckCutoffsAndCancelled(ordersInfo);
