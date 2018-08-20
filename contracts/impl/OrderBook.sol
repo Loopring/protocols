@@ -36,7 +36,6 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
         bool allOrNone
     )
     external
-    returns (bytes32)
     {
         Data.Order memory order = Data.Order(
             msg.sender,
@@ -79,8 +78,6 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
 
         orders[order.hash] = orderData;
         emit OrderSubmitted(msg.sender, order.hash);
-
-        return order.hash;
     }
 
 }

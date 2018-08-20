@@ -19,30 +19,22 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 
-/// @title IOrderBook
-/// @author Daniel Wang - <daniel@loopring.org>.
-/// @author Kongliang Zhong - <kongliang@loopring.org>.
-contract IOrderBook {
-    mapping(bytes32 => bool) public orderSubmitted;
-
-    mapping(bytes32 => OrderData) public orders;
-
-    struct OrderData {
-        address[3] addressArray;
-        uint[5] uintArray;
-        bool allOrNone;
-    }
-
-    event OrderSubmitted(address owner, bytes32 orderHash);
-
-    /// order's owner is msg.sender, so no signature needed.
-    /// order's owner can be a contract's address.
-    /// only support LRC as fee for now.
-    /// no fee split to wallet. (wallet is 0x0)
-    function submitOrder(
+/// @title IOrderMaker
+/// @author Kongliang Zhong - <kongliang@loopring.org>
+contract IOrderMaker {
+    function makeOrder(
         address[3] addressArray, // tokenS, tokenB, broker
         uint[5] uintArray, // amountS, amountB, validSince, validUntil, lrcFeeAmount
         bool allOrNone
     )
         external;
+
+    function settleOrder(
+        bytes32 orderHash,
+        address takerAddress,
+        address feeRecipient,
+        uint fillAmountS
+    )
+        external;
+
 }
