@@ -22,13 +22,14 @@ pragma experimental "ABIEncoderV2";
 import "../iface/IFeeHolder.sol";
 import "../iface/ITradeDelegate.sol";
 import "../lib/Claimable.sol";
-import "../lib/ERC20.sol";
+import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract FeeHolder is IFeeHolder, NoDefaultFunc {
     using MathUint for uint;
+    using ERC20SafeTransfer for address;
 
     address public delegateAddress = 0x0;
 
@@ -63,7 +64,7 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
     {
         require(feeBalances[token][msg.sender] >= value);
         feeBalances[token][msg.sender] = feeBalances[token][msg.sender].sub(value);
-        success = ERC20(token).transfer(msg.sender, value);
+        success = token.safeTransfer(msg.sender, value);
         emit TokenWithdrawn(msg.sender, token, value);
     }
 
