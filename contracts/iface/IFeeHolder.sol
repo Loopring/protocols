@@ -34,5 +34,6 @@ contract IFeeHolder {
     event TokenWithdrawn(
         address owner,
         address token,
-        uint value);
+        uint value
+    );
 }

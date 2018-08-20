@@ -80,6 +80,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
             0 == positionMap[addr],
             "address already exists"
         );
+        require(isContract(addr), "not a contract address");
 
         authorizedAddresses.push(addr);
         positionMap[addr] = authorizedAddresses.length;
@@ -256,6 +257,22 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
     {
         owner = 0x0;
         emit OwnershipTransferred(owner, 0x0);
+    }
+
+    function isContract(
+        address addr
+        )
+        internal
+        view
+        returns (bool)
+    {
+        if (addr == 0x0) {
+            return false;
+        } else {
+            uint size;
+            assembly { size := extcodesize(addr) }
+            return size > 0;
+        }
     }
 
 }

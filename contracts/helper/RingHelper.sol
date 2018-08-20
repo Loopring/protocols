@@ -457,9 +457,9 @@ library RingHelper {
         // orders that need it.
         if (feeCtx.ring.minerFeesToOrdersPercentage > 0) {
             // Subtract all fees the miner pays to the orders
-            feeToMiner = minerFee.mul(
-                feeCtx.ctx.feePercentageBase - feeCtx.ring.minerFeesToOrdersPercentage)
-                / feeCtx.ctx.feePercentageBase;
+            feeToMiner = minerFee.mul(feeCtx.ctx.feePercentageBase -
+                feeCtx.ring.minerFeesToOrdersPercentage) /
+                feeCtx.ctx.feePercentageBase;
             // Pay out the fees to the orders
             distributeMinerFeeToOwners(
                 feeCtx,
@@ -536,35 +536,6 @@ library RingHelper {
                 mstore(add(start, 64), amount)
             }
             return offset + 3;
-        }
-    }
-
-    event LogTrans(
-        address token,
-        address from,
-        address to,
-        uint amount,
-        uint spendable);
-
-    function logTrans(
-        bytes32[] batch,
-        address delegateAddress
-        )
-        internal
-    {
-        for (uint i = 0; i < batch.length; i += 4) {
-            uint spendable = getSpendable(
-                address(batch[i]),
-                address(batch[i + 1]),
-                delegateAddress
-            );
-            emit LogTrans(
-                address(batch[i]),
-                address(batch[i + 1]),
-                address(batch[i + 2]),
-                uint(batch[i + 3]),
-                spendable
-            );
         }
     }
 

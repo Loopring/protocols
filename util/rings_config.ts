@@ -93,6 +93,38 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "multiple 2-size rings, share the same order, prices matched exactly.",
+    signAlgorithm: SignAlgorithm.Ethereum,
+    rings: [[0, 1], [0, 2]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[1],
+        amountS: 100e18,
+        amountB: 10e18,
+        signAlgorithm: SignAlgorithm.Ethereum,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+      },
+    ],
+  },
+
+  {
     description: "simple single 3-size ring, prices exactly match.",
     signAlgorithm: SignAlgorithm.Ethereum,
     rings: [[0, 1, 2]],
