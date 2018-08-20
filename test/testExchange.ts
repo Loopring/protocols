@@ -465,14 +465,8 @@ contract("Exchange", (accounts: string[]) => {
         const simulator = new ProtocolSimulator(walletSplitPercentage, context);
         const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin);
         assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
-        let report: any;
-        try {
-          report = await simulator.simulateAndReport(deserializedRingsInfo);
-          // console.log("report.transferItems:", report.transferItems);
-        } catch (err) {
-          console.log("simulator error:", err);
-          report = {ringMinedEvents: [], transferItems: [], feeBalances: {}, filledAmounts: {}};
-        }
+        const report = await simulator.simulateAndReport(deserializedRingsInfo);
+        // console.log("report.transferItems:", report.transferItems);
 
         const eventFromBlock: number = web3.eth.blockNumber;
         const tx = await exchange.submitRings(bs, {from: transactionOrigin});

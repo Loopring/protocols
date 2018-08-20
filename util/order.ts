@@ -140,11 +140,11 @@ export class OrderUtil {
                                                                 orderInfo.brokerInterceptor);
   }
 
-  private async getErc20SpendableAmount(tokenAddr: string,
-                                        owner: string,
-                                        spender: string,
-                                        broker: string,
-                                        brokerInterceptor: string) {
+  public async getErc20SpendableAmount(tokenAddr: string,
+                                       owner: string,
+                                       spender: string,
+                                       broker: string,
+                                       brokerInterceptor: string) {
     const token = this.context.ERC20Contract.at(tokenAddr);
     const balance = await token.balanceOf(owner);
     const allowance = await token.allowance(owner, spender);

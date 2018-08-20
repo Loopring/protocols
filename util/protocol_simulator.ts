@@ -108,6 +108,34 @@ export class ProtocolSimulator {
       }
     }
 
+    // Simulate the token transfers of all rings
+    const balances: { [id: string]: any; } = {};
+    for (const transfer of transferItems) {
+      if (!balances[transfer.token]) {
+        balances[transfer.token] = {};
+      }
+      if (!balances[transfer.token][transfer.from]) {
+        balances[transfer.token][transfer.from] = 0;
+      }
+      if (!balances[transfer.token][transfer.to]) {
+        balances[transfer.token][transfer.to] = 0;
+      }
+      balances[transfer.token][transfer.from] -= transfer.amount;
+      balances[transfer.token][transfer.to] += transfer.amount;
+    }
+    // Check if we haven't spent more funds than the owner owns
+    for (const token of Object.keys(balances)) {
+      for (const owner of Object.keys(balances[token])) {
+        const spendable = await this.orderUtil.getErc20SpendableAmount(token,
+                                                                       owner,
+                                                                       this.context.tradeDelegate.address,
+                                                                       undefined,
+                                                                       undefined);
+        const finalBalance = spendable + balances[token][owner];
+        assert(finalBalance >= 0, "can't sell more tokens than the owner owns");
+      }
+    }
+
     const filledAmounts: { [hash: string]: number; } = {};
     for (const order of orders) {
       filledAmounts[order.hash.toString("hex")] = order.filledAmountS ? order.filledAmountS : 0;
