@@ -23,8 +23,8 @@ pragma experimental "ABIEncoderV2";
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract IOrderMaker {
     function makeOrder(
-        address[3] addressArray, // tokenS, tokenB, broker
-        uint[5] uintArray, // amountS, amountB, validSince, validUntil, lrcFeeAmount
+        address[] addressArray, // tokenS, tokenB, broker
+        uint[] uintArray, // amountS, amountB, validSince, validUntil, lrcFeeAmount
         bool allOrNone
     )
         external;

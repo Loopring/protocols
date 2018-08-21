@@ -25,12 +25,13 @@ pragma experimental "ABIEncoderV2";
 contract IOrderBook {
     mapping(bytes32 => bool) public orderSubmitted;
 
-    mapping(bytes32 => OrderData) public orders;
+    mapping(bytes32 => bytes32[]) public orders;
 
     struct OrderData {
-        address[3] addressArray;
-        uint[5] uintArray;
-        bool allOrNone;
+        /* address[] addressArray; // tokenS, tokenB, broker, */
+        /* uint[] uintArray; // amountS, amountB, validSince, validUntil, lrcFeeAmount */
+        /* bool allOrNone; */
+        bytes32[] dataArray;
     }
 
     event OrderSubmitted(address owner, bytes32 orderHash);
@@ -40,9 +41,7 @@ contract IOrderBook {
     /// only support LRC as fee for now.
     /// no fee split to wallet. (wallet is 0x0)
     function submitOrder(
-        address[3] addressArray, // tokenS, tokenB, broker
-        uint[5] uintArray, // amountS, amountB, validSince, validUntil, lrcFeeAmount
-        bool allOrNone
+        bytes32[] dataArray
     )
         external;
 }

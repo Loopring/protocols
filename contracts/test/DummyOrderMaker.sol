@@ -20,17 +20,18 @@ pragma experimental "ABIEncoderV2";
 
 import "../iface/IOrderMaker.sol";
 import "../iface/IOrderBook.sol";
+import "../impl/OrderBook.sol";
 import "../lib/Claimable.sol";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract DummyOrderMaker is IOrderMaker, Claimable {
 
-    address public loopringOrderBookAddress = 0x0;
+    address public _loopringOrderBookAddress = 0x0;
     address public tokenSAddress = 0x0;
     address public tokenBAddress = 0x0;
 
     function setOrderBookAddress(address orderBookAddress) onlyOwner external {
-        loopringOrderBookAddress = orderBookAddress;
+        _loopringOrderBookAddress = orderBookAddress;
     }
 
     function setTokenSAddress(address _tokenSAddress) onlyOwner external {
@@ -41,19 +42,11 @@ contract DummyOrderMaker is IOrderMaker, Claimable {
         tokenBAddress = _tokenBAddress;
     }
 
-    function makeOrder(
-        address[3] addressArray, // tokenS, tokenB, broker
-        uint[5] uintArray, // amountS, amountB, validSince, validUntil, lrcFeeAmount
-        bool allOrNone
-    )
+    function makeOrder(bytes32[] dataArray)
         onlyOwner
         external
     {
-        IOrderBook(loopringOrderBookAddress).submitOrder(
-            addressArray,
-            uintArray,
-            allOrNone
-        );
+        OrderBook(_loopringOrderBookAddress).submitOrder(dataArray);
     }
 
     function settleOrder(
