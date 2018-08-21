@@ -132,7 +132,8 @@ export class ProtocolSimulator {
                                                                        undefined,
                                                                        undefined);
         const finalBalance = spendable + balances[token][owner];
-        assert(finalBalance >= 0, "can't sell more tokens than the owner owns");
+        const epsilon = 1000;
+        assert(finalBalance >= -epsilon, "can't sell more tokens than the owner owns");
       }
     }
 

@@ -236,7 +236,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             TAX_P2P_INCOME_LRC,
             TAX_P2P_INCOME_ETH,
             TAX_P2P_INCOME_OTHER,
-            TAX_PERCENTAGE_BASE,
+            FEE_AND_TAX_PERCENTAGE_BASE,
             lrcTokenAddress,
             wethTokenAddress
         );
@@ -251,7 +251,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             IFeeHolder(feeHolderAddress),
             ringIndex,
             tax,
-            FEE_PERCENTAGE_BASE
+            FEE_AND_TAX_PERCENTAGE_BASE
         );
 
         // Check if the highest bit of ringIndex is '1'

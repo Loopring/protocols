@@ -90,9 +90,7 @@ library RingHelper {
                     true
                 );
 
-                // TODO: actual scale between tax and fees correctly using the variables
-                // (they should probably use the same base to make this easy)
-                uint totalAddedPercentage = p.order.tokenSFeePercentage + taxRateTokenS * 10;
+                uint totalAddedPercentage = p.order.tokenSFeePercentage + taxRateTokenS;
 
                 uint totalAmountS = p.fillAmountS.mul(
                     ctx.feePercentageBase) / (ctx.feePercentageBase - totalAddedPercentage);

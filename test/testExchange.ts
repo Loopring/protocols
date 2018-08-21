@@ -413,7 +413,7 @@ contract("Exchange", (accounts: string[]) => {
       allTokens.push(token);
     }
 
-    feePercentageBase = await exchange.FEE_PERCENTAGE_BASE();
+    feePercentageBase = await exchange.FEE_AND_TAX_PERCENTAGE_BASE();
     tax = new Tax(await exchange.TAX_MATCHING_CONSUMER_LRC(),
                   await exchange.TAX_MATCHING_CONSUMER_ETH(),
                   await exchange.TAX_MATCHING_CONSUMER_OTHER(),
@@ -426,7 +426,7 @@ contract("Exchange", (accounts: string[]) => {
                   await exchange.TAX_P2P_INCOME_LRC(),
                   await exchange.TAX_P2P_INCOME_ETH(),
                   await exchange.TAX_P2P_INCOME_OTHER(),
-                  await exchange.TAX_PERCENTAGE_BASE(),
+                  await exchange.FEE_AND_TAX_PERCENTAGE_BASE(),
                   lrcAddress,
                   wethAddress);
 

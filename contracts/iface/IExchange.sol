@@ -23,23 +23,21 @@ pragma experimental "ABIEncoderV2";
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract IExchange {
-    uint16  public constant FEE_PERCENTAGE_BASE = 1000;
-    uint8   public constant OPTION_MASK_ALL_OR_NONE = 0x01;
+    uint16  public constant FEE_AND_TAX_PERCENTAGE_BASE = 1000;
 
     // Tax rates
-    uint8 public constant TAX_PERCENTAGE_BASE          =  100;
-    uint8 public constant TAX_MATCHING_CONSUMER_LRC    =    1;
-    uint8 public constant TAX_MATCHING_CONSUMER_ETH    =   50;
-    uint8 public constant TAX_MATCHING_CONSUMER_OTHER  =  100;
-    uint8 public constant TAX_MATCHING_INCOME_LRC      =    1;
-    uint8 public constant TAX_MATCHING_INCOME_ETH      =   10;
-    uint8 public constant TAX_MATCHING_INCOME_OTHER    =   20;
-    uint8 public constant TAX_P2P_CONSUMER_LRC         =    1;
-    uint8 public constant TAX_P2P_CONSUMER_ETH         =    2;
-    uint8 public constant TAX_P2P_CONSUMER_OTHER       =    2;
-    uint8 public constant TAX_P2P_INCOME_LRC           =    0;
-    uint8 public constant TAX_P2P_INCOME_ETH           =    0;
-    uint8 public constant TAX_P2P_INCOME_OTHER         =    0;
+    uint16 public constant TAX_MATCHING_CONSUMER_LRC    =    10;
+    uint16 public constant TAX_MATCHING_CONSUMER_ETH    =   500;
+    uint16 public constant TAX_MATCHING_CONSUMER_OTHER  =  1000;
+    uint16 public constant TAX_MATCHING_INCOME_LRC      =    10;
+    uint16 public constant TAX_MATCHING_INCOME_ETH      =   100;
+    uint16 public constant TAX_MATCHING_INCOME_OTHER    =   200;
+    uint16 public constant TAX_P2P_CONSUMER_LRC         =    10;
+    uint16 public constant TAX_P2P_CONSUMER_ETH         =    20;
+    uint16 public constant TAX_P2P_CONSUMER_OTHER       =    20;
+    uint16 public constant TAX_P2P_INCOME_LRC           =     0;
+    uint16 public constant TAX_P2P_INCOME_ETH           =     0;
+    uint16 public constant TAX_P2P_INCOME_OTHER         =     0;
 
     struct Fill {
         bytes32     orderHash;

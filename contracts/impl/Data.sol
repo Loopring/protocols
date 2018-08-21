@@ -41,19 +41,19 @@ library Data {
 
     // Update TaxHelper.getTaxRate() if you change the order of these parameters
     struct Tax {
-        uint8 matchingConsumerLRC;
-        uint8 matchingConsumerETH;
-        uint8 matchingConsumerOther;
-        uint8 matchingIncomeLRC;
-        uint8 matchingIncomeETH;
-        uint8 matchingIncomeOther;
-        uint8 p2pConsumerLRC;
-        uint8 p2pConsumerETH;
-        uint8 p2pConsumerOther;
-        uint8 p2pIncomeLRC;
-        uint8 p2pIncomeETH;
-        uint8 p2pIncomeOther;
-        uint8 percentageBase;
+        uint16 matchingConsumerLRC;
+        uint16 matchingConsumerETH;
+        uint16 matchingConsumerOther;
+        uint16 matchingIncomeLRC;
+        uint16 matchingIncomeETH;
+        uint16 matchingIncomeOther;
+        uint16 p2pConsumerLRC;
+        uint16 p2pConsumerETH;
+        uint16 p2pConsumerOther;
+        uint16 p2pIncomeLRC;
+        uint16 p2pIncomeETH;
+        uint16 p2pIncomeOther;
+        uint16 percentageBase;
         address lrcTokenAddress;
         address wethTokenAddress;
     }

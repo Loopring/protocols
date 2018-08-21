@@ -85,8 +85,7 @@ export class Ring {
         // less tokenS. We have to calculate totalAmountS here so that
         // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
         const taxRateTokenS = this.context.tax.getTaxRate(order.tokenS, false, true);
-        // TODO: correct scaling between tax percentage base and fee percentage base
-        const totalAddedPercentage = order.tokenSFeePercentage + taxRateTokenS * 10;
+        const totalAddedPercentage = order.tokenSFeePercentage + taxRateTokenS;
         const totalAmountS = Math.floor((order.fillAmountS * this.context.feePercentageBase) /
                                         (this.context.feePercentageBase - totalAddedPercentage));
         if (totalAmountS > order.spendableS) {
@@ -588,7 +587,8 @@ export class Ring {
       const feeAddress = this.context.feeHolder.address;
       const expectedBalance = expectedFeeHolderBalances[token] ? expectedFeeHolderBalances[token] : 0;
       const balance = (balances[token] && balances[token][feeAddress]) ? balances[token][feeAddress] : 0;
-      assert.equal(balance, expectedBalance, "FeeHolder balance after transfers should match expected value");
+      this.assertNumberEqualsWithPrecision(balance, expectedBalance,
+                                           "FeeHolder balance after transfers should match expected value");
     }
 
     // Ensure fee payments match perfectly with total amount fees paid by all orders
