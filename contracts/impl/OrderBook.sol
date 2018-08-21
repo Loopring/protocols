@@ -30,31 +30,32 @@ import "../helper/OrderHelper.sol";
 contract OrderBook is IOrderBook, NoDefaultFunc {
     using OrderHelper     for Data.Order;
 
-    function submitOrder(
-        address[3] addressArray, // tokenS, tokenB, broker
-        uint[5] uintArray, // amountS, amountB, validSince, validUntil, lrcFeeAmount
-        bool allOrNone
-    )
-    external
-    returns (bytes32)
+    function submitOrder(bytes32[] dataArray)
+        external
     {
+        require(dataArray.length >= 9);
+        bool allOrNone = false;
+        if (uint(dataArray[7]) > 0) {
+            allOrNone = true;
+        }
+
         Data.Order memory order = Data.Order(
             msg.sender,
-            addressArray[0],
-            addressArray[1],
-            uintArray[0],
-            uintArray[1],
-            uintArray[2],
+            address(dataArray[0]),
+            address(dataArray[1]),
+            uint(dataArray[3]),
+            uint(dataArray[4]),
+            uint(dataArray[5]),
             0x0,
-            addressArray[2],
+            address(dataArray[2]),
             0x0,
             0x0,
-            uintArray[3],
+            uint(dataArray[6]),
             new bytes(0),
             new bytes(0),
             allOrNone,
             0x0,
-            uintArray[4],
+            uint(dataArray[7]),
             0,
             0,
             0,
@@ -71,16 +72,8 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
         order.updateHash();
         require(!orderSubmitted[order.hash]);
         orderSubmitted[order.hash] = true;
-        OrderData memory orderData = OrderData(
-            addressArray,
-            uintArray,
-            allOrNone
-        );
-
-        orders[order.hash] = orderData;
+        orders[order.hash] = dataArray;
         emit OrderSubmitted(msg.sender, order.hash);
-
-        return order.hash;
     }
 
 }
