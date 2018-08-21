@@ -21,7 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "../impl/Data.sol";
 
 
-/// @title An Implementation of IOrderbook.
+/// @title InputsHelper
 /// @author Daniel Wang - <daniel@loopring.org>.
 library InputsHelper {
 

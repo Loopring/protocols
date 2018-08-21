@@ -22,7 +22,7 @@ import "../impl/Data.sol";
 import "../lib/MultihashUtil.sol";
 
 
-/// @title An Implementation of IOrderbook.
+/// @title MiningHelper
 /// @author Daniel Wang - <daniel@loopring.org>.
 library MiningHelper {
 

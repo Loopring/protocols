@@ -28,7 +28,7 @@ import "./ParticipationHelper.sol";
 import "./TaxHelper.sol";
 
 
-/// @title An Implementation of IOrderbook.
+/// @title RingHelper
 library RingHelper {
     using MathUint for uint;
     using ParticipationHelper for Data.Participation;
@@ -41,18 +41,28 @@ library RingHelper {
         internal
         pure
     {
-        bytes memory orderHashes = new bytes(32 * ring.size);
+        uint hashSizePerOrder = 32 + 2;
+        bytes memory data = new bytes(hashSizePerOrder * ring.size);
         for (uint i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             bytes32 orderHash = p.order.hash;
+            int16 waiveFeePercentage = p.order.waiveFeePercentage;
             assembly {
+                let dst := add(
+                    add(data, 32),
+                    mul(i, hashSizePerOrder)
+                )
                 mstore(
-                    add(add(orderHashes, 0x20), mul(i, 0x20)),
+                    add(dst, 2),
+                    and(waiveFeePercentage, 0xffff)
+                )
+                mstore(
+                    dst,
                     orderHash
                 )
             }
         }
-        ring.hash = keccak256(orderHashes);
+        ring.hash = keccak256(data);
     }
 
     function calculateFillAmountAndFee(

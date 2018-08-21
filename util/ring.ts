@@ -42,6 +42,7 @@ export class Ring {
     const orderHashes = new Bitstream();
     for (const order of this.orders) {
       orderHashes.addHex(order.hash.toString("hex"));
+      orderHashes.addNumber(order.waiveFeePercentage ? order.waiveFeePercentage : 0, 2);
     }
     this.hash = ABI.soliditySHA3(["bytes"], [Buffer.from(orderHashes.getData().slice(2), "hex")]);
   }

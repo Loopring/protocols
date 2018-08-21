@@ -34,6 +34,7 @@ export class RingsGenerator {
       const orderHashes = new Bitstream();
       for (const order of ring) {
         orderHashes.addHex(rings.orders[order].hash.toString("hex"));
+        orderHashes.addNumber(rings.orders[order].waiveFeePercentage ? rings.orders[order].waiveFeePercentage : 0, 2);
       }
       const ringHash = ABI.soliditySHA3(["bytes"], [Buffer.from(orderHashes.getData().slice(2), "hex")]);
       ringHashes.push("0x" + ringHash.toString("hex"));

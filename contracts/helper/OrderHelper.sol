@@ -25,7 +25,7 @@ import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
 
 
-/// @title An Implementation of IOrderbook.
+/// @title OrderHelper
 /// @author Daniel Wang - <daniel@loopring.org>.
 library OrderHelper {
     using MathUint      for uint;
