@@ -413,20 +413,20 @@ contract("Exchange", (accounts: string[]) => {
       allTokens.push(token);
     }
 
-    feePercentageBase = await exchange.FEE_AND_TAX_PERCENTAGE_BASE();
-    tax = new Tax(await exchange.TAX_MATCHING_CONSUMER_LRC(),
-                  await exchange.TAX_MATCHING_CONSUMER_ETH(),
-                  await exchange.TAX_MATCHING_CONSUMER_OTHER(),
-                  await exchange.TAX_MATCHING_INCOME_LRC(),
-                  await exchange.TAX_MATCHING_INCOME_ETH(),
-                  await exchange.TAX_MATCHING_INCOME_OTHER(),
-                  await exchange.TAX_P2P_CONSUMER_LRC(),
-                  await exchange.TAX_P2P_CONSUMER_ETH(),
-                  await exchange.TAX_P2P_CONSUMER_OTHER(),
-                  await exchange.TAX_P2P_INCOME_LRC(),
-                  await exchange.TAX_P2P_INCOME_ETH(),
-                  await exchange.TAX_P2P_INCOME_OTHER(),
-                  await exchange.FEE_AND_TAX_PERCENTAGE_BASE(),
+    feePercentageBase = (await exchange.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
+    tax = new Tax((await exchange.TAX_MATCHING_CONSUMER_LRC()).toNumber(),
+                  (await exchange.TAX_MATCHING_CONSUMER_ETH()).toNumber(),
+                  (await exchange.TAX_MATCHING_CONSUMER_OTHER()).toNumber(),
+                  (await exchange.TAX_MATCHING_INCOME_LRC()).toNumber(),
+                  (await exchange.TAX_MATCHING_INCOME_ETH()).toNumber(),
+                  (await exchange.TAX_MATCHING_INCOME_OTHER()).toNumber(),
+                  (await exchange.TAX_P2P_CONSUMER_LRC()).toNumber(),
+                  (await exchange.TAX_P2P_CONSUMER_ETH()).toNumber(),
+                  (await exchange.TAX_P2P_CONSUMER_OTHER()).toNumber(),
+                  (await exchange.TAX_P2P_INCOME_LRC()).toNumber(),
+                  (await exchange.TAX_P2P_INCOME_ETH()).toNumber(),
+                  (await exchange.TAX_P2P_INCOME_OTHER()).toNumber(),
+                  (await exchange.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber(),
                   lrcAddress,
                   wethAddress);
 
