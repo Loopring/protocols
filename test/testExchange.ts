@@ -148,7 +148,8 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const setupOrder = async (order: OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
-    const ownerIndex = index === 0 ? index : index % orderOwners.length;
+    const ownerIndex = order.ownerIndex ? order.ownerIndex : (index === 0 ? index : index % orderOwners.length);
+    assert(ownerIndex >= 0 && ownerIndex < orderOwners.length, "Invalid owner index");
     const owner = orderOwners[ownerIndex];
 
     order.owner = owner;
@@ -196,11 +197,17 @@ contract("Exchange", (accounts: string[]) => {
     }*/
 
     // setup amount:
-    const orderTokenS = await DummyToken.at(order.tokenS);
-    await orderTokenS.setBalance(order.owner, order.balanceS ? order.balanceS : order.amountS);
+    const tokenS = await DummyToken.at(order.tokenS);
+    await tokenS.setBalance(order.owner, order.balanceS ? order.balanceS : order.amountS);
     if (!limitFeeTokenAmount) {
-      const feeToken = await DummyToken.at(order.feeToken ? order.feeToken : lrcAddress);
-      await feeToken.setBalance(order.owner, order.balanceFee ? order.balanceFee : order.feeAmount);
+      const feeToken = order.feeToken ? order.feeToken : lrcAddress;
+      const balanceFee = order.balanceFee ? order.balanceFee : order.feeAmount;
+      if (feeToken === order.tokenS) {
+        tokenS.addBalance(order.owner, balanceFee);
+      } else {
+        const tokenFee = await DummyToken.at(feeToken);
+        await tokenFee.setBalance(order.owner, balanceFee);
+      }
     }
   };
 
@@ -211,7 +218,7 @@ contract("Exchange", (accounts: string[]) => {
     const orderPropertiesToSkip = [
       "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
-      "balanceS", "balanceFee",
+      "balanceS", "balanceFee", "ownerIndex",
     ];
     // Make sure to get the keys from both objects to make sure we get all keys defined in both
     for (const key of [...Object.keys(ringsInfoA), ...Object.keys(ringsInfoB)]) {

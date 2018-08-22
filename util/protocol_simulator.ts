@@ -86,7 +86,6 @@ export class ProtocolSimulator {
 
     for (const order of orders) {
       this.orderUtil.checkDualAuthSignature(order, mining.hash);
-      // console.log("order.valid:", order.valid);
     }
 
     for (const order of orders) {
@@ -100,7 +99,6 @@ export class ProtocolSimulator {
       ring.checkOrdersValid();
       await ring.checkTokensRegistered();
       ring.checkP2P(mining);
-      // console.log("~~~~~~~~~~~ring.valid:", ring.valid);
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);

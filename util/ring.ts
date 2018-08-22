@@ -73,6 +73,11 @@ export class Ring {
   }
 
   public async calculateFillAmountAndFee() {
+    // Invalid order data could cause a divide by zero in the calculations
+    if (!this.valid) {
+      return;
+    }
+
     for (const order of this.orders) {
       order.fillAmountS = order.maxAmountS;
       if (this.P2P) {

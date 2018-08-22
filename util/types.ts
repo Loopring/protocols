@@ -57,6 +57,7 @@ export interface OrderInfo {
   dualAuthSignAlgorithm?: SignAlgorithm;
 
   index?: number;
+  ownerIndex?: number;
   balanceS?: number;
   balanceFee?: number;
 

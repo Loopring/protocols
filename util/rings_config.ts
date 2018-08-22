@@ -94,22 +94,21 @@ export const ringsInfoList: RingsInfo[] = [
 
   {
     description: "multiple 2-size ring, same owner in different orders",
-    signAlgorithm: SignAlgorithm.Ethereum,
     rings: [[0, 1], [2, 3]],
     orders: [
       {
         index: 0,
-        tokenS: tokenSymbols[0],
+        ownerIndex: 0,
+        tokenS: tokenSymbols[2],
         tokenB: tokenSymbols[1],
         amountS: 3e18,
         amountB: 1e18,
-        feeAmount: 1e18,
-        balanceFee: 1.1e18,
       },
       {
         index: 1,
+        ownerIndex: 1,
         tokenS: tokenSymbols[1],
-        tokenB: tokenSymbols[0],
+        tokenB: tokenSymbols[2],
         amountS: 1e18,
         amountB: 3e18,
         feeAmount: 1e18,
@@ -117,6 +116,7 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 2,
+        ownerIndex: 1,
         tokenS: tokenSymbols[2],
         tokenB: tokenSymbols[3],
         amountS: 100e18,
@@ -126,12 +126,11 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 3,
+        ownerIndex: 2,
         tokenS: tokenSymbols[3],
         tokenB: tokenSymbols[2],
-        amountS: 5e18,
-        amountB: 50e18,
-        feeAmount: 1e18,
-        balanceFee: 1.1e18,
+        amountS: 10e18,
+        amountB: 100e18,
       },
     ],
   },
