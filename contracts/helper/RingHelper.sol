@@ -72,6 +72,11 @@ library RingHelper {
         internal
         pure
     {
+        // Invalid order data could cause a divide by zero in the calculations
+        if (!ring.valid) {
+            return;
+        }
+
         uint i;
         int j;
 
@@ -91,6 +96,10 @@ library RingHelper {
                 );
 
                 uint totalAddedPercentage = p.order.tokenSFeePercentage + taxRateTokenS;
+                if (totalAddedPercentage >= ctx.feePercentageBase) {
+                    ring.valid = false;
+                    return;
+                }
 
                 uint totalAmountS = p.fillAmountS.mul(
                     ctx.feePercentageBase) / (ctx.feePercentageBase - totalAddedPercentage);

@@ -30,12 +30,23 @@ export class OrderUtil {
   }
 
   public async validateInfo(order: OrderInfo) {
+    // Fill in defaults here to make things easier
+    order.feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
+    order.tokenSFeePercentage = order.tokenSFeePercentage ? order.tokenSFeePercentage : 0;
+    order.tokenBFeePercentage = order.tokenBFeePercentage ? order.tokenBFeePercentage : 0;
+    order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 0;
+
     let valid = true;
     valid = valid && ensure(order.owner ? true : false, "invalid order owner");
     valid = valid && ensure(order.tokenS ? true : false, "invalid order tokenS");
     valid = valid && ensure(order.tokenB ? true : false, "invalid order tokenB");
     valid = valid && ensure(order.amountS !== 0, "invalid order amountS");
     valid = valid && ensure(order.amountB !== 0, "invalid order amountB");
+    valid = valid && ensure(order.feePercentage < this.context.feePercentageBase, "invalid fee percentage");
+    valid = valid && ensure(order.waiveFeePercentage <= this.context.feePercentageBase, "invalid waive percentage");
+    valid = valid && ensure(order.waiveFeePercentage >= -this.context.feePercentageBase, "invalid waive percentage");
+    valid = valid && ensure(order.tokenSFeePercentage < this.context.feePercentageBase, "invalid tokenS percentage");
+    valid = valid && ensure(order.tokenBFeePercentage < this.context.feePercentageBase, "invalid tokenB percentage");
 
     const blockTimestamp = this.context.blockTimestamp;
     valid = valid && ensure(order.validSince <= blockTimestamp, "order is too early to match");

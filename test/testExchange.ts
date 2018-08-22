@@ -158,9 +158,7 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.tokenB.startsWith("0x")) {
       order.tokenB = await symbolRegistry.getAddressBySymbol(order.tokenB);
     }
-    if (!order.feeToken) {
-      order.feeToken = lrcAddress;
-    } else if (!order.feeToken.startsWith("0x")) {
+    if (order.feeToken && !order.feeToken.startsWith("0x")) {
       order.feeToken = await symbolRegistry.getAddressBySymbol(order.feeToken);
     }
     if (!order.feeAmount) {
@@ -201,7 +199,7 @@ contract("Exchange", (accounts: string[]) => {
     const orderTokenS = await DummyToken.at(order.tokenS);
     await orderTokenS.setBalance(order.owner, order.balanceS ? order.balanceS : order.amountS);
     if (!limitFeeTokenAmount) {
-      const feeToken = await DummyToken.at(order.feeToken);
+      const feeToken = await DummyToken.at(order.feeToken ? order.feeToken : lrcAddress);
       await feeToken.setBalance(order.owner, order.balanceFee ? order.balanceFee : order.feeAmount);
     }
   };

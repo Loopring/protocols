@@ -74,10 +74,6 @@ export class Ring {
 
   public async calculateFillAmountAndFee() {
     for (const order of this.orders) {
-      order.tokenSFeePercentage = order.tokenSFeePercentage ? order.tokenSFeePercentage : 0;
-      order.tokenBFeePercentage = order.tokenBFeePercentage ? order.tokenBFeePercentage : 0;
-      order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 0;
-
       order.fillAmountS = order.maxAmountS;
       if (this.P2P) {
         // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to the wallet
@@ -86,6 +82,11 @@ export class Ring {
         // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
         const taxRateTokenS = this.context.tax.getTaxRate(order.tokenS, false, true);
         const totalAddedPercentage = order.tokenSFeePercentage + taxRateTokenS;
+        if (totalAddedPercentage >= this.context.feePercentageBase) {
+          console.log("totalAddedPercentage >= feePercentageBase");
+          this.valid = false;
+          return;
+        }
         const totalAmountS = Math.floor((order.fillAmountS * this.context.feePercentageBase) /
                                         (this.context.feePercentageBase - totalAddedPercentage));
         if (totalAmountS > order.spendableS) {

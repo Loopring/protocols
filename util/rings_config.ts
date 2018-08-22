@@ -254,4 +254,26 @@ export const ringsInfoList: RingsInfo[] = [
       },
     ],
   },
+
+  {
+    description: "ring with invalid order",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 0,
+        amountB: 3e18,
+        feeAmount: 0,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 0,
+      },
+    ],
+  },
 ];
