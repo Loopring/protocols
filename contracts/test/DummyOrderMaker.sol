@@ -20,7 +20,6 @@ pragma experimental "ABIEncoderV2";
 
 import "../iface/IOrderMaker.sol";
 import "../iface/IOrderBook.sol";
-import "../impl/OrderBook.sol";
 import "../lib/Claimable.sol";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
@@ -46,7 +45,7 @@ contract DummyOrderMaker is IOrderMaker, Claimable {
         onlyOwner
         external
     {
-        OrderBook(_loopringOrderBookAddress).submitOrder(dataArray);
+        IOrderBook(_loopringOrderBookAddress).submitOrder(dataArray);
     }
 
     function settleOrder(

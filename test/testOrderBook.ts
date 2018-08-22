@@ -1,8 +1,7 @@
-import BN = require("bn.js");
+import { BN } from "bn.js";
 import abi = require("ethereumjs-abi");
 import util = require("util");
 import { Artifacts } from "../util/artifacts";
-import { expectThrow } from "../util/expectThrow";
 
 const {
   OrderBook,
@@ -45,6 +44,26 @@ contract("OrderBook", (accounts: string[]) => {
     });
   };
 
+  // const padString = (x: string, targetLength: number) => {
+  //   if (x.length > targetLength) {
+  //     throw Error("0x" + x + " is too big to fit in the requested length (" + targetLength + ")");
+  //   }
+  //   while (x.length < targetLength) {
+  //     x = "0" + x;
+  //   }
+  //   return x;
+  // };
+
+  const numberToBytes32Str = (n: number) => {
+    const encoded = abi.rawEncode(["uint256"], [new BN(n.toString(10), 10)]);
+    return "0x" + encoded.toString("hex");
+  };
+
+  const addressToBytes32Str = (addr: string) => {
+    const encoded = abi.rawEncode(["address"], [addr]);
+    return "0x" + encoded.toString("hex");
+  };
+
   before(async () => {
     symbolRegistry = await SymbolRegistry.deployed();
     orderBook = await OrderBook.deployed();
@@ -60,19 +79,28 @@ contract("OrderBook", (accounts: string[]) => {
       const validUntil = Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30;
       const uintArray = [100e18, 200e18, 0, validUntil, 1e18];
       const allOrNone = false;
+      const bytes32Array: string[] = [];
+      addressArray.forEach((addr) => bytes32Array.push(addressToBytes32Str(addr)));
+      uintArray.forEach((value) => bytes32Array.push(numberToBytes32Str(value)));
+      if (allOrNone) {
+        bytes32Array.push(numberToBytes32Str(1));
+      } else {
+        bytes32Array.push(numberToBytes32Str(0));
+      }
 
-      const tx = await orderBook.submitOrder(addressArray, uintArray, allOrNone);
+      const tx = await orderBook.submitOrder(bytes32Array);
 
       const events: any = await getEventsFromContract(orderBook, "OrderSubmitted", 0);
-      // console.log("events:", events);
       const orderHash = events[0].args.orderHash;
       // // await watchAndPrintEvent(orderBook, "OrderSubmitted");
 
-      const orderData = await orderBook.orders(orderHash);
+      // console.log("orderHash:", orderHash);
+      // const orderData = await orderBook.orders.call(orderHash);
       // console.log("orderData", orderData);
 
       const submitted = await orderBook.orderSubmitted(orderHash);
       assert.equal(submitted, true, "order should be submitted");
     });
   });
+
 });
