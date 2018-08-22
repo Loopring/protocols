@@ -37,14 +37,14 @@ export default class Order
         return packOrder(order);
     }
 
-    storeDatasInShortTerm (hash, origin)
-    {
-        return storeDatasInShortTerm(this.host, hash, origin);
-    }
-
     cancelOrder (params)
     {
         return cancelOrder(this.host, params);
+    }
+
+    setTempStore (key, value)
+    {
+        return setTempStore(this.host, key, value);
     }
 }
 
@@ -235,24 +235,24 @@ export function packOrder (order)
 /**
  * @description Submit some datas to relay that will store in a short term (24H)
  * @param host
- * @param hash
- * @param origin
+ * @param key
+ * @param value
  * @returns {Promise.<*>}
  */
-export function storeDatasInShortTerm (host, hash, origin)
+export function setTempStore (host, key, value)
 {
     try
     {
-        validator.validate({value: hash, type: 'STRING'});
-        validator.validate({value: origin, type: 'STRING'});
+        validator.validate({value: key, type: 'STRING'});
+        validator.validate({value: value, type: 'STRING'});
     }
     catch (e)
     {
         return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
     }
     const body = {};
-    body.method = 'loopring_setOrderTransfer';
-    body.params = [{hash, origin}];
+    body.method = 'loopring_setTempStore';
+    body.params = [{key, value}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {

@@ -44,7 +44,11 @@ export function getRings (host, filter)
 {
     try
     {
-        validator.validate({value: filter.delegateAddress, type: 'ETH_ADDRESS'});
+        if (filter.delegateAddress)
+        {
+            validator.validate({value: filter.delegateAddress, type: 'ETH_ADDRESS'});
+        }
+
         if (filter.pageIndex)
         {
             validator.validate({value: filter.pageIndex, type: 'OPTION_NUMBER'});
@@ -73,14 +77,14 @@ export function getRings (host, filter)
  * @description Get ring mined detail
  * @param host
  * @param ringIndex
- * @param protocolAddress
+ * @param delegateAddress
  * @returns {Promise}
  */
-export function getRingMinedDetail (host, {ringIndex, protocolAddress})
+export function getRingMinedDetail (host, {ringIndex, delegateAddress})
 {
     try
     {
-        validator.validate({value: protocolAddress, type: 'ETH_ADDRESS'});
+        validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
     }
     catch (e)
     {
@@ -89,7 +93,7 @@ export function getRingMinedDetail (host, {ringIndex, protocolAddress})
     ringIndex = toHex(toBig(ringIndex));
     const body = {};
     body.method = 'loopring_getRingMinedDetail';
-    body.params = [{ringIndex, protocolAddress}];
+    body.params = [{ringIndex, delegateAddress}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {
