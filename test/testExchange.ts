@@ -192,15 +192,17 @@ contract("Exchange", (accounts: string[]) => {
       order.walletAddr = wallet1;
     }
     /*if (!order.waiveFeePercentage && index > 0) {
+      order.waiveFeePercentage = -450;
+    } else {
       order.waiveFeePercentage = -250;
     }*/
 
     // setup amount:
     const orderTokenS = await DummyToken.at(order.tokenS);
-    await orderTokenS.addBalance(order.owner, order.amountS);
+    await orderTokenS.setBalance(order.owner, order.balanceS ? order.balanceS : order.amountS);
     if (!limitFeeTokenAmount) {
       const feeToken = await DummyToken.at(order.feeToken);
-      await feeToken.addBalance(order.owner, order.feeAmount);
+      await feeToken.setBalance(order.owner, order.balanceFee ? order.balanceFee : order.feeAmount);
     }
   };
 
@@ -211,6 +213,7 @@ contract("Exchange", (accounts: string[]) => {
     const orderPropertiesToSkip = [
       "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
+      "balanceS", "balanceFee",
     ];
     // Make sure to get the keys from both objects to make sure we get all keys defined in both
     for (const key of [...Object.keys(ringsInfoA), ...Object.keys(ringsInfoB)]) {
