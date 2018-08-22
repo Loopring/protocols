@@ -18,9 +18,9 @@ export default class Ring
         return getRings(this.host, filter);
     }
 
-    getRingMinedDetail ({ringIndex, protocolAddress})
+    getRingMinedDetail (filter)
     {
-        return getRingMinedDetail(this.host, {ringIndex, protocolAddress});
+        return getRingMinedDetail(this.host, filter);
     }
 
     getFills (filter)
@@ -44,16 +44,16 @@ export function getRings (host, filter)
 {
     try
     {
-        if (filter.delegateAddress)
+        if (filter && filter.delegateAddress)
         {
             validator.validate({value: filter.delegateAddress, type: 'ETH_ADDRESS'});
         }
 
-        if (filter.pageIndex)
+        if (filter && filter.pageIndex)
         {
             validator.validate({value: filter.pageIndex, type: 'OPTION_NUMBER'});
         }
-        if (filter.pageSize)
+        if (filter && filter.pageSize)
         {
             validator.validate({value: filter.pageSize, type: 'OPTION_NUMBER'});
         }
