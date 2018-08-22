@@ -387,7 +387,7 @@ library RingHelper {
         internal
     {
         // It only costs 3 gas/word for extra memory, so just create the maximum array size needed
-        bytes32[] memory data = new bytes32[]((ring.size + 3) * ring.size * 3);
+        bytes32[] memory data = new bytes32[]((ring.size + 3) * 3 * ring.size * 3);
         Data.FeeContext memory feeCtx = Data.FeeContext(
             data,
             0,
