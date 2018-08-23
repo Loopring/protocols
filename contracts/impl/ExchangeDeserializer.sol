@@ -95,7 +95,7 @@ library ExchangeDeserializer {
 
         inputs.bytesList = data.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
 
-        return submitRingsInternal(
+        return inputToStructedData(
             ctx,
             miningSpec,
             orderSpecs,
@@ -104,7 +104,7 @@ library ExchangeDeserializer {
         );
     }
 
-    function submitRingsInternal(
+    function inputToStructedData(
         Data.Context ctx,
         uint16 miningSpec,
         uint16[] orderSpecs,

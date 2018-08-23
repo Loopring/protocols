@@ -75,13 +75,9 @@ contract IExchange {
         uint            _cutoff
     );
 
-    event LogTrans(
-        address indexed token,
-        address indexed from,
-        address indexed to,
-        uint amount
+    event InvalidRing(
+        bytes32 ringHash
     );
-
 
     /// @dev Cancel multiple orders.
     /// @param owner              The order's owner.

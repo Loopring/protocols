@@ -94,14 +94,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes[]     bytesList;
     }
 
-    event LogTrans(
-        address token,
-        address from,
-        address to,
-        uint amount,
-        uint spendable
-    ); // for debug
-
     constructor(
         address _lrcTokenAddress,
         address _wethTokenAddress,
@@ -308,6 +300,7 @@ contract Exchange is IExchange, NoDefaultFunc {
                 );
             } else {
                 // todo(kongliang): We need to log bad rings?
+                emit InvalidRing(ring.hash);
             }
         }
         updateOrdersStats(ctx, orders);
