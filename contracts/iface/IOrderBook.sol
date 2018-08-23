@@ -44,4 +44,9 @@ contract IOrderBook {
         bytes32[] dataArray
     )
         external;
+
+    function getOrderData(bytes32 orderHash)
+        view
+        external
+        returns (bytes32[]);
 }

@@ -9,6 +9,7 @@ const {
 } = new Artifacts(artifacts);
 contract("OrderBook", (accounts: string[]) => {
   const emptyAddr = "0x0000000000000000000000000000000000000000";
+  const orderSubmitter = accounts[1];
 
   let symbolRegistry: any;
   let orderBook: any;
@@ -80,6 +81,7 @@ contract("OrderBook", (accounts: string[]) => {
       const uintArray = [100e18, 200e18, 0, validUntil, 1e18];
       const allOrNone = false;
       const bytes32Array: string[] = [];
+      bytes32Array.push(addressToBytes32Str(orderSubmitter));
       addressArray.forEach((addr) => bytes32Array.push(addressToBytes32Str(addr)));
       uintArray.forEach((value) => bytes32Array.push(numberToBytes32Str(value)));
       if (allOrNone) {
@@ -88,15 +90,20 @@ contract("OrderBook", (accounts: string[]) => {
         bytes32Array.push(numberToBytes32Str(0));
       }
 
-      const tx = await orderBook.submitOrder(bytes32Array);
+      // console.log("bytes32Array:", bytes32Array);
+
+      const tx = await orderBook.submitOrder(bytes32Array, {from: orderSubmitter});
 
       const events: any = await getEventsFromContract(orderBook, "OrderSubmitted", 0);
       const orderHash = events[0].args.orderHash;
       // // await watchAndPrintEvent(orderBook, "OrderSubmitted");
 
       // console.log("orderHash:", orderHash);
-      // const orderData = await orderBook.orders.call(orderHash);
+      const orderData = await orderBook.getOrderData(orderHash);
       // console.log("orderData", orderData);
+      for (let i = 0; i < orderData.length; i++) {
+        assert.equal(orderData[i], bytes32Array[i], "order data changed");
+      }
 
       const submitted = await orderBook.orderSubmitted(orderHash);
       assert.equal(submitted, true, "order should be submitted");

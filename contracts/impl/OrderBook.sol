@@ -33,29 +33,29 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
     function submitOrder(bytes32[] dataArray)
         external
     {
-        require(dataArray.length >= 9);
+        require(dataArray.length >= 10);
         bool allOrNone = false;
-        if (uint(dataArray[7]) > 0) {
+        if (uint(dataArray[9]) > 0) {
             allOrNone = true;
         }
 
         Data.Order memory order = Data.Order(
-            msg.sender,
             address(dataArray[0]),
             address(dataArray[1]),
-            uint(dataArray[3]),
+            address(dataArray[2]),
             uint(dataArray[4]),
             uint(dataArray[5]),
-            0x0,
-            address(dataArray[2]),
-            0x0,
-            0x0,
             uint(dataArray[6]),
+            0x0,
+            address(dataArray[3]),
+            0x0,
+            0x0,
+            uint(dataArray[7]),
             new bytes(0),
             new bytes(0),
             allOrNone,
             0x0,
-            uint(dataArray[7]),
+            uint(dataArray[8]),
             0,
             0,
             0,
@@ -71,9 +71,18 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
 
         order.updateHash();
         require(!orderSubmitted[order.hash]);
+
         orderSubmitted[order.hash] = true;
         orders[order.hash] = dataArray;
         emit OrderSubmitted(msg.sender, order.hash);
+    }
+
+    function getOrderData(bytes32 orderHash)
+        view
+        external
+        returns (bytes32[])
+    {
+        return orders[orderHash];
     }
 
 }
