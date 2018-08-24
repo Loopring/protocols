@@ -78,8 +78,19 @@ export class Ring {
       return;
     }
 
+    // Set spendables for this order
     for (const order of this.orders) {
-      order.fillAmountS = order.maxAmountS;
+      order.spendableS = await this.orderUtil.getSpendableS(order);
+      if (this.P2P) {
+        order.spendableFee = 0;
+      } else {
+        order.spendableFee = await this.orderUtil.getSpendableFee(order);
+      }
+    }
+
+    for (const order of this.orders) {
+      const remainingS = order.amountS - order.filledAmountS;
+      order.fillAmountS = Math.min(order.spendableS, remainingS);
       if (this.P2P) {
         // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to the wallet
         // We have to make sure the order owner can pay that percentage, otherwise we'll have to sell
@@ -206,21 +217,16 @@ export class Ring {
     const totalAmountS = filledAmountS + order.taxS;
     const totalAmountFee = order.fillAmountFee + order.taxFee;
     order.filledAmountS += filledAmountS;
-    order.maxAmountS -= filledAmountS;
-    if (order.maxAmountS > order.spendableS) {
-      order.maxAmountS = order.spendableS;
-    }
     // Update spendables
-    order.spendableS -= totalAmountS;
-    order.spendableFee -= totalAmountFee;
-    if (order.tokenS === order.feeToken) {
-      order.spendableS -= totalAmountFee;
-      order.spendableFee -= totalAmountS;
+    order.tokenSpendableS.amount -= totalAmountS;
+    order.tokenSpendableFee.amount -= totalAmountFee;
+    if (order.brokerInterceptor) {
+      order.brokerSpendableS.amount -= totalAmountS;
+      order.brokerSpendableFee.amount -= totalAmountFee;
     }
     // Checks
-    assert(order.spendableS >= 0, "spendableS should be positive");
-    assert(order.spendableFee >= 0, "spendableFee should be positive");
-    assert(order.maxAmountS >= 0, "maxAmountS should be positive");
+    assert(order.tokenSpendableS.amount >= 0, "spendableS should be positive");
+    assert(order.tokenSpendableFee.amount >= 0, "spendableFee should be positive");
     assert(order.filledAmountS <= order.amountS, "filledAmountS <= amountS");
   }
 
@@ -441,8 +447,11 @@ export class Ring {
         const totalAmountTokenS = order.fillAmountS + order.splitS + order.fillAmountFeeS + order.taxS;
         const totalAmountTokenFee = order.fillAmountFee + order.taxFee;
         if (order.tokenS === order.feeToken) {
-          assert.equal(order.spendableS, order.spendableFee,
-                       "Spendable amounts should match when tokenS == tokenFee");
+          if (!this.P2P) {
+            // We don't need spendableFee in a P2P ring, so it may not be initialized correctly
+            assert.equal(order.spendableS, order.spendableFee,
+                        "Spendable amounts should match when tokenS == tokenFee");
+          }
           assert(totalAmountTokenS + totalAmountTokenFee <= order.spendableS + epsilon,
                  "totalAmountTokenS + totalAmountTokenFee <= spendableS");
         } else {

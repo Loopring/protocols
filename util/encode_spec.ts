@@ -31,11 +31,15 @@ export class EncodeSpec {
     return this.data[5];
   }
 
+  public spendableListSize() {
+    return this.data[6];
+  }
+
   public ringSpecSizeArray() {
     const arrayLen = this.data[1];
     const sizeArray: number[] = [];
     for (let i = 0; i < arrayLen; i++) {
-      sizeArray.push(this.data[6 + i]);
+      sizeArray.push(this.data[7 + i]);
     }
     return sizeArray;
   }
@@ -43,7 +47,7 @@ export class EncodeSpec {
   public ringSpecSizeI(i: number) {
     const ringSize = this.ringSpecSize();
     assert(i < ringSize);
-    return this.data[6 + i];
+    return this.data[7 + i];
   }
 
   public ringSpecsDataLen() {
@@ -60,7 +64,7 @@ export class EncodeSpec {
     const listSize = this.bytesListSize();
     const sizeArray: number[] = [];
     for (let i = 0; i < listSize; i++) {
-      sizeArray.push(this.data[6 + ringSpecLength + i]);
+      sizeArray.push(this.data[7 + ringSpecLength + i]);
     }
     return sizeArray;
   }

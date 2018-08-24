@@ -95,6 +95,8 @@ library ExchangeDeserializer {
 
         inputs.bytesList = data.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
 
+        inputs.spendableList = new Data.Spendable[](encodeSpecs.spendableListSize());
+
         return inputToStructedData(
             ctx,
             miningSpec,

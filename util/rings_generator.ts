@@ -9,13 +9,15 @@ import { Context } from "./context";
 import { MultiHashUtil } from "./multihash";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
-import { OrderInfo, RingsInfo, RingsSubmitParam, SignAlgorithm } from "./types";
+import { OrderInfo, RingsInfo, RingsSubmitParam, SignAlgorithm, Spendable } from "./types";
 
 export class RingsGenerator {
   private multiHashUtil = new MultiHashUtil();
   private orderUtil: OrderUtil;
+  private context: Context;
 
   constructor(context: Context) {
+    this.context = context;
     this.orderUtil = new OrderUtil(context);
   }
 
@@ -83,10 +85,11 @@ export class RingsGenerator {
   }
 
   public toSubmitableParam(rings: RingsInfo) {
+    const numSpendables = this.setupSpendables(rings);
     const param = this.ringsToParam(rings);
 
     const encodeSpecs: number[] = [];
-    const len = 6 + param.ringSpecs.length + param.bytesList.length;
+    const len = 7 + param.ringSpecs.length + param.bytesList.length;
     encodeSpecs.push(len);
     encodeSpecs.push(param.orderSpecs.length);
     encodeSpecs.push(param.ringSpecs.length);
@@ -94,11 +97,67 @@ export class RingsGenerator {
     encodeSpecs.push(param.uintList.length);
     encodeSpecs.push(param.uint16List.length);
     encodeSpecs.push(param.bytesList.length);
+    encodeSpecs.push(numSpendables);
     param.ringSpecs.forEach((rs) => encodeSpecs.push(rs.length));
     // Bytes arrays start with 0x and have 2 characters/byte
     param.bytesList.forEach((bs) => encodeSpecs.push((bs.length - 2) / 2));
 
     return this.submitParamToBytes(param, encodeSpecs);
+  }
+
+  private setupSpendables(rings: RingsInfo) {
+    let numSpendables = 0;
+    const ownerTokens: { [id: string]: any; } = {};
+    const ownerBrokerTokens: { [id: string]: any; } = {};
+    for (const order of rings.orders) {
+      const tokenFee = order.feeToken ? order.feeToken : this.context.lrcAddress;
+      // Token spendables
+      if (!ownerTokens[order.owner]) {
+        ownerTokens[order.owner] = {};
+      }
+      if (!ownerTokens[order.owner][order.tokenS]) {
+        ownerTokens[order.owner][order.tokenS] = {
+          index: numSpendables++,
+          initialized: false,
+          amount: 0,
+        };
+      }
+      order.tokenSpendableS = ownerTokens[order.owner][order.tokenS];
+      if (!ownerTokens[order.owner][tokenFee]) {
+        ownerTokens[order.owner][tokenFee] = {
+          index: numSpendables++,
+          initialized: false,
+          amount: 0,
+        };
+      }
+      order.tokenSpendableFee = ownerTokens[order.owner][tokenFee];
+      // Broker allowances
+      if (order.broker) {
+        if (!ownerBrokerTokens[order.owner]) {
+          ownerBrokerTokens[order.owner] = {};
+        }
+        if (!ownerBrokerTokens[order.owner][order.broker]) {
+          ownerBrokerTokens[order.owner][order.broker] = {};
+        }
+        if (!ownerBrokerTokens[order.owner][order.broker][order.tokenS]) {
+          ownerBrokerTokens[order.owner][order.broker][order.tokenS] = {
+            index: numSpendables++,
+            initialized: false,
+            amount: 0,
+          };
+        }
+        order.brokerSpendableS = ownerBrokerTokens[order.owner][order.broker][order.tokenS];
+        if (!ownerBrokerTokens[order.owner][order.broker][tokenFee]) {
+          ownerBrokerTokens[order.owner][order.broker][tokenFee] = {
+            index: numSpendables++,
+            initialized: false,
+            amount: 0,
+          };
+        }
+        order.brokerSpendableFee = ownerBrokerTokens[order.owner][order.broker][tokenFee];
+      }
+    }
+    return numSpendables;
   }
 
   private ringsToParam(ringsInfo: RingsInfo) {
@@ -147,6 +206,8 @@ export class RingsGenerator {
     param.uintList.push(new BigNumber(order.amountS));
     param.uintList.push(new BigNumber(order.amountB));
     param.uintList.push(new BigNumber(order.validSince));
+    param.uint16List.push(order.tokenSpendableS.index);
+    param.uint16List.push(order.tokenSpendableFee.index);
 
     // param.addressList.push(order.delegateContract);
 
@@ -159,6 +220,8 @@ export class RingsGenerator {
     if (order.broker) {
       spec += 1 << 1;
       param.addressList.push(order.broker);
+      param.uint16List.push(order.brokerSpendableS.index);
+      param.uint16List.push(order.brokerSpendableFee.index);
     }
     if (order.orderInterceptor) {
       spec += 1 << 2;

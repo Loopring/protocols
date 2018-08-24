@@ -10,6 +10,12 @@ export enum SignAlgorithm {
   None = 255,     // Do not sign
 }
 
+export interface Spendable {
+  initialized: boolean;
+  amount: number;
+  index?: number;
+}
+
 export interface OrderInfo {
   // required fields in contract
   owner?: string;
@@ -18,10 +24,14 @@ export interface OrderInfo {
   amountS: number;
   amountB: number;
   validSince?: number;
+  tokenSpendableS?: Spendable;
+  tokenSpendableFee?: Spendable;
 
   // optional fields
   dualAuthAddr?: string;            // spec value 1
   broker?: string;                  // spec value 1 << 1
+  brokerSpendableS?: Spendable;
+  brokerSpendableFee?: Spendable;
   orderInterceptor?: string;        // spec value 1 << 2
   walletAddr?: string;              // spec value 1 << 3
   validUntil?: number;              // spec value 1 << 4
@@ -39,7 +49,6 @@ export interface OrderInfo {
   filledAmountS?: number;
   spendableS?: number;
   spendableFee?: number;
-  maxAmountS?: number;
   fillAmountS?: number;
   fillAmountB?: number;
   fillAmountFee?: number;

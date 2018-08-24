@@ -61,8 +61,12 @@ library OrderSpecs {
             inputs.nextUint(),    // amountS
             inputs.nextUint(),    // amountB
             inputs.nextUint(),    // validSince
+            inputs.spendableList[inputs.nextUint16()],       // tokenSpendableS
+            inputs.spendableList[inputs.nextUint16()],       // tokenSpendableFee
             spec.hasDualAuth() ? inputs.nextAddress() : 0x0,
             spec.hasBroker() ? inputs.nextAddress() : 0x0,
+            spec.hasBroker() ? inputs.spendableList[inputs.nextUint16()] : Data.Spendable(true, 0),
+            spec.hasBroker() ? inputs.spendableList[inputs.nextUint16()] : Data.Spendable(true, 0),
             spec.hasOrderInterceptor() ? inputs.nextAddress() : 0x0,
             spec.hasWallet() ? inputs.nextAddress() : 0x0,
             spec.hasValidUntil() ? inputs.nextUint() : uint(0) - 1,
@@ -80,7 +84,6 @@ library OrderSpecs {
             0,  // filledAmountS
             0,  // spendableS
             0,  // spendableFee
-            0,  // maxAmountS
             true   // valid
         );
     }

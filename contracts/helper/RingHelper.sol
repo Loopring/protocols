@@ -24,6 +24,7 @@ import "../impl/Data.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
+import "./OrderHelper.sol";
 import "./ParticipationHelper.sol";
 import "./TaxHelper.sol";
 
@@ -31,6 +32,7 @@ import "./TaxHelper.sol";
 /// @title RingHelper
 library RingHelper {
     using MathUint for uint;
+    using OrderHelper for Data.Order;
     using ParticipationHelper for Data.Participation;
     using TaxHelper for Data.Tax;
 
@@ -70,7 +72,6 @@ library RingHelper {
         Data.Context ctx
         )
         internal
-        pure
     {
         // Invalid order data could cause a divide by zero in the calculations
         if (!ring.valid) {
@@ -79,10 +80,22 @@ library RingHelper {
 
         uint i;
         int j;
+        Data.Participation memory p;
 
         for (i = 0; i < ring.size; i++) {
-            Data.Participation memory p = ring.participations[i];
-            p.fillAmountS = p.order.maxAmountS;
+            p = ring.participations[i];
+            p.order.spendableS = p.order.getSpendableS(ctx);
+            if (ring.P2P) {
+                p.order.spendableFee = 0;
+            } else {
+                p.order.spendableFee = p.order.getSpendableFee(ctx);
+            }
+        }
+
+        for (i = 0; i < ring.size; i++) {
+            p = ring.participations[i];
+            uint remainingS = p.order.amountS - p.order.filledAmountS;
+            p.fillAmountS = (p.order.spendableS < remainingS) ? p.order.spendableS : remainingS;
             if (ring.P2P) {
                 // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to
                 // the wallet. We have to make sure the order owner can pay that percentage,
@@ -132,7 +145,7 @@ library RingHelper {
 
         for (i = 0; i < ring.size; i++) {
             uint nextIndex = (i + 1) % ring.size;
-            Data.Participation memory p = ring.participations[i];
+            p = ring.participations[i];
             Data.Participation memory nextP = ring.participations[nextIndex];
             if (nextP.fillAmountS >= p.fillAmountB) {
                 nextP.calculateFeesAndTaxes(p, ctx, ring.P2P);

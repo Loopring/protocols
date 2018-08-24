@@ -10,7 +10,7 @@ import { OrderUtil } from "./order";
 import { OrderSpec } from "./order_spec";
 import { ParticipationSpec } from "./participation_spec";
 import { Ring } from "./ring";
-import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, TransferItem } from "./types";
+import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, Spendable, TransferItem } from "./types";
 
 export class ExchangeDeserializer {
 
@@ -22,6 +22,7 @@ export class ExchangeDeserializer {
   private uintList?: BigNumber[];
   private uint16List?: number[];
   private bytesList?: string[];
+  private spendableList?: Spendable[];
 
   private addressListIdx: number = 0;
   private uintListIdx: number = 0;
@@ -60,6 +61,15 @@ export class ExchangeDeserializer {
 
     this.bytesList = bitstream.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
 
+    this.spendableList = [];
+    for (let i = 0; i < encodeSpecs.spendableListSize(); i++) {
+      const spendable = {
+        initialized: false,
+        amount: 0,
+      };
+      this.spendableList.push(spendable);
+    }
+
     const mining = new Mining(
       this.context,
       (miningSpec.hasFeeRecipient() ? this.nextAddress() : undefined),
@@ -91,8 +101,12 @@ export class ExchangeDeserializer {
       amountS: this.nextUint().toNumber(),
       amountB: this.nextUint().toNumber(),
       validSince: this.nextUint().toNumber(),
+      tokenSpendableS: this.spendableList[this.nextUint16()],
+      tokenSpendableFee: this.spendableList[this.nextUint16()],
       dualAuthAddr: spec.hasDualAuth() ? this.nextAddress() : undefined,
       broker: spec.hasBroker() ? this.nextAddress() : undefined,
+      brokerSpendableS: spec.hasBroker() ? this.spendableList[this.nextUint16()] : undefined,
+      brokerSpendableFee: spec.hasBroker() ? this.spendableList[this.nextUint16()] : undefined,
       orderInterceptor: spec.hasOrderInterceptor() ? this.nextAddress() : undefined,
       walletAddr: spec.hasWallet() ? this.nextAddress() : undefined,
       validUntil: spec.hasValidUntil() ? this.nextUint().toNumber() : undefined,

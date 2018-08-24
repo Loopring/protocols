@@ -139,6 +139,7 @@ contract("Exchange", (accounts: string[]) => {
     const report = await simulator.simulateAndReport(deserializedRingsInfo);
 
     const tx = await exchange.submitRings(bs, {from: txOrigin});
+    console.log("gas used: ", tx.receipt.gasUsed);
     const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
     assertTransfers(transferEvents, report.transferItems);
     await assertFeeBalances(report.feeBalances);
@@ -218,7 +219,8 @@ contract("Exchange", (accounts: string[]) => {
     const orderPropertiesToSkip = [
       "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
-      "balanceS", "balanceFee", "ownerIndex",
+      "balanceS", "balanceFee", "ownerIndex", "tokenSpendableS", "tokenSpendableFee",
+      "brokerSpendableS", "brokerSpendableFee",
     ];
     // Make sure to get the keys from both objects to make sure we get all keys defined in both
     for (const key of [...Object.keys(ringsInfoA), ...Object.keys(ringsInfoB)]) {

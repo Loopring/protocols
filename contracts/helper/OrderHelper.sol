@@ -96,28 +96,7 @@ library OrderHelper {
         )
         internal
     {
-        order.spendableFee = getSpendable(
-            ctx.delegate,
-            order.feeToken,
-            order.owner,
-            order.broker,
-            order.brokerInterceptor
-        );
-
         order.filledAmountS = ctx.delegate.filled(order.hash);
-        order.maxAmountS = order.amountS.sub(order.filledAmountS);
-
-        order.spendableS = getSpendable(
-            ctx.delegate,
-            order.tokenS,
-            order.owner,
-            order.broker,
-            order.brokerInterceptor
-        );
-
-        if (order.maxAmountS > order.spendableS) {
-            order.maxAmountS = order.spendableS;
-        }
     }
 
     function validateInfo(Data.Order order, Data.Context ctx)
@@ -180,42 +159,116 @@ library OrderHelper {
         }
     }
 
-       /// @return Amount of ERC20 token that can be spent by this contract.
-    function getSpendable(
+    function getSpendableS(
+        Data.Order order,
+        Data.Context ctx
+        )
+        internal
+        returns (uint)
+    {
+        return getSpendable(
+            ctx.delegate,
+            order.tokenS,
+            order.owner,
+            order.broker,
+            order.brokerInterceptor,
+            order.tokenSpendableS,
+            order.brokerSpendableS
+        );
+    }
+
+    function getSpendableFee(
+        Data.Order order,
+        Data.Context ctx
+        )
+        internal
+        returns (uint)
+    {
+        return getSpendable(
+            ctx.delegate,
+            order.feeToken,
+            order.owner,
+            order.broker,
+            order.brokerInterceptor,
+            order.tokenSpendableFee,
+            order.brokerSpendableFee
+        );
+    }
+
+    /// @return Amount of ERC20 token that can be spent by this contract.
+    function getERC20Spendable(
         ITradeDelegate delegate,
         address tokenAddress,
-        address tokenOwner,
-        address broker,
-        address brokerInterceptor
+        address owner
         )
         private
         returns (uint spendable)
     {
         ERC20 token = ERC20(tokenAddress);
         spendable = token.allowance(
-            tokenOwner,
+            owner,
             address(delegate)
         );
         if (spendable == 0) {
             return;
         }
-        uint amount = token.balanceOf(tokenOwner);
-        if (amount < spendable) {
-            spendable = amount;
-            if (spendable == 0) {
-                return;
-            }
-        }
+        uint balance = token.balanceOf(owner);
+        spendable = (balance < spendable) ? balance : spendable;
+    }
 
-        if (brokerInterceptor != 0x0 && broker != tokenOwner) {
-            amount = brokerInterceptor.getAllowanceSafe(
-                tokenOwner,
+    /// @return Amount of ERC20 token that can be spent by the broker
+    function getBrokerAllowance(
+        address tokenAddress,
+        address owner,
+        address broker,
+        address brokerInterceptor
+        )
+        private
+        returns (uint allowance)
+    {
+        if (brokerInterceptor != 0x0) {
+            allowance = brokerInterceptor.getAllowanceSafe(
+                owner,
                 broker,
                 tokenAddress
             );
-            if (amount < spendable) {
-                spendable = amount;
+        } else {
+            allowance = uint(0) - 1;
+        }
+    }
+
+    function getSpendable(
+        ITradeDelegate delegate,
+        address tokenAddress,
+        address owner,
+        address broker,
+        address brokerInterceptor,
+        Data.Spendable tokenSpendable,
+        Data.Spendable brokerSpendable
+        )
+        private
+        returns (uint spendable)
+    {
+        if (!tokenSpendable.initialized) {
+            tokenSpendable.amount = getERC20Spendable(
+                delegate,
+                tokenAddress,
+                owner
+            );
+            tokenSpendable.initialized = true;
+        }
+        spendable = tokenSpendable.amount;
+        if (brokerInterceptor != 0x0) {
+            if (!brokerSpendable.initialized) {
+                brokerSpendable.amount = getBrokerAllowance(
+                    tokenAddress,
+                    owner,
+                    broker,
+                    brokerInterceptor
+                );
+                brokerSpendable.initialized = true;
             }
+            spendable = (brokerSpendable.amount < spendable) ? brokerSpendable.amount : spendable;
         }
     }
 }

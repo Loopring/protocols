@@ -37,9 +37,11 @@ import "../impl/Data.sol";
 /// --------------------------------
 /// | 5        | bytesList length  |
 /// --------------------------------
-/// | 6 ~ 6+i  | ringSpecs i length|
+/// | 6        | spendableList length|
 /// --------------------------------
-/// | 6+i+j ~  | bytes[j] length   |
+/// | 7 ~ 7+i  | ringSpecs i length|
+/// --------------------------------
+/// | 7+i+j ~  | bytes[j] length   |
 /// --------------------------------
 /// @title Encode spec for SumitRings parameters.
 /// @author Kongliang - <kongliang@loopring.org>.
@@ -68,7 +70,7 @@ library EncodeSpec {
     {
         uint ringSize = ringSpecSize(spec);
         require(i < ringSize);
-        uint ind = 6 + i;
+        uint ind = 7 + i;
         return spec[ind];
     }
 
@@ -79,7 +81,7 @@ library EncodeSpec {
         uint arrayLen = spec[1];
         uint[] memory sizeArray = new uint[](arrayLen);
         for (uint i = 0; i < arrayLen; i++) {
-            sizeArray[i] = uint(spec[6 + i]);
+            sizeArray[i] = uint(spec[7 + i]);
         }
         return sizeArray;
     }
@@ -128,6 +130,14 @@ library EncodeSpec {
         return spec[5];
     }
 
+    function spendableListSize(uint16[] spec)
+        internal
+        pure
+        returns (uint16)
+    {
+        return spec[6];
+    }
+
     function bytesListSizeI(uint16[] spec, uint i)
         internal
         pure
@@ -137,7 +147,7 @@ library EncodeSpec {
         require(i < listSize);
 
         uint ringSize = ringSpecSize(spec);
-        uint ind = 6 + ringSize + i;
+        uint ind = 7 + ringSize + i;
         return spec[ind];
     }
 
@@ -149,7 +159,7 @@ library EncodeSpec {
         uint listSize = bytesListSize(spec);
         uint[] memory sizeArray = new uint[](listSize);
         for (uint i = 0; i < listSize; i++) {
-            sizeArray[i] = uint(spec[6 + ringSpecLength + i]);
+            sizeArray[i] = uint(spec[7 + ringSpecLength + i]);
         }
         return sizeArray;
     }

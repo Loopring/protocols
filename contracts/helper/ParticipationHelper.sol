@@ -103,16 +103,12 @@ library ParticipationHelper {
         uint totalAmountS = filledAmountS + p.taxS;
         uint totalAmountFee = p.feeAmount + p.taxFee;
         p.order.filledAmountS += filledAmountS;
-        p.order.maxAmountS = p.order.maxAmountS.sub(filledAmountS);
-        if (p.order.maxAmountS > p.order.spendableS) {
-            p.order.maxAmountS = p.order.spendableS;
-        }
         // Update spendables
-        p.order.spendableS = p.order.spendableS.sub(totalAmountS);
-        p.order.spendableFee = p.order.spendableFee.sub(totalAmountFee);
-        if (p.order.tokenS == p.order.feeToken) {
-            p.order.spendableS = p.order.spendableS.sub(totalAmountFee);
-            p.order.spendableFee = p.order.spendableFee.sub(totalAmountS);
+        p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
+        p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
+        if (p.order.brokerInterceptor != 0x0) {
+            p.order.brokerSpendableS.amount = p.order.brokerSpendableS.amount.sub(totalAmountFee);
+            p.order.brokerSpendableFee.amount = p.order.brokerSpendableFee.amount.sub(totalAmountS);
         }
     }
 

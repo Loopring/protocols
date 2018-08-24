@@ -4,7 +4,7 @@ import ABI = require("ethereumjs-abi");
 import { Context } from "./context";
 import { ensure } from "./ensure";
 import { MultiHashUtil } from "./multihash";
-import { OrderInfo } from "./types";
+import { OrderInfo, Spendable } from "./types";
 
 export class OrderUtil {
 
@@ -133,50 +133,79 @@ export class OrderUtil {
   }
 
   public async updateStates(orderInfo: OrderInfo) {
-    orderInfo.spendableS = await this.getErc20SpendableAmount(orderInfo.tokenS,
-                                                              orderInfo.owner,
-                                                              this.context.tradeDelegate.address,
-                                                              orderInfo.broker,
-                                                              orderInfo.brokerInterceptor);
-
     orderInfo.filledAmountS = await this.context.tradeDelegate.filled("0x" + orderInfo.hash.toString("hex")).toNumber();
-    const remaining = orderInfo.amountS - orderInfo.filledAmountS;
-
-    orderInfo.maxAmountS = Math.min(orderInfo.spendableS, remaining);
-
-    orderInfo.spendableFee = await this.getErc20SpendableAmount(orderInfo.feeToken,
-                                                                orderInfo.owner,
-                                                                this.context.tradeDelegate.address,
-                                                                orderInfo.broker,
-                                                                orderInfo.brokerInterceptor);
   }
 
-  public async getErc20SpendableAmount(tokenAddr: string,
-                                       owner: string,
-                                       spender: string,
-                                       broker: string,
-                                       brokerInterceptor: string) {
-    const token = this.context.ERC20Contract.at(tokenAddr);
+  public async getSpendableS(order: OrderInfo) {
+    return await this.getSpendable(order.tokenS,
+                                   order.owner,
+                                   order.broker,
+                                   order.brokerInterceptor,
+                                   order.tokenSpendableS,
+                                   order.brokerSpendableS);
+  }
+
+  public async getSpendableFee(order: OrderInfo) {
+    return await this.getSpendable(order.feeToken,
+                                   order.owner,
+                                   order.broker,
+                                   order.brokerInterceptor,
+                                   order.tokenSpendableFee,
+                                   order.brokerSpendableFee);
+  }
+
+  public async getERC20Spendable(spender: string,
+                                 tokenAddress: string,
+                                 owner: string) {
+    const token = this.context.ERC20Contract.at(tokenAddress);
     const balance = await token.balanceOf(owner);
     const allowance = await token.allowance(owner, spender);
-    let spendable = Math.min(balance, allowance);
+    const spendable = Math.min(balance, allowance);
+    return spendable;
+  }
 
-    if (brokerInterceptor && broker !== owner) {
-      let amount = 0;
+  public async getBrokerAllowance(tokenAddr: string,
+                                  owner: string,
+                                  broker: string,
+                                  brokerInterceptor: string) {
+    let allowance = 1e64;
+    if (brokerInterceptor) {
       try {
-        amount = await this.context.BrokerInterceptorContract.at(brokerInterceptor).getAllowance(
+        allowance = await this.context.BrokerInterceptorContract.at(brokerInterceptor).getAllowance(
             owner,
             broker,
             tokenAddr,
         );
       } catch {
-        amount = 0;
-      }
-      if (amount < spendable) {
-          spendable = amount;
+        allowance = 0;
       }
     }
+    return allowance;
+  }
 
+  private async getSpendable(token: string,
+                             owner: string,
+                             broker: string,
+                             brokerInterceptor: string,
+                             tokenSpendable: Spendable,
+                             brokerSpendable: Spendable) {
+    if (!tokenSpendable.initialized) {
+      tokenSpendable.amount = await this.getERC20Spendable(this.context.tradeDelegate.address,
+                                                           token,
+                                                           owner);
+      tokenSpendable.initialized = true;
+    }
+    let spendable = tokenSpendable.amount;
+    if (brokerInterceptor) {
+      if (!brokerSpendable.initialized) {
+        brokerSpendable.amount = await this.getBrokerAllowance(token,
+                                                                  owner,
+                                                                  broker,
+                                                                  brokerInterceptor);
+        brokerSpendable.initialized = true;
+      }
+      spendable = (brokerSpendable.amount < spendable) ? brokerSpendable.amount : spendable;
+    }
     return spendable;
   }
 

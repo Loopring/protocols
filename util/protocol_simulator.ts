@@ -124,11 +124,9 @@ export class ProtocolSimulator {
     // Check if we haven't spent more funds than the owner owns
     for (const token of Object.keys(balances)) {
       for (const owner of Object.keys(balances[token])) {
-        const spendable = await this.orderUtil.getErc20SpendableAmount(token,
-                                                                       owner,
-                                                                       this.context.tradeDelegate.address,
-                                                                       undefined,
-                                                                       undefined);
+        const spendable = await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+                                                                 token,
+                                                                 owner);
         const finalBalance = spendable + balances[token][owner];
         const epsilon = 1000;
         assert(finalBalance >= -epsilon, "can't sell more tokens than the owner owns");

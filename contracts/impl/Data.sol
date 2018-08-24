@@ -33,6 +33,7 @@ library Data {
         uint[] uintList;
         uint16[] uint16List;
         bytes[] bytesList;
+        Spendable[] spendableList;
         uint addressIndex;
         uint uintIndex;
         uint uint16Index;
@@ -85,30 +86,39 @@ library Data {
         address interceptor;
     }
 
+    struct Spendable {
+        bool initialized;
+        uint amount;
+    }
+
     struct Order {
         // required fields
-        address owner;
-        address tokenS;
-        address tokenB;
-        uint    amountS;
-        uint    amountB;
-        uint    validSince;
+        address   owner;
+        address   tokenS;
+        address   tokenB;
+        uint      amountS;
+        uint      amountB;
+        uint      validSince;
+        Spendable tokenSpendableS;
+        Spendable tokenSpendableFee;
 
         // optional fields
-        address dualAuthAddr;
-        address broker;
-        address orderInterceptor;
-        address wallet;
-        uint    validUntil;
-        bytes   sig;
-        bytes   dualAuthSig;
-        bool    allOrNone;
-        address feeToken;
-        uint    feeAmount;
-        uint16  feePercentage;         // Post-trading
-        int16   waiveFeePercentage;
-        uint16  tokenSFeePercentage;    // Pre-trading
-        uint16  tokenBFeePercentage;   // Post-trading
+        address   dualAuthAddr;
+        address   broker;
+        Spendable brokerSpendableS;
+        Spendable brokerSpendableFee;
+        address   orderInterceptor;
+        address   wallet;
+        uint      validUntil;
+        bytes     sig;
+        bytes     dualAuthSig;
+        bool      allOrNone;
+        address   feeToken;
+        uint      feeAmount;
+        uint16    feePercentage;         // Post-trading
+        int16     waiveFeePercentage;
+        uint16    tokenSFeePercentage;    // Pre-trading
+        uint16    tokenBFeePercentage;   // Post-trading
 
         // computed fields
         bytes32 hash;
@@ -116,7 +126,6 @@ library Data {
         uint    filledAmountS;
         uint    spendableS;
         uint    spendableFee;
-        uint    maxAmountS;
         bool    valid;
     }
 
