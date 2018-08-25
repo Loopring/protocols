@@ -48,8 +48,6 @@ export interface OrderInfo {
 
   // helper field
   filledAmountS?: number;
-  ringSpendableS?: number;
-  ringSpendableFee?: number;
   fillAmountS?: number;
   fillAmountB?: number;
   fillAmountFee?: number;
@@ -61,6 +59,10 @@ export interface OrderInfo {
   splitS?: number;
   brokerInterceptor?: string;
   valid?: boolean;
+
+  // test fields
+  ringSpendableS?: number;
+  ringSpendableFee?: number;
 
   hash?: Buffer;
   signAlgorithm?: SignAlgorithm;

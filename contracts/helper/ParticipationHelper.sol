@@ -44,29 +44,39 @@ library ParticipationHelper {
         if (ring.P2P) {
             // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to
             // the wallet. We have to make sure the order owner can pay that percentage,
-            // otherwise we'll have to sell less tokenS. We have to calculate totalAmountS here
-            // so that:
-            // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
-            uint taxRateTokenS = ctx.tax.getTaxRate(
-                p.order.tokenS,
-                false,
-                true
+            // otherwise we'll have to sell less tokenS.
+            uint feeS = p.fillAmountS.calculatePreTradingPercentage(
+                p.order.tokenSFeePercentage,
+                ctx.feePercentageBase
             );
 
-            uint totalAddedPercentage = p.order.tokenSFeePercentage + taxRateTokenS;
-            if (totalAddedPercentage >= ctx.feePercentageBase) {
-                ring.valid = false;
-                return;
-            }
+            uint taxS = ctx.tax.calculateTax(
+                p.order.tokenS,
+                false,
+                true,
+                feeS
+            );
 
-            uint totalAmountS = p.fillAmountS.mul(
-                ctx.feePercentageBase) / (ctx.feePercentageBase - totalAddedPercentage);
-
+            uint totalAmountS = p.fillAmountS + feeS + taxS;
             if (totalAmountS > spendableS) {
-                uint maxFeeAmountS = spendableS
-                    .mul(totalAddedPercentage) / ctx.feePercentageBase;
+                // This will very, very slightly underestimate fillAmountS to keep calculations simple
+                uint taxRateTokenS = ctx.tax.getTaxRate(
+                    p.order.tokenS,
+                    false,
+                    true
+                );
 
-                p.fillAmountS = spendableS - maxFeeAmountS;
+                uint totalAddedPercentage = p.order.tokenSFeePercentage * (ctx.feePercentageBase + taxRateTokenS);
+                uint totalPercentageBase = ctx.feePercentageBase * ctx.feePercentageBase;
+                if (totalAddedPercentage >= totalPercentageBase) {
+                    ring.valid = false;
+                    return;
+                }
+
+                uint maxFeeAndTaxAmountS = spendableS
+                    .mul(totalAddedPercentage) / totalPercentageBase;
+
+                p.fillAmountS = spendableS - maxFeeAndTaxAmountS;
             }
         }
         p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;
@@ -84,8 +94,10 @@ library ParticipationHelper {
             // Calculate P2P fees
             p.feeAmount = 0;
             if (p.order.wallet != 0x0) {
-                p.feeAmountS = p.fillAmountS.mul(
-                    ctx.feePercentageBase) / (ctx.feePercentageBase - p.order.tokenSFeePercentage) - p.fillAmountS;
+                p.feeAmountS = p.fillAmountS.calculatePreTradingPercentage(
+                    p.order.tokenSFeePercentage,
+                    ctx.feePercentageBase
+                );
                 p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / ctx.feePercentageBase;
             } else {
                 p.feeAmountS = 0;

@@ -134,21 +134,24 @@ export class Ring {
     if (this.P2P) {
       // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to the wallet
       // We have to make sure the order owner can pay that percentage, otherwise we'll have to sell
-      // less tokenS. We have to calculate totalAmountS here so that
-      // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
-      const taxRateTokenS = this.context.tax.getTaxRate(order.tokenS, false, true);
-      const totalAddedPercentage = order.tokenSFeePercentage + taxRateTokenS;
-      if (totalAddedPercentage >= this.context.feePercentageBase) {
-        this.valid = ensure(false, "totalAddedPercentage >= feePercentageBase");
-        return;
-      }
-      let totalAmountS = Math.floor((order.fillAmountS * this.context.feePercentageBase) /
-                                      (this.context.feePercentageBase - totalAddedPercentage));
+      // less tokenS.
+      const feeS = this.calculatePreTradingPercentage(order.fillAmountS,
+                                                      order.tokenSFeePercentage,
+                                                      this.context.feePercentageBase);
+      const taxS = this.context.tax.calculateTax(order.tokenS, false, true, feeS);
+      const totalAmountS = order.fillAmountS + feeS + taxS;
       if (totalAmountS > order.ringSpendableS) {
-        totalAmountS = order.ringSpendableS;
-        const maxFeeAmountS = Math.floor(totalAmountS * totalAddedPercentage /
-                              this.context.feePercentageBase);
-        order.fillAmountS = totalAmountS - maxFeeAmountS;
+        // This will very, very slightly underestimate fillAmountS to keep calculations simple
+        const taxRateTokenS = this.context.tax.getTaxRate(order.tokenS, false, true);
+        const totalAddedPercentage = order.tokenSFeePercentage * (this.context.feePercentageBase + taxRateTokenS);
+        const totalPercentageBase = this.context.feePercentageBase * this.context.feePercentageBase;
+        if (totalAddedPercentage >= totalPercentageBase) {
+          this.valid = ensure(false, "totalAddedPercentage >= totalPercentageBase");
+          return;
+        }
+        const maxFeeAndTaxAmountS = Math.floor(order.ringSpendableS * totalAddedPercentage /
+                                               totalPercentageBase);
+        order.fillAmountS = order.ringSpendableS - maxFeeAndTaxAmountS;
       }
     }
     order.fillAmountB = Math.floor(order.fillAmountS * order.amountB / order.amountS);
@@ -159,9 +162,9 @@ export class Ring {
       // Calculate P2P fees
       order.fillAmountFee = 0;
       if (order.walletAddr) {
-        order.fillAmountFeeS = Math.floor((order.fillAmountS * this.context.feePercentageBase) /
-                                          (this.context.feePercentageBase - order.tokenSFeePercentage)) -
-                               order.fillAmountS;
+        order.fillAmountFeeS = this.calculatePreTradingPercentage(order.fillAmountS,
+                                                                  order.tokenSFeePercentage,
+                                                                  this.context.feePercentageBase);
         order.fillAmountFeeB = Math.floor(order.fillAmountB * order.tokenBFeePercentage /
                                this.context.feePercentageBase);
       } else {
@@ -383,6 +386,11 @@ export class Ring {
     }
 
     return newSmallest;
+  }
+
+  private calculatePreTradingPercentage(value: number, percentage: number, percentageBase: number) {
+    assert(percentage < percentageBase);
+    return Math.floor((value * percentageBase) / (percentageBase - percentage)) - value;
   }
 
   private validateSettlement(transfers: TransferItem[]) {

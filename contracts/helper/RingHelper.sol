@@ -552,22 +552,4 @@ library RingHelper {
         }
     }
 
-    function getSpendable(
-        address token,
-        address owner,
-        address spender
-        )
-        internal
-        view
-        returns (uint amount)
-    {
-        uint allowance = ERC20(token).allowance(owner, spender);
-        uint balance = ERC20(token).balanceOf(owner);
-        if (balance > allowance) {
-            amount = allowance;
-        } else {
-            amount = balance;
-        }
-    }
-
 }
