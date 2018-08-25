@@ -451,22 +451,18 @@ export class Ring {
       }
 
       // Spendable limitations
-      // {
-      //   const totalAmountTokenS = order.fillAmountS + order.splitS + order.fillAmountFeeS + order.taxS;
-      //   const totalAmountTokenFee = order.fillAmountFee + order.taxFee;
-      //   if (order.tokenS === order.feeToken) {
-      //     if (!this.P2P) {
-      //       // We don't need spendableFee in a P2P ring, so it may not be initialized correctly
-      //       assert.equal(order.ringSpendableS, order.ringSpendableFee,
-      //                   "Spendable amounts should match when tokenS == tokenFee");
-      //     }
-      //     assert(totalAmountTokenS + totalAmountTokenFee <= order.ringSpendableS + epsilon,
-      //            "totalAmountTokenS + totalAmountTokenFee <= spendableS");
-      //   } else {
-      //     assert(totalAmountTokenS <= order.ringSpendableS + epsilon, "totalAmountTokenS <= spendableS");
-      //     assert(totalAmountTokenFee <= order.ringSpendableFee + epsilon, "totalAmountTokenFee <= spendableFee");
-      //   }
-      // }
+      {
+        const totalAmountTokenS = order.fillAmountS + order.splitS + order.fillAmountFeeS + order.taxS;
+        const totalAmountTokenFee = order.fillAmountFee + order.taxFee;
+        if (order.tokenS === order.feeToken) {
+          assert(totalAmountTokenS + totalAmountTokenFee <= order.ringSpendableS + epsilon,
+                 "totalAmountTokenS + totalAmountTokenFee <= spendableS");
+        } else {
+          assert(totalAmountTokenS <= order.ringSpendableS + epsilon, "totalAmountTokenS <= spendableS");
+          assert(totalAmountTokenFee <= (order.ringSpendableFee ? order.ringSpendableFee : 0) + epsilon,
+                 "totalAmountTokenFee <= spendableFee");
+        }
+      }
 
       // Ensure fees are calculated correctly
       if (this.P2P) {
