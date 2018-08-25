@@ -84,47 +84,10 @@ library RingHelper {
 
         for (i = 0; i < ring.size; i++) {
             p = ring.participations[i];
-            p.order.spendableS = p.order.getSpendableS(ctx);
-            if (ring.P2P) {
-                p.order.spendableFee = 0;
-            } else {
-                p.order.spendableFee = p.order.getSpendableFee(ctx);
-            }
-        }
-
-        for (i = 0; i < ring.size; i++) {
-            p = ring.participations[i];
-            uint remainingS = p.order.amountS - p.order.filledAmountS;
-            p.fillAmountS = (p.order.spendableS < remainingS) ? p.order.spendableS : remainingS;
-            if (ring.P2P) {
-                // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to
-                // the wallet. We have to make sure the order owner can pay that percentage,
-                // otherwise we'll have to sell less tokenS. We have to calculate totalAmountS here
-                // so that:
-                // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
-                uint taxRateTokenS = ctx.tax.getTaxRate(
-                    p.order.tokenS,
-                    false,
-                    true
-                );
-
-                uint totalAddedPercentage = p.order.tokenSFeePercentage + taxRateTokenS;
-                if (totalAddedPercentage >= ctx.feePercentageBase) {
-                    ring.valid = false;
-                    return;
-                }
-
-                uint totalAmountS = p.fillAmountS.mul(
-                    ctx.feePercentageBase) / (ctx.feePercentageBase - totalAddedPercentage);
-
-                if (totalAmountS > p.order.spendableS) {
-                    uint maxFeeAmountS = p.order.spendableS
-                        .mul(totalAddedPercentage) / ctx.feePercentageBase;
-
-                    p.fillAmountS = p.order.spendableS - maxFeeAmountS;
-                }
-            }
-            p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;
+            p.setMaxFillAmounts(
+                ring,
+                ctx
+            );
         }
 
         uint smallest = 0;
@@ -144,13 +107,13 @@ library RingHelper {
         }
 
         for (i = 0; i < ring.size; i++) {
-            uint nextIndex = (i + 1) % ring.size;
+            uint prevIndex = (i + ring.size - 1) % ring.size;
+            Data.Participation memory prevP = ring.participations[prevIndex];
             p = ring.participations[i];
-            Data.Participation memory nextP = ring.participations[nextIndex];
-            if (nextP.fillAmountS >= p.fillAmountB) {
-                nextP.calculateFeesAndTaxes(p, ctx, ring.P2P);
-                if (nextP.order.waiveFeePercentage < 0) {
-                    ring.minerFeesToOrdersPercentage += uint(-nextP.order.waiveFeePercentage);
+            if (p.fillAmountS >= prevP.fillAmountB) {
+                p.calculateFeesAndTaxes(prevP, ctx, ring.P2P);
+                if (p.order.waiveFeePercentage < 0) {
+                    ring.minerFeesToOrdersPercentage += uint(-p.order.waiveFeePercentage);
                 }
             } else {
                 ring.valid = false;
@@ -158,7 +121,13 @@ library RingHelper {
             }
         }
         // Miner can only distribute 100% of its fees to all orders combined
-        ring.valid = ring.valid && ring.minerFeesToOrdersPercentage <= ctx.feePercentageBase;
+        ring.valid = ring.valid && (ring.minerFeesToOrdersPercentage <= ctx.feePercentageBase);
+
+        // Ring calculations are done. Make sure te remove all spendable reservations for this ring
+        for (i = 0; i < ring.size; i++) {
+            p = ring.participations[i];
+            p.order.resetReservations();
+        }
     }
 
     function calculateOrderFillAmounts(
@@ -193,6 +162,20 @@ library RingHelper {
         for (uint i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             ring.valid = ring.valid && p.order.valid;
+        }
+    }
+
+    function checkForSubRings(
+        Data.Ring ring
+        )
+        internal
+        pure
+    {
+        for (uint i = 0; i < ring.size - 1; i++) {
+            address tokenS = ring.participations[i].order.tokenS;
+            for (uint j = i + 1; j < ring.size; j++) {
+                ring.valid = ring.valid && (tokenS != ring.participations[j].order.tokenS);
+            }
         }
     }
 

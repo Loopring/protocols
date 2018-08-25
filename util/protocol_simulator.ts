@@ -97,6 +97,7 @@ export class ProtocolSimulator {
     const feeBalances: { [id: string]: any; } = {};
     for (const ring of rings) {
       ring.checkOrdersValid();
+      ring.checkForSubRings();
       await ring.checkTokensRegistered();
       ring.checkP2P(mining);
       if (ring.valid) {

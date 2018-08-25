@@ -66,6 +66,7 @@ export class ExchangeDeserializer {
       const spendable = {
         initialized: false,
         amount: 0,
+        reserved: 0,
       };
       this.spendableList.push(spendable);
     }

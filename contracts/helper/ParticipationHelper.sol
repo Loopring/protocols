@@ -20,6 +20,7 @@ pragma experimental "ABIEncoderV2";
 
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
+import "./OrderHelper.sol";
 import "./TaxHelper.sol";
 
 
@@ -27,7 +28,49 @@ import "./TaxHelper.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 library ParticipationHelper {
     using MathUint for uint;
+    using OrderHelper for Data.Order;
     using TaxHelper for Data.Tax;
+
+    function setMaxFillAmounts(
+        Data.Participation p,
+        Data.Ring ring,
+        Data.Context ctx
+        )
+        internal
+    {
+        uint spendableS = p.order.getSpendableS(ctx);
+        uint remainingS = p.order.amountS.sub(p.order.filledAmountS);
+        p.fillAmountS = (spendableS < remainingS) ? spendableS : remainingS;
+        if (ring.P2P) {
+            // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to
+            // the wallet. We have to make sure the order owner can pay that percentage,
+            // otherwise we'll have to sell less tokenS. We have to calculate totalAmountS here
+            // so that:
+            // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
+            uint taxRateTokenS = ctx.tax.getTaxRate(
+                p.order.tokenS,
+                false,
+                true
+            );
+
+            uint totalAddedPercentage = p.order.tokenSFeePercentage + taxRateTokenS;
+            if (totalAddedPercentage >= ctx.feePercentageBase) {
+                ring.valid = false;
+                return;
+            }
+
+            uint totalAmountS = p.fillAmountS.mul(
+                ctx.feePercentageBase) / (ctx.feePercentageBase - totalAddedPercentage);
+
+            if (totalAmountS > spendableS) {
+                uint maxFeeAmountS = spendableS
+                    .mul(totalAddedPercentage) / ctx.feePercentageBase;
+
+                p.fillAmountS = spendableS - maxFeeAmountS;
+            }
+        }
+        p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;
+    }
 
     function calculateFeesAndTaxes(
         Data.Participation p,
@@ -36,7 +79,6 @@ library ParticipationHelper {
         bool P2P
         )
         internal
-        pure
     {
         if (P2P) {
             // Calculate P2P fees
@@ -61,12 +103,16 @@ library ParticipationHelper {
             // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
             uint feeAmountTax = ctx.tax.calculateTax(p.order.feeToken, false, P2P, p.feeAmount);
             uint totalAmountFeeToken = p.feeAmount + feeAmountTax;
-            if (p.order.feeToken == p.order.tokenS) {
-                totalAmountFeeToken += p.fillAmountS;
-            }
-            if (totalAmountFeeToken > p.order.spendableFee) {
+
+            // This and subsequent orders could use tokenS to pay fees,
+            // so we have to make sure the funds needed for this order cannot be used
+            p.order.reserveAmountS(p.fillAmountS);
+            uint spendableFee = p.order.getSpendableFee(ctx);
+            if (totalAmountFeeToken > spendableFee) {
                 p.feeAmountB = p.fillAmountB.mul(p.order.feePercentage) / ctx.feePercentageBase;
                 p.feeAmount = 0;
+            } else {
+                p.order.reserveAmountFee(totalAmountFeeToken);
             }
 
             // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.

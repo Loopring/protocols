@@ -93,6 +93,33 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "self-trading in 2-size ring",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        ownerIndex: 0,
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[1],
+        amountS: 3e18,
+        amountB: 1e18,
+        feeAmount: 1e18,
+        balanceFee: 1.1e18,
+      },
+      {
+        index: 1,
+        ownerIndex: 0,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 1e18,
+        amountB: 3e18,
+        feeAmount: 1e18,
+        balanceFee: 1.1e18,
+      },
+    ],
+  },
+
+  {
     description: "multiple 2-size ring, same owner in different orders",
     rings: [[0, 1], [2, 3]],
     orders: [
@@ -272,6 +299,55 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[0],
         amountS: 1e18,
         amountB: 0,
+      },
+    ],
+  },
+
+  {
+    description: "ring with sub-ring",
+    rings: [[0, 1, 2, 3, 4, 5]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[1],
+        amountS: 100e18,
+        amountB: 10e18,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[3],
+        amountS: 10e18,
+        amountB: 50e18,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[3],
+        tokenB: tokenSymbols[4],
+        amountS: 50e18,
+        amountB: 25e18,
+      },
+      {
+        index: 3,
+        tokenS: tokenSymbols[4],
+        tokenB: tokenSymbols[1],
+        amountS: 25e18,
+        amountB: 20e18,
+      },
+      {
+        index: 4,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[3],
+        amountS: 20e18,
+        amountB: 30e18,
+      },
+      {
+        index: 5,
+        tokenS: tokenSymbols[3],
+        tokenB: tokenSymbols[2],
+        amountS: 30e18,
+        amountB: 100e18,
       },
     ],
   },

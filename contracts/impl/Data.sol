@@ -89,6 +89,7 @@ library Data {
     struct Spendable {
         bool initialized;
         uint amount;
+        uint reserved;
     }
 
     struct Order {
@@ -124,8 +125,6 @@ library Data {
         bytes32 hash;
         address brokerInterceptor;
         uint    filledAmountS;
-        uint    spendableS;
-        uint    spendableFee;
         bool    valid;
     }
 

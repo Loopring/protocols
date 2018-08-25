@@ -149,7 +149,8 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const setupOrder = async (order: OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
-    const ownerIndex = order.ownerIndex ? order.ownerIndex : (index === 0 ? index : index % orderOwners.length);
+    const ownerIndex = order.ownerIndex !== undefined ?
+                       order.ownerIndex : (index === 0 ? index : index % orderOwners.length);
     assert(ownerIndex >= 0 && ownerIndex < orderOwners.length, "Invalid owner index");
     const owner = orderOwners[ownerIndex];
 

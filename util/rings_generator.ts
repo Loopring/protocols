@@ -118,16 +118,12 @@ export class RingsGenerator {
       if (!ownerTokens[order.owner][order.tokenS]) {
         ownerTokens[order.owner][order.tokenS] = {
           index: numSpendables++,
-          initialized: false,
-          amount: 0,
         };
       }
       order.tokenSpendableS = ownerTokens[order.owner][order.tokenS];
       if (!ownerTokens[order.owner][tokenFee]) {
         ownerTokens[order.owner][tokenFee] = {
           index: numSpendables++,
-          initialized: false,
-          amount: 0,
         };
       }
       order.tokenSpendableFee = ownerTokens[order.owner][tokenFee];
@@ -142,16 +138,12 @@ export class RingsGenerator {
         if (!ownerBrokerTokens[order.owner][order.broker][order.tokenS]) {
           ownerBrokerTokens[order.owner][order.broker][order.tokenS] = {
             index: numSpendables++,
-            initialized: false,
-            amount: 0,
           };
         }
         order.brokerSpendableS = ownerBrokerTokens[order.owner][order.broker][order.tokenS];
         if (!ownerBrokerTokens[order.owner][order.broker][tokenFee]) {
           ownerBrokerTokens[order.owner][order.broker][tokenFee] = {
             index: numSpendables++,
-            initialized: false,
-            amount: 0,
           };
         }
         order.brokerSpendableFee = ownerBrokerTokens[order.owner][order.broker][tokenFee];

@@ -11,8 +11,9 @@ export enum SignAlgorithm {
 }
 
 export interface Spendable {
-  initialized: boolean;
-  amount: number;
+  initialized?: boolean;
+  amount?: number;
+  reserved?: number;
   index?: number;
 }
 
@@ -47,8 +48,8 @@ export interface OrderInfo {
 
   // helper field
   filledAmountS?: number;
-  spendableS?: number;
-  spendableFee?: number;
+  ringSpendableS?: number;
+  ringSpendableFee?: number;
   fillAmountS?: number;
   fillAmountB?: number;
   fillAmountFee?: number;

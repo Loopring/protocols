@@ -137,21 +137,40 @@ export class OrderUtil {
   }
 
   public async getSpendableS(order: OrderInfo) {
-    return await this.getSpendable(order.tokenS,
-                                   order.owner,
-                                   order.broker,
-                                   order.brokerInterceptor,
-                                   order.tokenSpendableS,
-                                   order.brokerSpendableS);
+    const spendable = await this.getSpendable(order.tokenS,
+                                              order.owner,
+                                              order.broker,
+                                              order.brokerInterceptor,
+                                              order.tokenSpendableS,
+                                              order.brokerSpendableS);
+    return spendable;
   }
 
   public async getSpendableFee(order: OrderInfo) {
-    return await this.getSpendable(order.feeToken,
-                                   order.owner,
-                                   order.broker,
-                                   order.brokerInterceptor,
-                                   order.tokenSpendableFee,
-                                   order.brokerSpendableFee);
+    const spendable = await this.getSpendable(order.feeToken,
+                                              order.owner,
+                                              order.broker,
+                                              order.brokerInterceptor,
+                                              order.tokenSpendableFee,
+                                              order.brokerSpendableFee);
+    return spendable;
+  }
+
+  public async reserveAmountS(order: OrderInfo,
+                              amount: number) {
+    assert((await this.getSpendableS(order)) >= amount, "spendableS >= reserve amount");
+    order.tokenSpendableS.reserved += amount;
+  }
+
+  public async reserveAmountFee(order: OrderInfo,
+                                amount: number) {
+    assert((await this.getSpendableFee(order)) >= amount, "spendableFee >= reserve amount");
+    order.tokenSpendableFee.reserved += amount;
+  }
+
+  public resetReservations(order: OrderInfo) {
+    order.tokenSpendableS.reserved = 0;
+    order.tokenSpendableFee.reserved = 0;
   }
 
   public async getERC20Spendable(spender: string,
@@ -206,7 +225,7 @@ export class OrderUtil {
       }
       spendable = (brokerSpendable.amount < spendable) ? brokerSpendable.amount : spendable;
     }
-    return spendable;
+    return spendable - tokenSpendable.reserved;
   }
 
   private toBN(n: number) {

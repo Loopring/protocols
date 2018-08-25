@@ -195,6 +195,36 @@ library OrderHelper {
         );
     }
 
+    function reserveAmountS(
+        Data.Order order,
+        uint amount
+        )
+        internal
+        pure
+    {
+        order.tokenSpendableS.reserved += amount;
+    }
+
+    function reserveAmountFee(
+        Data.Order order,
+        uint amount
+        )
+        internal
+        pure
+    {
+        order.tokenSpendableFee.reserved += amount;
+    }
+
+    function resetReservations(
+        Data.Order order
+        )
+        internal
+        pure
+    {
+        order.tokenSpendableS.reserved = 0;
+        order.tokenSpendableFee.reserved = 0;
+    }
+
     /// @return Amount of ERC20 token that can be spent by this contract.
     function getERC20Spendable(
         ITradeDelegate delegate,
@@ -202,6 +232,7 @@ library OrderHelper {
         address owner
         )
         private
+        view
         returns (uint spendable)
     {
         ERC20 token = ERC20(tokenAddress);
@@ -270,5 +301,6 @@ library OrderHelper {
             }
             spendable = (brokerSpendable.amount < spendable) ? brokerSpendable.amount : spendable;
         }
+        spendable = spendable.sub(tokenSpendable.reserved);
     }
 }

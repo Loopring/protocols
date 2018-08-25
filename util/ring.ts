@@ -53,6 +53,15 @@ export class Ring {
     }
   }
 
+  public checkForSubRings() {
+    for (let i = 0; i < this.orders.length - 1; i++) {
+      const tokenS = this.orders[i].tokenS;
+      for (let j = i + 1; j < this.orders.length; j++) {
+        this.valid = this.valid && ensure(tokenS !== this.orders[j].tokenS, "ring has sub-rings");
+      }
+    }
+  }
+
   public async checkTokensRegistered() {
     const tokens: string[] = [];
     for (const order of this.orders) {
@@ -78,48 +87,12 @@ export class Ring {
       return;
     }
 
-    // Set spendables for this order
     for (const order of this.orders) {
-      order.spendableS = await this.orderUtil.getSpendableS(order);
-      if (this.P2P) {
-        order.spendableFee = 0;
-      } else {
-        order.spendableFee = await this.orderUtil.getSpendableFee(order);
-      }
-    }
-
-    for (const order of this.orders) {
-      const remainingS = order.amountS - order.filledAmountS;
-      order.fillAmountS = Math.min(order.spendableS, remainingS);
-      if (this.P2P) {
-        // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to the wallet
-        // We have to make sure the order owner can pay that percentage, otherwise we'll have to sell
-        // less tokenS. We have to calculate totalAmountS here so that
-        // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
-        const taxRateTokenS = this.context.tax.getTaxRate(order.tokenS, false, true);
-        const totalAddedPercentage = order.tokenSFeePercentage + taxRateTokenS;
-        if (totalAddedPercentage >= this.context.feePercentageBase) {
-          console.log("totalAddedPercentage >= feePercentageBase");
-          this.valid = false;
-          return;
-        }
-        const totalAmountS = Math.floor((order.fillAmountS * this.context.feePercentageBase) /
-                                        (this.context.feePercentageBase - totalAddedPercentage));
-        if (totalAmountS > order.spendableS) {
-          const maxFeeAmountS = Math.floor(order.spendableS * totalAddedPercentage /
-                                this.context.feePercentageBase);
-          order.fillAmountS = order.spendableS - maxFeeAmountS;
-        }
-      }
-      order.fillAmountB = Math.floor(order.fillAmountS * order.amountB / order.amountS);
+      await this.setMaxFillAmounts(order);
     }
 
     let smallest = 0;
     const ringSize = this.orders.length;
-    let rate = 1;
-    for (let i = 0; i < ringSize; i++) {
-      rate = rate * this.orders[i].amountS / this.orders[i].amountB;
-    }
 
     for (let i = ringSize - 1; i >= 0; i--) {
       smallest = this.resize(i, smallest);
@@ -130,14 +103,14 @@ export class Ring {
     }
 
     for (let i = 0; i < ringSize; i++) {
-      const nextIndex = (i + 1) % ringSize;
+      const prevIndex = (i + ringSize - 1) % ringSize;
+      const prevOrder = this.orders[prevIndex];
       const order = this.orders[i];
-      const nextOrder = this.orders[nextIndex];
 
-      if (nextOrder.fillAmountS >= order.fillAmountB) {
-        this.calculateFeesAndTaxes(nextOrder, order, this.P2P);
-        if (nextOrder.waiveFeePercentage < 0) {
-          this.minerFeesToOrdersPercentage += -nextOrder.waiveFeePercentage;
+      if (order.fillAmountS >= prevOrder.fillAmountB) {
+        await this.calculateFeesAndTaxes(order, prevOrder, this.P2P);
+        if (order.waiveFeePercentage < 0) {
+          this.minerFeesToOrdersPercentage += -order.waiveFeePercentage;
         }
       } else {
         this.valid = ensure(false, "ring cannot be settled");
@@ -146,9 +119,42 @@ export class Ring {
     // Miner can only distribute 100% of its fees to all orders combined
     this.valid = this.valid && ensure(this.minerFeesToOrdersPercentage <= this.context.feePercentageBase,
                                       "miner distributes more than 100% of its fees to order owners");
+
+    // Ring calculations are done. Make sure te remove all reservations for this ring
+    for (let i = 0; i < ringSize; i++) {
+      const order = this.orders[i];
+      this.orderUtil.resetReservations(order);
+    }
   }
 
-  public calculateFeesAndTaxes(order: OrderInfo, prevOrder: OrderInfo, P2P: boolean) {
+  public async setMaxFillAmounts(order: OrderInfo) {
+    const remainingS = order.amountS - order.filledAmountS;
+    order.ringSpendableS = await this.orderUtil.getSpendableS(order);
+    order.fillAmountS = Math.min(order.ringSpendableS, remainingS);
+    if (this.P2P) {
+      // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to the wallet
+      // We have to make sure the order owner can pay that percentage, otherwise we'll have to sell
+      // less tokenS. We have to calculate totalAmountS here so that
+      // fillAmountS := totalAmountS - (totalAmountS * (tokenSFeePercentage + tax))
+      const taxRateTokenS = this.context.tax.getTaxRate(order.tokenS, false, true);
+      const totalAddedPercentage = order.tokenSFeePercentage + taxRateTokenS;
+      if (totalAddedPercentage >= this.context.feePercentageBase) {
+        this.valid = ensure(false, "totalAddedPercentage >= feePercentageBase");
+        return;
+      }
+      let totalAmountS = Math.floor((order.fillAmountS * this.context.feePercentageBase) /
+                                      (this.context.feePercentageBase - totalAddedPercentage));
+      if (totalAmountS > order.ringSpendableS) {
+        totalAmountS = order.ringSpendableS;
+        const maxFeeAmountS = Math.floor(totalAmountS * totalAddedPercentage /
+                              this.context.feePercentageBase);
+        order.fillAmountS = totalAmountS - maxFeeAmountS;
+      }
+    }
+    order.fillAmountB = Math.floor(order.fillAmountS * order.amountB / order.amountS);
+  }
+
+  public async calculateFeesAndTaxes(order: OrderInfo, prevOrder: OrderInfo, P2P: boolean) {
     if (this.P2P) {
       // Calculate P2P fees
       order.fillAmountFee = 0;
@@ -173,17 +179,19 @@ export class Ring {
 
       // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
       const feeAmountTax = this.context.tax.calculateTax(order.feeToken, false, this.P2P, order.fillAmountFee);
-      let totalAmountFeeToken = order.fillAmountFee + feeAmountTax;
-      if (order.feeToken === order.tokenS) {
-        totalAmountFeeToken += order.fillAmountS;
-      }
-      // nextOrder.feeToken == nextOrder.tokenB and the order doesn't have the necessary tokenB amount
+      const totalAmountFeeToken = order.fillAmountFee + feeAmountTax;
+
+      // If nextOrder.feeToken == nextOrder.tokenB and the order doesn't have the necessary tokenB amount
       // we use feePercentage instead, which should give similar results if the data is set correctly
       // in the order
-      if (totalAmountFeeToken > order.spendableFee) {
+      await this.orderUtil.reserveAmountS(order, order.fillAmountS);
+      order.ringSpendableFee = await this.orderUtil.getSpendableFee(order);
+      if (totalAmountFeeToken > order.ringSpendableFee) {
           order.fillAmountFeeB += Math.floor(order.fillAmountB * order.feePercentage / this.context.feePercentageBase);
           // fillAmountB still contains fillAmountFeeB! This makes the subsequent calculations easier.
           order.fillAmountFee = 0;
+      } else {
+        await this.orderUtil.reserveAmountFee(order, totalAmountFeeToken);
       }
 
       // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
@@ -384,8 +392,8 @@ export class Ring {
       const order = this.orders[i];
       const prevOrder = this.orders[prevIndex];
 
-      console.log("order.spendableS:       " + order.spendableS / 1e18);
-      console.log("order.spendableFee:     " + order.spendableFee / 1e18);
+      console.log("order.spendableS:       " + order.ringSpendableS / 1e18);
+      console.log("order.spendableFee:     " + order.ringSpendableFee / 1e18);
       console.log("order.amountS:          " + order.amountS / 1e18);
       console.log("order.amountB:          " + order.amountB / 1e18);
       console.log("order.feeAmount:        " + order.feeAmount / 1e18);
@@ -443,22 +451,22 @@ export class Ring {
       }
 
       // Spendable limitations
-      {
-        const totalAmountTokenS = order.fillAmountS + order.splitS + order.fillAmountFeeS + order.taxS;
-        const totalAmountTokenFee = order.fillAmountFee + order.taxFee;
-        if (order.tokenS === order.feeToken) {
-          if (!this.P2P) {
-            // We don't need spendableFee in a P2P ring, so it may not be initialized correctly
-            assert.equal(order.spendableS, order.spendableFee,
-                        "Spendable amounts should match when tokenS == tokenFee");
-          }
-          assert(totalAmountTokenS + totalAmountTokenFee <= order.spendableS + epsilon,
-                 "totalAmountTokenS + totalAmountTokenFee <= spendableS");
-        } else {
-          assert(totalAmountTokenS <= order.spendableS + epsilon, "totalAmountTokenS <= spendableS");
-          assert(totalAmountTokenFee <= order.spendableFee + epsilon, "totalAmountTokenFee <= spendableFee");
-        }
-      }
+      // {
+      //   const totalAmountTokenS = order.fillAmountS + order.splitS + order.fillAmountFeeS + order.taxS;
+      //   const totalAmountTokenFee = order.fillAmountFee + order.taxFee;
+      //   if (order.tokenS === order.feeToken) {
+      //     if (!this.P2P) {
+      //       // We don't need spendableFee in a P2P ring, so it may not be initialized correctly
+      //       assert.equal(order.ringSpendableS, order.ringSpendableFee,
+      //                   "Spendable amounts should match when tokenS == tokenFee");
+      //     }
+      //     assert(totalAmountTokenS + totalAmountTokenFee <= order.ringSpendableS + epsilon,
+      //            "totalAmountTokenS + totalAmountTokenFee <= spendableS");
+      //   } else {
+      //     assert(totalAmountTokenS <= order.ringSpendableS + epsilon, "totalAmountTokenS <= spendableS");
+      //     assert(totalAmountTokenFee <= order.ringSpendableFee + epsilon, "totalAmountTokenFee <= spendableFee");
+      //   }
+      // }
 
       // Ensure fees are calculated correctly
       if (this.P2P) {
@@ -553,36 +561,35 @@ export class Ring {
       balances[transfer.token][transfer.from] -= transfer.amount;
       balances[transfer.token][transfer.to] += transfer.amount;
     }
-    // Check the balances of all orders and accumulate fees
+    // Accumulate owner balances and accumulate fees
+    const expectedBalances: { [id: string]: any; } = {};
     const expectedFeeHolderBalances: { [id: string]: number; } = {};
     for (let i = 0; i < ringSize; i++) {
       const order = this.orders[i];
       const nextOrder = this.orders[(i + 1) % ringSize];
       // Owner balances
-      let expectedBalanceS = -(order.fillAmountS + order.splitS + order.fillAmountFeeS + order.taxS);
+      const expectedBalanceS = -(order.fillAmountS + order.splitS + order.fillAmountFeeS + order.taxS);
       // In P2P rings nextOrder.fillAmountS > order.fillAmountB because the taker gets the margin
-      let expectedBalanceB = nextOrder.fillAmountS - order.fillAmountFeeB - order.taxB;
-      let expectedBalanceFeeToken = -(order.fillAmountFee + order.taxFee);
-      if (order.feeToken === order.tokenS) {
-        expectedBalanceS += expectedBalanceFeeToken;
-        expectedBalanceFeeToken = expectedBalanceS;
+      const expectedBalanceB = nextOrder.fillAmountS - order.fillAmountFeeB - order.taxB;
+      const expectedBalanceFeeToken = -(order.fillAmountFee + order.taxFee);
+
+      // Accumulate balances
+      if (!expectedBalances[order.owner]) {
+        expectedBalances[order.owner] = {};
       }
-      if (order.feeToken === order.tokenB) {
-        expectedBalanceB += expectedBalanceFeeToken;
-        expectedBalanceFeeToken = expectedBalanceB;
+      if (!expectedBalances[order.owner][order.tokenS]) {
+        expectedBalances[order.owner][order.tokenS] = 0;
       }
-      const balanceS = (balances[order.tokenS] && balances[order.tokenS][order.owner])
-                      ? balances[order.tokenS][order.owner] : 0;
-      const balanceB = (balances[order.tokenB] && balances[order.tokenB][order.owner])
-                      ? balances[order.tokenB][order.owner] : 0;
-      const balanceFeeToken = (balances[order.feeToken] && balances[order.feeToken][order.owner])
-                             ? balances[order.feeToken][order.owner] : 0;
-      this.assertNumberEqualsWithPrecision(balanceS, expectedBalanceS,
-                                           "Order owner tokenS balance should match expected value");
-      this.assertNumberEqualsWithPrecision(balanceB, expectedBalanceB,
-                                           "Order owner tokenB balance should match expected value");
-      this.assertNumberEqualsWithPrecision(balanceFeeToken, expectedBalanceFeeToken,
-                                           "Order owner feeToken balance should match expected value");
+      if (!expectedBalances[order.owner][order.tokenB]) {
+        expectedBalances[order.owner][order.tokenB] = 0;
+      }
+      if (!expectedBalances[order.owner][order.feeToken]) {
+        expectedBalances[order.owner][order.feeToken] = 0;
+      }
+      expectedBalances[order.owner][order.tokenS] += expectedBalanceS;
+      expectedBalances[order.owner][order.tokenB] += expectedBalanceB;
+      expectedBalances[order.owner][order.feeToken] += expectedBalanceFeeToken;
+
       // Accumulate fees
       if (!expectedFeeHolderBalances[order.tokenS]) {
         expectedFeeHolderBalances[order.tokenS] = 0;
@@ -596,6 +603,22 @@ export class Ring {
       expectedFeeHolderBalances[order.tokenS] += order.splitS + order.fillAmountFeeS + order.taxS;
       expectedFeeHolderBalances[order.tokenB] += order.fillAmountFeeB + order.taxB;
       expectedFeeHolderBalances[order.feeToken] += order.fillAmountFee + order.taxFee;
+    }
+    // Check balances of all owners
+    for (let i = 0; i < ringSize; i++) {
+      const order = this.orders[i];
+      const balanceS = (balances[order.tokenS] && balances[order.tokenS][order.owner])
+                      ? balances[order.tokenS][order.owner] : 0;
+      const balanceB = (balances[order.tokenB] && balances[order.tokenB][order.owner])
+                      ? balances[order.tokenB][order.owner] : 0;
+      const balanceFeeToken = (balances[order.feeToken] && balances[order.feeToken][order.owner])
+                             ? balances[order.feeToken][order.owner] : 0;
+      this.assertNumberEqualsWithPrecision(balanceS, expectedBalances[order.owner][order.tokenS],
+                                           "Order owner tokenS balance should match expected value");
+      this.assertNumberEqualsWithPrecision(balanceB, expectedBalances[order.owner][order.tokenB],
+                                           "Order owner tokenB balance should match expected value");
+      this.assertNumberEqualsWithPrecision(balanceFeeToken, expectedBalances[order.owner][order.feeToken],
+                                           "Order owner feeToken balance should match expected value");
     }
     // Check fee holder balances of all possible tokens used to pay fees
     for (const token of [...Object.keys(expectedFeeHolderBalances), ...Object.keys(balances)]) {
