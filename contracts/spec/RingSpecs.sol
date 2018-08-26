@@ -30,8 +30,7 @@ library RingSpecs {
 
     function assembleRings(
         uint8[][] specs,
-        Data.Order[] orders,
-        Data.Inputs inputs
+        Data.Order[] orders
         )
         internal
         pure
@@ -42,16 +41,14 @@ library RingSpecs {
         for (uint i = 0; i < size; i++) {
             rings[i] = assembleRing(
                 specs[i],
-                orders,
-                inputs
+                orders
             );
         }
     }
 
     function assembleRing(
         uint8[] pspecs,
-        Data.Order[] orders,
-        Data.Inputs inputs
+        Data.Order[] orders
         )
         internal
         pure

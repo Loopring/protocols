@@ -69,8 +69,7 @@ library MiningHelper {
     }
 
     function checkMinerSignature(
-        Data.Mining mining,
-        Data.Context ctx
+        Data.Mining mining
         )
         internal
         view

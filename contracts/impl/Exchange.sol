@@ -213,7 +213,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     function submitRings(
         bytes data
         )
-        public
+        external
     {
         Data.Tax memory tax = Data.Tax(
             TAX_MATCHING_CONSUMER_LRC,
@@ -270,7 +270,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         mining.updateHash(rings);
         mining.updateMinerAndInterceptor(ctx);
-        require(mining.checkMinerSignature(ctx), "Invalid miner signature");
+        require(mining.checkMinerSignature(), "Invalid miner signature");
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].checkDualAuthSignature(mining.hash);

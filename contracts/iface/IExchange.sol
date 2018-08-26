@@ -117,5 +117,5 @@ contract IExchange {
     function submitRings(
         bytes data
         )
-        public;
+        external;
 }

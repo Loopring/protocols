@@ -130,7 +130,7 @@ library ExchangeDeserializer {
         );
 
         Data.Order[] memory orders = orderSpecs.assembleOrders(ctx, inputs);
-        Data.Ring[] memory rings = ringSpecs.assembleRings(orders, inputs);
+        Data.Ring[] memory rings = ringSpecs.assembleRings(orders);
 
         return (mining, orders, rings);
     }

@@ -234,10 +234,10 @@ library RingHelper {
     }
 
     function generateFills(
-        Data.Ring ring,
-        Data.Context ctx
+        Data.Ring ring
         )
         internal
+        pure
         returns (IExchange.Fill[])
     {
         IExchange.Fill[] memory fills = new IExchange.Fill[](ring.size);

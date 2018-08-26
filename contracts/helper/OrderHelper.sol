@@ -95,6 +95,7 @@ library OrderHelper {
         Data.Context ctx
         )
         internal
+        view
     {
         order.filledAmountS = ctx.delegate.filled(order.hash);
     }
