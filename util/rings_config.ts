@@ -304,6 +304,20 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "single order ring",
+    rings: [[0]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[0],
+        amountS: 2e18,
+        amountB: 2e18,
+      },
+    ],
+  },
+
+  {
     description: "ring with sub-ring",
     rings: [[0, 1, 2, 3, 4, 5]],
     orders: [

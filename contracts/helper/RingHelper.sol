@@ -159,6 +159,7 @@ library RingHelper {
         internal
         pure
     {
+        ring.valid = ring.valid && (ring.size > 1 && ring.size <= 8); // invalid ring size
         for (uint i = 0; i < ring.size; i++) {
             Data.Participation memory p = ring.participations[i];
             ring.valid = ring.valid && p.order.valid;

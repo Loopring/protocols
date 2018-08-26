@@ -58,7 +58,6 @@ library RingSpecs {
         returns (Data.Ring memory)
     {
         uint size = pspecs.length;
-        require(size > 1 && size <= 8, "bad ring size");
 
         Data.Participation[] memory parts = new Data.Participation[](size);
         for (uint i = 0; i < size; i++) {

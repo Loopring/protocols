@@ -48,6 +48,7 @@ export class Ring {
   }
 
   public checkOrdersValid() {
+    this.valid = this.valid && ensure(this.orders.length > 1 && this.orders.length <= 8, "invald ring size");
     for (const order of this.orders) {
       this.valid = this.valid && ensure(order.valid, "ring contains invalid order");
     }
@@ -116,13 +117,11 @@ export class Ring {
         this.valid = ensure(false, "ring cannot be settled");
       }
     }
-    // Miner can only distribute 100% of its fees to all orders combined
     this.valid = this.valid && ensure(this.minerFeesToOrdersPercentage <= this.context.feePercentageBase,
                                       "miner distributes more than 100% of its fees to order owners");
 
     // Ring calculations are done. Make sure te remove all reservations for this ring
-    for (let i = 0; i < ringSize; i++) {
-      const order = this.orders[i];
+    for (const order of this.orders) {
       this.orderUtil.resetReservations(order);
     }
   }

@@ -135,7 +135,6 @@ export class ExchangeDeserializer {
 
   private assembleRing(pspecs: number[], orders: OrderInfo[]) {
     const size = pspecs.length;
-    assert(size > 1 && size <= 8, "bad ring size");
 
     const ring: number[] = [];
     for (let i = 0; i < size; i++) {
