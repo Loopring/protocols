@@ -243,7 +243,7 @@ export class RingsGenerator {
       param.bytesList.push(order.dualAuthSig);
     }
 
-    if (order.feeToken) {
+    if (order.feeToken && order.feeToken !== this.context.lrcAddress) {
       spec += 1 << 8;
       param.addressList.push(order.feeToken);
     }

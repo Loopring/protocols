@@ -145,6 +145,10 @@ contract("Exchange", (accounts: string[]) => {
     await assertFeeBalances(report.feeBalances);
     await assertFilledAmounts(context, report.filledAmounts);
 
+    // await watchAndPrintEvent(tradeDelegate, "LogTrans");
+    // await watchAndPrintEvent(exchange, "LogUint3");
+    // await watchAndPrintEvent(exchange, "LogAddress");
+
     return {tx, report};
   };
 
@@ -164,17 +168,11 @@ contract("Exchange", (accounts: string[]) => {
     if (order.feeToken && !order.feeToken.startsWith("0x")) {
       order.feeToken = await symbolRegistry.getAddressBySymbol(order.feeToken);
     }
-    if (!order.feeAmount) {
+    if (order.feeAmount === undefined) {
       order.feeAmount = 1e18;
     }
-    if (!order.feePercentage) {
+    if (order.feePercentage === undefined && order.feeAmount > 0) {
       order.feePercentage = 20;  // == 2.0%
-    }
-    if (!order.tokenSFeePercentage) {
-      order.tokenSFeePercentage = 15;  // == 1.5%
-    }
-    if (!order.tokenBFeePercentage) {
-      order.tokenBFeePercentage = 25;  // == 2.5%
     }
     if (!order.dualAuthSignAlgorithm) {
       order.dualAuthSignAlgorithm = SignAlgorithm.Ethereum;
@@ -192,18 +190,20 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.walletAddr && index > 0) {
       order.walletAddr = wallet1;
     }
-    /*if (!order.waiveFeePercentage && index > 0) {
-      order.waiveFeePercentage = -450;
-    } else {
-      order.waiveFeePercentage = -250;
-    }*/
+    // Fill in defaults (default, so these will not get serialized)
+    order.feeToken = order.feeToken ? order.feeToken : lrcAddress;
+    order.feeAmount = order.feeAmount ? order.feeAmount : 0;
+    order.feePercentage = order.feePercentage ? order.feePercentage : 0;
+    order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 0;
+    order.tokenSFeePercentage = order.tokenSFeePercentage ? order.tokenSFeePercentage : 0;
+    order.tokenBFeePercentage = order.tokenBFeePercentage ? order.tokenBFeePercentage : 0;
 
-    // setup amount:
+    // setup initial balances:
     const tokenS = await DummyToken.at(order.tokenS);
-    await tokenS.setBalance(order.owner, order.balanceS ? order.balanceS : order.amountS);
+    await tokenS.setBalance(order.owner, (order.balanceS !== undefined) ? order.balanceS : order.amountS);
     if (!limitFeeTokenAmount) {
       const feeToken = order.feeToken ? order.feeToken : lrcAddress;
-      const balanceFee = order.balanceFee ? order.balanceFee : order.feeAmount;
+      const balanceFee = (order.balanceFee !== undefined) ? order.balanceFee : (order.feeAmount * 2);
       if (feeToken === order.tokenS) {
         tokenS.addBalance(order.owner, balanceFee);
       } else {
@@ -216,7 +216,7 @@ contract("Exchange", (accounts: string[]) => {
   const assertEqualsRingsInfo = (ringsInfoA: RingsInfo, ringsInfoB: RingsInfo) => {
     // Blacklist properties we don't want to check.
     // We don't whitelist because we might forget to add them here otherwise.
-    const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash"];
+    const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash", "transactionOriginOwnerIndex"];
     const orderPropertiesToSkip = [
       "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
@@ -453,93 +453,26 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     for (const ringsInfo of ringsInfoList) {
-      // all configed testcases here:
-      ringsInfo.transactionOrigin = transactionOrigin;
-      ringsInfo.miner = miner;
-      ringsInfo.feeRecipient = miner;
-
       it(ringsInfo.description, async () => {
-
-        // before() is async, so any dependency we have on before() having run needs
-        // to be done in async tests (see mocha docs)
-        const context = getDefaultContext();
-
+        if (ringsInfo.transactionOriginOwnerIndex === undefined) {
+          ringsInfo.transactionOrigin = transactionOrigin;
+          ringsInfo.feeRecipient = miner;
+          ringsInfo.miner = miner;
+        } else {
+          ringsInfo.transactionOrigin = orderOwners[ringsInfo.transactionOriginOwnerIndex];
+          ringsInfo.feeRecipient = undefined;
+          ringsInfo.miner = undefined;
+        }
         for (const [i, order] of ringsInfo.orders.entries()) {
           await setupOrder(order, i);
         }
-
-        const ringsGenerator = new RingsGenerator(context);
-        await ringsGenerator.setupRingsAsync(ringsInfo);
-        const bs = ringsGenerator.toSubmitableParam(ringsInfo);
-        // console.log("bs:", bs);
-
-        const simulator = new ProtocolSimulator(walletSplitPercentage, context);
-        const deserializedRingsInfo = simulator.deserialize(bs, transactionOrigin);
-        assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
-        const report = await simulator.simulateAndReport(deserializedRingsInfo);
-        // console.log("report.transferItems:", report.transferItems);
-
-        const eventFromBlock: number = web3.eth.blockNumber;
-        const tx = await exchange.submitRings(bs, {from: transactionOrigin});
-        console.log("gas used: ", tx.receipt.gasUsed);
-
-        const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
-        assertTransfers(transferEvents, report.transferItems);
-        await assertFeeBalances(report.feeBalances);
-        await assertFilledAmounts(context, report.filledAmounts);
-
-        // await watchAndPrintEvent(tradeDelegate, "LogTrans");
-        // await watchAndPrintEvent(exchange, "LogUint3");
-        // await watchAndPrintEvent(exchange, "LogAddress");
-      });
-    }
-
-  });
-
-  describe.skip("submitRing with insufficient feeAmount (will use feePercentage)", () => {
-    before(async () => {
-      await cleanTradeHistory();
-    });
-
-    for (const ringsInfo of ringsInfoList) {
-      ringsInfo.transactionOrigin = transactionOrigin;
-      ringsInfo.miner = miner;
-      ringsInfo.feeRecipient = miner;
-
-      it(ringsInfo.description, async () => {
-        for (const [i, order] of ringsInfo.orders.entries()) {
-          await setupOrder(order, i, true);
-        }
         const context = getDefaultContext();
         await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
       });
     }
   });
 
-  describe.skip("submitRing in P2P scenario", () => {
-    before(async () => {
-      await cleanTradeHistory();
-    });
-
-    for (const ringsInfo of ringsInfoList) {
-      it(ringsInfo.description, async () => {
-        for (const [i, order] of ringsInfo.orders.entries()) {
-          await setupOrder(order, i, true);
-        }
-        const ringMiner = ringsInfo.orders[0].owner;
-        ringsInfo.transactionOrigin = ringMiner;
-        ringsInfo.miner = ringMiner;
-        ringsInfo.feeRecipient = ringMiner;
-
-        const context = getDefaultContext();
-        await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
-      });
-    }
-  });
-
-  // Added '.skip' here so these tests are NOT run by default because they take quite
-  // a bit of extra time to run. Remove it once development on submitRings is less frequent.
-  describe.skip("Cancelling orders", () => {
+  describe("Cancelling orders", () => {
 
     // Start each test case with a clean trade history otherwise state changes
     // would persist between test cases which would be hard to keep track of and
@@ -697,9 +630,7 @@ contract("Exchange", (accounts: string[]) => {
 
   });
 
-  // Added '.skip' here so these tests are NOT run by default because they take quite
-  // a bit of extra time to run. Remove it once development on submitRings is less frequent.
-  describe.skip("Broker", () => {
+  describe("Broker", () => {
 
     // Start each test case with a clean trade history otherwise state changes
     // would persist between test cases which would be hard to keep track of and
@@ -896,9 +827,7 @@ contract("Exchange", (accounts: string[]) => {
 
   });
 
-  // Added '.skip' here so these tests are NOT run by default because they take quite
-  // a bit of extra time to run. Remove it once development on submitRings is less frequent.
-  describe.skip("Security", () => {
+  describe("Security", () => {
 
     beforeEach(async () => {
       await cleanTradeHistory();

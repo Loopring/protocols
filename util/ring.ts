@@ -500,6 +500,13 @@ export class Ring {
         // Fees need to be paid either in feeToken OR tokenB, never both at the same time
         assert(!(order.fillAmountFee > 0 && order.fillAmountFeeB > 0), "fees should be paid in tokenFee OR tokenB");
 
+        // Fees can only be paid in tokenB when the owner doesn't have enought funds to pay in feeToken
+        if (order.fillAmountFeeB > 0) {
+          const fee = Math.floor(order.feeAmount * (order.fillAmountS + order.splitS) / order.amountS);
+          const tax = this.context.tax.calculateTax(order.feeToken, false, false, fee);
+          assert(fee + tax > order.ringSpendableFee, "fees should be paid in tokenFee if possible");
+        }
+
         if (order.waiveFeePercentage < 0) {
           // If the miner waives the fees for this order all fees need to be 0
           assert.equal(order.fillAmountFee,  0, "No fees need to be paid if miner waives fees");

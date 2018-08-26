@@ -106,6 +106,8 @@ export interface RingsInfo {
   hash?: Buffer;
   transactionOrigin?: string;
 
+  transactionOriginOwnerIndex?: number;
+
   [key: string]: any;
 }
 

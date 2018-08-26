@@ -30,12 +30,6 @@ export class OrderUtil {
   }
 
   public async validateInfo(order: OrderInfo) {
-    // Fill in defaults here to make things easier
-    order.feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
-    order.tokenSFeePercentage = order.tokenSFeePercentage ? order.tokenSFeePercentage : 0;
-    order.tokenBFeePercentage = order.tokenBFeePercentage ? order.tokenBFeePercentage : 0;
-    order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 0;
-
     let valid = true;
     valid = valid && ensure(order.owner ? true : false, "invalid order owner");
     valid = valid && ensure(order.tokenS ? true : false, "invalid order tokenS");
