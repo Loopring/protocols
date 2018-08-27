@@ -1,0 +1,46 @@
+{
+  "name": "protocol-simulator-core",
+  "version": "0.1.0",
+  "description": "loopring protocol simulator core lib",
+  "main": "main.js",
+  "types": "globals.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Loopring/protocol-simulator-core"
+  },
+  "scripts": {
+    "test": "mocha -r ts-node/register test/**/*.ts",
+    "compile": "tsc -p .",
+    "fix": "gts fix",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile"
+  },
+  "keywords": [],
+  "author": "loopring",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chai": "^4.1.3",
+    "@types/mocha": "^5.2.0",
+    "@types/node": "^10.1.2",
+    "gts": "^0.6.0",
+    "mocha": "^5.2.0",
+    "ts-node": "^6.0.5",
+    "typescript": "^2.8.3",
+    "web3-typescript-typings": "^0.10.2"
+  },
+  "dependencies": {
+    "@types/browserify": "^12.0.33",
+    "@types/express": "^4.11.1",
+    "@types/underscore": "^1.8.8",
+    "express": "^4.16.3",
+    "bignumber.js": "^7.1.0",
+    "bitwise-xor": "0.0.0",
+    "bn.js": "^4.11.8",
+    "es6-promisify": "^6.0.0",
+    "ethereum-tx-decoder": "^2.0.1",
+    "ethereumjs-abi": "^0.6.5",
+    "ethereumjs-util": "^5.2.0",
+    "lodash": "^4.17.10",
+    "web3": "^0.14.1"
+  }
+}
