@@ -2,7 +2,7 @@ declare module 'bn.js';
 declare module 'ethereumjs-abi';
 declare module 'ethereumjs-util';
 declare module 'es6-promisify';
-declare module 'protocol-simulator-core';
+// declare module 'protocol-simulator-core';
 
 // Truffle injects the following into the global scope
 declare var web3: any;

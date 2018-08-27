@@ -4,19 +4,10 @@ import promisify = require("es6-promisify");
 import abi = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import * as _ from "lodash";
-import { Artifacts } from "protocol-simulator-core";
+import * as psc from "protocol-simulator-core";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
-import { Bitstream } from "../util/bitstream";
-import { Context } from "../util/context";
-import { expectThrow } from "../util/expectThrow";
-import { ProtocolSimulator } from "../util/protocol_simulator";
-import { Ring } from "../util/ring";
-import { ringsInfoList } from "../util/rings_config";
-import { RingsGenerator } from "../util/rings_generator";
-import { Tax } from "../util/tax";
-import { OrderInfo, RingsInfo, SignAlgorithm, TransferItem } from "../util/types";
-import { xor } from "../util/xor";
+import { ringsInfoList } from "./rings_config";
 
 const {
   Exchange,
@@ -29,9 +20,11 @@ const {
   FeeHolder,
   DummyToken,
   DummyBrokerInterceptor,
-} = new Artifacts(artifacts);
+} = new psc.Artifacts(artifacts);
 
 contract("Exchange", (accounts: string[]) => {
+  // console.log("psc:", psc);
+
   const deployer = accounts[0];
   const miner = accounts[9];
   const orderOwners = accounts.slice(5, 8); // 5 ~ 7
@@ -54,7 +47,7 @@ contract("Exchange", (accounts: string[]) => {
   let wethAddress: string;
   let walletSplitPercentage: number;
   let feePercentageBase: number;
-  let tax: Tax;
+  let tax: psc.Tax;
 
   const tokenSymbolAddrMap = new Map();
   const tokenInstanceMap = new Map();
@@ -112,7 +105,7 @@ contract("Exchange", (accounts: string[]) => {
     const currBlockNumber = web3.eth.blockNumber;
     const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
     // Pass in the block number and the block time stamp so we can more accurately reproduce transactions
-    const context = new Context(currBlockNumber,
+    const context = new psc.Context(currBlockNumber,
                                 currBlockTimestamp,
                                 TokenRegistry.address,
                                 tradeDelegate.address,
@@ -127,12 +120,12 @@ contract("Exchange", (accounts: string[]) => {
     return context;
   };
 
-  const submitRingsAndSimulate = async (context: Context, ringsInfo: RingsInfo, eventFromBlock: number) => {
-    const ringsGenerator = new RingsGenerator(context);
+  const submitRingsAndSimulate = async (context: psc.Context, ringsInfo: psc.RingsInfo, eventFromBlock: number) => {
+    const ringsGenerator = new psc.RingsGenerator(context);
     await ringsGenerator.setupRingsAsync(ringsInfo);
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
-    const simulator = new ProtocolSimulator(walletSplitPercentage, context);
+    const simulator = new psc.ProtocolSimulator(walletSplitPercentage, context);
     const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin : transactionOrigin;
     const deserializedRingsInfo = simulator.deserialize(bs, txOrigin);
     assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
@@ -152,7 +145,7 @@ contract("Exchange", (accounts: string[]) => {
     return {tx, report};
   };
 
-  const setupOrder = async (order: OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
+  const setupOrder = async (order: psc.OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
     const ownerIndex = order.ownerIndex !== undefined ?
                        order.ownerIndex : (index === 0 ? index : index % orderOwners.length);
     assert(ownerIndex >= 0 && ownerIndex < orderOwners.length, "Invalid owner index");
@@ -175,9 +168,9 @@ contract("Exchange", (accounts: string[]) => {
       order.feePercentage = 20;  // == 2.0%
     }
     if (!order.dualAuthSignAlgorithm) {
-      order.dualAuthSignAlgorithm = SignAlgorithm.Ethereum;
+      order.dualAuthSignAlgorithm = psc.SignAlgorithm.Ethereum;
     }
-    if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== SignAlgorithm.None) {
+    if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== psc.SignAlgorithm.None) {
       order.dualAuthAddr = orderDualAuthAddr[ownerIndex];
     }
     if (!order.allOrNone) {
@@ -213,7 +206,7 @@ contract("Exchange", (accounts: string[]) => {
     }
   };
 
-  const assertEqualsRingsInfo = (ringsInfoA: RingsInfo, ringsInfoB: RingsInfo) => {
+  const assertEqualsRingsInfo = (ringsInfoA: psc.RingsInfo, ringsInfoB: psc.RingsInfo) => {
     // Blacklist properties we don't want to check.
     // We don't whitelist because we might forget to add them here otherwise.
     const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash", "transactionOriginOwnerIndex"];
@@ -256,7 +249,8 @@ contract("Exchange", (accounts: string[]) => {
     }
   };
 
-  const assertTransfers = (tranferEvents: Array<[string, string, string, number]>, transferList: TransferItem[]) => {
+  const assertTransfers =
+    (tranferEvents: Array<[string, string, string, number]>, transferList: psc.TransferItem[]) => {
     const transfersFromSimulator: Array<[string, string, string, number]> = [];
     transferList.forEach((item) => transfersFromSimulator.push([item.token, item.from, item.to, item.amount]));
     const sorter = (a: [string, string, string, number], b: [string, string, string, number]) => {
@@ -305,7 +299,7 @@ contract("Exchange", (accounts: string[]) => {
     }
   };
 
-  const assertFilledAmounts = async (context: Context, filledAmounts: { [hash: string]: number; }) => {
+  const assertFilledAmounts = async (context: psc.Context, filledAmounts: { [hash: string]: number; }) => {
     console.log("Filled amounts:");
     for (const hash of Object.keys(filledAmounts)) {
       const filledFromSimulator = filledAmounts[hash];
@@ -315,15 +309,15 @@ contract("Exchange", (accounts: string[]) => {
     }
   };
 
-  const assertOrdersValid = async (orders: OrderInfo[], expectedValidValues: boolean[]) => {
+  const assertOrdersValid = async (orders: psc.OrderInfo[], expectedValidValues: boolean[]) => {
     assert.equal(orders.length, expectedValidValues.length, "Array sizes need to match");
 
-    const bitstream = new Bitstream();
+    const bitstream = new psc.Bitstream();
     for (const order of orders) {
       bitstream.addAddress(order.owner, 32);
       bitstream.addHex(order.hash.toString("hex"));
       bitstream.addNumber(order.validSince, 32);
-      bitstream.addHex(xor(order.tokenS, order.tokenB, 20).slice(2));
+      bitstream.addHex(psc.xor(order.tokenS, order.tokenB, 20).slice(2));
       bitstream.addNumber(0, 12);
     }
 
@@ -425,21 +419,21 @@ contract("Exchange", (accounts: string[]) => {
     }
 
     feePercentageBase = (await exchange.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
-    tax = new Tax((await exchange.TAX_MATCHING_CONSUMER_LRC()).toNumber(),
-                  (await exchange.TAX_MATCHING_CONSUMER_ETH()).toNumber(),
-                  (await exchange.TAX_MATCHING_CONSUMER_OTHER()).toNumber(),
-                  (await exchange.TAX_MATCHING_INCOME_LRC()).toNumber(),
-                  (await exchange.TAX_MATCHING_INCOME_ETH()).toNumber(),
-                  (await exchange.TAX_MATCHING_INCOME_OTHER()).toNumber(),
-                  (await exchange.TAX_P2P_CONSUMER_LRC()).toNumber(),
-                  (await exchange.TAX_P2P_CONSUMER_ETH()).toNumber(),
-                  (await exchange.TAX_P2P_CONSUMER_OTHER()).toNumber(),
-                  (await exchange.TAX_P2P_INCOME_LRC()).toNumber(),
-                  (await exchange.TAX_P2P_INCOME_ETH()).toNumber(),
-                  (await exchange.TAX_P2P_INCOME_OTHER()).toNumber(),
-                  (await exchange.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber(),
-                  lrcAddress,
-                  wethAddress);
+    tax = new psc.Tax((await exchange.TAX_MATCHING_CONSUMER_LRC()).toNumber(),
+                      (await exchange.TAX_MATCHING_CONSUMER_ETH()).toNumber(),
+                      (await exchange.TAX_MATCHING_CONSUMER_OTHER()).toNumber(),
+                      (await exchange.TAX_MATCHING_INCOME_LRC()).toNumber(),
+                      (await exchange.TAX_MATCHING_INCOME_ETH()).toNumber(),
+                      (await exchange.TAX_MATCHING_INCOME_OTHER()).toNumber(),
+                      (await exchange.TAX_P2P_CONSUMER_LRC()).toNumber(),
+                      (await exchange.TAX_P2P_CONSUMER_ETH()).toNumber(),
+                      (await exchange.TAX_P2P_CONSUMER_OTHER()).toNumber(),
+                      (await exchange.TAX_P2P_INCOME_LRC()).toNumber(),
+                      (await exchange.TAX_P2P_INCOME_ETH()).toNumber(),
+                      (await exchange.TAX_P2P_INCOME_OTHER()).toNumber(),
+                      (await exchange.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber(),
+                      lrcAddress,
+                      wethAddress);
 
     await initializeTradeDelegate();
   });
@@ -482,7 +476,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("should be able to cancel an order", async () => {
-      const ringsInfo: RingsInfo = {
+      const ringsInfo: psc.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -510,13 +504,13 @@ contract("Exchange", (accounts: string[]) => {
       const context = getDefaultContext();
 
       // Setup the ring so we have access to the calculated hashes
-      const ringsGenerator = new RingsGenerator(context);
+      const ringsGenerator = new psc.RingsGenerator(context);
       await ringsGenerator.setupRingsAsync(ringsInfo);
 
       // Cancel the second order in the ring
       const orderToCancelIdx = 1;
       const orderToCancel = ringsInfo.orders[orderToCancelIdx];
-      const hashes = new Bitstream();
+      const hashes = new psc.Bitstream();
       hashes.addHex(orderToCancel.hash.toString("hex"));
       const cancelTx = await exchange.cancelOrders(orderToCancel.owner, hashes.getData());
 
@@ -532,7 +526,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("should be able to cancel all orders of a trading pair of an owner", async () => {
-      const ringsInfo: RingsInfo = {
+      const ringsInfo: psc.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -560,7 +554,7 @@ contract("Exchange", (accounts: string[]) => {
       const context = getDefaultContext();
 
       // Setup the ring so we have access to the calculated hashes
-      const ringsGenerator = new RingsGenerator(context);
+      const ringsGenerator = new psc.RingsGenerator(context);
       await ringsGenerator.setupRingsAsync(ringsInfo);
 
       // Cancel the first order using trading pairs
@@ -581,7 +575,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("should be able to cancel all orders of an owner", async () => {
-      const ringsInfo: RingsInfo = {
+      const ringsInfo: psc.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -609,7 +603,7 @@ contract("Exchange", (accounts: string[]) => {
       const context = getDefaultContext();
 
       // Setup the ring so we have access to the calculated hashes
-      const ringsGenerator = new RingsGenerator(context);
+      const ringsGenerator = new psc.RingsGenerator(context);
       await ringsGenerator.setupRingsAsync(ringsInfo);
 
       // Cancel the first order using trading pairs
@@ -640,7 +634,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("should be able for an order to use a broker without an interceptor", async () => {
-      const ringsInfo: RingsInfo = {
+      const ringsInfo: psc.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -690,7 +684,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("should be able to for an order to use a broker with an interceptor", async () => {
-      const ringsInfo: RingsInfo = {
+      const ringsInfo: psc.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -762,7 +756,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("an order using a broker with an invalid interceptor should not fail the transaction", async () => {
-      const ringsInfo: RingsInfo = {
+      const ringsInfo: psc.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -834,7 +828,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Reentrancy attack", async () => {
-      const ringsInfo: RingsInfo = {
+      const ringsInfo: psc.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -858,7 +852,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // A ring without callbacks so submitRings doesn't get into an infinite loop
       // in a reentrancy scenario
-      const ringsInfoAttack: RingsInfo = {
+      const ringsInfoAttack: psc.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -901,7 +895,7 @@ contract("Exchange", (accounts: string[]) => {
       // Enable the Reentrancy attack
       // Create a valid ring that can be submitted by the interceptor
       {
-        const ringsGeneratorAttack = new RingsGenerator(context);
+        const ringsGeneratorAttack = new psc.RingsGenerator(context);
         await ringsGeneratorAttack.setupRingsAsync(ringsInfoAttack);
         const bsAttack = ringsGeneratorAttack.toSubmitableParam(ringsInfoAttack);
         // Enable the reentrancy attack on the interceptor
@@ -909,7 +903,7 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       // Setup the ring
-      const ringsGenerator = new RingsGenerator(context);
+      const ringsGenerator = new psc.RingsGenerator(context);
       await ringsGenerator.setupRingsAsync(ringsInfo);
       const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
