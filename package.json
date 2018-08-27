@@ -1,6 +1,6 @@
 {
   "name": "protocol-simulator-core",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "loopring protocol simulator core lib",
   "main": "index.ts",
   "repository": {
