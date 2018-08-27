@@ -1,4 +1,5 @@
 # Loopring Protocol Smart Contracts
+[![Build Status](https://travis-ci.com/Loopring/protocol2.svg?token=LFU5xhzys581aWFBPai3&branch=master)](https://travis-ci.com/Loopring/protocol2)
 
 ## Compile
 
