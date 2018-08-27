@@ -45,16 +45,6 @@ contract("OrderBook", (accounts: string[]) => {
     });
   };
 
-  // const padString = (x: string, targetLength: number) => {
-  //   if (x.length > targetLength) {
-  //     throw Error("0x" + x + " is too big to fit in the requested length (" + targetLength + ")");
-  //   }
-  //   while (x.length < targetLength) {
-  //     x = "0" + x;
-  //   }
-  //   return x;
-  // };
-
   const numberToBytes32Str = (n: number) => {
     const encoded = abi.rawEncode(["uint256"], [new BN(n.toString(10), 10)]);
     return "0x" + encoded.toString("hex");
@@ -96,7 +86,6 @@ contract("OrderBook", (accounts: string[]) => {
 
       const events: any = await getEventsFromContract(orderBook, "OrderSubmitted", 0);
       const orderHash = events[0].args.orderHash;
-      // // await watchAndPrintEvent(orderBook, "OrderSubmitted");
 
       // console.log("orderHash:", orderHash);
       const orderData = await orderBook.getOrderData(orderHash);
