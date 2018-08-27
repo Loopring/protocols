@@ -1,9 +1,8 @@
 {
   "name": "protocol-simulator-core",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "description": "loopring protocol simulator core lib",
-  "main": "main.js",
-  "types": "globals.d.ts",
+  "main": "index.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/Loopring/protocol-simulator-core"
