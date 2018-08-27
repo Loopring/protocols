@@ -2,8 +2,8 @@ dist: trusty
 language: node_js
 
 script:
-  - npm run testrpc &
-  - npm run test
+- npm run testrpc  1 > /dev/null &
+- npm run test
 
 node_js:
   - "8"
