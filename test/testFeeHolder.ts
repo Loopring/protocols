@@ -1,7 +1,6 @@
 import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
-import { Artifacts } from "../util/artifacts";
-import { expectThrow } from "../util/expectThrow";
+import { Artifacts, expectThrow } from "protocol-simulator-core";
 
 const {
   FeeHolder,

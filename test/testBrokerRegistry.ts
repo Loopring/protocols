@@ -1,5 +1,4 @@
-import { Artifacts } from "../util/artifacts";
-import { expectThrow } from "../util/expectThrow";
+import { Artifacts, expectThrow } from "protocol-simulator-core";
 
 const {
   BrokerRegistry,

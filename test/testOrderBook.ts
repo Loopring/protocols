@@ -1,7 +1,7 @@
 import { BN } from "bn.js";
 import abi = require("ethereumjs-abi");
+import { Artifacts } from "protocol-simulator-core";
 import util = require("util");
-import { Artifacts } from "../util/artifacts";
 
 const {
   OrderBook,
