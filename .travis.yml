@@ -1,12 +1,13 @@
+sudo: false
 dist: trusty
 language: node_js
+node_js: 8
 
 script:
 - npm run testrpc  1 > /dev/null &
 - npm run test
 
-node_js:
-  - "8"
+
 
 cache:
   directories:
