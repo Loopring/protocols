@@ -10,8 +10,8 @@
     "allowJs": true
   },
   "include": [
-    "node_modules/protocol-simulator-core/index.ts",
-    "node_modules/protocol-simulator-core/src/**/*",
+    "node_modules/protocol2-js/index.ts",
+    "node_modules/protocol2-js/src/**/*",
     "node_modules/web3-typescript-typings/index.d.ts",
     "./globals.d.ts",
     "./util/**/*",

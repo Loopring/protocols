@@ -1,6 +1,6 @@
 import { BN } from "bn.js";
 import abi = require("ethereumjs-abi");
-import { Artifacts } from "protocol-simulator-core";
+import { Artifacts } from "protocol2-js";
 import util = require("util");
 
 const {

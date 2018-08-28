@@ -4,7 +4,7 @@ import promisify = require("es6-promisify");
 import abi = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import * as _ from "lodash";
-import * as psc from "protocol-simulator-core";
+import * as psc from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
 import { ringsInfoList } from "./rings_config";

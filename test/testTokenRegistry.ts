@@ -1,4 +1,4 @@
-import { Artifacts, expectThrow } from "protocol-simulator-core";
+import { Artifacts, expectThrow } from "protocol2-js";
 
 const {
   TokenRegistry,

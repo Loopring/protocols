@@ -1,4 +1,4 @@
-import { RingsInfo, SignAlgorithm } from "protocol-simulator-core";
+import { RingsInfo, SignAlgorithm } from "protocol2-js";
 import tokenInfos = require("../migrations/config/tokens.js");
 
 const tokenSymbols = tokenInfos.development.map((t) => t.symbol);

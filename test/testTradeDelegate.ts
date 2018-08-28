@@ -1,7 +1,7 @@
 import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
-import { Artifacts, Bitstream, expectThrow } from "protocol-simulator-core";
+import { Artifacts, Bitstream, expectThrow } from "protocol2-js";
 
 const {
   TradeDelegate,
