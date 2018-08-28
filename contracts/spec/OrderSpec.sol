@@ -137,4 +137,12 @@ library OrderSpec {
         return spec & (1 << 13) != 0;
     }
 
+    function hasTokenRecipient(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 14) != 0;
+    }
+
 }

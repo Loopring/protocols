@@ -295,7 +295,7 @@ library RingHelper {
                 offset,
                 p.order.tokenS,
                 p.order.owner,
-                prevP.order.owner,
+                prevP.order.tokenRecipient == 0x0 ? prevP.order.owner : prevP.order.tokenRecipient,
                 amountSToBuyer
             );
             offset = addTokenTransfer(

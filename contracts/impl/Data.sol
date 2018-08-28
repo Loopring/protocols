@@ -110,6 +110,7 @@ library Data {
         Spendable brokerSpendableFee;
         address   orderInterceptor;
         address   wallet;
+        address   tokenRecipient;
         uint      validUntil;
         bytes     sig;
         bytes     dualAuthSig;

@@ -54,6 +54,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
             Data.Spendable(true, 0, 0),
             0x0,
             0x0,
+            0x0,
             uint(dataArray[7]),
             new bytes(0),
             new bytes(0),
