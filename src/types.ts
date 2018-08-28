@@ -45,6 +45,7 @@ export interface OrderInfo {
   waiveFeePercentage?: number;      // spec value 1 << 11
   tokenSFeePercentage?: number;     // spec value 1 << 12
   tokenBFeePercentage?: number;     // spec value 1 << 13
+  tokenRecipient?: string;          // spec value 1 << 14
 
   // helper field
   filledAmountS?: number;

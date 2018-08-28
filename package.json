@@ -1,11 +1,11 @@
 {
-  "name": "protocol-simulator-core",
-  "version": "0.1.5",
+  "name": "protocol2-js",
+  "version": "0.1.6",
   "description": "loopring protocol simulator core lib",
   "main": "index.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Loopring/protocol-simulator-core"
+    "url": "https://github.com/Loopring/protocol2-js"
   },
   "scripts": {
     "test": "mocha -r ts-node/register test/**/*.ts",
@@ -40,6 +40,6 @@
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^5.2.0",
     "lodash": "^4.17.10",
-    "web3": "^0.14.1"
+    "web3": "^0.20.6"
   }
 }

@@ -122,6 +122,7 @@ export class ExchangeDeserializer {
       waiveFeePercentage: spec.hasWaiveFeePercentage() ? this.toInt16(this.nextUint16()) : 0,
       tokenSFeePercentage: spec.hasTokenSFeePercentage() ? this.nextUint16() : 0,
       tokenBFeePercentage: spec.hasTokenBFeePercentage() ? this.nextUint16() : 0,
+      tokenRecipient: spec.hasTokenRecipient() ? this.nextAddress() : undefined,
     };
     return order;
   }

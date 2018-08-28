@@ -63,4 +63,8 @@ export class OrderSpec {
     return (this.data & (1 << 13)) !== 0;
   }
 
+  public hasTokenRecipient() {
+    return (this.data & (1 << 14)) !== 0;
+  }
+
 }

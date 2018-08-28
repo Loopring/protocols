@@ -275,6 +275,11 @@ export class RingsGenerator {
       param.uint16List.push(order.tokenBFeePercentage);
     }
 
+    if (order.tokenRecipient) {
+      spec += 1 << 14;
+      param.addressList.push(order.tokenRecipient);
+    }
+
     param.orderSpecs.push(spec);
   }
 
