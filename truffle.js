@@ -30,7 +30,7 @@ module.exports = {
       port: 8545,
       network_id: "*", // Match any network id
       gasPrice: 21000000000,
-      gas: 6500000
+      gas: 6700000
     },
     docker: {
       host: "testrpc",

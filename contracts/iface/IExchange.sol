@@ -51,8 +51,8 @@ contract IExchange {
     event RingMined(
         uint            _ringIndex,
         address indexed _broker,        // TODO: broker is different for every order
-        address indexed _feeRecipient/*,
-        Fill[]          _fills*/        // Currently can't seem to get events with structs in js
+        address indexed _feeRecipient,
+        Fill[]          _fills
     );
 
     event OrdersCancelled(

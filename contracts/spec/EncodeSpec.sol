@@ -138,19 +138,6 @@ library EncodeSpec {
         return spec[6];
     }
 
-    function bytesListSizeI(uint16[] spec, uint i)
-        internal
-        pure
-        returns (uint16)
-    {
-        uint listSize = bytesListSize(spec);
-        require(i < listSize);
-
-        uint ringSize = ringSpecSize(spec);
-        uint ind = 7 + ringSize + i;
-        return spec[ind];
-    }
-
     function bytesListSizeArray(uint16[] spec)
         internal
         pure

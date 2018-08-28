@@ -176,12 +176,8 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
         view
         returns (bool)
     {
-        if (addr == 0x0) {
-            return false;
-        } else {
-            uint size;
-            assembly { size := extcodesize(addr) }
-            return size > 0;
-        }
+        uint size;
+        assembly { size := extcodesize(addr) }
+        return size > 0;
     }
 }

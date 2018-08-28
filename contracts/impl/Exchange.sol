@@ -290,12 +290,12 @@ contract Exchange is IExchange, NoDefaultFunc {
             if (ring.valid) {
                 // Only settle rings we have checked to be valid
                 ring.settleRing(ctx, mining);
-                // IExchange.Fill[] memory fills = ring.generateFills();
+                IExchange.Fill[] memory fills = ring.generateFills();
                 emit RingMined(
                     ctx.ringIndex++,
                     0x0,
-                    mining.feeRecipient/*,
-                    fills*/
+                    mining.feeRecipient,
+                    fills
                 );
             } else {
                 emit InvalidRing(ring.hash);

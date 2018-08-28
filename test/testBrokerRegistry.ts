@@ -38,8 +38,9 @@ contract("BrokerRegistry", (accounts: string[]) => {
     assert(!isRegistered, "interceptor should not be registered.");
   };
 
-  const assertGetBrokers = async (user: string, brokersAndInterceptors: string[][]) => {
-    const [brokersFromContract, interceptorsFromContract] = await brokerRegistry.getBrokers(user, 0, 100);
+  const assertGetBrokers = async (user: string, brokersAndInterceptors: string[][], start: number, end: number) => {
+    const [brokersFromContract, interceptorsFromContract] =
+      await brokerRegistry.getBrokers(user, start, end);
     brokersAndInterceptors.map((element, index) => {
       assert.equal(brokersFromContract[index], element[0], "Addresses should match");
       assert.equal(interceptorsFromContract[index], element[1], "Interceptors should match");
@@ -65,10 +66,39 @@ contract("BrokerRegistry", (accounts: string[]) => {
       await registerBrokerChecked(user1, broker1, dummyBrokerInterceptor.address);
     });
 
+    it("should be able to get all registered brokers for a user", async () => {
+      const brokersAndInterceptorsUser1 = [[broker1, emptyAddr], [broker3, emptyAddr]];
+      brokersAndInterceptorsUser1.map(async (element) => await registerBrokerChecked(user1, element[0], element[1]));
+
+      const brokersAndInterceptorsUser2 = [[broker3, dummyBrokerInterceptor.address]];
+      brokersAndInterceptorsUser2.map(async (element) => await registerBrokerChecked(user2, element[0], element[1]));
+
+      await assertGetBrokers(user1, brokersAndInterceptorsUser1, 0, 2);
+      // List is capped by the actual number of brokers
+      await assertGetBrokers(user2, brokersAndInterceptorsUser2, 0, 100);
+      // Invalid start/end parameters simply return empty lists
+      await assertGetBrokers(user1, [], 1, 1);
+      await assertGetBrokers(user1, [], 4, 2);
+    });
+
     it("should be able to unregister a broker", async () => {
-      await expectThrow(brokerRegistry.unregisterBroker(broker1, {from: user1}));
-      await registerBrokerChecked(user1, broker1, dummyBrokerInterceptor.address);
+      const interceptor = dummyBrokerInterceptor.address;
+      await registerBrokerChecked(user1, broker1, interceptor);
+      await registerBrokerChecked(user1, broker2, interceptor);
+      await registerBrokerChecked(user1, broker3, interceptor);
+
+      await assertGetBrokers(user1, [[broker1, interceptor], [broker2, interceptor], [broker3, interceptor]], 0, 3);
+      await unregisterBrokerChecked(user1, broker2);
+      await assertGetBrokers(user1, [[broker1, interceptor], [broker3, interceptor]], 0, 3);
       await unregisterBrokerChecked(user1, broker1);
+      await assertGetBrokers(user1, [[broker3, interceptor]], 0, 3);
+      await unregisterBrokerChecked(user1, broker3);
+      await assertGetBrokers(user1, [], 0, 3);
+    });
+
+    it("should not be able to unregister a broker that is not registered", async () => {
+      await registerBrokerChecked(user1, broker1, dummyBrokerInterceptor.address);
+      await expectThrow(brokerRegistry.unregisterBroker(broker2, {from: user1}));
     });
 
     it("should not be able to register a broker with interceptor that is not a contract", async () => {
@@ -96,17 +126,6 @@ contract("BrokerRegistry", (accounts: string[]) => {
       await assertNotRegistered(user1, broker1);
       await assertNotRegistered(user2, broker2);
       await assertNotRegistered(user1, broker3);
-    });
-
-    it("should be able to get all resgistered brokers for a user", async () => {
-      const brokersAndInterceptorsUser1 = [[broker1, emptyAddr], [broker3, emptyAddr]];
-      brokersAndInterceptorsUser1.map(async (element) => await registerBrokerChecked(user1, element[0], element[1]));
-
-      const brokersAndInterceptorsUser2 = [[broker3, dummyBrokerInterceptor.address]];
-      brokersAndInterceptorsUser2.map(async (element) => await registerBrokerChecked(user2, element[0], element[1]));
-
-      assertGetBrokers(user1, brokersAndInterceptorsUser1);
-      assertGetBrokers(user2, brokersAndInterceptorsUser2);
     });
 
   });

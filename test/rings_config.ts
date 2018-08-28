@@ -339,6 +339,38 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "simple single 3-size ring, miner splits more than 100% of fees with orders",
+    rings: [[0, 1, 2]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 100e18,
+        amountB: 10e18,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[3],
+        amountS: 10e18,
+        amountB: 45e18,
+        feeAmount: 1e18,
+        waiveFeePercentage: -650, // = -65%
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[3],
+        tokenB: tokenSymbols[1],
+        amountS: 45e18,
+        amountB: 100e18,
+        feeAmount: 1e18,
+        waiveFeePercentage: -450, // = -45%
+      },
+    ],
+  },
+
+  {
     description: "simple single 3-size ring, cannot be settled",
     rings: [[0, 1, 2]],
     orders: [
@@ -661,4 +693,76 @@ export const ringsInfoList: RingsInfo[] = [
       },
     ],
   },
+
+  {
+    description: "invalid order signature",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 3e18,
+        amountB: 1e18,
+        signAlgorithm: SignAlgorithm.Ethereum,
+        sig: "0x00411c8ddc1f9062d1968d1333fa5488b7af57fb17250c18918de6ed31349a39834f787805224fdb56500" +
+             "e0331e79746060f7effb569df13c1aaf42e15efc3ef4dea04",
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 3e18,
+      },
+    ],
+  },
+
+  {
+    description: "invalid dual-author order signature",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 3e18,
+        amountB: 1e18,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 3e18,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+        dualAuthSig: "0x00411c8ddc1f9062d1968d1333fa5488b7af57fb17250c18918de6ed31349a39834f787805224fdb56500" +
+                     "e0331e79746060f7effb569df13c1aaf42e15efc3ef4dea04",
+      },
+    ],
+  },
+
+  // {
+  //   description: "invalid miner signature",
+  //   signAlgorithm: SignAlgorithm.Ethereum,
+  //   sig: "0x00411c8ddc1f9062d1968d1333fa5488b7af57fb17250c18918de6ed31349a39834f787805224fdb56500" +
+  //        "e0331e79746060f7effb569df13c1aaf42e15efc3ef4dea04",
+  //   rings: [[0, 1]],
+  //   orders: [
+  //     {
+  //       index: 0,
+  //       tokenS: tokenSymbols[0],
+  //       tokenB: tokenSymbols[1],
+  //       amountS: 3e18,
+  //       amountB: 1e18,
+  //     },
+  //     {
+  //       index: 1,
+  //       tokenS: tokenSymbols[1],
+  //       tokenB: tokenSymbols[0],
+  //       amountS: 1e18,
+  //       amountB: 3e18,
+  //     },
+  //   ],
+  // },
 ];
