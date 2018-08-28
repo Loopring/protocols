@@ -81,6 +81,8 @@ export class ExchangeDeserializer {
     const orders = this.assembleOrders(orderSpecs);
     const rings = this.assembleRings(ringSpecs, orders);
 
+    this.validateSpendables(orders);
+
     return [mining, orders, rings];
   }
 
@@ -174,6 +176,46 @@ export class ExchangeDeserializer {
       return decoded.toString();
     } else {
       return x;
+    }
+  }
+
+  private validateSpendables(orders: OrderInfo[]) {
+    const ownerSpendables: { [id: string]: any; } = {};
+    const brokerSpendables: { [id: string]: any; } = {};
+    for (const order of orders) {
+      // Token spendables
+      if (!ownerSpendables[order.owner]) {
+        ownerSpendables[order.owner] = {};
+      }
+      if (!ownerSpendables[order.owner][order.tokenS]) {
+        ownerSpendables[order.owner][order.tokenS] = order.tokenSpendableS;
+      }
+      assert.equal(order.tokenSpendableS, ownerSpendables[order.owner][order.tokenS],
+                   "Spendable for tokenS should match");
+      if (!ownerSpendables[order.owner][order.feeToken]) {
+        ownerSpendables[order.owner][order.feeToken] = order.tokenSpendableFee;
+      }
+      assert.equal(order.tokenSpendableFee, ownerSpendables[order.owner][order.feeToken],
+                   "Spendable for feeToken should match");
+      // Broker allowances
+      if (order.broker) {
+        if (!brokerSpendables[order.owner]) {
+          brokerSpendables[order.owner] = {};
+        }
+        if (!brokerSpendables[order.owner][order.broker]) {
+          brokerSpendables[order.owner][order.broker] = {};
+        }
+        if (!brokerSpendables[order.owner][order.broker][order.tokenS]) {
+          brokerSpendables[order.owner][order.broker][order.tokenS] = order.brokerSpendableS;
+        }
+        assert.equal(order.brokerSpendableS, brokerSpendables[order.owner][order.broker][order.tokenS],
+                     "broker spendable for tokenS should match");
+        if (!brokerSpendables[order.owner][order.broker][order.feeToken]) {
+          brokerSpendables[order.owner][order.broker][order.feeToken] = order.brokerSpendableFee;
+        }
+        assert.equal(order.brokerSpendableFee, brokerSpendables[order.owner][order.broker][order.feeToken],
+                     "broker spendable for tokenFee should match");
+      }
     }
   }
 }

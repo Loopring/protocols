@@ -25,7 +25,7 @@ export class RingsGenerator {
     // Setup orders
     for (const order of rings.orders) {
       order.hash = this.orderUtil.getOrderHash(order);
-      if (/*order.sig === undefined*/true) {
+      if (order.sig === undefined) {
         order.sig = await this.multiHashUtil.signOrderAsync(order);
       }
     }
@@ -67,12 +67,14 @@ export class RingsGenerator {
     if (miner === rings.transactionOrigin) {
       rings.sig = undefined;
     } else {
-      rings.sig = await this.multiHashUtil.signAsync(rings.signAlgorithm, rings.hash, miner);
+      if (rings.sig === undefined) {
+        rings.sig = await this.multiHashUtil.signAsync(rings.signAlgorithm, rings.hash, miner);
+      }
     }
 
     // Dual Authoring
     for (const order of rings.orders) {
-      if (/*order.dualAuthSig === undefined*/true) {
+      if (order.dualAuthSig === undefined) {
         if (order.dualAuthAddr) {
           order.dualAuthSig = await this.multiHashUtil.signAsync(
             order.dualAuthSignAlgorithm,
