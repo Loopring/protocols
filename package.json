@@ -20,6 +20,7 @@
     "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
     "testrpc": "ganache-cli",
+    "coverage": "./node_modules/.bin/solidity-coverage",
     "truffle": "truffle"
   },
   "license": "ISC",
@@ -35,6 +36,7 @@
     "dirty-chai": "^2.0.1",
     "ganache-cli": "^6.1.0",
     "mocha": "^5.2.0",
+    "solidity-coverage": "^0.5.8",
     "solium": "^1.1.7",
     "truffle": "4.1.13",
     "tslint": "5.8.0",
