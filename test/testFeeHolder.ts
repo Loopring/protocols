@@ -121,7 +121,7 @@ contract("FeeHolder", (accounts: string[]) => {
   beforeEach(async () => {
     // Fresh FeeHolder for each test
     feeHolder = await FeeHolder.new(tradeDelegate.address);
-    dummyExchange = await DummyExchange.new(feeHolder.address);
+    dummyExchange = await DummyExchange.new(tradeDelegate.address, feeHolder.address);
     await authorizeAddressChecked(dummyExchange.address, deployer);
   });
 
@@ -216,11 +216,14 @@ contract("FeeHolder", (accounts: string[]) => {
       addFeePayment(feePayments, user2, token2, amount);
       await batchAddFeeBalancesChecked(feePayments);
 
+      // Withdraw half the available balance
       await withdrawTokenChecked(user1, token1, amount / 2);
+      // Amount is greater than what's available
       await expectThrow(withdrawTokenChecked(user1, token1, amount));
+      // Other user shouldn't be able to withdraw those funds
       await expectThrow(withdrawTokenChecked(user2, token1, amount / 2));
+      // User shouldn't be able to withdraw tokens it didn't get paid
       await expectThrow(withdrawTokenChecked(user1, token2, amount));
-      await expectThrow(withdrawTokenChecked(user3, token1, amount));
     });
   });
 

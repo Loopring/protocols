@@ -118,17 +118,16 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
     {
         require(batch.length % 4 == 0);
         for (uint i = 0; i < batch.length; i += 4) {
-            if (uint(batch[i + 3]) < 1000) { // if transfer value < 1000, ignore.
-                continue;
+            if (address(batch[i + 1]) != address(batch[i + 2]) && uint(batch[i + 3]) > 0) {
+                require(
+                    address(batch[i]).safeTransferFrom(
+                        address(batch[i + 1]),
+                        address(batch[i + 2]),
+                        uint(batch[i + 3])
+                    ),
+                    "token transfer failure"
+                );
             }
-            require(
-                address(batch[i]).safeTransferFrom(
-                    address(batch[i + 1]),
-                    address(batch[i + 2]),
-                    uint(batch[i + 3])
-                ),
-                "token transfer failure"
-            );
         }
     }
 
@@ -249,7 +248,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         suspended = false;
     }
 
-    /// owner must suspend delegate first before invoke kill method.
+    /// owner must suspend the delegate first before invoking the kill method.
     function kill()
         onlyOwner
         isSuspended
@@ -266,13 +265,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         view
         returns (bool)
     {
-        if (addr == 0x0) {
-            return false;
-        } else {
-            uint size;
-            assembly { size := extcodesize(addr) }
-            return size > 0;
-        }
+        uint size;
+        assembly { size := extcodesize(addr) }
+        return size > 0;
     }
 
 }

@@ -350,9 +350,7 @@ library RingHelper {
         pure
         returns (uint)
     {
-        if (amount == 0) {
-            return offset;
-        } else {
+        if (from != to && amount > 0) {
             assembly {
                 let start := add(data, mul(add(offset, 1), 32))
                 mstore(add(start,  0), token)
@@ -361,6 +359,8 @@ library RingHelper {
                 mstore(add(start, 96), amount)
             }
             return offset + 4;
+        } else {
+            return offset;
         }
     }
 
