@@ -68,15 +68,11 @@ library ParticipationHelper {
 
                 uint totalAddedPercentage = p.order.tokenSFeePercentage * (ctx.feePercentageBase + taxRateTokenS);
                 uint totalPercentageBase = ctx.feePercentageBase * ctx.feePercentageBase;
-                if (totalAddedPercentage >= totalPercentageBase) {
-                    ring.valid = false;
-                    return;
-                }
 
                 uint maxFeeAndTaxAmountS = spendableS
                     .mul(totalAddedPercentage) / totalPercentageBase;
 
-                p.fillAmountS = spendableS - maxFeeAndTaxAmountS;
+                p.fillAmountS = spendableS.sub(maxFeeAndTaxAmountS);
             }
         }
         p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;

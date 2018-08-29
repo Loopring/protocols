@@ -712,6 +712,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const orderIndex = 1;
       const owner = ringsInfo.orders[orderIndex].owner;
+      const tokenS = ringsInfo.orders[orderIndex].tokenS;
       const amountS = ringsInfo.orders[orderIndex].amountS;
       const context = getDefaultContext();
 
@@ -750,6 +751,10 @@ contract("Exchange", (accounts: string[]) => {
         const {tx, report} = await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
         assert(report.transferItems.length > 0, "Tokens should be transfered");
       }
+
+      // Check if onTokenSpent was correctly called
+      const spendS = (await dummyBrokerInterceptor.spent(owner, tokenS)).toNumber();
+      assertNumberEqualsWithPrecision(spendS, amountS);
 
       // Unregister the broker
       await unregisterBrokerChecked(owner, broker1);

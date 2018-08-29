@@ -162,7 +162,7 @@ contract("FeeHolder", (accounts: string[]) => {
       const feePayments: FeePayment[] = [];
       addFeePayment(feePayments, user1, token1, 1.23 * 1e18);
       addFeePayment(feePayments, user2, token2, 3.21 * 1e19);
-      expectThrow(feeHolder.batchAddFeeBalances(toBatch(feePayments), {from: user1}));
+      await expectThrow(feeHolder.batchAddFeeBalances(toBatch(feePayments), {from: user1}));
     });
 
   });

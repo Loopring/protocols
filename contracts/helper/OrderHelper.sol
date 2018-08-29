@@ -258,15 +258,11 @@ library OrderHelper {
         private
         returns (uint allowance)
     {
-        if (brokerInterceptor != 0x0) {
-            allowance = brokerInterceptor.getAllowanceSafe(
-                owner,
-                broker,
-                tokenAddress
-            );
-        } else {
-            allowance = uint(0) - 1;
-        }
+        allowance = brokerInterceptor.getAllowanceSafe(
+            owner,
+            broker,
+            tokenAddress
+        );
     }
 
     function getSpendable(

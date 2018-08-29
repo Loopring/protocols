@@ -83,6 +83,10 @@ contract("TokenRegistry", (accounts: string[]) => {
       await expectThrow(tokenRegistry.registerToken(token1, {from: owner}));
     });
 
+    it("should not be able to register an invalid token", async () => {
+      await expectThrow(tokenRegistry.registerToken(emptyAddr, {from: owner}));
+    });
+
     it("should be able to unregister a token", async () => {
       await registerTokenChecked(token1, owner);
       await registerTokenChecked(token2, owner);
@@ -95,18 +99,19 @@ contract("TokenRegistry", (accounts: string[]) => {
       await unregisterTokenChecked(token3, owner);
     });
 
-    it("should be able to check all tokens registered in array", async () => {
+    it("should not be able to unregister an unregistered token", async () => {
       await registerTokenChecked(token1, owner);
-      await registerTokenChecked(token2, owner);
-      await areAllTokensRegisteredChecked([token1, token2], true);
-      await registerTokenChecked(token3, owner);
-      await areAllTokensRegisteredChecked([token1, token3, token2], true);
-      // token4 is not registered
-      await areAllTokensRegisteredChecked([token3, token4, token1], false);
+      await expectThrow(tokenRegistry.unregisterToken(emptyAddr, {from: owner}));
+      await expectThrow(tokenRegistry.unregisterToken(token2, {from: owner}));
     });
 
     it("should be able to register an agency", async () => {
       await registerAgencyChecked(dummyAgency1.address, owner, 0);
+    });
+
+    it("should not be able to register an agency twice", async () => {
+      await registerAgencyChecked(dummyAgency1.address, owner, 0);
+      await expectThrow(registerAgencyChecked(dummyAgency1.address, owner, 1));
     });
 
     it("should be able to unregister an agency", async () => {
@@ -128,18 +133,25 @@ contract("TokenRegistry", (accounts: string[]) => {
       await expectThrow(tokenRegistry.agencies(0));
     });
 
+    it("should not be able to unregister an unregistered agency", async () => {
+      await registerAgencyChecked(dummyAgency1.address, owner, 0);
+      await expectThrow(tokenRegistry.unregisterAgency(dummyAgency2.address, {from: owner}));
+    });
+
     it("should not be able to register an agency that is not a contract", async () => {
       await expectThrow(tokenRegistry.registerAgency(emptyAddr, {from: owner}));
       await expectThrow(tokenRegistry.registerAgency(user, {from: owner}));
     });
 
+    it("should not be able to unregister an agency that isn't registered", async () => {
+      await registerAgencyChecked(dummyAgency1.address, owner, 0);
+      await expectThrow(tokenRegistry.unregisterAgency(emptyAddr, {from: owner}));
+      await expectThrow(tokenRegistry.unregisterAgency(dummyAgency2.address, {from: owner}));
+    });
+
   });
 
   describe("agency", () => {
-
-    it("should not be able to register a token if not registered", async () => {
-      await expectThrow(dummyAgency1.registerToken(token1, {from: user}));
-    });
 
     it("should be able to register a token if registered", async () => {
       await registerAgencyChecked(dummyAgency1.address, owner, 0);
@@ -147,26 +159,47 @@ contract("TokenRegistry", (accounts: string[]) => {
       await areAllTokensRegisteredChecked([token1], true);
     });
 
-    it("should not be allowed to unregister a token even if registered", async () => {
+    it("should not be able to register a token if not registered", async () => {
+      await expectThrow(dummyAgency1.registerToken(token1, {from: user}));
+    });
+
+    it("should not be able to unregister a token even if registered", async () => {
       await registerTokenChecked(token1, owner);
       await expectThrow(dummyAgency1.unregisterToken(token1, {from: user}));
       await unregisterTokenChecked(token1, owner);
     });
 
-    // TODO: more tests
-
   });
 
-  describe("other users", () => {
+  describe("any user", () => {
+
+    it("should be able to check all tokens registered in array", async () => {
+      await registerTokenChecked(token1, owner);
+      await registerTokenChecked(token2, owner);
+      await areAllTokensRegisteredChecked([token1, token2], true);
+      await registerTokenChecked(token3, owner);
+      await areAllTokensRegisteredChecked([token1, token3, token2], true);
+      // token4 is not registered
+      await areAllTokensRegisteredChecked([token3, token4, token1], false);
+    });
+
     it("should not be able to register a token", async () => {
       await expectThrow(tokenRegistry.registerToken(token1, {from: user}));
+    });
+
+    it("should not be able to unregister a token", async () => {
+      await registerTokenChecked(token1, owner);
+      await expectThrow(tokenRegistry.unregisterToken(token1, {from: user}));
     });
 
     it("should not be able to register an agency", async () => {
       await expectThrow(tokenRegistry.registerAgency(dummyAgency1.address, {from: user}));
     });
 
-    // TODO: more tests
+    it("should not be able to unregister an agency", async () => {
+      await registerAgencyChecked(dummyAgency1.address, owner, 0);
+      await expectThrow(tokenRegistry.unregisterAgency(dummyAgency2.address, {from: user}));
+    });
 
   });
 

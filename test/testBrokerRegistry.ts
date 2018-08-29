@@ -101,6 +101,14 @@ contract("BrokerRegistry", (accounts: string[]) => {
       await expectThrow(brokerRegistry.unregisterBroker(broker2, {from: user1}));
     });
 
+    it("should not be able to register an invalid broker address", async () => {
+      await expectThrow(registerBrokerChecked(user1, emptyAddr, emptyAddr));
+    });
+
+    it("should not be able to unregister an invalid broker address", async () => {
+      await expectThrow(unregisterBrokerChecked(user1, emptyAddr));
+    });
+
     it("should not be able to register a broker with interceptor that is not a contract", async () => {
       await expectThrow(brokerRegistry.registerBroker(broker1, invalidInterceptor, {from: user1}));
     });

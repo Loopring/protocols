@@ -24,6 +24,8 @@ import "../iface/IExchange.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract DummyBrokerInterceptor is IBrokerInterceptor {
 
+    mapping(address => mapping(address => uint)) public spent;
+
     address public exchangeAddress = 0x0;
     uint public allowance = 0;
 
@@ -71,6 +73,7 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         if (doReentrancyAttack) {
             IExchange(exchangeAddress).submitRings(submitRingsData);
         }
+        spent[owner][token] += amount;
         ok = true;
     }
 
