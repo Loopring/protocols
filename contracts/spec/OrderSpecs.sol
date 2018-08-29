@@ -52,9 +52,9 @@ library OrderSpecs {
         )
         internal
         pure
-        returns (Data.Order memory)
+        returns (Data.Order memory order)
     {
-        return Data.Order(
+        order = Data.Order(
             inputs.nextAddress(), // owner
             inputs.nextAddress(), // tokenS
             address(0x0),         // tokenB
@@ -85,5 +85,6 @@ library OrderSpecs {
             0,  // filledAmountS
             true   // valid
         );
+        order.tokenRecipient = (order.tokenRecipient == 0x0) ? order.owner : order.tokenRecipient;
     }
 }

@@ -146,12 +146,14 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const setupOrder = async (order: psc.OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
-    const ownerIndex = order.ownerIndex !== undefined ?
-                       order.ownerIndex : (index === 0 ? index : index % orderOwners.length);
-    assert(ownerIndex >= 0 && ownerIndex < orderOwners.length, "Invalid owner index");
-    const owner = orderOwners[ownerIndex];
-
-    order.owner = owner;
+    if (order.owner === undefined) {
+      const accountIndex = index % orderOwners.length;
+      order.owner = orderOwners[accountIndex];
+    } else if (order.owner !== undefined && !order.owner.startsWith("0x")) {
+      const accountIndex = parseInt(order.owner, 10);
+      assert(accountIndex >= 0 && accountIndex < orderOwners.length, "Invalid owner index");
+      order.owner = orderOwners[accountIndex];
+    }
     if (!order.tokenS.startsWith("0x")) {
       order.tokenS = await symbolRegistry.getAddressBySymbol(order.tokenS);
     }
@@ -171,7 +173,8 @@ contract("Exchange", (accounts: string[]) => {
       order.dualAuthSignAlgorithm = psc.SignAlgorithm.Ethereum;
     }
     if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== psc.SignAlgorithm.None) {
-      order.dualAuthAddr = orderDualAuthAddr[ownerIndex];
+      const accountIndex = index % orderDualAuthAddr.length;
+      order.dualAuthAddr = orderDualAuthAddr[accountIndex];
     }
     if (!order.allOrNone) {
       order.allOrNone = false;
@@ -183,7 +186,13 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.walletAddr && index > 0) {
       order.walletAddr = wallet1;
     }
+    if (order.tokenRecipient !== undefined && !order.tokenRecipient.startsWith("0x")) {
+      const accountIndex = parseInt(order.tokenRecipient, 10);
+      assert(accountIndex >= 0 && accountIndex < orderOwners.length, "Invalid token recipient index");
+      order.tokenRecipient = orderOwners[accountIndex];
+    }
     // Fill in defaults (default, so these will not get serialized)
+    order.tokenRecipient = order.tokenRecipient ? order.tokenRecipient : order.owner;
     order.feeToken = order.feeToken ? order.feeToken : lrcAddress;
     order.feeAmount = order.feeAmount ? order.feeAmount : 0;
     order.feePercentage = order.feePercentage ? order.feePercentage : 0;
@@ -209,11 +218,11 @@ contract("Exchange", (accounts: string[]) => {
   const assertEqualsRingsInfo = (ringsInfoA: psc.RingsInfo, ringsInfoB: psc.RingsInfo) => {
     // Blacklist properties we don't want to check.
     // We don't whitelist because we might forget to add them here otherwise.
-    const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash", "transactionOriginOwnerIndex"];
+    const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash"];
     const orderPropertiesToSkip = [
       "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
-      "balanceS", "balanceFee", "ownerIndex", "tokenSpendableS", "tokenSpendableFee",
+      "balanceS", "balanceFee", "tokenSpendableS", "tokenSpendableFee",
       "brokerSpendableS", "brokerSpendableFee",
     ];
     // Make sure to get the keys from both objects to make sure we get all keys defined in both
@@ -448,12 +457,16 @@ contract("Exchange", (accounts: string[]) => {
 
     for (const ringsInfo of ringsInfoList) {
       it(ringsInfo.description, async () => {
-        if (ringsInfo.transactionOriginOwnerIndex === undefined) {
+        if (ringsInfo.transactionOrigin === undefined) {
           ringsInfo.transactionOrigin = transactionOrigin;
           ringsInfo.feeRecipient = miner;
           ringsInfo.miner = miner;
         } else {
-          ringsInfo.transactionOrigin = orderOwners[ringsInfo.transactionOriginOwnerIndex];
+          if (!ringsInfo.transactionOrigin.startsWith("0x")) {
+            const accountIndex = parseInt(ringsInfo.transactionOrigin, 10);
+            assert(accountIndex >= 0 && accountIndex < orderOwners.length, "Invalid owner index");
+            ringsInfo.transactionOrigin = orderOwners[accountIndex];
+          }
           ringsInfo.feeRecipient = undefined;
           ringsInfo.miner = undefined;
         }

@@ -194,12 +194,36 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "single 2-size ring, owner specifies token receiver address",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 3e18,
+        amountB: 1e18,
+        owner: "0",
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 3e18,
+        owner: "1",
+        tokenRecipient: "2",
+      },
+    ],
+  },
+
+  {
     description: "self-trading in 2-size ring",
     rings: [[0, 1]],
     orders: [
       {
         index: 0,
-        ownerIndex: 0,
+        owner: "0",
         tokenS: tokenSymbols[2],
         tokenB: tokenSymbols[1],
         amountS: 3e18,
@@ -209,7 +233,7 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 1,
-        ownerIndex: 0,
+        owner: "0",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 1e18,
@@ -439,7 +463,7 @@ export const ringsInfoList: RingsInfo[] = [
     orders: [
       {
         index: 0,
-        ownerIndex: 0,
+        owner: "0",
         tokenS: tokenSymbols[2],
         tokenB: tokenSymbols[1],
         amountS: 3e18,
@@ -447,7 +471,7 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 1,
-        ownerIndex: 1,
+        owner: "1",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 1e18,
@@ -457,7 +481,7 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 2,
-        ownerIndex: 1,
+        owner: "1",
         tokenS: tokenSymbols[2],
         tokenB: tokenSymbols[3],
         amountS: 100e18,
@@ -467,7 +491,7 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 3,
-        ownerIndex: 2,
+        owner: "2",
         tokenS: tokenSymbols[3],
         tokenB: tokenSymbols[2],
         amountS: 10e18,
@@ -506,12 +530,12 @@ export const ringsInfoList: RingsInfo[] = [
 
   {
     description: "P2P: single 2-size ring, prices match exactly",
-    transactionOriginOwnerIndex: 1,
+    transactionOrigin: "1",
     rings: [[0, 1]],
     orders: [
       {
         index: 0,
-        ownerIndex: 0,
+        owner: "0",
         tokenS: tokenSymbols[0],
         tokenB: tokenSymbols[1],
         amountS: 100e18,
@@ -520,7 +544,7 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 1,
-        ownerIndex: 1,
+        owner: "1",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[0],
         amountS: 0.01e18,
@@ -532,12 +556,12 @@ export const ringsInfoList: RingsInfo[] = [
 
   {
     description: "P2P: single 2-size ring, with price gap",
-    transactionOriginOwnerIndex: 1,
+    transactionOrigin: "1",
     rings: [[0, 1]],
     orders: [
       {
         index: 0,
-        ownerIndex: 0,
+        owner: "0",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 100e18,
@@ -546,7 +570,7 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 1,
-        ownerIndex: 1,
+        owner: "1",
         tokenS: tokenSymbols[2],
         tokenB: tokenSymbols[1],
         amountS: 0.02e18,
@@ -558,12 +582,12 @@ export const ringsInfoList: RingsInfo[] = [
 
   {
     description: "P2P: single 2-size ring, insufficient funds",
-    transactionOriginOwnerIndex: 1,
+    transactionOrigin: "1",
     rings: [[0, 1]],
     orders: [
       {
         index: 0,
-        ownerIndex: 0,
+        owner: "0",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 100e18,
@@ -572,7 +596,7 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 1,
-        ownerIndex: 1,
+        owner: "1",
         tokenS: tokenSymbols[2],
         tokenB: tokenSymbols[1],
         amountS: 0.02e18,
@@ -585,12 +609,12 @@ export const ringsInfoList: RingsInfo[] = [
 
   {
     description: "P2P: invalid tokenSFeePercentage",
-    transactionOriginOwnerIndex: 0,
+    transactionOrigin: "0",
     rings: [[0, 1]],
     orders: [
       {
         index: 0,
-        ownerIndex: 0,
+        owner: "0",
         tokenS: tokenSymbols[0],
         tokenB: tokenSymbols[1],
         amountS: 100e18,
@@ -599,7 +623,7 @@ export const ringsInfoList: RingsInfo[] = [
       },
       {
         index: 1,
-        ownerIndex: 1,
+        owner: "1",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[0],
         amountS: 0.01e18,
