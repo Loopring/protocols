@@ -69,7 +69,6 @@ library OrderSpecs {
             spec.hasBroker() ? inputs.spendableList[inputs.nextUint16()] : Data.Spendable(true, 0, 0),
             spec.hasOrderInterceptor() ? inputs.nextAddress() : 0x0,
             spec.hasWallet() ? inputs.nextAddress() : 0x0,
-            spec.hasTokenRecipient() ? inputs.nextAddress() : 0x0,
             spec.hasValidUntil() ? inputs.nextUint() : uint(0) - 1,
             spec.hasSignature() ? inputs.nextBytes() : new bytes(0),
             spec.hasDualAuthSig() ? inputs.nextBytes() : new bytes(0),
@@ -80,6 +79,7 @@ library OrderSpecs {
             spec.hasWaiveFeePercentage() ? int16(inputs.nextUint16()) : 0,
             spec.hasTokenSFeePercentage() ? inputs.nextUint16() : 0,
             spec.hasTokenBFeePercentage() ? inputs.nextUint16() : 0,
+            spec.hasTokenRecipient() ? inputs.nextAddress() : 0x0,
             bytes32(0x0), // hash
             0x0, // orderBrokerInterceptor
             0,  // filledAmountS

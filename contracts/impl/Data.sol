@@ -110,7 +110,6 @@ library Data {
         Spendable brokerSpendableFee;
         address   orderInterceptor;
         address   wallet;
-        address   tokenRecipient;
         uint      validUntil;
         bytes     sig;
         bytes     dualAuthSig;
@@ -121,6 +120,7 @@ library Data {
         int16     waiveFeePercentage;
         uint16    tokenSFeePercentage;    // Pre-trading
         uint16    tokenBFeePercentage;   // Post-trading
+        address   tokenRecipient;
 
         // computed fields
         bytes32 hash;
