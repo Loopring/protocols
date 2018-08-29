@@ -304,7 +304,7 @@ export class Ring {
   }
 
   private addTokenTransfer(transferItems: TransferItem[], token: string, from: string, to: string, amount: number) {
-    if (amount > 0) {
+    if (from !== to && amount > 0) {
       transferItems.push({token, from, to, amount});
     }
   }

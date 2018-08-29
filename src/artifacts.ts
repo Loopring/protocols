@@ -10,6 +10,7 @@ export class Artifacts {
   public DummyToken: any;
   public DummyAgency: any;
   public DummyBrokerInterceptor: any;
+  public DummyExchange: any;
   public FeeHolder: any;
   public OrderBook: any;
   constructor(artifacts: any) {
@@ -23,6 +24,7 @@ export class Artifacts {
     this.DummyToken = artifacts.require("test/DummyToken");
     this.DummyAgency = artifacts.require("test/DummyAgency");
     this.DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");
+    this.DummyExchange = artifacts.require("test/DummyExchange");
     this.FeeHolder = artifacts.require("impl/FeeHolder");
     this.OrderBook = artifacts.require("impl/OrderBook");
   }
