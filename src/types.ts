@@ -70,7 +70,6 @@ export interface OrderInfo {
   dualAuthSignAlgorithm?: SignAlgorithm;
 
   index?: number;
-  ownerIndex?: number;
   balanceS?: number;
   balanceFee?: number;
 
@@ -106,8 +105,6 @@ export interface RingsInfo {
   signAlgorithm?: SignAlgorithm;
   hash?: Buffer;
   transactionOrigin?: string;
-
-  transactionOriginOwnerIndex?: number;
 
   [key: string]: any;
 }

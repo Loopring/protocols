@@ -124,6 +124,7 @@ export class ExchangeDeserializer {
       tokenBFeePercentage: spec.hasTokenBFeePercentage() ? this.nextUint16() : 0,
       tokenRecipient: spec.hasTokenRecipient() ? this.nextAddress() : undefined,
     };
+    order.tokenRecipient = order.tokenRecipient ? order.tokenRecipient : order.owner;
     return order;
   }
 

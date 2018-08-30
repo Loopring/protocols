@@ -144,13 +144,10 @@ export class Ring {
         const taxRateTokenS = this.context.tax.getTaxRate(order.tokenS, false, true);
         const totalAddedPercentage = order.tokenSFeePercentage * (this.context.feePercentageBase + taxRateTokenS);
         const totalPercentageBase = this.context.feePercentageBase * this.context.feePercentageBase;
-        if (totalAddedPercentage >= totalPercentageBase) {
-          this.valid = ensure(false, "totalAddedPercentage >= totalPercentageBase");
-          return;
-        }
         const maxFeeAndTaxAmountS = Math.floor(order.ringSpendableS * totalAddedPercentage /
                                                totalPercentageBase);
         order.fillAmountS = order.ringSpendableS - maxFeeAndTaxAmountS;
+        assert(order.fillAmountS >= 0, "ringSpendableS >= maxFeeAndTaxAmountS");
       }
     }
     order.fillAmountB = Math.floor(order.fillAmountS * order.amountB / order.amountS);
@@ -296,7 +293,7 @@ export class Ring {
         amountFeeToFeeHolder = 0;
       }
 
-      this.addTokenTransfer(transferItems, order.tokenS, order.owner, prevOrder.owner, amountSToBuyer);
+      this.addTokenTransfer(transferItems, order.tokenS, order.owner, prevOrder.tokenRecipient, amountSToBuyer);
       this.addTokenTransfer(transferItems, order.tokenS, order.owner, feeHolder, amountSToFeeHolder);
       this.addTokenTransfer(transferItems, order.feeToken, order.owner, feeHolder, amountFeeToFeeHolder);
     }
@@ -587,17 +584,20 @@ export class Ring {
       if (!expectedBalances[order.owner]) {
         expectedBalances[order.owner] = {};
       }
+      if (!expectedBalances[order.tokenRecipient]) {
+        expectedBalances[order.tokenRecipient] = {};
+      }
       if (!expectedBalances[order.owner][order.tokenS]) {
         expectedBalances[order.owner][order.tokenS] = 0;
       }
-      if (!expectedBalances[order.owner][order.tokenB]) {
-        expectedBalances[order.owner][order.tokenB] = 0;
+      if (!expectedBalances[order.tokenRecipient][order.tokenB]) {
+        expectedBalances[order.tokenRecipient][order.tokenB] = 0;
       }
       if (!expectedBalances[order.owner][order.feeToken]) {
         expectedBalances[order.owner][order.feeToken] = 0;
       }
       expectedBalances[order.owner][order.tokenS] += expectedBalanceS;
-      expectedBalances[order.owner][order.tokenB] += expectedBalanceB;
+      expectedBalances[order.tokenRecipient][order.tokenB] += expectedBalanceB;
       expectedBalances[order.owner][order.feeToken] += expectedBalanceFeeToken;
 
       // Accumulate fees
@@ -619,14 +619,14 @@ export class Ring {
       const order = this.orders[i];
       const balanceS = (balances[order.tokenS] && balances[order.tokenS][order.owner])
                       ? balances[order.tokenS][order.owner] : 0;
-      const balanceB = (balances[order.tokenB] && balances[order.tokenB][order.owner])
-                      ? balances[order.tokenB][order.owner] : 0;
+      const balanceB = (balances[order.tokenB] && balances[order.tokenB][order.tokenRecipient])
+                      ? balances[order.tokenB][order.tokenRecipient] : 0;
       const balanceFeeToken = (balances[order.feeToken] && balances[order.feeToken][order.owner])
                              ? balances[order.feeToken][order.owner] : 0;
       this.assertNumberEqualsWithPrecision(balanceS, expectedBalances[order.owner][order.tokenS],
                                            "Order owner tokenS balance should match expected value");
-      this.assertNumberEqualsWithPrecision(balanceB, expectedBalances[order.owner][order.tokenB],
-                                           "Order owner tokenB balance should match expected value");
+      this.assertNumberEqualsWithPrecision(balanceB, expectedBalances[order.tokenRecipient][order.tokenB],
+                                           "Order tokenRecipient tokenB balance should match expected value");
       this.assertNumberEqualsWithPrecision(balanceFeeToken, expectedBalances[order.owner][order.feeToken],
                                            "Order owner feeToken balance should match expected value");
     }

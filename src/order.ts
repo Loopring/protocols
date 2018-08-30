@@ -81,6 +81,7 @@ export class OrderUtil {
       order.validSince ? this.toBN(order.validSince) : this.toBN(0),
       order.validUntil ? this.toBN(order.validUntil) : MAX_UINT,
       order.allOrNone,
+      order.tokenRecipient,
     ];
     const argTypesPart1 = [
       "address",
@@ -95,15 +96,16 @@ export class OrderUtil {
       "uint256",
       "uint256",
       "bool",
+      "address",
     ];
     const orderHashPart1 = ABI.soliditySHA3(argTypesPart1, argsPart1);
 
     const argsPart2 = [
-      order.feeToken ? order.feeToken : this.context.lrcAddress,
-      order.feeAmount ? this.toBN(order.feeAmount) : this.toBN(0),
-      order.feePercentage ? this.toBN(order.feePercentage) : this.toBN(0),
-      order.tokenSFeePercentage ? this.toBN(order.tokenSFeePercentage) : this.toBN(0),
-      order.tokenBFeePercentage ? this.toBN(order.tokenBFeePercentage) : this.toBN(0),
+      order.feeToken,
+      this.toBN(order.feeAmount),
+      this.toBN(order.feePercentage),
+      this.toBN(order.tokenSFeePercentage),
+      this.toBN(order.tokenBFeePercentage),
     ];
     const argTypesPart2 = [
       "address",
@@ -181,19 +183,15 @@ export class OrderUtil {
                                   owner: string,
                                   broker: string,
                                   brokerInterceptor: string) {
-    let allowance = 1e64;
-    if (brokerInterceptor) {
-      try {
-        allowance = await this.context.BrokerInterceptorContract.at(brokerInterceptor).getAllowance(
-            owner,
-            broker,
-            tokenAddr,
-        );
-      } catch {
-        allowance = 0;
-      }
+    try {
+      return await this.context.BrokerInterceptorContract.at(brokerInterceptor).getAllowance(
+          owner,
+          broker,
+          tokenAddr,
+      );
+    } catch {
+      return 0;
     }
-    return allowance;
   }
 
   private async getSpendable(token: string,
