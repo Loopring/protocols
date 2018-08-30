@@ -129,10 +129,25 @@ contract("Exchange", (accounts: string[]) => {
     const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin : transactionOrigin;
     const deserializedRingsInfo = simulator.deserialize(bs, txOrigin);
     assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
-    const report = await simulator.simulateAndReport(deserializedRingsInfo);
-
-    const tx = await exchange.submitRings(bs, {from: txOrigin});
-    console.log("gas used: ", tx.receipt.gasUsed);
+    let shouldThrow = false;
+    let report: any = {
+      ringMinedEvents: [],
+      transferItems: [],
+      feeBalances: [],
+      filledAmounts: [],
+    };
+    let tx = null;
+    try {
+      report = await simulator.simulateAndReport(deserializedRingsInfo);
+    } catch {
+      shouldThrow = true;
+    }
+    if (shouldThrow) {
+      tx = await psc.expectThrow(exchange.submitRings(bs, {from: txOrigin}));
+    } else {
+      tx = await exchange.submitRings(bs, {from: txOrigin});
+      console.log("gas used: ", tx.receipt.gasUsed);
+    }
     const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
     assertTransfers(transferEvents, report.transferItems);
     await assertFeeBalances(report.feeBalances);

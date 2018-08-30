@@ -766,27 +766,27 @@ export const ringsInfoList: RingsInfo[] = [
     ],
   },
 
-  // {
-  //   description: "invalid miner signature",
-  //   signAlgorithm: SignAlgorithm.Ethereum,
-  //   sig: "0x00411c8ddc1f9062d1968d1333fa5488b7af57fb17250c18918de6ed31349a39834f787805224fdb56500" +
-  //        "e0331e79746060f7effb569df13c1aaf42e15efc3ef4dea04",
-  //   rings: [[0, 1]],
-  //   orders: [
-  //     {
-  //       index: 0,
-  //       tokenS: tokenSymbols[0],
-  //       tokenB: tokenSymbols[1],
-  //       amountS: 3e18,
-  //       amountB: 1e18,
-  //     },
-  //     {
-  //       index: 1,
-  //       tokenS: tokenSymbols[1],
-  //       tokenB: tokenSymbols[0],
-  //       amountS: 1e18,
-  //       amountB: 3e18,
-  //     },
-  //   ],
-  // },
+  {
+    description: "invalid miner signature",
+    signAlgorithm: SignAlgorithm.Ethereum,
+    sig: "0x00411c8ddc1f9062d1968d1333fa5488b7af57fb17250c18918de6ed31349a39834f787805224fdb56500" +
+         "e0331e79746060f7effb569df13c1aaf42e15efc3ef4dea04",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 3e18,
+        amountB: 1e18,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 3e18,
+      },
+    ],
+  },
 ];
