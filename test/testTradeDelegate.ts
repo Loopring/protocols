@@ -40,6 +40,12 @@ contract("TradeDelegate", (accounts: string[]) => {
   let token3: string;
   let token4: string;
 
+  const numberToBytesX = (value: number, numBytes: number) => {
+    const bitstream = new Bitstream();
+    bitstream.addNumber(value, numBytes);
+    return bitstream.getData();
+  };
+
   const addTokenTransfer = (transfers: TokenTransfer[], token: string, from: string, to: string, amount: number) => {
     const transfer: TokenTransfer = {
       token,
@@ -51,11 +57,8 @@ contract("TradeDelegate", (accounts: string[]) => {
   };
 
   const addFilledUpdate = (updates: FilledUpdate[], hash: number,  amount: number) => {
-    const bitstream = new Bitstream();
-    bitstream.addNumber(hash, 32);
-    const hashBytes32 = bitstream.getData();
     const update: FilledUpdate = {
-      hash: hashBytes32,
+      hash: numberToBytesX(hash, 32),
       amount,
     };
     updates.push(update);
@@ -225,6 +228,12 @@ contract("TradeDelegate", (accounts: string[]) => {
       await expectThrow(authorizeAddressChecked(dummyExchange1.address, owner));
     });
 
+    it("should not be able to deauthorize an unathorized address", async () => {
+      await authorizeAddressChecked(dummyExchange1.address, owner);
+      await expectThrow(deauthorizeAddressChecked(emptyAddr, owner));
+      await expectThrow(deauthorizeAddressChecked(dummyExchange2.address, owner));
+    });
+
     it("should be able to suspend and resume the contract", async () => {
       await tradeDelegate.suspend({from: owner});
       // Try to do a transfer
@@ -282,6 +291,31 @@ contract("TradeDelegate", (accounts: string[]) => {
         addTokenTransfer(transfers, token3, user3, user1, 1.5e18);
         await batchTransferChecked(transfers);
       }
+      {
+        const transfers: TokenTransfer[] = [];
+        // No tokens to be transfered
+        addTokenTransfer(transfers, token1, user1, user3, 0);
+        // From == To
+        addTokenTransfer(transfers, token3, user3, user3, 2.5e18);
+        await batchTransferChecked(transfers);
+      }
+    });
+
+    it("should not be able to batch transfer tokens with malformed data", async () => {
+      await setUserBalance(token1, user1, 10e18);
+      const transfers: TokenTransfer[] = [];
+      addTokenTransfer(transfers, token1, user1, user2, 1e18);
+      addTokenTransfer(transfers, token1, user1, user3, 2e18);
+      const batch = toTransferBatch(transfers);
+      batch.pop();
+      await expectThrow(dummyExchange1.batchTransfer(batch));
+    });
+
+    it("should be able to batch transfer tokens with non-ERC20 token address", async () => {
+      const transfers: TokenTransfer[] = [];
+      addTokenTransfer(transfers, token1, user1, user2, 1e18);
+      const batch = toTransferBatch(transfers);
+      await expectThrow(dummyExchange1.batchTransfer(batch));
     });
 
     it("should be able to batch update filled", async () => {
@@ -306,6 +340,17 @@ contract("TradeDelegate", (accounts: string[]) => {
         addFilledUpdate(updates, hash2, 2.3e18);
         await batchUpdateFilledChecked(updates);
       }
+    });
+
+    it("should not be able to batch update filled with malformed data", async () => {
+      const hash1 = 123;
+      const hash2 = 456;
+      const updates: FilledUpdate[] = [];
+      addFilledUpdate(updates, hash1, 1e18);
+      addFilledUpdate(updates, hash2, 2e18);
+      const batch = toFilledBatch(updates);
+      batch.pop();
+      await expectThrow(dummyExchange1.batchUpdateFilled(batch));
     });
 
     it("should be able to cancel all orders of an owner address up to a set time", async () => {
@@ -336,15 +381,24 @@ contract("TradeDelegate", (accounts: string[]) => {
         const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
         assertOrdersValid(result, [true, true, true, true]);
       }
-      {
-        const bitstream = new Bitstream();
-        bitstream.addNumber(tradingPairToCancel, 20);
-        await dummyExchange1.setTradingPairCutoffs(user1, bitstream.getData(), 2000);
-      }
+      await dummyExchange1.setTradingPairCutoffs(user1, numberToBytesX(tradingPairToCancel, 20), 2000);
       {
         const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
         assertOrdersValid(result, [true, false, true, true]);
       }
+    });
+
+    it("should not be able to uncancel orders by setting the owner cutoff earlier", async () => {
+      await dummyExchange1.setCutoffs(user1, 10000);
+      await dummyExchange1.setCutoffs(user1, 20000);
+      await expectThrow(dummyExchange1.setCutoffs(user1, 19000));
+    });
+
+    it("should not be able to uncancel orders by setting the trading pair cutoff earlier", async () => {
+      const tradingPair = numberToBytesX(123, 20);
+      dummyExchange1.setTradingPairCutoffs(user1, tradingPair, 2000);
+      dummyExchange1.setTradingPairCutoffs(user1, tradingPair, 4000);
+      await expectThrow(dummyExchange1.setTradingPairCutoffs(user1, tradingPair, 3000));
     });
 
     it("should be able to cancel a single order", async () => {
@@ -359,20 +413,12 @@ contract("TradeDelegate", (accounts: string[]) => {
         const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
         assertOrdersValid(result, [true, true, true, true]);
       }
-      {
-        const bitstream = new Bitstream();
-        bitstream.addNumber(orderHashOwner2ToCancel, 32);
-        await dummyExchange1.setCancelled(user2, bitstream.getData());
-      }
+      await dummyExchange1.setCancelled(user2, numberToBytesX(orderHashOwner2ToCancel, 32));
       {
         const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
         assertOrdersValid(result, [true, true, false, true]);
       }
-      {
-        const bitstream = new Bitstream();
-        bitstream.addNumber(orderHashOwner1ToCancel, 32);
-        await dummyExchange1.setCancelled(user1, bitstream.getData());
-      }
+      await dummyExchange1.setCancelled(user1, numberToBytesX(orderHashOwner1ToCancel, 32));
       {
         const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
         assertOrdersValid(result, [false, true, false, true]);
@@ -405,6 +451,31 @@ contract("TradeDelegate", (accounts: string[]) => {
       const data = toCutoffBatch(owners, tradingPairs, validSince, hashes);
       const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data);
       assertOrdersValid(result, [true]);
+    });
+
+    it("should not be able to check if order cutoffs are valid with malformed data", async () => {
+      const owners = [user1];
+      const tradingPairs = [456];
+      const validSince = [1];
+      const hashes = [123];
+      const batch = toCutoffBatch(owners, tradingPairs, validSince, hashes);
+      batch.pop();
+      await expectThrow(tradeDelegate.batchCheckCutoffsAndCancelled(batch));
+    });
+
+    it("should not be able to transfer tokens", async () => {
+      // Make sure everyone has enough funds
+      await setUserBalance(token1, user1, 10e18);
+      const transfers: TokenTransfer[] = [];
+      addTokenTransfer(transfers, token1, user1, user2, 1e18);
+      await expectThrow(batchTransferChecked(transfers));
+    });
+
+    it("should not be able to batch update filled", async () => {
+      const hash1 = 123;
+      const updates: FilledUpdate[] = [];
+      addFilledUpdate(updates, hash1, 1.5e18);
+      await expectThrow(batchUpdateFilledChecked(updates));
     });
   });
 });
