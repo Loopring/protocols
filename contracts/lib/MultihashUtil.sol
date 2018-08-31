@@ -43,11 +43,11 @@ library MultihashUtil {
         returns (bool)
     {
         require(multihash.length >= 2, "invalid multihash format");
-        HashAlgorithm algorithm = HashAlgorithm(uint8(multihash[0]));
+        uint8 algorithm = uint8(multihash[0]);
         uint8 size = uint8(multihash[1]);
         require(multihash.length == (2 + size), "bad multihash size");
 
-        if (algorithm == HashAlgorithm.Ethereum) {
+        if (algorithm == uint8(HashAlgorithm.Ethereum)) {
             require(signer != 0x0, "invalid signer address");
             require(size == 65, "bad Ethereum multihash size");
             return signer == ecrecover(
