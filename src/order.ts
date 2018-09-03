@@ -41,6 +41,7 @@ export class OrderUtil {
     valid = valid && ensure(order.waiveFeePercentage >= -this.context.feePercentageBase, "invalid waive percentage");
     valid = valid && ensure(order.tokenSFeePercentage < this.context.feePercentageBase, "invalid tokenS percentage");
     valid = valid && ensure(order.tokenBFeePercentage < this.context.feePercentageBase, "invalid tokenB percentage");
+    valid = valid && ensure(order.walletSplitPercentage <= 100, "invalid wallet split percentage");
 
     const blockTimestamp = this.context.blockTimestamp;
     valid = valid && ensure(order.validSince <= blockTimestamp, "order is too early to match");
@@ -82,6 +83,7 @@ export class OrderUtil {
       order.validUntil ? this.toBN(order.validUntil) : MAX_UINT,
       order.allOrNone,
       order.tokenRecipient,
+      order.walletSplitPercentage,
     ];
     const argTypesPart1 = [
       "address",
@@ -97,6 +99,7 @@ export class OrderUtil {
       "uint256",
       "bool",
       "address",
+      "uint16",
     ];
     const orderHashPart1 = ABI.soliditySHA3(argTypesPart1, argsPart1);
 
