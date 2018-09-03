@@ -52,7 +52,8 @@ library OrderHelper {
                 order.validSince,
                 order.validUntil,
                 order.allOrNone,
-                order.tokenRecipient
+                order.tokenRecipient,
+                order.walletSplitPercentage
             )
         );
         bytes32 hashPart2 = keccak256(
