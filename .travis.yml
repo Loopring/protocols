@@ -1,0 +1,19 @@
+dist: trusty
+sudo: false
+
+language: node_js
+node_js:
+  - "8"
+
+# install:
+    - yarn install
+#   - npm install -g truffle
+
+
+script:
+  - npm run compile
+  - npm run test
+  
+cache:
+  directories:
+    - node_modules
