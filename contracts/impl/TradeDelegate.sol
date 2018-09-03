@@ -42,15 +42,6 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         address addr;
     }
 
-    constructor(
-        uint8 _walletSplitPercentage
-        )
-        public
-    {
-        require(_walletSplitPercentage >= 0 && _walletSplitPercentage <= 100);
-        walletSplitPercentage = _walletSplitPercentage;
-    }
-
     modifier onlyAuthorized()
     {
         require(positionMap[msg.sender] > 0, "unauthorized");

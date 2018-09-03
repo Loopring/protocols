@@ -47,8 +47,6 @@ contract ITradeDelegate {
     // A map from address to its trading-pair cutoff timestamp.
     mapping (address => mapping (bytes20 => uint)) public tradingPairCutoffs;
 
-    uint8 public walletSplitPercentage = 0;
-
     /// @dev Add a Loopring protocol address.
     /// @param addr A loopring protocol address.
     function authorizeAddress(

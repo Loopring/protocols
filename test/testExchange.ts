@@ -47,7 +47,6 @@ contract("Exchange", (accounts: string[]) => {
   let minerBrokerRegistryAddress: string;
   let lrcAddress: string;
   let wethAddress: string;
-  let walletSplitPercentage: number;
   let feePercentageBase: number;
   let tax: psc.Tax;
 
@@ -127,7 +126,7 @@ contract("Exchange", (accounts: string[]) => {
     await ringsGenerator.setupRingsAsync(ringsInfo);
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
-    const simulator = new psc.ProtocolSimulator(walletSplitPercentage, context);
+    const simulator = new psc.ProtocolSimulator(context);
     const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin : transactionOrigin;
     const deserializedRingsInfo = simulator.deserialize(bs, txOrigin);
     assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
@@ -203,6 +202,9 @@ contract("Exchange", (accounts: string[]) => {
     if (!order.walletAddr && index > 0) {
       order.walletAddr = wallet1;
     }
+    if (order.walletAddr && !order.walletSplitPercentage) {
+      order.walletSplitPercentage = (index * 10) % 100;
+    }
     if (order.tokenRecipient !== undefined && !order.tokenRecipient.startsWith("0x")) {
       const accountIndex = parseInt(order.tokenRecipient, 10);
       assert(accountIndex >= 0 && accountIndex < orderOwners.length, "Invalid token recipient index");
@@ -216,6 +218,7 @@ contract("Exchange", (accounts: string[]) => {
     order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 0;
     order.tokenSFeePercentage = order.tokenSFeePercentage ? order.tokenSFeePercentage : 0;
     order.tokenBFeePercentage = order.tokenBFeePercentage ? order.tokenBFeePercentage : 0;
+    order.walletSplitPercentage = order.walletSplitPercentage ? order.walletSplitPercentage : 0;
 
     // setup initial balances:
     const tokenS = await DummyToken.at(order.tokenS);
@@ -381,9 +384,9 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const cleanTradeHistory = async () => {
-    // This will re-deploy the TradeDelegate contract (and thus the RingSubmitter contract as well)
+    // This will re-deploy the TradeDelegate contract (and thus the RingSubmitter/RingCanceller contract as well)
     // so all trade history is reset
-    tradeDelegate = await TradeDelegate.new(walletSplitPercentage);
+    tradeDelegate = await TradeDelegate.new();
     feeHolder = await FeeHolder.new(tradeDelegate.address);
     ringSubmitter = await RingSubmitter.new(
       lrcAddress,
@@ -396,15 +399,15 @@ contract("Exchange", (accounts: string[]) => {
       MinerRegistry.address,
       feeHolder.address,
     );
+    ringCanceller = await RingCanceller.new(
+      tradeDelegate.address,
+    );
     await initializeTradeDelegate();
   };
 
   const initializeTradeDelegate = async () => {
     await tradeDelegate.authorizeAddress(ringSubmitter.address, {from: deployer});
     await tradeDelegate.authorizeAddress(ringCanceller.address, {from: deployer});
-
-    const walletSplitPercentageBN = await tradeDelegate.walletSplitPercentage();
-    walletSplitPercentage = walletSplitPercentageBN.toNumber();
 
     for (const token of allTokens) {
       // approve once for all orders:

@@ -15,7 +15,7 @@ module.exports = function(deployer, network, accounts) {
   deployer.deploy(MinerRegistry);
   deployer.deploy(OrderBook);
 
-  deployer.deploy(TradeDelegate, 20).then(() => {
+  deployer.deploy(TradeDelegate).then(() => {
     return deployer.deploy(FeeHolder, TradeDelegate.address);
   });
 

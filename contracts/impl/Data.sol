@@ -121,6 +121,7 @@ library Data {
         uint16    tokenSFeePercentage;    // Pre-trading
         uint16    tokenBFeePercentage;   // Post-trading
         address   tokenRecipient;
+        uint16    walletSplitPercentage;
 
         // computed fields
         bytes32 hash;
@@ -160,6 +161,5 @@ library Data {
         Data.Ring ring;
         Data.Context ctx;
         Data.Mining mining;
-        uint8 walletSplitPercentage;
     }
 }

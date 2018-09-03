@@ -117,6 +117,7 @@ library OrderHelper {
         valid = valid && (order.waiveFeePercentage >= -int16(ctx.feePercentageBase)); // invalid waive percentage
         valid = valid && (order.tokenSFeePercentage < ctx.feePercentageBase); // invalid tokenS percentage
         valid = valid && (order.tokenBFeePercentage < ctx.feePercentageBase); // invalid tokenB percentage
+        valid = valid && (order.walletSplitPercentage <= 100); // invalid wallet split percentage
 
         valid = valid && (order.validSince <= block.timestamp); // order is too early to match
         valid = valid && (order.validUntil > block.timestamp);  // order is expired

@@ -399,33 +399,38 @@ library RingHelper {
             0,
             ring,
             ctx,
-            mining,
-            ring.P2P ? 100 : ctx.delegate.walletSplitPercentage()
+            mining
         );
         Data.Participation memory p;
         for (uint i = 0; i < ring.size; i++) {
             p = ring.participations[i];
+
+            uint walletPercentage = ring.P2P ? 100 : (p.order.wallet == 0x0 ? 0 : p.order.walletSplitPercentage);
+
             uint feeInTokenS = p.feeAmountS + p.splitS;
             payFeesAndTaxes(
                 feeCtx,
                 p.order.feeToken,
                 p.feeAmount,
                 p.taxFee,
-                p.order.wallet
+                p.order.wallet,
+                walletPercentage
             );
             payFeesAndTaxes(
                 feeCtx,
                 p.order.tokenS,
                 feeInTokenS,
                 p.taxS,
-                p.order.wallet
+                p.order.wallet,
+                walletPercentage
             );
             payFeesAndTaxes(
                 feeCtx,
                 p.order.tokenB,
                 p.feeAmountB,
                 p.taxB,
-                p.order.wallet
+                p.order.wallet,
+                walletPercentage
             );
         }
         // Patch in the correct length of the data array
@@ -441,7 +446,8 @@ library RingHelper {
         address token,
         uint amount,
         uint consumerTax,
-        address wallet
+        address wallet,
+        uint walletSplitPercentage
         )
         internal
         pure
@@ -459,10 +465,7 @@ library RingHelper {
 
         uint incomeAfterTax = amount - incomeTax;
 
-        uint feeToWallet = incomeAfterTax.mul(feeCtx.walletSplitPercentage) / 100;
-        if (wallet == 0x0) {
-            feeToWallet = 0;
-        }
+        uint feeToWallet = incomeAfterTax.mul(walletSplitPercentage) / 100;
         uint minerFee = incomeAfterTax - feeToWallet;
 
         uint feeToMiner = minerFee;

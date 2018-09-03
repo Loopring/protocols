@@ -80,6 +80,7 @@ library OrderSpecs {
             spec.hasTokenSFeePercentage() ? inputs.nextUint16() : 0,
             spec.hasTokenBFeePercentage() ? inputs.nextUint16() : 0,
             spec.hasTokenRecipient() ? inputs.nextAddress() : 0x0,
+            spec.hasWalletSplitPercentage() ? inputs.nextUint16() : 0,
             bytes32(0x0), // hash
             0x0, // orderBrokerInterceptor
             0,  // filledAmountS

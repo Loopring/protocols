@@ -145,4 +145,11 @@ library OrderSpec {
         return spec & (1 << 14) != 0;
     }
 
+    function hasWalletSplitPercentage(uint16 spec)
+        internal
+        pure
+        returns (bool)
+    {
+        return spec & (1 << 15) != 0;
+    }
 }
