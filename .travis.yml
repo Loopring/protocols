@@ -7,6 +7,7 @@ node_js:
 
 install:
   - npm install
+  - npm install -g testrpc
 
 before_script:
   - testrpc > testrpc.log &
