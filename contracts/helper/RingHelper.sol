@@ -18,7 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/IExchange.sol";
+import "../iface/IRingSubmitter.sol";
 import "../impl/BrokerInterceptorProxy.sol";
 import "../impl/Data.sol";
 import "../lib/ERC20.sol";
@@ -238,9 +238,9 @@ library RingHelper {
         )
         internal
         pure
-        returns (IExchange.Fill[])
+        returns (IRingSubmitter.Fill[])
     {
-        IExchange.Fill[] memory fills = new IExchange.Fill[](ring.size);
+        IRingSubmitter.Fill[] memory fills = new IRingSubmitter.Fill[](ring.size);
         Data.Participation memory p;
         for (uint i = 0; i < ring.size; i++) {
             p = ring.participations[i];
