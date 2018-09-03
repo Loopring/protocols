@@ -67,4 +67,7 @@ export class OrderSpec {
     return (this.data & (1 << 14)) !== 0;
   }
 
+  public hasWalletSplitPercentage() {
+    return (this.data & (1 << 15)) !== 0;
+  }
 }

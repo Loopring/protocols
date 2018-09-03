@@ -18,7 +18,6 @@ export class Ring {
 
   private context: Context;
   private orderUtil: OrderUtil;
-  private walletSplitPercentage: number;
 
   private feeBalances: { [id: string]: any; } = {};
 
@@ -237,11 +236,7 @@ export class Ring {
     assert(order.filledAmountS <= order.amountS, "filledAmountS <= amountS");
   }
 
-  public async getRingTransferItems(walletSplitPercentage: number, feeBalances: { [id: string]: any; }) {
-    this.walletSplitPercentage = walletSplitPercentage;
-    if (walletSplitPercentage > 100 && walletSplitPercentage < 0) {
-      throw new Error("invalid walletSplitPercentage:" + walletSplitPercentage);
-    }
+  public async getRingTransferItems(feeBalances: { [id: string]: any; }) {
     if (!this.valid) {
       return [];
     }
@@ -310,14 +305,34 @@ export class Ring {
     const ringSize = this.orders.length;
     for (let i = 0; i < ringSize; i++) {
       const order = this.orders[i];
+
+      const walletPercentage = this.P2P ? 100 :
+                               (order.walletAddr ? order.walletSplitPercentage : 0);
+
       const feeInTokenS = order.fillAmountFeeS + order.splitS;
-      await this.payFeesAndTaxes(order.feeToken, order.fillAmountFee, order.taxFee, order.walletAddr);
-      await this.payFeesAndTaxes(order.tokenS, feeInTokenS, order.taxS, order.walletAddr);
-      await this.payFeesAndTaxes(order.tokenB, order.fillAmountFeeB, order.taxB, order.walletAddr);
+      await this.payFeesAndTaxes(order.feeToken,
+                                 order.fillAmountFee,
+                                 order.taxFee,
+                                 order.walletAddr,
+                                 walletPercentage);
+      await this.payFeesAndTaxes(order.tokenS,
+                                 feeInTokenS,
+                                 order.taxS,
+                                 order.walletAddr,
+                                 walletPercentage);
+      await this.payFeesAndTaxes(order.tokenB,
+                                 order.fillAmountFeeB,
+                                 order.taxB,
+                                 order.walletAddr,
+                                 walletPercentage);
     }
   }
 
-  private async payFeesAndTaxes(token: string, amount: number, consumerTax: number, wallet: string) {
+  private async payFeesAndTaxes(token: string,
+                                amount: number,
+                                consumerTax: number,
+                                wallet: string,
+                                walletSplitPercentage: number) {
     if (amount === 0) {
       assert.equal(consumerTax, 0, "If fee == 0 no tax should be paid");
       return;
@@ -326,13 +341,10 @@ export class Ring {
       assert.equal(amount, 0, "In a P2P ring no fees should be paid when no wallet is provided");
     }
 
-    const walletPercentage = this.P2P ? 100 :
-                             (wallet ? this.walletSplitPercentage : 0);
-
     const incomeTax = this.context.tax.calculateTax(token, true, this.P2P, amount);
     const incomeAfterTax = amount - incomeTax;
 
-    const feeToWallet = Math.floor(incomeAfterTax * walletPercentage / 100);
+    const feeToWallet = Math.floor(incomeAfterTax * walletSplitPercentage / 100);
     const minerFee = incomeAfterTax - feeToWallet;
 
     let feeToMiner = minerFee;

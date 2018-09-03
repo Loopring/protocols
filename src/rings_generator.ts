@@ -280,6 +280,11 @@ export class RingsGenerator {
       param.addressList.push(order.tokenRecipient);
     }
 
+    if (order.walletSplitPercentage) {
+      spec += 1 << 15;
+      param.uint16List.push(order.walletSplitPercentage);
+    }
+
     param.orderSpecs.push(spec);
   }
 

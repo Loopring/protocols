@@ -12,14 +12,12 @@ import { xor } from "./xor";
 
 export class ProtocolSimulator {
 
-  public walletSplitPercentage: number;
   public context: Context;
 
   private ringIndex: number = 0;
   private orderUtil: OrderUtil;
 
-  constructor(walletSplitPercentage: number, context: Context) {
-    this.walletSplitPercentage = walletSplitPercentage;
+  constructor(context: Context) {
     this.context = context;
     this.orderUtil = new OrderUtil(context);
   }
@@ -150,7 +148,7 @@ export class ProtocolSimulator {
 
   private async simulateAndReportSingle(ring: Ring, feeBalances: { [id: string]: any; }) {
     await ring.calculateFillAmountAndFee();
-    const transferItems = await ring.getRingTransferItems(this.walletSplitPercentage, feeBalances);
+    const transferItems = await ring.getRingTransferItems(feeBalances);
     const ringMinedEvent: RingMinedEvent = {
       ringIndex: new BigNumber(this.ringIndex++),
     };
