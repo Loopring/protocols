@@ -45,7 +45,7 @@ contract Voting {
 
         uint256 balance = ERC20(lrcAddress).balanceOf(msg.sender);
         votesReceived[candidate] += balance;
-        voteFlag[msg.sender] == true;
+        voteFlag[msg.sender] = true;
     }
 
     function validCandidate(
