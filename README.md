@@ -1,4 +1,5 @@
 ## Loopring Protocol Javascript Library
+[![Build Status](https://travis-ci.com/Loopring/loopring.js.svg?branch=master)](https://travis-ci.com/Loopring/loopring.js)
 
 ### Introduction
 Loopring.js is a javascript library. Loopring.js enables developers to quickly develop an Ethereum  wallet, interact with Loopring protocol and develop a decentralized exchange. 
