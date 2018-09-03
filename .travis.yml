@@ -7,10 +7,10 @@ node_js:
 
 install:
   - npm install
-  - npm install -g testrpc
+  - npm install -g ganache-cli
 
 before_script:
-  - testrpc > testrpc.log &
+  - ganache-cli > ganache_cli.log &
 
 script:
   - npm run test
