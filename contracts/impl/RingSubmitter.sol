@@ -20,20 +20,16 @@ pragma experimental "ABIEncoderV2";
 
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IBrokerInterceptor.sol";
-import "../iface/IExchange.sol";
+import "../iface/IRingSubmitter.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IMinerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 
-import "../lib/AddressUtil.sol";
 import "../lib/BytesUtil.sol";
-import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
-import "../lib/MemoryUtil.sol";
 import "../lib/NoDefaultFunc.sol";
-import "../lib/MultihashUtil.sol";
 
 import "../spec/EncodeSpec.sol";
 import "../spec/MiningSpec.sol";
@@ -49,7 +45,7 @@ import "./Data.sol";
 import "./ExchangeDeserializer.sol";
 
 
-/// @title An Implementation of IExchange.
+/// @title An Implementation of IRingSubmitter.
 /// @author Daniel Wang - <daniel@loopring.org>,
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 /// @author Brechtpd - <brecht@loopring.org>
@@ -58,7 +54,7 @@ import "./ExchangeDeserializer.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract Exchange is IExchange, NoDefaultFunc {
+contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     using MathUint      for uint;
     using BytesUtil     for bytes;
     using MiningSpec    for uint16;
@@ -126,88 +122,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         orderRegistryAddress = _orderRegistryAddress;
         minerRegistryAddress = _minerRegistryAddress;
         feeHolderAddress = _feeHolderAddress;
-    }
-
-    function cancelOrders(
-        address owner,
-        bytes   orderHashes
-        )
-        external
-    {
-        uint size = orderHashes.length;
-        require(size > 0 && size % 32 == 0);
-
-        /* verifyAuthenticationGetInterceptor( */
-        /*     owner, */
-        /*     tx.origin */
-        /* ); */
-
-        size /= 32;
-        bytes32[] memory hashes = new bytes32[](size);
-
-        ITradeDelegate delegate = ITradeDelegate(delegateAddress);
-
-        for (uint i = 0; i < size; i++) {
-            hashes[i] = BytesUtil.bytesToBytes32(orderHashes, i * 32);
-            delegate.setCancelled(owner, hashes[i]);
-        }
-
-        emit OrdersCancelled(
-            owner,
-            tx.origin,
-            hashes
-        );
-    }
-
-    function cancelAllOrdersForTradingPair(
-        address owner,
-        address token1,
-        address token2,
-        uint    cutoff
-        )
-        external
-    {
-        // verifyAuthenticationGetInterceptor(owner, tx.origin);
-
-        uint t = (cutoff == 0) ? block.timestamp : cutoff;
-
-        bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
-
-        ITradeDelegate(delegateAddress).setTradingPairCutoffs(
-            owner,
-            tokenPair,
-            t
-        );
-
-        emit AllOrdersCancelledForTradingPair(
-            owner,
-            tx.origin,
-            token1,
-            token2,
-            t
-        );
-    }
-
-    function cancelAllOrders(
-        address owner,
-        uint   cutoff
-        )
-        external
-    {
-        /* verifyAuthenticationGetInterceptor( */
-        /*     owner, */
-        /*     tx.origin */
-        /* ); */
-
-        uint t = (cutoff == 0) ? block.timestamp : cutoff;
-
-        ITradeDelegate(delegateAddress).setCutoffs(owner, t);
-
-        emit AllOrdersCancelled(
-            owner,
-            tx.origin,
-            t
-        );
     }
 
     function submitRings(
@@ -290,7 +204,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             if (ring.valid) {
                 // Only settle rings we have checked to be valid
                 ring.settleRing(ctx, mining);
-                IExchange.Fill[] memory fills = ring.generateFills();
+                IRingSubmitter.Fill[] memory fills = ring.generateFills();
                 emit RingMined(
                     ctx.ringIndex++,
                     0x0,

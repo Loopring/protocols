@@ -4,7 +4,8 @@ var SymbolRegistry = artifacts.require("./impl/SymbolRegistry");
 var BrokerRegistry = artifacts.require("./impl/BrokerRegistry");
 var OrderRegistry = artifacts.require("./impl/OrderRegistry");
 var MinerRegistry = artifacts.require("./impl/MinerRegistry");
-var Exchange = artifacts.require("./impl/Exchange");
+var RingSubmitter = artifacts.require("./impl/RingSubmitter");
+var RingCanceller = artifacts.require("./impl/RingCanceller");
 var FeeHolder = artifacts.require("./impl/FeeHolder");
 
 module.exports = function(deployer, network, accounts) {
@@ -33,7 +34,7 @@ module.exports = function(deployer, network, accounts) {
     }).then(addresses => {
       var [orderBrokerRegistry, minerBrokerRegistry, lrcAddr, wethAddr] = addresses;
       return deployer.deploy(
-        Exchange,
+        RingSubmitter,
         lrcAddr,
         wethAddr,
         TokenRegistry.address,
@@ -44,6 +45,8 @@ module.exports = function(deployer, network, accounts) {
         MinerRegistry.address,
         FeeHolder.address,
       );
+    }).then(() => {
+      return deployer.deploy(RingCanceller, TradeDelegate.address);
     });
 
   }

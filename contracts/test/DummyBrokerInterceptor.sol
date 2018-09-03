@@ -19,7 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IBrokerInterceptor.sol";
-import "../iface/IExchange.sol";
+import "../iface/IRingSubmitter.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract DummyBrokerInterceptor is IBrokerInterceptor {
@@ -71,7 +71,7 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
             require(owner == 0x0, "Fake check");
         }
         if (doReentrancyAttack) {
-            IExchange(exchangeAddress).submitRings(submitRingsData);
+            IRingSubmitter(exchangeAddress).submitRings(submitRingsData);
         }
         spent[owner][token] += amount;
         ok = true;
