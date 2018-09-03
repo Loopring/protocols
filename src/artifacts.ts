@@ -2,7 +2,8 @@
 export class Artifacts {
   public TokenRegistry: any;
   public SymbolRegistry: any;
-  public Exchange: any;
+  public RingSubmitter: any;
+  public RingCanceller: any;
   public TradeDelegate: any;
   public BrokerRegistry: any;
   public OrderRegistry: any;
@@ -16,7 +17,8 @@ export class Artifacts {
   constructor(artifacts: any) {
     this.TokenRegistry = artifacts.require("impl/TokenRegistry");
     this.SymbolRegistry = artifacts.require("impl/SymbolRegistry");
-    this.Exchange = artifacts.require("impl/Exchange");
+    this.RingSubmitter = artifacts.require("impl/RingSubmitter");
+    this.RingCanceller = artifacts.require("impl/RingCanceller");
     this.TradeDelegate = artifacts.require("impl/TradeDelegate");
     this.BrokerRegistry = artifacts.require("impl/BrokerRegistry");
     this.OrderRegistry = artifacts.require("impl/OrderRegistry");
