@@ -10,7 +10,8 @@ import tokenInfos = require("../migrations/config/tokens.js");
 import { ringsInfoList } from "./rings_config";
 
 const {
-  Exchange,
+  RingSubmitter,
+  RingCanceller,
   TokenRegistry,
   SymbolRegistry,
   BrokerRegistry,
@@ -33,7 +34,8 @@ contract("Exchange", (accounts: string[]) => {
   const broker1 = accounts[1];
   const wallet1 = accounts[3];
 
-  let exchange: any;
+  let ringSubmitter: any;
+  let ringCanceller: any;
   let tokenRegistry: any;
   let symbolRegistry: any;
   let tradeDelegate: any;
@@ -143,9 +145,9 @@ contract("Exchange", (accounts: string[]) => {
       shouldThrow = true;
     }
     if (shouldThrow) {
-      tx = await psc.expectThrow(exchange.submitRings(bs, {from: txOrigin}));
+      tx = await psc.expectThrow(ringSubmitter.submitRings(bs, {from: txOrigin}));
     } else {
-      tx = await exchange.submitRings(bs, {from: txOrigin});
+      tx = await ringSubmitter.submitRings(bs, {from: txOrigin});
       console.log("gas used: ", tx.receipt.gasUsed);
     }
     const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
@@ -154,8 +156,8 @@ contract("Exchange", (accounts: string[]) => {
     await assertFilledAmounts(context, report.filledAmounts);
 
     // await watchAndPrintEvent(tradeDelegate, "LogTrans");
-    // await watchAndPrintEvent(exchange, "LogUint3");
-    // await watchAndPrintEvent(exchange, "LogAddress");
+    // await watchAndPrintEvent(ringSubmitter, "LogUint3");
+    // await watchAndPrintEvent(ringSubmitter, "LogAddress");
 
     return {tx, report};
   };
@@ -379,11 +381,11 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const cleanTradeHistory = async () => {
-    // This will re-deploy the TradeDelegate contract (and thus the Exchange contract as well)
+    // This will re-deploy the TradeDelegate contract (and thus the RingSubmitter contract as well)
     // so all trade history is reset
     tradeDelegate = await TradeDelegate.new(walletSplitPercentage);
     feeHolder = await FeeHolder.new(tradeDelegate.address);
-    exchange = await Exchange.new(
+    ringSubmitter = await RingSubmitter.new(
       lrcAddress,
       wethAddress,
       TokenRegistry.address,
@@ -398,7 +400,8 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const initializeTradeDelegate = async () => {
-    await tradeDelegate.authorizeAddress(exchange.address, {from: deployer});
+    await tradeDelegate.authorizeAddress(ringSubmitter.address, {from: deployer});
+    await tradeDelegate.authorizeAddress(ringCanceller.address, {from: deployer});
 
     const walletSplitPercentageBN = await tradeDelegate.walletSplitPercentage();
     walletSplitPercentage = walletSplitPercentageBN.toNumber();
@@ -412,24 +415,25 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   before( async () => {
-    [exchange, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
-      minerRegistry, feeHolder, dummyBrokerInterceptor] = await Promise.all([
-      Exchange.deployed(),
-      TokenRegistry.deployed(),
-      SymbolRegistry.deployed(),
-      TradeDelegate.deployed(),
-      OrderRegistry.deployed(),
-      MinerRegistry.deployed(),
-      FeeHolder.deployed(),
-      DummyBrokerInterceptor.deployed(),
-    ]);
+    [ringSubmitter, ringCanceller, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
+     minerRegistry, feeHolder, dummyBrokerInterceptor] = await Promise.all([
+       RingSubmitter.deployed(),
+       RingCanceller.deployed(),
+       TokenRegistry.deployed(),
+       SymbolRegistry.deployed(),
+       TradeDelegate.deployed(),
+       OrderRegistry.deployed(),
+       MinerRegistry.deployed(),
+       FeeHolder.deployed(),
+       DummyBrokerInterceptor.deployed(),
+     ]);
 
     lrcAddress = await symbolRegistry.getAddressBySymbol("LRC");
     wethAddress = await symbolRegistry.getAddressBySymbol("WETH");
 
-    // Get the different brokers from the exchange
-    orderBrokerRegistryAddress = await exchange.orderBrokerRegistryAddress();
-    minerBrokerRegistryAddress = await exchange.minerBrokerRegistryAddress();
+    // Get the different brokers from the ringSubmitter
+    orderBrokerRegistryAddress = await ringSubmitter.orderBrokerRegistryAddress();
+    minerBrokerRegistryAddress = await ringSubmitter.minerBrokerRegistryAddress();
 
     // Dummy data
     const minerBrokerRegistry = BrokerRegistry.at(minerBrokerRegistryAddress);
@@ -442,20 +446,20 @@ contract("Exchange", (accounts: string[]) => {
       allTokens.push(token);
     }
 
-    feePercentageBase = (await exchange.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
-    tax = new psc.Tax((await exchange.TAX_MATCHING_CONSUMER_LRC()).toNumber(),
-                      (await exchange.TAX_MATCHING_CONSUMER_ETH()).toNumber(),
-                      (await exchange.TAX_MATCHING_CONSUMER_OTHER()).toNumber(),
-                      (await exchange.TAX_MATCHING_INCOME_LRC()).toNumber(),
-                      (await exchange.TAX_MATCHING_INCOME_ETH()).toNumber(),
-                      (await exchange.TAX_MATCHING_INCOME_OTHER()).toNumber(),
-                      (await exchange.TAX_P2P_CONSUMER_LRC()).toNumber(),
-                      (await exchange.TAX_P2P_CONSUMER_ETH()).toNumber(),
-                      (await exchange.TAX_P2P_CONSUMER_OTHER()).toNumber(),
-                      (await exchange.TAX_P2P_INCOME_LRC()).toNumber(),
-                      (await exchange.TAX_P2P_INCOME_ETH()).toNumber(),
-                      (await exchange.TAX_P2P_INCOME_OTHER()).toNumber(),
-                      (await exchange.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber(),
+    feePercentageBase = (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
+    tax = new psc.Tax((await ringSubmitter.TAX_MATCHING_CONSUMER_LRC()).toNumber(),
+                      (await ringSubmitter.TAX_MATCHING_CONSUMER_ETH()).toNumber(),
+                      (await ringSubmitter.TAX_MATCHING_CONSUMER_OTHER()).toNumber(),
+                      (await ringSubmitter.TAX_MATCHING_INCOME_LRC()).toNumber(),
+                      (await ringSubmitter.TAX_MATCHING_INCOME_ETH()).toNumber(),
+                      (await ringSubmitter.TAX_MATCHING_INCOME_OTHER()).toNumber(),
+                      (await ringSubmitter.TAX_P2P_CONSUMER_LRC()).toNumber(),
+                      (await ringSubmitter.TAX_P2P_CONSUMER_ETH()).toNumber(),
+                      (await ringSubmitter.TAX_P2P_CONSUMER_OTHER()).toNumber(),
+                      (await ringSubmitter.TAX_P2P_INCOME_LRC()).toNumber(),
+                      (await ringSubmitter.TAX_P2P_INCOME_ETH()).toNumber(),
+                      (await ringSubmitter.TAX_P2P_INCOME_OTHER()).toNumber(),
+                      (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber(),
                       lrcAddress,
                       wethAddress);
 
@@ -540,7 +544,7 @@ contract("Exchange", (accounts: string[]) => {
       const orderToCancel = ringsInfo.orders[orderToCancelIdx];
       const hashes = new psc.Bitstream();
       hashes.addHex(orderToCancel.hash.toString("hex"));
-      const cancelTx = await exchange.cancelOrders(orderToCancel.owner, hashes.getData());
+      const cancelTx = await ringCanceller.cancelOrders(orderToCancel.owner, hashes.getData());
 
       // Check the TradeDelegate contract to see if the order is indeed cancelled
       const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
@@ -588,7 +592,7 @@ contract("Exchange", (accounts: string[]) => {
       // Cancel the first order using trading pairs
       const orderToCancelIdx = 0;
       const orderToCancel = ringsInfo.orders[orderToCancelIdx];
-      const cancelTx = await exchange.cancelAllOrdersForTradingPair(
+      const cancelTx = await ringCanceller.cancelAllOrdersForTradingPair(
         orderToCancel.owner, orderToCancel.tokenS, orderToCancel.tokenB, orderToCancel.validSince + 500);
 
       // Check the TradeDelegate contract to see if the order is indeed cancelled
@@ -637,7 +641,7 @@ contract("Exchange", (accounts: string[]) => {
       // Cancel the first order using trading pairs
       const orderToCancelIdx = 1;
       const orderToCancel = ringsInfo.orders[orderToCancelIdx];
-      const cancelTx = await exchange.cancelAllOrders(orderToCancel.owner, orderToCancel.validSince + 500);
+      const cancelTx = await ringCanceller.cancelAllOrders(orderToCancel.owner, orderToCancel.validSince + 500);
 
       // Check the TradeDelegate contract to see if the order is indeed cancelled
       const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
@@ -917,7 +921,7 @@ contract("Exchange", (accounts: string[]) => {
       const owner = ringsInfo.orders[0].owner;
       const context = getDefaultContext();
 
-      const attackBrokerInterceptor = await DummyBrokerInterceptor.new(exchange.address);
+      const attackBrokerInterceptor = await DummyBrokerInterceptor.new(ringSubmitter.address);
 
       // Register the broker with interceptor
       await registerBrokerChecked(owner, broker1, attackBrokerInterceptor.address);
@@ -941,7 +945,7 @@ contract("Exchange", (accounts: string[]) => {
       const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
       // submitRings currently does not throw because external calls cannot fail the transaction
-      exchange.submitRings(bs, {from: transactionOrigin});
+      ringSubmitter.submitRings(bs, {from: transactionOrigin});
 
       // Unregister the broker
       await unregisterBrokerChecked(owner, broker1);

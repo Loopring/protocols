@@ -45,6 +45,8 @@ module.exports = function(deployer, network, accounts) {
         MinerRegistry.address,
         FeeHolder.address,
       );
+    }).then(() => {
+      return deployer.deploy(RingCanceller, TradeDelegate.address);
     });
 
   }
