@@ -19,7 +19,6 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IBrokerRegistry.sol";
-import "../iface/IBrokerInterceptor.sol";
 import "../iface/IExchange.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IMinerRegistry.sol";
@@ -27,13 +26,9 @@ import "../iface/IOrderRegistry.sol";
 import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 
-import "../lib/AddressUtil.sol";
 import "../lib/BytesUtil.sol";
-import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
-import "../lib/MemoryUtil.sol";
 import "../lib/NoDefaultFunc.sol";
-import "../lib/MultihashUtil.sol";
 
 import "../spec/EncodeSpec.sol";
 import "../spec/MiningSpec.sol";
