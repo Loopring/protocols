@@ -11,8 +11,7 @@ install:
 
 
 script:
-  - npm run compile
-  - npm run test
+  - npm run build
   
 cache:
   directories:
