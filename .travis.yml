@@ -5,12 +5,8 @@ language: node_js
 node_js:
   - "8"
 
-# install:
-#   - npm install -g truffle
-#   - npm install -g truffle-expect
-#   - npm install -g truffle-config
-#   - npm install -g ethereumjs-testrpc
-#   - npm install -g web3
+install:
+  - npm install
 
 before_script:
   - testrpc > testrpc.log &
