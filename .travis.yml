@@ -6,6 +6,7 @@ node_js:
   - "8"
 
 install:
+  - apt-get install libusb-1.0-0-dev
   - npm install
 
 
