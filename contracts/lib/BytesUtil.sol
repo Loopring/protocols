@@ -68,28 +68,6 @@ library BytesUtil {
         return resultArray;
     }
 
-    function copyToAddressArray(bytes b, uint offset, uint arraySize)
-        internal
-        pure
-        returns (address[]) {
-        address[] memory resultArray = new address[](arraySize);
-        for (uint i = 0; i < arraySize; i++) {
-            resultArray[i] = MemoryUtil.bytesToAddress(b, offset + i * 20);
-        }
-        return resultArray;
-    }
-
-    function copyToUintArray(bytes b, uint offset, uint arraySize)
-        internal
-        pure
-        returns (uint[]) {
-        uint[] memory resultArray = new uint[](arraySize);
-        for (uint i = 0; i < arraySize; i++) {
-            resultArray[i] = MemoryUtil.bytesToUint(b, offset + i * 32);
-        }
-        return resultArray;
-    }
-
     function copyToBytesArray(bytes b, uint offset, uint[] innerBytesSizeList)
         internal
         pure
@@ -98,12 +76,8 @@ library BytesUtil {
         bytes[] memory resultArray = new bytes[](arraySize);
         for (uint i = 0; i < arraySize; i++) {
             uint len = innerBytesSizeList[i];
-            bytes memory data = new bytes(len);
-            for(uint j = 0; j < len; j++) {
-                data[j] = bytes1(MemoryUtil.bytesToUintX(b, offset, 1));
-                offset++;
-            }
-            resultArray[i] = data;
+            resultArray[i] = MemoryUtil.copyBytes(b, offset, len);
+            offset += len;
         }
         return resultArray;
     }

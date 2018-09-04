@@ -29,14 +29,12 @@ import "../iface/IFeeHolder.sol";
 library Data {
 
     struct Inputs {
-        address[] addressList;
-        uint[] uintList;
-        uint16[] uint16List;
+        bytes data;
         bytes[] bytesList;
         Spendable[] spendableList;
-        uint addressIndex;
-        uint uintIndex;
-        uint uint16Index;
+        uint addressOffset;
+        uint uintOffset;
+        uint uint16Offset;
         uint bytesIndex;
     }
 

@@ -89,4 +89,31 @@ library MemoryUtil {
         }
     }
 
+    function copyBytes(
+        bytes data,
+        uint start,
+        uint numBytes
+        )
+        internal
+        pure
+        returns (bytes)
+    {
+        uint numLoops = (numBytes + 31) / 32;
+        uint memoryLength = numLoops * 32;
+        bytes memory result = new bytes(memoryLength);
+        for(uint j = 0; j < numLoops; j++) {
+            uint offset = (j + 1) * 32;
+            assembly {
+                mstore(
+                    add(result, offset),
+                    mload(add(data, add(offset, start)))
+                )
+            }
+        }
+        assembly {
+            mstore(result, numBytes)
+        }
+        return result;
+    }
+
 }

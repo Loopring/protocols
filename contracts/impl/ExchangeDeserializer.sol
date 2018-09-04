@@ -83,18 +83,14 @@ library ExchangeDeserializer {
         offset += 1 * encodeSpecs.ringSpecsDataLen();
 
         Data.Inputs memory inputs;
-
-        inputs.addressList = data.copyToAddressArray(offset, encodeSpecs.addressListSize());
+        inputs.data = data;
+        inputs.addressOffset = offset;
         offset += 20 * encodeSpecs.addressListSize();
-
-        inputs.uintList = data.copyToUintArray(offset, encodeSpecs.uintListSize());
+        inputs.uintOffset = offset;
         offset += 32 * encodeSpecs.uintListSize();
-
-        inputs.uint16List = data.copyToUint16Array(offset, encodeSpecs.uint16ListSize());
+        inputs.uint16Offset = offset;
         offset += 2 * encodeSpecs.uint16ListSize();
-
         inputs.bytesList = data.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
-
         inputs.spendableList = new Data.Spendable[](encodeSpecs.spendableListSize());
 
         return inputToStructedData(

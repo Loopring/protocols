@@ -19,6 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../impl/Data.sol";
+import "../lib/MemoryUtil.sol";
 
 
 /// @title InputsHelper
@@ -30,9 +31,10 @@ library InputsHelper {
         )
         internal
         pure
-        returns (address)
+        returns (address value)
     {
-        return inputs.addressList[inputs.addressIndex++];
+        value = MemoryUtil.bytesToAddress(inputs.data, inputs.addressOffset);
+        inputs.addressOffset += 20;
     }
 
     function nextUint(
@@ -40,9 +42,10 @@ library InputsHelper {
         )
         internal
         pure
-        returns (uint)
+        returns (uint value)
     {
-        return inputs.uintList[inputs.uintIndex++];
+        value = MemoryUtil.bytesToUint(inputs.data, inputs.uintOffset);
+        inputs.uintOffset += 32;
     }
 
     function nextUint16(
@@ -50,9 +53,10 @@ library InputsHelper {
         )
         internal
         pure
-        returns (uint16)
+        returns (uint16 value)
     {
-        return inputs.uint16List[inputs.uint16Index++];
+        value = uint16(MemoryUtil.bytesToUintX(inputs.data, inputs.uint16Offset, 2));
+        inputs.uint16Offset += 2;
     }
 
     function nextBytes(

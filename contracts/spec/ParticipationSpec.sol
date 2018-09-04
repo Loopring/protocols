@@ -33,11 +33,4 @@ library ParticipationSpec {
         return spec;
     }
 
-    /* function marginSplitAsFee(uint8 spec) */
-    /*     internal */
-    /*     pure */
-    /*     returns (bool) */
-    /* { */
-    /*     return false; */
-    /* } */
 }
