@@ -125,3 +125,18 @@ contract ITradeDelegate {
     function kill()
         external;
 }
+
+library TradeDelegateData {
+    struct TokenTransferData {
+        address token;
+        address from;
+        address to;
+        uint    amount;
+    }
+    struct OrderCheckCancelledData {
+        address owner;
+        bytes32 hash;
+        uint    validSince;
+        bytes20 tradingPair;
+    }
+}

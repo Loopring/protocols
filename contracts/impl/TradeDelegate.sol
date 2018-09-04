@@ -24,6 +24,7 @@ import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/MemoryUtil.sol";
 import "../lib/NoDefaultFunc.sol";
 
 
@@ -108,13 +109,24 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         external
     {
         require(batch.length % 4 == 0);
+
+        TradeDelegateData.TokenTransferData memory transfer;
+        uint transferPtr;
+        assembly {
+            transferPtr := transfer
+        }
+
         for (uint i = 0; i < batch.length; i += 4) {
-            if (address(batch[i + 1]) != address(batch[i + 2]) && uint(batch[i + 3]) > 0) {
+
+            // Copy the data straight to the order struct from the call data
+            MemoryUtil.copyCallDataBytesInArray(0, transferPtr, i * 32, 4 * 32);
+
+            if (transfer.from != transfer.to && transfer.amount > 0) {
                 require(
-                    address(batch[i]).safeTransferFrom(
-                        address(batch[i + 1]),
-                        address(batch[i + 2]),
-                        uint(batch[i + 3])
+                    transfer.token.safeTransferFrom(
+                        transfer.from,
+                        transfer.to,
+                        transfer.amount
                     ),
                     "token transfer failure"
                 );
@@ -212,11 +224,21 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         require(batch.length % 4 == 0);
         require(batch.length <= 256 * 4);
 
+        TradeDelegateData.OrderCheckCancelledData memory order;
+        uint orderPtr;
+        assembly {
+            orderPtr := order
+        }
+
         uint cutoffsValid = 0;
         for (uint i = 0; i < batch.length; i += 4) {
-            bool valid = !cancelled[address(batch[i])][batch[i + 1]];
-            valid = valid && uint(batch[i + 2]) > tradingPairCutoffs[address(batch[i])][bytes20(batch[i + 3])];
-            valid = valid && uint(batch[i + 2]) > cutoffs[address(batch[i])];
+
+            // Copy the data straight to the order struct from the call data
+            MemoryUtil.copyCallDataBytesInArray(0, orderPtr, i * 32, 4 * 32);
+
+            bool valid = !cancelled[order.owner][order.hash];
+            valid = valid && order.validSince > tradingPairCutoffs[order.owner][order.tradingPair];
+            valid = valid && order.validSince > cutoffs[order.owner];
             cutoffsValid |= valid ? (1 << (i >> 2)) : 0;
         }
 
