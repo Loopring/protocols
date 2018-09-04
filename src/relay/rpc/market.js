@@ -39,9 +39,9 @@ export default class Market
         return getTickers(this.host, market);
     }
 
-    getTrend ({market, interval})
+    getTrend (filter)
     {
-        return getTrend(this.host, {market, interval});
+        return getTrend(this.host, filter);
     }
 }
 

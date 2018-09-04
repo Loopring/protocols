@@ -10,9 +10,9 @@ export default class Account
         this.host = host;
     }
 
-    getBalance ({delegateAddress, owner})
+    getBalance (filter)
     {
-        return getBalance(this.host, {delegateAddress, owner});
+        return getBalance(this.host, filter);
     }
 
     register (owner)
@@ -20,19 +20,19 @@ export default class Account
         return register(this.host, owner);
     }
 
-    notifyTransactionSubmitted ({txHash, rawTx, from})
+    notifyTransactionSubmitted (filter)
     {
-        return notifyTransactionSubmitted(this.host, {txHash, rawTx, from});
+        return notifyTransactionSubmitted(this.host, filter);
     }
 
-    getTransactions ({owner, status, txHash, pageIndex, pageSize})
+    getTransactions (filter)
     {
-        return getTransactions(this.host, {owner, status, txHash, pageIndex, pageSize});
+        return getTransactions(this.host, filter);
     }
 
-    getEstimatedAllocatedAllowance ({owner, token, delegateAddress})
+    getEstimatedAllocatedAllowance (filter)
     {
-        return getEstimatedAllocatedAllowance(this.host, {owner, token, delegateAddress});
+        return getEstimatedAllocatedAllowance(this.host, filter);
     }
 
     getFrozenLrcFee (owner)
@@ -163,13 +163,19 @@ export function notifyTransactionSubmitted (host, {txHash, rawTx, from})
  * @param pageSize
  * @returns {Promise.<*>}
  */
-export function getTransactions (host, {owner, status, txHash, pageIndex, pageSize})
+export function getTransactions (host, filter)
 {
+    let {owner, status, txHash, pageIndex, pageSize, symbol} = filter;
     status = status || 'pending';
     try
     {
+        validator.validate({value: symbol, type: 'STRING'});
         validator.validate({value: owner, type: 'ETH_ADDRESS'});
-        validator.validate({value: status, type: 'RPC_TAG'});
+        if (status)
+        {
+            validator.validate({value: status, type: 'RPC_TAG'});
+        }
+
         if (txHash)
         {
             validator.validate({value: txHash, type: 'HASH'});
