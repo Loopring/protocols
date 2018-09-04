@@ -165,7 +165,7 @@ export function notifyTransactionSubmitted (host, {txHash, rawTx, from})
  */
 export function getTransactions (host, filter)
 {
-    let {owner, status, txHash, pageIndex, pageSize, symbol} = filter;
+    let {owner, status, thxHash, pageIndex, pageSize, symbol} = filter;
     status = status || 'pending';
     try
     {
@@ -176,9 +176,9 @@ export function getTransactions (host, filter)
             validator.validate({value: status, type: 'RPC_TAG'});
         }
 
-        if (txHash)
+        if (thxHash)
         {
-            validator.validate({value: txHash, type: 'HASH'});
+            validator.validate({value: thxHash, type: 'HASH'});
         }
         if (pageIndex)
         {
@@ -195,7 +195,7 @@ export function getTransactions (host, filter)
     }
     const body = {};
     body.method = 'loopring_getTransactions';
-    body.params = [{owner, status, txHash, pageIndex, pageSize}];
+    body.params = [{...filter}];
     body.id = id();
     return request(host, {
         method: 'post',
