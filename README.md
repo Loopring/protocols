@@ -1,4 +1,6 @@
-## new LRC token contract  
+# New LRC Token Contract  
+
+[![Build Status](https://travis-ci.com/Loopring/new-lrc-token.svg?token=LFU5xhzys581aWFBPai3&branch=master)](https://travis-ci.com/Loopring/new-lrc-token)
 
 ### compile
 ```
