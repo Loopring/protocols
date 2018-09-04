@@ -27,6 +27,7 @@ contract ITokenRegistry {
 
     address[] public agencies;
     address[] public tokens;
+    mapping (address => address[]) public tokensByRegistrar;
 
 
     event AgencyRegistered(
@@ -70,7 +71,13 @@ contract ITokenRegistry {
     function unregisterToken(
         address addr
         )
-        external;
+        public;
+
+    function unregisterAllTokens(
+        address registrar
+        )
+        external
+        returns (bool);
 
     function areAllTokensRegistered(
         address[] addressList

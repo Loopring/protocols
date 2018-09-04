@@ -29,10 +29,12 @@ import "../lib/NoDefaultFunc.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
 
-    // using AddressUtil for address;
+    mapping (address => uint)       private agencyPosMap;
+    mapping (address => uint)       private tokenPosMap;
+    mapping (address => address)    public tokenToRegistrarMap;
+    mapping (address => mapping (address => uint))     private tokensByRegistrarPosMap;
 
-    mapping (address => uint)   private agencyPosMap;
-    mapping (address => uint)   private tokenPosMap;
+    address[] public agencies;
 
     function registerAgency(
         address agency
@@ -40,7 +42,7 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         onlyOwner
         external
     {
-        require(isContract(agency), "agency is not a contract");
+        require(0x0 != agency, "bad agency");
         require(
             0 == agencyPosMap[agency],
             "agency already exists"
@@ -107,6 +109,10 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         tokens.push(addr);
         tokenPosMap[addr] = tokens.length;
 
+        tokenToRegistrarMap[addr] = msg.sender;
+        tokensByRegistrar[msg.sender].push(addr);
+        tokensByRegistrarPosMap[msg.sender][addr] = tokensByRegistrar[msg.sender].length;
+
         emit TokenRegistered(addr);
     }
 
@@ -114,10 +120,11 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
         address addr
         )
         onlyOwner
-        external
+        public
     {
         require(addr != 0x0, "bad token address ");
 
+        // Remove from tokens array
         uint pos = tokenPosMap[addr];
         require(pos != 0, "token not found");
 
@@ -131,7 +138,51 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
 
         delete tokenPosMap[addr];
 
+        // Remove from tokensByRegistrar array
+        address registrar = tokenToRegistrarMap[addr];
+        pos = tokensByRegistrarPosMap[registrar][addr];
+        require(pos != 0, "token not found");
+
+        size = tokensByRegistrar[registrar].length;
+        if (pos != size) {
+            address lastOne = tokensByRegistrar[registrar][size - 1];
+            tokensByRegistrar[registrar][pos - 1] = lastOne;
+            tokensByRegistrarPosMap[registrar][lastOne] = pos;
+        }
+        tokensByRegistrar[registrar].length -= 1;
+
+        delete tokensByRegistrarPosMap[registrar][addr];
+
         emit TokenUnregistered(addr);
+    }
+
+    function unregisterAllTokens(
+        address registrar
+        )
+        onlyOwner
+        external
+        returns (bool)
+    {
+        require(registrar != 0x0, "bad registrar address");
+
+        bool allTokensUnregistered = true;
+        uint start = tokensByRegistrar[registrar].length;
+        if (start == 0) {
+            return true;
+        }
+
+        // Limit the number of unregisters per transaction to keep below gas limits
+        uint end = 0;
+        if (start > 100) {
+            end = start - 100;
+            allTokensUnregistered = false;
+        }
+
+        for(int i = int(start) - 1; i >= int(end); i--) {
+            unregisterToken(tokensByRegistrar[registrar][uint(i)]);
+        }
+
+        return allTokensUnregistered;
     }
 
     function areAllTokensRegistered(
@@ -147,26 +198,6 @@ contract TokenRegistry is ITokenRegistry, Claimable, NoDefaultFunc {
             }
         }
         return true;
-    }
-
-    // Currently here to work around InternalCompilerErrors when implemented
-    // in a library. Because extcodesize is used the function cannot be pure,
-    // so view is used which sometimes gives InternalCompilerErrors when
-    // combined with internal.
-    function isContract(
-        address addr
-        )
-        public
-        view
-        returns (bool)
-    {
-        if (addr == 0x0) {
-            return false;
-        } else {
-            uint size;
-            assembly { size := extcodesize(addr) }
-            return size > 0;
-        }
     }
 
 }

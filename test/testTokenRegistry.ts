@@ -109,6 +109,10 @@ contract("TokenRegistry", (accounts: string[]) => {
       await registerAgencyChecked(dummyAgency1.address, owner, 0);
     });
 
+    it("should be able to register an agency that is not a contract", async () => {
+      await registerAgencyChecked(user, owner, 0);
+    });
+
     it("should not be able to register an agency twice", async () => {
       await registerAgencyChecked(dummyAgency1.address, owner, 0);
       await expectThrow(registerAgencyChecked(dummyAgency1.address, owner, 1));
@@ -138,15 +142,50 @@ contract("TokenRegistry", (accounts: string[]) => {
       await expectThrow(tokenRegistry.unregisterAgency(dummyAgency2.address, {from: owner}));
     });
 
-    it("should not be able to register an agency that is not a contract", async () => {
-      await expectThrow(tokenRegistry.registerAgency(emptyAddr, {from: owner}));
-      await expectThrow(tokenRegistry.registerAgency(user, {from: owner}));
-    });
-
     it("should not be able to unregister an agency that isn't registered", async () => {
       await registerAgencyChecked(dummyAgency1.address, owner, 0);
       await expectThrow(tokenRegistry.unregisterAgency(emptyAddr, {from: owner}));
       await expectThrow(tokenRegistry.unregisterAgency(dummyAgency2.address, {from: owner}));
+    });
+
+    it("should be able to unregister a token registered by an agency", async () => {
+      await registerAgencyChecked(dummyAgency1.address, owner, 0);
+      await dummyAgency1.registerToken(token1, {from: user});
+      await unregisterTokenChecked(token1, owner);
+    });
+
+    it("should be able to unregister all tokens registered by an agency", async () => {
+      await registerAgencyChecked(dummyAgency1.address, owner, 0);
+      await registerAgencyChecked(dummyAgency2.address, owner, 1);
+      await dummyAgency1.registerToken(token1, {from: user});
+      await dummyAgency1.registerToken(token2, {from: user});
+      await dummyAgency2.registerToken(token3, {from: user});
+      await dummyAgency1.registerToken(token4, {from: user});
+      await tokenRegistry.unregisterAllTokens(dummyAgency1.address, {from: owner});
+      [token1, token2, token4].forEach((token) => assertTokenNotRegistered(token));
+      await assertTokenRegistered(token3);
+    });
+
+    it("should be able to unregister 100s of tokens registered by an agency", async () => {
+      await registerAgencyChecked(dummyAgency1.address, owner, 0);
+      await registerAgencyChecked(dummyAgency2.address, owner, 1);
+      await registerAgencyChecked(dummyAgency3.address, owner, 2);
+      await dummyAgency1.registerToken(token1, {from: user});
+      await dummyAgency3.registerToken(token3, {from: user});
+      const registeredTokens: string[] = [];
+      for (let i = 0; i < 222; i++) {
+        const token = "0x" + (i + 1);
+        dummyAgency2.registerToken(token, {from: user});
+        registeredTokens.push(token);
+      }
+      await areAllTokensRegisteredChecked(registeredTokens, true);
+      // 10 times should be more than enough to ensure all tokens are unregistered
+      for (let i = 0; i < 10; i++) {
+        await tokenRegistry.unregisterAllTokens(dummyAgency2.address, {from: owner});
+      }
+      registeredTokens.forEach((token) => assertTokenNotRegistered(token));
+      await assertTokenRegistered(token1);
+      await assertTokenRegistered(token3);
     });
 
   });
