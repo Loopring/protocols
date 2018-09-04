@@ -9,11 +9,11 @@ install:
   - npm install
   - npm install -g ganache-cli
 
-before_script:
-  - ganache-cli > ganache_cli.log &
+# before_script:
+#   - ganache-cli > ganache_cli.log &
 
 script:
-  - npm run build
+  - truffle compile
   
 cache:
   directories:
