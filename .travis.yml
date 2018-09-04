@@ -1,14 +1,20 @@
-sudo: false
 dist: trusty
+sudo: false
+
 language: node_js
-node_js: 8
+node_js:
+  - "8"
+
+install:
+  - npm install
+  - npm install -g ganache-cli
+
+before_script:
+  - ganache-cli > ganache_cli.log &
 
 script:
-- npm run testrpc  1 > /dev/null &
-- npm run test
-
-
-
+  - npm run test
+  
 cache:
   directories:
     - node_modules
