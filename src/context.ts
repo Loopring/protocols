@@ -17,6 +17,7 @@ export class Context {
   public MinerRegistryContract: any;
   public BrokerInterceptorContract: any;
   public FeeHolderContract: any;
+  public OrderBookContract: any;
 
   public tokenRegistry: any;
   public tradeDelegate: any;
@@ -25,6 +26,7 @@ export class Context {
   public orderRegistry: any;
   public minerRegistry: any;
   public feeHolder: any;
+  public orderBook: any;
 
   constructor(blockNumber: number,
               blockTimestamp: number,
@@ -36,6 +38,7 @@ export class Context {
               minerRegistryAddress: string,
               feeHolderAddress: string,
               lrcAddress: string,
+              orderBookAddress: string,
               tax: Tax,
               feePercentageBase: number) {
     this.blockNumber = blockNumber;
@@ -53,6 +56,7 @@ export class Context {
     const minerRegistryAbi = fs.readFileSync(ABIPath + "IMinerRegistry.abi", "ascii");
     const brokerInterceptorAbi = fs.readFileSync(ABIPath + "IBrokerInterceptor.abi", "ascii");
     const feeHolderAbi = fs.readFileSync(ABIPath + "IFeeHolder.abi", "ascii");
+    const orderBookAbi = fs.readFileSync(ABIPath + "IOrderBook.abi", "ascii");
 
     this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
     this.TokenRegistryContract = web3.eth.contract(JSON.parse(tokenRegistryAbi));
@@ -61,6 +65,7 @@ export class Context {
     this.OrderRegistryContract = web3.eth.contract(JSON.parse(orderRegistryAbi));
     this.MinerRegistryContract = web3.eth.contract(JSON.parse(minerRegistryAbi));
     this.FeeHolderContract = web3.eth.contract(JSON.parse(feeHolderAbi));
+    this.OrderBookContract = web3.eth.contract(JSON.parse(orderBookAbi));
     this.BrokerInterceptorContract = web3.eth.contract(JSON.parse(brokerInterceptorAbi));
 
     this.tokenRegistry = this.TokenRegistryContract.at(tokenRegistryAddress);
@@ -70,6 +75,7 @@ export class Context {
     this.orderRegistry = this.OrderRegistryContract.at(orderRegistryAddress);
     this.minerRegistry = this.MinerRegistryContract.at(minerRegistryAddress);
     this.feeHolder = this.FeeHolderContract.at(feeHolderAddress);
+    this.orderBook = this.OrderBookContract.at(orderBookAddress);
   }
 
 }
