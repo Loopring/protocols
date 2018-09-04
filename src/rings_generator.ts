@@ -52,7 +52,7 @@ export class RingsGenerator {
     const feeRecipient = rings.feeRecipient ? rings.feeRecipient : rings.transactionOrigin;
     const args = [
       feeRecipient,
-      rings.miner ? rings.miner : "0x0",
+      rings.miner ? ((rings.miner === feeRecipient) ? "0x0" : rings.miner) : "0x0",
       ringHashesXOR,
     ];
     const argTypes = [
@@ -174,18 +174,22 @@ export class RingsGenerator {
   }
 
   private calculateMiningSepc(ringsInfo: RingsInfo, param: RingsSubmitParam) {
+
+    const feeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin;
+    const miner = ringsInfo.miner ? ringsInfo.miner : feeRecipient;
+
     let miningSpec = 0;
-    if (ringsInfo.feeRecipient) {
+    if (feeRecipient !== ringsInfo.transactionOrigin) {
       miningSpec += 1;
       param.addressList.push(ringsInfo.feeRecipient);
     }
 
-    if (ringsInfo.miner) {
+    if (miner !== feeRecipient) {
       miningSpec += 1 << 1;
       param.addressList.push(ringsInfo.miner);
     }
 
-    if (ringsInfo.sig) {
+    if (ringsInfo.sig && miner !== ringsInfo.transactionOrigin) {
       miningSpec += 1 << 2;
       param.bytesList.push(ringsInfo.sig);
     }
@@ -275,7 +279,7 @@ export class RingsGenerator {
       param.uint16List.push(order.tokenBFeePercentage);
     }
 
-    if (order.tokenRecipient) {
+    if (order.tokenRecipient && order.tokenRecipient !== order.owner) {
       spec += 1 << 14;
       param.addressList.push(order.tokenRecipient);
     }
