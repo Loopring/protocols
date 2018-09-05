@@ -21,6 +21,7 @@ const {
   FeeHolder,
   DummyToken,
   DummyBrokerInterceptor,
+  OrderBook,
 } = new psc.Artifacts(artifacts);
 
 contract("Exchange", (accounts: string[]) => {
@@ -116,6 +117,7 @@ contract("Exchange", (accounts: string[]) => {
                                 MinerRegistry.address,
                                 feeHolder.address,
                                 lrcAddress,
+                                OrderBook.address,
                                 tax,
                                 feePercentageBase);
     return context;
@@ -127,8 +129,8 @@ contract("Exchange", (accounts: string[]) => {
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
     const simulator = new psc.ProtocolSimulator(context);
-    const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin : transactionOrigin;
-    const deserializedRingsInfo = simulator.deserialize(bs, txOrigin);
+    ringsInfo.transactionOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin : transactionOrigin;
+    const deserializedRingsInfo = simulator.deserialize(bs, ringsInfo.transactionOrigin);
     assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
     let shouldThrow = false;
     let report: any = {
@@ -144,9 +146,9 @@ contract("Exchange", (accounts: string[]) => {
       shouldThrow = true;
     }
     if (shouldThrow) {
-      tx = await psc.expectThrow(ringSubmitter.submitRings(bs, {from: txOrigin}));
+      tx = await psc.expectThrow(ringSubmitter.submitRings(bs, {from: deserializedRingsInfo.transactionOrigin}));
     } else {
-      tx = await ringSubmitter.submitRings(bs, {from: txOrigin});
+      tx = await ringSubmitter.submitRings(bs, {from: deserializedRingsInfo.transactionOrigin});
       console.log("gas used: ", tx.receipt.gasUsed);
     }
     const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
@@ -236,6 +238,10 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const assertEqualsRingsInfo = (ringsInfoA: psc.RingsInfo, ringsInfoB: psc.RingsInfo) => {
+    // Revert defaults back to undefined
+    ringsInfoA.miner = (ringsInfoA.miner === ringsInfoA.feeRecipient) ? undefined : ringsInfoA.miner;
+    ringsInfoB.miner = (ringsInfoB.miner === ringsInfoB.feeRecipient) ? undefined : ringsInfoB.miner;
+
     // Blacklist properties we don't want to check.
     // We don't whitelist because we might forget to add them here otherwise.
     const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash"];
@@ -428,6 +434,7 @@ contract("Exchange", (accounts: string[]) => {
        OrderRegistry.deployed(),
        MinerRegistry.deployed(),
        FeeHolder.deployed(),
+       OrderBook.deployed(),
        DummyBrokerInterceptor.deployed(),
      ]);
 
