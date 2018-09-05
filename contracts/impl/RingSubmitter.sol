@@ -248,7 +248,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             cancelledData.owner = order.owner;
             cancelledData.hash = order.hash;
             cancelledData.validSince = order.validSince;
-            cancelledData.hash = bytes20(order.tokenS) ^ bytes20(order.tokenB);
+            cancelledData.tradingPair = bytes20(order.tokenS) ^ bytes20(order.tokenB);
         }
 
         uint ordersValid = ctx.delegate.batchCheckCutoffsAndCancelled(ordersInfo);
