@@ -71,8 +71,9 @@ export default class Account
  * @param owner
  * @returns {Promise.<*>}
  */
-export function getBalance (host, {delegateAddress, owner})
+export function getBalance (host, filter)
 {
+    const {delegateAddress, owner} = filter;
     try
     {
         validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
@@ -84,7 +85,7 @@ export function getBalance (host, {delegateAddress, owner})
     }
     let body = {};
     body.method = 'loopring_getBalance';
-    body.params = [{delegateAddress, owner}];
+    body.params = [{...filter}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {
@@ -156,11 +157,7 @@ export function notifyTransactionSubmitted (host, {txHash, rawTx, from})
 /**
  * @description Get user's  transactions by given filter.
  * @param host
- * @param owner
- * @param status
- * @param txHash
- * @param pageIndex
- * @param pageSize
+ * @param filter
  * @returns {Promise.<*>}
  */
 export function getTransactions (host, filter)
@@ -205,14 +202,13 @@ export function getTransactions (host, filter)
 
 /**
  * @description Get the total frozen amount of all unfinished orders
- * @param delegateAddress
  * @param host
- * @param owner
- * @param token
+ * @param filter
  * @returns {Promise}
  */
-export function getEstimatedAllocatedAllowance (host, {owner, token, delegateAddress})
+export function getEstimatedAllocatedAllowance (host, filter)
 {
+    const {owner, token, delegateAddress} = filter;
     try
     {
         validator.validate({value: owner, type: 'ETH_ADDRESS'});
@@ -223,7 +219,7 @@ export function getEstimatedAllocatedAllowance (host, {owner, token, delegateAdd
     }
     const body = {};
     body.method = 'loopring_getEstimatedAllocatedAllowance';
-    body.params = [{owner, token, delegateAddress}];
+    body.params = [{...filter}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {

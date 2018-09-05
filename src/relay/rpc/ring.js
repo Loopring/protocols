@@ -64,7 +64,7 @@ export function getRings (host, filter)
     }
     const body = {};
     body.method = 'loopring_getRingMined';
-    body.params = [filter];
+    body.params = [{...filter}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {
@@ -80,8 +80,9 @@ export function getRings (host, filter)
  * @param delegateAddress
  * @returns {Promise}
  */
-export function getRingMinedDetail (host, {ringIndex, delegateAddress})
+export function getRingMinedDetail (host, filter)
 {
+    let {ringIndex, delegateAddress} = filter;
     try
     {
         validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
@@ -93,7 +94,7 @@ export function getRingMinedDetail (host, {ringIndex, delegateAddress})
     ringIndex = toHex(toBig(ringIndex));
     const body = {};
     body.method = 'loopring_getRingMinedDetail';
-    body.params = [{ringIndex, delegateAddress}];
+    body.params = [{...filter}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {

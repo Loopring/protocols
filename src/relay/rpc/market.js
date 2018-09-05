@@ -178,8 +178,9 @@ export function getTickers (host, market)
  * @param interval - examples:1Hr, 2Hr, 4Hr, 1Day, 1Week.
  * @returns {Promise.<*>}
  */
-export function getTrend (host, {market, interval})
+export function getTrend (host, filter)
 {
+    const {market, interval} = filter;
     try
     {
         validator.validate({value: market, type: 'STRING'});
@@ -191,7 +192,7 @@ export function getTrend (host, {market, interval})
     }
     const body = {};
     body.method = 'loopring_getTrend';
-    body.params = [{market, interval}];
+    body.params = [{...filter}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {

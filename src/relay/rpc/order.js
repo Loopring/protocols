@@ -17,9 +17,9 @@ export default class Order
         return getOrders(this.host, filter);
     }
 
-    getCutoff ({address, delegateAddress, blockNumber})
+    getCutoff (filter)
     {
-        return getCutoff(this.host, {address, delegateAddress, blockNumber});
+        return getCutoff(this.host, filter);
     }
 
     placeOrder (order)
@@ -88,8 +88,9 @@ export function getOrders (host, filter)
  * @param blockNumber
  * @returns {Promise.<*>}
  */
-export function getCutoff (host, {address, delegateAddress, blockNumber})
+export function getCutoff (host, filter)
 {
+    let {address, delegateAddress, blockNumber} = filter;
     blockNumber = blockNumber || 'latest';
     try
     {
@@ -103,7 +104,7 @@ export function getCutoff (host, {address, delegateAddress, blockNumber})
     }
     const body = {};
     body.method = 'loopring_getCutoff';
-    body.params = [{address, delegateAddress, blockNumber}];
+    body.params = [{...filter}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {
