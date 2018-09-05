@@ -138,7 +138,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
     let tx = null;
     try {
       report = await simulator.simulateAndReport(deserializedRingsInfo);
-    } catch {
+    } catch (err) {
+      console.log("Simulator reverted -> " + err);
       shouldThrow = true;
     }
     if (shouldThrow) {
@@ -231,6 +232,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
   };
 
   const assertEqualsRingsInfo = (ringsInfoA: psc.RingsInfo, ringsInfoB: psc.RingsInfo) => {
+    // Revert defaults back to undefined
+    ringsInfoA.miner = (ringsInfoA.miner === ringsInfoA.feeRecipient) ? undefined : ringsInfoA.miner;
+    ringsInfoB.miner = (ringsInfoB.miner === ringsInfoB.feeRecipient) ? undefined : ringsInfoB.miner;
+
     // Blacklist properties we don't want to check.
     // We don't whitelist because we might forget to add them here otherwise.
     const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash"];
