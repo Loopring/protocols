@@ -477,7 +477,7 @@ contract("Exchange", (accounts: string[]) => {
     await initializeTradeDelegate();
   });
 
-  describe.skip("submitRing", () => {
+  describe("submitRing", () => {
 
     // We don't want to reset the trading history between each test here, so do it once at the beginning
     // to make sure no order is cancelled
