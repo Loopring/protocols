@@ -1,4 +1,4 @@
-import {keccak} from 'ethereumjs-util';
+import {keccak, hashPersonalMessage} from 'ethereumjs-util';
 import {toHex, toBig} from './formatter';
 
 /**
@@ -28,3 +28,7 @@ export function calculateGas (gasPrice, gasLimit)
 {
     return toBig(gasPrice).times(gasLimit).div(1e9);
 }
+
+export default {
+    hashPersonalMessage
+};

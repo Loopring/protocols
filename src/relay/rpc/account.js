@@ -62,6 +62,10 @@ export default class Account
     {
         return getNonce(this.host, owner);
     }
+    getAllEstimatedAllocatedAmount (params)
+    {
+        return getAllEstimatedAllocatedAmount(this.host, params);
+    }
 }
 
 /**
@@ -208,7 +212,7 @@ export function getTransactions (host, filter)
  */
 export function getEstimatedAllocatedAllowance (host, filter)
 {
-    const {owner, token, delegateAddress} = filter;
+    const {owner} = filter;
     try
     {
         validator.validate({value: owner, type: 'ETH_ADDRESS'});
@@ -369,6 +373,34 @@ export async function getNonce (host, owner)
     let body = {};
     body.method = 'loopring_getNonce';
     body.params = [{owner}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
+}
+/**
+ *
+ * @param host
+ * @param owner
+ * @param delegateAddress
+ * @return {Promise.<*>}
+ */
+export async function getAllEstimatedAllocatedAmount (host, {owner, delegateAddress})
+{
+    try
+    {
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
+        validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    let body = {};
+    body.method = 'loopring_getAllEstimatedAllocatedAmount';
+    body.params = [{owner, delegateAddress}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {
