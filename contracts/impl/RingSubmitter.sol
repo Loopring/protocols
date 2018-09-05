@@ -26,6 +26,7 @@ import "../iface/IMinerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
+import "../iface/IOrderBook.sol";
 
 import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
@@ -75,6 +76,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     address public  orderRegistryAddress        = 0x0;
     address public  minerRegistryAddress        = 0x0;
     address public  feeHolderAddress            = 0x0;
+    address public  orderBookAddress            = 0x0;
 
     uint64  public  ringIndex                   = 0;
 
@@ -99,7 +101,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         address _minerBrokerRegistryAddress,
         address _orderRegistryAddress,
         address _minerRegistryAddress,
-        address _feeHolderAddress
+        address _feeHolderAddress,
+        address _orderBookAddress
         )
         public
     {
@@ -112,6 +115,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         require(_orderRegistryAddress != 0x0);
         require(_minerRegistryAddress != 0x0);
         require(_feeHolderAddress != 0x0);
+        require(_orderBookAddress != 0x0);
 
         lrcTokenAddress = _lrcTokenAddress;
         wethTokenAddress = _wethTokenAddress;
@@ -122,6 +126,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         orderRegistryAddress = _orderRegistryAddress;
         minerRegistryAddress = _minerRegistryAddress;
         feeHolderAddress = _feeHolderAddress;
+        orderBookAddress = _orderBookAddress;
     }
 
     function submitRings(
@@ -155,6 +160,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             IOrderRegistry(orderRegistryAddress),
             IMinerRegistry(minerRegistryAddress),
             IFeeHolder(feeHolderAddress),
+            IOrderBook(orderBookAddress),
             ringIndex,
             tax,
             FEE_AND_TAX_PERCENTAGE_BASE
