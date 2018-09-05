@@ -25,15 +25,14 @@ const {
 } = new psc.Artifacts(artifacts);
 
 contract("Exchange_Security", (accounts: string[]) => {
-  // console.log("psc:", psc);
-
   const deployer = accounts[0];
-  const miner = accounts[9];
-  const orderOwners = accounts.slice(5, 8); // 5 ~ 7
-  const orderDualAuthAddr = accounts.slice(1, 4);
-  const transactionOrigin = /*miner*/ accounts[1];
-  const broker1 = accounts[1];
+  const transactionOrigin = accounts[1];
+  const miner = accounts[2];
   const wallet1 = accounts[3];
+  const broker1 = accounts[4];
+  const orderOwners = accounts.slice(5, 9);
+  const orderDualAuthAddr = accounts.slice(9, 13);
+  const allOrderTokenRecipients = accounts.slice(13, 17);
 
   let ringSubmitter: any;
   let ringCanceller: any;
@@ -124,46 +123,6 @@ contract("Exchange_Security", (accounts: string[]) => {
     return context;
   };
 
-  const submitRingsAndSimulate = async (context: psc.Context, ringsInfo: psc.RingsInfo, eventFromBlock: number) => {
-    const ringsGenerator = new psc.RingsGenerator(context);
-    await ringsGenerator.setupRingsAsync(ringsInfo);
-    const bs = ringsGenerator.toSubmitableParam(ringsInfo);
-
-    const simulator = new psc.ProtocolSimulator(context);
-    ringsInfo.transactionOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin : transactionOrigin;
-    const deserializedRingsInfo = simulator.deserialize(bs, ringsInfo.transactionOrigin);
-    assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
-    let shouldThrow = false;
-    let report: any = {
-      ringMinedEvents: [],
-      transferItems: [],
-      feeBalances: [],
-      filledAmounts: [],
-    };
-    let tx = null;
-    try {
-      report = await simulator.simulateAndReport(deserializedRingsInfo);
-    } catch {
-      shouldThrow = true;
-    }
-    if (shouldThrow) {
-      tx = await psc.expectThrow(ringSubmitter.submitRings(bs, {from: deserializedRingsInfo.transactionOrigin}));
-    } else {
-      tx = await ringSubmitter.submitRings(bs, {from: deserializedRingsInfo.transactionOrigin});
-      console.log("gas used: ", tx.receipt.gasUsed);
-    }
-    const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
-    assertTransfers(transferEvents, report.transferItems);
-    await assertFeeBalances(report.feeBalances);
-    await assertFilledAmounts(context, report.filledAmounts);
-
-    // await watchAndPrintEvent(tradeDelegate, "LogTrans");
-    // await watchAndPrintEvent(ringSubmitter, "LogUint3");
-    // await watchAndPrintEvent(ringSubmitter, "LogAddress");
-
-    return {tx, report};
-  };
-
   const setupOrder = async (order: psc.OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
     if (order.owner === undefined) {
       const accountIndex = index % orderOwners.length;
@@ -238,133 +197,6 @@ contract("Exchange_Security", (accounts: string[]) => {
     }
   };
 
-  const assertEqualsRingsInfo = (ringsInfoA: psc.RingsInfo, ringsInfoB: psc.RingsInfo) => {
-    // Revert defaults back to undefined
-    ringsInfoA.miner = (ringsInfoA.miner === ringsInfoA.feeRecipient) ? undefined : ringsInfoA.miner;
-    ringsInfoB.miner = (ringsInfoB.miner === ringsInfoB.feeRecipient) ? undefined : ringsInfoB.miner;
-
-    // Blacklist properties we don't want to check.
-    // We don't whitelist because we might forget to add them here otherwise.
-    const ringsInfoPropertiesToSkip = ["description", "signAlgorithm", "hash"];
-    const orderPropertiesToSkip = [
-      "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
-      "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
-      "balanceS", "balanceFee", "tokenSpendableS", "tokenSpendableFee",
-      "brokerSpendableS", "brokerSpendableFee",
-    ];
-    // Make sure to get the keys from both objects to make sure we get all keys defined in both
-    for (const key of [...Object.keys(ringsInfoA), ...Object.keys(ringsInfoB)]) {
-      if (ringsInfoPropertiesToSkip.every((x) => x !== key)) {
-        if (key === "rings") {
-          assert.equal(ringsInfoA.rings.length, ringsInfoB.rings.length,
-                       "Number of rings does not match");
-          for (let r = 0; r < ringsInfoA.rings.length; r++) {
-            assert.equal(ringsInfoA.rings[r].length, ringsInfoB.rings[r].length,
-                         "Number of orders in rings does not match");
-            for (let o = 0; o < ringsInfoA.rings[r].length; o++) {
-              assert.equal(ringsInfoA.rings[r][o], ringsInfoB.rings[r][o],
-                           "Order indices in rings do not match");
-            }
-          }
-        } else if (key === "orders") {
-          assert.equal(ringsInfoA.orders.length, ringsInfoB.orders.length,
-                       "Number of orders does not match");
-          for (let o = 0; o < ringsInfoA.orders.length; o++) {
-            for (const orderKey of [...Object.keys(ringsInfoA.orders[o]), ...Object.keys(ringsInfoB.orders[o])]) {
-              if (orderPropertiesToSkip.every((x) => x !== orderKey)) {
-                assert.equal(ringsInfoA.orders[o][orderKey], ringsInfoB.orders[o][orderKey],
-                             "Order property '" + orderKey + "' does not match");
-              }
-            }
-          }
-        } else {
-            assert.equal(ringsInfoA[key], ringsInfoB[key],
-                         "RingInfo property '" + key + "' does not match");
-        }
-      }
-    }
-  };
-
-  const assertTransfers =
-    (tranferEvents: Array<[string, string, string, number]>, transferList: psc.TransferItem[]) => {
-    const transfersFromSimulator: Array<[string, string, string, number]> = [];
-    transferList.forEach((item) => transfersFromSimulator.push([item.token, item.from, item.to, item.amount]));
-    const sorter = (a: [string, string, string, number], b: [string, string, string, number]) => {
-      if (a[0] === b[0]) {
-        if (a[1] === b[1]) {
-          if (a[2] === b[2]) {
-            return a[3] - b[3];
-          } else {
-            return a[2] > b[2] ? 1 : -1;
-          }
-        } else {
-          return a[1] > b[1] ? 1 : -1;
-        }
-      } else {
-        return a[0] > b[0] ? 1 : -1;
-      }
-    };
-
-    transfersFromSimulator.sort(sorter);
-    tranferEvents.sort(sorter);
-    console.log("transfer items from simulator:");
-    transfersFromSimulator.forEach((t) => console.log(t[0], ":" , t[1], "->", t[2], ":", t[3] / 1e18));
-    console.log("transfer items from contract:");
-    tranferEvents.forEach((t) => console.log(t[0], ":" , t[1], "->", t[2], ":", t[3] / 1e18));
-    assert.equal(tranferEvents.length, transfersFromSimulator.length, "transfer amounts not match");
-    for (let i = 0; i < tranferEvents.length; i++) {
-      const transferFromEvent = tranferEvents[i];
-      const transferFromSimulator = transfersFromSimulator[i];
-      assert.equal(transferFromEvent[0], transferFromSimulator[0]);
-      assert.equal(transferFromEvent[1], transferFromSimulator[1]);
-      assert.equal(transferFromEvent[2], transferFromSimulator[2]);
-      assertNumberEqualsWithPrecision(transferFromEvent[3], transferFromSimulator[3]);
-    }
-  };
-
-  const assertFeeBalances = async (feeBalances: { [id: string]: any; }) => {
-    console.log("Fee balances:");
-    for (const token of Object.keys(feeBalances)) {
-      for (const owner of Object.keys(feeBalances[token])) {
-        const balanceFromSimulator = feeBalances[token][owner];
-        const balanceFromContract = await feeHolder.feeBalances(token, owner);
-        console.log("Token: " + token + ", Owner: " + owner + ": " +
-          balanceFromContract  / 1e18 + " == " + balanceFromSimulator  / 1e18);
-        assertNumberEqualsWithPrecision(balanceFromContract, balanceFromSimulator);
-      }
-    }
-  };
-
-  const assertFilledAmounts = async (context: psc.Context, filledAmounts: { [hash: string]: number; }) => {
-    console.log("Filled amounts:");
-    for (const hash of Object.keys(filledAmounts)) {
-      const filledFromSimulator = filledAmounts[hash];
-      const filledFromContract = await context.tradeDelegate.filled("0x" + hash).toNumber();
-      console.log(hash + ": " + filledFromContract / 1e18 + " == " + filledFromSimulator / 1e18);
-      assertNumberEqualsWithPrecision(filledFromContract, filledFromSimulator);
-    }
-  };
-
-  const assertOrdersValid = async (orders: psc.OrderInfo[], expectedValidValues: boolean[]) => {
-    assert.equal(orders.length, expectedValidValues.length, "Array sizes need to match");
-
-    const bitstream = new psc.Bitstream();
-    for (const order of orders) {
-      bitstream.addAddress(order.owner, 32);
-      bitstream.addHex(order.hash.toString("hex"));
-      bitstream.addNumber(order.validSince, 32);
-      bitstream.addHex(psc.xor(order.tokenS, order.tokenB, 20).slice(2));
-      bitstream.addNumber(0, 12);
-    }
-
-    const ordersValid = await tradeDelegate.batchCheckCutoffsAndCancelled(bitstream.getBytes32Array());
-
-    const bits = new BN(ordersValid.toString(16), 16);
-    for (const [i, order] of orders.entries()) {
-        assert.equal(bits.testn(i), expectedValidValues[i], "Order cancelled status incorrect");
-    }
-  };
-
   const registerBrokerChecked = async (user: string, broker: string, interceptor: string) => {
     const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
     await brokerRegistry.registerBroker(broker, interceptor, {from: user});
@@ -405,6 +237,7 @@ contract("Exchange_Security", (accounts: string[]) => {
       OrderRegistry.address,
       MinerRegistry.address,
       feeHolder.address,
+      orderBook.address,
     );
     ringCanceller = await RingCanceller.new(
       tradeDelegate.address,

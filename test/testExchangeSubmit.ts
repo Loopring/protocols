@@ -11,7 +11,6 @@ import { ringsInfoList } from "./rings_config";
 
 const {
   RingSubmitter,
-  RingCanceller,
   TokenRegistry,
   SymbolRegistry,
   BrokerRegistry,
@@ -20,24 +19,20 @@ const {
   TradeDelegate,
   FeeHolder,
   DummyToken,
-  DummyBrokerInterceptor,
   OrderBook,
 } = new psc.Artifacts(artifacts);
 
 contract("Exchange_Submit", (accounts: string[]) => {
-  // console.log("psc:", psc);
-
   const deployer = accounts[0];
-  const miner = accounts[9];
-  const orderOwners = accounts.slice(5, 8); // 5 ~ 7
-  const orderDualAuthAddr = accounts.slice(1, 4);
-  const allOrderTokenRecipients = accounts.slice(10, 14);
-  const transactionOrigin = /*miner*/ accounts[1];
-  const broker1 = accounts[1];
+  const transactionOrigin = accounts[1];
+  const miner = accounts[2];
   const wallet1 = accounts[3];
+  const broker1 = accounts[4];
+  const orderOwners = accounts.slice(5, 9);
+  const orderDualAuthAddr = accounts.slice(9, 13);
+  const allOrderTokenRecipients = accounts.slice(13, 17);
 
   let ringSubmitter: any;
-  let ringCanceller: any;
   let tokenRegistry: any;
   let symbolRegistry: any;
   let tradeDelegate: any;
@@ -45,7 +40,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
   let minerRegistry: any;
   let feeHolder: any;
   let orderBook: any;
-  let dummyBrokerInterceptor: any;
   let orderBrokerRegistryAddress: string;
   let minerBrokerRegistryAddress: string;
   let lrcAddress: string;
@@ -359,54 +353,28 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
   };
 
-  const registerBrokerChecked = async (user: string, broker: string, interceptor: string) => {
-    const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
-    await brokerRegistry.registerBroker(broker, interceptor, {from: user});
-    await assertRegistered(user, broker, interceptor);
-  };
-
-  const unregisterBrokerChecked = async (user: string, broker: string) => {
-    const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
-    await brokerRegistry.unregisterBroker(broker, {from: user});
-    await assertNotRegistered(user, broker);
-  };
-
-  const assertRegistered = async (user: string, broker: string, interceptor: string) => {
-    const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(isRegistered, "interceptor should be registered.");
-    assert.equal(interceptor, interceptorFromContract, "get wrong interceptor");
-  };
-
-  const assertNotRegistered = async (user: string, broker: string) => {
-    const brokerRegistry = BrokerRegistry.at(orderBrokerRegistryAddress);
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(!isRegistered, "interceptor should not be registered.");
-  };
-
-  const cleanTradeHistory = async () => {
-    // This will re-deploy the TradeDelegate contract (and thus the RingSubmitter contract as well)
-    // so all trade history is reset
-    tradeDelegate = await TradeDelegate.new();
-    feeHolder = await FeeHolder.new(tradeDelegate.address);
-    ringSubmitter = await RingSubmitter.new(
-      lrcAddress,
-      wethAddress,
-      TokenRegistry.address,
-      tradeDelegate.address,
-      orderBrokerRegistryAddress,
-      minerBrokerRegistryAddress,
-      OrderRegistry.address,
-      MinerRegistry.address,
-      feeHolder.address,
-      orderBook.address,
-    );
-    await initializeTradeDelegate();
-  };
+  // const cleanTradeHistory = async () => {
+  //   // This will re-deploy the TradeDelegate contract (and thus the RingSubmitter contract as well)
+  //   // so all trade history is reset
+  //   tradeDelegate = await TradeDelegate.new();
+  //   feeHolder = await FeeHolder.new(tradeDelegate.address);
+  //   ringSubmitter = await RingSubmitter.new(
+  //     lrcAddress,
+  //     wethAddress,
+  //     TokenRegistry.address,
+  //     tradeDelegate.address,
+  //     orderBrokerRegistryAddress,
+  //     minerBrokerRegistryAddress,
+  //     OrderRegistry.address,
+  //     MinerRegistry.address,
+  //     feeHolder.address,
+  //     orderBook.address,
+  //   );
+  //   await initializeTradeDelegate();
+  // };
 
   const initializeTradeDelegate = async () => {
     await tradeDelegate.authorizeAddress(ringSubmitter.address, {from: deployer});
-    await tradeDelegate.authorizeAddress(ringCanceller.address, {from: deployer});
 
     for (const token of allTokens) {
       // approve once for all orders:
@@ -417,17 +385,15 @@ contract("Exchange_Submit", (accounts: string[]) => {
   };
 
   before( async () => {
-    [ringSubmitter, ringCanceller, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
-     minerRegistry, feeHolder, dummyBrokerInterceptor, orderBook] = await Promise.all([
+    [ringSubmitter, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
+     minerRegistry, feeHolder, orderBook] = await Promise.all([
        RingSubmitter.deployed(),
-       RingCanceller.deployed(),
        TokenRegistry.deployed(),
        SymbolRegistry.deployed(),
        TradeDelegate.deployed(),
        OrderRegistry.deployed(),
        MinerRegistry.deployed(),
        FeeHolder.deployed(),
-       DummyBrokerInterceptor.deployed(),
        OrderBook.deployed(),
      ]);
 
@@ -473,9 +439,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
     // We don't want to reset the trading history between each test here, so do it once at the beginning
     // to make sure no order is cancelled
-    before(async () => {
-      await cleanTradeHistory();
-    });
+    // before(async () => {
+    //   await cleanTradeHistory();
+    // });
 
     for (const ringsInfo of ringsInfoList) {
       it(ringsInfo.description, async () => {

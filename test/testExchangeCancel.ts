@@ -25,15 +25,14 @@ const {
 } = new psc.Artifacts(artifacts);
 
 contract("Exchange_Cancel", (accounts: string[]) => {
-  // console.log("psc:", psc);
-
   const deployer = accounts[0];
-  const miner = accounts[9];
-  const orderOwners = accounts.slice(5, 8); // 5 ~ 7
-  const orderDualAuthAddr = accounts.slice(1, 4);
-  const transactionOrigin = /*miner*/ accounts[1];
-  const broker1 = accounts[1];
+  const transactionOrigin = accounts[1];
+  const miner = accounts[2];
   const wallet1 = accounts[3];
+  const broker1 = accounts[4];
+  const orderOwners = accounts.slice(5, 9);
+  const orderDualAuthAddr = accounts.slice(9, 13);
+  const allOrderTokenRecipients = accounts.slice(13, 17);
 
   let ringSubmitter: any;
   let ringCanceller: any;
@@ -156,10 +155,6 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     assertTransfers(transferEvents, report.transferItems);
     await assertFeeBalances(report.feeBalances);
     await assertFilledAmounts(context, report.filledAmounts);
-
-    // await watchAndPrintEvent(tradeDelegate, "LogTrans");
-    // await watchAndPrintEvent(ringSubmitter, "LogUint3");
-    // await watchAndPrintEvent(ringSubmitter, "LogAddress");
 
     return {tx, report};
   };
@@ -405,6 +400,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
       OrderRegistry.address,
       MinerRegistry.address,
       feeHolder.address,
+      orderBook.address,
     );
     ringCanceller = await RingCanceller.new(
       tradeDelegate.address,

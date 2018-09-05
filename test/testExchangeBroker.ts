@@ -11,7 +11,6 @@ import { ringsInfoList } from "./rings_config";
 
 const {
   RingSubmitter,
-  RingCanceller,
   TokenRegistry,
   SymbolRegistry,
   BrokerRegistry,
@@ -24,19 +23,17 @@ const {
   OrderBook,
 } = new psc.Artifacts(artifacts);
 
-contract("Exchange", (accounts: string[]) => {
-  // console.log("psc:", psc);
-
+contract("Exchange_Broker", (accounts: string[]) => {
   const deployer = accounts[0];
-  const miner = accounts[9];
-  const orderOwners = accounts.slice(5, 8); // 5 ~ 7
-  const orderDualAuthAddr = accounts.slice(1, 4);
-  const transactionOrigin = /*miner*/ accounts[1];
-  const broker1 = accounts[1];
+  const transactionOrigin = accounts[1];
+  const miner = accounts[2];
   const wallet1 = accounts[3];
+  const broker1 = accounts[4];
+  const orderOwners = accounts.slice(5, 9);
+  const orderDualAuthAddr = accounts.slice(9, 13);
+  const allOrderTokenRecipients = accounts.slice(13, 17);
 
   let ringSubmitter: any;
-  let ringCanceller: any;
   let tokenRegistry: any;
   let symbolRegistry: any;
   let tradeDelegate: any;
@@ -156,10 +153,6 @@ contract("Exchange", (accounts: string[]) => {
     assertTransfers(transferEvents, report.transferItems);
     await assertFeeBalances(report.feeBalances);
     await assertFilledAmounts(context, report.filledAmounts);
-
-    // await watchAndPrintEvent(tradeDelegate, "LogTrans");
-    // await watchAndPrintEvent(ringSubmitter, "LogUint3");
-    // await watchAndPrintEvent(ringSubmitter, "LogAddress");
 
     return {tx, report};
   };
@@ -405,16 +398,13 @@ contract("Exchange", (accounts: string[]) => {
       OrderRegistry.address,
       MinerRegistry.address,
       feeHolder.address,
-    );
-    ringCanceller = await RingCanceller.new(
-      tradeDelegate.address,
+      orderBook.address,
     );
     await initializeTradeDelegate();
   };
 
   const initializeTradeDelegate = async () => {
     await tradeDelegate.authorizeAddress(ringSubmitter.address, {from: deployer});
-    await tradeDelegate.authorizeAddress(ringCanceller.address, {from: deployer});
 
     for (const token of allTokens) {
       // approve once for all orders:
@@ -425,10 +415,9 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   before( async () => {
-    [ringSubmitter, ringCanceller, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
+    [ringSubmitter, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
      minerRegistry, feeHolder, orderBook, dummyBrokerInterceptor] = await Promise.all([
        RingSubmitter.deployed(),
-       RingCanceller.deployed(),
        TokenRegistry.deployed(),
        SymbolRegistry.deployed(),
        TradeDelegate.deployed(),
