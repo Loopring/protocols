@@ -194,9 +194,9 @@ contract("TradeDelegate", (accounts: string[]) => {
 
   beforeEach(async () => {
     tradeDelegate = await TradeDelegate.new(20);
-    dummyExchange1 = await DummyExchange.new(tradeDelegate.address, "0x0");
-    dummyExchange2 = await DummyExchange.new(tradeDelegate.address, "0x0");
-    dummyExchange3 = await DummyExchange.new(tradeDelegate.address, "0x0");
+    dummyExchange1 = await DummyExchange.new(tradeDelegate.address, "0x0", "0x0");
+    dummyExchange2 = await DummyExchange.new(tradeDelegate.address, "0x0", "0x0");
+    dummyExchange3 = await DummyExchange.new(tradeDelegate.address, "0x0", "0x0");
   });
 
   describe("contract owner", () => {

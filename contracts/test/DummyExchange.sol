@@ -20,63 +20,57 @@ pragma experimental "ABIEncoderV2";
 
 import "../iface/ITradeDelegate.sol";
 import "../iface/IFeeHolder.sol";
+import "../iface/IRingSubmitter.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract DummyExchange {
 
     address public tradeDelegateAddress = 0x0;
     address public feeHolderAddress = 0x0;
+    address public ringSubmitterAddress = 0x0;
 
     constructor(
         address _tradeDelegateAddress,
-        address _feeHolderAddress
+        address _feeHolderAddress,
+        address _ringSubmitterAddress
         )
         public
     {
         tradeDelegateAddress = _tradeDelegateAddress;
         feeHolderAddress = _feeHolderAddress;
+        ringSubmitterAddress = _ringSubmitterAddress;
+    }
+
+    function submitRings(
+        bytes data
+        )
+        external
+    {
+        IRingSubmitter(ringSubmitterAddress).submitRings(data);
     }
 
     function batchAddFeeBalances(
         bytes32[] data
         )
-        external
+        public
     {
-        // Work around following solidity compile error:
-        // 'UnimplementedFeatureError: Only byte arrays can be encoded from calldata currently.'
-        bytes32[] memory batch = new bytes32[](data.length);
-        for (uint i = 0; i < data.length; i++) {
-            batch[i] = data[i];
-        }
-        IFeeHolder(feeHolderAddress).batchAddFeeBalances(batch);
+        IFeeHolder(feeHolderAddress).batchAddFeeBalances(data);
     }
 
     function batchTransfer(
         bytes32[] data
         )
-        external
+        public
     {
-        // Work around following solidity compile error:
-        // 'UnimplementedFeatureError: Only byte arrays can be encoded from calldata currently.'
-        bytes32[] memory batch = new bytes32[](data.length);
-        for (uint i = 0; i < data.length; i++) {
-            batch[i] = data[i];
-        }
-        ITradeDelegate(tradeDelegateAddress).batchTransfer(batch);
+        ITradeDelegate(tradeDelegateAddress).batchTransfer(data);
     }
 
     function batchUpdateFilled(
         bytes32[] data
         )
-        external
+        public
     {
-        // Work around following solidity compile error:
-        // 'UnimplementedFeatureError: Only byte arrays can be encoded from calldata currently.'
-        bytes32[] memory batch = new bytes32[](data.length);
-        for (uint i = 0; i < data.length; i++) {
-            batch[i] = data[i];
-        }
-        ITradeDelegate(tradeDelegateAddress).batchUpdateFilled(batch);
+        ITradeDelegate(tradeDelegateAddress).batchUpdateFilled(data);
     }
 
     function setCancelled(

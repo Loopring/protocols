@@ -17,12 +17,13 @@ module.exports = function(deployer, network, accounts) {
         TokenRegistry.deployed(),
         TradeDelegate.deployed(),
         FeeHolder.deployed(),
+        RingSubmitter.deployed(),
       ]);
     }).then((contracts) => {
       return Promise.all([
         deployer.deploy(DummyBrokerInterceptor, RingSubmitter.address),
         deployer.deploy(DummyAgency, TokenRegistry.address),
-        deployer.deploy(DummyExchange, TradeDelegate.address, FeeHolder.address),
+        deployer.deploy(DummyExchange, TradeDelegate.address, FeeHolder.address, RingSubmitter.address),
       ]);
     });
   }

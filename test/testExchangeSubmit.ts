@@ -131,11 +131,11 @@ contract("Exchange_Submit", (accounts: string[]) => {
     for (const order of ringsInfo.orders) {
       // All tokens that could be paid to all recipients for this order
       const tokens = [order.feeToken, order.tokenS, order.tokenB];
-      const feeRecipients = [order.owner, ringsInfo.feeRecipient, feeHolder.address, order.wallet];
+      const feeRecipients = [order.owner, ringsInfo.feeRecipient, feeHolder.address, order.walletAddr];
       for (const token of tokens) {
         for (const feeRecipient of feeRecipients) {
           if (feeRecipient) {
-            feePayments.add(feeRecipient, token, 1e18);
+            feePayments.add(feeRecipient, token, 1);
           }
         }
       }
@@ -304,13 +304,13 @@ contract("Exchange_Submit", (accounts: string[]) => {
   };
 
   const addAddress = (addressBook: { [id: string]: any; }, address: string, name: string) => {
-    addressBook[address] = (addressBook[address] ? addressBook[address] + "," : "") + name;
+    addressBook[address] = (addressBook[address] ? addressBook[address] + "=" : "") + name;
   };
 
   const getAddressBook = (ringsInfo: psc.RingsInfo) => {
     const addressBook: { [id: string]: string; } = {};
     addAddress(addressBook, ringsInfo.feeRecipient, "FeeRecipient");
-    addAddress(addressBook, feeHolder.address, "TaxContract");
+    addAddress(addressBook, feeHolder.address, "FeeHolder");
     for (const [i, order] of ringsInfo.orders.entries()) {
       addAddress(addressBook, order.owner, "Owner[" + i + "]");
       if (order.owner !== order.tokenRecipient) {
@@ -382,7 +382,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         const tokenSymbol = tokenSymbolAddrMap.get(token);
         console.log(ownerName + ": " +
                     balanceFromContract  / 1e18 + " " + tokenSymbol + " " +
-                    "(== " + balanceFromSimulator  / 1e18 + ")");
+                    "(Simulator: " + balanceFromSimulator  / 1e18 + ")");
         assertNumberEqualsWithPrecision(balanceFromContract, balanceFromSimulator);
       }
     }
@@ -394,10 +394,22 @@ contract("Exchange_Submit", (accounts: string[]) => {
     const addressBook = getAddressBook(ringsInfo);
     console.log("Filled amounts:");
     for (const hash of Object.keys(filledAmounts)) {
+      let hashOrder: psc.OrderInfo = null;
+      for (const order of ringsInfo.orders) {
+        if (order.hash.toString("hex") === hash) {
+          hashOrder = order;
+        }
+      }
       const filledFromSimulator = filledAmounts[hash];
       const filledFromContract = await context.tradeDelegate.filled("0x" + hash).toNumber();
+      let percentageFilled = 0;
+      if (hashOrder) {
+        percentageFilled = filledFromContract * 100 / hashOrder.amountS;
+      }
       const hashName = addressBook[hash];
-      console.log(hashName + ": " + filledFromContract / 1e18 + " == " + filledFromSimulator / 1e18);
+      console.log(hashName + ": " + filledFromContract / 1e18 +
+                  " (Simulator: " + filledFromSimulator / 1e18 + ")" +
+                  " (" + percentageFilled + "%)");
       assertNumberEqualsWithPrecision(filledFromContract, filledFromSimulator);
     }
   };
@@ -479,7 +491,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     await minerBrokerRegistry.registerBroker(miner, "0x0", {from: miner});
 
     // Authorize dummy exchange
-    dummyExchange = await DummyExchange.new(tradeDelegate.address, feeHolder.address);
+    dummyExchange = await DummyExchange.new(tradeDelegate.address, feeHolder.address, ringSubmitter.address);
     await tradeDelegate.authorizeAddress(dummyExchange.address, {from: deployer});
 
     for (const sym of allTokenSymbols) {
