@@ -171,9 +171,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
       console.log("gas used: ", tx.receipt.gasUsed);
     }
     const transferEvents = await getTransferEvents(allTokens, eventFromBlock);
-    assertTransfers(transferEvents, report.transferItems);
-    await assertFeeBalances(report.feeBalances);
-    await assertFilledAmounts(context, report.filledAmounts);
+    assertTransfers(deserializedRingsInfo, transferEvents, report.transferItems);
+    await assertFeeBalances(deserializedRingsInfo, report.feeBalances);
+    await assertFilledAmounts(deserializedRingsInfo, context, report.filledAmounts);
 
     // await watchAndPrintEvent(tradeDelegate, "LogTrans");
     // await watchAndPrintEvent(ringSubmitter, "LogUint3");
@@ -303,8 +303,28 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
   };
 
-  const assertTransfers =
-    (tranferEvents: Array<[string, string, string, number]>, transferList: psc.TransferItem[]) => {
+  const addAddress = (addressBook: { [id: string]: any; }, address: string, name: string) => {
+    addressBook[address] = (addressBook[address] ? addressBook[address] + "," : "") + name;
+  };
+
+  const getAddressBook = (ringsInfo: psc.RingsInfo) => {
+    const addressBook: { [id: string]: string; } = {};
+    addAddress(addressBook, ringsInfo.feeRecipient, "FeeRecipient");
+    addAddress(addressBook, feeHolder.address, "TaxContract");
+    for (const [i, order] of ringsInfo.orders.entries()) {
+      addAddress(addressBook, order.owner, "Owner[" + i + "]");
+      if (order.owner !== order.tokenRecipient) {
+        addAddress(addressBook, order.tokenRecipient, "TokenRecipient[" + i + "]");
+      }
+      addAddress(addressBook, order.walletAddr, "Wallet[" + i + "]");
+      addAddress(addressBook, order.hash.toString("hex"), "Hash[" + i + "]");
+    }
+    return addressBook;
+  };
+
+  const assertTransfers = (ringsInfo: psc.RingsInfo,
+                           tranferEvents: Array<[string, string, string, number]>,
+                           transferList: psc.TransferItem[]) => {
     const transfersFromSimulator: Array<[string, string, string, number]> = [];
     transferList.forEach((item) => transfersFromSimulator.push([item.token, item.from, item.to, item.amount]));
     const sorter = (a: [string, string, string, number], b: [string, string, string, number]) => {
@@ -325,10 +345,21 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
     transfersFromSimulator.sort(sorter);
     tranferEvents.sort(sorter);
+    const addressBook = getAddressBook(ringsInfo);
     console.log("transfer items from simulator:");
-    transfersFromSimulator.forEach((t) => console.log(t[0], ":" , t[1], "->", t[2], ":", t[3] / 1e18));
+    transfersFromSimulator.forEach((t) => {
+      const tokenSymbol = tokenSymbolAddrMap.get(t[0]);
+      const fromName = addressBook[t[1]];
+      const toName = addressBook[t[2]];
+      console.log(fromName + " -> " + toName + " : " + t[3] / 1e18 + " " + tokenSymbol);
+    });
     console.log("transfer items from contract:");
-    tranferEvents.forEach((t) => console.log(t[0], ":" , t[1], "->", t[2], ":", t[3] / 1e18));
+    tranferEvents.forEach((t) => {
+      const tokenSymbol = tokenSymbolAddrMap.get(t[0]);
+      const fromName = addressBook[t[1]];
+      const toName = addressBook[t[2]];
+      console.log(fromName + " -> " + toName + " : " + t[3] / 1e18 + " " + tokenSymbol);
+    });
     assert.equal(tranferEvents.length, transfersFromSimulator.length, "transfer amounts not match");
     for (let i = 0; i < tranferEvents.length; i++) {
       const transferFromEvent = tranferEvents[i];
@@ -340,25 +371,33 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
   };
 
-  const assertFeeBalances = async (feeBalances: { [id: string]: any; }) => {
+  const assertFeeBalances = async (ringsInfo: psc.RingsInfo, feeBalances: { [id: string]: any; }) => {
+    const addressBook = getAddressBook(ringsInfo);
     console.log("Fee balances:");
     for (const token of Object.keys(feeBalances)) {
       for (const owner of Object.keys(feeBalances[token])) {
         const balanceFromSimulator = feeBalances[token][owner];
         const balanceFromContract = await feeHolder.feeBalances(token, owner);
-        console.log("Token: " + token + ", Owner: " + owner + ": " +
-          balanceFromContract  / 1e18 + " == " + balanceFromSimulator  / 1e18);
+        const ownerName = addressBook[owner] ? addressBook[owner] : owner;
+        const tokenSymbol = tokenSymbolAddrMap.get(token);
+        console.log(ownerName + ": " +
+                    balanceFromContract  / 1e18 + " " + tokenSymbol + " " +
+                    "(== " + balanceFromSimulator  / 1e18 + ")");
         assertNumberEqualsWithPrecision(balanceFromContract, balanceFromSimulator);
       }
     }
   };
 
-  const assertFilledAmounts = async (context: psc.Context, filledAmounts: { [hash: string]: number; }) => {
+  const assertFilledAmounts = async (ringsInfo: psc.RingsInfo,
+                                     context: psc.Context,
+                                     filledAmounts: { [hash: string]: number; }) => {
+    const addressBook = getAddressBook(ringsInfo);
     console.log("Filled amounts:");
     for (const hash of Object.keys(filledAmounts)) {
       const filledFromSimulator = filledAmounts[hash];
       const filledFromContract = await context.tradeDelegate.filled("0x" + hash).toNumber();
-      console.log(hash + ": " + filledFromContract / 1e18 + " == " + filledFromSimulator / 1e18);
+      const hashName = addressBook[hash];
+      console.log(hashName + ": " + filledFromContract / 1e18 + " == " + filledFromSimulator / 1e18);
       assertNumberEqualsWithPrecision(filledFromContract, filledFromSimulator);
     }
   };
@@ -445,7 +484,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
     for (const sym of allTokenSymbols) {
       const addr = await symbolRegistry.getAddressBySymbol(sym);
-      tokenSymbolAddrMap.set(sym, addr);
+      tokenSymbolAddrMap.set(addr, sym);
       const token = await DummyToken.at(addr);
       allTokens.push(token);
     }
