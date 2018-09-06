@@ -4,7 +4,7 @@ import { Context } from "./context";
 import { ensure } from "./ensure";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
-import { OrderInfo, TransferItem } from "./types";
+import { DetailedTokenTransfer, OrderInfo, OrderPayments, RingPayments, TransferItem } from "./types";
 
 export class Ring {
 
@@ -16,10 +16,14 @@ export class Ring {
   public P2P: boolean;
   public valid: boolean;
 
+  public payments: RingPayments;
+
   private context: Context;
   private orderUtil: OrderUtil;
 
   private feeBalances: { [id: string]: any; } = {};
+
+  private tokenPayments: Array<{ [id: string]: DetailedTokenTransfer; }> = [];
 
   constructor(context: Context,
               orders: OrderInfo[],
@@ -33,6 +37,16 @@ export class Ring {
     this.P2P = false;
     this.valid = true;
     this.minerFeesToOrdersPercentage = 0;
+
+    this.payments = {
+      orders: [],
+    };
+    for (const order of orders) {
+      this.payments.orders.push({
+        payments: [],
+      });
+      this.tokenPayments.push({});
+    }
 
     this.orderUtil = new OrderUtil(context);
   }
@@ -291,6 +305,62 @@ export class Ring {
       this.addTokenTransfer(transferItems, order.tokenS, order.owner, prevOrder.tokenRecipient, amountSToBuyer);
       this.addTokenTransfer(transferItems, order.tokenS, order.owner, feeHolder, amountSToFeeHolder);
       this.addTokenTransfer(transferItems, order.feeToken, order.owner, feeHolder, amountFeeToFeeHolder);
+
+      if (!this.tokenPayments[i][order.tokenS]) {
+        const payment: DetailedTokenTransfer = {
+          description: "none",
+          token: order.tokenS,
+          from: order.owner,
+          to: prevOrder.tokenRecipient,
+          amount: 0,
+          subPayments: [],
+        };
+        this.tokenPayments[i][order.tokenS] = payment;
+      }
+      this.tokenPayments[i][order.tokenS].amount +=
+        order.fillAmountS + order.splitS + order.fillAmountFeeS + order.taxS;
+
+      const paymentToBuyer: DetailedTokenTransfer = {
+        description: "none",
+        token: order.tokenS,
+        from: order.owner,
+        to: prevOrder.tokenRecipient,
+        amount: order.fillAmountS,
+        subPayments: [],
+      };
+      this.tokenPayments[i][order.tokenS].subPayments.push(paymentToBuyer);
+
+      if (!this.tokenPayments[i][order.tokenB]) {
+        const payment: DetailedTokenTransfer = {
+          description: "none",
+          token: order.tokenB,
+          from: order.owner,
+          to: order.owner,
+          amount: 0,
+          subPayments: [],
+        };
+        this.tokenPayments[i][order.tokenB] = payment;
+      }
+      this.tokenPayments[i][order.tokenB].amount -= (order.fillAmountB - order.fillAmountFeeB - order.taxB);
+
+      if (!this.tokenPayments[i][order.feeToken]) {
+        const payment: DetailedTokenTransfer = {
+          description: "none",
+          token: order.feeToken,
+          from: order.owner,
+          to: feeHolder,
+          amount: 0,
+          subPayments: [],
+        };
+        this.tokenPayments[i][order.feeToken] = payment;
+      }
+      this.tokenPayments[i][order.feeToken].amount += (order.fillAmountFee + order.taxFee);
+
+      this.payments.orders[i].payments.push(this.tokenPayments[i][order.tokenS]);
+      this.payments.orders[i].payments.push(this.tokenPayments[i][order.tokenB]);
+      if (order.tokenS !== order.feeToken && order.tokenB !== order.feeToken) {
+        this.payments.orders[i].payments.push(this.tokenPayments[i][order.feeToken]);
+      }
     }
     return transferItems;
   }
@@ -314,17 +384,20 @@ export class Ring {
                                  order.fillAmountFee,
                                  order.taxFee,
                                  order.walletAddr,
-                                 walletPercentage);
+                                 walletPercentage,
+                                 i);
       await this.payFeesAndTaxes(order.tokenS,
                                  feeInTokenS,
                                  order.taxS,
                                  order.walletAddr,
-                                 walletPercentage);
+                                 walletPercentage,
+                                 i);
       await this.payFeesAndTaxes(order.tokenB,
                                  order.fillAmountFeeB,
                                  order.taxB,
                                  order.walletAddr,
-                                 walletPercentage);
+                                 walletPercentage,
+                                 i);
     }
   }
 
@@ -332,7 +405,8 @@ export class Ring {
                                 amount: number,
                                 consumerTax: number,
                                 wallet: string,
-                                walletSplitPercentage: number) {
+                                walletSplitPercentage: number,
+                                orderIdx: number) {
     if (amount === 0) {
       assert.equal(consumerTax, 0, "If fee == 0 no tax should be paid");
       return;
@@ -343,6 +417,36 @@ export class Ring {
 
     const incomeTax = this.context.tax.calculateTax(token, true, this.P2P, amount);
     const incomeAfterTax = amount - incomeTax;
+
+    const payment: DetailedTokenTransfer = {
+      description: "none",
+      token,
+      from: this.orders[orderIdx].owner,
+      to: "X",
+      amount,
+      subPayments: [],
+    };
+    this.tokenPayments[orderIdx][token].subPayments.push(payment);
+
+    const incomeTaxPayment: DetailedTokenTransfer = {
+      description: "none",
+      token,
+      from: this.orders[orderIdx].owner,
+      to: this.context.feeHolder.address,
+      amount: incomeTax,
+      subPayments: [],
+    };
+    payment.subPayments.push(incomeTaxPayment);
+
+    const incomeAfterTaxPayment: DetailedTokenTransfer = {
+      description: "none",
+      token,
+      from: this.orders[orderIdx].owner,
+      to: "X",
+      amount: incomeAfterTax,
+      subPayments: [],
+    };
+    payment.subPayments.push(incomeAfterTaxPayment);
 
     const feeToWallet = Math.floor(incomeAfterTax * walletSplitPercentage / 100);
     const minerFee = incomeAfterTax - feeToWallet;
@@ -358,17 +462,21 @@ export class Ring {
       for (const order of this.orders) {
         if (order.waiveFeePercentage < 0) {
           const feeToOwner = Math.floor(minerFee * (-order.waiveFeePercentage) / this.context.feePercentageBase);
-          await this.payFee(token, order.owner, feeToOwner);
+          await this.payFee(token, order.owner, feeToOwner, orderIdx, payment);
         }
       }
     }
-    await this.payFee(token, wallet, feeToWallet);
-    await this.payFee(token, this.feeRecipient, feeToMiner);
+    await this.payFee(token, wallet, feeToWallet, orderIdx, incomeAfterTaxPayment);
+    await this.payFee(token, this.feeRecipient, feeToMiner, orderIdx, incomeAfterTaxPayment);
     // Pay the tax with the feeHolder as owner
-    await this.payFee(token, this.context.feeHolder.address, consumerTax + incomeTax);
+    await this.payFee(token, this.context.feeHolder.address, consumerTax + incomeTax, orderIdx, null);
   }
 
-  private async payFee(token: string, owner: string, amount: number) {
+  private async payFee(token: string,
+                       owner: string,
+                       amount: number,
+                       orderIdx: number,
+                       parentPayment: DetailedTokenTransfer) {
     if (!token || !owner || !amount) {
       return;
     }
@@ -379,6 +487,18 @@ export class Ring {
       this.feeBalances[token][owner] = 0;
     }
     this.feeBalances[token][owner] += amount;
+
+    if (parentPayment) {
+      const payment: DetailedTokenTransfer = {
+        description: "none",
+        token,
+        from: this.orders[orderIdx].owner,
+        to: owner,
+        amount,
+        subPayments: [],
+      };
+      parentPayment.subPayments.push(payment);
+    }
   }
 
   private resize(i: number, smallest: number) {

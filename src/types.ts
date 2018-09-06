@@ -110,11 +110,33 @@ export interface RingsInfo {
   [key: string]: any;
 }
 
+export interface DetailedTokenTransfer {
+  description: string;
+  token: string;
+  from: string;
+  to: string;
+  amount: number;
+  subPayments: DetailedTokenTransfer[];
+}
+
+export interface OrderPayments {
+  payments: DetailedTokenTransfer[];
+}
+
+export interface RingPayments {
+  orders: OrderPayments[];
+}
+
+export interface TransactionPayments {
+  rings: RingPayments[];
+}
+
 export interface SimulatorReport {
   ringMinedEvents: RingMinedEvent[];
   transferItems: TransferItem[];
   feeBalances: { [id: string]: any; };
   filledAmounts: { [hash: string]: number; };
+  payments: TransactionPayments;
 }
 
 export interface TransferItem {

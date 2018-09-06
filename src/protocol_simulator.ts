@@ -7,7 +7,7 @@ import { ExchangeDeserializer } from "./exchange_deserializer";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
-import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, TransferItem } from "./types";
+import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, TransactionPayments, TransferItem } from "./types";
 import { xor } from "./xor";
 
 export class ProtocolSimulator {
@@ -137,11 +137,19 @@ export class ProtocolSimulator {
       filledAmounts[order.hash.toString("hex")] = order.filledAmountS ? order.filledAmountS : 0;
     }
 
+    const payments: TransactionPayments = {
+      rings: [],
+    };
+    for (const ring of rings) {
+      payments.rings.push(ring.payments);
+    }
+
     const simulatorReport: SimulatorReport = {
       ringMinedEvents,
       transferItems,
       feeBalances,
       filledAmounts,
+      payments,
     };
     return simulatorReport;
   }
