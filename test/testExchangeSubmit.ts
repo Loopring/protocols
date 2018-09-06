@@ -7,6 +7,7 @@ import * as _ from "lodash";
 import * as psc from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
+import { FeePayments } from "./feePayments";
 import { ringsInfoList } from "./rings_config";
 
 const {
@@ -20,6 +21,7 @@ const {
   FeeHolder,
   DummyToken,
   OrderBook,
+  DummyExchange,
 } = new psc.Artifacts(artifacts);
 
 contract("Exchange_Submit", (accounts: string[]) => {
@@ -40,6 +42,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
   let minerRegistry: any;
   let feeHolder: any;
   let orderBook: any;
+  let dummyExchange: any;
   let orderBrokerRegistryAddress: string;
   let minerBrokerRegistryAddress: string;
   let lrcAddress: string;
@@ -120,6 +123,25 @@ contract("Exchange_Submit", (accounts: string[]) => {
   };
 
   const submitRingsAndSimulate = async (context: psc.Context, ringsInfo: psc.RingsInfo, eventFromBlock: number) => {
+
+    // Add an initial fee payment to all addresses to make gas use more realistic
+    // (gas cost to change variable in storage: zero -> non-zero: 20,000 gas, non-zero -> non-zero: 5,000 gas)
+    // Addresses getting fees will be getting a lot of fees so a balance of 0 is not realistic
+    const feePayments = new FeePayments();
+    for (const order of ringsInfo.orders) {
+      // All tokens that could be paid to all recipients for this order
+      const tokens = [order.feeToken, order.tokenS, order.tokenB];
+      const feeRecipients = [order.owner, ringsInfo.feeRecipient, feeHolder.address, order.wallet];
+      for (const token of tokens) {
+        for (const feeRecipient of feeRecipients) {
+          if (feeRecipient) {
+            feePayments.add(feeRecipient, token, 1e18);
+          }
+        }
+      }
+    }
+    await dummyExchange.batchAddFeeBalances(feePayments.getData());
+
     const ringsGenerator = new psc.RingsGenerator(context);
     await ringsGenerator.setupRingsAsync(ringsInfo);
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
@@ -198,8 +220,11 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // Set the order validSince time to a bit before the current timestamp;
       order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
     }
-    if (!order.walletAddr && index > 0) {
+    if (order.walletAddr === undefined) {
       order.walletAddr = wallet1;
+    }
+    if (order.walletAddr && order.walletSplitPercentage === undefined) {
+      order.walletSplitPercentage = ((index + 1) * 10) % 100;
     }
     if (order.tokenRecipient !== undefined && !order.tokenRecipient.startsWith("0x")) {
       const accountIndex = parseInt(order.tokenRecipient, 10);
@@ -391,7 +416,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
   before( async () => {
     [ringSubmitter, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
-     minerRegistry, feeHolder, orderBook] = await Promise.all([
+     minerRegistry, feeHolder, orderBook, dummyExchange] = await Promise.all([
        RingSubmitter.deployed(),
        TokenRegistry.deployed(),
        SymbolRegistry.deployed(),
@@ -400,6 +425,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
        MinerRegistry.deployed(),
        FeeHolder.deployed(),
        OrderBook.deployed(),
+       DummyExchange.deployed(),
      ]);
 
     lrcAddress = await symbolRegistry.getAddressBySymbol("LRC");
@@ -412,6 +438,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
     // Dummy data
     const minerBrokerRegistry = BrokerRegistry.at(minerBrokerRegistryAddress);
     await minerBrokerRegistry.registerBroker(miner, "0x0", {from: miner});
+
+    // Authorize dummy exchange
+    dummyExchange = await DummyExchange.new(tradeDelegate.address, feeHolder.address);
+    await tradeDelegate.authorizeAddress(dummyExchange.address, {from: deployer});
 
     for (const sym of allTokenSymbols) {
       const addr = await symbolRegistry.getAddressBySymbol(sym);

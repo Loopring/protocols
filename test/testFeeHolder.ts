@@ -1,6 +1,7 @@
 import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
 import { Artifacts, expectThrow } from "protocol2-js";
+import { FeePayments } from "./feePayments";
 
 const {
   FeeHolder,
@@ -9,12 +10,6 @@ const {
   DummyExchange,
   DummyToken,
 } = new Artifacts(artifacts);
-
-interface FeePayment {
-  owner: string;
-  token: string;
-  amount: number;
-}
 
 contract("FeeHolder", (accounts: string[]) => {
   const deployer = accounts[0];
@@ -33,35 +28,6 @@ contract("FeeHolder", (accounts: string[]) => {
   let token3: string;
   let token4: string;
 
-  const numberToBytes32Str = (n: number) => {
-    const encoded = abi.rawEncode(["uint256"], [new BN(n.toString(10), 10)]);
-    return "0x" + encoded.toString("hex");
-  };
-
-  const addressToBytes32Str = (addr: string) => {
-    const encoded = abi.rawEncode(["address"], [addr]);
-    return "0x" + encoded.toString("hex");
-  };
-
-  const addFeePayment = (feePayments: FeePayment[], owner: string, token: string, amount: number) => {
-    const feePayment: FeePayment = {
-      owner,
-      token,
-      amount,
-    };
-    feePayments.push(feePayment);
-  };
-
-  const toBatch = (feePayments: FeePayment[]) => {
-    const batch: string[] = [];
-    for (const feePayment of feePayments) {
-      batch.push(addressToBytes32Str(feePayment.token));
-      batch.push(addressToBytes32Str(feePayment.owner));
-      batch.push(numberToBytes32Str(feePayment.amount));
-    }
-    return batch;
-  };
-
   const authorizeAddressChecked = async (address: string, transcationOrigin: string) => {
     await tradeDelegate.authorizeAddress(address, {from: transcationOrigin});
     await assertAuthorized(address);
@@ -72,10 +38,10 @@ contract("FeeHolder", (accounts: string[]) => {
     assert.equal(isAuthorizedInDelegate, true, "exchange not authorized.");
   };
 
-  const batchAddFeeBalancesChecked = async (feePayments: FeePayment[]) => {
+  const batchAddFeeBalancesChecked = async (feePayments: FeePayments) => {
     // Calculate expected fee balances
     const feeBalances: { [id: string]: any; } = {};
-    for (const feePayment of feePayments) {
+    for (const feePayment of feePayments.payments) {
       if (!feeBalances[feePayment.owner]) {
         feeBalances[feePayment.owner] = {};
       }
@@ -86,10 +52,10 @@ contract("FeeHolder", (accounts: string[]) => {
       feeBalances[feePayment.owner][feePayment.token] += feePayment.amount;
     }
     // Update fee balances
-    const batch = toBatch(feePayments);
+    const batch = feePayments.getData();
     await dummyExchange.batchAddFeeBalances(batch);
     // Check if we get the expected results
-    for (const feePayment of feePayments) {
+    for (const feePayment of feePayments.payments) {
       const balance = (await feeHolder.feeBalances(feePayment.token, feePayment.owner)).toNumber();
       const expectedBalance = feeBalances[feePayment.owner][feePayment.token];
       assert.equal(balance, expectedBalance, "Fee balance does not match expected value");
@@ -128,30 +94,30 @@ contract("FeeHolder", (accounts: string[]) => {
   describe("protocol", () => {
     it("should be able to add fee balances in batch", async () => {
       {
-        const feePayments: FeePayment[] = [];
-        addFeePayment(feePayments, user1, token1, 1.23 * 1e18);
-        addFeePayment(feePayments, user2, token2, 3.21 * 1e19);
-        addFeePayment(feePayments, user1, token2, 2.71 * 1e19);
-        addFeePayment(feePayments, user3, token3, 4.91 * 1e19);
-        addFeePayment(feePayments, user1, token1, 1.48 * 1e19);
-        addFeePayment(feePayments, user3, token1, 2.61 * 1e19);
+        const feePayments = new FeePayments();
+        feePayments.add(user1, token1, 1.23 * 1e18);
+        feePayments.add(user2, token2, 3.21 * 1e19);
+        feePayments.add(user1, token2, 2.71 * 1e19);
+        feePayments.add(user3, token3, 4.91 * 1e19);
+        feePayments.add(user1, token1, 1.48 * 1e19);
+        feePayments.add(user3, token1, 2.61 * 1e19);
         await batchAddFeeBalancesChecked(feePayments);
       }
       {
-        const feePayments: FeePayment[] = [];
-        addFeePayment(feePayments, user3, token1, 1.23 * 1e18);
-        addFeePayment(feePayments, user1, token3, 3.21 * 1e19);
-        addFeePayment(feePayments, user2, token2, 2.71 * 1e19);
-        addFeePayment(feePayments, user3, token3, 2.61 * 1e19);
+        const feePayments = new FeePayments();
+        feePayments.add(user3, token1, 1.23 * 1e18);
+        feePayments.add(user1, token3, 3.21 * 1e19);
+        feePayments.add(user2, token2, 2.71 * 1e19);
+        feePayments.add(user3, token3, 2.61 * 1e19);
         await batchAddFeeBalancesChecked(feePayments);
       }
     });
 
     it("should not accept data in incorrect format for batchAddFeeBalances", async () => {
-      const feePayments: FeePayment[] = [];
-      addFeePayment(feePayments, user1, token1, 1.23 * 1e18);
-      addFeePayment(feePayments, user2, token2, 3.21 * 1e19);
-      const batch = toBatch(feePayments);
+      const feePayments = new FeePayments();
+      feePayments.add(user1, token1, 1.23 * 1e18);
+      feePayments.add(user2, token2, 3.21 * 1e19);
+      const batch = feePayments.getData();
       batch.pop();
       await expectThrow(dummyExchange.batchAddFeeBalances(batch));
     });
@@ -159,10 +125,10 @@ contract("FeeHolder", (accounts: string[]) => {
 
   describe("other users", () => {
     it("should not be able to add fee balances", async () => {
-      const feePayments: FeePayment[] = [];
-      addFeePayment(feePayments, user1, token1, 1.23 * 1e18);
-      addFeePayment(feePayments, user2, token2, 3.21 * 1e19);
-      await expectThrow(feeHolder.batchAddFeeBalances(toBatch(feePayments), {from: user1}));
+      const feePayments = new FeePayments();
+      feePayments.add(user1, token1, 1.23 * 1e18);
+      feePayments.add(user2, token2, 3.21 * 1e19);
+      await expectThrow(feeHolder.batchAddFeeBalances(feePayments.getData(), {from: user1}));
     });
 
   });
@@ -178,10 +144,10 @@ contract("FeeHolder", (accounts: string[]) => {
       await dummyToken1.setBalance(feeHolder.address, amount11 + amount12);
       await dummyToken2.setBalance(feeHolder.address, amount21);
 
-      const feePayments: FeePayment[] = [];
-      addFeePayment(feePayments, user1, token1, amount11);
-      addFeePayment(feePayments, user2, token1, amount12);
-      addFeePayment(feePayments, user1, token2, amount21);
+      const feePayments = new FeePayments();
+      feePayments.add(user1, token1, amount11);
+      feePayments.add(user2, token1, amount12);
+      feePayments.add(user1, token2, amount21);
       await batchAddFeeBalancesChecked(feePayments);
 
       await withdrawTokenChecked(user1, token1, amount11);
@@ -194,8 +160,8 @@ contract("FeeHolder", (accounts: string[]) => {
       // Make sure the contract has enough funds
       await dummyToken1.setBalance(feeHolder.address, amount);
 
-      const feePayments: FeePayment[] = [];
-      addFeePayment(feePayments, user1, token1, amount);
+      const feePayments = new FeePayments();
+      feePayments.add(user1, token1, amount);
       await batchAddFeeBalancesChecked(feePayments);
 
       await withdrawTokenChecked(user1, token1, amount / 4);
@@ -211,9 +177,9 @@ contract("FeeHolder", (accounts: string[]) => {
       await dummyToken1.setBalance(feeHolder.address, amount);
       await dummyToken2.setBalance(feeHolder.address, amount);
 
-      const feePayments: FeePayment[] = [];
-      addFeePayment(feePayments, user1, token1, amount);
-      addFeePayment(feePayments, user2, token2, amount);
+      const feePayments = new FeePayments();
+      feePayments.add(user1, token1, amount);
+      feePayments.add(user2, token2, amount);
       await batchAddFeeBalancesChecked(feePayments);
 
       // Withdraw half the available balance
