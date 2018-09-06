@@ -546,6 +546,13 @@ library RingHelper {
         if (amount == 0) {
             return offset;
         } else {
+            // Try to find an existing fee payment of the same token to the same owner
+            for (uint i = 0; i < offset; i += 3) {
+                if(token == address(data[i]) && owner == address(data[i + 1])) {
+                    data[i + 2] = bytes32(uint(data[i + 2]).add(amount));
+                    return offset;
+                }
+            }
             assembly {
                 let start := add(data, mul(add(offset, 1), 32))
                 mstore(add(start,  0), token)
