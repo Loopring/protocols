@@ -41,15 +41,9 @@ library Data {
 
     // Update TaxHelper.getTaxRate() if you change the order of these parameters
     struct Tax {
-        uint16 matchingConsumerLRC;
-        uint16 matchingConsumerETH;
-        uint16 matchingConsumerOther;
         uint16 matchingIncomeLRC;
         uint16 matchingIncomeETH;
         uint16 matchingIncomeOther;
-        uint16 p2pConsumerLRC;
-        uint16 p2pConsumerETH;
-        uint16 p2pConsumerOther;
         uint16 p2pIncomeLRC;
         uint16 p2pIncomeETH;
         uint16 p2pIncomeOther;
@@ -124,6 +118,7 @@ library Data {
         uint16    walletSplitPercentage;
 
         // computed fields
+        bool    P2P;
         bytes32 hash;
         address brokerInterceptor;
         uint    filledAmountS;
@@ -139,9 +134,6 @@ library Data {
         uint feeAmount;
         uint feeAmountS;
         uint feeAmountB;
-        uint taxFee;
-        uint taxS;
-        uint taxB;
         uint fillAmountS;
         uint fillAmountB;
     }
@@ -150,7 +142,6 @@ library Data {
         uint size;
         Participation[] participations;
         bytes32 hash;
-        bool P2P;
         uint minerFeesToOrdersPercentage;
         bool valid;
     }

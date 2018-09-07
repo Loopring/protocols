@@ -33,7 +33,6 @@ library ParticipationHelper {
 
     function setMaxFillAmounts(
         Data.Participation p,
-        Data.Ring ring,
         Data.Context ctx
         )
         internal
@@ -41,7 +40,7 @@ library ParticipationHelper {
         uint spendableS = p.order.getSpendableS(ctx);
         uint remainingS = p.order.amountS.sub(p.order.filledAmountS);
         p.fillAmountS = (spendableS < remainingS) ? spendableS : remainingS;
-        if (ring.P2P) {
+        if (p.order.P2P) {
             // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to
             // the wallet. We have to make sure the order owner can pay that percentage,
             // otherwise we'll have to sell less tokenS.
@@ -50,29 +49,13 @@ library ParticipationHelper {
                 ctx.feePercentageBase
             );
 
-            uint taxS = ctx.tax.calculateTax(
-                p.order.tokenS,
-                false,
-                true,
-                feeS
-            );
-
-            uint totalAmountS = p.fillAmountS + feeS + taxS;
+            uint totalAmountS = p.fillAmountS + feeS;
             if (totalAmountS > spendableS) {
-                // This will very, very slightly underestimate fillAmountS to keep calculations simple
-                uint taxRateTokenS = ctx.tax.getTaxRate(
-                    p.order.tokenS,
-                    false,
-                    true
-                );
 
-                uint totalAddedPercentage = p.order.tokenSFeePercentage * (ctx.feePercentageBase + taxRateTokenS);
-                uint totalPercentageBase = ctx.feePercentageBase * ctx.feePercentageBase;
+                uint maxFeeAmountS = spendableS
+                    .mul(p.order.tokenSFeePercentage) / ctx.feePercentageBase;
 
-                uint maxFeeAndTaxAmountS = spendableS
-                    .mul(totalAddedPercentage) / totalPercentageBase;
-
-                p.fillAmountS = spendableS.sub(maxFeeAndTaxAmountS);
+                p.fillAmountS = spendableS - maxFeeAmountS;
             }
         }
         p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;
@@ -81,12 +64,11 @@ library ParticipationHelper {
     function calculateFeesAndTaxes(
         Data.Participation p,
         Data.Participation prevP,
-        Data.Context ctx,
-        bool P2P
+        Data.Context ctx
         )
         internal
     {
-        if (P2P) {
+        if (p.order.P2P) {
             // Calculate P2P fees
             p.feeAmount = 0;
             if (p.order.wallet != 0x0) {
@@ -102,6 +84,7 @@ library ParticipationHelper {
 
             // The taker gets the margin
             p.splitS = 0;
+            p.fillAmountS = prevP.fillAmountB;
         } else {
             // Calculate matching fees
             p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
@@ -109,18 +92,15 @@ library ParticipationHelper {
             p.feeAmountB = 0;
 
             // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
-            uint feeAmountTax = ctx.tax.calculateTax(p.order.feeToken, false, P2P, p.feeAmount);
-            uint totalAmountFeeToken = p.feeAmount + feeAmountTax;
-
             // This and subsequent orders could use tokenS to pay fees,
             // so we have to make sure the funds needed for this order cannot be used
             p.order.reserveAmountS(p.fillAmountS);
             uint spendableFee = p.order.getSpendableFee(ctx);
-            if (totalAmountFeeToken > spendableFee) {
+            if (p.feeAmount > spendableFee) {
                 p.feeAmountB = p.fillAmountB.mul(p.order.feePercentage) / ctx.feePercentageBase;
                 p.feeAmount = 0;
             } else {
-                p.order.reserveAmountFee(totalAmountFeeToken);
+                p.order.reserveAmountFee(p.feeAmount);
             }
 
             // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
@@ -140,11 +120,6 @@ library ParticipationHelper {
             p.splitS = p.fillAmountS - prevP.fillAmountB;
             p.fillAmountS = prevP.fillAmountB;
         }
-
-        // Calculate consumer taxes. These are applied on top of the calculated fees
-        p.taxFee = ctx.tax.calculateTax(p.order.feeToken, false, P2P, p.feeAmount);
-        p.taxS = ctx.tax.calculateTax(p.order.tokenS, false, P2P, p.feeAmountS);
-        p.taxB = ctx.tax.calculateTax(p.order.tokenB, false, P2P, p.feeAmountB);
     }
 
     function adjustOrderState(
@@ -154,8 +129,8 @@ library ParticipationHelper {
         pure
     {
         uint filledAmountS = p.fillAmountS + p.splitS;
-        uint totalAmountS = filledAmountS + p.taxS;
-        uint totalAmountFee = p.feeAmount + p.taxFee;
+        uint totalAmountS = filledAmountS;
+        uint totalAmountFee = p.feeAmount;
         p.order.filledAmountS += filledAmountS;
         // Update spendables
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);

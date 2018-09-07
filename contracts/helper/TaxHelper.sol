@@ -32,7 +32,6 @@ library TaxHelper {
     function calculateTax(
         Data.Tax tax,
         address token,
-        bool income,
         bool P2P,
         uint amount
         )
@@ -43,7 +42,7 @@ library TaxHelper {
         if (amount == 0) {
             return 0;
         }
-        uint taxRate = getTaxRate(tax, token, income, P2P);
+        uint taxRate = getTaxRate(tax, token, P2P);
         return amount.mul(taxRate) / tax.percentageBase;
     }
 
@@ -61,13 +60,12 @@ library TaxHelper {
         }
     }
 
-    function getTaxRate(Data.Tax tax, address token, bool income, bool P2P)
+    function getTaxRate(Data.Tax tax, address token, bool P2P)
         internal
         pure
         returns (uint taxRate)
     {
-        uint offset = P2P ? 6 : 0;
-        offset += income ? 3 : 0;
+        uint offset = P2P ? 3 : 0;
         offset += uint(getTokenType(tax, token));
         assembly {
             taxRate := mload(add(tax, mul(offset, 32)))

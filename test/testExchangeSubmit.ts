@@ -122,6 +122,35 @@ contract("Exchange_Submit", (accounts: string[]) => {
     return context;
   };
 
+  const logDetailedTokenTransfer = (addressBook: { [id: string]: string; },
+                                    payment: psc.DetailedTokenTransfer,
+                                    depth: number = 0) => {
+    const tokenSymbol = tokenSymbolAddrMap.get(payment.token);
+    const whiteSpace = " ".repeat(depth);
+    if (payment.subPayments.length === 0) {
+      const toName =  addressBook[payment.to];
+      console.log(whiteSpace + "- " + (payment.amount / 1e18) + " " + tokenSymbol + " -> " + toName);
+    } else {
+      console.log(whiteSpace + "+ " + (payment.amount / 1e18) + " " + tokenSymbol);
+      for (const subPayment of payment.subPayments) {
+        logDetailedTokenTransfer(addressBook, subPayment, depth + 1);
+      }
+    }
+  };
+
+  const logDetailedTokenTransfers = (ringsInfo: psc.RingsInfo, report: psc.SimulatorReport) => {
+    const addressBook = getAddressBook(ringsInfo);
+    for (const [r, ring] of report.payments.rings.entries()) {
+      console.log("# Payments for ring " + r + ": ");
+      for (const [o, order] of ring.orders.entries()) {
+        console.log("## Order " + o + ": ");
+        for (const payment of order.payments) {
+          logDetailedTokenTransfer(addressBook, payment, 1);
+        }
+      }
+    }
+  };
+
   const submitRingsAndSimulate = async (context: psc.Context, ringsInfo: psc.RingsInfo, eventFromBlock: number) => {
 
     // Add an initial fee payment to all addresses to make gas use more realistic
@@ -174,6 +203,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
     assertTransfers(deserializedRingsInfo, transferEvents, report.transferItems);
     await assertFeeBalances(deserializedRingsInfo, report.feeBalances);
     await assertFilledAmounts(deserializedRingsInfo, context, report.filledAmounts);
+
+    // logDetailedTokenTransfers(ringsInfo, report);
 
     // await watchAndPrintEvent(tradeDelegate, "LogTrans");
     // await watchAndPrintEvent(ringSubmitter, "LogUint3");
@@ -309,8 +340,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
   const getAddressBook = (ringsInfo: psc.RingsInfo) => {
     const addressBook: { [id: string]: string; } = {};
-    addAddress(addressBook, ringsInfo.feeRecipient, "FeeRecipient");
-    addAddress(addressBook, feeHolder.address, "FeeHolder");
+    addAddress(addressBook, ringsInfo.feeRecipient, "Miner");
+    addAddress(addressBook, feeHolder.address, "Tax");
     for (const [i, order] of ringsInfo.orders.entries()) {
       addAddress(addressBook, order.owner, "Owner[" + i + "]");
       if (order.owner !== order.tokenRecipient) {
@@ -502,15 +533,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
 
     feePercentageBase = (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
-    tax = new psc.Tax((await ringSubmitter.TAX_MATCHING_CONSUMER_LRC()).toNumber(),
-                      (await ringSubmitter.TAX_MATCHING_CONSUMER_ETH()).toNumber(),
-                      (await ringSubmitter.TAX_MATCHING_CONSUMER_OTHER()).toNumber(),
-                      (await ringSubmitter.TAX_MATCHING_INCOME_LRC()).toNumber(),
+    tax = new psc.Tax((await ringSubmitter.TAX_MATCHING_INCOME_LRC()).toNumber(),
                       (await ringSubmitter.TAX_MATCHING_INCOME_ETH()).toNumber(),
                       (await ringSubmitter.TAX_MATCHING_INCOME_OTHER()).toNumber(),
-                      (await ringSubmitter.TAX_P2P_CONSUMER_LRC()).toNumber(),
-                      (await ringSubmitter.TAX_P2P_CONSUMER_ETH()).toNumber(),
-                      (await ringSubmitter.TAX_P2P_CONSUMER_OTHER()).toNumber(),
                       (await ringSubmitter.TAX_P2P_INCOME_LRC()).toNumber(),
                       (await ringSubmitter.TAX_P2P_INCOME_ETH()).toNumber(),
                       (await ringSubmitter.TAX_P2P_INCOME_OTHER()).toNumber(),

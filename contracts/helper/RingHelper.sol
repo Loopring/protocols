@@ -85,7 +85,6 @@ library RingHelper {
         for (i = 0; i < ring.size; i++) {
             p = ring.participations[i];
             p.setMaxFillAmounts(
-                ring,
                 ctx
             );
         }
@@ -111,7 +110,7 @@ library RingHelper {
             Data.Participation memory prevP = ring.participations[prevIndex];
             p = ring.participations[i];
             if (p.fillAmountS >= prevP.fillAmountB) {
-                p.calculateFeesAndTaxes(prevP, ctx, ring.P2P);
+                p.calculateFeesAndTaxes(prevP, ctx);
                 if (p.order.waiveFeePercentage < 0) {
                     ring.minerFeesToOrdersPercentage += uint(-p.order.waiveFeePercentage);
                 }
@@ -198,24 +197,6 @@ library RingHelper {
         ring.valid = ring.valid && ctx.tokenRegistry.areAllTokensRegistered(tokens);
     }
 
-    function checkP2P(
-        Data.Ring ring,
-        Data.Mining mining
-        )
-        internal
-        pure
-    {
-        // This is a P2P ring when the signer of the ring is an owner of an order in the ring
-        for (uint i = 0; i < ring.size; i++) {
-            Data.Participation memory p = ring.participations[i];
-            if (p.order.owner == mining.miner) {
-                ring.P2P = true;
-                return;
-            }
-        }
-    }
-
-
     function settleRing(
         Data.Ring ring,
         Data.Context ctx,
@@ -273,16 +254,13 @@ library RingHelper {
             // If the buyer needs to pay fees in tokenB, the seller needs
             // to send the tokenS amount to the fee holder contract
             uint amountSToBuyer = p.fillAmountS
-                .sub(prevP.feeAmountB)
-                .sub(prevP.taxB);
+                .sub(prevP.feeAmountB);
 
             uint amountSToFeeHolder = p.splitS
                 .add(p.feeAmountS)
-                .add(p.taxS)
-                .add(prevP.feeAmountB)
-                .add(prevP.taxB);
+                .add(prevP.feeAmountB);
 
-            uint amountFeeToFeeHolder = p.feeAmount.add(p.taxFee);
+            uint amountFeeToFeeHolder = p.feeAmount;
 
             if (p.order.tokenS == p.order.feeToken) {
                 amountSToFeeHolder += amountFeeToFeeHolder;
@@ -405,32 +383,32 @@ library RingHelper {
         for (uint i = 0; i < ring.size; i++) {
             p = ring.participations[i];
 
-            uint walletPercentage = ring.P2P ? 100 : (p.order.wallet == 0x0 ? 0 : p.order.walletSplitPercentage);
+            uint walletPercentage = p.order.P2P ? 100 : (p.order.wallet == 0x0 ? 0 : p.order.walletSplitPercentage);
 
             uint feeInTokenS = p.feeAmountS + p.splitS;
             payFeesAndTaxes(
                 feeCtx,
                 p.order.feeToken,
                 p.feeAmount,
-                p.taxFee,
                 p.order.wallet,
-                walletPercentage
+                walletPercentage,
+                p.order.P2P
             );
             payFeesAndTaxes(
                 feeCtx,
                 p.order.tokenS,
                 feeInTokenS,
-                p.taxS,
                 p.order.wallet,
-                walletPercentage
+                walletPercentage,
+                p.order.P2P
             );
             payFeesAndTaxes(
                 feeCtx,
                 p.order.tokenB,
                 p.feeAmountB,
-                p.taxB,
                 p.order.wallet,
-                walletPercentage
+                walletPercentage,
+                p.order.P2P
             );
         }
         // Patch in the correct length of the data array
@@ -445,9 +423,9 @@ library RingHelper {
         Data.FeeContext memory feeCtx,
         address token,
         uint amount,
-        uint consumerTax,
         address wallet,
-        uint walletSplitPercentage
+        uint walletSplitPercentage,
+        bool P2P
         )
         internal
         pure
@@ -458,8 +436,7 @@ library RingHelper {
 
         uint incomeTax = feeCtx.ctx.tax.calculateTax(
             token,
-            true,
-            feeCtx.ring.P2P,
+            P2P,
             amount
         );
 
@@ -504,7 +481,7 @@ library RingHelper {
             feeCtx.offset,
             token,
             address(feeCtx.ctx.feeHolder),
-            consumerTax + incomeTax
+            incomeTax
         );
     }
 

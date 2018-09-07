@@ -66,6 +66,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
             0,
             0x0,
             0,
+            false,
             bytes32(0x0),
             0x0,
             0,

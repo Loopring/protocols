@@ -135,15 +135,9 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         external
     {
         Data.Tax memory tax = Data.Tax(
-            TAX_MATCHING_CONSUMER_LRC,
-            TAX_MATCHING_CONSUMER_ETH,
-            TAX_MATCHING_CONSUMER_OTHER,
             TAX_MATCHING_INCOME_LRC,
             TAX_MATCHING_INCOME_ETH,
             TAX_MATCHING_INCOME_OTHER,
-            TAX_P2P_CONSUMER_LRC,
-            TAX_P2P_CONSUMER_ETH,
-            TAX_P2P_CONSUMER_OTHER,
             TAX_P2P_INCOME_LRC,
             TAX_P2P_INCOME_ETH,
             TAX_P2P_INCOME_OTHER,
@@ -178,6 +172,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].validateInfo(ctx);
+            orders[i].checkP2P();
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
             orders[i].checkBrokerSignature(ctx);
@@ -194,9 +189,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].checkDualAuthSignature(mining.hash);
-        }
-
-        for (uint i = 0; i < orders.length; i++) {
             orders[i].updateStates(ctx);
         }
 
@@ -205,7 +197,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             ring.checkOrdersValid();
             ring.checkForSubRings();
             ring.checkTokensRegistered(ctx);
-            ring.checkP2P(mining);
             ring.calculateFillAmountAndFee(ctx);
             if (ring.valid) {
                 // Only settle rings we have checked to be valid

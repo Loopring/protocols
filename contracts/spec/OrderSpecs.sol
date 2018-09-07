@@ -81,10 +81,11 @@ library OrderSpecs {
             spec.hasTokenBFeePercentage() ? inputs.nextUint16() : 0,
             spec.hasTokenRecipient() ? inputs.nextAddress() : 0x0,
             spec.hasWalletSplitPercentage() ? inputs.nextUint16() : 0,
+            false,        // P2P
             bytes32(0x0), // hash
-            0x0, // orderBrokerInterceptor
-            0,  // filledAmountS
-            true   // valid
+            0x0,          // orderBrokerInterceptor
+            0,            // filledAmountS
+            true          // valid
         );
         order.tokenRecipient = (order.tokenRecipient == 0x0) ? order.owner : order.tokenRecipient;
     }

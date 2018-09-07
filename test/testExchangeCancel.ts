@@ -454,15 +454,9 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     }
 
     feePercentageBase = (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
-    tax = new psc.Tax((await ringSubmitter.TAX_MATCHING_CONSUMER_LRC()).toNumber(),
-                      (await ringSubmitter.TAX_MATCHING_CONSUMER_ETH()).toNumber(),
-                      (await ringSubmitter.TAX_MATCHING_CONSUMER_OTHER()).toNumber(),
-                      (await ringSubmitter.TAX_MATCHING_INCOME_LRC()).toNumber(),
+    tax = new psc.Tax((await ringSubmitter.TAX_MATCHING_INCOME_LRC()).toNumber(),
                       (await ringSubmitter.TAX_MATCHING_INCOME_ETH()).toNumber(),
                       (await ringSubmitter.TAX_MATCHING_INCOME_OTHER()).toNumber(),
-                      (await ringSubmitter.TAX_P2P_CONSUMER_LRC()).toNumber(),
-                      (await ringSubmitter.TAX_P2P_CONSUMER_ETH()).toNumber(),
-                      (await ringSubmitter.TAX_P2P_CONSUMER_OTHER()).toNumber(),
                       (await ringSubmitter.TAX_P2P_INCOME_LRC()).toNumber(),
                       (await ringSubmitter.TAX_P2P_INCOME_ETH()).toNumber(),
                       (await ringSubmitter.TAX_P2P_INCOME_OTHER()).toNumber(),

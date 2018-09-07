@@ -65,9 +65,6 @@ library RingSpecs {
                 orders[pspec.orderIndex()].feeAmount, // feeAmount
                 0, // tokenSFeePercentage
                 0, // tokenBFeePercentage
-                0, // taxFee
-                0, // taxS
-                0, // taxB
                 0, // fillAmountS
                 0  // fillAmountB
             );
@@ -82,7 +79,6 @@ library RingSpecs {
           size,
           parts,
           bytes32(0x0), // hash
-          false,        // P2P
           0,            // minerFeesToOrdersPercentage
           true          // valid
         );

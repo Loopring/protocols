@@ -126,6 +126,15 @@ library OrderHelper {
         order.valid = order.valid && valid;
     }
 
+    function checkP2P(
+        Data.Order order
+        )
+        internal
+        pure
+    {
+        order.P2P = (order.tokenSFeePercentage > 0 || order.tokenBFeePercentage > 0);
+    }
+
     function checkBrokerSignature(
         Data.Order order,
         Data.Context ctx
