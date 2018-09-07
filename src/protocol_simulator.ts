@@ -67,6 +67,7 @@ export class ProtocolSimulator {
     for (const order of orders) {
       order.valid = true;
       await this.orderUtil.validateInfo(order);
+      this.orderUtil.checkP2P(order);
       order.hash = this.orderUtil.getOrderHash(order);
       await this.orderUtil.updateBrokerAndInterceptor(order);
       await this.orderUtil.checkBrokerSignature(order);
@@ -97,7 +98,6 @@ export class ProtocolSimulator {
       ring.checkOrdersValid();
       ring.checkForSubRings();
       await ring.checkTokensRegistered();
-      ring.checkP2P(mining);
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);

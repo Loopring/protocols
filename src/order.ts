@@ -131,6 +131,10 @@ export class OrderUtil {
     return orderHash;
   }
 
+  public checkP2P(orderInfo: OrderInfo) {
+    orderInfo.P2P = (orderInfo.tokenSFeePercentage > 0 || orderInfo.tokenBFeePercentage > 0);
+  }
+
   public async updateStates(orderInfo: OrderInfo) {
     orderInfo.filledAmountS = await this.context.tradeDelegate.filled("0x" + orderInfo.hash.toString("hex")).toNumber();
   }

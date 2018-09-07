@@ -49,15 +49,13 @@ export interface OrderInfo {
   walletSplitPercentage?: number;   // spec value 1 << 15
 
   // helper field
+  P2P?: boolean;
   filledAmountS?: number;
   fillAmountS?: number;
   fillAmountB?: number;
   fillAmountFee?: number;
   fillAmountFeeS?: number;
   fillAmountFeeB?: number;
-  taxFee?: number;
-  taxS?: number;
-  taxB?: number;
   splitS?: number;
   brokerInterceptor?: string;
   valid?: boolean;
