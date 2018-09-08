@@ -22,6 +22,7 @@ const {
   DummyToken,
   DummyBrokerInterceptor,
   OrderBook,
+  TaxTable,
 } = new psc.Artifacts(artifacts);
 
 contract("Exchange_Security", (accounts: string[]) => {
@@ -238,6 +239,7 @@ contract("Exchange_Security", (accounts: string[]) => {
       MinerRegistry.address,
       feeHolder.address,
       orderBook.address,
+      TaxTable.address,
     );
     ringCanceller = await RingCanceller.new(
       tradeDelegate.address,
@@ -258,8 +260,10 @@ contract("Exchange_Security", (accounts: string[]) => {
   };
 
   before( async () => {
-    [ringSubmitter, ringCanceller, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
-     minerRegistry, feeHolder, orderBook, dummyBrokerInterceptor] = await Promise.all([
+    [ringSubmitter, ringCanceller, tokenRegistry,
+     symbolRegistry, tradeDelegate, orderRegistry,
+     minerRegistry, feeHolder, orderBook,
+     dummyBrokerInterceptor] = await Promise.all([
        RingSubmitter.deployed(),
        RingCanceller.deployed(),
        TokenRegistry.deployed(),

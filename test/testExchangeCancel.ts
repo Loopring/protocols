@@ -22,6 +22,7 @@ const {
   DummyToken,
   DummyBrokerInterceptor,
   OrderBook,
+  TaxTable,
 } = new psc.Artifacts(artifacts);
 
 contract("Exchange_Cancel", (accounts: string[]) => {
@@ -401,6 +402,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
       MinerRegistry.address,
       feeHolder.address,
       orderBook.address,
+      TaxTable.address,
     );
     ringCanceller = await RingCanceller.new(
       tradeDelegate.address,
