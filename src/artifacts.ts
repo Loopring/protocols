@@ -14,6 +14,7 @@ export class Artifacts {
   public DummyExchange: any;
   public FeeHolder: any;
   public OrderBook: any;
+  public TaxTable: any;
   constructor(artifacts: any) {
     this.TokenRegistry = artifacts.require("impl/TokenRegistry");
     this.SymbolRegistry = artifacts.require("impl/SymbolRegistry");
@@ -29,5 +30,6 @@ export class Artifacts {
     this.DummyExchange = artifacts.require("test/DummyExchange");
     this.FeeHolder = artifacts.require("impl/FeeHolder");
     this.OrderBook = artifacts.require("impl/OrderBook");
+    this.TaxTable = artifacts.require("impl/TaxTable");
   }
 }
