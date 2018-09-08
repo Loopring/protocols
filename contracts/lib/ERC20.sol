@@ -23,6 +23,11 @@ pragma experimental "ABIEncoderV2";
 /// @dev see https://github.com/ethereum/EIPs/issues/20
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ERC20 {
+    function totalSupply()
+        public
+        view
+        returns (uint256);
+
     function balanceOf(
         address who
         )

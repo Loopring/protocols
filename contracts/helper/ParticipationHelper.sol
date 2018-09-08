@@ -21,7 +21,6 @@ pragma experimental "ABIEncoderV2";
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
 import "./OrderHelper.sol";
-import "./TaxHelper.sol";
 
 
 /// @title ParticipationHelper
@@ -29,7 +28,6 @@ import "./TaxHelper.sol";
 library ParticipationHelper {
     using MathUint for uint;
     using OrderHelper for Data.Order;
-    using TaxHelper for Data.Tax;
 
     function setMaxFillAmounts(
         Data.Participation p,
@@ -61,7 +59,7 @@ library ParticipationHelper {
         p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;
     }
 
-    function calculateFeesAndTaxes(
+    function calculateFees(
         Data.Participation p,
         Data.Participation prevP,
         Data.Context ctx

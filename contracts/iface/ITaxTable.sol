@@ -23,12 +23,17 @@ pragma experimental "ABIEncoderV2";
 contract ITaxTable {
 
     struct TokenData {
-        address token;
-        uint tier;
-        uint sinceTimeStamp;
+        uint    tier;
+        uint    validUntil;
+    }
+
+    struct UserData {
+        uint    amount;
+        uint    lockedSince;
     }
 
     mapping(address => TokenData) public tokens;
+    mapping(address => UserData) public balances;
 
     // Tiers
     uint8 public constant TIER_4 = 0;
@@ -36,24 +41,54 @@ contract ITaxTable {
     uint8 public constant TIER_2 = 2;
     uint8 public constant TIER_1 = 3;
 
+    uint16 public constant BASE_PERCENTAGE                =  1000; // 100%
+
+    // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
+    uint16 public constant TIER_UPGRADE_COST_PERCENTAGE   =     5; // 0.5%
+
     // Tax rates
     // Matching
-    uint16 public constant TAX_MATCHING_INCOME_TIER1      =    10;
-    uint16 public constant TAX_MATCHING_INCOME_TIER2      =   200;
-    uint16 public constant TAX_MATCHING_INCOME_TIER3      =   400;
-    uint16 public constant TAX_MATCHING_INCOME_TIER4      =   600;
+    uint16 public constant TAX_MATCHING_TIER1             =    10; //  1%
+    uint16 public constant TAX_MATCHING_TIER2             =   200; // 20%
+    uint16 public constant TAX_MATCHING_TIER3             =   400; // 40%
+    uint16 public constant TAX_MATCHING_TIER4             =   600; // 60%
     // P2P
-    uint16 public constant TAX_P2P_INCOME_TIER1           =    10;
-    uint16 public constant TAX_P2P_INCOME_TIER2           =    20;
-    uint16 public constant TAX_P2P_INCOME_TIER3           =    30;
-    uint16 public constant TAX_P2P_INCOME_TIER4           =    60;
+    uint16 public constant TAX_P2P_TIER1                  =    10; //  1%
+    uint16 public constant TAX_P2P_TIER2                  =    20; //  2%
+    uint16 public constant TAX_P2P_TIER3                  =    30; //  3%
+    uint16 public constant TAX_P2P_TIER4                  =    60; //  6%
 
+    event TokenTierUpgraded(
+        address indexed addr,
+        uint            tier
+    );
 
-    function getTaxRate(address token, bool P2P)
+    function getTaxRate(
+        address spender,
+        address token,
+        bool P2P
+        )
         external
+        view
         returns (uint16);
 
-    function upgradeTier(address token)
+    // Before calling this function, msg.sender needs to approve this contract for the neccessary funds
+    function upgradeTokenTier(
+        address token
+        )
+        external
+        returns (bool);
+
+    // Before calling this function, msg.sender needs to approve this contract for the neccessary funds
+    function lock(
+        uint amount
+        )
+        external
+        returns (bool);
+
+    function withdraw(
+        uint amount
+        )
         external
         returns (bool);
 

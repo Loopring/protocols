@@ -21,6 +21,7 @@ const {
   DummyToken,
   DummyBrokerInterceptor,
   OrderBook,
+  TaxTable,
 } = new psc.Artifacts(artifacts);
 
 contract("Exchange_Broker", (accounts: string[]) => {
@@ -399,6 +400,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
       MinerRegistry.address,
       feeHolder.address,
       orderBook.address,
+      TaxTable.address,
     );
     await initializeTradeDelegate();
   };

@@ -18,20 +18,17 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../lib/ERC20Token.sol";
-import "../lib/MathUint.sol";
-
+import "./LRCToken.sol";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-contract DummyToken is ERC20Token {
-    using MathUint for uint;
+contract DummyToken is LRCToken {
 
     constructor(
         string _name,
         string _symbol,
         uint8  _decimals,
         uint   _totalSupply
-    ) ERC20Token(
+    ) LRCToken(
         _name,
         _symbol,
         _decimals,

@@ -77,6 +77,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     address public  minerRegistryAddress        = 0x0;
     address public  feeHolderAddress            = 0x0;
     address public  orderBookAddress            = 0x0;
+    address public  taxTableAddress             = 0x0;
 
     uint64  public  ringIndex                   = 0;
 
@@ -102,7 +103,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         address _orderRegistryAddress,
         address _minerRegistryAddress,
         address _feeHolderAddress,
-        address _orderBookAddress
+        address _orderBookAddress,
+        address _taxTableAddress
         )
         public
     {
@@ -116,6 +118,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         require(_minerRegistryAddress != 0x0);
         require(_feeHolderAddress != 0x0);
         require(_orderBookAddress != 0x0);
+        require(_taxTableAddress != 0x0);
 
         lrcTokenAddress = _lrcTokenAddress;
         wethTokenAddress = _wethTokenAddress;
@@ -127,6 +130,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         minerRegistryAddress = _minerRegistryAddress;
         feeHolderAddress = _feeHolderAddress;
         orderBookAddress = _orderBookAddress;
+        taxTableAddress = _taxTableAddress;
     }
 
     function submitRings(

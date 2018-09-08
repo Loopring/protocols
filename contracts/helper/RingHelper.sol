@@ -110,7 +110,7 @@ library RingHelper {
             Data.Participation memory prevP = ring.participations[prevIndex];
             p = ring.participations[i];
             if (p.fillAmountS >= prevP.fillAmountB) {
-                p.calculateFeesAndTaxes(prevP, ctx);
+                p.calculateFees(prevP, ctx);
                 if (p.order.waiveFeePercentage < 0) {
                     ring.minerFeesToOrdersPercentage += uint(-p.order.waiveFeePercentage);
                 }

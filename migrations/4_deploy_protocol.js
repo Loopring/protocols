@@ -8,6 +8,7 @@ var RingSubmitter = artifacts.require("./impl/RingSubmitter");
 var RingCanceller = artifacts.require("./impl/RingCanceller");
 var FeeHolder = artifacts.require("./impl/FeeHolder");
 var OrderBook = artifacts.require("./impl/OrderBook");
+var TaxTable = artifacts.require("./impl/TaxTable");
 
 module.exports = function(deployer, network, accounts) {
 
@@ -28,29 +29,37 @@ module.exports = function(deployer, network, accounts) {
     }).then((contracts) => {
       var [symbolRegistry] = contracts;
       return Promise.all([
-        BrokerRegistry.new(),
-        BrokerRegistry.new(),
         symbolRegistry.getAddressBySymbol("LRC"),
         symbolRegistry.getAddressBySymbol("WETH"),
       ]);
-    }).then(addresses => {
-      var [orderBrokerRegistry, minerBrokerRegistry, lrcAddr, wethAddr] = addresses;
-      return deployer.deploy(
-        RingSubmitter,
+    }).then((addresses) => {
+      var [lrcAddr, wethAddr] = addresses;
+      return Promise.all([
         lrcAddr,
         wethAddr,
-        TokenRegistry.address,
-        TradeDelegate.address,
-        orderBrokerRegistry.address,
-        minerBrokerRegistry.address,
-        OrderRegistry.address,
-        MinerRegistry.address,
-        FeeHolder.address,
-        OrderBook.address,
-      );
-    }).then(() => {
-      return deployer.deploy(RingCanceller, TradeDelegate.address);
+        BrokerRegistry.new(),
+        BrokerRegistry.new(),
+        deployer.deploy(TaxTable, lrcAddr, wethAddr),
+      ]);
+    }).then(addresses => {
+      var [lrcAddr, wethAddr, orderBrokerRegistry, minerBrokerRegistry, taxTableAddr] = addresses;
+      return Promise.all([
+        deployer.deploy(
+          RingSubmitter,
+          lrcAddr,
+          wethAddr,
+          TokenRegistry.address,
+          TradeDelegate.address,
+          orderBrokerRegistry.address,
+          minerBrokerRegistry.address,
+          OrderRegistry.address,
+          MinerRegistry.address,
+          FeeHolder.address,
+          OrderBook.address,
+          TaxTable.address,
+        ),
+        deployer.deploy(RingCanceller, TradeDelegate.address),
+      ]);
     });
-
   }
 };
