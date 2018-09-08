@@ -131,6 +131,32 @@ export class OrderUtil {
     return orderHash;
   }
 
+  public toOrderBookSubmitParams(orderInfo: OrderInfo) {
+    const numberToBytes32Str = (n: number) => {
+      const encoded = ABI.rawEncode(["uint256"], [new BN(n.toString(10), 10)]);
+      return "0x" + encoded.toString("hex");
+    };
+
+    const addressToBytes32Str = (addr: string) => {
+      const encoded = ABI.rawEncode(["address"], [addr]);
+      return "0x" + encoded.toString("hex");
+    };
+
+    const bytes32Array: string[] = [];
+    bytes32Array.push(addressToBytes32Str(orderInfo.owner));
+    bytes32Array.push(addressToBytes32Str(orderInfo.tokenS));
+    bytes32Array.push(addressToBytes32Str(orderInfo.tokenB));
+    bytes32Array.push(addressToBytes32Str(orderInfo.broker));
+    bytes32Array.push(numberToBytes32Str(orderInfo.amountS));
+    bytes32Array.push(numberToBytes32Str(orderInfo.amountB));
+    bytes32Array.push(numberToBytes32Str(orderInfo.validSince));
+    bytes32Array.push(numberToBytes32Str(orderInfo.validUntil));
+    bytes32Array.push(numberToBytes32Str(orderInfo.feeAmount));
+    bytes32Array.push(numberToBytes32Str(0));
+
+    return bytes32Array;
+  }
+
   public checkP2P(orderInfo: OrderInfo) {
     orderInfo.P2P = (orderInfo.tokenSFeePercentage > 0 || orderInfo.tokenBFeePercentage > 0);
   }
