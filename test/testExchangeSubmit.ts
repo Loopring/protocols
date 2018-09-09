@@ -575,6 +575,38 @@ contract("Exchange_Submit", (accounts: string[]) => {
         await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
       });
     }
+
+    it("on-chain order should be able to dealed with off-chain order", async () => {
+      const onchainOrder: psc.OrderInfo = {
+        tokenS: "GTO",
+        tokenB: "WETH",
+        amountS: 10000e18,
+        amountB: 3e18,
+        validSince: web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000,
+        validUntil: web3.eth.getBlock(web3.eth.blockNumber).timestamp + 360000,
+      };
+
+      onchainOrder.owner = orderOwners[0];
+      onchainOrder.tokenS = await symbolRegistry.getAddressBySymbol(onchainOrder.tokenS);
+      onchainOrder.tokenB = await symbolRegistry.getAddressBySymbol(onchainOrder.tokenB);
+
+      console.log("onchainOrder:", onchainOrder);
+
+      const offChainOrder: psc.OrderInfo = {
+        tokenS: "WETH",
+        tokenB: "GTO",
+        amountS: 3e18,
+        amountB: 10000e18,
+        signAlgorithm: psc.SignAlgorithm.Ethereum,
+      };
+
+      await setupOrder(offChainOrder, 1);
+      console.log("offChainOrder:", offChainOrder);
+
+      assert.equal(true, true, "TODO");
+
+    });
+
   });
 
 });

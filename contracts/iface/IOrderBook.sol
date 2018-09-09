@@ -28,7 +28,7 @@ contract IOrderBook {
     mapping(bytes32 => bytes32[]) public orders;
 
     struct OrderData {
-        /* address[] addressArray; // tokenS, tokenB, broker, */
+        /* address[] addressArray; // owner, tokenS, tokenB, broker*/
         /* uint[] uintArray; // amountS, amountB, validSince, validUntil, lrcFeeAmount */
         /* bool allOrNone; */
         bytes32[] dataArray;
