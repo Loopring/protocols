@@ -27,6 +27,7 @@ import "../iface/IOrderRegistry.sol";
 import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 import "../iface/IOrderBook.sol";
+import "../iface/ITaxTable.sol";
 
 import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
@@ -159,6 +160,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             IMinerRegistry(minerRegistryAddress),
             IFeeHolder(feeHolderAddress),
             IOrderBook(orderBookAddress),
+            ITaxTable(taxTableAddress),
             ringIndex,
             tax,
             FEE_AND_TAX_PERCENTAGE_BASE

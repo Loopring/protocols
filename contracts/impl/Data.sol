@@ -25,6 +25,7 @@ import "../iface/ITradeDelegate.sol";
 import "../iface/IMinerRegistry.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IOrderBook.sol";
+import "../iface/ITaxTable.sol";
 
 
 library Data {
@@ -62,6 +63,7 @@ library Data {
         IMinerRegistry  minerRegistry;
         IFeeHolder feeHolder;
         IOrderBook orderBook;
+        ITaxTable taxTable;
         uint64 ringIndex;
         Tax tax;
         uint feePercentageBase;

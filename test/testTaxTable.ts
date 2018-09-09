@@ -54,17 +54,39 @@ contract("TaxTable", (accounts: string[]) => {
     }
   };
 
-  const getTokenRate = async (user: string, token: string) => {
-    const matching = (await taxTable.getTaxRate(user1, token, false)).toNumber();
-    const P2P = (await taxTable.getTaxRate(user1, token, true)).toNumber();
-    return [matching, P2P];
+  const getTokenTierValue = async (tier: number) => {
+    if (tier === 1) {
+      return (await taxTable.TIER_1()).toNumber();
+    } else if (tier === 2) {
+      return (await taxTable.TIER_2()).toNumber();
+    } else if (tier === 3) {
+      return (await taxTable.TIER_3()).toNumber();
+    } else if (tier === 4) {
+      return (await taxTable.TIER_4()).toNumber();
+    } else {
+      assert(false, "Invalid tier");
+    }
   };
 
-  const checkTokenTier = async (user: string, token: string, tier: number) => {
+  const getTokenRate = async (user: string, token: string) => {
+    const [burnRateMatching, reductionMatching] = await taxTable.getBurnAndRebateRate(user, token, false);
+    const [burnRateP2P, reductionP2P] = await taxTable.getBurnAndRebateRate(user, token, true);
+    return [burnRateMatching.toNumber(), burnRateP2P.toNumber()];
+  };
+
+  const checkTokenTier = async (user: string, token: string, expectedTier: number) => {
     const [matchingToken, P2PToken] = await getTokenRate(user, token);
-    const [matchingTier, P2PTier] = await getTierRate(tier);
-    assert.equal(matchingToken, matchingTier, "matching rate needs to match tier " + tier + " rate");
-    assert.equal(P2PToken, P2PTier, "P2P rate needs to match tier " + tier + " rate");
+    const [matchingTier, P2PTier] = await getTierRate(expectedTier);
+    const tierValue = (await taxTable.getTokenTier(token)).toNumber();
+    const expectedTierValue = await getTokenTierValue(expectedTier);
+    assert.equal(tierValue, expectedTierValue, "Token tier needs to match expected tier");
+    assert.equal(matchingToken, matchingTier, "matching rate needs to match tier " + expectedTier + " rate");
+    assert.equal(P2PToken, P2PTier, "P2P rate needs to match tier " + expectedTier + " rate");
+  };
+
+  const checkRebateRate = async (user: string, expectedRate: number) => {
+    const rate = (await taxTable.getRebateRate(user)).toNumber();
+    assert.equal(rate, expectedRate, "User rebate rate need to match expected rate");
   };
 
   before(async () => {
@@ -98,7 +120,7 @@ contract("TaxTable", (accounts: string[]) => {
       const totalLRCSupply = await LRC.totalSupply();
 
       // Calculate the needed funds to upgrade the tier
-      const basePercentage = (await taxTable.BASE_PERCENTAGE()).toNumber();
+      const basePercentage = (await taxTable.TAX_BASE_PERCENTAGE()).toNumber();
       const upgradeCostPercentage = (await taxTable.TIER_UPGRADE_COST_PERCENTAGE()).toNumber();
       const upgradeAmount = Math.floor(totalLRCSupply * upgradeCostPercentage / basePercentage);
 
@@ -136,7 +158,7 @@ contract("TaxTable", (accounts: string[]) => {
       const totalLRCSupply = await LRC.totalSupply();
 
       // Calculate the needed funds to upgrade the tier
-      const basePercentage = (await taxTable.BASE_PERCENTAGE()).toNumber();
+      const basePercentage = (await taxTable.TAX_BASE_PERCENTAGE()).toNumber();
       const upgradeCostPercentage = (await taxTable.TIER_UPGRADE_COST_PERCENTAGE()).toNumber();
       const upgradeAmount = Math.floor(totalLRCSupply * upgradeCostPercentage / basePercentage);
 
@@ -156,7 +178,7 @@ contract("TaxTable", (accounts: string[]) => {
       const totalLRCSupply = await LRC.totalSupply();
 
       // Calculate the needed funds to upgrade the tier
-      const basePercentage = (await taxTable.BASE_PERCENTAGE()).toNumber();
+      const basePercentage = (await taxTable.TAX_BASE_PERCENTAGE()).toNumber();
       const upgradeCostPercentage = (await taxTable.TIER_UPGRADE_COST_PERCENTAGE()).toNumber();
       const upgradeAmount = Math.floor(totalLRCSupply * upgradeCostPercentage / basePercentage);
 
@@ -175,7 +197,37 @@ contract("TaxTable", (accounts: string[]) => {
     });
 
     it("can lower burn rate by locking LRC", async () => {
-      // TODO
+      const LRC = await DummyToken.at(tokenLRC);
+      const totalLRCSupply = await LRC.totalSupply();
+
+      // Calculate the needed funds to upgrade the tier
+      const basePercentage = (await taxTable.LOCK_BASE_PERCENTAGE()).toNumber();
+      const maxLockPercentage = (await taxTable.MAX_LOCK_PERCENTAGE()).toNumber();
+      const maxLockAmount = Math.floor(totalLRCSupply * maxLockPercentage / basePercentage);
+
+      // Have the user have a bit more balance
+      const balance = maxLockAmount + 1e20;
+
+      // Make sure the user has enough LRC
+      await LRC.transfer(user1, balance, {from: deployer});
+      await LRC.approve(taxTable.address, balance, {from: user1});
+
+      const taxBasePercentage = (await taxTable.TAX_BASE_PERCENTAGE()).toNumber();
+
+      // Rebate rate should still be at 0%
+      await checkRebateRate(user1, 0 * taxBasePercentage);
+      // Lock the max amount
+      await taxTable.lock(maxLockAmount, {from: user1});
+      // Rebate rate needs to be set at 100%
+      await checkRebateRate(user1, 1 * taxBasePercentage);
+
+      // Balance of the owner should have been depleted by the locked amount
+      /*const currentBalance = (await LRC.balanceOf(user1)).toNumber();
+      console.log("currentBalance: " + currentBalance);
+      assertNumberEqualsWithPrecision(
+        currentBalance, balance - maxLockAmount,
+        "Balance of the user should be depleted by the locked amount",
+      );*/
     });
   });
 
