@@ -22,7 +22,9 @@ export class Ring {
 
   private feeBalances: { [id: string]: any; } = {};
 
-  private tokenPayments: Array<{ [id: string]: DetailedTokenTransfer; }> = [];
+  private detailTransferS: DetailedTokenTransfer[];
+  private detailTransferB: DetailedTokenTransfer[];
+  private detailTransferFee: DetailedTokenTransfer[];
 
   constructor(context: Context,
               orders: OrderInfo[],
@@ -39,11 +41,49 @@ export class Ring {
     this.payments = {
       orders: [],
     };
-    for (const order of orders) {
+    this.detailTransferS = [];
+    this.detailTransferB = [];
+    this.detailTransferFee = [];
+    for (const [i, order] of orders.entries()) {
       this.payments.orders.push({
         payments: [],
       });
-      this.tokenPayments.push({});
+
+      const prevOrder = orders[(i + orders.length - 1) % orders.length];
+      const nextOrder = orders[(i + 1) % orders.length];
+
+      const paymentS: DetailedTokenTransfer = {
+        description: "tokenS",
+        token: order.tokenS,
+        from: order.owner,
+        to: prevOrder.owner,
+        amount: 0,
+        subPayments: [],
+      };
+      this.detailTransferS.push(paymentS);
+      this.payments.orders[i].payments.push(paymentS);
+
+      const paymentB: DetailedTokenTransfer = {
+        description: "tokenB",
+        token: order.tokenB,
+        from: nextOrder.owner,
+        to: order.owner,
+        amount: 0,
+        subPayments: [],
+      };
+      this.detailTransferB.push(paymentB);
+      this.payments.orders[i].payments.push(paymentB);
+
+      const paymentFee: DetailedTokenTransfer = {
+        description: "feeToken",
+        token: order.feeToken,
+        from: order.owner,
+        to: this.feeRecipient,
+        amount: 0,
+        subPayments: [],
+      };
+      this.detailTransferFee.push(paymentFee);
+      this.payments.orders[i].payments.push(paymentFee);
     }
 
     this.orderUtil = new OrderUtil(context);
@@ -162,10 +202,6 @@ export class Ring {
         order.fillAmountFeeS = 0;
         order.fillAmountFeeB = 0;
       }
-
-      // The taker gets the margin
-      order.splitS = 0;
-      order.fillAmountS = prevOrder.fillAmountB;
     } else {
       // Calculate matching fees
       order.fillAmountFee = Math.floor(order.feeAmount * order.fillAmountS / order.amountS);
@@ -185,19 +221,20 @@ export class Ring {
       } else {
         await this.orderUtil.reserveAmountFee(order, order.fillAmountFee);
       }
-
-      // The miner/wallet gets the margin
-      order.splitS = order.fillAmountS - prevOrder.fillAmountB;
-      order.fillAmountS = prevOrder.fillAmountB;
     }
+
+    // The miner (or in a P2P case, the taker) gets the margin
+    order.splitS = order.fillAmountS - prevOrder.fillAmountB;
+    order.fillAmountS = prevOrder.fillAmountB;
   }
 
   public adjustOrderState(order: OrderInfo) {
-    const filledAmountS = order.fillAmountS + order.splitS;
-    const totalAmountS = filledAmountS;
-    const totalAmountFee = order.fillAmountFee;
-    order.filledAmountS += filledAmountS;
+    // Update filled amount
+    order.filledAmountS += order.fillAmountS + order.splitS;
+
     // Update spendables
+    const totalAmountS = order.fillAmountS + order.fillAmountFeeS;
+    const totalAmountFee = order.fillAmountFee;
     order.tokenSpendableS.amount -= totalAmountS;
     order.tokenSpendableFee.amount -= totalAmountFee;
     if (order.brokerInterceptor) {
@@ -219,7 +256,7 @@ export class Ring {
     const transferItems = await this.transferTokens();
 
     // Validate how the ring is settled
-    // this.validateSettlement(transferItems);
+    this.validateSettlement(transferItems);
 
     // Adjust orders
     for (const order of this.orders) {
@@ -254,7 +291,7 @@ export class Ring {
       // If the buyer needs to pay fees in a percentage of tokenB, the seller needs
       // to send that amount of tokenS to the fee holder contract.
       const amountSToBuyer = order.fillAmountS - prevOrder.fillAmountFeeB;
-      let amountSToFeeHolder = /*order.splitS + */order.fillAmountFeeS + prevOrder.fillAmountFeeB;
+      let amountSToFeeHolder = order.fillAmountFeeS + prevOrder.fillAmountFeeB;
       let amountFeeToFeeHolder = order.fillAmountFee;
       if (order.tokenS === order.feeToken) {
         amountSToFeeHolder += amountFeeToFeeHolder;
@@ -265,61 +302,10 @@ export class Ring {
       this.addTokenTransfer(transferItems, order.tokenS, order.owner, feeHolder, amountSToFeeHolder);
       this.addTokenTransfer(transferItems, order.feeToken, order.owner, feeHolder, amountFeeToFeeHolder);
 
-      if (!this.tokenPayments[i][order.tokenS]) {
-        const payment: DetailedTokenTransfer = {
-          description: "none",
-          token: order.tokenS,
-          from: order.owner,
-          to: prevOrder.tokenRecipient,
-          amount: 0,
-          subPayments: [],
-        };
-        this.tokenPayments[i][order.tokenS] = payment;
-      }
-      this.tokenPayments[i][order.tokenS].amount +=
-        order.fillAmountS + order.splitS + order.fillAmountFeeS;
-
-      const paymentToBuyer: DetailedTokenTransfer = {
-        description: "none",
-        token: order.tokenS,
-        from: order.owner,
-        to: prevOrder.tokenRecipient,
-        amount: order.fillAmountS,
-        subPayments: [],
-      };
-      this.tokenPayments[i][order.tokenS].subPayments.push(paymentToBuyer);
-
-      if (!this.tokenPayments[i][order.tokenB]) {
-        const payment: DetailedTokenTransfer = {
-          description: "none",
-          token: order.tokenB,
-          from: order.owner,
-          to: order.owner,
-          amount: 0,
-          subPayments: [],
-        };
-        this.tokenPayments[i][order.tokenB] = payment;
-      }
-      this.tokenPayments[i][order.tokenB].amount -= (order.fillAmountB - order.fillAmountFeeB);
-
-      if (!this.tokenPayments[i][order.feeToken]) {
-        const payment: DetailedTokenTransfer = {
-          description: "none",
-          token: order.feeToken,
-          from: order.owner,
-          to: feeHolder,
-          amount: 0,
-          subPayments: [],
-        };
-        this.tokenPayments[i][order.feeToken] = payment;
-      }
-      this.tokenPayments[i][order.feeToken].amount += order.fillAmountFee;
-
-      this.payments.orders[i].payments.push(this.tokenPayments[i][order.tokenS]);
-      this.payments.orders[i].payments.push(this.tokenPayments[i][order.tokenB]);
-      if (order.tokenS !== order.feeToken && order.tokenB !== order.feeToken) {
-        this.payments.orders[i].payments.push(this.tokenPayments[i][order.feeToken]);
-      }
+      // Set correct payment details
+      this.detailTransferS[i].amount = order.fillAmountS;
+      this.detailTransferB[i].amount = order.fillAmountB;
+      this.detailTransferFee[i].amount = order.fillAmountFee;
     }
     return transferItems;
   }
@@ -338,75 +324,101 @@ export class Ring {
       const walletPercentage = order.P2P ? 100 :
                                (order.walletAddr ? order.walletSplitPercentage : 0);
 
-      const feePaidFee = await this.payFeesAndTaxes(order,
-                                                    order.feeToken,
-                                                    order.fillAmountFee,
-                                                    walletPercentage,
-                                                    i);
-      const feePaidS = await this.payFeesAndTaxes(order,
-                                                  order.tokenS,
-                                                  order.fillAmountFeeS + order.splitS,
-                                                  walletPercentage,
-                                                  i);
-      const feePaidB = await this.payFeesAndTaxes(order,
-                                                  order.tokenB,
-                                                  order.fillAmountFeeB,
-                                                  walletPercentage,
-                                                  i);
+      // Save these fee amounts before any discount the order gets for validation
+      order.noDiscountFee = order.fillAmountFee;
+      order.noDiscountFeeS = order.fillAmountFeeS;
+      order.noDiscountFeeB = order.fillAmountFeeB;
+      const feePercentageB = order.P2P ? order.tokenBFeePercentage : order.feePercentage * 10;
 
-      order.fillAmountFee = feePaidFee;
-      order.fillAmountFeeS = feePaidS;
-      order.fillAmountFeeB = feePaidB;
+      order.fillAmountFee = await this.payFeesAndTaxes(order,
+                                                       order.feeToken,
+                                                       order.fillAmountFee,
+                                                       0,
+                                                       walletPercentage,
+                                                       this.detailTransferFee[i]);
+      order.fillAmountFeeS = await this.payFeesAndTaxes(order,
+                                                        order.tokenS,
+                                                        order.fillAmountFeeS,
+                                                        order.splitS,
+                                                        walletPercentage,
+                                                        this.detailTransferS[i],
+                                                        order.tokenSFeePercentage);
+      order.fillAmountFeeB = await this.payFeesAndTaxes(order,
+                                                        order.tokenB,
+                                                        order.fillAmountFeeB,
+                                                        0,
+                                                        walletPercentage,
+                                                        this.detailTransferB[i],
+                                                        feePercentageB);
     }
   }
 
   private async payFeesAndTaxes(order: OrderInfo,
                                 token: string,
                                 amount: number,
+                                margin: number,
                                 walletSplitPercentage: number,
-                                orderIdx: number) {
-    if (amount === 0) {
+                                payment: DetailedTokenTransfer,
+                                feePercentage: number = 0) {
+    if (amount + margin === 0) {
       return 0;
     }
     if (order.P2P && !order.walletAddr) {
       assert.equal(amount, 0, "In a P2P order no fees should be paid when no wallet is provided");
     }
 
-    /*const payment: DetailedTokenTransfer = {
-      description: "none",
-      token,
-      from: this.orders[orderIdx].owner,
-      to: "X",
-      amount,
-      subPayments: [],
-    };
-    this.tokenPayments[orderIdx][token].subPayments.push(payment);*/
+    // Pay the tax with the feeHolder as owner
+    const taxAddress = this.context.feeHolder.address;
+
+    const feeDesc = "Fee" + ((feePercentage > 0) ? ("@" + (feePercentage / 10)) + "%" : "");
+    const totalPayment = this.logPayment(payment, token, order.owner, "NA", amount + margin, feeDesc + "+Margin");
+    const marginPayment = this.logPayment(totalPayment, token, order.owner, this.feeRecipient, margin, "Margin");
+    const feePayment = this.logPayment(totalPayment, token, order.owner, "NA", amount, feeDesc);
 
     const walletFee = Math.floor(amount * walletSplitPercentage / 100);
     let minerFee = amount - walletFee;
+
+    const walletPayment = this.logPayment(
+      feePayment, token, order.owner, "NA", walletFee, "Wallet@" + walletSplitPercentage + "%");
+    let minerPayment = this.logPayment(
+      feePayment, token, order.owner, "NA", minerFee, "Miner@" + (100 - walletSplitPercentage) + "%");
 
     // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
     if (order.waiveFeePercentage > 0) {
       minerFee = Math.floor(minerFee *
                             (this.context.feePercentageBase - order.waiveFeePercentage) /
                             this.context.feePercentageBase);
-      // fillAmountFeeS is always 0
+
+      minerPayment = this.logPayment(
+        minerPayment, token, order.owner, "NA", minerFee, "Waive@" + order.waiveFeePercentage / 10 + "%");
     } else if (order.waiveFeePercentage < 0) {
-      // No fees need to be paid by this order
+      // No fees need to be paid to the miner by this order
       minerFee = 0;
+
+      minerPayment = this.logPayment(
+        minerPayment, token, order.owner, "NA", minerFee, "Waive@" + order.waiveFeePercentage / 10 + "%");
     }
 
     // Calculate taxes and rebates
     const [burnRate, rebateRate] =
     await this.context.taxTable.getBurnAndRebateRate(order.owner, order.feeToken, order.P2P);
     // Miner fee
-    const minerFeeTax = Math.floor(minerFee * burnRate.toNumber() / this.context.feePercentageBase);
-    const minerFeeRebate = Math.floor(minerFee * rebateRate.toNumber() / this.context.feePercentageBase);
-    let feeToMiner = minerFee - minerFeeTax - minerFeeRebate;
+    const minerTax = Math.floor(minerFee * burnRate.toNumber() / this.context.feePercentageBase);
+    const minerRebate = Math.floor(minerFee * rebateRate.toNumber() / this.context.feePercentageBase);
+    let feeToMiner = margin + (minerFee - minerTax - minerRebate);
     // Wallet fee
-    const walletFeeTax = Math.floor(walletFee * burnRate.toNumber() / this.context.feePercentageBase);
-    const walletFeeRebate = Math.floor(walletFee * rebateRate.toNumber() / this.context.feePercentageBase);
-    const feeToWallet = walletFee - walletFeeTax - walletFeeRebate;
+    const walletTax = Math.floor(walletFee * burnRate.toNumber() / this.context.feePercentageBase);
+    const walletRebate = Math.floor(walletFee * rebateRate.toNumber() / this.context.feePercentageBase);
+    const feeToWallet = walletFee - walletTax - walletRebate;
+
+    this.logPayment(minerPayment, token, order.owner, taxAddress, minerTax, "Burn@" + burnRate / 10 + "%");
+    this.logPayment(minerPayment, token, order.owner, order.owner, minerRebate, "Rebate@" + rebateRate / 10 + "%");
+    const minerIncomePayment =
+      this.logPayment(minerPayment, token, order.owner, this.feeRecipient, feeToMiner - margin, "Income");
+
+    this.logPayment(walletPayment, token, order.owner, taxAddress, walletTax, "Burn@" + burnRate / 10 + "%");
+    this.logPayment(walletPayment, token, order.owner, order.owner, walletRebate, "Rebate@" + rebateRate / 10 + "%");
+    this.logPayment(walletPayment, token, order.owner, order.walletAddr, feeToWallet, "Income");
 
     // Fees can be paid out in different tokens so we can't easily accumulate the total fee
     // that needs to be paid out to order owners. So we pay out each part out here to all orders that need it.
@@ -415,7 +427,10 @@ export class Ring {
       for (const otherOrder of this.orders) {
         if (otherOrder.waiveFeePercentage < 0) {
           const feeToOwner = Math.floor(feeToMiner * (-otherOrder.waiveFeePercentage) / this.context.feePercentageBase);
-          await this.addFeePayment(token, otherOrder.owner, feeToOwner, orderIdx, null);
+          await this.addFeePayment(token, otherOrder.owner, feeToOwner);
+
+          this.logPayment(minerIncomePayment, token, order.owner, otherOrder.owner, feeToOwner,
+            "Share_Income+Margin@" + (-otherOrder.waiveFeePercentage) / 10 + "%");
         }
       }
       // Subtract all fees the miner pays to the orders
@@ -424,44 +439,30 @@ export class Ring {
     }
 
     // Do the fee payments
-    await this.addFeePayment(token, order.walletAddr, feeToWallet, orderIdx, null);
-    await this.addFeePayment(token, this.feeRecipient, feeToMiner, orderIdx, null);
-    // Pay the tax with the feeHolder as owner
-    await this.addFeePayment(token, this.context.feeHolder.address, minerFeeTax + walletFeeTax, orderIdx, null);
+    await this.addFeePayment(token, order.walletAddr, feeToWallet);
+    await this.addFeePayment(token, this.feeRecipient, feeToMiner);
+    // Tax
+    await this.addFeePayment(token, taxAddress, minerTax + walletTax);
 
     // Calculate the total fee payment after possible discounts (tax rebate + fee waiving)
-    const totalFeePaid = (feeToWallet + feeToMiner) + (minerFeeTax + walletFeeTax);
-    assert(totalFeePaid <= amount, "Total fee paid cannot exceed the total fee amount");
+    const totalFeePaid = (feeToWallet + feeToMiner) + (minerTax + walletTax);
+    assert(totalFeePaid <= amount + margin, "Total fee paid cannot exceed the total fee amount");
     return totalFeePaid;
   }
 
   private async addFeePayment(token: string,
-                              owner: string,
-                              amount: number,
-                              orderIdx: number,
-                              parentPayment: DetailedTokenTransfer) {
-    if (!token || !owner || !amount) {
+                              to: string,
+                              amount: number) {
+    if (!token || !to || !amount) {
       return;
     }
     if (!this.feeBalances[token]) {
       this.feeBalances[token] = {};
     }
-    if (!this.feeBalances[token][owner]) {
-      this.feeBalances[token][owner] = 0;
+    if (!this.feeBalances[token][to]) {
+      this.feeBalances[token][to] = 0;
     }
-    this.feeBalances[token][owner] += amount;
-
-    if (parentPayment) {
-      const payment: DetailedTokenTransfer = {
-        description: "none",
-        token,
-        from: this.orders[orderIdx].owner,
-        to: owner,
-        amount,
-        subPayments: [],
-      };
-      parentPayment.subPayments.push(payment);
-    }
+    this.feeBalances[token][to] += amount;
   }
 
   private resize(i: number, smallest: number) {
@@ -522,31 +523,27 @@ export class Ring {
       assert(order.fillAmountFee >= 0, "fillAmountFee should be positive");
       assert(order.fillAmountFeeS >= 0, "fillAmountFeeS should be positive");
       assert(order.fillAmountFeeB >= 0, "fillAmountFeeB should be positive");
+      assert(order.noDiscountFee >= 0, "noDiscountFee should be positive");
+      assert(order.noDiscountFeeS >= 0, "noDiscountFeeS should be positive");
+      assert(order.noDiscountFeeB >= 0, "noDiscountFeeB should be positive");
 
       // General fill requirements
       assert((order.fillAmountS + order.splitS) <= order.amountS, "fillAmountS + splitS <= amountS");
       assert(order.fillAmountB <= order.amountB + epsilon, "fillAmountB <= amountB");
-      assert(order.fillAmountFee <= order.feeAmount, "fillAmountFee <= feeAmount");
+      assert(order.noDiscountFee <= order.feeAmount, "fillAmountFee <= feeAmount");
       if (order.fillAmountS > 0 || order.fillAmountB > 0) {
         const orderRate = order.amountS / order.amountB;
         const rate = (order.fillAmountS + order.splitS) / order.fillAmountB;
         this.assertNumberEqualsWithPrecision(rate, orderRate, "fill rates need to match order rate");
       }
 
-      // Check who gets the margin
-      if (order.P2P) {
-        // Taker gets all margin
-        assert(order.fillAmountS >= prevOrder.fillAmountB, "fillAmountS >= prev.fillAmountB");
-        assert.equal(order.splitS, 0, "splitS should be 0 in a P2P order");
-      } else {
-        // Miner gets all margin
-        assert.equal(order.fillAmountS, prevOrder.fillAmountB, "fillAmountS == prev.fillAmountB");
-      }
+      // Miner/Taker gets all margin
+      assert.equal(order.fillAmountS, prevOrder.fillAmountB, "fillAmountS == prev.fillAmountB");
 
       // Spendable limitations
       {
-        const totalAmountTokenS = order.fillAmountS + order.splitS + order.fillAmountFeeS;
-        const totalAmountTokenFee = order.fillAmountFee;
+        const totalAmountTokenS = order.fillAmountS + order.splitS + order.noDiscountFeeS;
+        const totalAmountTokenFee = order.noDiscountFee;
         if (order.tokenS === order.feeToken) {
           assert(totalAmountTokenS + totalAmountTokenFee <= order.ringSpendableS + epsilon,
                  "totalAmountTokenS + totalAmountTokenFee <= spendableS");
@@ -560,7 +557,7 @@ export class Ring {
       // Ensure fees are calculated correctly
       if (order.P2P) {
         // Fee cannot be paid in tokenFee
-        assert.equal(order.fillAmountFee, 0, "Cannot pay in tokenFee in a P2P order");
+        assert.equal(order.noDiscountFee, 0, "Cannot pay in tokenFee in a P2P order");
         // Check if fees were calculated correctly for the expected rate
         if (order.walletAddr) {
           // fees in tokenS
@@ -582,17 +579,17 @@ export class Ring {
         }
       } else {
         // Fee cannot be paid in tokenS
-        // assert.equal(order.fillAmountFeeS, 0, "Cannot pay in tokenS");
+        assert.equal(order.noDiscountFeeS, 0, "Cannot pay in tokenS");
         // Fees need to be paid either in feeToken OR tokenB, never both at the same time
-        assert(!(order.fillAmountFee > 0 && order.fillAmountFeeB > 0), "fees should be paid in tokenFee OR tokenB");
+        assert(!(order.noDiscountFee > 0 && order.noDiscountFeeB > 0), "fees should be paid in tokenFee OR tokenB");
 
         // Fees can only be paid in tokenB when the owner doesn't have enought funds to pay in feeToken
-        if (order.fillAmountFeeB > 0) {
+        if (order.noDiscountFeeB > 0) {
           const fee = Math.floor(order.feeAmount * (order.fillAmountS + order.splitS) / order.amountS);
           assert(fee > order.ringSpendableFee, "fees should be paid in tokenFee if possible");
         }
 
-        if (order.waiveFeePercentage < 0) {
+        /*if (order.waiveFeePercentage < 0) {
           // If the miner waives the fees for this order all fees need to be 0
           assert.equal(order.fillAmountFee,  0, "No fees need to be paid if miner waives fees");
           assert.equal(order.fillAmountFeeB, 0, "No fees need to be paid if miner waives fees");
@@ -612,11 +609,11 @@ export class Ring {
             this.assertNumberEqualsWithPrecision(rate, filledPercentageAfterMinerReduction,
                                                  "feeAmount rate should match filledPercentage after miner reduction");
           }
-        }
+        }*/
       }
 
       // Ensure fees in tokenB can be paid with the amount bought
-      assert(prevOrder.fillAmountFeeB <= order.fillAmountS + epsilon,
+      assert(prevOrder.noDiscountFeeB <= order.fillAmountS + epsilon,
              "Can't pay more in tokenB fees than what was bought");
     }
 
@@ -643,7 +640,7 @@ export class Ring {
       const order = this.orders[i];
       const nextOrder = this.orders[(i + 1) % ringSize];
       // Owner balances
-      const expectedBalanceS = -(order.fillAmountS + order.splitS + order.fillAmountFeeS);
+      const expectedBalanceS = -(order.fillAmountS + order.fillAmountFeeS);
       // In a P2P order nextOrder.fillAmountS > order.fillAmountB because the taker gets the margin
       const expectedBalanceB = nextOrder.fillAmountS - order.fillAmountFeeB;
       const expectedBalanceFeeToken = -(order.fillAmountFee);
@@ -678,7 +675,7 @@ export class Ring {
       if (!expectedFeeHolderBalances[order.feeToken]) {
         expectedFeeHolderBalances[order.feeToken] = 0;
       }
-      expectedFeeHolderBalances[order.tokenS] += order.splitS + order.fillAmountFeeS;
+      expectedFeeHolderBalances[order.tokenS] += order.fillAmountFeeS;
       expectedFeeHolderBalances[order.tokenB] += order.fillAmountFeeB;
       expectedFeeHolderBalances[order.feeToken] += order.fillAmountFee;
     }
@@ -720,14 +717,14 @@ export class Ring {
         if (!totalFees[order.tokenS]) {
           totalFees[order.tokenS] = 0;
         }
-        totalFees[order.tokenS] += order.fillAmountFeeS + order.splitS;
+        totalFees[order.tokenS] += order.fillAmountFeeS;
         if (!totalFees[order.tokenB]) {
           totalFees[order.tokenB] = 0;
         }
         totalFees[order.tokenB] += order.fillAmountFeeB;
       }
 
-      /*for (const token of Object.keys(this.feeBalances)) {
+      for (const token of Object.keys(this.feeBalances)) {
         let totalFee = 0;
         let totalTax = 0;
         for (const owner of Object.keys(this.feeBalances[token])) {
@@ -738,13 +735,13 @@ export class Ring {
             totalFee += balance;
           }
         }
-        const totalIncomeTax = this.context.tax.calculateTax(token, order.P2P, totalFees[token]);
+        /*const totalIncomeTax = this.context.tax.calculateTax(token, order.P2P, totalFees[token]);
         const incomeAfterTax = totalFees[token] - totalIncomeTax;
         this.assertNumberEqualsWithPrecision(incomeAfterTax, totalFee,
                                              "Total income distributed needs to match paid fees after tax");
         this.assertNumberEqualsWithPrecision(totalIncomeTax, totalTax,
-                                             "Total tax distributed needs to match consumer tax + income tax");
-      }*/
+                                             "Total tax distributed needs to match consumer tax + income tax");*/
+      }
     }
   }
 
@@ -752,5 +749,23 @@ export class Ring {
     const numStr1 = (n1 / 1e18).toFixed(precision);
     const numStr2 = (n2 / 1e18).toFixed(precision);
     return assert.equal(Number(numStr1), Number(numStr2), description);
+  }
+
+  private logPayment(parent: DetailedTokenTransfer,
+                     token: string,
+                     from: string,
+                     to: string,
+                     amount: number,
+                     description: string = "NA") {
+    const payment: DetailedTokenTransfer = {
+      description,
+      token,
+      from,
+      to,
+      amount,
+      subPayments: [],
+    };
+    parent.subPayments.push(payment);
+    return payment;
   }
 }
