@@ -101,19 +101,6 @@ library ParticipationHelper {
                 p.order.reserveAmountFee(p.feeAmount);
             }
 
-            // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
-            if (p.order.waiveFeePercentage > 0) {
-                p.feeAmount = p.feeAmount.mul(
-                    ctx.feePercentageBase - uint(p.order.waiveFeePercentage)) / ctx.feePercentageBase;
-                p.feeAmountB = p.feeAmountB.mul(
-                    ctx.feePercentageBase - uint(p.order.waiveFeePercentage)) / ctx.feePercentageBase;
-                // fillAmountFeeS is always 0
-            } else if (p.order.waiveFeePercentage < 0) {
-                // No fees need to be paid by this order
-                p.feeAmount = 0;
-                p.feeAmountB = 0;
-            }
-
             // The miner/wallet gets the margin
             p.splitS = p.fillAmountS - prevP.fillAmountB;
             p.fillAmountS = prevP.fillAmountB;

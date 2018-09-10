@@ -154,5 +154,6 @@ library Data {
         Data.Ring ring;
         Data.Context ctx;
         Data.Mining mining;
+        uint walletPercentage;
     }
 }

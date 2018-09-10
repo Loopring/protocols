@@ -21,6 +21,7 @@ const {
   FeeHolder,
   DummyToken,
   OrderBook,
+  TaxTable,
   DummyExchange,
 } = new psc.Artifacts(artifacts);
 
@@ -42,13 +43,13 @@ contract("Exchange_Submit", (accounts: string[]) => {
   let minerRegistry: any;
   let feeHolder: any;
   let orderBook: any;
+  let taxTable: any;
   let dummyExchange: any;
   let orderBrokerRegistryAddress: string;
   let minerBrokerRegistryAddress: string;
   let lrcAddress: string;
   let wethAddress: string;
   let feePercentageBase: number;
-  let tax: psc.Tax;
 
   const tokenSymbolAddrMap = new Map();
   const tokenInstanceMap = new Map();
@@ -116,8 +117,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
                                     MinerRegistry.address,
                                     feeHolder.address,
                                     orderBook.address,
+                                    taxTable.address,
                                     lrcAddress,
-                                    tax,
                                     feePercentageBase);
     return context;
   };
@@ -498,7 +499,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
   before( async () => {
     [ringSubmitter, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
-     minerRegistry, feeHolder, orderBook, dummyExchange] = await Promise.all([
+     minerRegistry, feeHolder, orderBook, taxTable, dummyExchange] = await Promise.all([
        RingSubmitter.deployed(),
        TokenRegistry.deployed(),
        SymbolRegistry.deployed(),
@@ -507,6 +508,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
        MinerRegistry.deployed(),
        FeeHolder.deployed(),
        OrderBook.deployed(),
+       TaxTable.deployed(),
        DummyExchange.deployed(),
      ]);
 
@@ -533,15 +535,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
 
     feePercentageBase = (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
-    tax = new psc.Tax((await ringSubmitter.TAX_MATCHING_INCOME_LRC()).toNumber(),
-                      (await ringSubmitter.TAX_MATCHING_INCOME_ETH()).toNumber(),
-                      (await ringSubmitter.TAX_MATCHING_INCOME_OTHER()).toNumber(),
-                      (await ringSubmitter.TAX_P2P_INCOME_LRC()).toNumber(),
-                      (await ringSubmitter.TAX_P2P_INCOME_ETH()).toNumber(),
-                      (await ringSubmitter.TAX_P2P_INCOME_OTHER()).toNumber(),
-                      (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber(),
-                      lrcAddress,
-                      wethAddress);
 
     await initializeTradeDelegate();
   });

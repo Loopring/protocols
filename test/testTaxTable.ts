@@ -32,6 +32,16 @@ contract("TaxTable", (accounts: string[]) => {
     return assert.equal(Number(numStr1), Number(numStr2), description);
   };
 
+  const advanceBlockTimestamp = async (days: number) => {
+    const previousTimestamp = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+    const seconds = 3600 * 24 * days;
+    await web3.currentProvider.send({ jsonrpc: "2.0", method: "evm_increaseTime", params: [seconds], id: 0 });
+    await web3.currentProvider.send({ jsonrpc: "2.0", method: "evm_mine", params: [], id: 0 });
+    const currentTimestamp = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+    assert(Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
+           "Timestamp should have been increased by roughly the expected value");
+  };
+
   const getTierRate = async (tier: number) => {
     if (tier === 1) {
       const matching = (await taxTable.TAX_MATCHING_TIER1()).toNumber();
@@ -96,26 +106,26 @@ contract("TaxTable", (accounts: string[]) => {
   });
 
   beforeEach(async () => {
-    // Fresh FeeHolder for each test
+    // Fresh TaxTable and LRC token for each test
+    const LRC = await DummyToken.new("Loopring", "LRC", 18, 1e+26);
+    tokenLRC = LRC.address;
     taxTable = await TaxTable.new(tokenLRC, tokenWETH);
   });
 
-  describe("general", () => {
+  describe("Token tiers", () => {
     it("LRC should be tier 1", async () => {
-      checkTokenTier(user1, tokenLRC, 1);
+      await checkTokenTier(user1, tokenLRC, 1);
     });
 
     it("WETH should be tier 2", async () => {
-      checkTokenTier(user1, tokenWETH, 2);
+      await checkTokenTier(user1, tokenWETH, 2);
     });
 
     it("Any other tokens should default to tier 4", async () => {
-      checkTokenTier(user1, token1, 4);
+      await checkTokenTier(user1, token1, 4);
     });
-  });
 
-  describe("anyone", () => {
-    it("should be able to upgrade the tier of a token by burning enough tokens", async () => {
+    it("should be able to upgrade the tier of a token for 2 years by burning enough tokens", async () => {
       const LRC = await DummyToken.at(tokenLRC);
       const totalLRCSupply = await LRC.totalSupply();
 
@@ -136,7 +146,7 @@ contract("TaxTable", (accounts: string[]) => {
       // Upgrade
       await taxTable.upgradeTokenTier(token1, {from: user1});
       // Token should now be at tier 3
-      checkTokenTier(user1, token1, 3);
+      await checkTokenTier(user1, token1, 3);
 
       // Balance of the owner should have been depleted by the upgrade amount
       const currentBalance = (await LRC.balanceOf(user1)).toNumber();
@@ -151,6 +161,14 @@ contract("TaxTable", (accounts: string[]) => {
         newTotalLRCSupply, totalLRCSupply - upgradeAmount,
         "LRC upgrade amount needs te be burned",
       );
+
+      // The tier of the token should still be the same after ~1 year
+      await advanceBlockTimestamp(365 + 1);
+      await checkTokenTier(user1, token1, 3);
+
+      // The tier of the token should have reverted back to tier 4 after ~2 years
+      await advanceBlockTimestamp(365 + 1);
+      await checkTokenTier(user1, token1, 4);
     });
 
     it("should not be able to upgrade the tier of a token by not burning enough tokens", async () => {
@@ -195,7 +213,9 @@ contract("TaxTable", (accounts: string[]) => {
       // Try to upgrade WETH
       await expectThrow(taxTable.upgradeTokenTier(tokenWETH, {from: user1}));
     });
+  });
 
+  describe("LRC locking", () => {
     it("can lower burn rate by locking LRC", async () => {
       const LRC = await DummyToken.at(tokenLRC);
       const totalLRCSupply = await LRC.totalSupply();
@@ -212,22 +232,31 @@ contract("TaxTable", (accounts: string[]) => {
       await LRC.transfer(user1, balance, {from: deployer});
       await LRC.approve(taxTable.address, balance, {from: user1});
 
-      const taxBasePercentage = (await taxTable.TAX_BASE_PERCENTAGE()).toNumber();
-
       // Rebate rate should still be at 0%
+      const taxBasePercentage = (await taxTable.TAX_BASE_PERCENTAGE()).toNumber();
       await checkRebateRate(user1, 0 * taxBasePercentage);
       // Lock the max amount
       await taxTable.lock(maxLockAmount, {from: user1});
-      // Rebate rate needs to be set at 100%
-      await checkRebateRate(user1, 1 * taxBasePercentage);
 
       // Balance of the owner should have been depleted by the locked amount
-      /*const currentBalance = (await LRC.balanceOf(user1)).toNumber();
-      console.log("currentBalance: " + currentBalance);
+      const currentBalance = (await LRC.balanceOf(user1)).toNumber();
       assertNumberEqualsWithPrecision(
         currentBalance, balance - maxLockAmount,
         "Balance of the user should be depleted by the locked amount",
-      );*/
+      );
+
+      // Rebate rate needs to be set at 100%
+      await checkRebateRate(user1, 1 * taxBasePercentage);
+      // Rebate rate of another user should still be 0%
+      await checkRebateRate(user2, 0 * taxBasePercentage);
+
+      // Rebate rate should stay the same as long as the user doesn't withdraw any tokens
+      await advanceBlockTimestamp(365 + 1);
+      await checkRebateRate(user1, 1 * taxBasePercentage);
+      await advanceBlockTimestamp(365 + 1);
+      await checkRebateRate(user1, 1 * taxBasePercentage);
+      await advanceBlockTimestamp(365 + 1);
+      await checkRebateRate(user1, 1 * taxBasePercentage);
     });
   });
 

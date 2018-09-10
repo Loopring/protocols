@@ -204,8 +204,8 @@ library RingHelper {
         )
         internal
     {
-        transferTokens(ring, ctx);
         payFees(ring, ctx, mining);
+        transferTokens(ring, ctx);
 
         // Adjust the orders
         for (uint i = 0; i < ring.size; i++) {
@@ -256,8 +256,10 @@ library RingHelper {
             uint amountSToBuyer = p.fillAmountS
                 .sub(prevP.feeAmountB);
 
-            uint amountSToFeeHolder = p.splitS
+            /*uint amountSToFeeHolder = p.splitS
                 .add(p.feeAmountS)
+                .add(prevP.feeAmountB);*/
+            uint amountSToFeeHolder = p.feeAmountS
                 .add(prevP.feeAmountB);
 
             uint amountFeeToFeeHolder = p.feeAmount;
@@ -377,38 +379,33 @@ library RingHelper {
             0,
             ring,
             ctx,
-            mining
+            mining,
+            0
         );
         Data.Participation memory p;
         for (uint i = 0; i < ring.size; i++) {
             p = ring.participations[i];
 
             uint walletPercentage = p.order.P2P ? 100 : (p.order.wallet == 0x0 ? 0 : p.order.walletSplitPercentage);
+            feeCtx.walletPercentage = walletPercentage;
 
-            uint feeInTokenS = p.feeAmountS + p.splitS;
-            payFeesAndTaxes(
+            p.feeAmount = payFeesAndTaxes(
                 feeCtx,
+                p.order,
                 p.order.feeToken,
-                p.feeAmount,
-                p.order.wallet,
-                walletPercentage,
-                p.order.P2P
+                p.feeAmount
             );
-            payFeesAndTaxes(
+            p.feeAmountS = payFeesAndTaxes(
                 feeCtx,
+                p.order,
                 p.order.tokenS,
-                feeInTokenS,
-                p.order.wallet,
-                walletPercentage,
-                p.order.P2P
+                p.feeAmountS + p.splitS
             );
-            payFeesAndTaxes(
+            p.feeAmountB = payFeesAndTaxes(
                 feeCtx,
+                p.order,
                 p.order.tokenB,
-                p.feeAmountB,
-                p.order.wallet,
-                walletPercentage,
-                p.order.P2P
+                p.feeAmountB
             );
         }
         // Patch in the correct length of the data array
@@ -421,54 +418,68 @@ library RingHelper {
 
     function payFeesAndTaxes(
         Data.FeeContext memory feeCtx,
+        Data.Order memory order,
         address token,
-        uint amount,
-        address wallet,
-        uint walletSplitPercentage,
-        bool P2P
+        uint amount
         )
         internal
-        pure
+        view
+        returns (uint)
     {
         if (amount == 0) {
-            return;
+            return 0;
         }
 
-        uint incomeTax = feeCtx.ctx.tax.calculateTax(
-            token,
-            P2P,
-            amount
+        uint feeToWallet = amount.mul(feeCtx.walletPercentage) / 100;
+        uint feeToMiner = amount - feeToWallet;
+
+        // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
+        if (order.waiveFeePercentage > 0) {
+            feeToMiner = feeToMiner.mul(
+                feeCtx.ctx.feePercentageBase - uint(order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
+        } else if (order.waiveFeePercentage < 0) {
+            // No fees need to be paid by this order
+            feeToMiner = 0;
+        }
+
+        // Calculate taxes and rebates
+        (uint16 burnRate, uint16 rebateRate) = feeCtx.ctx.taxTable.getBurnAndRebateRate(
+            order.owner,
+            order.feeToken,
+            order.P2P
         );
 
-        uint incomeAfterTax = amount - incomeTax;
+        // Miner fee
+        uint minerFeeTax = feeToMiner.mul(burnRate) / feeCtx.ctx.feePercentageBase;
+        feeToMiner = feeToMiner - minerFeeTax - feeToMiner.mul(rebateRate) / feeCtx.ctx.feePercentageBase;
+        // Wallet fee
+        uint walletFeeTax = feeToWallet.mul(burnRate) / feeCtx.ctx.feePercentageBase;
+        feeToWallet = feeToWallet - walletFeeTax - feeToWallet.mul(rebateRate) / feeCtx.ctx.feePercentageBase;
 
-        uint feeToWallet = incomeAfterTax.mul(walletSplitPercentage) / 100;
-        uint minerFee = incomeAfterTax - feeToWallet;
-
-        uint feeToMiner = minerFee;
         // Fees can be paid out in different tokens so we can't easily accumulate the total fee
         // that needs to be paid out to order owners. So we pay out each part out here to all
         // orders that need it.
-        if (feeCtx.ring.minerFeesToOrdersPercentage > 0) {
-            // Subtract all fees the miner pays to the orders
-            feeToMiner = minerFee.mul(feeCtx.ctx.feePercentageBase -
-                feeCtx.ring.minerFeesToOrdersPercentage) /
-                feeCtx.ctx.feePercentageBase;
+        if (feeCtx.ring.minerFeesToOrdersPercentage > 0 && feeToMiner > 0) {
             // Pay out the fees to the orders
             distributeMinerFeeToOwners(
                 feeCtx,
                 token,
-                minerFee
+                feeToMiner
             );
+            // Subtract all fees the miner pays to the orders
+            feeToMiner = feeToMiner.mul(feeCtx.ctx.feePercentageBase -
+                feeCtx.ring.minerFeesToOrdersPercentage) /
+                feeCtx.ctx.feePercentageBase;
         }
-        feeCtx.offset = payFee(
+
+        feeCtx.offset = addFeePayment(
             feeCtx.data,
             feeCtx.offset,
             token,
-            wallet,
+            order.wallet,
             feeToWallet
         );
-        feeCtx.offset = payFee(
+        feeCtx.offset = addFeePayment(
             feeCtx.data,
             feeCtx.offset,
             token,
@@ -476,13 +487,16 @@ library RingHelper {
             feeToMiner
         );
         // Pay the tax with the feeHolder as owner
-        feeCtx.offset = payFee(
+        feeCtx.offset = addFeePayment(
             feeCtx.data,
             feeCtx.offset,
             token,
             address(feeCtx.ctx.feeHolder),
-            incomeTax
+            minerFeeTax + walletFeeTax
         );
+
+        // Calculate the total fee payment after possible discounts (tax rebate + fee waiving)
+        return (feeToWallet + feeToMiner) + (minerFeeTax + walletFeeTax);
     }
 
     function distributeMinerFeeToOwners(
@@ -499,7 +513,7 @@ library RingHelper {
                 uint feeToOwner = minerFee
                     .mul(uint(-p.order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
 
-                feeCtx.offset = payFee(
+                feeCtx.offset = addFeePayment(
                     feeCtx.data,
                     feeCtx.offset,
                     token,
@@ -509,7 +523,7 @@ library RingHelper {
         }
     }
 
-    function payFee(
+    function addFeePayment(
         bytes32[] data,
         uint offset,
         address token,
