@@ -1,12 +1,10 @@
 import fs = require("fs");
-import { Tax } from "./tax";
 
 export class Context {
 
   public blockNumber: number;
   public blockTimestamp: number;
   public lrcAddress: string;
-  public tax: Tax;
   public feePercentageBase: number;
 
   public ERC20Contract: any;
@@ -18,6 +16,7 @@ export class Context {
   public BrokerInterceptorContract: any;
   public FeeHolderContract: any;
   public OrderBookContract: any;
+  public TaxTableContract: any;
 
   public tokenRegistry: any;
   public tradeDelegate: any;
@@ -27,6 +26,7 @@ export class Context {
   public minerRegistry: any;
   public feeHolder: any;
   public orderBook: any;
+  public taxTable: any;
 
   constructor(blockNumber: number,
               blockTimestamp: number,
@@ -37,14 +37,13 @@ export class Context {
               orderRegistryAddress: string,
               minerRegistryAddress: string,
               feeHolderAddress: string,
-              lrcAddress: string,
               orderBookAddress: string,
-              tax: Tax,
+              taxTableAddress: string,
+              lrcAddress: string,
               feePercentageBase: number) {
     this.blockNumber = blockNumber;
     this.blockTimestamp = blockTimestamp;
     this.lrcAddress = lrcAddress;
-    this.tax = tax;
     this.feePercentageBase = feePercentageBase;
 
     const ABIPath = "ABI/latest/";
@@ -57,6 +56,7 @@ export class Context {
     const brokerInterceptorAbi = fs.readFileSync(ABIPath + "IBrokerInterceptor.abi", "ascii");
     const feeHolderAbi = fs.readFileSync(ABIPath + "IFeeHolder.abi", "ascii");
     const orderBookAbi = fs.readFileSync(ABIPath + "IOrderBook.abi", "ascii");
+    const taxTableAbi = fs.readFileSync(ABIPath + "ITaxTable.abi", "ascii");
 
     this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
     this.TokenRegistryContract = web3.eth.contract(JSON.parse(tokenRegistryAbi));
@@ -67,6 +67,7 @@ export class Context {
     this.FeeHolderContract = web3.eth.contract(JSON.parse(feeHolderAbi));
     this.OrderBookContract = web3.eth.contract(JSON.parse(orderBookAbi));
     this.BrokerInterceptorContract = web3.eth.contract(JSON.parse(brokerInterceptorAbi));
+    this.TaxTableContract = web3.eth.contract(JSON.parse(taxTableAbi));
 
     this.tokenRegistry = this.TokenRegistryContract.at(tokenRegistryAddress);
     this.tradeDelegate = this.TradeDelegateContract.at(tradeDelegateAddress);
@@ -76,6 +77,7 @@ export class Context {
     this.minerRegistry = this.MinerRegistryContract.at(minerRegistryAddress);
     this.feeHolder = this.FeeHolderContract.at(feeHolderAddress);
     this.orderBook = this.OrderBookContract.at(orderBookAddress);
+    this.taxTable = this.TaxTableContract.at(taxTableAddress);
   }
 
 }
