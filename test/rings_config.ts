@@ -634,6 +634,33 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "P2P order + normal order",
+    transactionOrigin: "1",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        owner: "0",
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 100e18,
+        amountB: 1e18,
+        tokenSFeePercentage: 15,  // == 1.5%
+        tokenBFeePercentage: 30,  // == 3.0%
+      },
+      {
+        index: 1,
+        owner: "1",
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[1],
+        amountS: 0.02e18,
+        amountB: 1e18,
+        feeAmount: 1.5e18,
+      },
+    ],
+  },
+
+  {
     description: "ring with invalid order",
     rings: [[0, 1]],
     orders: [

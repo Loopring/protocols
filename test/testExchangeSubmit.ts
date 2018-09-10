@@ -126,13 +126,18 @@ contract("Exchange_Submit", (accounts: string[]) => {
   const logDetailedTokenTransfer = (addressBook: { [id: string]: string; },
                                     payment: psc.DetailedTokenTransfer,
                                     depth: number = 0) => {
+    if (payment.amount === 0 && payment.subPayments.length === 0) {
+      return;
+    }
     const tokenSymbol = tokenSymbolAddrMap.get(payment.token);
     const whiteSpace = " ".repeat(depth);
+    const description = payment.description ? payment.description : "";
+    const amount = (payment.amount / 1e18);
     if (payment.subPayments.length === 0) {
       const toName =  addressBook[payment.to];
-      console.log(whiteSpace + "- " + (payment.amount / 1e18) + " " + tokenSymbol + " -> " + toName);
+      console.log(whiteSpace + "- "  + " [" + description + "] " +  amount + " " + tokenSymbol + " -> " + toName);
     } else {
-      console.log(whiteSpace + "+ " + (payment.amount / 1e18) + " " + tokenSymbol);
+      console.log(whiteSpace + "+ " + " [" + description + "] " + amount + " " + tokenSymbol);
       for (const subPayment of payment.subPayments) {
         logDetailedTokenTransfer(addressBook, subPayment, depth + 1);
       }
@@ -186,6 +191,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       transferItems: [],
       feeBalances: [],
       filledAmounts: [],
+      payments: {rings: []},
     };
     let tx = null;
     try {
@@ -205,7 +211,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     await assertFeeBalances(deserializedRingsInfo, report.feeBalances);
     await assertFilledAmounts(deserializedRingsInfo, context, report.filledAmounts);
 
-    // logDetailedTokenTransfers(ringsInfo, report);
+    logDetailedTokenTransfers(ringsInfo, report);
 
     // await watchAndPrintEvent(tradeDelegate, "LogTrans");
     // await watchAndPrintEvent(ringSubmitter, "LogUint3");

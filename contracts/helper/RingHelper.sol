@@ -256,9 +256,6 @@ library RingHelper {
             uint amountSToBuyer = p.fillAmountS
                 .sub(prevP.feeAmountB);
 
-            /*uint amountSToFeeHolder = p.splitS
-                .add(p.feeAmountS)
-                .add(prevP.feeAmountB);*/
             uint amountSToFeeHolder = p.feeAmountS
                 .add(prevP.feeAmountB);
 
@@ -393,19 +390,22 @@ library RingHelper {
                 feeCtx,
                 p.order,
                 p.order.feeToken,
-                p.feeAmount
+                p.feeAmount,
+                0
             );
             p.feeAmountS = payFeesAndTaxes(
                 feeCtx,
                 p.order,
                 p.order.tokenS,
-                p.feeAmountS + p.splitS
+                p.feeAmountS,
+                p.splitS
             );
             p.feeAmountB = payFeesAndTaxes(
                 feeCtx,
                 p.order,
                 p.order.tokenB,
-                p.feeAmountB
+                p.feeAmountB,
+                0
             );
         }
         // Patch in the correct length of the data array
@@ -420,13 +420,14 @@ library RingHelper {
         Data.FeeContext memory feeCtx,
         Data.Order memory order,
         address token,
-        uint amount
+        uint amount,
+        uint margin
         )
         internal
         view
         returns (uint)
     {
-        if (amount == 0) {
+        if (amount + margin == 0) {
             return 0;
         }
 
@@ -451,7 +452,7 @@ library RingHelper {
 
         // Miner fee
         uint minerFeeTax = feeToMiner.mul(burnRate) / feeCtx.ctx.feePercentageBase;
-        feeToMiner = feeToMiner - minerFeeTax - feeToMiner.mul(rebateRate) / feeCtx.ctx.feePercentageBase;
+        feeToMiner = margin + (feeToMiner - minerFeeTax - feeToMiner.mul(rebateRate) / feeCtx.ctx.feePercentageBase);
         // Wallet fee
         uint walletFeeTax = feeToWallet.mul(burnRate) / feeCtx.ctx.feePercentageBase;
         feeToWallet = feeToWallet - walletFeeTax - feeToWallet.mul(rebateRate) / feeCtx.ctx.feePercentageBase;

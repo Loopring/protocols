@@ -250,13 +250,21 @@ contract("TaxTable", (accounts: string[]) => {
       // Rebate rate of another user should still be 0%
       await checkRebateRate(user2, 0 * taxBasePercentage);
 
-      // Rebate rate should stay the same as long as the user doesn't withdraw any tokens
-      await advanceBlockTimestamp(365 + 1);
+      // Rebate rate should stay the same until the locking peridod is over and the user doesn't withdraw any tokens
+      // Day 100
+      await advanceBlockTimestamp(100);
       await checkRebateRate(user1, 1 * taxBasePercentage);
-      await advanceBlockTimestamp(365 + 1);
+      // Day 200
+      await advanceBlockTimestamp(100);
       await checkRebateRate(user1, 1 * taxBasePercentage);
-      await advanceBlockTimestamp(365 + 1);
+      // Day 300
+      await advanceBlockTimestamp(100);
       await checkRebateRate(user1, 1 * taxBasePercentage);
+
+      // Locking period of 1 year over, back to no rebate
+      // Day 370
+      await advanceBlockTimestamp(70);
+      await checkRebateRate(user1, 0 * taxBasePercentage);
     });
   });
 

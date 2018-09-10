@@ -25,14 +25,6 @@ pragma experimental "ABIEncoderV2";
 contract IExchange {
     uint16  public constant FEE_AND_TAX_PERCENTAGE_BASE = 1000;
 
-    // Tax rates
-    uint16 public constant TAX_MATCHING_INCOME_LRC      =    10;
-    uint16 public constant TAX_MATCHING_INCOME_ETH      =   100;
-    uint16 public constant TAX_MATCHING_INCOME_OTHER    =   200;
-    uint16 public constant TAX_P2P_INCOME_LRC           =     0;
-    uint16 public constant TAX_P2P_INCOME_ETH           =     0;
-    uint16 public constant TAX_P2P_INCOME_OTHER         =     0;
-
     struct Fill {
         bytes32     orderHash;
         address     owner;

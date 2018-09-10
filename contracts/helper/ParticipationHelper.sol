@@ -79,10 +79,6 @@ library ParticipationHelper {
                 p.feeAmountS = 0;
                 p.feeAmountB = 0;
             }
-
-            // The taker gets the margin
-            p.splitS = 0;
-            p.fillAmountS = prevP.fillAmountB;
         } else {
             // Calculate matching fees
             p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
@@ -100,11 +96,11 @@ library ParticipationHelper {
             } else {
                 p.order.reserveAmountFee(p.feeAmount);
             }
-
-            // The miner/wallet gets the margin
-            p.splitS = p.fillAmountS - prevP.fillAmountB;
-            p.fillAmountS = prevP.fillAmountB;
         }
+
+        // The miner (or in a P2P case, the taker) gets the margin
+        p.splitS = p.fillAmountS - prevP.fillAmountB;
+        p.fillAmountS = prevP.fillAmountB;
     }
 
     function adjustOrderState(
@@ -113,11 +109,12 @@ library ParticipationHelper {
         internal
         pure
     {
-        uint filledAmountS = p.fillAmountS + p.splitS;
-        uint totalAmountS = filledAmountS;
-        uint totalAmountFee = p.feeAmount;
-        p.order.filledAmountS += filledAmountS;
+        // Update filled amount
+        p.order.filledAmountS += p.fillAmountS + p.splitS;
+
         // Update spendables
+        uint totalAmountS = p.fillAmountS + p.feeAmountS;
+        uint totalAmountFee = p.feeAmount;
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
         if (p.order.brokerInterceptor != 0x0) {

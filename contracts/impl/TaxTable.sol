@@ -144,10 +144,14 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         view
         returns (uint16)
     {
+        UserData storage userData = balances[user];
+        if (userData.lockedSince + LOCK_TIME < now) {
+            return uint16(0);
+        }
+
         uint totalSupply = BurnableERC20(lrcAddress).totalSupply();
         uint maxLockAmount = totalSupply.mul(MAX_LOCK_PERCENTAGE) / LOCK_BASE_PERCENTAGE;
 
-        UserData storage userData = balances[user];
         uint rebatePercentage = userData.amount.mul(TAX_BASE_PERCENTAGE) / maxLockAmount;
         rebatePercentage = (rebatePercentage > TAX_BASE_PERCENTAGE) ? TAX_BASE_PERCENTAGE : rebatePercentage;
         return uint16(rebatePercentage);
