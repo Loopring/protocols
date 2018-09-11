@@ -1,20 +1,36 @@
 import validator from './validator';
-import {addHexPrefix, clearHexPrefix, formatAddress, formatKey, toBuffer, toHex, toNumber} from '../common/formatter';
-import {decryptKeystoreToPkey, pkeyToKeystore} from './keystore';
-import {privateToAddress, privateToPublic, publicToAddress, sha3, hashPersonalMessage, ecsign} from 'ethereumjs-util';
-import {mnemonictoPrivatekey} from './mnemonic';
-import {generateMnemonic} from 'bip39';
-import {trimAll} from '../common/utils';
+import {
+    addHexPrefix,
+    clearHexPrefix,
+    formatAddress,
+    formatKey,
+    toBuffer,
+    toHex,
+    toNumber
+} from '../common/formatter';
+import { decryptKeystoreToPkey, pkeyToKeystore } from './keystore';
+import {
+    privateToAddress,
+    privateToPublic,
+    publicToAddress,
+    sha3,
+    hashPersonalMessage,
+    ecsign
+} from 'ethereumjs-util';
+import { mnemonictoPrivatekey } from './mnemonic';
+import { generateMnemonic } from 'bip39';
+import { trimAll } from '../common/utils';
 import HDKey from 'hdkey';
 import EthTransaction from 'ethereumjs-tx';
-import {getOrderHash} from '../relay/rpc/order';
+import { getOrderHash } from '../relay/rpc/order';
 import * as Trezor from './trezor';
 import * as Ledger from './ledger';
 import * as MetaMask from './metaMask';
 import Wallet from 'ethereumjs-wallet';
 
 const wallets = require('../config/wallets.json');
-const LoopringWallet = wallets.find(wallet => trimAll(wallet.name).toLowerCase() === 'loopringwallet');
+const LoopringWallet = wallets.find(
+    wallet => trimAll(wallet.name).toLowerCase() === 'loopringwallet');
 export const path = LoopringWallet.dpath;
 
 export function createWallet ()
@@ -73,8 +89,10 @@ export function getAddresses ({publicKey, chainCode, pageSize, pageNum})
 {
     const addresses = [];
     const hdk = new HDKey();
-    hdk.publicKey = publicKey instanceof Buffer ? publicKey : toBuffer(addHexPrefix(publicKey));
-    hdk.chainCode = chainCode instanceof Buffer ? chainCode : toBuffer(addHexPrefix(chainCode));
+    hdk.publicKey = publicKey instanceof Buffer ? publicKey : toBuffer(
+        addHexPrefix(publicKey));
+    hdk.chainCode = chainCode instanceof Buffer ? chainCode : toBuffer(
+        addHexPrefix(chainCode));
     for (let i = 0; i < pageSize; i++)
     {
         const dkey = hdk.derive(`m/${i + pageSize * pageNum}`);
@@ -142,6 +160,26 @@ export function fromKeystore (keystore, password)
 {
     const privateKey = decryptKeystoreToPkey(keystore, password);
     return fromPrivateKey(privateKey);
+}
+
+export async function fromLedger (dpath)
+{
+    const response = await Ledger.connect();
+    if (response.result)
+    {
+        return new LedgerAccount(response.result, dpath);
+    }
+    throw new Error(response.error.message);
+}
+
+export function fromTrezor (dpath)
+{
+    return new TrezorAccount(dpath);
+}
+
+export function fromMetaMask (web3)
+{
+    return new MetaMaskAccount(web3);
 }
 
 /**
@@ -394,7 +432,8 @@ export class LedgerAccount extends Account
     async signOrder (order)
     {
         const hash = getOrderHash(order);
-        const result = await Ledger.signMessage(this.dpath, clearHexPrefix(toHex(hash)), this.ledger);
+        const result = await Ledger.signMessage(this.dpath,
+            clearHexPrefix(toHex(hash)), this.ledger);
         if (result.error)
         {
             throw new Error(result.error.message);
@@ -420,7 +459,8 @@ export class MetaMaskAccount extends Account
 
     getAddress ()
     {
-        if (this.web3 && this.web3.eth.accounts[0]) return this.web3.eth.accounts[0];
+        if (this.web3 &&
+      this.web3.eth.accounts[0]) return this.web3.eth.accounts[0];
         else throw new Error('Not found MetaMask');
     }
 
@@ -452,7 +492,8 @@ export class MetaMaskAccount extends Account
 
     async signEthereumTx (rawTx)
     {
-        const result = await MetaMask.signEthereumTx(this.web3, this.account, rawTx);
+        const result = await MetaMask.signEthereumTx(this.web3, this.account,
+            rawTx);
         if (!result.error)
         {
             return result.result;
