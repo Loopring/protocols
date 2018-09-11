@@ -2,18 +2,19 @@
 ## About
 This developer documentation introduces the use of loopring.js to access Loopring’s Protocol. loopring.js can be used to develop ethereum wallet and dex by intergrating loopring protocol.
 
-## Documents in Other Languages
+[Chinese Document (中文文档)](chinese.md)
 
-- [Chinese (中文文档)](chinese.md)
+## Usage
 
+Note: loopring.js is only applicable to the browser environment, and some functions in node environment cannot be used.
 
-## Installation
+### Installation
 
 ```javascript
  npm install loopring.js --save
 ```
 
-## Browser Usage
+### Browser Usage
 
 loopring.js ships as both a [UMD](https://github.com/umdjs/umd) module and a [CommonJS](https://en.wikipedia.org/wiki/CommonJS) package.
 
@@ -47,6 +48,28 @@ import {WalletUtils} from 'loopring.js';
 or
 const loopring = require('loopring.js');
 ```
+
+## Getting Started
+
+### How to develop an ethereum wallet
+
+- #### Create Wallet
+
+- #### Unlock Wallet
+
+- #### Backup Wallet
+
+- #### Sign
+
+### How to integrate with Loopring  Protocol
+
+- #### Order Structure
+
+- #### Sign Order
+
+- #### Submit Order
+
+- #### Cancel Order
 
 ## API
 

@@ -2,13 +2,17 @@
 
 该开发者文档主要介绍如果使用loopring.js接入路印协议。loopring.js 库可以帮助用户完成以太坊钱包以及接入路印协议开发去中心化交易所功能。loopring.js封装了Loopring Relay的JSON-RPC 接口和SocketIO接口。具体的接口详情见[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2)。
 
-## 获取
+## 如何使用
+
+注：loopring.js 仅适用于浏览器环境，node环境下部分功能无法使用。
+
+### 安装
 
 ```javascript
  npm install loopring.js --save
 ```
 
-## 浏览器端使用方法
+### 引用方法
 
 loopring.js包含UMD规范的版本和CommonJS规范的版本
 
@@ -42,6 +46,28 @@ import {WalletUtils} from 'loopring.js';
 or
 const loopring = require('loopring.js');
 ```
+
+## 快速上手
+
+### 如何开发以太坊钱包
+
+- #### 创建钱包
+
+- #### 解锁钱包
+
+- #### 备份钱包
+
+- #### 签名
+
+### 如何接入路印协议
+
+- #### 订单结构
+
+- #### 订单签名
+
+- #### 提交订单
+
+- #### 取消订单
 
 ## API
 
