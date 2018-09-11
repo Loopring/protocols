@@ -138,8 +138,12 @@ export class OrderUtil {
     };
 
     const addressToBytes32Str = (addr: string) => {
-      const encoded = ABI.rawEncode(["address"], [addr]);
-      return "0x" + encoded.toString("hex");
+      if (addr) {
+        const encoded = ABI.rawEncode(["address"], [addr]);
+        return "0x" + encoded.toString("hex");
+      } else {
+        return undefined;
+      }
     };
 
     const bytes32Array: string[] = [];
