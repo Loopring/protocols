@@ -12,7 +12,8 @@
 
 loopring.js包含UMD规范的版本和CommonJS规范的版本
 
-### UMD 规范包
+- ##### UMD 规范包
+
 
 通过下面的方式引入 loopring.min.js
 
@@ -30,7 +31,9 @@ window.loopring.EthRpcUtils
 window.loopring.SocketUtils
 ```
 
-### CommonJS  规范包  (要求引入babel-polyfill)
+- ##### CommonJS  规范包 
+
+  引用commojs规范包，需要引入 babel-polyfill
 
 ```javascript
 import loopring from 'loopring.js';

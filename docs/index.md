@@ -17,7 +17,8 @@ This developer documentation introduces the use of loopring.js to access Looprin
 
 loopring.js ships as both a [UMD](https://github.com/umdjs/umd) module and a [CommonJS](https://en.wikipedia.org/wiki/CommonJS) package.
 
-### UMD Package
+- ##### UMD Package
+
 
 Include the following script tag in your HTML:
 
@@ -35,7 +36,9 @@ window.loopring.EthRpcUtils
 window.loopring.SocketUtils
 ```
 
-### CommonJS  Package   (babel-polyfill is required)
+- ##### CommonJS  Package   
+
+  using commonjs version loopring.js, babel-polyfill is required，
 
 ```javascript
 import loopring from 'loopring.js';
@@ -45,7 +48,7 @@ or
 const loopring = require('loopring.js');
 ```
 
-### API
+## API
 
 note: The following code examples take the CommonJS approach
 
