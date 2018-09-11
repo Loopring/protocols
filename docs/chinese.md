@@ -303,14 +303,6 @@ const account = WalletUtils.fromPrivateKey(privateKey);
 
 - dpath  string
 
-返回值
-
-
-
-
-
-
-
 ##### 返回值
 
 LedgerAccount 
