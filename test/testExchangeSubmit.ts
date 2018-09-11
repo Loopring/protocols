@@ -4,7 +4,7 @@ import promisify = require("es6-promisify");
 import abi = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import * as _ from "lodash";
-import * as psc from "protocol2-js";
+import * as pjs from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
 import { FeePayments } from "./feePayments";
@@ -23,7 +23,7 @@ const {
   OrderBook,
   TaxTable,
   DummyExchange,
-} = new psc.Artifacts(artifacts);
+} = new pjs.Artifacts(artifacts);
 
 contract("Exchange_Submit", (accounts: string[]) => {
   const deployer = accounts[0];
@@ -107,7 +107,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     const currBlockNumber = web3.eth.blockNumber;
     const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
     // Pass in the block number and the block time stamp so we can more accurately reproduce transactions
-    const context = new psc.Context(currBlockNumber,
+    const context = new pjs.Context(currBlockNumber,
                                     currBlockTimestamp,
                                     TokenRegistry.address,
                                     tradeDelegate.address,
@@ -124,7 +124,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
   };
 
   const logDetailedTokenTransfer = (addressBook: { [id: string]: string; },
-                                    payment: psc.DetailedTokenTransfer,
+                                    payment: pjs.DetailedTokenTransfer,
                                     depth: number = 0) => {
     if (payment.amount === 0 && payment.subPayments.length === 0) {
       return;
@@ -144,7 +144,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
   };
 
-  const logDetailedTokenTransfers = (ringsInfo: psc.RingsInfo, report: psc.SimulatorReport) => {
+  const logDetailedTokenTransfers = (ringsInfo: pjs.RingsInfo, report: pjs.SimulatorReport) => {
     const addressBook = getAddressBook(ringsInfo);
     for (const [r, ring] of report.payments.rings.entries()) {
       console.log("# Payments for ring " + r + ": ");
@@ -157,7 +157,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
   };
 
-  const submitRingsAndSimulate = async (context: psc.Context, ringsInfo: psc.RingsInfo, eventFromBlock: number) => {
+  const submitRingsAndSimulate = async (context: pjs.Context, ringsInfo: pjs.RingsInfo, eventFromBlock: number) => {
 
     // Add an initial fee payment to all addresses to make gas use more realistic
     // (gas cost to change variable in storage: zero -> non-zero: 20,000 gas, non-zero -> non-zero: 5,000 gas)
@@ -177,11 +177,11 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
     await dummyExchange.batchAddFeeBalances(feePayments.getData());
 
-    const ringsGenerator = new psc.RingsGenerator(context);
+    const ringsGenerator = new pjs.RingsGenerator(context);
     await ringsGenerator.setupRingsAsync(ringsInfo);
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
-    const simulator = new psc.ProtocolSimulator(context);
+    const simulator = new pjs.ProtocolSimulator(context);
     const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin : transactionOrigin;
     const deserializedRingsInfo = simulator.deserialize(bs, txOrigin);
     assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
@@ -201,7 +201,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       shouldThrow = true;
     }
     if (shouldThrow) {
-      tx = await psc.expectThrow(ringSubmitter.submitRings(bs, {from: txOrigin}));
+      tx = await pjs.expectThrow(ringSubmitter.submitRings(bs, {from: txOrigin}));
     } else {
       tx = await ringSubmitter.submitRings(bs, {from: txOrigin});
       console.log("gas used: ", tx.receipt.gasUsed);
@@ -220,7 +220,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     return {tx, report};
   };
 
-  const setupOrder = async (order: psc.OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
+  const setupOrder = async (order: pjs.OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
     if (order.owner === undefined) {
       const accountIndex = index % orderOwners.length;
       order.owner = orderOwners[accountIndex];
@@ -245,9 +245,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
       order.feePercentage = 20;  // == 2.0%
     }
     if (!order.dualAuthSignAlgorithm) {
-      order.dualAuthSignAlgorithm = psc.SignAlgorithm.Ethereum;
+      order.dualAuthSignAlgorithm = pjs.SignAlgorithm.Ethereum;
     }
-    if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== psc.SignAlgorithm.None) {
+    if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== pjs.SignAlgorithm.None) {
       const accountIndex = index % orderDualAuthAddr.length;
       order.dualAuthAddr = orderDualAuthAddr[accountIndex];
     }
@@ -283,7 +283,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     setOrderBalances(order, limitFeeTokenAmount);
   };
 
-  const setOrderBalances = async (order: psc.OrderInfo, limitFeeTokenAmount?: boolean) => {
+  const setOrderBalances = async (order: pjs.OrderInfo, limitFeeTokenAmount?: boolean) => {
     const tokenS = await DummyToken.at(order.tokenS);
     await tokenS.setBalance(order.owner, (order.balanceS !== undefined) ? order.balanceS : order.amountS);
     if (!limitFeeTokenAmount) {
@@ -296,9 +296,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
         await tokenFee.setBalance(order.owner, balanceFee);
       }
     }
-  }
+  };
 
-  const assertEqualsRingsInfo = (ringsInfoA: psc.RingsInfo, ringsInfoB: psc.RingsInfo) => {
+  const assertEqualsRingsInfo = (ringsInfoA: pjs.RingsInfo, ringsInfoB: pjs.RingsInfo) => {
     // Revert defaults back to undefined
     ringsInfoA.miner = (ringsInfoA.miner === ringsInfoA.feeRecipient) ? undefined : ringsInfoA.miner;
     ringsInfoB.miner = (ringsInfoB.miner === ringsInfoB.feeRecipient) ? undefined : ringsInfoB.miner;
@@ -349,7 +349,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     addressBook[address] = (addressBook[address] ? addressBook[address] + "=" : "") + name;
   };
 
-  const getAddressBook = (ringsInfo: psc.RingsInfo) => {
+  const getAddressBook = (ringsInfo: pjs.RingsInfo) => {
     const addressBook: { [id: string]: string; } = {};
     addAddress(addressBook, ringsInfo.feeRecipient, "Miner");
     addAddress(addressBook, feeHolder.address, "Tax");
@@ -364,9 +364,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
     return addressBook;
   };
 
-  const assertTransfers = (ringsInfo: psc.RingsInfo,
+  const assertTransfers = (ringsInfo: pjs.RingsInfo,
                            tranferEvents: Array<[string, string, string, number]>,
-                           transferList: psc.TransferItem[]) => {
+                           transferList: pjs.TransferItem[]) => {
     const transfersFromSimulator: Array<[string, string, string, number]> = [];
     transferList.forEach((item) => transfersFromSimulator.push([item.token, item.from, item.to, item.amount]));
     const sorter = (a: [string, string, string, number], b: [string, string, string, number]) => {
@@ -413,7 +413,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
   };
 
-  const assertFeeBalances = async (ringsInfo: psc.RingsInfo, feeBalances: { [id: string]: any; }) => {
+  const assertFeeBalances = async (ringsInfo: pjs.RingsInfo, feeBalances: { [id: string]: any; }) => {
     const addressBook = getAddressBook(ringsInfo);
     console.log("Fee balances:");
     for (const token of Object.keys(feeBalances)) {
@@ -430,13 +430,13 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
   };
 
-  const assertFilledAmounts = async (ringsInfo: psc.RingsInfo,
-                                     context: psc.Context,
+  const assertFilledAmounts = async (ringsInfo: pjs.RingsInfo,
+                                     context: pjs.Context,
                                      filledAmounts: { [hash: string]: number; }) => {
     const addressBook = getAddressBook(ringsInfo);
     console.log("Filled amounts:");
     for (const hash of Object.keys(filledAmounts)) {
-      let hashOrder: psc.OrderInfo = null;
+      let hashOrder: pjs.OrderInfo = null;
       for (const order of ringsInfo.orders) {
         if (order.hash.toString("hex") === hash) {
           hashOrder = order;
@@ -456,15 +456,15 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
   };
 
-  const assertOrdersValid = async (orders: psc.OrderInfo[], expectedValidValues: boolean[]) => {
+  const assertOrdersValid = async (orders: pjs.OrderInfo[], expectedValidValues: boolean[]) => {
     assert.equal(orders.length, expectedValidValues.length, "Array sizes need to match");
 
-    const bitstream = new psc.Bitstream();
+    const bitstream = new pjs.Bitstream();
     for (const order of orders) {
       bitstream.addAddress(order.owner, 32);
       bitstream.addHex(order.hash.toString("hex"));
       bitstream.addNumber(order.validSince, 32);
-      bitstream.addHex(psc.xor(order.tokenS, order.tokenB, 20).slice(2));
+      bitstream.addHex(pjs.xor(order.tokenS, order.tokenB, 20).slice(2));
       bitstream.addNumber(0, 12);
     }
 
@@ -584,11 +584,11 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const gtoAddr = await symbolRegistry.getAddressBySymbol("GTO");
       const wethAddr = await symbolRegistry.getAddressBySymbol("WETH");
 
-      const onchainOrder: psc.OrderInfo = {
+      const onChainOrder: pjs.OrderInfo = {
+        index: 0,
         owner: orderOwners[0],
         tokenS: gtoAddr,
         tokenB: wethAddr,
-        broker: "0x0",
         amountS: 10000e18,
         amountB: 3e18,
         validSince: web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000,
@@ -597,14 +597,15 @@ contract("Exchange_Submit", (accounts: string[]) => {
         allOrNone: false,
       };
 
-      onchainOrder.tokenS = await symbolRegistry.getAddressBySymbol(onchainOrder.tokenS);
-      onchainOrder.tokenB = await symbolRegistry.getAddressBySymbol(onchainOrder.tokenB);
+      onChainOrder.tokenS = await symbolRegistry.getAddressBySymbol(onChainOrder.tokenS);
+      onChainOrder.tokenB = await symbolRegistry.getAddressBySymbol(onChainOrder.tokenB);
 
-      const orderUtil = new psc.OrderUtil(undefined);
-      const bytes32Array = orderUtil.toOrderBookSubmitParams(onchainOrder);
+      const orderUtil = new pjs.OrderUtil(undefined);
+      const bytes32Array = orderUtil.toOrderBookSubmitParams(onChainOrder);
       await orderBook.submitOrder(bytes32Array);
 
-      const offChainOrder: psc.OrderInfo = {
+      const offChainOrder: pjs.OrderInfo = {
+        index: 1,
         tokenS: wethAddr,
         tokenB: gtoAddr,
         amountS: 3e18,
@@ -616,11 +617,20 @@ contract("Exchange_Submit", (accounts: string[]) => {
       };
 
       await setupOrder(offChainOrder, 1);
-      await setOrderBalances(onchainOrder);
-      console.log("offChainOrder:", offChainOrder);
+      await setOrderBalances(onChainOrder);
 
-      assert.equal(true, true, "TODO");
-
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          onChainOrder,
+          offChainOrder,
+        ],
+      };
+      ringsInfo.transactionOrigin = transactionOrigin;
+      ringsInfo.feeRecipient = miner;
+      ringsInfo.miner = miner;
+      const context = getDefaultContext();
+      // await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
     });
 
   });
