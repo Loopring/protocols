@@ -280,6 +280,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
     order.walletSplitPercentage = order.walletSplitPercentage ? order.walletSplitPercentage : 0;
 
     // setup initial balances:
+    setOrderBalances(order, limitFeeTokenAmount);
+  };
+
+  const setOrderBalances = async (order: psc.OrderInfo, limitFeeTokenAmount?: boolean) => {
     const tokenS = await DummyToken.at(order.tokenS);
     await tokenS.setBalance(order.owner, (order.balanceS !== undefined) ? order.balanceS : order.amountS);
     if (!limitFeeTokenAmount) {
@@ -292,7 +296,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         await tokenFee.setBalance(order.owner, balanceFee);
       }
     }
-  };
+  }
 
   const assertEqualsRingsInfo = (ringsInfoA: psc.RingsInfo, ringsInfoB: psc.RingsInfo) => {
     // Revert defaults back to undefined
@@ -577,30 +581,42 @@ contract("Exchange_Submit", (accounts: string[]) => {
     }
 
     it("on-chain order should be able to dealed with off-chain order", async () => {
+      const gtoAddr = await symbolRegistry.getAddressBySymbol("GTO");
+      const wethAddr = await symbolRegistry.getAddressBySymbol("WETH");
+
       const onchainOrder: psc.OrderInfo = {
-        tokenS: "GTO",
-        tokenB: "WETH",
+        owner: orderOwners[0],
+        tokenS: gtoAddr,
+        tokenB: wethAddr,
+        broker: "0x0",
         amountS: 10000e18,
         amountB: 3e18,
         validSince: web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000,
         validUntil: web3.eth.getBlock(web3.eth.blockNumber).timestamp + 360000,
+        feeAmount: 1e18,
+        allOrNone: false,
       };
 
-      onchainOrder.owner = orderOwners[0];
       onchainOrder.tokenS = await symbolRegistry.getAddressBySymbol(onchainOrder.tokenS);
       onchainOrder.tokenB = await symbolRegistry.getAddressBySymbol(onchainOrder.tokenB);
 
-      console.log("onchainOrder:", onchainOrder);
+      const orderUtil = new psc.OrderUtil(undefined);
+      const bytes32Array = orderUtil.toOrderBookSubmitParams(onchainOrder);
+      await orderBook.submitOrder(bytes32Array);
 
       const offChainOrder: psc.OrderInfo = {
-        tokenS: "WETH",
-        tokenB: "GTO",
+        tokenS: wethAddr,
+        tokenB: gtoAddr,
         amountS: 3e18,
         amountB: 10000e18,
-        signAlgorithm: psc.SignAlgorithm.Ethereum,
+        validSince: web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000,
+        validUntil: web3.eth.getBlock(web3.eth.blockNumber).timestamp + 360000,
+        feeAmount: 1e18,
+        allOrNone: false,
       };
 
       await setupOrder(offChainOrder, 1);
+      await setOrderBalances(onchainOrder);
       console.log("offChainOrder:", offChainOrder);
 
       assert.equal(true, true, "TODO");

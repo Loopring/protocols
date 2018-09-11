@@ -1,6 +1,6 @@
 import { BN } from "bn.js";
 import abi = require("ethereumjs-abi");
-import { Artifacts } from "protocol2-js";
+import { Artifacts, OrderInfo, OrderUtil } from "protocol2-js";
 import util = require("util");
 
 const {
@@ -9,7 +9,7 @@ const {
 } = new Artifacts(artifacts);
 contract("OrderBook", (accounts: string[]) => {
   const emptyAddr = "0x0000000000000000000000000000000000000000";
-  const orderSubmitter = accounts[1];
+  const orderOwner = accounts[1];
 
   let symbolRegistry: any;
   let orderBook: any;
@@ -66,23 +66,27 @@ contract("OrderBook", (accounts: string[]) => {
 
   describe("any user", () => {
     it("should be able to submit a order to order book", async () => {
-      const addressArray = [lrcAddress, gtoAddress, emptyAddr];
-      const validUntil = Math.floor(new Date().getTime() / 1000) + 3600 * 24 * 30;
-      const uintArray = [100e18, 200e18, 0, validUntil, 1e18];
-      const allOrNone = false;
-      const bytes32Array: string[] = [];
-      bytes32Array.push(addressToBytes32Str(orderSubmitter));
-      addressArray.forEach((addr) => bytes32Array.push(addressToBytes32Str(addr)));
-      uintArray.forEach((value) => bytes32Array.push(numberToBytes32Str(value)));
-      if (allOrNone) {
-        bytes32Array.push(numberToBytes32Str(1));
-      } else {
-        bytes32Array.push(numberToBytes32Str(0));
-      }
+      const validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
+      const validUntil = web3.eth.getBlock(web3.eth.blockNumber).timestamp + 360000;
 
-      // console.log("bytes32Array:", bytes32Array);
+      const orderInfo: OrderInfo = {
+        owner: orderOwner,
+        tokenS: lrcAddress,
+        tokenB: gtoAddress,
+        broker: "0x0",
+        amountS: 100e18,
+        amountB: 200e18,
+        validSince,
+        validUntil,
+        feeAmount: 1e18,
+        allOrNone: false,
+      };
 
-      const tx = await orderBook.submitOrder(bytes32Array, {from: orderSubmitter});
+      const orderUtil = new OrderUtil(undefined);
+
+      const bytes32Array = orderUtil.toOrderBookSubmitParams(orderInfo);
+
+      const tx = await orderBook.submitOrder(bytes32Array);
 
       const events: any = await getEventsFromContract(orderBook, "OrderSubmitted", 0);
       const orderHash = events[0].args.orderHash;
