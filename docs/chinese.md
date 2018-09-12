@@ -1,4 +1,4 @@
-## 关于Loopring.js
+关于Loopring.js
 
 该开发者文档主要介绍如果使用loopring.js接入路印协议。loopring.js 库可以帮助用户完成以太坊钱包以及接入路印协议开发去中心化交易所功能。loopring.js封装了Loopring Relay的JSON-RPC 接口和SocketIO接口。具体的接口详情见[Loopring Relay 接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2)。
 
@@ -33,6 +33,7 @@ window.loopring.ContractUtils
 window.loopring.RelayRpcUitls
 window.loopring.EthRpcUtils
 window.loopring.SocketUtils
+window.loopring.Utils
 ```
 
 - ##### CommonJS  规范包 
@@ -53,21 +54,318 @@ const loopring = require('loopring.js');
 
 - #### 创建钱包
 
+  ```javascript
+  import {WalletUtils,ethereum} from 'loopring.js'
+  
+  const mnemnic  = WalletUtils.createMnemonic(128);
+  const dpath = ethereum.account.path;
+  const account =  WalletUtils.fromMnemonic(mnemnic,dpath.concat('/0'))
+  const privateKey = WalletUtils.mnemonictoPrivatekey(mnemnic,dpath.concat('/0'))
+  const address = account.getAddress()
+  ```
+
 - #### 解锁钱包
+
+  - ##### 解锁助记词钱包
+
+    ```javascript
+    import {WalletUtils} from 'loopring.js'
+    
+    const mnemonic = "seven museum glove patrol gain dumb dawn bridge task alone lion check interest hair scare cash sentence diary better kingdom remember nerve sunset move";
+    const dpath = "m/44'/60'/0'/0/0"
+    if(WalletUtils.isValidateMnemonic(mnemnic)){
+      const account = WalletUtils.fromMnemonic(mnemnic, dpath);
+      const privateKey = WalletUtils.mnemonictoPrivatekey(mnemnic,dpath);
+      const address = account.getAddress();
+    }else{
+      console.log("助记词不合法")
+    }
+    ```
+
+  - ##### 解锁Keystore钱包
+
+    ```javascript
+    import {WalletUtils} from 'loopring.js'
+    
+    const keystore = "{"version":3,"id":"e603b01d-9aa9-4ddf-a165-1b21630237a5","address":"2131b0816b3ef8fe2d120e32b20d15c866e6b4c1","Crypto":{"ciphertext":"7e0c30a985cf29493486acaf86259a2cb0eb45befb367ab59a0baa7738adf49e","cipherparams":{"iv":"54bbb6e77719a13c3fc2072bb88a708c"},"cipher":"aes-128-ctr","kdf":"scrypt","kdfparams":{"dklen":32,"salt":"50c31e2a99f231b09201494cac1cf0943246edcc6864a91cc931563cd11eb0ce","n":1024,"r":8,"p":1},"mac":"13d3566174d20d93d2fb447167c21a127190d4b9b4843fe7cbebeb6054639a4f"}}";
+    const password = "1111111";
+    const privatekey =  WalletUtils.decryptKeystoreToPkey(keystore,password);
+    const account = WalletUtils.fromKeystore(keystore)
+    const address = account.getAddress();
+    ```
+
+  - ##### 解锁私钥
+
+    ```javascript
+    import {WalletUtils} from 'loopring.js'
+    
+    const password = "1111111";
+    const privatekey = "07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466bf9e"
+    const account = WalletUtils.fromPrivateKey(privatekey)
+    const address = account.getAddress();
+    ```
 
 - #### 备份钱包
 
+  ```javascript
+  import {WalletUtils,ethereum,Utils} from 'loopring.js'
+  
+  //获得助记词
+  const mnemnic  = WalletUtils.createMnemonic(128);
+  
+  //获得私钥
+  const dpath = ethereum.account.path;
+  const privateKey = WalletUtils.mnemonictoPrivatekey(mnemnic,dpath.concat('/0'))
+  const formatedKey = Utils.formatKey(privateKey)
+  
+  // 获得keystore
+  const account = WalletUtils.fromMnemonic(mnemnic, dpath.concat('/0'));
+  const keystore = account.toV3Keystore('111111');
+  ```
+
 - #### 签名
+
+  - ##### 签名信息
+
+    ```javascript
+    import {Utils} from 'loopring.js';
+    
+    const hash = Utils.toBuffer('loopring');
+    const sig = account.signMessage(hash);
+    //sig : { r: '0x83a812a468e90106038ba4f409b2702d14e373c40ad377c92935c61d09f12e53',
+      s: '0x666425e6e769c3bf4378408488cd920aeda964d7995dac748529dab396cbaca4',
+      v: 28 }
+    ```
+
+  - ##### 签名交易
+
+    ```javascript
+    const rawTx = {
+      "gasPrice": "0x4e3b29200",
+      "gasLimit": "0x15f90",
+      "to": "0x88699e7fee2da0462981a08a15a3b940304cc516",
+      "value": "0x56bc75e2d63100000",
+      "data": "",
+      "chainId": 1,
+      "nonce": "0x9b"
+    };
+    const tx = account.signEthereumTx(rawTx)
+    //tx:0xf86f819b8504e3b2920083015f909488699e7fee2da0462981a08a15a3b940304cc51689056bc75e2d631000008025a0d75c34cf2236bf632126f10d9ee8e963bf94623f8ec2dedb59c6d13342dbe3bea0644afdfa9812f494eee21adafc1b268c5b88bc47905880577876a8a293bd9c66
+    ```
 
 ### 如何接入路印协议
 
 - #### 订单结构
 
+  - protocol    address      路印撮合协议地址，例如 1.5.1版本：0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78
+  - delegate   address      路印协议授权地址，例如 1.5.1 版本 ：0x17233e07c67d086464fD408148c3ABB56245FA64
+  - owner       address        订单拥有者，即下单用户的地址
+  - tokenS      address         要卖出币种的合约地址
+  - tokenB      address         要买入币种的合约地址
+  - authAddr   address      随机生成账户对应地址
+  - authPriavteKey    privatekey    随机生成账户对应私钥
+  - validSince    hex string    订单生效时间，时间戳—秒数。 
+  - validUntil     hex string    订单失效时间， 时间戳—秒数。
+  - amountB     hex string    要购买的tokenB的数量（这里以最小单位作为单位）
+  - amountS     hex string    要出售的tokenS的数量（这里以最小单位作为单位） 
+  - walletAddress   address  钱包的订单撮合费收益接收地址
+  - buyNoMoreThanAmountB   bool  是不是允许购买超过amountB数量的tokeB
+  - lrcFee           hex string    订单完全撮合最多需要支付的撮合费。（这里以LRC的最小单位作单位）
+  - marginSplitPercentage   number(0–100)  撮合分润中用来支付撮合费的比例
+
 - #### 订单签名
+
+  ```javascript
+  const order = {
+    "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+    "protocol": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
+    "owner": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "tokenB": "0xEF68e7C694F40c8202821eDF525dE3782458639f",
+    "tokenS": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "amountB": "0x15af1d78b58c400000",
+    "amountS": "0x4fefa17b7240000",
+    "lrcFee": "0xa8c0ff92d4c0000",
+    "validSince": "0x5af6ce85",
+    "validUntil": "0x5af82005",
+    "marginSplitPercentage": 50,
+    "buyNoMoreThanAmountB": true,
+    "walletAddress": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "authAddr": "0xf65bf0b63cf812ab1a979a8e54c070674a849344",
+    "authPrivateKey": "95f373ce0c34872db600017d506b90f7fbbb6433496640228cc7a8e00f27b23e"
+  };
+  const signedOrder = account.signOrder(order);
+  //signedOrder:{
+    "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+    "protocol": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
+    "owner": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "tokenB": "0xEF68e7C694F40c8202821eDF525dE3782458639f",
+    "tokenS": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "amountB": "0x15af1d78b58c400000",
+    "amountS": "0x4fefa17b7240000",
+    "lrcFee": "0xa8c0ff92d4c0000",
+    "validSince": "0x5af6ce85",
+    "validUntil": "0x5af82005",
+    "marginSplitPercentage": 50,
+    "buyNoMoreThanAmountB": true,
+    "walletAddress": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "authAddr": "0xf65bf0b63cf812ab1a979a8e54c070674a849344",
+    "authPrivateKey": "95f373ce0c34872db600017d506b90f7fbbb6433496640228cc7a8e00f27b23e",
+    "v": 27,
+    "r": "0xb657f82ee339555e622fc60fefd4089c40057bdb6d4976b19de2a88177129ed4",
+    "s": "0x0d4ac4e1fbc05421f59b365f53c229a4b3cb9d75b4e53b7f3f0ffe3cdb85dfde"
+  }
+  ```
 
 - #### 提交订单
 
+  ```javascript
+  import {RelayUtils} from 'loopring.js';
+  
+  const signedOrder = {
+    "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+    "protocol": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
+    "owner": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "tokenB": "0xEF68e7C694F40c8202821eDF525dE3782458639f",
+    "tokenS": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "amountB": "0x15af1d78b58c400000",
+    "amountS": "0x4fefa17b7240000",
+    "lrcFee": "0xa8c0ff92d4c0000",
+    "validSince": "0x5af6ce85",
+    "validUntil": "0x5af82005",
+    "marginSplitPercentage": 50,
+    "buyNoMoreThanAmountB": true,
+    "walletAddress": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "authAddr": "0xf65bf0b63cf812ab1a979a8e54c070674a849344",
+    "authPrivateKey": "95f373ce0c34872db600017d506b90f7fbbb6433496640228cc7a8e00f27b23e",
+    "v": 27,
+    "r": "0xb657f82ee339555e622fc60fefd4089c40057bdb6d4976b19de2a88177129ed4",
+    "s": "0x0d4ac4e1fbc05421f59b365f53c229a4b3cb9d75b4e53b7f3f0ffe3cdb85dfde"
+  };
+  signedOrder.powNonce = 100;
+  
+  const resonpose = await relayUtils.order.placeOrder(signedOrder)
+  if(response.error){
+      //提交失败
+      console.log)(response.error.message)
+  }else{
+      //提交成功
+      console.log(response.result)
+  }
+  ```
+
 - #### 取消订单
+
+  - ##### 硬取消-- 通过以太坊交易取消订单，需要消耗以太坊油费
+
+    ```javascript
+    import {ContractUtils,EthRpcUtils，Utils} from 'loopring.js'
+    
+    const ethRpcUtils = new EthRpcUtils('localhost:8545');
+    const rawTx = {  
+      "gasPrice": "0x4e3b29200",
+      "gasLimit": "0x15f90",
+      "to": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78", //Loopring protocol Address
+      "value": "0x0",
+      "chainId": 1,
+      "nonce": "0x9b"}
+    
+    //取消单个订单
+    const signedOrder = {
+      "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+      "protocol": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
+      "owner": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+      "tokenB": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      "tokenS": "0xEF68e7C694F40c8202821eDF525dE3782458639f",
+      "amountB": "0x429d069189e0000",
+      "amountS": "0xad78ebc5ac6200000",
+      "lrcFee": "0x928ca80cfc20000",
+      "validSince": "0x5b038122",
+      "validUntil": "0x5b04d2a2",
+      "marginSplitPercentage": 50,
+      "buyNoMoreThanAmountB": false,
+      "walletAddress": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+      "authAddr": "0x5b98dac691be2f2882bfb79067ee50c221d20203",
+      "authPrivateKey": "89fb80ba23d355686ff0b2093100af2d6a2ec071fe98c33252878caeab738e37",
+      "v": 28,
+      "r": "0xbdf3c5bdeeadbddc0995d7fb51471e2166774c8ad5ed9cc315635985c190e573",
+      "s": "0x4ab135ff654c3f5e87183865175b6180e342565525eefc56bf2a0d5d5c564a73",
+      "powNonce": 100
+    };
+    const data = ContractUtils.LoopringProtocol.encodeCancelOrder(signedOrder);
+    rawTx.data = data;
+    const signedTx = account.signEthereumTx(rawTx)
+    const response = await ethRpcUtils.sendRawTransaction();
+    if(response.error){
+        //发送失败
+       console.log(response.error.message)
+    }else{
+        //发送成功
+          console.log(response.result)
+    }
+    
+    //根据市场对取消订单
+    const pair = "LRC-WETH"
+    const tokenA = "0xEF68e7C694F40c8202821eDF525dE3782458639f"; // LRC address
+    const tokenB = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";// WETH address
+    const cutOff =  Utils.toHex(Math.ceil(new Date().getTimes() / 1000))
+    const data = ContractUtils.LoopringProtocol.encodeInputs("cancelAllOrdersByTradingPair",tokenA,tokenB,cutOff)
+    rawTx.data = data
+    const signedTx = account.signEthereumTx(rawTx)
+    const response = await ethRpcUtils.sendRawTransaction();
+    if(response.error){
+        //发送失败
+       console.log(response.error.message)
+    }else{
+        //发送成功
+          console.log(response.result)
+    }
+    //取消全部订单
+    const cutOff =  Utils.toHex(Math.ceil(new Date().getTimes() / 1000))
+    const data = ContractUtils.LoopringProtocol.encodeInputs("cancelAllOrders",cutOff)
+    rawTx.data = data
+    const signedTx = account.signEthereumTx(rawTx)
+    const response = await ethRpcUtils.sendRawTransaction();
+    if(response.error){
+        //发送失败
+       console.log(response.error.message)
+    }else{
+        //发送成功
+          console.log(response.result)
+    }
+    ```
+
+  - ##### 软取消--通过relay进行取消订单，无需消耗以太坊油费，但是如果订单被广播，可能无法成功取消
+
+    ```javascript
+    import {Utils,RelayRpcUtils} from 'loopring.js'
+    
+    const relayRpcUtils = new RelayRpcUtils('localhost:8080')
+    
+    //取消单个订单
+    const orderHash = "0x52c90064a0503ce566a50876fc41e0d549bffd2ba757f859b1749a75be798819"
+    const cutOff = Math.ceil(new Date().getTimes() / 1000)
+    const sign = account.signMessage(Utils.keccakHash(cutOff))
+    sign.owner = account.getAddress()
+    const type = 1
+    relayRpcUtils.order.cancelOrder({sign,orderHash,type,cutOff})
+    
+    //根据市场对取消订单
+    const cutOff = Math.ceil(new Date().getTimes() / 1000)
+    const sign = account.signMessage(Utils.keccakHash(cutOff))
+    sign.owner = account.getAddress()
+    const type = 4
+    const pair = "LRC-WETH"
+    const tokenS = "0xEF68e7C694F40c8202821eDF525dE3782458639f"; // LRC address
+    const tokenB = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";// WETH address
+    relayRpcUtils.order.cancelOrder({sign,tokenS,tokenB,type,cutOff})
+    
+    //取消全部订单
+    const cutOff = Math.ceil(new Date().getTimes() / 1000)
+    const sign = account.signMessage(Utils.keccakHash(cutOff))
+    sign.owner = account.getAddress()
+    const type = 3
+    relayRpcUtils.order.cancelOrder({sign,type,cutOff})
+    ```
 
 ## API
 
@@ -488,7 +786,7 @@ LoopringProtocol 封装实现了encodECancelOrder, encodeSubmitRing
   - r               hex string
   - v              hex string
   - powNonce  number     满足难度系数的随机数
-  - amount  number or hex string  要取消的数量 ，默认为订单全量
+- amount  number or hex string  要取消的数量 ，默认为订单全量
 
 ##### 返回值
 
@@ -497,6 +795,7 @@ LoopringProtocol 封装实现了encodECancelOrder, encodeSubmitRing
 ##### 代码样例
 
 ```javascript
+import {ContractUtils} from 'loopring.js'
 const signedOrder = {
   "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
   "protocol": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
@@ -518,7 +817,7 @@ const signedOrder = {
   "s": "0x4ab135ff654c3f5e87183865175b6180e342565525eefc56bf2a0d5d5c564a73",
   "powNonce": 100
 };
-const data = LoopringProtocol.encodeCancelOrder(signedOrder);
+const data = ContractUtils.LoopringProtocol.encodeCancelOrder(signedOrder);
 //data : 
 "0x8c59f7ca000000000000000000000000b94065482ad64d4c2b9252358d746b39e820a582000000000000000000000000ef68e7c694f40c8202821edf525de3782458639f000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000b94065482ad64d4c2b9252358d746b39e820a5820000000000000000000000005b98dac691be2f2882bfb79067ee50c221d2020300000000000000000000000000000000000000000000000ad78ebc5ac62000000000000000000000000000000000000000000000000000000429d069189e0000000000000000000000000000000000000000000000000000000000005b038122000000000000000000000000000000000000000000000000000000005b04d2a20000000000000000000000000000000000000000000000000928ca80cfc2000000000000000000000000000000000000000000000000000ad78ebc5ac620000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000001cbdf3c5bdeeadbddc0995d7fb51471e2166774c8ad5ed9cc315635985c190e5734ab135ff654c3f5e87183865175b6180e342565525eefc56bf2a0d5d5c564a73"
 ```
@@ -739,6 +1038,12 @@ order相关接口
 
 ring相关接口
 
+#### cancelOrder(params)
+
+ 通过relay取消订单
+
+详情参考[Loopring Relay的接入文档](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_flexcancelorder) 
+
 ------
 
 #### getRings(fiter)
@@ -824,3 +1129,210 @@ socketUtils.on(event,handle);
 ```javascript
 socketUtils.close()
 ```
+
+### Utils
+
+#### toBuffer(data)
+
+##### 参数
+
+- data	Array|Buffer|number|string (16进制字符串须有"0x"前缀)
+
+##### 返回值
+
+- data	Buffer 
+
+##### 代码样例
+
+```javascript
+import {Utils} from "loopring.js"
+
+const data = "0x123456789"
+const buffer_data = Utils.toBuffer(data)
+```
+
+#### toHex(data)
+
+##### 参数
+
+- data	BN|BigNumber|Buffer|number|string (16进制字符串须有"0x"前缀)
+
+##### 返回值
+
+- data	Hex String
+
+##### 代码样例
+
+```javascript
+import {Utils} from "loopring.js"
+
+const data = 64
+const hex_string = Utils.toHex(data) // 0x40
+```
+
+#### toNumber(data)
+
+##### 参数
+
+- data	BN|BigNumber|Buffer|number|string (16进制字符串须有"0x"前缀)
+
+##### 返回值
+
+- data	Number
+
+##### 代码样例
+
+```javascript
+import {Utils} from "loopring.js"
+
+const data = "0x40"
+const num = Utils.toNumber(data) // 64
+```
+
+#### toBig(data)
+
+##### 参数
+
+- data Bignumber|number|string (16进制字符串须有"0x"前缀)
+
+##### 返回值
+
+- data BigNumber
+
+##### 代码样例
+
+```javascript
+import {Utils} from 'loopring.js'
+
+const data = "0x123456789"
+const bignumber = Utils.toBig(data)
+```
+
+##### toBN
+
+##### 参数
+
+- data  BN|number|string (16进制字符串须有"0x"前缀)
+
+##### 返回值
+
+- data BN
+
+##### 代码样例
+
+```javascript
+import {Utils} from 'loopring.js'
+
+const data = "0x123456789"
+const bn = Utils.toBN(data)
+```
+
+##### formatKey(key)
+
+##### 参数
+
+- key	string | Buffer
+
+##### 返回值
+
+- key	Hex String (无“0x”前缀)
+
+##### 代码样例
+
+```javascript
+import {Utils} from 'loopring.js'
+
+const key = "0x07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466bf9e"
+const formattedKey = Utils.formatKey(key)
+//"07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466bf9e"
+```
+
+#### formatAddress(add)
+
+##### 参数
+
+- add	string | Buffer
+
+##### 返回值
+
+- add	Hex String 
+
+##### 代码样例
+
+```javascript
+import {Utils} from 'loopring.js'
+
+const add = "0xb94065482ad64d4c2b9252358d746b39e820a582"
+const formattedAdd = Utils.formatAddress(add)
+//"0xb94065482Ad64d4c2b9252358D746B39e820A582"
+```
+
+#### addHexPrefix(data)
+
+添加hex 前缀“0x”
+
+#### clearHexPrefix
+
+ 去掉hex前缀“0x”
+
+#### toFixed(data,precision,ceil)
+
+##### 参数
+
+- data  number | BigNumber
+- precison    number  默认是0  — 保留的小数位
+- ceil bool 默认是false,  是否向上取整 
+
+##### 返回值
+
+- data   string 
+
+##### 样例代码
+
+```javascript
+import {Utils} from "loopring.js"
+
+const data = 123.45
+const fixed_num = Utils.toFixed(data,1) // 123.4
+```
+
+#### keccakHash(mes)
+
+##### 参数
+
+- mes  string|Buffer
+
+##### 返回值
+
+- hash  hex string
+
+##### 样例代码
+
+```javascript
+import {Utils} from "loopring.js"
+
+const mes = "0x12121"
+const hash = Utils.keccakHash(mes)
+```
+
+#### hashPersonalMessage(mes)
+
+keccak256("\x19Ethereum Signed Message:\n" + len(message) + message))
+
+##### 参数
+
+- mes  string|Buffer
+
+##### 返回值
+
+- hash  hex string
+
+##### 样例代码
+
+```javascript
+import {Utils} from "loopring.js"
+
+const mes = "0x12121"
+const hash = Utils.hashPersonalMessage(mes)
+```
+

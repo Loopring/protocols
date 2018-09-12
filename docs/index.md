@@ -35,6 +35,7 @@ window.loopring.ContractUtils
 window.loopring.RelayRpcUitls
 window.loopring.EthRpcUtils
 window.loopring.SocketUtils
+window.loopring.Utils
 ```
 
 - ##### CommonJS  Package   
@@ -55,21 +56,322 @@ const loopring = require('loopring.js');
 
 - #### Create Wallet
 
+  ```javascript
+  import {WalletUtils,ethereum} from 'loopring.js'
+  
+  const mnemnic  = WalletUtils.createMnemonic(128);
+  const dpath = ethereum.account.path;
+  const account =  WalletUtils.fromMnemonic(mnemnic,dpath.concat('/0'))
+  const privateKey = WalletUtils.mnemonictoPrivatekey(mnemnic,dpath.concat('/0'))
+  const address = account.getAddress()
+  ```
+
 - #### Unlock Wallet
+
+  - ##### Unlock Mnemonic
+
+    ```javascript
+    import {WalletUtils} from 'loopring.js'
+    
+    const mnemonic = "seven museum glove patrol gain dumb dawn bridge task alone lion check interest hair scare cash sentence diary better kingdom remember nerve sunset move";
+    const dpath = "m/44'/60'/0'/0/0"
+    if(WalletUtils.isValidateMnemonic(mnemnic)){
+      const account = WalletUtils.fromMnemonic(mnemnic, dpath);
+      const privateKey = WalletUtils.mnemonictoPrivatekey(mnemnic,dpath);
+      const address = account.getAddress();
+    }else{
+      console.log("助记词不合法")
+    }
+    ```
+
+  - ##### Unlock Keystore
+
+    ```javascript
+    import {WalletUtils} from 'loopring.js'
+      
+    const keystore = "{"version":3,"id":"e603b01d-9aa9-4ddf-a165-1b21630237a5","address":"2131b0816b3ef8fe2d120e32b20d15c866e6b4c1","Crypto":{"ciphertext":"7e0c30a985cf29493486acaf86259a2cb0eb45befb367ab59a0baa7738adf49e","cipherparams":{"iv":"54bbb6e77719a13c3fc2072bb88a708c"},"cipher":"aes-128-ctr","kdf":"scrypt","kdfparams":{"dklen":32,"salt":"50c31e2a99f231b09201494cac1cf0943246edcc6864a91cc931563cd11eb0ce","n":1024,"r":8,"p":1},"mac":"13d3566174d20d93d2fb447167c21a127190d4b9b4843fe7cbebeb6054639a4f"}}";
+     const password = "1111111";
+     const privatekey =  WalletUtils.decryptKeystoreToPkey(keystore,password);
+     const account = WalletUtils.fromKeystore(keystore)
+     const address = account.getAddress();
+    ```
+
+  - ##### Unlock PrivateKey
+
+    ```javascript
+    import {WalletUtils} from 'loopring.js'
+    
+    const password = "1111111";
+    const privatekey = "07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466bf9e"
+    const account = WalletUtils.fromPrivateKey(privatekey)
+    const address = account.getAddress();
+    ```
 
 - #### Backup Wallet
 
+  ```javascript
+  import {WalletUtils,ethereum,Utils} from 'loopring.js'
+  
+  //Get Mnemonic
+  const mnemnic  = WalletUtils.createMnemonic(128);
+  
+  //Get PrivatKey
+  const dpath = ethereum.account.path;
+  const privateKey = WalletUtils.mnemonictoPrivatekey(mnemnic,dpath.concat('/0'))
+  const formatedKey = Utils.formatKey(privateKey)
+  
+  // Get Keystore
+  const account = WalletUtils.fromMnemonic(mnemnic, dpath.concat('/0'));
+  const keystore = account.toV3Keystore('111111');
+  ```
+
 - #### Sign
+
+  - ##### Sign Messgae
+
+    ```javascript
+    import {Utils} from 'loopring.js';
+    
+    const hash = Utils.toBuffer('loopring');
+    const sig = account.signMessage(hash);
+    //sig : { r: '0x83a812a468e90106038ba4f409b2702d14e373c40ad377c92935c61d09f12e53',
+      s: '0x666425e6e769c3bf4378408488cd920aeda964d7995dac748529dab396cbaca4',
+      v: 28 }
+    ```
+
+  - Sign Tx
+
+    ```javascript
+     const rawTx = {
+        "gasPrice": "0x4e3b29200",
+        "gasLimit": "0x15f90",
+        "to": "0x88699e7fee2da0462981a08a15a3b940304cc516",
+        "value": "0x56bc75e2d63100000",
+        "data": "",
+        "chainId": 1,
+        "nonce": "0x9b"
+      };
+      const tx = account.signEthereumTx(rawTx)
+      //tx:0xf86f819b8504e3b2920083015f909488699e7fee2da0462981a08a15a3b940304cc51689056bc75e2d631000008025a0d75c34cf2236bf632126f10d9ee8e963bf94623f8ec2dedb59c6d13342dbe3bea0644afdfa9812f494eee21adafc1b268c5b88bc47905880577876a8a293bd9c66 
+    ```
 
 ### How to integrate with Loopring  Protocol
 
 - #### Order Structure
 
+  - protocol  address, here is an example version 1.5.1 protocol address: 0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78
+  - delegate  address, the Loopring protocol authorization address, here is an example version 1.5.1 address: 0x17233e07c67d086464fD408148c3ABB56245FA64
+  - owner  address, the address of the ordering user
+  - tokenS  address, the contract address that is selling currency 
+  - tokenB  address, the contract address that is buying currency 
+  - authAddr  address, randomly generated account address
+  - authPriavteKey  privatekey, randomly generated privatekey corresponding to the account
+  - validSince  hex string, the order effective time, timestamp in seconds
+  - validUntil  hex string, the order expiration time, timestamp in seconds
+  - amountB  hex string, the amount of tokenB to buy (here in units of the smallest unit)
+  - amountS  hex string, the amount of tokenS to sell (here in units of the smallest unit)
+  - walletAddress  address, address of the wallet that receives the tokens from an order
+  - buyNoMoreThanAmountB  bool, true if amountB is greater than tokenB
+  - lrcFee  hex string, orders fully match the maximum amount of fees that need to be paid. (Here the unit of LRC is the smallest unit)
+  - marginSplitPercentage  number(0–100), the proportion of funds used to pay for the reconciliation
+
 - #### Sign Order
+
+  ```javascript
+  const order = {
+    "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+    "protocol": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
+    "owner": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "tokenB": "0xEF68e7C694F40c8202821eDF525dE3782458639f",
+    "tokenS": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "amountB": "0x15af1d78b58c400000",
+    "amountS": "0x4fefa17b7240000",
+    "lrcFee": "0xa8c0ff92d4c0000",
+    "validSince": "0x5af6ce85",
+    "validUntil": "0x5af82005",
+    "marginSplitPercentage": 50,
+    "buyNoMoreThanAmountB": true,
+    "walletAddress": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "authAddr": "0xf65bf0b63cf812ab1a979a8e54c070674a849344",
+    "authPrivateKey": "95f373ce0c34872db600017d506b90f7fbbb6433496640228cc7a8e00f27b23e"
+  };
+  const signedOrder = account.signOrder(order);
+  //signedOrder:{
+    "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+    "protocol": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
+    "owner": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "tokenB": "0xEF68e7C694F40c8202821eDF525dE3782458639f",
+    "tokenS": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "amountB": "0x15af1d78b58c400000",
+    "amountS": "0x4fefa17b7240000",
+    "lrcFee": "0xa8c0ff92d4c0000",
+    "validSince": "0x5af6ce85",
+    "validUntil": "0x5af82005",
+    "marginSplitPercentage": 50,
+    "buyNoMoreThanAmountB": true,
+    "walletAddress": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "authAddr": "0xf65bf0b63cf812ab1a979a8e54c070674a849344",
+    "authPrivateKey": "95f373ce0c34872db600017d506b90f7fbbb6433496640228cc7a8e00f27b23e",
+    "v": 27,
+    "r": "0xb657f82ee339555e622fc60fefd4089c40057bdb6d4976b19de2a88177129ed4",
+    "s": "0x0d4ac4e1fbc05421f59b365f53c229a4b3cb9d75b4e53b7f3f0ffe3cdb85dfde"
+  }
+  ```
 
 - #### Submit Order
 
+  ```javascript
+  import {RelayUtils} from 'loopring.js';
+  
+  const signedOrder = {
+    "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+    "protocol": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
+    "owner": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "tokenB": "0xEF68e7C694F40c8202821eDF525dE3782458639f",
+    "tokenS": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "amountB": "0x15af1d78b58c400000",
+    "amountS": "0x4fefa17b7240000",
+    "lrcFee": "0xa8c0ff92d4c0000",
+    "validSince": "0x5af6ce85",
+    "validUntil": "0x5af82005",
+    "marginSplitPercentage": 50,
+    "buyNoMoreThanAmountB": true,
+    "walletAddress": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+    "authAddr": "0xf65bf0b63cf812ab1a979a8e54c070674a849344",
+    "authPrivateKey": "95f373ce0c34872db600017d506b90f7fbbb6433496640228cc7a8e00f27b23e",
+    "v": 27,
+    "r": "0xb657f82ee339555e622fc60fefd4089c40057bdb6d4976b19de2a88177129ed4",
+    "s": "0x0d4ac4e1fbc05421f59b365f53c229a4b3cb9d75b4e53b7f3f0ffe3cdb85dfde"
+  };
+  signedOrder.powNonce = 100;
+  
+  const resonpose = await relayUtils.order.placeOrder(signedOrder)
+  if(response.error){
+      //Submit Failed
+      console.log)(response.error.message)
+  }else{
+      //Submit Successfully
+      console.log(response.result)
+  }
+  ```
+
 - #### Cancel Order
+
+  - ##### Cancel Orders by Loopring Protocol
+
+    To cancel orders by Loopring Protocol is to send an ethereum tx, and it will cost some gas.
+
+    ```javascript
+    import {ContractUtils,EthRpcUtils，Utils} from 'loopring.js'
+    
+    const ethRpcUtils = new EthRpcUtils('localhost:8545');
+    const rawTx = {  
+      "gasPrice": "0x4e3b29200",
+      "gasLimit": "0x15f90",
+      "to": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78", //Loopring protocol Address
+      "value": "0x0",
+      "chainId": 1,
+      "nonce": "0x9b"}
+    
+    //Cancel order by giving orderHash
+    const signedOrder = {
+      "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+      "protocol": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
+      "owner": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+      "tokenB": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      "tokenS": "0xEF68e7C694F40c8202821eDF525dE3782458639f",
+      "amountB": "0x429d069189e0000",
+      "amountS": "0xad78ebc5ac6200000",
+      "lrcFee": "0x928ca80cfc20000",
+      "validSince": "0x5b038122",
+      "validUntil": "0x5b04d2a2",
+      "marginSplitPercentage": 50,
+      "buyNoMoreThanAmountB": false,
+      "walletAddress": "0xb94065482ad64d4c2b9252358d746b39e820a582",
+      "authAddr": "0x5b98dac691be2f2882bfb79067ee50c221d20203",
+      "authPrivateKey": "89fb80ba23d355686ff0b2093100af2d6a2ec071fe98c33252878caeab738e37",
+      "v": 28,
+      "r": "0xbdf3c5bdeeadbddc0995d7fb51471e2166774c8ad5ed9cc315635985c190e573",
+      "s": "0x4ab135ff654c3f5e87183865175b6180e342565525eefc56bf2a0d5d5c564a73",
+      "powNonce": 100
+    };
+    const data = ContractUtils.LoopringProtocol.encodeCancelOrder(signedOrder);
+    rawTx.data = data;
+    const signedTx = account.signEthereumTx(rawTx)
+    const response = await ethRpcUtils.sendRawTransaction();
+    if(response.error){
+        //send failed
+       console.log(response.error.message)
+    }else{
+        //send successfully
+       console.log(response.result)
+    }
+    
+    //Cancel orders by token pair
+    const pair = "LRC-WETH"
+    const tokenA = "0xEF68e7C694F40c8202821eDF525dE3782458639f"; // LRC address
+    const tokenB = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";// WETH address
+    const cutOff =  Utils.toHex(Math.ceil(new Date().getTimes() / 1000))
+    const data = ContractUtils.LoopringProtocol.encodeInputs("cancelAllOrdersByTradingPair",tokenA,tokenB,cutOff)
+    rawTx.data = data
+    const signedTx = account.signEthereumTx(rawTx)
+    const response = await ethRpcUtils.sendRawTransaction();
+    if(response.error){
+       //send failed
+       console.log(response.error.message)
+    }else{
+        //send successfully
+       console.log(response.result)
+    }
+    //cancel all orders
+    const cutOff =  Utils.toHex(Math.ceil(new Date().getTimes() / 1000))
+    const data = ContractUtils.LoopringProtocol.encodeInputs("cancelAllOrders",cutOff)
+    rawTx.data = data
+    const signedTx = account.signEthereumTx(rawTx)
+    const response = await ethRpcUtils.sendRawTransaction();
+    if(response.error){
+       //send failed
+       console.log(response.error.message)
+    }else{
+       //send successfully
+      console.log(response.result)
+    }
+    ```
+
+  - Cancel Order by Relay
+
+    To cancel orders by Relay will not cost gas, but if the order is broadcasted to other relays, it can't be canceled by this way.
+
+    ```javascript
+    import {Utils,RelayRpcUtils} from 'loopring.js'
+    
+    const relayRpcUtils = new RelayRpcUtils('localhost:8080')
+    
+    //Cancel Order by giving orderHash
+    const orderHash = "0x52c90064a0503ce566a50876fc41e0d549bffd2ba757f859b1749a75be798819"
+    const cutOff = Math.ceil(new Date().getTimes() / 1000)
+    const sign = account.signMessage(Utils.keccakHash(cutOff))
+    sign.owner = account.getAddress()
+    const type = 1
+    relayRpcUtils.order.cancelOrder({sign,orderHash,type,cutOff})
+    
+    //Cancel order by token pair
+    const cutOff = Math.ceil(new Date().getTimes() / 1000)
+    const sign = account.signMessage(Utils.keccakHash(cutOff))
+    sign.owner = account.getAddress()
+    const type = 4
+    const pair = "LRC-WETH"
+    const tokenS = "0xEF68e7C694F40c8202821eDF525dE3782458639f"; // LRC address
+    const tokenB = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";// WETH address
+    relayRpcUtils.order.cancelOrder({sign,tokenS,tokenB,type,cutOff})
+    
+    //Cancel all orders
+    const cutOff = Math.ceil(new Date().getTimes() / 1000)
+    const sign = account.signMessage(Utils.keccakHash(cutOff))
+    sign.owner = account.getAddress()
+    const type = 3
+    relayRpcUtils.order.cancelOrder({sign,type,cutOff})
+    ```
 
 ## API
 
@@ -740,6 +1042,12 @@ For details, reference: [Loopring Relay placeOrder interface](https://loopring.g
 
 Calculate orderHash
 
+#### cancelOrder(params)
+
+ Cancel Orders by relay
+
+For details, reference: [Loopring Relay placeOrder interface](https://loopring.github.io/relay-cluster/relay_api_spec_v2#loopring_flexcancelorder)
+
 #### Ring interfaces
 
 ------
@@ -828,3 +1136,210 @@ Manually disconnect the socket connection
 ```javascript
 socketUtils.close()
 ```
+
+### Utils
+
+#### toBuffer(data)
+
+##### Parameters
+
+- data	Array|Buffer|number|string (hex string must be with '0x' prefix)
+
+##### Returns
+
+- data	Buffer 
+
+##### Example
+
+```javascript
+import {Utils} from "loopring.js"
+
+const data = "0x123456789"
+const buffer_data = Utils.toBuffer(data)
+```
+
+#### toHex(data)
+
+##### Parameters
+
+- data	BN|BigNumber|Buffer|number|string (hex string must be with '0x' prefix)
+
+##### Returns
+
+- data	Hex String
+
+##### Example
+
+```javascript
+import {Utils} from "loopring.js"
+
+const data = 64
+const hex_string = Utils.toHex(data) // 0x40
+```
+
+#### toNumber(data)
+
+##### Parameters
+
+- data	BN|BigNumber|Buffer|number|string (hex string must be with '0x' prefix)
+
+##### Returns
+
+- data	Number
+
+##### Example
+
+```javascript
+import {Utils} from "loopring.js"
+
+const data = "0x40"
+const num = Utils.toNumber(data) // 64
+```
+
+#### toBig(data)
+
+##### Parameters
+
+- data Bignumber|number|string (hex string must be with '0x' prefix)
+
+##### Returns
+
+- data BigNumber
+
+##### Example
+
+```javascript
+import {Utils} from 'loopring.js'
+
+const data = "0x123456789"
+const bignumber = Utils.toBig(data)
+```
+
+##### toBN
+
+##### Parameters
+
+- data  BN|number|string ( hex string must be with '0x' prefix)
+
+##### Returns
+
+- data BN
+
+##### Example
+
+```javascript
+import {Utils} from 'loopring.js'
+
+const data = "0x123456789"
+const bn = Utils.toBN(data)
+```
+
+##### formatKey(key)
+
+##### Parameters
+
+- key	string | Buffer
+
+##### Returns
+
+- key	Hex String ( without “0x”)
+
+##### Example
+
+```javascript
+import {Utils} from 'loopring.js'
+
+const key = "0x07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466bf9e"
+const formattedKey = Utils.formatKey(key)
+//"07ae9ee56203d29171ce3de536d7742e0af4df5b7f62d298a0445d11e466bf9e"
+```
+
+#### formatAddress(add)
+
+##### Parameters
+
+- add	string | Buffer
+
+##### Returns
+
+- add	Hex String 
+
+##### Example
+
+```javascript
+import {Utils} from 'loopring.js'
+
+const add = "0xb94065482ad64d4c2b9252358d746b39e820a582"
+const formattedAdd = Utils.formatAddress(add)
+//"0xb94065482Ad64d4c2b9252358D746B39e820A582"
+```
+
+#### addHexPrefix(data)
+
+add hex prefix "0x"
+
+#### clearHexPrefix
+
+Clear hex prefix "0x"
+
+#### toFixed(data,precision,ceil)
+
+##### Parameters
+
+- data  number | BigNumber
+- precison    number  default is 0 
+- ceil bool  default is false
+
+##### Returns
+
+- data   string 
+
+##### Example
+
+```javascript
+import {Utils} from "loopring.js"
+
+const data = 123.45
+const fixed_num = Utils.toFixed(data,1) // 123.4
+```
+
+#### keccakHash(mes)
+
+##### Parameters
+
+- mes  string|Buffer
+
+##### Returns
+
+- hash  hex string
+
+##### Example
+
+```javascript
+import {Utils} from "loopring.js"
+
+const mes = "0x12121"
+const hash = Utils.keccakHash(mes)
+```
+
+#### hashPersonalMessage(mes)
+
+keccak256("\x19Ethereum Signed Message:\n" + len(message) + message))
+
+##### Parameters
+
+- mes  string|Buffer
+
+##### Returns
+
+- hash  hex string
+
+##### Example
+
+```
+import {Utils} from "loopring.js"
+
+const mes = "0x12121"
+const hash = Utils.hashPersonalMessage(mes)
+```
+
