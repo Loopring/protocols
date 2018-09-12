@@ -9,8 +9,6 @@ import { DetailedTokenTransfer, OrderInfo, OrderPayments, RingPayments, Transfer
 export class Ring {
 
   public orders: OrderInfo[];
-  public owner: string;
-  public feeRecipient: string;
   public hash?: Buffer;
   public minerFeesToOrdersPercentage?: number;
   public valid: boolean;
@@ -27,14 +25,9 @@ export class Ring {
   private detailTransferFee: DetailedTokenTransfer[];
 
   constructor(context: Context,
-              orders: OrderInfo[],
-              owner: string,
-              feeRecipient: string,
-              ) {
+              orders: OrderInfo[]) {
     this.context = context;
     this.orders = orders;
-    this.owner = owner;
-    this.feeRecipient = feeRecipient;
     this.valid = true;
     this.minerFeesToOrdersPercentage = 0;
 
@@ -78,7 +71,7 @@ export class Ring {
         description: "MatchingFee",
         token: order.feeToken,
         from: order.owner,
-        to: this.feeRecipient,
+        to: "NA",
         amount: 0,
         subPayments: [],
       };
@@ -167,7 +160,6 @@ export class Ring {
   public async setMaxFillAmounts(order: OrderInfo) {
     const remainingS = order.amountS - order.filledAmountS;
     order.ringSpendableS = await this.orderUtil.getSpendableS(order);
-    const spendableFee = await this.orderUtil.getSpendableFee(order);
     order.fillAmountS = Math.min(order.ringSpendableS, remainingS);
     order.fillAmountB = Math.floor(order.fillAmountS * order.amountB / order.amountS);
   }
@@ -237,12 +229,12 @@ export class Ring {
     assert(order.filledAmountS <= order.amountS, "filledAmountS <= amountS");
   }
 
-  public async getRingTransferItems(feeBalances: { [id: string]: any; }) {
+  public async getRingTransferItems(mining: Mining, feeBalances: { [id: string]: any; }) {
     if (!this.valid) {
       return [];
     }
 
-    await this.payFees();
+    await this.payFees(mining);
     const transferItems = await this.transferTokens();
 
     // Validate how the ring is settled
@@ -312,7 +304,7 @@ export class Ring {
     }
   }
 
-  private async payFees() {
+  private async payFees(mining: Mining) {
     const ringSize = this.orders.length;
     for (let i = 0; i < ringSize; i++) {
       const order = this.orders[i];
@@ -321,22 +313,25 @@ export class Ring {
                                (order.walletAddr ? order.walletSplitPercentage : 0);
 
       // Save these fee amounts before any discount the order gets for validation
-      const feePercentageB = order.P2P ? order.tokenBFeePercentage : order.feePercentage * 10;
+      const feePercentageB = order.P2P ? order.tokenBFeePercentage : order.feePercentage;
 
-      order.rebateFee = await this.payFeesAndTaxes(order,
+      order.rebateFee = await this.payFeesAndTaxes(mining,
+                                                   order,
                                                    order.feeToken,
                                                    order.fillAmountFee,
                                                    0,
                                                    walletPercentage,
                                                    this.detailTransferFee[i]);
-      order.rebateS = await this.payFeesAndTaxes(order,
+      order.rebateS = await this.payFeesAndTaxes(mining,
+                                                 order,
                                                  order.tokenS,
                                                  order.fillAmountFeeS,
                                                  order.splitS,
                                                  walletPercentage,
                                                  this.detailTransferS[i],
                                                  order.tokenSFeePercentage);
-      order.rebateB = await this.payFeesAndTaxes(order,
+      order.rebateB = await this.payFeesAndTaxes(mining,
+                                                 order,
                                                  order.tokenB,
                                                  order.fillAmountFeeB,
                                                  0,
@@ -346,7 +341,8 @@ export class Ring {
     }
   }
 
-  private async payFeesAndTaxes(order: OrderInfo,
+  private async payFeesAndTaxes(mining: Mining,
+                                order: OrderInfo,
                                 token: string,
                                 amount: number,
                                 margin: number,
@@ -365,7 +361,7 @@ export class Ring {
 
     const feeDesc = "Fee" + ((feePercentage > 0) ? ("@" + (feePercentage / 10)) + "%" : "");
     const totalPayment = this.logPayment(payment, token, order.owner, "NA", amount + margin, feeDesc + "+Margin");
-    const marginPayment = this.logPayment(totalPayment, token, order.owner, this.feeRecipient, margin, "Margin");
+    const marginPayment = this.logPayment(totalPayment, token, order.owner, mining.feeRecipient, margin, "Margin");
     const feePayment = this.logPayment(totalPayment, token, order.owner, "NA", amount, feeDesc);
 
     const walletFee = Math.floor(amount * walletSplitPercentage / 100);
@@ -407,7 +403,7 @@ export class Ring {
     this.logPayment(minerPayment, token, order.owner, taxAddress, minerTax, "Burn@" + burnRate / 10 + "%");
     this.logPayment(minerPayment, token, order.owner, order.owner, minerRebate, "Rebate@" + rebateRate / 10 + "%");
     const minerIncomePayment =
-      this.logPayment(minerPayment, token, order.owner, this.feeRecipient, minerFee - margin, "Income");
+      this.logPayment(minerPayment, token, order.owner, mining.feeRecipient, minerFee - margin, "Income");
 
     this.logPayment(walletPayment, token, order.owner, taxAddress, walletTax, "Burn@" + burnRate / 10 + "%");
     this.logPayment(walletPayment, token, order.owner, order.owner, walletRebate, "Rebate@" + rebateRate / 10 + "%");
@@ -434,7 +430,7 @@ export class Ring {
 
     // Do the fee payments
     await this.addFeePayment(token, order.walletAddr, feeToWallet);
-    await this.addFeePayment(token, this.feeRecipient, feeToMiner);
+    await this.addFeePayment(token, mining.feeRecipient, feeToMiner);
     // Tax
     await this.addFeePayment(token, taxAddress, minerTax + walletTax);
 

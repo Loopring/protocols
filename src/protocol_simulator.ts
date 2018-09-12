@@ -58,8 +58,6 @@ export class ProtocolSimulator {
       const ring = new Ring(
         this.context,
         ringOrders,
-        ringsInfo.miner,
-        ringsInfo.feeRecipient,
       );
       rings.push(ring);
     }
@@ -99,7 +97,7 @@ export class ProtocolSimulator {
       ring.checkForSubRings();
       // await ring.checkTokensRegistered();
       if (ring.valid) {
-        const ringReport = await this.simulateAndReportSingle(ring, feeBalances);
+        const ringReport = await this.simulateAndReportSingle(ring, mining, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);
         transferItems.push(...ringReport.transferItems);
       }
@@ -154,9 +152,9 @@ export class ProtocolSimulator {
     return simulatorReport;
   }
 
-  private async simulateAndReportSingle(ring: Ring, feeBalances: { [id: string]: any; }) {
+  private async simulateAndReportSingle(ring: Ring, mining: Mining, feeBalances: { [id: string]: any; }) {
     await ring.calculateFillAmountAndFee();
-    const transferItems = await ring.getRingTransferItems(feeBalances);
+    const transferItems = await ring.getRingTransferItems(mining, feeBalances);
     const ringMinedEvent: RingMinedEvent = {
       ringIndex: new BigNumber(this.ringIndex++),
     };
