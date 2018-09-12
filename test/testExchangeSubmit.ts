@@ -196,6 +196,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     let tx = null;
     try {
       report = await simulator.simulateAndReport(deserializedRingsInfo);
+      logDetailedTokenTransfers(ringsInfo, report);
     } catch (err) {
       console.log("Simulator reverted -> " + err);
       shouldThrow = true;
@@ -211,8 +212,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
     await assertFeeBalances(deserializedRingsInfo, report.feeBalances);
     await assertFilledAmounts(deserializedRingsInfo, context, report.filledAmounts);
 
-    logDetailedTokenTransfers(ringsInfo, report);
-
     // await watchAndPrintEvent(tradeDelegate, "LogTrans");
     // await watchAndPrintEvent(ringSubmitter, "LogUint3");
     // await watchAndPrintEvent(ringSubmitter, "LogAddress");
@@ -220,7 +219,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     return {tx, report};
   };
 
-  const setupOrder = async (order: pjs.OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
+  const setupOrder = async (order: pjs.OrderInfo, index: number) => {
     if (order.owner === undefined) {
       const accountIndex = index % orderOwners.length;
       order.owner = orderOwners[accountIndex];
@@ -280,21 +279,21 @@ contract("Exchange_Submit", (accounts: string[]) => {
     order.walletSplitPercentage = order.walletSplitPercentage ? order.walletSplitPercentage : 0;
 
     // setup initial balances:
-    setOrderBalances(order, limitFeeTokenAmount);
+    await setOrderBalances(order);
   };
 
-  const setOrderBalances = async (order: pjs.OrderInfo, limitFeeTokenAmount?: boolean) => {
+  const setOrderBalances = async (order: pjs.OrderInfo) => {
     const tokenS = await DummyToken.at(order.tokenS);
-    await tokenS.setBalance(order.owner, (order.balanceS !== undefined) ? order.balanceS : order.amountS);
-    if (!limitFeeTokenAmount) {
-      const feeToken = order.feeToken ? order.feeToken : lrcAddress;
-      const balanceFee = (order.balanceFee !== undefined) ? order.balanceFee : (order.feeAmount * 2);
-      if (feeToken === order.tokenS) {
-        tokenS.addBalance(order.owner, balanceFee);
-      } else {
-        const tokenFee = await DummyToken.at(feeToken);
-        await tokenFee.setBalance(order.owner, balanceFee);
-      }
+    const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
+    await tokenS.setBalance(order.owner, balanceS);
+
+    const feeToken = order.feeToken ? order.feeToken : lrcAddress;
+    const balanceFee = (order.balanceFee !== undefined) ? order.balanceFee : order.feeAmount;
+    if (feeToken === order.tokenS) {
+      tokenS.addBalance(order.owner, balanceFee);
+    } else {
+      const tokenFee = await DummyToken.at(feeToken);
+      await tokenFee.setBalance(order.owner, balanceFee);
     }
   };
 
@@ -597,8 +596,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
         allOrNone: false,
       };
 
-      onChainOrder.tokenS = await symbolRegistry.getAddressBySymbol(onChainOrder.tokenS);
-      onChainOrder.tokenB = await symbolRegistry.getAddressBySymbol(onChainOrder.tokenB);
+      // onChainOrder.tokenS = await symbolRegistry.getAddressBySymbol(onChainOrder.tokenS);
+      // onChainOrder.tokenB = await symbolRegistry.getAddressBySymbol(onChainOrder.tokenB);
 
       const orderUtil = new pjs.OrderUtil(undefined);
       const bytes32Array = orderUtil.toOrderBookSubmitParams(onChainOrder);

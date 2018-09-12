@@ -529,6 +529,34 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "P2P: Daniel's example",
+    transactionOrigin: "1",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        owner: "0",
+        tokenS: "GTO",
+        tokenB: "WETH",
+        amountS: 100e18,
+        amountB: 380e18,
+        tokenSFeePercentage: 60,  // == 6.0%
+        tokenBFeePercentage: 100,  // == 10.0%
+      },
+      {
+        index: 1,
+        owner: "1",
+        tokenS: "WETH",
+        tokenB: "GTO",
+        amountS: 400e18,
+        amountB: 94e18,
+        tokenSFeePercentage: 50,  // == 5.0%
+        tokenBFeePercentage: 25,  // == 2.5%
+      },
+    ],
+  },
+
+  {
     description: "P2P: single 2-size ring, prices match exactly",
     transactionOrigin: "1",
     rings: [[0, 1]],
@@ -548,7 +576,7 @@ export const ringsInfoList: RingsInfo[] = [
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[0],
         amountS: 0.01e18,
-        amountB: 1e18,
+        amountB: 0.985e18,
         tokenBFeePercentage: 25,  // == 2.5%
       },
     ],

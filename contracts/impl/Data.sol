@@ -136,6 +136,9 @@ library Data {
         uint feeAmount;
         uint feeAmountS;
         uint feeAmountB;
+        uint rebateFee;
+        uint rebateS;
+        uint rebateB;
         uint fillAmountS;
         uint fillAmountB;
     }
@@ -154,6 +157,7 @@ library Data {
         Data.Ring ring;
         Data.Context ctx;
         Data.Mining mining;
+        Data.Order order;
         uint walletPercentage;
     }
 }

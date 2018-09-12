@@ -63,8 +63,11 @@ library RingSpecs {
                 orders[pspec.orderIndex()],
                 0, // splitS
                 orders[pspec.orderIndex()].feeAmount, // feeAmount
-                0, // tokenSFeePercentage
-                0, // tokenBFeePercentage
+                0, // feeAmountS
+                0, // feeAmountB
+                0, // rebateFee
+                0, // rebateS
+                0, // rebateB
                 0, // fillAmountS
                 0  // fillAmountB
             );

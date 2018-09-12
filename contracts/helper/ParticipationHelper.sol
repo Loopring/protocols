@@ -38,24 +38,6 @@ library ParticipationHelper {
         uint spendableS = p.order.getSpendableS(ctx);
         uint remainingS = p.order.amountS.sub(p.order.filledAmountS);
         p.fillAmountS = (spendableS < remainingS) ? spendableS : remainingS;
-        if (p.order.P2P) {
-            // If this is a P2P ring we may have to pay a (pre-trading) percentage tokenS to
-            // the wallet. We have to make sure the order owner can pay that percentage,
-            // otherwise we'll have to sell less tokenS.
-            uint feeS = p.fillAmountS.calculatePreTradingPercentage(
-                p.order.tokenSFeePercentage,
-                ctx.feePercentageBase
-            );
-
-            uint totalAmountS = p.fillAmountS + feeS;
-            if (totalAmountS > spendableS) {
-
-                uint maxFeeAmountS = spendableS
-                    .mul(p.order.tokenSFeePercentage) / ctx.feePercentageBase;
-
-                p.fillAmountS = spendableS - maxFeeAmountS;
-            }
-        }
         p.fillAmountB = p.fillAmountS.mul(p.order.amountB) / p.order.amountS;
     }
 
@@ -65,15 +47,17 @@ library ParticipationHelper {
         Data.Context ctx
         )
         internal
+        returns (bool)
     {
+        // Reserve the total amount tokenS used for the order, it may be used to pay fees
+        // for this order or even another order with the same owner
+        p.order.reserveAmountS(p.fillAmountS);
+
         if (p.order.P2P) {
             // Calculate P2P fees
             p.feeAmount = 0;
             if (p.order.wallet != 0x0) {
-                p.feeAmountS = p.fillAmountS.calculatePreTradingPercentage(
-                    p.order.tokenSFeePercentage,
-                    ctx.feePercentageBase
-                );
+                p.feeAmountS = p.fillAmountS.mul(p.order.tokenSFeePercentage) / ctx.feePercentageBase;
                 p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / ctx.feePercentageBase;
             } else {
                 p.feeAmountS = 0;
@@ -88,7 +72,6 @@ library ParticipationHelper {
             // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
             // This and subsequent orders could use tokenS to pay fees,
             // so we have to make sure the funds needed for this order cannot be used
-            p.order.reserveAmountS(p.fillAmountS);
             uint spendableFee = p.order.getSpendableFee(ctx);
             if (p.feeAmount > spendableFee) {
                 p.feeAmountB = p.fillAmountB.mul(p.order.feePercentage) / ctx.feePercentageBase;
@@ -98,9 +81,14 @@ library ParticipationHelper {
             }
         }
 
-        // The miner (or in a P2P case, the taker) gets the margin
-        p.splitS = p.fillAmountS - prevP.fillAmountB;
-        p.fillAmountS = prevP.fillAmountB;
+        if ((p.fillAmountS - p.feeAmountS) >= prevP.fillAmountB) {
+            // The miner (or in a P2P case, the taker) gets the margin
+            p.splitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
+            p.fillAmountS = prevP.fillAmountB + p.feeAmountS;
+            return true;
+        } else {
+            false;
+        }
     }
 
     function adjustOrderState(
@@ -113,7 +101,7 @@ library ParticipationHelper {
         p.order.filledAmountS += p.fillAmountS + p.splitS;
 
         // Update spendables
-        uint totalAmountS = p.fillAmountS + p.feeAmountS;
+        uint totalAmountS = p.fillAmountS;
         uint totalAmountFee = p.feeAmount;
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
