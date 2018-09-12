@@ -542,6 +542,7 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 380e18,
         tokenSFeePercentage: 60,  // == 6.0%
         tokenBFeePercentage: 100,  // == 10.0%
+        walletAddr: "0",
       },
       {
         index: 1,
@@ -552,6 +553,7 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 94e18,
         tokenSFeePercentage: 50,  // == 5.0%
         tokenBFeePercentage: 25,  // == 2.5%
+        walletAddr: "1",
       },
     ],
   },
