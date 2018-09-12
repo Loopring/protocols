@@ -4,9 +4,10 @@ import { Artifacts } from "../util/Artifacts";
 
 const {
   TaxTable,
-  SymbolRegistry,
   TradeDelegate,
   DummyToken,
+  LRCToken,
+  WETHToken,
 } = new Artifacts(artifacts);
 
 contract("TaxTable", (accounts: string[]) => {
@@ -18,7 +19,6 @@ contract("TaxTable", (accounts: string[]) => {
   const user4 = accounts[5];
 
   let taxTable: any;
-  let symbolRegistry: any;
   let tokenLRC: string;
   let tokenWETH: string;
   const token1 = "0x" + "1".repeat(40);
@@ -101,9 +101,8 @@ contract("TaxTable", (accounts: string[]) => {
   };
 
   before(async () => {
-    symbolRegistry = await SymbolRegistry.deployed();
-    tokenLRC = await symbolRegistry.getAddressBySymbol("LRC");
-    tokenWETH = await symbolRegistry.getAddressBySymbol("WETH");
+    tokenLRC = LRCToken.address;
+    tokenWETH = WETHToken.address;
   });
 
   beforeEach(async () => {

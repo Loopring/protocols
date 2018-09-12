@@ -6,13 +6,14 @@ import { Artifacts } from "../util/Artifacts";
 
 const {
   OrderBook,
-  SymbolRegistry,
+  LRCToken,
+  GTOToken,
+  RDNToken,
 } = new Artifacts(artifacts);
 contract("OrderBook", (accounts: string[]) => {
   const emptyAddr = "0x0000000000000000000000000000000000000000";
   const orderOwner = accounts[1];
 
-  let symbolRegistry: any;
   let orderBook: any;
 
   let lrcAddress: string;
@@ -57,12 +58,11 @@ contract("OrderBook", (accounts: string[]) => {
   };
 
   before(async () => {
-    symbolRegistry = await SymbolRegistry.deployed();
     orderBook = await OrderBook.deployed();
 
-    lrcAddress = await symbolRegistry.getAddressBySymbol("LRC");
-    rdnAddress = await symbolRegistry.getAddressBySymbol("RDN");
-    gtoAddress = await symbolRegistry.getAddressBySymbol("GTO");
+    lrcAddress = LRCToken.address;
+    rdnAddress = RDNToken.address;
+    gtoAddress = GTOToken.address;
   });
 
   describe("any user", () => {

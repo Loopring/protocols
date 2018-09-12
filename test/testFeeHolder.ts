@@ -6,10 +6,13 @@ import { Artifacts } from "../util/Artifacts";
 
 const {
   FeeHolder,
-  SymbolRegistry,
   TradeDelegate,
   DummyExchange,
   DummyToken,
+  LRCToken,
+  GTOToken,
+  RDNToken,
+  REPToken,
 } = new Artifacts(artifacts);
 
 contract("FeeHolder", (accounts: string[]) => {
@@ -20,7 +23,6 @@ contract("FeeHolder", (accounts: string[]) => {
   const user3 = accounts[4];
   const user4 = accounts[5];
 
-  let symbolRegistry: any;
   let tradeDelegate: any;
   let feeHolder: any;
   let dummyExchange: any;
@@ -76,13 +78,12 @@ contract("FeeHolder", (accounts: string[]) => {
   };
 
   before(async () => {
-    symbolRegistry = await SymbolRegistry.deployed();
     tradeDelegate = await TradeDelegate.deployed();
 
-    token1 = await symbolRegistry.getAddressBySymbol("LRC");
-    token2 = await symbolRegistry.getAddressBySymbol("WETH");
-    token3 = await symbolRegistry.getAddressBySymbol("EOS");
-    token4 = await symbolRegistry.getAddressBySymbol("GTO");
+    token1 = LRCToken.address;
+    token2 = REPToken.address;
+    token3 = RDNToken.address;
+    token4 = GTOToken.address;
   });
 
   beforeEach(async () => {

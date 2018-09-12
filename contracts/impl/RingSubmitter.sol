@@ -166,9 +166,11 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         // Set the highest bit of ringIndex to '1' (IN STORAGE!)
         ringIndex = ctx.ringIndex | (1 << 63);
 
-        (Data.Mining  memory mining,
+        (
+            Data.Mining  memory mining,
             Data.Order[] memory orders,
-         Data.Ring[]  memory rings) = ExchangeDeserializer.deserialize(lrcTokenAddress, data);
+            Data.Ring[]  memory rings
+        ) = ExchangeDeserializer.deserialize(lrcTokenAddress, data);
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].validateInfo(ctx);

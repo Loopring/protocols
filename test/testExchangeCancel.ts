@@ -8,13 +8,12 @@ import * as psc from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
 import { ringsInfoList } from "./rings_config";
+import { ExchangeTestContext, ExchangeTestUtil } from "./testExchangeUtil";
 import { Artifacts } from "../util/Artifacts";
 
 const {
   RingSubmitter,
   RingCanceller,
-  TokenRegistry,
-  SymbolRegistry,
   BrokerRegistry,
   OrderRegistry,
   MinerRegistry,
@@ -38,8 +37,6 @@ contract("Exchange_Cancel", (accounts: string[]) => {
 
   let ringSubmitter: any;
   let ringCanceller: any;
-  let tokenRegistry: any;
-  let symbolRegistry: any;
   let tradeDelegate: any;
   let orderRegistry: any;
   let minerRegistry: any;
@@ -53,10 +50,11 @@ contract("Exchange_Cancel", (accounts: string[]) => {
   let wethAddress: string;
   let feePercentageBase: number;
 
-  const tokenSymbolAddrMap = new Map();
-  const tokenInstanceMap = new Map();
+  // const tokenSymbolAddrMap = new Map();
+  // const tokenInstanceMap = new Map();
   const allTokenSymbols = tokenInfos.development.map((t) => t.symbol);
   const allTokens: any[] = [];
+  let exchangeTestUtil: ExchangeTestUtil;
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, precision: number = 8) => {
     const numStr1 = (n1 / 1e18).toFixed(precision);
@@ -111,7 +109,6 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     // Pass in the block number and the block time stamp so we can more accurately reproduce transactions
     const context = new psc.Context(currBlockNumber,
                                 currBlockTimestamp,
-                                TokenRegistry.address,
                                 tradeDelegate.address,
                                 orderBrokerRegistryAddress,
                                 minerBrokerRegistryAddress,
@@ -171,13 +168,13 @@ contract("Exchange_Cancel", (accounts: string[]) => {
       order.owner = orderOwners[accountIndex];
     }
     if (!order.tokenS.startsWith("0x")) {
-      order.tokenS = await symbolRegistry.getAddressBySymbol(order.tokenS);
+      order.tokenS = exchangeTestUtil.testContext.tokenSymbolAddrMap.get(order.tokenS);
     }
     if (!order.tokenB.startsWith("0x")) {
-      order.tokenB = await symbolRegistry.getAddressBySymbol(order.tokenB);
+      order.tokenB = exchangeTestUtil.testContext.tokenSymbolAddrMap.get(order.tokenB);
     }
     if (order.feeToken && !order.feeToken.startsWith("0x")) {
-      order.feeToken = await symbolRegistry.getAddressBySymbol(order.feeToken);
+      order.feeToken = exchangeTestUtil.testContext.tokenSymbolAddrMap.get(order.feeToken);
     }
     if (order.feeAmount === undefined) {
       order.feeAmount = 1e18;
@@ -395,7 +392,6 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     ringSubmitter = await RingSubmitter.new(
       lrcAddress,
       wethAddress,
-      TokenRegistry.address,
       tradeDelegate.address,
       orderBrokerRegistryAddress,
       minerBrokerRegistryAddress,
@@ -424,12 +420,10 @@ contract("Exchange_Cancel", (accounts: string[]) => {
   };
 
   before( async () => {
-    [ringSubmitter, ringCanceller, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
+    [ringSubmitter, ringCanceller, tradeDelegate, orderRegistry,
      minerRegistry, feeHolder, orderBook, taxTable, dummyBrokerInterceptor] = await Promise.all([
        RingSubmitter.deployed(),
        RingCanceller.deployed(),
-       TokenRegistry.deployed(),
-       SymbolRegistry.deployed(),
        TradeDelegate.deployed(),
        OrderRegistry.deployed(),
        MinerRegistry.deployed(),
@@ -439,9 +433,6 @@ contract("Exchange_Cancel", (accounts: string[]) => {
        DummyBrokerInterceptor.deployed(),
      ]);
 
-    lrcAddress = await symbolRegistry.getAddressBySymbol("LRC");
-    wethAddress = await symbolRegistry.getAddressBySymbol("WETH");
-
     // Get the different brokers from the ringSubmitter
     orderBrokerRegistryAddress = await ringSubmitter.orderBrokerRegistryAddress();
     minerBrokerRegistryAddress = await ringSubmitter.minerBrokerRegistryAddress();
@@ -450,16 +441,23 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     const minerBrokerRegistry = BrokerRegistry.at(minerBrokerRegistryAddress);
     await minerBrokerRegistry.registerBroker(miner, "0x0", {from: miner});
 
-    for (const sym of allTokenSymbols) {
-      const addr = await symbolRegistry.getAddressBySymbol(sym);
-      tokenSymbolAddrMap.set(sym, addr);
-      const token = await DummyToken.at(addr);
-      allTokens.push(token);
-    }
+    // for (const sym of allTokenSymbols) {
+    //   const addr = await symbolRegistry.getAddressBySymbol(sym);
+    //   tokenSymbolAddrMap.set(sym, addr);
+    //   const token = await DummyToken.at(addr);
+    //   allTokens.push(token);
+    // }
 
     feePercentageBase = (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
 
     await initializeTradeDelegate();
+
+    exchangeTestUtil = new ExchangeTestUtil();
+    await exchangeTestUtil.initialize(accounts);
+
+    lrcAddress = exchangeTestUtil.testContext.tokenSymbolAddrMap.get("LRC");
+    wethAddress = exchangeTestUtil.testContext.tokenSymbolAddrMap.get("WETH");
+    allTokens.concat(exchangeTestUtil.testContext.allTokens);
   });
 
   describe("Cancelling orders", () => {

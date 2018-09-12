@@ -3,6 +3,7 @@ import * as pjs from "protocol2-js";
 import util = require("util");
 import { FeePayments } from "./feePayments";
 import { ringsInfoList } from "./rings_config";
+import { Artifacts } from "../util/Artifacts";
 
 export class ExchangeTestContext {
   public orderOwners: string[];
@@ -10,19 +11,129 @@ export class ExchangeTestContext {
   public wallet1: string;
   public allOrderTokenRecipients: string[];
 
-  public tokenSymbolAddrMap: Map<string, string>;
-  public tokenAddrSymbolMap: Map<string, string>;
+  public tokenSymbolAddrMap: Map<string, string>; // key: symbol, value: addr
+  public tokenAddrSymbolMap: Map<string, string>; // key: addr, value: symbol
   public tokenAddrInstanceMap: Map<string, any>;
+  public allTokens: any[];
 
+  constructor(
+    orderOwners: string[],
+    orderDualAuthAddrs: string[],
+    wallet1: string,
+    allOrderTokenRecipients: string[],
+    tokenSymbolAddrMap: Map<string, string>,
+    tokenAddrSymbolMap: Map<string, string>,
+    tokenAddrInstanceMap: Map<string, any>,
+    allTokens: any[]) {
+    this.orderOwners = orderOwners;
+    this.orderDualAuthAddrs = orderDualAuthAddrs;
+    this.wallet1 = wallet1;
+    this.allOrderTokenRecipients = allOrderTokenRecipients;
+    this.tokenSymbolAddrMap = tokenSymbolAddrMap;
+    this.tokenAddrSymbolMap = tokenAddrSymbolMap;
+    this.tokenAddrInstanceMap = tokenAddrInstanceMap;
+    this.allTokens = allTokens;
+  }
 }
 
 export class ExchangeTestUtil {
   public context: pjs.Context;
   public testContext: ExchangeTestContext;
 
-  constructor(context: pjs.Context, testContext: ExchangeTestContext) {
-    this.context = context;
-    this.testContext = testContext;
+  public async initialize(accounts: string[]) {
+    this.context = await this.createContractContext();
+    this.testContext = await this.createExchangeTestContext(accounts);
+  }
+
+  private async createContractContext() {
+    const {
+      RingSubmitter,
+      OrderRegistry,
+      MinerRegistry,
+      TradeDelegate,
+      FeeHolder,
+      OrderBook,
+      TaxTable,
+      LRCToken,
+    } = new Artifacts(artifacts);
+
+    const ringSubmitter = await RingSubmitter.deployed();
+
+    const orderBrokerRegistryAddress = await ringSubmitter.orderBrokerRegistryAddress();
+    const minerBrokerRegistryAddress = await ringSubmitter.minerBrokerRegistryAddress();
+    const feePercentageBase = (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
+
+    const currBlockNumber = web3.eth.blockNumber;
+    const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
+    return new pjs.Context(currBlockNumber,
+                           currBlockTimestamp,
+                           TradeDelegate.address,
+                           orderBrokerRegistryAddress,
+                           minerBrokerRegistryAddress,
+                           OrderRegistry.address,
+                           MinerRegistry.address,
+                           FeeHolder.address,
+                           OrderBook.address,
+                           TaxTable.address,
+                           LRCToken.address,
+                           feePercentageBase);
+  }
+
+  private async createExchangeTestContext(accounts: string[]) {
+    const {
+      LRCToken,
+      GTOToken,
+      RDNToken,
+      REPToken,
+      WETHToken,
+    } = new Artifacts(artifacts);
+
+    const tokenSymbolAddrMap = new Map<string, string>();
+    const tokenAddrSymbolMap = new Map<string, string>();
+    const tokenAddrInstanceMap = new Map<string, any>();
+
+    const [lrc, gto, rdn, rep, weth] = await Promise.all([
+      LRCToken.deployed(),
+      GTOToken.deployed(),
+      RDNToken.deployed(),
+      REPToken.deployed(),
+      WETHToken.deployed(),
+    ]);
+
+    const allTokens = [lrc, gto, rdn, rep, weth];
+
+    tokenSymbolAddrMap.set("LRC", LRCToken.address);
+    tokenSymbolAddrMap.set("GTO", GTOToken.address);
+    tokenSymbolAddrMap.set("RDN", RDNToken.address);
+    tokenSymbolAddrMap.set("REP", REPToken.address);
+    tokenSymbolAddrMap.set("WETH", WETHToken.address);
+
+    tokenAddrSymbolMap.set(LRCToken.address, "LRC");
+    tokenAddrSymbolMap.set(GTOToken.address, "GTO");
+    tokenAddrSymbolMap.set(RDNToken.address, "RDN");
+    tokenAddrSymbolMap.set(REPToken.address, "REP");
+    tokenAddrSymbolMap.set(WETHToken.address, "WETH");
+
+    tokenAddrInstanceMap.set(LRCToken.address, lrc);
+    tokenAddrInstanceMap.set(GTOToken.address, gto);
+    tokenAddrInstanceMap.set(RDNToken.address, rdn);
+    tokenAddrInstanceMap.set(REPToken.address, rep);
+    tokenAddrInstanceMap.set(WETHToken.address, weth);
+
+    const wallet1 = accounts[3];
+    const broker1 = accounts[4];
+    const orderOwners = accounts.slice(5, 9);
+    const orderDualAuthAddr = accounts.slice(9, 13);
+    const allOrderTokenRecipients = accounts.slice(13, 17);
+
+    return new ExchangeTestContext(orderOwners,
+                                   orderDualAuthAddr,
+                                   wallet1,
+                                   allOrderTokenRecipients,
+                                   tokenSymbolAddrMap,
+                                   tokenAddrSymbolMap,
+                                   tokenAddrInstanceMap,
+                                   allTokens);
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {

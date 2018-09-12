@@ -6,9 +6,12 @@ import { Artifacts } from "../util/Artifacts";
 
 const {
   TradeDelegate,
-  SymbolRegistry,
   DummyToken,
   DummyExchange,
+  LRCToken,
+  GTOToken,
+  RDNToken,
+  WETHToken,
 } = new Artifacts(artifacts);
 
 interface TokenTransfer {
@@ -32,7 +35,6 @@ contract("TradeDelegate", (accounts: string[]) => {
   const emptyAddr = "0x0000000000000000000000000000000000000000";
 
   let tradeDelegate: any;
-  let symbolRegistry: any;
   let dummyExchange1: any;
   let dummyExchange2: any;
   let dummyExchange3: any;
@@ -186,11 +188,10 @@ contract("TradeDelegate", (accounts: string[]) => {
   };
 
   before(async () => {
-    symbolRegistry = await SymbolRegistry.deployed();
-    token1 = await symbolRegistry.getAddressBySymbol("LRC");
-    token2 = await symbolRegistry.getAddressBySymbol("EOS");
-    token3 = await symbolRegistry.getAddressBySymbol("RDN");
-    token4 = await symbolRegistry.getAddressBySymbol("GTO");
+    token1 = LRCToken.address;
+    token2 = WETHToken.address;
+    token3 = RDNToken.address;
+    token4 = GTOToken.address;
   });
 
   beforeEach(async () => {
