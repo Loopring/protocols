@@ -15,8 +15,6 @@
   limitations under the License.
 */
 pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
 
 import "./LRCToken.sol";
 
@@ -33,7 +31,7 @@ contract DummyToken is LRCToken {
         _symbol,
         _decimals,
         _totalSupply,
-        msg.sender
+        tx.origin
         )
         public
     {

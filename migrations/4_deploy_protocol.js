@@ -1,6 +1,4 @@
 var TradeDelegate = artifacts.require("./impl/TradeDelegate");
-var TokenRegistry = artifacts.require("./impl/TokenRegistry");
-var SymbolRegistry = artifacts.require("./impl/SymbolRegistry");
 var BrokerRegistry = artifacts.require("./impl/BrokerRegistry");
 var OrderRegistry = artifacts.require("./impl/OrderRegistry");
 var MinerRegistry = artifacts.require("./impl/MinerRegistry");
@@ -9,6 +7,8 @@ var RingCanceller = artifacts.require("./impl/RingCanceller");
 var FeeHolder = artifacts.require("./impl/FeeHolder");
 var OrderBook = artifacts.require("./impl/OrderBook");
 var TaxTable = artifacts.require("./impl/TaxTable");
+var LRCToken = artifacts.require("./test/tokens/LRC.sol");
+var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 
 module.exports = function(deployer, network, accounts) {
 
@@ -17,29 +17,22 @@ module.exports = function(deployer, network, accounts) {
   } else {
     deployer.then(() => {
       return Promise.all([
-        SymbolRegistry.deployed(),
-        TokenRegistry.deployed(),
         TradeDelegate.deployed(),
         BrokerRegistry.deployed(),
         OrderRegistry.deployed(),
         MinerRegistry.deployed(),
         FeeHolder.deployed(),
         OrderBook.deployed(),
+        LRCToken.deployed(),
+        WETHToken.deployed(),
       ]);
-    }).then((contracts) => {
-      var [symbolRegistry] = contracts;
+    }).then(() => {
       return Promise.all([
-        symbolRegistry.getAddressBySymbol("LRC"),
-        symbolRegistry.getAddressBySymbol("WETH"),
-      ]);
-    }).then((addresses) => {
-      var [lrcAddr, wethAddr] = addresses;
-      return Promise.all([
-        lrcAddr,
-        wethAddr,
+        LRCToken.address,
+        WETHToken.address,
         BrokerRegistry.new(),
         BrokerRegistry.new(),
-        deployer.deploy(TaxTable, lrcAddr, wethAddr),
+        deployer.deploy(TaxTable, LRCToken.address, WETHToken.address),
       ]);
     }).then(addresses => {
       var [lrcAddr, wethAddr, orderBrokerRegistry, minerBrokerRegistry, taxTableAddr] = addresses;
@@ -48,7 +41,6 @@ module.exports = function(deployer, network, accounts) {
           RingSubmitter,
           lrcAddr,
           wethAddr,
-          TokenRegistry.address,
           TradeDelegate.address,
           orderBrokerRegistry.address,
           minerBrokerRegistry.address,
