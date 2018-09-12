@@ -7,10 +7,10 @@ import * as _ from "lodash";
 import * as pjs from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
+import { Artifacts } from "../util/Artifacts";
 import { FeePayments } from "./feePayments";
 import { ringsInfoList } from "./rings_config";
-import { ExchangeTestContext, ExchangeTestUtil } from "./testExchangeUtil";
-import { Artifacts } from "../util/Artifacts";
+import { ExchangeTestUtil } from "./testExchangeUtil";
 
 const {
   RingSubmitter,

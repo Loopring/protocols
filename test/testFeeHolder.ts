@@ -1,8 +1,8 @@
 import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
 import { expectThrow } from "protocol2-js";
-import { FeePayments } from "./feePayments";
 import { Artifacts } from "../util/Artifacts";
+import { FeePayments } from "./feePayments";
 
 const {
   FeeHolder,

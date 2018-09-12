@@ -7,9 +7,9 @@ import * as _ from "lodash";
 import * as psc from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
-import { ringsInfoList } from "./rings_config";
-import { ExchangeTestContext, ExchangeTestUtil } from "./testExchangeUtil";
 import { Artifacts } from "../util/Artifacts";
+import { ringsInfoList } from "./rings_config";
+import { ExchangeTestUtil } from "./testExchangeUtil";
 
 const {
   RingSubmitter,

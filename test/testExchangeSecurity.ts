@@ -7,9 +7,9 @@ import * as _ from "lodash";
 import * as psc from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
-import { ringsInfoList } from "./rings_config";
-import { ExchangeTestContext, ExchangeTestUtil } from "./testExchangeUtil";
 import { Artifacts } from "../util/Artifacts";
+import { ringsInfoList } from "./rings_config";
+import { ExchangeTestUtil } from "./testExchangeUtil";
 
 const {
   RingSubmitter,
@@ -37,7 +37,6 @@ contract("Exchange_Security", (accounts: string[]) => {
 
   let ringSubmitter: any;
   let ringCanceller: any;
-  let symbolRegistry: any;
   let tradeDelegate: any;
   let orderRegistry: any;
   let minerRegistry: any;
@@ -133,13 +132,13 @@ contract("Exchange_Security", (accounts: string[]) => {
       order.owner = orderOwners[accountIndex];
     }
     if (!order.tokenS.startsWith("0x")) {
-      order.tokenS = await symbolRegistry.getAddressBySymbol(order.tokenS);
+      order.tokenS = exchangeTestUtil.testContext.tokenSymbolAddrMap.get(order.tokenS);
     }
     if (!order.tokenB.startsWith("0x")) {
-      order.tokenB = await symbolRegistry.getAddressBySymbol(order.tokenB);
+      order.tokenB = exchangeTestUtil.testContext.tokenSymbolAddrMap.get(order.tokenB);
     }
     if (order.feeToken && !order.feeToken.startsWith("0x")) {
-      order.feeToken = await symbolRegistry.getAddressBySymbol(order.feeToken);
+      order.feeToken = exchangeTestUtil.testContext.tokenSymbolAddrMap.get(order.feeToken);
     }
     if (order.feeAmount === undefined) {
       order.feeAmount = 1e18;

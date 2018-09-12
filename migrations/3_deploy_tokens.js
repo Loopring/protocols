@@ -4,7 +4,6 @@ var RDNToken                = artifacts.require("./test/tokens/RDN.sol");
 var REPToken                = artifacts.require("./test/tokens/REP.sol");
 var WETHToken                = artifacts.require("./test/tokens/WETH.sol");
 
-
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {
     // ignore

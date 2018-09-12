@@ -7,9 +7,9 @@ import * as _ from "lodash";
 import * as pjs from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
-import { ringsInfoList } from "./rings_config";
-import { ExchangeTestContext, ExchangeTestUtil } from "./testExchangeUtil";
 import { Artifacts } from "../util/Artifacts";
+import { ringsInfoList } from "./rings_config";
+import { ExchangeTestUtil } from "./testExchangeUtil";
 
 const {
   RingSubmitter,
@@ -60,7 +60,6 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
   // const tokenSymbolAddrMap = new Map();
   // const tokenInstanceMap = new Map();
-
 
   // const newExchangeTextContext = async () => {
   //   const tokenSymbolAddrMap = new Map<string, string>();
@@ -495,7 +494,10 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+
     allTokens.concat(exchangeTestUtil.testContext.allTokens);
+    lrcAddress = exchangeTestUtil.testContext.tokenSymbolAddrMap.get("LRC");
+    wethAddress = exchangeTestUtil.testContext.tokenSymbolAddrMap.get("WETH");
   });
 
   describe("Broker", () => {
