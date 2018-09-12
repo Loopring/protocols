@@ -9,10 +9,12 @@ import { ExchangeTestContext } from "./testExchangeContext";
 export class ExchangeTestUtil {
   public context: pjs.Context;
   public testContext: ExchangeTestContext;
+  public ringSubmitter: any;
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
+    await this.initializeTradeDelegate();
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -74,7 +76,7 @@ export class ExchangeTestUtil {
     const amount = (payment.amount / 1e18);
     if (payment.subPayments.length === 0) {
       const toName =  addressBook[payment.to];
-      console.log(whiteSpace + "- "  + " [" + description + "] " +  amount + " " + tokenSymbol + " -> " + toName);
+      console.log(whiteSpace + "- " + " [" + description + "] " + amount + " " + tokenSymbol + " -> " + toName);
     } else {
       console.log(whiteSpace + "+ " + " [" + description + "] " + amount + " " + tokenSymbol);
       for (const subPayment of payment.subPayments) {
@@ -93,6 +95,25 @@ export class ExchangeTestUtil {
           this.logDetailedTokenTransfer(addressBook, payment, 1);
         }
       }
+    }
+  }
+
+  public async setupRings(ringsInfo: pjs.RingsInfo) {
+    if (ringsInfo.transactionOrigin === undefined) {
+      ringsInfo.transactionOrigin = this.testContext.transactionOrigin;
+      ringsInfo.feeRecipient = this.testContext.feeRecipient;
+      ringsInfo.miner = this.testContext.miner;
+    } else {
+      if (!ringsInfo.transactionOrigin.startsWith("0x")) {
+        const accountIndex = parseInt(ringsInfo.transactionOrigin, 10);
+        assert(accountIndex >= 0 && accountIndex < this.testContext.orderOwners.length, "Invalid owner index");
+        ringsInfo.transactionOrigin = this.testContext.orderOwners[accountIndex];
+      }
+      ringsInfo.feeRecipient = undefined;
+      ringsInfo.miner = undefined;
+    }
+    for (const [i, order] of ringsInfo.orders.entries()) {
+      await this.setupOrder(order, i);
     }
   }
 
@@ -135,7 +156,7 @@ export class ExchangeTestUtil {
       order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
     }
     if (order.walletAddr === undefined) {
-      order.walletAddr = this.testContext.wallet1;
+      order.walletAddr = this.testContext.wallets[0];
     }
     if (order.walletAddr && order.walletSplitPercentage === undefined) {
       order.walletSplitPercentage = ((index + 1) * 10) % 100;
@@ -228,7 +249,11 @@ export class ExchangeTestUtil {
     };
 
     const addressBook: { [id: string]: string; } = {};
-    addAddress(addressBook, ringsInfo.feeRecipient, "Miner");
+    const feeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient  : ringsInfo.transactionOrigin;
+    const miner = ringsInfo.miner ? ringsInfo.miner : feeRecipient;
+    addAddress(addressBook, ringsInfo.transactionOrigin, "Tx.origin");
+    addAddress(addressBook, miner, "Miner");
+    addAddress(addressBook, feeRecipient, "FeeRecipient");
     addAddress(addressBook, this.context.feeHolder.address, "Tax");
     for (const [i, order] of ringsInfo.orders.entries()) {
       addAddress(addressBook, order.owner, "Owner[" + i + "]");
@@ -308,7 +333,6 @@ export class ExchangeTestUtil {
   }
 
   public async assertFilledAmounts(ringsInfo: pjs.RingsInfo,
-                                   context: pjs.Context,
                                    filledAmounts: { [hash: string]: number; }) {
     const addressBook = this.getAddressBook(ringsInfo);
     console.log("Filled amounts:");
@@ -353,6 +377,130 @@ export class ExchangeTestUtil {
     }
   }
 
+  public async submitRingsAndSimulate(ringsInfo: pjs.RingsInfo,
+                                      eventFromBlock: number,
+                                      dummyExchange?: any) {
+    if (dummyExchange !== undefined) {
+      // Add an initial fee payment to all addresses to make gas use more realistic
+      // (gas cost to change variable in storage: zero -> non-zero: 20,000 gas, non-zero -> non-zero: 5,000 gas)
+      // Addresses getting fees will be getting a lot of fees so a balance of 0 is not realistic
+      const feePayments = new FeePayments();
+      for (const order of ringsInfo.orders) {
+        // All tokens that could be paid to all recipients for this order
+        const tokens = [order.feeToken, order.tokenS, order.tokenB];
+        const feeRecipients = [order.owner, ringsInfo.feeRecipient, this.context.feeHolder.address, order.walletAddr];
+        for (const token of tokens) {
+          for (const feeRecipient of feeRecipients) {
+            if (feeRecipient) {
+              feePayments.add(feeRecipient, token, 1);
+            }
+          }
+        }
+      }
+      await dummyExchange.batchAddFeeBalances(feePayments.getData());
+    }
+
+    const ringsGenerator = new pjs.RingsGenerator(this.context);
+    await ringsGenerator.setupRingsAsync(ringsInfo);
+    const bs = ringsGenerator.toSubmitableParam(ringsInfo);
+
+    const simulator = new pjs.ProtocolSimulator(this.context);
+    const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin :
+                                                   this.testContext.transactionOrigin;
+    const deserializedRingsInfo = simulator.deserialize(bs, txOrigin);
+    this.assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
+    let shouldThrow = false;
+    let report: any = {
+      ringMinedEvents: [],
+      transferItems: [],
+      feeBalances: [],
+      filledAmounts: [],
+      payments: {rings: []},
+    };
+    let tx = null;
+    try {
+      report = await simulator.simulateAndReport(deserializedRingsInfo);
+      this.logDetailedTokenTransfers(ringsInfo, report);
+    } catch (err) {
+      console.log("Simulator reverted -> " + err);
+      shouldThrow = true;
+    }
+    if (shouldThrow) {
+      tx = await pjs.expectThrow(this.ringSubmitter.submitRings(bs, {from: txOrigin}));
+    } else {
+      tx = await this.ringSubmitter.submitRings(bs, {from: txOrigin});
+      console.log("gas used: ", tx.receipt.gasUsed);
+    }
+    const transferEvents = await this.getTransferEvents(this.testContext.allTokens, eventFromBlock);
+    this.assertTransfers(deserializedRingsInfo, transferEvents, report.transferItems);
+    await this.assertFeeBalances(deserializedRingsInfo, report.feeBalances);
+    await this.assertFilledAmounts(deserializedRingsInfo, report.filledAmounts);
+
+    // await this.watchAndPrintEvent(tradeDelegate, "LogTrans");
+    // await this.watchAndPrintEvent(ringSubmitter, "LogUint3");
+    // await this.watchAndPrintEvent(ringSubmitter, "LogAddress");
+
+    return {tx, report};
+  }
+
+  public async initializeTradeDelegate() {
+    await this.context.tradeDelegate.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+
+    for (const token of this.testContext.allTokens) {
+      // approve once for all orders:
+      for (const orderOwner of this.testContext.orderOwners) {
+        await token.approve(this.context.tradeDelegate.address, 1e32, {from: orderOwner});
+      }
+    }
+  }
+
+  public async cleanTradeHistory() {
+    const {
+      RingSubmitter,
+      OrderRegistry,
+      MinerRegistry,
+      TradeDelegate,
+      FeeHolder,
+      WETHToken,
+    } = new Artifacts(artifacts);
+
+    const tradeDelegate = await TradeDelegate.new();
+    const feeHolder = await FeeHolder.new(tradeDelegate.address);
+    this.ringSubmitter = await RingSubmitter.new(
+      this.context.lrcAddress,
+      WETHToken.address,
+      tradeDelegate.address,
+      this.context.orderBrokerRegistry.address,
+      this.context.minerBrokerRegistry.address,
+      OrderRegistry.address,
+      MinerRegistry.address,
+      feeHolder.address,
+      this.context.orderBook.address,
+      this.context.taxTable.address,
+    );
+
+    const orderBrokerRegistryAddress = await this.ringSubmitter.orderBrokerRegistryAddress();
+    const minerBrokerRegistryAddress = await this.ringSubmitter.minerBrokerRegistryAddress();
+    const feePercentageBase = (await this.ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
+
+    const currBlockNumber = web3.eth.blockNumber;
+    const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
+    this.context = new pjs.Context(currBlockNumber,
+                                   currBlockTimestamp,
+                                   tradeDelegate.address,
+                                   orderBrokerRegistryAddress,
+                                   minerBrokerRegistryAddress,
+                                   OrderRegistry.address,
+                                   MinerRegistry.address,
+                                   feeHolder.address,
+                                   this.context.orderBook.address,
+                                   this.context.taxTable.address,
+                                   this.context.lrcAddress,
+                                   feePercentageBase);
+
+    await this.initializeTradeDelegate();
+  }
+
   // private functions:
   private async createContractContext() {
     const {
@@ -366,11 +514,23 @@ export class ExchangeTestUtil {
       LRCToken,
     } = new Artifacts(artifacts);
 
-    const ringSubmitter = await RingSubmitter.deployed();
+    const [ringSubmitter, tradeDelegate, orderRegistry,
+      minerRegistry, feeHolder, orderBook, taxTable, lrcToken] = await Promise.all([
+        RingSubmitter.deployed(),
+        TradeDelegate.deployed(),
+        OrderRegistry.deployed(),
+        MinerRegistry.deployed(),
+        FeeHolder.deployed(),
+        OrderBook.deployed(),
+        TaxTable.deployed(),
+        LRCToken.deployed(),
+      ]);
+
+    this.ringSubmitter = ringSubmitter;
 
     const orderBrokerRegistryAddress = await ringSubmitter.orderBrokerRegistryAddress();
     const minerBrokerRegistryAddress = await ringSubmitter.minerBrokerRegistryAddress();
-    const feePercentageBase = (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
+    const feePercentageBase = (await ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
 
     const currBlockNumber = web3.eth.blockNumber;
     const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
@@ -429,16 +589,25 @@ export class ExchangeTestUtil {
     tokenAddrInstanceMap.set(REPToken.address, rep);
     tokenAddrInstanceMap.set(WETHToken.address, weth);
 
-    const wallet1 = accounts[3];
-    const broker1 = accounts[4];
-    const orderOwners = accounts.slice(5, 9);
+    const deployer = accounts[0];
+    const transactionOrigin = accounts[1];
+    const feeRecipient = accounts[2];
+    const miner = accounts[3];
+    const orderOwners = accounts.slice(4, 9);
     const orderDualAuthAddr = accounts.slice(9, 13);
     const allOrderTokenRecipients = accounts.slice(13, 17);
+    const wallets = accounts.slice(17, 21);
+    const brokers =  accounts.slice(21, 25);
 
-    return new ExchangeTestContext(orderOwners,
+    return new ExchangeTestContext(deployer,
+                                   transactionOrigin,
+                                   feeRecipient,
+                                   miner,
+                                   orderOwners,
                                    orderDualAuthAddr,
-                                   wallet1,
                                    allOrderTokenRecipients,
+                                   wallets,
+                                   brokers,
                                    tokenSymbolAddrMap,
                                    tokenAddrSymbolMap,
                                    tokenAddrInstanceMap,

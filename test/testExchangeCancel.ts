@@ -448,7 +448,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     //   allTokens.push(token);
     // }
 
-    feePercentageBase = (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
+    feePercentageBase = (await ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
 
     await initializeTradeDelegate();
 
