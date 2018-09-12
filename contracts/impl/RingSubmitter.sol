@@ -24,7 +24,6 @@ import "../iface/IRingSubmitter.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IMinerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
-import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 import "../iface/IOrderBook.sol";
 import "../iface/ITaxTable.sol";
@@ -70,7 +69,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
     address public  lrcTokenAddress             = 0x0;
     address public  wethTokenAddress            = 0x0;
-    address public  tokenRegistryAddress        = 0x0;
     address public  delegateAddress             = 0x0;
     address public  orderBrokerRegistryAddress  = 0x0;
     address public  minerBrokerRegistryAddress  = 0x0;
@@ -97,7 +95,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     constructor(
         address _lrcTokenAddress,
         address _wethTokenAddress,
-        address _tokenRegistryAddress,
         address _delegateAddress,
         address _orderBrokerRegistryAddress,
         address _minerBrokerRegistryAddress,
@@ -111,7 +108,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     {
         require(_lrcTokenAddress != 0x0);
         require(_wethTokenAddress != 0x0);
-        require(_tokenRegistryAddress != 0x0);
         require(_delegateAddress != 0x0);
         require(_orderBrokerRegistryAddress != 0x0);
         require(_minerBrokerRegistryAddress != 0x0);
@@ -123,7 +119,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
         lrcTokenAddress = _lrcTokenAddress;
         wethTokenAddress = _wethTokenAddress;
-        tokenRegistryAddress = _tokenRegistryAddress;
         delegateAddress = _delegateAddress;
         orderBrokerRegistryAddress = _orderBrokerRegistryAddress;
         minerBrokerRegistryAddress = _minerBrokerRegistryAddress;
@@ -152,7 +147,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         );
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
-            ITokenRegistry(tokenRegistryAddress),
             ITradeDelegate(delegateAddress),
             IBrokerRegistry(orderBrokerRegistryAddress),
             IBrokerRegistry(minerBrokerRegistryAddress),
@@ -202,7 +196,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             Data.Ring memory ring = rings[i];
             ring.checkOrdersValid();
             ring.checkForSubRings();
-            ring.checkTokensRegistered(ctx);
             ring.calculateFillAmountAndFee(ctx);
             if (ring.valid) {
                 // Only settle rings we have checked to be valid

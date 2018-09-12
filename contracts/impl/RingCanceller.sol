@@ -24,7 +24,6 @@ import "../iface/IRingCanceller.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IMinerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
-import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 
 import "../lib/AddressUtil.sol";

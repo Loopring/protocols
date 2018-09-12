@@ -187,24 +187,6 @@ library RingHelper {
         }
     }
 
-    function checkTokensRegistered(
-        Data.Ring ring,
-        Data.Context ctx
-        )
-        internal
-        view
-    {
-        // Extract the token addresses
-        address[] memory tokens = new address[](ring.size);
-        for (uint i = 0; i < ring.size; i++) {
-            Data.Participation memory p = ring.participations[i];
-            tokens[i] = p.order.tokenS;
-        }
-
-        // Test all token addresses at once
-        ring.valid = ring.valid && ctx.tokenRegistry.areAllTokensRegistered(tokens);
-    }
-
     function settleRing(
         Data.Ring ring,
         Data.Context ctx,

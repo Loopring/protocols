@@ -20,7 +20,6 @@ pragma experimental "ABIEncoderV2";
 
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
-import "../iface/ITokenRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 import "../iface/IMinerRegistry.sol";
 import "../iface/IFeeHolder.sol";
@@ -55,7 +54,6 @@ library Data {
 
     struct Context {
         address lrcTokenAddress;
-        ITokenRegistry  tokenRegistry;
         ITradeDelegate  delegate;
         IBrokerRegistry orderBrokerRegistry;
         IBrokerRegistry minerBrokerRegistry;
