@@ -31,7 +31,7 @@ library OrderSpecs {
 
     function assembleOrders(
         uint16[] specs,
-        Data.Context ctx,
+        address lrcTokenAddress,
         Data.Inputs inputs
         )
         internal
@@ -41,12 +41,12 @@ library OrderSpecs {
         uint size = specs.length;
         orders = new Data.Order[](size);
         for (uint i = 0; i < size; i++) {
-            orders[i] = assembleOrder(ctx, specs[i], inputs);
+            orders[i] = assembleOrder(lrcTokenAddress, specs[i], inputs);
         }
     }
 
     function assembleOrder(
-        Data.Context ctx,
+        address lrcTokenAddress,
         uint16 spec,
         Data.Inputs inputs
         )
@@ -73,7 +73,7 @@ library OrderSpecs {
             spec.hasSignature() ? inputs.nextBytes() : new bytes(0),
             spec.hasDualAuthSig() ? inputs.nextBytes() : new bytes(0),
             spec.allOrNone(),
-            spec.hasFeeToken() ? inputs.nextAddress() : ctx.lrcTokenAddress,
+            spec.hasFeeToken() ? inputs.nextAddress() : lrcTokenAddress,
             spec.hasFeeAmount() ? inputs.nextUint() : 0,
             spec.hasFeePercentage() ? inputs.nextUint16() : 0,
             spec.hasWaiveFeePercentage() ? int16(inputs.nextUint16()) : 0,

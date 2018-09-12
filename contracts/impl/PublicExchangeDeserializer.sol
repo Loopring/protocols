@@ -32,33 +32,28 @@ import "../spec/MiningSpec.sol";
 import "../spec/RingSpecs.sol";
 
 import "../helper/InputsHelper.sol";
-import "../helper/OrderHelper.sol";
-import "../helper/RingHelper.sol";
-import "../helper/MiningHelper.sol";
 
 import "./Data.sol";
 
 
-/// @title An Implementation of IExchange.
+/// @title An public library for deserializing loopring submitRings params.
 /// @author Daniel Wang - <daniel@loopring.org>,
-library ExchangeDeserializer {
+library PublicExchangeDeserializer {
     using MathUint      for uint;
     using BytesUtil     for bytes;
     using MiningSpec    for uint16;
     using EncodeSpec    for uint16[];
     using OrderSpecs    for uint16[];
     using RingSpecs     for uint8[][];
-    using OrderHelper     for Data.Order;
-    using RingHelper      for Data.Ring;
     using InputsHelper    for Data.Inputs;
-    using MiningHelper    for Data.Mining;
+
+    address public constant LRC_TOKEN_ADDRESS = 0xEF68e7C694F40c8202821eDF525dE3782458639f;
 
     /// @dev Submit a order-ring for validation and settlement.
     function deserialize(
-        address lrcTokenAddress,
         bytes data
         )
-        internal
+        public
         view
         returns (
             Data.Mining,
@@ -94,7 +89,6 @@ library ExchangeDeserializer {
         inputs.spendableList = new Data.Spendable[](encodeSpecs.spendableListSize());
 
         return inputToStructedData(
-            lrcTokenAddress,
             miningSpec,
             orderSpecs,
             ringSpecs,
@@ -103,7 +97,6 @@ library ExchangeDeserializer {
     }
 
     function inputToStructedData(
-        address lrcTokenAddress,
         uint16 miningSpec,
         uint16[] orderSpecs,
         uint8[][] ringSpecs,
@@ -125,7 +118,7 @@ library ExchangeDeserializer {
             address(0x0)  // interceptor
         );
 
-        Data.Order[] memory orders = orderSpecs.assembleOrders(lrcTokenAddress, inputs);
+        Data.Order[] memory orders = orderSpecs.assembleOrders(LRC_TOKEN_ADDRESS, inputs);
         Data.Ring[] memory rings = ringSpecs.assembleRings(orders);
 
         return (mining, orders, rings);
