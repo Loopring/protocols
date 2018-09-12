@@ -56,9 +56,9 @@ export interface OrderInfo {
   fillAmountFee?: number;
   fillAmountFeeS?: number;
   fillAmountFeeB?: number;
-  noDiscountFee?: number;
-  noDiscountFeeS?: number;
-  noDiscountFeeB?: number;
+  rebateFee?: number;
+  rebateS?: number;
+  rebateB?: number;
   splitS?: number;
   brokerInterceptor?: string;
   valid?: boolean;
