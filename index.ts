@@ -1,4 +1,3 @@
-export * from "./src/artifacts";
 export * from "./src/bitstream";
 export * from "./src/context";
 export * from "./src/encode_spec";

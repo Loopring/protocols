@@ -97,7 +97,7 @@ export class ProtocolSimulator {
     for (const ring of rings) {
       ring.checkOrdersValid();
       ring.checkForSubRings();
-      await ring.checkTokensRegistered();
+      // await ring.checkTokensRegistered();
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);

@@ -114,14 +114,14 @@ export class Ring {
     }
   }
 
-  public async checkTokensRegistered() {
-    const tokens: string[] = [];
-    for (const order of this.orders) {
-      tokens.push(order.tokenS);
-    }
-    const tokensRegistered = await this.context.tokenRegistry.areAllTokensRegistered(tokens);
-    this.valid = this.valid && ensure(tokensRegistered, "ring uses unregistered tokens");
-  }
+  // public async checkTokensRegistered() {
+  //   const tokens: string[] = [];
+  //   for (const order of this.orders) {
+  //     tokens.push(order.tokenS);
+  //   }
+  //   const tokensRegistered = await this.context.tokenRegistry.areAllTokensRegistered(tokens);
+  //   this.valid = this.valid && ensure(tokensRegistered, "ring uses unregistered tokens");
+  // }
 
   public async calculateFillAmountAndFee() {
     // Invalid order data could cause a divide by zero in the calculations
