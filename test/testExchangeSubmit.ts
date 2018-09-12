@@ -9,6 +9,7 @@ import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
 import { FeePayments } from "./feePayments";
 import { ringsInfoList } from "./rings_config";
+import { Artifacts } from "../util/Artifacts";
 
 const {
   RingSubmitter,
@@ -23,7 +24,7 @@ const {
   OrderBook,
   TaxTable,
   DummyExchange,
-} = new pjs.Artifacts(artifacts);
+} = new Artifacts(artifacts);
 
 contract("Exchange_Submit", (accounts: string[]) => {
   const deployer = accounts[0];

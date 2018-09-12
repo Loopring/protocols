@@ -1,4 +1,5 @@
-import { Artifacts, expectThrow } from "protocol2-js";
+import { expectThrow } from "protocol2-js";
+import { Artifacts } from "../util/Artifacts";
 
 const {
   BrokerRegistry,

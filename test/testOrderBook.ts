@@ -1,7 +1,8 @@
 import { BN } from "bn.js";
 import abi = require("ethereumjs-abi");
-import { Artifacts, OrderInfo, OrderUtil } from "protocol2-js";
+import {OrderInfo, OrderUtil } from "protocol2-js";
 import util = require("util");
+import { Artifacts } from "../util/Artifacts";
 
 const {
   OrderBook,

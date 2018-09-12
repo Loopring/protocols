@@ -4,15 +4,14 @@ import promisify = require("es6-promisify");
 import abi = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import * as _ from "lodash";
-import * as psc from "protocol2-js";
+import * as pjs from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
 import { ringsInfoList } from "./rings_config";
+import { Artifacts } from "../util/Artifacts";
 
 const {
   RingSubmitter,
-  TokenRegistry,
-  SymbolRegistry,
   BrokerRegistry,
   OrderRegistry,
   MinerRegistry,
@@ -22,7 +21,7 @@ const {
   DummyBrokerInterceptor,
   OrderBook,
   TaxTable,
-} = new psc.Artifacts(artifacts);
+} = new Artifacts(artifacts);
 
 contract("Exchange_Broker", (accounts: string[]) => {
   const deployer = accounts[0];
@@ -35,8 +34,6 @@ contract("Exchange_Broker", (accounts: string[]) => {
   const allOrderTokenRecipients = accounts.slice(13, 17);
 
   let ringSubmitter: any;
-  let tokenRegistry: any;
-  let symbolRegistry: any;
   let tradeDelegate: any;
   let orderRegistry: any;
   let minerRegistry: any;
@@ -106,9 +103,8 @@ contract("Exchange_Broker", (accounts: string[]) => {
     const currBlockNumber = web3.eth.blockNumber;
     const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
     // Pass in the block number and the block time stamp so we can more accurately reproduce transactions
-    const context = new psc.Context(currBlockNumber,
+    const context = new pjs.Context(currBlockNumber,
                                 currBlockTimestamp,
-                                TokenRegistry.address,
                                 tradeDelegate.address,
                                 orderBrokerRegistryAddress,
                                 minerBrokerRegistryAddress,
@@ -122,12 +118,12 @@ contract("Exchange_Broker", (accounts: string[]) => {
     return context;
   };
 
-  const submitRingsAndSimulate = async (context: psc.Context, ringsInfo: psc.RingsInfo, eventFromBlock: number) => {
-    const ringsGenerator = new psc.RingsGenerator(context);
+  const submitRingsAndSimulate = async (context: pjs.Context, ringsInfo: pjs.RingsInfo, eventFromBlock: number) => {
+    const ringsGenerator = new pjs.RingsGenerator(context);
     await ringsGenerator.setupRingsAsync(ringsInfo);
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
-    const simulator = new psc.ProtocolSimulator(context);
+    const simulator = new pjs.ProtocolSimulator(context);
     ringsInfo.transactionOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin : transactionOrigin;
     const deserializedRingsInfo = simulator.deserialize(bs, ringsInfo.transactionOrigin);
     assertEqualsRingsInfo(deserializedRingsInfo, ringsInfo);
@@ -145,7 +141,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
       shouldThrow = true;
     }
     if (shouldThrow) {
-      tx = await psc.expectThrow(ringSubmitter.submitRings(bs, {from: deserializedRingsInfo.transactionOrigin}));
+      tx = await pjs.expectThrow(ringSubmitter.submitRings(bs, {from: deserializedRingsInfo.transactionOrigin}));
     } else {
       tx = await ringSubmitter.submitRings(bs, {from: deserializedRingsInfo.transactionOrigin});
       console.log("gas used: ", tx.receipt.gasUsed);
@@ -158,7 +154,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
     return {tx, report};
   };
 
-  const setupOrder = async (order: psc.OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
+  const setupOrder = async (order: pjs.OrderInfo, index: number, limitFeeTokenAmount?: boolean) => {
     if (order.owner === undefined) {
       const accountIndex = index % orderOwners.length;
       order.owner = orderOwners[accountIndex];
@@ -183,9 +179,9 @@ contract("Exchange_Broker", (accounts: string[]) => {
       order.feePercentage = 20;  // == 2.0%
     }
     if (!order.dualAuthSignAlgorithm) {
-      order.dualAuthSignAlgorithm = psc.SignAlgorithm.Ethereum;
+      order.dualAuthSignAlgorithm = pjs.SignAlgorithm.Ethereum;
     }
-    if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== psc.SignAlgorithm.None) {
+    if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== pjs.SignAlgorithm.None) {
       const accountIndex = index % orderDualAuthAddr.length;
       order.dualAuthAddr = orderDualAuthAddr[accountIndex];
     }
@@ -232,7 +228,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
     }
   };
 
-  const assertEqualsRingsInfo = (ringsInfoA: psc.RingsInfo, ringsInfoB: psc.RingsInfo) => {
+  const assertEqualsRingsInfo = (ringsInfoA: pjs.RingsInfo, ringsInfoB: pjs.RingsInfo) => {
     // Revert defaults back to undefined
     ringsInfoA.miner = (ringsInfoA.miner === ringsInfoA.feeRecipient) ? undefined : ringsInfoA.miner;
     ringsInfoB.miner = (ringsInfoB.miner === ringsInfoB.feeRecipient) ? undefined : ringsInfoB.miner;
@@ -280,7 +276,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
   };
 
   const assertTransfers =
-    (tranferEvents: Array<[string, string, string, number]>, transferList: psc.TransferItem[]) => {
+    (tranferEvents: Array<[string, string, string, number]>, transferList: pjs.TransferItem[]) => {
     const transfersFromSimulator: Array<[string, string, string, number]> = [];
     transferList.forEach((item) => transfersFromSimulator.push([item.token, item.from, item.to, item.amount]));
     const sorter = (a: [string, string, string, number], b: [string, string, string, number]) => {
@@ -329,7 +325,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
     }
   };
 
-  const assertFilledAmounts = async (context: psc.Context, filledAmounts: { [hash: string]: number; }) => {
+  const assertFilledAmounts = async (context: pjs.Context, filledAmounts: { [hash: string]: number; }) => {
     console.log("Filled amounts:");
     for (const hash of Object.keys(filledAmounts)) {
       const filledFromSimulator = filledAmounts[hash];
@@ -339,15 +335,15 @@ contract("Exchange_Broker", (accounts: string[]) => {
     }
   };
 
-  const assertOrdersValid = async (orders: psc.OrderInfo[], expectedValidValues: boolean[]) => {
+  const assertOrdersValid = async (orders: pjs.OrderInfo[], expectedValidValues: boolean[]) => {
     assert.equal(orders.length, expectedValidValues.length, "Array sizes need to match");
 
-    const bitstream = new psc.Bitstream();
+    const bitstream = new pjs.Bitstream();
     for (const order of orders) {
       bitstream.addAddress(order.owner, 32);
       bitstream.addHex(order.hash.toString("hex"));
       bitstream.addNumber(order.validSince, 32);
-      bitstream.addHex(psc.xor(order.tokenS, order.tokenB, 20).slice(2));
+      bitstream.addHex(pjs.xor(order.tokenS, order.tokenB, 20).slice(2));
       bitstream.addNumber(0, 12);
     }
 
@@ -392,7 +388,6 @@ contract("Exchange_Broker", (accounts: string[]) => {
     ringSubmitter = await RingSubmitter.new(
       lrcAddress,
       wethAddress,
-      TokenRegistry.address,
       tradeDelegate.address,
       orderBrokerRegistryAddress,
       minerBrokerRegistryAddress,
@@ -417,11 +412,9 @@ contract("Exchange_Broker", (accounts: string[]) => {
   };
 
   before( async () => {
-    [ringSubmitter, tokenRegistry, symbolRegistry, tradeDelegate, orderRegistry,
+    [ringSubmitter, tradeDelegate, orderRegistry,
      minerRegistry, feeHolder, orderBook, taxTable, dummyBrokerInterceptor] = await Promise.all([
        RingSubmitter.deployed(),
-       TokenRegistry.deployed(),
-       SymbolRegistry.deployed(),
        TradeDelegate.deployed(),
        OrderRegistry.deployed(),
        MinerRegistry.deployed(),
@@ -431,9 +424,6 @@ contract("Exchange_Broker", (accounts: string[]) => {
        DummyBrokerInterceptor.deployed(),
      ]);
 
-    lrcAddress = await symbolRegistry.getAddressBySymbol("LRC");
-    wethAddress = await symbolRegistry.getAddressBySymbol("WETH");
-
     // Get the different brokers from the ringSubmitter
     orderBrokerRegistryAddress = await ringSubmitter.orderBrokerRegistryAddress();
     minerBrokerRegistryAddress = await ringSubmitter.minerBrokerRegistryAddress();
@@ -442,12 +432,12 @@ contract("Exchange_Broker", (accounts: string[]) => {
     const minerBrokerRegistry = BrokerRegistry.at(minerBrokerRegistryAddress);
     await minerBrokerRegistry.registerBroker(miner, "0x0", {from: miner});
 
-    for (const sym of allTokenSymbols) {
-      const addr = await symbolRegistry.getAddressBySymbol(sym);
-      tokenSymbolAddrMap.set(sym, addr);
-      const token = await DummyToken.at(addr);
-      allTokens.push(token);
-    }
+    // for (const sym of allTokenSymbols) {
+    //   const addr = await symbolRegistry.getAddressBySymbol(sym);
+    //   tokenSymbolAddrMap.set(sym, addr);
+    //   const token = await DummyToken.at(addr);
+    //   allTokens.push(token);
+    // }
 
     feePercentageBase = (await ringSubmitter.FEE_AND_TAX_PERCENTAGE_BASE()).toNumber();
 
@@ -464,7 +454,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
     });
 
     it("should be able for an order to use a broker without an interceptor", async () => {
-      const ringsInfo: psc.RingsInfo = {
+      const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -514,7 +504,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
     });
 
     it("should be able to for an order to use a broker with an interceptor", async () => {
-      const ringsInfo: psc.RingsInfo = {
+      const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -591,7 +581,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
     });
 
     it("an order using a broker with an invalid interceptor should not fail the transaction", async () => {
-      const ringsInfo: psc.RingsInfo = {
+      const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
@@ -619,7 +609,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       const owner = ringsInfo.orders[1].owner;
       const context = getDefaultContext();
-      const invalidInterceptorAddress = TokenRegistry.address;
+      const invalidInterceptorAddress = TradeDelegate.address;
 
       // Register the broker with interceptor
       await registerBrokerChecked(owner, broker1, invalidInterceptorAddress);

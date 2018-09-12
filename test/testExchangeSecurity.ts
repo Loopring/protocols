@@ -8,6 +8,7 @@ import * as psc from "protocol2-js";
 import util = require("util");
 import tokenInfos = require("../migrations/config/tokens.js");
 import { ringsInfoList } from "./rings_config";
+import { Artifacts } from "../util/Artifacts";
 
 const {
   RingSubmitter,
@@ -23,7 +24,7 @@ const {
   DummyBrokerInterceptor,
   OrderBook,
   TaxTable,
-} = new psc.Artifacts(artifacts);
+} = new Artifacts(artifacts);
 
 contract("Exchange_Security", (accounts: string[]) => {
   const deployer = accounts[0];
