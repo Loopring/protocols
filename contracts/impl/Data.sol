@@ -63,7 +63,6 @@ library Data {
         IOrderBook orderBook;
         ITaxTable taxTable;
         uint64 ringIndex;
-        Tax tax;
         uint feePercentageBase;
     }
 

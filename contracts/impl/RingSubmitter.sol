@@ -134,17 +134,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         )
         external
     {
-        Data.Tax memory tax = Data.Tax(
-            TAX_MATCHING_INCOME_LRC,
-            TAX_MATCHING_INCOME_ETH,
-            TAX_MATCHING_INCOME_OTHER,
-            TAX_P2P_INCOME_LRC,
-            TAX_P2P_INCOME_ETH,
-            TAX_P2P_INCOME_OTHER,
-            FEE_AND_TAX_PERCENTAGE_BASE,
-            lrcTokenAddress,
-            wethTokenAddress
-        );
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
             ITradeDelegate(delegateAddress),
@@ -156,8 +145,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             IOrderBook(orderBookAddress),
             ITaxTable(taxTableAddress),
             ringIndex,
-            tax,
-            FEE_AND_TAX_PERCENTAGE_BASE
+            FEE_PERCENTAGE_BASE
         );
 
         // Check if the highest bit of ringIndex is '1'

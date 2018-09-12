@@ -26,7 +26,6 @@ import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
 import "./OrderHelper.sol";
 import "./ParticipationHelper.sol";
-import "./TaxHelper.sol";
 
 
 /// @title RingHelper
@@ -34,7 +33,6 @@ library RingHelper {
     using MathUint for uint;
     using OrderHelper for Data.Order;
     using ParticipationHelper for Data.Participation;
-    using TaxHelper for Data.Tax;
 
     using BrokerInterceptorProxy for address;
     function updateHash(

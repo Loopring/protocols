@@ -23,7 +23,7 @@ pragma experimental "ABIEncoderV2";
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract IExchange {
-    uint16  public constant FEE_AND_TAX_PERCENTAGE_BASE = 1000;
+    uint16  public constant FEE_PERCENTAGE_BASE = 1000;
 
     struct Fill {
         bytes32     orderHash;

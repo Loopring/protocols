@@ -87,7 +87,7 @@ library ParticipationHelper {
             p.fillAmountS = prevP.fillAmountB + p.feeAmountS;
             return true;
         } else {
-            false;
+            return false;
         }
     }
 
