@@ -4,8 +4,8 @@ import * as order from './order';
 import * as ring from './ring';
 
 export default {
- account,
-  market,
-  order,
+    account,
+    market,
+    order,
     ring
 };
