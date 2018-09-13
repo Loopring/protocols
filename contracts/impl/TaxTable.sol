@@ -100,9 +100,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         uint currentTier = getTokenTier(token);
 
         // Can't upgrade to a higher level than tier 1
-        if (currentTier == TIER_1) {
-            return false;
-        }
+        require(currentTier != TIER_1, "Cannot upgrade to a tier higher than tier 1");
 
         // Burn TIER_UPGRADE_COST_PERCENTAGE of total LRC supply
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
@@ -228,21 +226,24 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
     {
         UserData storage userData = balances[user];
 
+        uint initialAmount = userData.amount.add(userData.amountWithdrawn);
+        uint withdrawableAmount = 0;
+
         uint timeDelta = now.sub(userData.lockedSince);
         if (timeDelta < LINEAR_UNLOCK_START_TIME) {
-            return 0;
+            withdrawableAmount = 0;
+        } else if (timeDelta >= LOCK_TIME) {
+            withdrawableAmount = initialAmount;
+        } else {
+            uint progress = timeDelta.sub(LINEAR_UNLOCK_START_TIME);
+            // Linear unlock between LINEAR_UNLOCK_START_TIME and LOCK_TIME on the initial locked amount
+            withdrawableAmount = initialAmount.mul(progress) / (LOCK_TIME - LINEAR_UNLOCK_START_TIME);
         }
 
-        timeDelta = timeDelta.sub(LINEAR_UNLOCK_START_TIME);
-
-        // Linear unlock between LINEAR_UNLOCK_START_TIME and LOCK_TIME on the initial locked amount
-        uint initialAmount = userData.amount.add(userData.amountWithdrawn);
-        uint amount = initialAmount.mul(timeDelta) / (LOCK_TIME - LINEAR_UNLOCK_START_TIME);
-
         // Subtract the part that was already withdrawn
-        amount = amount.sub(userData.amountWithdrawn);
+        withdrawableAmount = withdrawableAmount.sub(userData.amountWithdrawn);
 
-        return amount;
+        return withdrawableAmount;
     }
 
 }
