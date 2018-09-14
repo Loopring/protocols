@@ -20,9 +20,11 @@ export class Ring {
 
   private feeBalances: { [id: string]: any; } = {};
 
+  // BEGIN diagnostics
   private detailTransferS: DetailedTokenTransfer[];
   private detailTransferB: DetailedTokenTransfer[];
   private detailTransferFee: DetailedTokenTransfer[];
+  // END diagnostics
 
   constructor(context: Context,
               orders: OrderInfo[]) {
@@ -30,7 +32,9 @@ export class Ring {
     this.orders = orders;
     this.valid = true;
     this.minerFeesToOrdersPercentage = 0;
+    this.orderUtil = new OrderUtil(context);
 
+    // BEGIN diagnostics
     this.payments = {
       orders: [],
     };
@@ -78,8 +82,7 @@ export class Ring {
       this.detailTransferFee.push(paymentFee);
       this.payments.orders[i].payments.push(paymentFee);
     }
-
-    this.orderUtil = new OrderUtil(context);
+    // END diagnostics
   }
 
   public updateHash() {
@@ -106,15 +109,6 @@ export class Ring {
       }
     }
   }
-
-  // public async checkTokensRegistered() {
-  //   const tokens: string[] = [];
-  //   for (const order of this.orders) {
-  //     tokens.push(order.tokenS);
-  //   }
-  //   const tokensRegistered = await this.context.tokenRegistry.areAllTokensRegistered(tokens);
-  //   this.valid = this.valid && ensure(tokensRegistered, "ring uses unregistered tokens");
-  // }
 
   public async calculateFillAmountAndFee() {
     // Invalid order data could cause a divide by zero in the calculations
@@ -287,13 +281,13 @@ export class Ring {
       this.addTokenTransfer(transferItems, order.tokenS, order.owner, feeHolder, amountSToFeeHolder);
       this.addTokenTransfer(transferItems, order.feeToken, order.owner, feeHolder, amountFeeToFeeHolder);
 
-      // Set correct payment details
-      this.detailTransferS[i].amount = order.fillAmountS;
+      // BEGIN diagnostics
+      this.detailTransferS[i].amount = order.fillAmountS + order.splitS;
       this.logPayment(this.detailTransferS[i], order.tokenS, order.owner, prevOrder.tokenRecipient,
                       order.fillAmountS - order.fillAmountFeeS, "ToBuyer");
-
       this.detailTransferB[i].amount = order.fillAmountB;
       this.detailTransferFee[i].amount = order.fillAmountFee;
+      // END diagnostics
     }
     return transferItems;
   }
@@ -359,18 +353,22 @@ export class Ring {
     // Pay the tax with the feeHolder as owner
     const taxAddress = this.context.feeHolder.address;
 
+    // BEGIN diagnostics
     const feeDesc = "Fee" + ((feePercentage > 0) ? ("@" + (feePercentage / 10)) + "%" : "");
     const totalPayment = this.logPayment(payment, token, order.owner, "NA", amount + margin, feeDesc + "+Margin");
     const marginPayment = this.logPayment(totalPayment, token, order.owner, mining.feeRecipient, margin, "Margin");
     const feePayment = this.logPayment(totalPayment, token, order.owner, "NA", amount, feeDesc);
+    // END diagnostics
 
     const walletFee = Math.floor(amount * walletSplitPercentage / 100);
     let minerFee = amount - walletFee;
 
+    // BEGIN diagnostics
     const walletPayment = this.logPayment(
       feePayment, token, order.owner, "NA", walletFee, "Wallet@" + walletSplitPercentage + "%");
     let minerPayment = this.logPayment(
       feePayment, token, order.owner, "NA", minerFee, "Miner@" + (100 - walletSplitPercentage) + "%");
+    // END diagnostics
 
     // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
     if (order.waiveFeePercentage > 0) {
@@ -378,14 +376,18 @@ export class Ring {
                             (this.context.feePercentageBase - order.waiveFeePercentage) /
                             this.context.feePercentageBase);
 
+      // BEGIN diagnostics
       minerPayment = this.logPayment(
         minerPayment, token, order.owner, "NA", minerFee, "Waive@" + order.waiveFeePercentage / 10 + "%");
+      // END diagnostics
     } else if (order.waiveFeePercentage < 0) {
       // No fees need to be paid to the miner by this order
       minerFee = 0;
 
+      // BEGIN diagnostics
       minerPayment = this.logPayment(
         minerPayment, token, order.owner, "NA", minerFee, "Waive@" + order.waiveFeePercentage / 10 + "%");
+      // END diagnostics
     }
 
     // Calculate taxes and rebates
@@ -400,14 +402,15 @@ export class Ring {
     const walletRebate = Math.floor(walletFee * rebateRate.toNumber() / this.context.feePercentageBase);
     const feeToWallet = walletFee - walletTax - walletRebate;
 
+    // BEGIN diagnostics
     this.logPayment(minerPayment, token, order.owner, taxAddress, minerTax, "Burn@" + burnRate / 10 + "%");
     this.logPayment(minerPayment, token, order.owner, order.owner, minerRebate, "Rebate@" + rebateRate / 10 + "%");
     const minerIncomePayment =
       this.logPayment(minerPayment, token, order.owner, mining.feeRecipient, minerFee - margin, "Income");
-
     this.logPayment(walletPayment, token, order.owner, taxAddress, walletTax, "Burn@" + burnRate / 10 + "%");
     this.logPayment(walletPayment, token, order.owner, order.owner, walletRebate, "Rebate@" + rebateRate / 10 + "%");
     this.logPayment(walletPayment, token, order.owner, order.walletAddr, feeToWallet, "Income");
+    // END diagnostics
 
     // Fees can be paid out in different tokens so we can't easily accumulate the total fee
     // that needs to be paid out to order owners. So we pay out each part out here to all orders that need it.
@@ -419,8 +422,10 @@ export class Ring {
           const feeToOwner = Math.floor(minerFee * (-otherOrder.waiveFeePercentage) / this.context.feePercentageBase);
           await this.addFeePayment(token, otherOrder.owner, feeToOwner);
 
+          // BEGIN diagnostics
           this.logPayment(minerIncomePayment, token, order.owner, otherOrder.owner, feeToOwner,
             "Share_Income+Margin@" + (-otherOrder.waiveFeePercentage) / 10 + "%");
+          // END diagnostics
         }
       }
       // Subtract all fees the miner pays to the orders
@@ -441,7 +446,6 @@ export class Ring {
     if (totalFeePaid > amount + margin && totalFeePaid < amount + margin + 10000) {
       totalFeePaid = amount + margin;
     }
-
     assert(totalFeePaid <= amount + margin, "Total fee paid cannot exceed the total fee amount");
 
     // Return the rebate this order got
