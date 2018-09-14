@@ -89,7 +89,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       // Broker not registered: submitRings should NOT throw, but no transactions should happen
       {
-        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, web3.eth.blockNumber);
+        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
       }
 
@@ -98,7 +98,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       // Broker registered: transactions should happen
       {
-        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, web3.eth.blockNumber);
+        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert(report.transferItems.length > 0, "Tokens should be transfered");
       }
 
@@ -141,7 +141,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       // Broker not registered: submitRings should NOT throw, but no transactions should happen
       {
-        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, web3.eth.blockNumber);
+        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
       }
 
@@ -153,7 +153,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       // Broker registered, but allowance is set to 0 so no transactions should happen
       {
-        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, web3.eth.blockNumber);
+        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
       }
 
@@ -162,7 +162,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       // Broker registered, allowance is set to non-zero so transactions should happen
       {
-        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, web3.eth.blockNumber);
+        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert(report.transferItems.length > 0, "Tokens should be transfered");
       }
 
@@ -171,7 +171,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       // Broker registered and allowance set to a high value: transactions should happen
       {
-        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, web3.eth.blockNumber);
+        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert(report.transferItems.length > 0, "Tokens should be transfered");
       }
 
@@ -220,7 +220,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
       // Broker registered with invalid interceptor, should NOT throw but allowance will be set to 0
       // so no transactions should happen
       {
-        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, web3.eth.blockNumber);
+        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
       }
 
@@ -239,7 +239,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
       // Broker registered with interceptor functions erroring out, should NOT throw but allowance will be set to 0
       // so no transactions should happen
       {
-        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, web3.eth.blockNumber);
+        const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
       }
 

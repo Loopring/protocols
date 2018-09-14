@@ -51,15 +51,15 @@ contract ITaxTable {
 
     // Tax rates
     // Matching
-    uint16 public constant TAX_MATCHING_TIER1             =                   1 * 10; //  1%
-    uint16 public constant TAX_MATCHING_TIER2             =                  20 * 10; // 20%
-    uint16 public constant TAX_MATCHING_TIER3             =                  40 * 10; // 40%
-    uint16 public constant TAX_MATCHING_TIER4             =                  60 * 10; // 60%
+    uint16 public constant TAX_MATCHING_TIER1             =                   5 * 10; //   5%
+    uint16 public constant TAX_MATCHING_TIER2             =                  20 * 10; //  20%
+    uint16 public constant TAX_MATCHING_TIER3             =                  40 * 10; //  40%
+    uint16 public constant TAX_MATCHING_TIER4             =                  60 * 10; //  60%
     // P2P
-    uint16 public constant TAX_P2P_TIER1                  =                   1 * 10; //  1%
-    uint16 public constant TAX_P2P_TIER2                  =                   2 * 10; //  2%
-    uint16 public constant TAX_P2P_TIER3                  =                   3 * 10; //  3%
-    uint16 public constant TAX_P2P_TIER4                  =                   6 * 10; //  6%
+    uint16 public constant TAX_P2P_TIER1                  =                        5; // 0.5%
+    uint16 public constant TAX_P2P_TIER2                  =                   2 * 10; //   2%
+    uint16 public constant TAX_P2P_TIER3                  =                   3 * 10; //   3%
+    uint16 public constant TAX_P2P_TIER4                  =                   6 * 10; //   6%
 
     // Locking
     uint32 public constant LOCK_BASE_PERCENTAGE           =               100 * 1000; // 100%
@@ -129,6 +129,13 @@ contract ITaxTable {
         address user
         )
         public
+        view
+        returns (uint);
+
+    function getLockStartTime(
+        address user
+        )
+        external
         view
         returns (uint);
 

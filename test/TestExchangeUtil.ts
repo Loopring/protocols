@@ -384,7 +384,6 @@ export class ExchangeTestUtil {
   }
 
   public async submitRingsAndSimulate(ringsInfo: pjs.RingsInfo,
-                                      eventFromBlock: number,
                                       dummyExchange?: any) {
     if (dummyExchange !== undefined) {
       // Add an initial fee payment to all addresses to make gas use more realistic
@@ -437,7 +436,7 @@ export class ExchangeTestUtil {
       tx = await this.ringSubmitter.submitRings(bs, {from: txOrigin});
       console.log("gas used: ", tx.receipt.gasUsed);
     }
-    const transferEvents = await this.getTransferEvents(this.testContext.allTokens, eventFromBlock);
+    const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
     this.assertTransfers(deserializedRingsInfo, transferEvents, report.transferItems);
     await this.assertFeeBalances(deserializedRingsInfo, report.feeBalances);
     await this.assertFilledAmounts(deserializedRingsInfo, report.filledAmounts);
@@ -458,6 +457,30 @@ export class ExchangeTestUtil {
         await token.approve(this.context.tradeDelegate.address, 1e32, {from: orderOwner});
       }
     }
+  }
+
+  public async lockLRC(user: string, targetRebateRate: number) {
+    const {
+      DummyToken,
+      TaxTable,
+    } = new Artifacts(artifacts);
+
+    const LRC = await DummyToken.at(this.context.lrcAddress);
+    const taxTable = await TaxTable.deployed();
+    const totalLRCSupply = await LRC.totalSupply();
+
+    // Calculate the needed funds to upgrade the tier
+    const LOCK_BASE_PERCENTAGE = (await this.context.taxTable.LOCK_BASE_PERCENTAGE()).toNumber();
+    const maxLockPercentage = (await this.context.taxTable.MAX_LOCK_PERCENTAGE()).toNumber();
+    const maxLockAmount = Math.floor(totalLRCSupply * maxLockPercentage / LOCK_BASE_PERCENTAGE);
+
+    // How much we need to lock to get the target rebate rate
+    const lockAmount = maxLockAmount * targetRebateRate;
+
+    await LRC.transfer(user, lockAmount, {from: this.testContext.deployer});
+    await LRC.approve(this.context.taxTable.address, lockAmount, {from: user});
+
+    await taxTable.lock(lockAmount, {from: user});
   }
 
   public async cleanTradeHistory() {

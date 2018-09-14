@@ -33,9 +33,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     for (const ringsInfo of ringsInfoList) {
       it(ringsInfo.description, async () => {
         await exchangeTestUtil.setupRings(ringsInfo);
-        await exchangeTestUtil.submitRingsAndSimulate(ringsInfo,
-                                                      web3.eth.blockNumber,
-                                                      dummyExchange);
+        await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
       });
     }
 
@@ -89,6 +87,30 @@ contract("Exchange_Submit", (accounts: string[]) => {
       ringsInfo.feeRecipient = exchangeTestUtil.testContext.miner;
       ringsInfo.miner = exchangeTestUtil.testContext.miner;
       // await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+    });
+
+    it("user should be able to get a rebate by locking LRC", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 35e17,
+            amountB: 22e17,
+          },
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 23e17,
+            amountB: 31e17,
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      // Give the owner of the first order a burn rate rebate of 50%
+      await exchangeTestUtil.lockLRC(ringsInfo.orders[0].owner, 0.5);
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
     });
 
   });

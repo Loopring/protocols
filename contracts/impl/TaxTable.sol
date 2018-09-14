@@ -44,7 +44,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
 
         // Set fixed LRC and WETH tax rates
         setFixedTokenTier(lrcAddress, TIER_1);
-        setFixedTokenTier(wethAddress, TIER_2);
+        setFixedTokenTier(wethAddress, TIER_3);
     }
 
     function setFixedTokenTier(
@@ -52,7 +52,6 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         uint tier
         )
         internal
-        returns (uint)
     {
         TokenData storage tokenData = tokens[token];
         tokenData.validUntil = ~uint(0);
@@ -163,11 +162,23 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
     {
         require(amount > 0, "Need to lock a non-zero amount of tokens");
 
+        UserData storage userData = balances[msg.sender];
+
+        // If the user only has unlocked tokens he first needs to withdraw them.
+        // It doesn't make any sense to change the lock start time stamp if the new amount
+        // that should be locked is immediately unlocked because the new start time stamp is still
+        // below the lock duration period.
+        if (userData.amount > 0) {
+            uint withdrawableAmount = getWithdrawableBalance(msg.sender);
+            require(
+                userData.amount != withdrawableAmount,
+                "User only has unlocked tokens he should first withdraw"
+            );
+        }
+
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         bool success = LRC.transferFrom(msg.sender, this, amount);
         require(success, "LRC transfer needs to succeed");
-
-        UserData storage userData = balances[msg.sender];
 
         // The lock time is updated by weighting the extra amount with the new total amount
         // newLockedTime := oldLockedTime + ((now - oldLockedTime) * (amount / newAmount))
@@ -192,8 +203,6 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
     {
         require(amount > 0, "Need to withdraw a non-zero amount of tokens");
 
-        UserData storage userData = balances[msg.sender];
-
         uint withdrawableAmount = getWithdrawableBalance(msg.sender);
         require(withdrawableAmount >= amount, "user needs to have sufficient funds he can withdraw");
 
@@ -201,6 +210,8 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         bool success = LRC.transfer(msg.sender, amount);
         require(success, "LRC transfer needs to succeed");
 
+        UserData storage userData = balances[msg.sender];
+        userData.amount = userData.amount.sub(amount);
         userData.amountWithdrawn = userData.amountWithdrawn.add(amount);
 
         return true;
@@ -244,6 +255,17 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         withdrawableAmount = withdrawableAmount.sub(userData.amountWithdrawn);
 
         return withdrawableAmount;
+    }
+
+    function getLockStartTime(
+        address user
+        )
+        external
+        view
+        returns (uint)
+    {
+        UserData storage userData = balances[user];
+        return userData.lockedSince;
     }
 
 }
