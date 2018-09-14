@@ -110,6 +110,12 @@ library RingHelper {
             Data.Participation memory prevP = ring.participations[prevIndex];
             p = ring.participations[i];
 
+            // Check if this order needs to be completely filled
+            if(p.order.allOrNone && p.fillAmountB != p.order.amountB) {
+                ring.valid = false;
+                break;
+            }
+
             bool valid = p.calculateFees(prevP, ctx);
             if (!valid) {
                 ring.valid = false;
