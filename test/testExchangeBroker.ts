@@ -75,14 +75,8 @@ contract("Exchange_Broker", (accounts: string[]) => {
             amountB: 31e17,
           },
         ],
-        transactionOrigin: exchangeTestUtil.testContext.transactionOrigin,
-        feeRecipient: exchangeTestUtil.testContext.feeRecipient,
-        miner: exchangeTestUtil.testContext.miner,
       };
-
-      for (const [i, order] of ringsInfo.orders.entries()) {
-        await exchangeTestUtil.setupOrder(order, i);
-      }
+      await exchangeTestUtil.setupRings(ringsInfo);
 
       const owner = ringsInfo.orders[0].owner;
       const emptyAddr = "0x0000000000000000000000000000000000000000";
@@ -125,14 +119,8 @@ contract("Exchange_Broker", (accounts: string[]) => {
             broker,
           },
         ],
-        transactionOrigin: exchangeTestUtil.testContext.transactionOrigin,
-        feeRecipient: exchangeTestUtil.testContext.feeRecipient,
-        miner: exchangeTestUtil.testContext.miner,
       };
-
-      for (const [i, order] of ringsInfo.orders.entries()) {
-        await exchangeTestUtil.setupOrder(order, i);
-      }
+      await exchangeTestUtil.setupRings(ringsInfo);
 
       const orderIndex = 1;
       const owner = ringsInfo.orders[orderIndex].owner;
@@ -202,14 +190,8 @@ contract("Exchange_Broker", (accounts: string[]) => {
             broker,
           },
         ],
-        transactionOrigin: exchangeTestUtil.testContext.transactionOrigin,
-        feeRecipient: exchangeTestUtil.testContext.feeRecipient,
-        miner: exchangeTestUtil.testContext.miner,
       };
-
-      for (const [i, order] of ringsInfo.orders.entries()) {
-        await exchangeTestUtil.setupOrder(order, i);
-      }
+      await exchangeTestUtil.setupRings(ringsInfo);
 
       const owner = ringsInfo.orders[1].owner;
       const invalidInterceptorAddress = BrokerRegistry.address;

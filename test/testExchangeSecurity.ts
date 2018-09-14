@@ -69,10 +69,8 @@ contract("Exchange_Security", (accounts: string[]) => {
             amountB: 31e17,
           },
         ],
-        transactionOrigin: exchangeTestUtil.testContext.transactionOrigin,
-        feeRecipient: exchangeTestUtil.testContext.feeRecipient,
-        miner: exchangeTestUtil.testContext.miner,
       };
+      await exchangeTestUtil.setupRings(ringsInfo);
 
       // A ring without callbacks so submitRings doesn't get into an infinite loop
       // in a reentrancy scenario
@@ -92,18 +90,8 @@ contract("Exchange_Security", (accounts: string[]) => {
             amountB: 32e17,
           },
         ],
-        transactionOrigin: exchangeTestUtil.testContext.transactionOrigin,
-        feeRecipient: exchangeTestUtil.testContext.feeRecipient,
-        miner: exchangeTestUtil.testContext.miner,
       };
-
-      for (const [i, order] of ringsInfo.orders.entries()) {
-        await exchangeTestUtil.setupOrder(order, i);
-      }
-
-      for (const [i, order] of ringsInfoAttack.orders.entries()) {
-        await exchangeTestUtil.setupOrder(order, i);
-      }
+      await exchangeTestUtil.setupRings(ringsInfoAttack);
 
       const owner = ringsInfo.orders[0].owner;
       const attackBrokerInterceptor = await DummyBrokerInterceptor.new(exchangeTestUtil.ringSubmitter.address);
