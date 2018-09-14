@@ -239,7 +239,6 @@ export class RingsGenerator {
     }
     if (order.allOrNone) {
       spec += 1 << 5;
-      param.uintList.push(new BigNumber(1));
     }
 
     if (order.sig) {

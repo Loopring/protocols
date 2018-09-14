@@ -136,6 +136,12 @@ export class Ring {
       const prevOrder = this.orders[prevIndex];
       const order = this.orders[i];
 
+      // Check if this order needs to be completely filled
+      if (order.allOrNone && order.fillAmountB !== order.amountB) {
+        this.valid = ensure(false, "order needs to be filled completely");
+        break;
+      }
+
       const valid = await this.calculateFees(order, prevOrder);
       this.valid = ensure(valid, "ring cannot be settled");
       if (order.waiveFeePercentage < 0) {
