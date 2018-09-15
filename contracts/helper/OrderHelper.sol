@@ -35,42 +35,59 @@ library OrderHelper {
         internal
         pure
     {
-        // 'Stack too deep' errors when hashing all parameters at once in keccak256,
-        // so currently hashed in 2 parts.
-        // TODO: once order data is finalized this can be optimized using assembly
-        bytes32 hashPart1 = keccak256(
-            abi.encodePacked(
-                order.owner,
-                order.tokenS,
-                order.tokenB,
-                order.amountS,
-                order.amountB,
-                order.dualAuthAddr,
-                order.broker,
-                order.orderInterceptor,
-                order.wallet,
-                order.validSince,
-                order.validUntil,
-                order.allOrNone,
-                order.tokenRecipient,
-                order.walletSplitPercentage
-            )
-        );
-        bytes32 hashPart2 = keccak256(
-            abi.encodePacked(
-                order.feeToken,
-                order.feeAmount,
-                order.feePercentage,
-                order.tokenSFeePercentage,
-                order.tokenBFeePercentage
-            )
-        );
-        order.hash = keccak256(
-            abi.encodePacked(
-                hashPart1,
-                hashPart2
-            )
-        );
+        // order.hash = keccak256(
+        //     abi.encodePacked(
+        //         order.amountS,
+        //         order.amountB,
+        //         order.feeAmount,
+        //         order.validSince,
+        //         order.validUntil,
+        //         order.owner,
+        //         order.tokenS,
+        //         order.tokenB,
+        //         order.dualAuthAddr,
+        //         order.broker,
+        //         order.orderInterceptor,
+        //         order.wallet,
+        //         order.tokenRecipient,
+        //         order.feeToken,
+        //         order.walletSplitPercentage,
+        //         order.feePercentage,
+        //         order.tokenSFeePercentage,
+        //         order.tokenBFeePercentage,
+        //         order.allOrNone
+        //     )
+        // );
+        bytes32 hash;
+        assembly {
+            // Load the free memory pointer
+            let ptr := mload(64)
+
+            // We store the members back to front so we can overwrite data for members smaller than 32
+            // (mstore always writes 32 bytes)
+            mstore(add(ptr, sub(348, 31)), mload(add(order, 544)))   // allOrNone
+            mstore(add(ptr, sub(346, 30)), mload(add(order, 736)))   // tokenBFeePercentage
+            mstore(add(ptr, sub(344, 30)), mload(add(order, 704)))   // tokenSFeePercentage
+            mstore(add(ptr, sub(342, 30)), mload(add(order, 640)))   // feePercentage
+            mstore(add(ptr, sub(340, 30)), mload(add(order, 800)))   // walletSplitPercentage
+            mstore(add(ptr, sub(320, 12)), mload(add(order, 576)))   // feeToken
+            mstore(add(ptr, sub(300, 12)), mload(add(order, 768)))   // tokenRecipient
+            mstore(add(ptr, sub(280, 12)), mload(add(order, 416)))   // wallet
+            mstore(add(ptr, sub(260, 12)), mload(add(order, 384)))   // orderInterceptor
+            mstore(add(ptr, sub(240, 12)), mload(add(order, 288)))   // broker
+            mstore(add(ptr, sub(220, 12)), mload(add(order, 256)))   // dualAuthAddr
+            mstore(add(ptr, sub(200, 12)), mload(add(order,  64)))   // tokenB
+            mstore(add(ptr, sub(180, 12)), mload(add(order,  32)))   // tokenS
+            mstore(add(ptr, sub(160, 12)), mload(add(order,   0)))   // owner
+            mstore(add(ptr, sub(128,  0)), mload(add(order, 448)))   // validUntil
+            mstore(add(ptr, sub( 96,  0)), mload(add(order, 160)))   // validSince
+            mstore(add(ptr, sub( 64,  0)), mload(add(order, 608)))   // feeAmount
+            mstore(add(ptr, sub( 32,  0)), mload(add(order, 128)))   // amountB
+            mstore(add(ptr, sub(  0,  0)), mload(add(order,  96)))   // amountS
+
+            hash := keccak256(ptr, 349)  // 5*32 + 9*20 + 4*2 + 1*1
+        }
+        order.hash = hash;
     }
 
     function updateBrokerAndInterceptor(
