@@ -69,63 +69,47 @@ export class OrderUtil {
 
   public getOrderHash(order: OrderInfo) {
     const MAX_UINT = new BN("f".repeat(64), 16);
-    const argsPart1 = [
+    const args = [
+      this.toBN(order.amountS),
+      this.toBN(order.amountB),
+      this.toBN(order.feeAmount),
+      order.validSince ? this.toBN(order.validSince) : this.toBN(0),
+      order.validUntil ? this.toBN(order.validUntil) : MAX_UINT,
       order.owner,
       order.tokenS,
       order.tokenB,
-      this.toBN(order.amountS),
-      this.toBN(order.amountB),
       order.dualAuthAddr ? order.dualAuthAddr : "0x0",
       order.broker ? order.broker : "0x0",
       order.orderInterceptor ? order.orderInterceptor : "0x0",
       order.walletAddr ? order.walletAddr : "0x0",
-      order.validSince ? this.toBN(order.validSince) : this.toBN(0),
-      order.validUntil ? this.toBN(order.validUntil) : MAX_UINT,
-      order.allOrNone,
       order.tokenRecipient,
-      order.walletSplitPercentage,
-    ];
-    const argTypesPart1 = [
-      "address",
-      "address",
-      "address",
-      "uint256",
-      "uint256",
-      "address",
-      "address",
-      "address",
-      "address",
-      "uint256",
-      "uint256",
-      "bool",
-      "address",
-      "uint16",
-    ];
-    const orderHashPart1 = ABI.soliditySHA3(argTypesPart1, argsPart1);
-
-    const argsPart2 = [
       order.feeToken,
-      this.toBN(order.feeAmount),
+      order.walletSplitPercentage,
       this.toBN(order.feePercentage),
       this.toBN(order.tokenSFeePercentage),
       this.toBN(order.tokenBFeePercentage),
-    ];
-    const argTypesPart2 = [
-      "address",
-      "uint256",
-      "uint16",
-      "uint16",
-      "uint16",
-    ];
-    const orderHashPart2 = ABI.soliditySHA3(argTypesPart2, argsPart2);
-
-    const args = [
-      orderHashPart1,
-      orderHashPart2,
+      order.allOrNone,
     ];
     const argTypes = [
-      "bytes32",
-      "bytes32",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint256",
+      "uint256",
+      "address",
+      "address",
+      "address",
+      "address",
+      "address",
+      "address",
+      "address",
+      "address",
+      "address",
+      "uint16",
+      "uint16",
+      "uint16",
+      "uint16",
+      "bool",
     ];
     const orderHash = ABI.soliditySHA3(argTypes, args);
     return orderHash;
