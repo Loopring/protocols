@@ -123,7 +123,7 @@ export function formatKey (mixed)
 
     if (typeof mixed === 'string')
     {
-        return mixed.startsWith('0x') ? mixed : mixed;
+        return mixed.startsWith('0x') ? mixed.slice(2) : mixed;
     }
     throw new Error('Unsupported type');
 }

@@ -1,5 +1,5 @@
 import {keccak, hashPersonalMessage} from 'ethereumjs-util';
-import {toHex, toBig} from './formatter';
+import formatter, {toHex, toBig} from './formatter';
 
 /**
  * trim head space and tail space
@@ -30,5 +30,10 @@ export function calculateGas (gasPrice, gasLimit)
 }
 
 export default {
-    hashPersonalMessage
+    hashPersonalMessage,
+    ...formatter,
+    trim,
+    trimAll,
+    keccakHash,
+    calculateGas
 };

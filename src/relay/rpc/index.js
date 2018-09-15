@@ -1,7 +1,7 @@
-import account from './account';
-import market from './market';
-import order from './order';
-import ring from './ring';
+import * as account from './account';
+import * as market from './market';
+import * as order from './order';
+import * as ring from './ring';
 
 export default {
     account,
