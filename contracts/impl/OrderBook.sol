@@ -33,39 +33,39 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
     function submitOrder(bytes32[] dataArray)
         external
     {
-        require(dataArray.length >= 10);
+        require(dataArray.length >= 18);
         bool allOrNone = false;
-        if (uint(dataArray[9]) > 0) {
+        if (uint(dataArray[17]) > 0) {
             allOrNone = true;
         }
 
         Data.Order memory order = Data.Order(
-            address(dataArray[0]),
-            address(dataArray[1]),
-            address(dataArray[2]),
-            uint(dataArray[4]),
-            uint(dataArray[5]),
-            uint(dataArray[6]),
+            address(dataArray[0]), // owner
+            address(dataArray[1]), // tokenS
+            address(dataArray[2]), // tokenB
+            uint(dataArray[3]), // amountS
+            uint(dataArray[4]), // amountB
+            uint(dataArray[5]), // validSince
             Data.Spendable(true, 0, 0),
             Data.Spendable(true, 0, 0),
             0x0,
-            address(dataArray[3]),
+            address(dataArray[6]), // broker
             Data.Spendable(true, 0, 0),
             Data.Spendable(true, 0, 0),
-            0x0,
-            0x0,
-            uint(dataArray[7]),
+            address(dataArray[7]), // orderInterceptor
+            address(dataArray[8]), // wallet
+            uint(dataArray[9]), // validUtil
             new bytes(0),
             new bytes(0),
             allOrNone,
-            0x0,
-            uint(dataArray[8]),
+            address(dataArray[10]), // feeToken
+            uint(dataArray[11]), // feeAmount
+            uint16(dataArray[12]), // feePercentage
             0,
-            0,
-            0,
-            0,
-            0x0,
-            0,
+            uint16(dataArray[13]), // tokenSFeePercentage
+            uint16(dataArray[14]), // tokenBFeePercentage
+            address(dataArray[15]), // tokenRecipient
+            uint16(dataArray[16]), // walletSplitPercentage
             false,
             bytes32(0x0),
             0x0,

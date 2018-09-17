@@ -28,9 +28,8 @@ contract IOrderBook {
     mapping(bytes32 => bytes32[]) public orders;
 
     struct OrderData {
-        /* address[] addressArray; // owner, tokenS, tokenB, broker*/
-        /* uint[] uintArray; // amountS, amountB, validSince, validUntil, lrcFeeAmount */
-        /* bool allOrNone; */
+        /// contains all fields that used for order hash calculation.
+        /// @see OrderHelper.updateHash() for detailed information.
         bytes32[] dataArray;
     }
 
