@@ -25,6 +25,11 @@ export class RingsGenerator {
     // Setup orders
     for (const order of rings.orders) {
       order.hash = this.orderUtil.getOrderHash(order);
+
+      if (order.onChain) {
+        continue;
+      }
+
       if (order.sig === undefined) {
         order.sig = await this.multiHashUtil.signOrderAsync(order);
       }
@@ -74,6 +79,10 @@ export class RingsGenerator {
 
     // Dual Authoring
     for (const order of rings.orders) {
+      if (order.onChain) {
+        continue;
+      }
+
       if (order.dualAuthSig === undefined) {
         if (order.dualAuthAddr) {
           order.dualAuthSig = await this.multiHashUtil.signAsync(

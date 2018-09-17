@@ -52,8 +52,9 @@ export class OrderUtil {
 
   public async checkBrokerSignature(order: OrderInfo) {
     let signatureValid = true;
-    if (!order.sig) {
+    if (!order.sig && !order.onChain) {
       signatureValid = await this.context.orderRegistry.isOrderHashRegistered(order.broker, order.hash);
+      // console.log("check order hash registered:", order.broker, order.hash, signatureValid);
     } else {
       signatureValid = this.multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
     }
@@ -122,7 +123,7 @@ export class OrderUtil {
       if (n === undefined) {
         n = 0;
       }
-      const encoded = ABI.rawEncode(["uint256"], [new BN(n.toString(10), 10)]);
+      const encoded = ABI.rawEncode(["uint256"], [this.toBN(n)]);
       return "0x" + encoded.toString("hex");
     };
 
