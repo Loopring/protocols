@@ -116,7 +116,12 @@ export class OrderUtil {
   }
 
   public toOrderBookSubmitParams(orderInfo: OrderInfo) {
+    const emptyAddrBytes32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
     const numberToBytes32Str = (n: number) => {
+      if (n === undefined) {
+        n = 0;
+      }
       const encoded = ABI.rawEncode(["uint256"], [new BN(n.toString(10), 10)]);
       return "0x" + encoded.toString("hex");
     };
@@ -126,7 +131,7 @@ export class OrderUtil {
         const encoded = ABI.rawEncode(["address"], [addr]);
         return "0x" + encoded.toString("hex");
       } else {
-        return undefined;
+        return emptyAddrBytes32;
       }
     };
 
@@ -134,13 +139,27 @@ export class OrderUtil {
     bytes32Array.push(addressToBytes32Str(orderInfo.owner));
     bytes32Array.push(addressToBytes32Str(orderInfo.tokenS));
     bytes32Array.push(addressToBytes32Str(orderInfo.tokenB));
-    bytes32Array.push(addressToBytes32Str(orderInfo.broker));
     bytes32Array.push(numberToBytes32Str(orderInfo.amountS));
     bytes32Array.push(numberToBytes32Str(orderInfo.amountB));
     bytes32Array.push(numberToBytes32Str(orderInfo.validSince));
+    bytes32Array.push(addressToBytes32Str(orderInfo.broker));
+    bytes32Array.push(addressToBytes32Str(orderInfo.orderInterceptor));
+
+    bytes32Array.push(addressToBytes32Str(orderInfo.walletAddr));
     bytes32Array.push(numberToBytes32Str(orderInfo.validUntil));
+    bytes32Array.push(addressToBytes32Str(orderInfo.feeToken));
     bytes32Array.push(numberToBytes32Str(orderInfo.feeAmount));
-    bytes32Array.push(numberToBytes32Str(0));
+    bytes32Array.push(numberToBytes32Str(orderInfo.feePercentage));
+    bytes32Array.push(numberToBytes32Str(orderInfo.tokenSFeePercentage));
+    bytes32Array.push(numberToBytes32Str(orderInfo.tokenBFeePercentage));
+    bytes32Array.push(addressToBytes32Str(orderInfo.tokenRecipient));
+    bytes32Array.push(numberToBytes32Str(orderInfo.walletSplitPercentage));
+
+    if (orderInfo.allOrNone) {
+      bytes32Array.push(numberToBytes32Str(1));
+    } else {
+      bytes32Array.push(numberToBytes32Str(0));
+    }
 
     return bytes32Array;
   }
