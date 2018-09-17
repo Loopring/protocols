@@ -164,6 +164,7 @@ export class ProtocolSimulator {
   private async checkCutoffsAndCancelledOrders(orders: OrderInfo[]) {
     const bitstream = new Bitstream();
     for (const order of orders) {
+      bitstream.addAddress(order.broker, 32);
       bitstream.addAddress(order.owner, 32);
       bitstream.addHex(order.hash.toString("hex"));
       bitstream.addNumber(order.validSince, 32);
