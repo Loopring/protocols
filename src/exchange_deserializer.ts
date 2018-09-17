@@ -16,18 +16,9 @@ export class ExchangeDeserializer {
 
   private context: Context;
 
-  private data: string;
-
-  private addressList?: string[];
-  private uintList?: BigNumber[];
-  private uint16List?: number[];
-  private bytesList?: string[];
+  private data: Bitstream;
   private spendableList?: Spendable[];
-
-  private addressListIdx: number = 0;
-  private uintListIdx: number = 0;
-  private uint16ListIdx: number = 0;
-  private bytesListIdx: number = 0;
+  private bytesOffset: number = 0;
 
   constructor(context: Context) {
     this.context = context;
@@ -35,34 +26,28 @@ export class ExchangeDeserializer {
 
   public deserialize(data: string): [Mining, OrderInfo[], number[][]] {
 
-    const bitstream = new Bitstream(data);
+    this.data = new Bitstream(data);
 
-    const encodeSpecsLen = bitstream.extractUint16(0);
-    let offset = 2;
-    const encodeSpecs = new EncodeSpec(bitstream.copyToUint16Array(offset, encodeSpecsLen));
-    offset += 2 * encodeSpecsLen;
+    const numOrders = this.data.extractUint16(0);
+    const numRings = this.data.extractUint16(2);
+    const numSpendables = this.data.extractUint16(4);
+    const dataLength = this.data.extractUint16(6);
 
-    const miningSpec = new MiningSpec(bitstream.extractUint16(offset));
+    let offset = 2 * 4;
+
+    const miningSpec = new MiningSpec(this.data.extractUint16(offset));
     offset += 2;
-    const orderSpecs = bitstream.copyToUint16Array(offset, encodeSpecs.orderSpecSize());
-    offset += 2 * encodeSpecs.orderSpecSize();
 
-    const ringSpecs = bitstream.copyToUint8ArrayList(offset, encodeSpecs.ringSpecSizeArray());
-    offset += 1 * encodeSpecs.ringSpecsDataLen();
+    const orderOffset = offset;
+    offset += 2 * numOrders;
 
-    this.addressList = bitstream.copyToAddressArray(offset, encodeSpecs.addressListSize());
-    offset += 20 * encodeSpecs.addressListSize();
+    this.bytesOffset = offset;
+    offset += dataLength;
 
-    this.uintList = bitstream.copyToUintArray(offset, encodeSpecs.uintListSize());
-    offset += 32 * encodeSpecs.uintListSize();
-
-    this.uint16List = bitstream.copyToUint16Array(offset, encodeSpecs.uint16ListSize());
-    offset += 2 * encodeSpecs.uint16ListSize();
-
-    this.bytesList = bitstream.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
+    const ringSpecsOffset = offset;
 
     this.spendableList = [];
-    for (let i = 0; i < encodeSpecs.spendableListSize(); i++) {
+    for (let i = 0; i < numSpendables; i++) {
       const spendable = {
         initialized: false,
         amount: 0,
@@ -78,19 +63,19 @@ export class ExchangeDeserializer {
       (miningSpec.hasSignature() ? this.nextBytes() : undefined),
     );
 
-    const orders = this.assembleOrders(orderSpecs);
-    const rings = this.assembleRings(ringSpecs, orders);
+    const orders = this.assembleOrders(numOrders, orderOffset);
+    const rings = this.assembleRings(numRings, ringSpecsOffset, orders);
 
     this.validateSpendables(orders);
 
     return [mining, orders, rings];
   }
 
-  private assembleOrders(specs: number[]) {
-    const size = specs.length;
+  private assembleOrders(numOrders: number, offset: number) {
     const orders: OrderInfo[] = [];
-    for (let i = 0; i < size; i++) {
-      orders.push(this.assembleOrder(specs[i]));
+    for (let i = 0; i < numOrders; i++) {
+      const spec = this.data.extractUint16(offset + i * 2);
+      orders.push(this.assembleOrder(spec));
     }
     return orders;
   }
@@ -129,22 +114,23 @@ export class ExchangeDeserializer {
     return order;
   }
 
-  private assembleRings(specs: number[][], orders: OrderInfo[]) {
-    const size = specs.length;
+  private assembleRings(numRings: number, offset: number, orders: OrderInfo[]) {
     const rings: number[][] = [];
-    for (let i = 0; i < size; i++) {
-      rings.push(this.assembleRing(specs[i], orders));
+    for (let i = 0; i < numRings; i++) {
+      const ringSize = this.data.extractUint8(offset);
+      const ring = this.assembleRing(ringSize, offset + 1, orders);
+      rings.push(ring);
+      offset += 1 + ringSize;
     }
     return rings;
   }
 
-  private assembleRing(pspecs: number[], orders: OrderInfo[]) {
-    const size = pspecs.length;
-
+  private assembleRing(ringSize: number, offset: number, orders: OrderInfo[]) {
     const ring: number[] = [];
-    for (let i = 0; i < size; i++) {
-      const pspec = new ParticipationSpec(pspecs[i]);
-      const order = orders[pspec.orderIndex()];
+    for (let i = 0; i < ringSize; i++) {
+      const specData = this.data.extractUint8(offset);
+      offset += 1;
+      const pspec = new ParticipationSpec(specData);
       ring.push(pspec.orderIndex());
     }
 
@@ -157,19 +143,28 @@ export class ExchangeDeserializer {
   }
 
   private nextAddress() {
-    return this.addressList[this.addressListIdx++];
+    const value = this.data.extractAddress(this.bytesOffset);
+    this.bytesOffset += 20;
+    return value;
   }
 
   private nextUint() {
-    return this.uintList[this.uintListIdx++];
+    const value = this.data.extractUint(this.bytesOffset);
+    this.bytesOffset += 32;
+    return value;
   }
 
   private nextUint16() {
-    return this.uint16List[this.uint16ListIdx++];
+    const value = this.data.extractUint16(this.bytesOffset);
+    this.bytesOffset += 2;
+    return value;
   }
 
   private nextBytes() {
-    return this.bytesList[this.bytesListIdx++];
+    const len = this.data.extractUint(this.bytesOffset).toNumber();
+    const data = "0x" + this.data.extractBytesX(this.bytesOffset + 32, len).toString("hex");
+    this.bytesOffset += 32 + len;
+    return data;
   }
 
   private toInt16(x: number) {

@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import { Bitstream } from "./bitstream";
 
 // Make sure to keep this in sync with the Multihash smart contract
 export enum SignAlgorithm {
@@ -90,10 +91,7 @@ export interface RingsSubmitParam {
   miningSpec: number;
   orderSpecs: number[];
   ringSpecs: number[][];
-  addressList: string[];
-  uintList: BigNumber[];
-  uint16List: number[];
-  bytesList: string[];
+  data: Bitstream;
 }
 
 export interface RingsInfo {

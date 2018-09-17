@@ -91,18 +91,10 @@ export class RingsGenerator {
     const param = this.ringsToParam(rings);
 
     const encodeSpecs: number[] = [];
-    const len = 7 + param.ringSpecs.length + param.bytesList.length;
-    encodeSpecs.push(len);
     encodeSpecs.push(param.orderSpecs.length);
     encodeSpecs.push(param.ringSpecs.length);
-    encodeSpecs.push(param.addressList.length);
-    encodeSpecs.push(param.uintList.length);
-    encodeSpecs.push(param.uint16List.length);
-    encodeSpecs.push(param.bytesList.length);
     encodeSpecs.push(numSpendables);
-    param.ringSpecs.forEach((rs) => encodeSpecs.push(rs.length));
-    // Bytes arrays start with 0x and have 2 characters/byte
-    param.bytesList.forEach((bs) => encodeSpecs.push((bs.length - 2) / 2));
+    encodeSpecs.push(param.data.length());
 
     return this.submitParamToBytes(param, encodeSpecs);
   }
@@ -159,10 +151,7 @@ export class RingsGenerator {
       miningSpec: 0,
       orderSpecs: [],
       ringSpecs: [],
-      addressList: [],
-      uintList: [],
-      uint16List: [],
-      bytesList: [],
+      data: new Bitstream(),
     };
 
     this.calculateMiningSepc(ringsInfo, param);
@@ -184,58 +173,56 @@ export class RingsGenerator {
     let miningSpec = 0;
     if (feeRecipient !== ringsInfo.transactionOrigin) {
       miningSpec += 1;
-      param.addressList.push(ringsInfo.feeRecipient);
+      param.data.addAddress(ringsInfo.feeRecipient);
     }
 
     if (miner !== feeRecipient) {
       miningSpec += 1 << 1;
-      param.addressList.push(ringsInfo.miner);
+      param.data.addAddress(ringsInfo.miner);
     }
 
     if (ringsInfo.sig && miner !== ringsInfo.transactionOrigin) {
       miningSpec += 1 << 2;
-      param.bytesList.push(ringsInfo.sig);
+      param.data.addNumber((ringsInfo.sig.length - 2) / 2, 32);
+      param.data.addRawBytes(ringsInfo.sig);
     }
 
     param.miningSpec = miningSpec;
   }
 
   private calculateOrderSpec(order: OrderInfo, param: RingsSubmitParam) {
-    param.addressList.push(order.owner);
-    param.addressList.push(order.tokenS);
-    // param.addressList.push(order.tokenB);
-    param.uintList.push(new BigNumber(order.amountS));
-    param.uintList.push(new BigNumber(order.amountB));
-    param.uintList.push(new BigNumber(order.validSince));
-    param.uint16List.push(order.tokenSpendableS.index);
-    param.uint16List.push(order.tokenSpendableFee.index);
-
-    // param.addressList.push(order.delegateContract);
+    param.data.addAddress(order.owner);
+    param.data.addAddress(order.tokenS);
+    param.data.addNumber(order.amountS, 32);
+    param.data.addNumber(order.amountB, 32);
+    param.data.addNumber(order.validSince, 32);
+    param.data.addNumber(order.tokenSpendableS.index, 2);
+    param.data.addNumber(order.tokenSpendableFee.index, 2);
 
     let spec = 0;
     if (order.dualAuthAddr) {
       spec += 1;
-      param.addressList.push(order.dualAuthAddr);
+      param.data.addAddress(order.dualAuthAddr);
     }
 
     if (order.broker) {
       spec += 1 << 1;
-      param.addressList.push(order.broker);
-      param.uint16List.push(order.brokerSpendableS.index);
-      param.uint16List.push(order.brokerSpendableFee.index);
+      param.data.addAddress(order.broker);
+      param.data.addNumber(order.brokerSpendableS.index, 2);
+      param.data.addNumber(order.brokerSpendableFee.index, 2);
     }
     if (order.orderInterceptor) {
       spec += 1 << 2;
-      param.addressList.push(order.orderInterceptor);
+      param.data.addAddress(order.orderInterceptor);
     }
     if (order.walletAddr) {
       spec += 1 << 3;
-      param.addressList.push(order.walletAddr);
+      param.data.addAddress(order.walletAddr);
     }
 
     if (order.validUntil) {
       spec += 1 << 4;
-      param.uintList.push(new BigNumber(order.validUntil));
+      param.data.addNumber(order.validUntil, 32);
     }
     if (order.allOrNone) {
       spec += 1 << 5;
@@ -243,52 +230,54 @@ export class RingsGenerator {
 
     if (order.sig) {
       spec += 1 << 6;
-      param.bytesList.push(order.sig);
+      param.data.addNumber((order.sig.length - 2) / 2, 32);
+      param.data.addRawBytes(order.sig);
     }
 
     if (order.dualAuthSig) {
       spec += 1 << 7;
-      param.bytesList.push(order.dualAuthSig);
+      param.data.addNumber((order.dualAuthSig.length - 2) / 2, 32);
+      param.data.addRawBytes(order.dualAuthSig);
     }
 
     if (order.feeToken && order.feeToken !== this.context.lrcAddress) {
       spec += 1 << 8;
-      param.addressList.push(order.feeToken);
+      param.data.addAddress(order.feeToken);
     }
 
     if (order.feeAmount) {
       spec += 1 << 9;
-      param.uintList.push(new BigNumber(order.feeAmount));
+      param.data.addNumber(order.feeAmount, 32);
     }
 
     if (order.feePercentage) {
       spec += 1 << 10;
-      param.uint16List.push(order.feePercentage);
+      param.data.addNumber(order.feePercentage, 2);
     }
 
     if (order.waiveFeePercentage) {
       spec += 1 << 11;
-      param.uint16List.push(order.waiveFeePercentage);
+      param.data.addNumber(order.waiveFeePercentage, 2);
     }
 
     if (order.tokenSFeePercentage) {
       spec += 1 << 12;
-      param.uint16List.push(order.tokenSFeePercentage);
+      param.data.addNumber(order.tokenSFeePercentage, 2);
     }
 
     if (order.tokenBFeePercentage) {
       spec += 1 << 13;
-      param.uint16List.push(order.tokenBFeePercentage);
+      param.data.addNumber(order.tokenBFeePercentage, 2);
     }
 
     if (order.tokenRecipient && order.tokenRecipient !== order.owner) {
       spec += 1 << 14;
-      param.addressList.push(order.tokenRecipient);
+      param.data.addAddress(order.tokenRecipient);
     }
 
     if (order.walletSplitPercentage) {
       spec += 1 << 15;
-      param.uint16List.push(order.walletSplitPercentage);
+      param.data.addNumber(order.walletSplitPercentage, 2);
     }
 
     param.orderSpecs.push(spec);
@@ -307,13 +296,11 @@ export class RingsGenerator {
     encodeSpecs.forEach((i) => stream.addNumber(i, 2));
     stream.addNumber(param.miningSpec, 2);
     param.orderSpecs.forEach((i) => stream.addNumber(i, 2));
-    const ringSpecsFlattened = [].concat(...param.ringSpecs);
-    // console.log("ringSpecsFlattened:", ringSpecsFlattened);
-    ringSpecsFlattened.forEach((i) => stream.addNumber(i, 1));
-    param.addressList.forEach((a) => stream.addAddress(a));
-    param.uintList.forEach((bn) => stream.addBigNumber(bn));
-    param.uint16List.forEach((n) => stream.addNumber(n, 2));
-    param.bytesList.forEach((bs) => stream.addRawBytes(bs));
+    stream.addHex(param.data.getData());
+    param.ringSpecs.forEach((ring) => {
+      stream.addNumber(ring.length, 1);
+      ring.forEach((o) => stream.addNumber(o, 1));
+    });
 
     return stream.getData();
   }

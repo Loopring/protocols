@@ -91,55 +91,6 @@ export class Bitstream {
     return new Buffer(this.data.substring(start, end), "hex");
   }
 
-  public copyToUint16Array(offset: number, arraySize: number) {
-    const resultArray: number[] = [];
-    for (let i = 0; i < arraySize; i++) {
-      resultArray.push(this.extractUint16(offset + i * 2));
-    }
-    return resultArray;
-  }
-
-  public copyToUint8ArrayList(offset: number, innerArraySizeList: number[]) {
-    const arraySize = innerArraySizeList.length;
-    const resultArray: number[][] = [];
-    for (let i = 0; i < arraySize; i++) {
-      const len = innerArraySizeList[i];
-      resultArray[i] = [];
-      for (let j = 0; j < len; j++) {
-        resultArray[i].push(this.extractUint8(offset + j));
-      }
-      offset += len;
-    }
-    return resultArray;
-  }
-
-  public copyToAddressArray(offset: number, arraySize: number) {
-    const resultArray: string[] = [];
-    for (let i = 0; i < arraySize; i++) {
-      resultArray.push(this.extractAddress(offset + i * 20));
-    }
-    return resultArray;
-  }
-
-  public copyToUintArray(offset: number, arraySize: number) {
-    const resultArray: BigNumber[] = [];
-    for (let i = 0; i < arraySize; i++) {
-      resultArray.push(this.extractUint(offset + i * 32));
-    }
-    return resultArray;
-  }
-
-  public copyToBytesArray(offset: number, innerBytesSizeList: number[]) {
-    const arraySize = innerBytesSizeList.length;
-    const resultArray: string[] = [];
-    for (let i = 0; i < arraySize; i++) {
-      const len = innerBytesSizeList[i];
-      resultArray[i] = "0x" + this.extractBytesX(offset, len).toString("hex");
-      offset += len;
-    }
-    return resultArray;
-  }
-
   // Returns the number of bytes of data
   public length() {
     return this.data.length / 2;
