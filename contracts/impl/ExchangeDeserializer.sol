@@ -27,6 +27,7 @@ import "../lib/MultihashUtil.sol";
 import "../lib/NoDefaultFunc.sol";
 
 import "../spec/EncodeSpec.sol";
+import "../spec/OrderSpec.sol";
 import "../spec/OrderSpecs.sol";
 import "../spec/MiningSpec.sol";
 import "../spec/RingSpecs.sol";
@@ -66,68 +67,104 @@ library ExchangeDeserializer {
             Data.Ring[]
         )
     {
-        uint16 encodeSpecsLen = uint16(MemoryUtil.bytesToUintX(data, 0, 2));
-        uint offset = 2;
-        uint16[] memory encodeSpecs = data.copyToUint16Array(offset, encodeSpecsLen);
-        offset += 2 * encodeSpecsLen;
-
-        uint16 miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
-        offset += 2;
-        uint16[] memory orderSpecs = data.copyToUint16Array(
-            offset,
-            encodeSpecs.orderSpecSize()
-        );
-        offset += 2 * encodeSpecs.orderSpecSize();
-
-        uint8[][] memory ringSpecs = data.copyToUint8ArrayList(offset, encodeSpecs.ringSpecSizeArray());
-        offset += 1 * encodeSpecs.ringSpecsDataLen();
-
         Data.Inputs memory inputs;
         inputs.data = data;
-        inputs.addressOffset = offset;
-        offset += 20 * encodeSpecs.addressListSize();
-        inputs.uintOffset = offset;
-        offset += 32 * encodeSpecs.uintListSize();
-        inputs.uint16Offset = offset;
-        offset += 2 * encodeSpecs.uint16ListSize();
-        inputs.bytesList = data.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
-        inputs.spendableList = new Data.Spendable[](encodeSpecs.spendableListSize());
+        inputs.numOrders = uint16(MemoryUtil.bytesToUintX(data, 0, 2));
+        inputs.numRings = uint16(MemoryUtil.bytesToUintX(data, 2, 2));
+        uint16 numSpendables = uint16(MemoryUtil.bytesToUintX(data, 4, 2));
+        uint16 dataLength = uint16(MemoryUtil.bytesToUintX(data, 6, 2));
+
+        inputs.spendableList = new Data.Spendable[](numSpendables);
+
+        uint offset = 2 * 4;
+        inputs.miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
+        offset += 2;
+        inputs.ordersOffset = offset;
+        offset += 2 * inputs.numOrders;
+        inputs.bytesOffset = offset;
+        offset += dataLength;
+
+        inputs.ringsOffset = offset;
 
         return inputToStructedData(
             lrcTokenAddress,
-            miningSpec,
-            orderSpecs,
-            ringSpecs,
             inputs
         );
     }
 
     function inputToStructedData(
         address lrcTokenAddress,
-        uint16 miningSpec,
-        uint16[] orderSpecs,
-        uint8[][] ringSpecs,
         Data.Inputs inputs
         )
         internal
         view
         returns (
-            Data.Mining,
-            Data.Order[],
-            Data.Ring[]
+            Data.Mining mining,
+            Data.Order[] orders,
+            Data.Ring[] rings
         )
     {
-        Data.Mining memory mining = Data.Mining(
-            (miningSpec.hasFeeRecipient() ? inputs.nextAddress() : tx.origin),
-            (miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0)),
-            (miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0)),
-            bytes32(0x0), // hash
-            address(0x0)  // interceptor
-        );
+        uint i;
 
-        Data.Order[] memory orders = orderSpecs.assembleOrders(lrcTokenAddress, inputs);
-        Data.Ring[] memory rings = ringSpecs.assembleRings(orders);
+        mining.feeRecipient = inputs.miningSpec.hasFeeRecipient() ? inputs.nextAddress() : tx.origin;
+        mining.miner = inputs.miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0);
+        mining.sig = inputs.miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0);
 
-        return (mining, orders, rings);
+        orders = new Data.Order[](inputs.numOrders);
+        for (i = 0; i < inputs.numOrders; i++) {
+            Data.Order memory order = orders[i];
+            uint16 spec = uint16(MemoryUtil.bytesToUintX(inputs.data, inputs.ordersOffset + i * 2, 2));
+
+            order.owner = inputs.nextAddress();
+            order.tokenS = inputs.nextAddress();
+            order.amountS = inputs.nextUint();
+            order.amountB = inputs.nextUint();
+            order.validSince = inputs.nextUint();
+            order.tokenSpendableS = inputs.spendableList[inputs.nextUint16()];
+            order.tokenSpendableFee = inputs.spendableList[inputs.nextUint16()];
+            order.dualAuthAddr = (spec & 1 != 0) ? inputs.nextAddress() : 0x0;
+            if (spec & 2 != 0) {
+                order.broker = inputs.nextAddress();
+                order.brokerSpendableS = inputs.spendableList[inputs.nextUint16()];
+                order.brokerSpendableFee = inputs.spendableList[inputs.nextUint16()];
+            }
+            order.orderInterceptor = (spec & 4 != 0) ? inputs.nextAddress() : 0x0;
+            order.wallet = (spec & 8 != 0) ? inputs.nextAddress() : 0x0;
+            order.validUntil = (spec & 16 != 0) ? inputs.nextUint() : uint(0) - 1;
+            if (spec & 64 != 0) {
+                order.sig = inputs.nextBytes();
+            }
+            if (spec & 128 != 0) {
+                order.dualAuthSig = inputs.nextBytes();
+            }
+            order.allOrNone = (spec & 32 != 0);
+            order.feeToken = (spec & 256 != 0) ? inputs.nextAddress() : lrcTokenAddress;
+            order.feeAmount = (spec & 512 != 0) ? inputs.nextUint() : 0;
+            order.feePercentage = (spec & 1024 != 0) ? inputs.nextUint16() : 0;
+            order.waiveFeePercentage = (spec & 2048 != 0) ? int16(inputs.nextUint16()) : 0;
+            order.tokenSFeePercentage = (spec & 4096 != 0) ? inputs.nextUint16() : 0;
+            order.tokenBFeePercentage = (spec & 8192 != 0) ? inputs.nextUint16() : 0;
+            order.tokenRecipient = (spec & 16384 != 0) ? inputs.nextAddress() : order.owner;
+            order.walletSplitPercentage = (spec & 32768 != 0) ? inputs.nextUint16() : 0;
+            order.valid = true;
+        }
+
+        rings = new Data.Ring[](inputs.numRings);
+        for (uint r = 0; r < inputs.numRings; r++) {
+            uint ringSize = uint(inputs.data[inputs.ringsOffset++]);
+
+            Data.Ring memory ring = rings[r];
+            ring.size = ringSize;
+            ring.valid = true;
+            ring.participations = new Data.Participation[](ringSize);
+            for (i = 0; i < ringSize; i++) {
+                ring.participations[i].order = orders[uint(inputs.data[inputs.ringsOffset++])];
+            }
+
+            // Set tokenB of orders using the tokenS from the next order
+            for (i = 0; i < ringSize; i++) {
+                ring.participations[i].order.tokenB = ring.participations[(i + 1) % ringSize].order.tokenS;
+            }
+        }
     }
 }

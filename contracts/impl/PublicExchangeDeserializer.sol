@@ -78,15 +78,15 @@ library PublicExchangeDeserializer {
         offset += 1 * encodeSpecs.ringSpecsDataLen();
 
         Data.Inputs memory inputs;
-        inputs.data = data;
-        inputs.addressOffset = offset;
-        offset += 20 * encodeSpecs.addressListSize();
-        inputs.uintOffset = offset;
-        offset += 32 * encodeSpecs.uintListSize();
-        inputs.uint16Offset = offset;
-        offset += 2 * encodeSpecs.uint16ListSize();
-        inputs.bytesList = data.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
-        inputs.spendableList = new Data.Spendable[](encodeSpecs.spendableListSize());
+        // inputs.data = data;
+        // inputs.addressOffset = offset;
+        // offset += 20 * encodeSpecs.addressListSize();
+        // inputs.uintOffset = offset;
+        // offset += 32 * encodeSpecs.uintListSize();
+        // inputs.uint16Offset = offset;
+        // offset += 2 * encodeSpecs.uint16ListSize();
+        // inputs.bytesList = data.copyToBytesArray(offset, encodeSpecs.bytesListSizeArray());
+        // inputs.spendableList = new Data.Spendable[](encodeSpecs.spendableListSize());
 
         return inputToStructedData(
             miningSpec,

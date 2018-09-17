@@ -33,8 +33,12 @@ library InputsHelper {
         pure
         returns (address value)
     {
-        value = MemoryUtil.bytesToAddress(inputs.data, inputs.addressOffset);
-        inputs.addressOffset += 20;
+        bytes memory b = inputs.data;
+        uint offset = inputs.bytesOffset;
+        assembly {
+            value := mload(add(add(b, 20), offset))
+        }
+        inputs.bytesOffset += 20;
     }
 
     function nextUint(
@@ -44,8 +48,12 @@ library InputsHelper {
         pure
         returns (uint value)
     {
-        value = MemoryUtil.bytesToUint(inputs.data, inputs.uintOffset);
-        inputs.uintOffset += 32;
+        bytes memory b = inputs.data;
+        uint offset = inputs.bytesOffset;
+        assembly {
+            value := mload(add(add(b, 32), offset))
+        }
+        inputs.bytesOffset += 32;
     }
 
     function nextUint16(
@@ -55,8 +63,12 @@ library InputsHelper {
         pure
         returns (uint16 value)
     {
-        value = uint16(MemoryUtil.bytesToUintX(inputs.data, inputs.uint16Offset, 2));
-        inputs.uint16Offset += 2;
+        bytes memory b = inputs.data;
+        uint offset = inputs.bytesOffset;
+        assembly {
+            value := mload(add(add(b, 2), offset))
+        }
+        inputs.bytesOffset += 2;
     }
 
     function nextBytes(
@@ -64,8 +76,15 @@ library InputsHelper {
         )
         internal
         pure
-        returns (bytes)
+        returns (bytes value)
     {
-        return inputs.bytesList[inputs.bytesIndex++];
+        // We have stored the bytes arrays just like they are in stored in memory
+        // so we can just copy the memory location at the given offset
+        bytes memory data = inputs.data;
+        uint offset = 32 + inputs.bytesOffset;
+        assembly {
+          value := add(data, offset)
+        }
+        inputs.bytesOffset += 32 + value.length;
     }
 }

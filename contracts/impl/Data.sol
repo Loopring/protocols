@@ -31,12 +31,13 @@ library Data {
 
     struct Inputs {
         bytes data;
-        bytes[] bytesList;
         Spendable[] spendableList;
-        uint addressOffset;
-        uint uintOffset;
-        uint uint16Offset;
-        uint bytesIndex;
+        uint bytesOffset;
+        uint16 miningSpec;
+        uint numOrders;
+        uint ordersOffset;
+        uint numRings;
+        uint ringsOffset;
     }
 
     // Update TaxHelper.getTaxRate() if you change the order of these parameters
