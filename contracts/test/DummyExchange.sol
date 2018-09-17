@@ -74,12 +74,12 @@ contract DummyExchange {
     }
 
     function setCancelled(
-        address owner,
+        address broker,
         bytes32 orderHash
         )
         external
     {
-        ITradeDelegate(tradeDelegateAddress).setCancelled(owner, orderHash);
+        ITradeDelegate(tradeDelegateAddress).setCancelled(broker, orderHash);
     }
 
     function addFilled(
@@ -101,22 +101,43 @@ contract DummyExchange {
     }
 
     function setCutoffs(
+        address broker,
+        uint cutoff
+        )
+        external
+    {
+        ITradeDelegate(tradeDelegateAddress).setCutoffs(broker, cutoff);
+    }
+
+    function setTradingPairCutoffs(
+        address broker,
+        bytes20 tokenPair,
+        uint cutoff
+        )
+        external
+    {
+        ITradeDelegate(tradeDelegateAddress).setTradingPairCutoffs(broker, tokenPair, cutoff);
+    }
+
+    function setCutoffsOfOwner(
+        address broker,
         address owner,
         uint cutoff
         )
         external
     {
-        ITradeDelegate(tradeDelegateAddress).setCutoffs(owner, cutoff);
+        ITradeDelegate(tradeDelegateAddress).setCutoffsOfOwner(broker, owner, cutoff);
     }
 
-    function setTradingPairCutoffs(
+    function setTradingPairCutoffsOfOwner(
+        address broker,
         address owner,
         bytes20 tokenPair,
         uint cutoff
         )
         external
     {
-        ITradeDelegate(tradeDelegateAddress).setTradingPairCutoffs(owner, tokenPair, cutoff);
+        ITradeDelegate(tradeDelegateAddress).setTradingPairCutoffsOfOwner(broker, owner, tokenPair, cutoff);
     }
 
     function authorizeAddress(

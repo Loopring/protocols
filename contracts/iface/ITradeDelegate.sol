@@ -41,11 +41,18 @@ contract ITradeDelegate {
     // This map is used to keep trace of order's cancellation history.
     mapping (address => mapping (bytes32 => bool)) public cancelled;
 
-    // A map from address to its cutoff timestamp.
+    // A map from a broker to its cutoff timestamp.
     mapping (address => uint) public cutoffs;
 
-    // A map from address to its trading-pair cutoff timestamp.
+    // A map from a broker to its trading-pair cutoff timestamp.
     mapping (address => mapping (bytes20 => uint)) public tradingPairCutoffs;
+
+    // A map from a broker to an order owner to its cutoff timestamp.
+    mapping (address => mapping (address => uint)) public cutoffsOwner;
+
+    // A map from a broker to an order owner to its trading-pair cutoff timestamp.
+    mapping (address => mapping (address => mapping (bytes20 => uint))) public tradingPairCutoffsOwner;
+
 
     /// @dev Add a Loopring protocol address.
     /// @param addr A loopring protocol address.
@@ -79,7 +86,7 @@ contract ITradeDelegate {
         returns (bool);
 
     function setCancelled(
-        address owner,
+        address broker,
         bytes32 orderHash
         )
         external;
@@ -97,12 +104,27 @@ contract ITradeDelegate {
         external;
 
     function setCutoffs(
-        address owner,
+        address broker,
         uint cutoff
         )
         external;
 
     function setTradingPairCutoffs(
+        address broker,
+        bytes20 tokenPair,
+        uint cutoff
+        )
+        external;
+
+    function setCutoffsOfOwner(
+        address broker,
+        address owner,
+        uint cutoff
+        )
+        external;
+
+    function setTradingPairCutoffsOfOwner(
+        address broker,
         address owner,
         bytes20 tokenPair,
         uint cutoff
@@ -135,6 +157,7 @@ library TradeDelegateData {
     }
     struct OrderCheckCancelledData {
         address owner;
+        address broker;
         bytes32 hash;
         uint    validSince;
         bytes20 tradingPair;

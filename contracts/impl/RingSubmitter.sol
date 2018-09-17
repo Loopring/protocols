@@ -221,16 +221,17 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         view
     {
         TradeDelegateData.OrderCheckCancelledData memory cancelledData;
-        bytes32[] memory ordersInfo = new bytes32[](orders.length * 4);
+        bytes32[] memory ordersInfo = new bytes32[](orders.length * 5);
         for (uint i = 0; i < orders.length; i++) {
             Data.Order memory order = orders[i];
 
             // This will make writes to cancelledData to be stored in the memory of ordersInfo
-            uint ptr = MemoryUtil.getBytes32Pointer(ordersInfo, 4 * i);
+            uint ptr = MemoryUtil.getBytes32Pointer(ordersInfo, 5 * i);
             assembly {
                 cancelledData := ptr
             }
 
+            cancelledData.broker = order.broker;
             cancelledData.owner = order.owner;
             cancelledData.hash = order.hash;
             cancelledData.validSince = order.validSince;

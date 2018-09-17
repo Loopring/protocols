@@ -72,18 +72,12 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc {
     }
 
     function cancelOrders(
-        address owner,
         bytes   orderHashes
         )
         external
     {
         uint size = orderHashes.length;
         require(size > 0 && size % 32 == 0);
-
-        /* verifyAuthenticationGetInterceptor( */
-        /*     owner, */
-        /*     tx.origin */
-        /* ); */
 
         size /= 32;
         bytes32[] memory hashes = new bytes32[](size);
@@ -92,38 +86,33 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc {
 
         for (uint i = 0; i < size; i++) {
             hashes[i] = BytesUtil.bytesToBytes32(orderHashes, i * 32);
-            delegate.setCancelled(owner, hashes[i]);
+            delegate.setCancelled(tx.origin, hashes[i]);
         }
 
         emit OrdersCancelled(
-            owner,
             tx.origin,
             hashes
         );
     }
 
     function cancelAllOrdersForTradingPair(
-        address owner,
         address token1,
         address token2,
         uint    cutoff
         )
         external
     {
-        // verifyAuthenticationGetInterceptor(owner, tx.origin);
-
         uint t = (cutoff == 0) ? block.timestamp : cutoff;
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
 
         ITradeDelegate(delegateAddress).setTradingPairCutoffs(
-            owner,
+            tx.origin,
             tokenPair,
             t
         );
 
         emit AllOrdersCancelledForTradingPair(
-            owner,
             tx.origin,
             token1,
             token2,
@@ -132,23 +121,65 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc {
     }
 
     function cancelAllOrders(
-        address owner,
         uint   cutoff
         )
         external
     {
-        /* verifyAuthenticationGetInterceptor( */
-        /*     owner, */
-        /*     tx.origin */
-        /* ); */
-
         uint t = (cutoff == 0) ? block.timestamp : cutoff;
 
-        ITradeDelegate(delegateAddress).setCutoffs(owner, t);
+        ITradeDelegate(delegateAddress).setCutoffs(tx.origin, t);
 
         emit AllOrdersCancelled(
-            owner,
             tx.origin,
+            t
+        );
+    }
+
+    function cancelAllOrdersForTradingPairOfOwner(
+        address owner,
+        address token1,
+        address token2,
+        uint    cutoff
+        )
+        external
+    {
+        uint t = (cutoff == 0) ? block.timestamp : cutoff;
+
+        bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
+
+        ITradeDelegate(delegateAddress).setTradingPairCutoffsOfOwner(
+            tx.origin,
+            owner,
+            tokenPair,
+            t
+        );
+
+        emit AllOrdersCancelledForTradingPairByBroker(
+            tx.origin,
+            owner,
+            token1,
+            token2,
+            t
+        );
+    }
+
+    function cancelAllOrdersOfOwner(
+        address owner,
+        uint    cutoff
+        )
+        external
+    {
+        uint t = (cutoff == 0) ? block.timestamp : cutoff;
+
+        ITradeDelegate(delegateAddress).setCutoffsOfOwner(
+            tx.origin,
+            owner,
+            t
+        );
+
+        emit AllOrdersCancelledByBroker(
+            tx.origin,
+            owner,
             t
         );
     }

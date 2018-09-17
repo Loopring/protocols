@@ -19,6 +19,8 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     assert.equal(orders.length, expectedValidValues.length, "Array sizes need to match");
     const bitstream = new psc.Bitstream();
     for (const order of orders) {
+      const broker = order.broker ? order.broker : order.owner;
+      bitstream.addAddress(broker, 32);
       bitstream.addAddress(order.owner, 32);
       bitstream.addHex(order.hash.toString("hex"));
       bitstream.addNumber(order.validSince, 32);
@@ -81,7 +83,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
       const orderToCancel = ringsInfo.orders[orderToCancelIdx];
       const hashes = new psc.Bitstream();
       hashes.addHex(orderToCancel.hash.toString("hex"));
-      const cancelTx = await ringCanceller.cancelOrders(orderToCancel.owner, hashes.getData());
+      const cancelTx = await ringCanceller.cancelOrders(hashes.getData(), {from: orderToCancel.owner});
 
       // Check the TradeDelegate contract to see if the order is indeed cancelled
       const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
@@ -122,7 +124,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
       const orderToCancelIdx = 0;
       const orderToCancel = ringsInfo.orders[orderToCancelIdx];
       const cancelTx = await ringCanceller.cancelAllOrdersForTradingPair(
-        orderToCancel.owner, orderToCancel.tokenS, orderToCancel.tokenB, orderToCancel.validSince + 500);
+        orderToCancel.tokenS, orderToCancel.tokenB, orderToCancel.validSince + 500, {from: orderToCancel.owner});
 
       // Check the TradeDelegate contract to see if the order is indeed cancelled
       const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
@@ -162,7 +164,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
       // Cancel the first order using trading pairs
       const orderToCancelIdx = 1;
       const orderToCancel = ringsInfo.orders[orderToCancelIdx];
-      const cancelTx = await ringCanceller.cancelAllOrders(orderToCancel.owner, orderToCancel.validSince + 500);
+      const cancelTx = await ringCanceller.cancelAllOrders(orderToCancel.validSince + 500, {from: orderToCancel.owner});
 
       // Check the TradeDelegate contract to see if the order is indeed cancelled
       const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));

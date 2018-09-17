@@ -156,14 +156,14 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
     }
 
     function setCancelled(
-        address owner,
+        address broker,
         bytes32 orderHash
         )
         onlyAuthorized
         notSuspended
         external
     {
-        cancelled[owner][orderHash] = true;
+        cancelled[broker][orderHash] = true;
     }
 
     function addFilled(
@@ -188,8 +188,33 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         filled[orderHash] = amount;
     }
 
-
     function setCutoffs(
+        address broker,
+        uint    cutoff
+        )
+        onlyAuthorized
+        notSuspended
+        external
+    {
+        require(cutoffs[broker] < cutoff, "cutoff too small");
+        cutoffs[broker] = cutoff;
+    }
+
+    function setTradingPairCutoffs(
+        address broker,
+        bytes20 tokenPair,
+        uint    cutoff
+        )
+        onlyAuthorized
+        notSuspended
+        external
+    {
+        require(tradingPairCutoffs[broker][tokenPair] < cutoff, "cutoff too small");
+        tradingPairCutoffs[broker][tokenPair] = cutoff;
+    }
+
+    function setCutoffsOfOwner(
+        address broker,
         address owner,
         uint    cutoff
         )
@@ -197,11 +222,12 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         notSuspended
         external
     {
-        require(cutoffs[owner] < cutoff, "cutoff too small");
-        cutoffs[owner] = cutoff;
+        require(cutoffsOwner[broker][owner] < cutoff, "cutoff too small");
+        cutoffsOwner[broker][owner] = cutoff;
     }
 
-    function setTradingPairCutoffs(
+    function setTradingPairCutoffsOfOwner(
+        address broker,
         address owner,
         bytes20 tokenPair,
         uint    cutoff
@@ -210,8 +236,8 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         notSuspended
         external
     {
-        require(tradingPairCutoffs[owner][tokenPair] < cutoff, "cutoff too small");
-        tradingPairCutoffs[owner][tokenPair] = cutoff;
+        require(tradingPairCutoffsOwner[broker][owner][tokenPair] < cutoff, "cutoff too small");
+        tradingPairCutoffsOwner[broker][owner][tokenPair] = cutoff;
     }
 
     function batchCheckCutoffsAndCancelled(
@@ -221,8 +247,8 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         view
         returns (uint)
     {
-        require(batch.length % 4 == 0);
-        require(batch.length <= 256 * 4);
+        require(batch.length % 5 == 0);
+        require(batch.length <= 256 * 5);
 
         TradeDelegateData.OrderCheckCancelledData memory order;
         uint orderPtr;
@@ -231,15 +257,18 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         }
 
         uint cutoffsValid = 0;
-        for (uint i = 0; i < batch.length; i += 4) {
+        for (uint i = 0; i < batch.length; i += 5) {
 
             // Copy the data straight to the order struct from the call data
-            MemoryUtil.copyCallDataBytesInArray(0, orderPtr, i * 32, 4 * 32);
+            MemoryUtil.copyCallDataBytesInArray(0, orderPtr, i * 32, 5 * 32);
 
-            bool valid = !cancelled[order.owner][order.hash];
-            valid = valid && order.validSince > tradingPairCutoffs[order.owner][order.tradingPair];
-            valid = valid && order.validSince > cutoffs[order.owner];
-            cutoffsValid |= valid ? (1 << (i >> 2)) : 0;
+            bool valid = !cancelled[order.broker][order.hash];
+            valid = valid && order.validSince > tradingPairCutoffs[order.broker][order.tradingPair];
+            valid = valid && order.validSince > cutoffs[order.broker];
+            valid = valid && order.validSince > tradingPairCutoffsOwner[order.broker][order.owner][order.tradingPair];
+            valid = valid && order.validSince > cutoffsOwner[order.broker][order.owner];
+
+            cutoffsValid |= valid ? (1 << (i / 5)) : 0;
         }
 
         return cutoffsValid;

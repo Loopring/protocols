@@ -87,12 +87,14 @@ contract("TradeDelegate", (accounts: string[]) => {
     return bitstream.getBytes32Array();
   };
 
-  const toCutoffBatch = (owners: string[],
+  const toCutoffBatch = (brokers: string[],
+                         owners: string[],
                          tradingPairs: number[],
                          validSince: number[],
                          hashes: number[]) => {
     const bitstream = new Bitstream();
     for (let i = 0; i < owners.length; i++) {
+      bitstream.addAddress(brokers[i], 32);
       bitstream.addAddress(owners[i], 32);
       bitstream.addNumber(hashes[i], 32);
       bitstream.addNumber(validSince[i], 32);
@@ -356,11 +358,12 @@ contract("TradeDelegate", (accounts: string[]) => {
     });
 
     it("should be able to cancel all orders of an owner address up to a set time", async () => {
-      const owners = [user1, user1, user1, user2];
+      const brokers = [user1, user1, user1, user2];
+      const owners = brokers;
       const tradingPairs = [123, 456, 789, 123];
       const validSince = [1000, 2500, 1500, 1500];
       const hashes = [1, 2, 3, 4];
-      const data = toCutoffBatch(owners, tradingPairs, validSince, hashes);
+      const data = toCutoffBatch(brokers, owners, tradingPairs, validSince, hashes);
       {
         const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
         assertOrdersValid(result, [true, true, true, true]);
@@ -374,11 +377,12 @@ contract("TradeDelegate", (accounts: string[]) => {
 
     it("should be able to cancel all trading pair orders of an owner address up to a set time", async () => {
       const tradingPairToCancel = 666;
-      const owners = [user1, user1, user1, user2];
+      const brokers = [user1, user1, user1, user2];
+      const owners = brokers;
       const tradingPairs = [tradingPairToCancel, tradingPairToCancel, 789, tradingPairToCancel];
       const validSince = [3000, 1000, 1000, 1000];
       const hashes = [1, 2, 3, 4];
-      const data = toCutoffBatch(owners, tradingPairs, validSince, hashes);
+      const data = toCutoffBatch(brokers, owners, tradingPairs, validSince, hashes);
       {
         const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
         assertOrdersValid(result, [true, true, true, true]);
@@ -406,11 +410,12 @@ contract("TradeDelegate", (accounts: string[]) => {
     it("should be able to cancel a single order", async () => {
       const orderHashOwner1ToCancel = 666;
       const orderHashOwner2ToCancel = 666;
-      const owners = [user1, user1, user2, user2];
+      const brokers = [user1, user1, user2, user2];
+      const owners = brokers;
       const tradingPairs = [123, 426, 789, 123];
       const validSince = [3000, 1000, 1000, 1000];
       const hashes = [orderHashOwner1ToCancel, 2, orderHashOwner2ToCancel, 4];
-      const data = toCutoffBatch(owners, tradingPairs, validSince, hashes);
+      const data = toCutoffBatch(brokers, owners, tradingPairs, validSince, hashes);
       {
         const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
         assertOrdersValid(result, [true, true, true, true]);
@@ -446,21 +451,23 @@ contract("TradeDelegate", (accounts: string[]) => {
 
   describe("anyone", () => {
     it("should be able to check if order cutoffs are valid", async () => {
-      const owners = [user1];
+      const brokers = [user1];
+      const owners = brokers;
       const tradingPairs = [456];
       const validSince = [1];
       const hashes = [123];
-      const data = toCutoffBatch(owners, tradingPairs, validSince, hashes);
+      const data = toCutoffBatch(brokers, owners, tradingPairs, validSince, hashes);
       const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data);
       assertOrdersValid(result, [true]);
     });
 
     it("should not be able to check if order cutoffs are valid with malformed data", async () => {
-      const owners = [user1];
+      const brokers = [user1];
+      const owners = brokers;
       const tradingPairs = [456];
       const validSince = [1];
       const hashes = [123];
-      const batch = toCutoffBatch(owners, tradingPairs, validSince, hashes);
+      const batch = toCutoffBatch(brokers, owners, tradingPairs, validSince, hashes);
       batch.pop();
       await expectThrow(tradeDelegate.batchCheckCutoffsAndCancelled(batch));
     });
