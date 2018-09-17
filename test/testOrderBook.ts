@@ -74,13 +74,23 @@ contract("OrderBook", (accounts: string[]) => {
         owner: orderOwner,
         tokenS: lrcAddress,
         tokenB: gtoAddress,
-        broker: "0x0",
-        amountS: 100e18,
-        amountB: 200e18,
-        validSince,
-        validUntil,
-        feeAmount: 1e18,
+        broker: "0xdca66846a7123afe448f13f013ee83fbc33344e3",
+        amountS: 1e+22,
+        amountB: 3000000000000000000,
+        feeAmount: 1000000000000000000,
+        feePercentage: 20,
+        dualAuthSignAlgorithm: 0,
         allOrNone: false,
+        validSince: 1669907153,
+        validUntil: 1769907153,
+        walletAddr: "0xdca66846a7123afe448f13f013ee83fbc33344e3",
+        walletSplitPercentage: 10,
+        tokenRecipient: "0xa826c89cb23f99d8e2a754d1a85c13b37309b722",
+        feeToken: "0x40efda0416446e83cdc6ec3d143bec4f82827478",
+        waiveFeePercentage: 0,
+        tokenSFeePercentage: 0,
+        tokenBFeePercentage: 0,
+        onChain: true,
       };
 
       const orderUtil = new OrderUtil(undefined);
@@ -92,7 +102,12 @@ contract("OrderBook", (accounts: string[]) => {
       const events: any = await getEventsFromContract(orderBook, "OrderSubmitted", 0);
       const orderHash = events[0].args.orderHash;
 
-      // console.log("orderHash:", orderHash);
+      const orderHashBuffer = orderUtil.getOrderHash(orderInfo);
+      const orderHash2 = "0x" + orderHashBuffer.toString("hex");
+      // console.log("orderHashs:", orderHash, orderHash2);
+
+      assert.equal(orderHash, orderHash2);
+
       const orderData = await orderBook.getOrderData(orderHash);
       // console.log("orderData", orderData);
       for (let i = 0; i < orderData.length; i++) {

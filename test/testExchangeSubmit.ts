@@ -173,23 +173,12 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
       const onChainOrder: pjs.OrderInfo = {
         index: 0,
-        owner: exchangeTestUtil.testContext.orderOwners[0],
         tokenS: gtoAddr,
         tokenB: wethAddr,
         amountS: 10000e18,
         amountB: 3e18,
-        validSince: web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000,
-        validUntil: web3.eth.getBlock(web3.eth.blockNumber).timestamp + 360000,
-        feeAmount: 1e18,
-        allOrNone: false,
+        onChain: true,
       };
-
-      // onChainOrder.tokenS = await symbolRegistry.getAddressBySymbol(onChainOrder.tokenS);
-      // onChainOrder.tokenB = await symbolRegistry.getAddressBySymbol(onChainOrder.tokenB);
-
-      const orderUtil = new pjs.OrderUtil(undefined);
-      const bytes32Array = orderUtil.toOrderBookSubmitParams(onChainOrder);
-      await /*exchangeTestUtil.context.*/orderBook.submitOrder(bytes32Array);
 
       const offChainOrder: pjs.OrderInfo = {
         index: 1,
@@ -197,14 +186,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
         tokenB: gtoAddr,
         amountS: 3e18,
         amountB: 10000e18,
-        validSince: web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000,
-        validUntil: web3.eth.getBlock(web3.eth.blockNumber).timestamp + 360000,
         feeAmount: 1e18,
-        allOrNone: false,
       };
-
-      await exchangeTestUtil.setupOrder(offChainOrder, 1);
-      await exchangeTestUtil.setOrderBalances(onChainOrder);
 
       const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 1]],
@@ -213,10 +196,22 @@ contract("Exchange_Submit", (accounts: string[]) => {
           offChainOrder,
         ],
       };
-      ringsInfo.transactionOrigin = exchangeTestUtil.testContext.transactionOrigin;
-      ringsInfo.feeRecipient = exchangeTestUtil.testContext.miner;
-      ringsInfo.miner = exchangeTestUtil.testContext.miner;
-      // await submitRingsAndSimulate(context, ringsInfo, web3.eth.blockNumber);
+
+      await exchangeTestUtil.setupRings(ringsInfo);
+      console.log("onChainOrder:", onChainOrder);
+
+      const orderUtil = new pjs.OrderUtil(undefined);
+      const bytes32Array = orderUtil.toOrderBookSubmitParams(onChainOrder);
+      const fromBlock = web3.eth.blockNumber;
+      await orderBook.submitOrder(bytes32Array);
+      const events: any = await exchangeTestUtil.getEventsFromContract(orderBook, "OrderSubmitted", fromBlock);
+      const orderHashOnChain = events[0].args.orderHash;
+      const orderHashBuffer = orderUtil.getOrderHash(onChainOrder);
+      console.log("orderHash:", "0x" + orderHashBuffer.toString("hex"));
+      console.log("orderHashOnChain:", orderHashOnChain);
+      // assert.equal(onChainOrder.hash, orderHashOnChain, "order hash not equal");
+
+      // await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
     });
 
     it("user should be able to get a rebate by locking LRC", async () => {

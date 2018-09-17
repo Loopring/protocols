@@ -35,29 +35,29 @@ library OrderHelper {
         internal
         pure
     {
-        // order.hash = keccak256(
-        //     abi.encodePacked(
-        //         order.amountS,
-        //         order.amountB,
-        //         order.feeAmount,
-        //         order.validSince,
-        //         order.validUntil,
-        //         order.owner,
-        //         order.tokenS,
-        //         order.tokenB,
-        //         order.dualAuthAddr,
-        //         order.broker,
-        //         order.orderInterceptor,
-        //         order.wallet,
-        //         order.tokenRecipient,
-        //         order.feeToken,
-        //         order.walletSplitPercentage,
-        //         order.feePercentage,
-        //         order.tokenSFeePercentage,
-        //         order.tokenBFeePercentage,
-        //         order.allOrNone
-        //     )
-        // );
+        /* order.hash = keccak256( */
+        /*     abi.encodePacked( */
+        /*         order.amountS, */
+        /*         order.amountB, */
+        /*         order.feeAmount, */
+        /*         order.validSince, */
+        /*         order.validUntil, */
+        /*         order.owner, */
+        /*         order.tokenS, */
+        /*         order.tokenB, */
+        /*         order.dualAuthAddr, */
+        /*         order.broker, */
+        /*         order.orderInterceptor, */
+        /*         order.wallet, */
+        /*         order.tokenRecipient */
+        /*         order.feeToken, */
+        /*         order.walletSplitPercentage, */
+        /*         order.feePercentage, */
+        /*         order.tokenSFeePercentage, */
+        /*         order.tokenBFeePercentage, */
+        /*         order.allOrNone */
+        /*     ) */
+        /* ); */
         bytes32 hash;
         assembly {
             // Load the free memory pointer
@@ -160,10 +160,14 @@ library OrderHelper {
         view
     {
         if (order.sig.length == 0) {
-            order.valid = order.valid && ctx.orderRegistry.isOrderHashRegistered(
+            bool registered = ctx.orderRegistry.isOrderHashRegistered(
                 order.broker,
                 order.hash
             );
+
+            if (!registered) {
+                order.valid = order.valid && ctx.orderBook.orderSubmitted(order.hash);
+            }
         } else {
             order.valid = order.valid && MultihashUtil.verifySignature(
                 order.broker,

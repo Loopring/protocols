@@ -144,7 +144,10 @@ export class ExchangeTestUtil {
     if (!order.dualAuthSignAlgorithm) {
       order.dualAuthSignAlgorithm = pjs.SignAlgorithm.Ethereum;
     }
-    if (order.dualAuthAddr === undefined && order.dualAuthSignAlgorithm !== pjs.SignAlgorithm.None) {
+    // no dualAuthAddr for onChain order
+    if (!order.onChain &&
+        order.dualAuthAddr === undefined &&
+        order.dualAuthSignAlgorithm !== pjs.SignAlgorithm.None) {
       const accountIndex = index % this.testContext.orderDualAuthAddrs.length;
       order.dualAuthAddr = this.testContext.orderDualAuthAddrs[accountIndex];
     }
@@ -214,7 +217,7 @@ export class ExchangeTestUtil {
       "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
       "balanceS", "balanceFee", "tokenSpendableS", "tokenSpendableFee",
-      "brokerSpendableS", "brokerSpendableFee",
+      "brokerSpendableS", "brokerSpendableFee", "onChain",
     ];
     // Make sure to get the keys from both objects to make sure we get all keys defined in both
     for (const key of [...Object.keys(ringsInfoA), ...Object.keys(ringsInfoB)]) {
@@ -430,6 +433,9 @@ export class ExchangeTestUtil {
       console.log("Simulator reverted -> " + err);
       shouldThrow = true;
     }
+
+    console.log("shouldThrow:", shouldThrow);
+
     if (shouldThrow) {
       tx = await pjs.expectThrow(this.ringSubmitter.submitRings(bs, {from: txOrigin}));
     } else {
