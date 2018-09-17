@@ -238,7 +238,7 @@ export class Ring {
     const transferItems = await this.transferTokens();
 
     // Validate how the ring is settled
-    this.validateSettlement(transferItems);
+    await this.validateSettlement(transferItems);
 
     // Adjust orders
     for (const order of this.orders) {
@@ -499,7 +499,8 @@ export class Ring {
     return Math.floor((value * percentageBase) / (percentageBase - percentage)) - value;
   }
 
-  private validateSettlement(transfers: TransferItem[]) {
+  private async validateSettlement(transfers: TransferItem[]) {
+    const expectedTotalTax: { [id: string]: number; } = {};
     const ringSize = this.orders.length;
     for (let i = 0; i < ringSize; i++) {
       const prevIndex = (i + ringSize - 1) % ringSize;
@@ -551,6 +552,9 @@ export class Ring {
         const rate = (order.fillAmountS + order.splitS) / order.fillAmountB;
         this.assertNumberEqualsWithPrecision(rate, orderRate, "fill rates need to match order rate");
       }
+      assert(order.rebateFee <= order.fillAmountFee, "order.rebateFee <= order.fillAmountFee");
+      assert(order.rebateS <= order.fillAmountFeeS, "order.rebateS <= order.fillAmountFeeS");
+      assert(order.rebateB <= order.fillAmountFeeB, "order.rebateB <= order.fillAmountFeeB");
 
       // Miner/Taker gets all margin
       assert.equal(order.fillAmountS - order.fillAmountFeeS, prevOrder.fillAmountB, "fillAmountS == prev.fillAmountB");
@@ -603,29 +607,49 @@ export class Ring {
           const fee = Math.floor(order.feeAmount * (order.fillAmountS + order.splitS) / order.amountS);
           assert(fee > order.ringSpendableFee, "fees should be paid in tokenFee if possible");
         }
-
-        /*if (order.waiveFeePercentage < 0) {
-          // If the miner waives the fees for this order all fees need to be 0
-          assert.equal(order.fillAmountFee,  0, "No fees need to be paid if miner waives fees");
-          assert.equal(order.fillAmountFeeB, 0, "No fees need to be paid if miner waives fees");
-        } else {
-          if (order.fillAmountFeeB > 0) {
-            const rate = order.fillAmountFeeB / order.fillAmountB;
-            const feePercentageAfterMinerReduction = order.feePercentage *
-              (this.context.feePercentageBase - order.waiveFeePercentage) / this.context.feePercentageBase;
-            this.assertNumberEqualsWithPrecision(rate, feePercentageAfterMinerReduction,
-                                                 "tokenB fee should match feePercentage after miner reduction");
-          }
-          if (order.fillAmountFee > 0) {
-            const filledPercentage = (order.fillAmountS + order.splitS) / order.amountS;
-            const rate = order.fillAmountFee / order.feeAmount;
-            const filledPercentageAfterMinerReduction = filledPercentage *
-              (this.context.feePercentageBase - order.waiveFeePercentage) / this.context.feePercentageBase;
-            this.assertNumberEqualsWithPrecision(rate, filledPercentageAfterMinerReduction,
-                                                 "feeAmount rate should match filledPercentage after miner reduction");
-          }
-        }*/
       }
+
+      // Check rebates and taxes
+      const calculateTaxAndRebate = async (token: string, amount: number) => {
+        const walletSplitPercentage = order.P2P ? 100 : order.walletSplitPercentage;
+        const walletFee = Math.floor(amount * walletSplitPercentage / 100);
+        const minerFeeBeforeWaive = amount - walletFee;
+        const waiveFeePercentage = order.waiveFeePercentage < 0 ?
+                                   this.context.feePercentageBase : order.waiveFeePercentage;
+        const minerFee = Math.floor(minerFeeBeforeWaive *
+                                    (this.context.feePercentageBase - waiveFeePercentage) /
+                                    this.context.feePercentageBase);
+        const minerRebate = minerFeeBeforeWaive - minerFee;
+        const totalFee = walletFee + minerFee;
+        const [burnRate, rebateRate] =
+        await this.context.taxTable.getBurnAndRebateRate(order.owner, token, order.P2P);
+        const taxRebate = Math.floor(totalFee * rebateRate.toNumber() / this.context.feePercentageBase);
+        const tax = Math.floor(totalFee * burnRate.toNumber() / this.context.feePercentageBase);
+        return [tax, minerRebate + taxRebate];
+      };
+      const [expectedTaxFee, expectedRebateFee] = await calculateTaxAndRebate(order.feeToken, order.fillAmountFee);
+      const [expectedTaxS, expectedRebateS] = await calculateTaxAndRebate(order.tokenS, order.fillAmountFeeS);
+      const [expectedTaxB, expectedRebateB] = await calculateTaxAndRebate(order.tokenB, order.fillAmountFeeB);
+      this.assertNumberEqualsWithPrecision(order.rebateFee, expectedRebateFee,
+                                           "Fee rebate should match expected value");
+      this.assertNumberEqualsWithPrecision(order.rebateS, expectedRebateS,
+                                           "FeeS rebate should match expected value");
+      this.assertNumberEqualsWithPrecision(order.rebateB, expectedRebateB,
+                                           "FeeB rebate should match expected value");
+
+      // Add taxes to total expected taxes
+      if (!expectedTotalTax[order.feeToken]) {
+        expectedTotalTax[order.feeToken] = 0;
+      }
+      expectedTotalTax[order.feeToken] += expectedTaxFee;
+      if (!expectedTotalTax[order.tokenS]) {
+        expectedTotalTax[order.tokenS] = 0;
+      }
+      expectedTotalTax[order.tokenS] += expectedTaxS;
+      if (!expectedTotalTax[order.tokenB]) {
+        expectedTotalTax[order.tokenB] = 0;
+      }
+      expectedTotalTax[order.tokenB] += expectedTaxB;
 
       // Ensure fees in tokenB can be paid with the amount bought
       assert(prevOrder.fillAmountFeeB <= order.fillAmountS + epsilon,
@@ -718,44 +742,37 @@ export class Ring {
                                            "FeeHolder balance after transfers should match expected value");
     }
 
-    // Ensure fee payments match perfectly with total amount fees paid by all orders
+    // Ensure total fee payments match transferred amounts to feeHolder contract
     {
-      const totalFees: { [id: string]: number; } = {};
-      for (let i = 0; i < ringSize; i++) {
-        const order = this.orders[i];
-        // Fees
-        if (!totalFees[order.feeToken]) {
-          totalFees[order.feeToken] = 0;
-        }
-        totalFees[order.feeToken] += order.fillAmountFee;
-        if (!totalFees[order.tokenS]) {
-          totalFees[order.tokenS] = 0;
-        }
-        totalFees[order.tokenS] += order.fillAmountFeeS;
-        if (!totalFees[order.tokenB]) {
-          totalFees[order.tokenB] = 0;
-        }
-        totalFees[order.tokenB] += order.fillAmountFeeB;
-      }
-
-      for (const token of Object.keys(this.feeBalances)) {
+      for (const token of [...Object.keys(this.feeBalances), ...Object.keys(balances)]) {
+        const feeAddress = this.context.feeHolder.address;
         let totalFee = 0;
-        let totalTax = 0;
-        for (const owner of Object.keys(this.feeBalances[token])) {
-          const balance = this.feeBalances[token][owner];
-          if (owner === this.context.feeHolder.address) {
-            totalTax += balance;
-          } else {
-            totalFee += balance;
+        if (this.feeBalances[token]) {
+          for (const owner of Object.keys(this.feeBalances[token])) {
+            totalFee += this.feeBalances[token][owner];
           }
         }
-        /*const totalIncomeTax = this.context.tax.calculateTax(token, order.P2P, totalFees[token]);
-        const incomeAfterTax = totalFees[token] - totalIncomeTax;
-        this.assertNumberEqualsWithPrecision(incomeAfterTax, totalFee,
-                                             "Total income distributed needs to match paid fees after tax");
-        this.assertNumberEqualsWithPrecision(totalIncomeTax, totalTax,
-                                             "Total tax distributed needs to match consumer tax + income tax");*/
+        let feeHolderBalance = 0;
+        if (balances[token] && balances[token][feeAddress]) {
+          feeHolderBalance = balances[token][feeAddress];
+        }
+        this.assertNumberEqualsWithPrecision(totalFee, feeHolderBalance,
+                                             "Total fees amount in feeHolder should match total amount transferred");
       }
+    }
+
+    // Ensure total tax payments match expected total tax
+    for (const token of [...Object.keys(expectedTotalTax), ...Object.keys(this.feeBalances)]) {
+      const feeAddress = this.context.feeHolder.address;
+      let tax = 0;
+      let expected = 0;
+      if (this.feeBalances[token] && this.feeBalances[token][feeAddress]) {
+        tax = this.feeBalances[token][feeAddress];
+      }
+      if (expectedTotalTax[token]) {
+        expected = expectedTotalTax[token];
+      }
+      this.assertNumberEqualsWithPrecision(tax, expected, "Total tax should match expected value");
     }
   }
 
