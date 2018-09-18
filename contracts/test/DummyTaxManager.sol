@@ -18,26 +18,25 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-/// @author Kongliang Zhong - <kongliang@loopring.org>
-/// @title IFeeHolder - A contract holding fees and taxes .
-contract IFeeHolder {
+import "../iface/IFeeHolder.sol";
 
-    mapping(address => mapping(address => uint)) public feeBalances;
+/// @author Brecht Devos - <brecht@loopring.org>
+contract DummyTaxManager {
 
-    function batchAddFeeBalances(bytes32[] batch)
-        external;
+    address public feeHolderAddress = 0x0;
+
+    constructor(
+        address _feeHolderAddress
+        )
+        public
+    {
+        feeHolderAddress = _feeHolderAddress;
+    }
 
     function withdrawTax(address token, uint value)
         external
-        returns (bool success);
-
-    function withdrawToken(address token, uint value)
-        external
-        returns (bool success);
-
-    event TokenWithdrawn(
-        address owner,
-        address token,
-        uint value
-    );
+        returns (bool success)
+    {
+        return IFeeHolder(feeHolderAddress).withdrawTax(token, value);
+    }
 }

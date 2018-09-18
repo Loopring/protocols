@@ -8,6 +8,7 @@ const {
   FeeHolder,
   TradeDelegate,
   DummyExchange,
+  DummyTaxManager,
   DummyToken,
   LRCToken,
   GTOToken,
@@ -26,6 +27,7 @@ contract("FeeHolder", (accounts: string[]) => {
   let tradeDelegate: any;
   let feeHolder: any;
   let dummyExchange: any;
+  let dummyTaxManager: any;
   let token1: string;
   let token2: string;
   let token3: string;
@@ -66,15 +68,39 @@ contract("FeeHolder", (accounts: string[]) => {
   };
 
   const withdrawTokenChecked = async (owner: string, token: string, amount: number) => {
+    const dummyToken = DummyToken.at(token);
+
+    const balanceFeeHolderBefore = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
+    const balanceOwnerBefore = (await dummyToken.balanceOf(owner)).toNumber();
     const feeBalanceBefore = (await feeHolder.feeBalances(token, owner)).toNumber();
+
     const success = await feeHolder.withdrawToken(token, amount, {from: owner});
+    assert(success, "Withdrawal needs to succeed");
+
+    const balanceFeeHolderAfter = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
+    const balanceOwnerAfter = (await dummyToken.balanceOf(owner)).toNumber();
     const feeBalanceAfter = (await feeHolder.feeBalances(token, owner)).toNumber();
-    if (success) {
-      assert.equal(feeBalanceAfter, feeBalanceBefore - amount, "Withdrawal amount not correctly updated.");
-    } else {
-      // Caller needs to fail the transaction for now
-      assert.equal(feeBalanceAfter, feeBalanceBefore - amount, "Withdrawal amount not correctly updated.");
-    }
+    assert.equal(balanceFeeHolderAfter, balanceFeeHolderBefore - amount, "Contract balance should be reduced.");
+    assert.equal(balanceOwnerAfter, balanceOwnerBefore + amount, "Owner balance should have increased.");
+    assert.equal(feeBalanceAfter, feeBalanceBefore - amount, "Withdrawal amount not correctly updated.");
+  };
+
+  const withdrawTaxChecked = async (from: any, token: string, amount: number) => {
+    const dummyToken = DummyToken.at(token);
+
+    const balanceFeeHolderBefore = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
+    const balanceFromBefore = (await dummyToken.balanceOf(from.address)).toNumber();
+    const taxBalanceBefore = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
+
+    const success = await from.withdrawTax(token, amount);
+    assert(success, "Withdrawal needs to succeed");
+
+    const balanceFeeHolderAfter = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
+    const balanceOwnerAfter = (await dummyToken.balanceOf(from.address)).toNumber();
+    const taxBalanceAfter = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
+    assert.equal(balanceFeeHolderAfter, balanceFeeHolderBefore - amount, "Contract balance should be reduced.");
+    assert.equal(balanceOwnerAfter, balanceFromBefore + amount, "From balance should have increased.");
+    assert.equal(taxBalanceAfter, taxBalanceBefore - amount, "Withdrawal amount not correctly updated.");
   };
 
   before(async () => {
@@ -90,10 +116,12 @@ contract("FeeHolder", (accounts: string[]) => {
     // Fresh FeeHolder for each test
     feeHolder = await FeeHolder.new(tradeDelegate.address);
     dummyExchange = await DummyExchange.new(tradeDelegate.address, feeHolder.address, "0x0");
+    dummyTaxManager = await DummyTaxManager.new(feeHolder.address);
     await authorizeAddressChecked(dummyExchange.address, deployer);
+    await authorizeAddressChecked(dummyTaxManager.address, deployer);
   });
 
-  describe("protocol", () => {
+  describe("authorized address", () => {
     it("should be able to add fee balances in batch", async () => {
       {
         const feePayments = new FeePayments();
@@ -115,7 +143,21 @@ contract("FeeHolder", (accounts: string[]) => {
       }
     });
 
-    it("should not accept data in incorrect format for batchAddFeeBalances", async () => {
+    it("should be able to withdraw tax", async () => {
+      const dummyToken1 = await DummyToken.at(token1);
+      const amount = 2.4e18;
+      // Make sure the contract has enough funds
+      await dummyToken1.setBalance(feeHolder.address, amount);
+
+      const feePayments = new FeePayments();
+      feePayments.add(feeHolder.address, token1, amount);
+      await batchAddFeeBalancesChecked(feePayments);
+
+      // Withdraw the tax
+      await withdrawTaxChecked(dummyTaxManager, token1, amount);
+    });
+
+    it("should not be able to send fee payments in an incorrect format", async () => {
       const feePayments = new FeePayments();
       feePayments.add(user1, token1, 1.23 * 1e18);
       feePayments.add(user2, token2, 3.21 * 1e19);
@@ -125,18 +167,8 @@ contract("FeeHolder", (accounts: string[]) => {
     });
   });
 
-  describe("other users", () => {
-    it("should not be able to add fee balances", async () => {
-      const feePayments = new FeePayments();
-      feePayments.add(user1, token1, 1.23 * 1e18);
-      feePayments.add(user2, token2, 3.21 * 1e19);
-      await expectThrow(feeHolder.batchAddFeeBalances(feePayments.getData(), {from: user1}));
-    });
-
-  });
-
-  describe("any user", () => {
-    it("can withdraw tokens of its own", async () => {
+  describe("anyone", () => {
+    it("should be able to withdraw tokens of its own", async () => {
       const dummyToken1 = await DummyToken.at(token1);
       const dummyToken2 = await DummyToken.at(token2);
       const amount11 = 1.78e18;
@@ -156,7 +188,7 @@ contract("FeeHolder", (accounts: string[]) => {
       await withdrawTokenChecked(user1, token2, amount21);
     });
 
-    it("can withdraw tokens of its own in parts", async () => {
+    it("should be able to withdraw tokens of its own in parts", async () => {
       const dummyToken1 = await DummyToken.at(token1);
       const amount = 1.78e18;
       // Make sure the contract has enough funds
@@ -171,7 +203,7 @@ contract("FeeHolder", (accounts: string[]) => {
       await withdrawTokenChecked(user1, token1, amount / 4);
     });
 
-    it("can't withdraw more tokens than allowed", async () => {
+    it("should not be able to withdraw more tokens than allowed", async () => {
       const dummyToken1 = await DummyToken.at(token1);
       const dummyToken2 = await DummyToken.at(token2);
       const amount = 2.4e18;
@@ -192,6 +224,27 @@ contract("FeeHolder", (accounts: string[]) => {
       await expectThrow(withdrawTokenChecked(user2, token1, amount / 2));
       // User shouldn't be able to withdraw tokens it didn't get paid
       await expectThrow(withdrawTokenChecked(user1, token2, amount));
+    });
+
+    it("should not be able to withdraw tax", async () => {
+      const dummyToken1 = await DummyToken.at(token1);
+      const amount = 2.4e18;
+      // Make sure the contract has enough funds
+      await dummyToken1.setBalance(feeHolder.address, amount);
+
+      const feePayments = new FeePayments();
+      feePayments.add(feeHolder.address, token1, amount);
+      await batchAddFeeBalancesChecked(feePayments);
+
+      // Try to withdraw the tax
+      await expectThrow(feeHolder.withdrawTax(token1, amount, {from: user1}));
+    });
+
+    it("should not be able to add fee balances", async () => {
+      const feePayments = new FeePayments();
+      feePayments.add(user1, token1, 1.23 * 1e18);
+      feePayments.add(user2, token2, 3.21 * 1e19);
+      await expectThrow(feeHolder.batchAddFeeBalances(feePayments.getData(), {from: user1}));
     });
   });
 

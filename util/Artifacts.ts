@@ -8,6 +8,7 @@ export class Artifacts {
   public MinerRegistry: any;
   public DummyBrokerInterceptor: any;
   public DummyExchange: any;
+  public DummyTaxManager: any;
   public FeeHolder: any;
   public OrderBook: any;
   public TaxTable: any;
@@ -26,6 +27,7 @@ export class Artifacts {
     this.MinerRegistry = artifacts.require("impl/MinerRegistry");
     this.DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");
     this.DummyExchange = artifacts.require("test/DummyExchange");
+    this.DummyTaxManager = artifacts.require("test/DummyTaxManager");
     this.FeeHolder = artifacts.require("impl/FeeHolder");
     this.OrderBook = artifacts.require("impl/OrderBook");
     this.TaxTable = artifacts.require("impl/TaxTable");

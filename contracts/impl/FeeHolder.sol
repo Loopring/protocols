@@ -46,8 +46,8 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
     }
 
     function batchAddFeeBalances(bytes32[] batch)
-        onlyAuthorized
         external
+        onlyAuthorized
     {
         require(batch.length % 3 == 0, "invalid array length");
         for (uint i = 0; i < batch.length; i += 3) {
@@ -58,14 +58,29 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
         }
     }
 
+    function withdrawTax(address token, uint value)
+        external
+        onlyAuthorized
+        returns (bool)
+    {
+        return withdraw(token, this, msg.sender, value);
+    }
+
     function withdrawToken(address token, uint value)
         external
+        returns (bool)
+    {
+        return withdraw(token, msg.sender, msg.sender, value);
+    }
+
+    function withdraw(address token, address from, address to, uint value)
+        internal
         returns (bool success)
     {
-        require(feeBalances[token][msg.sender] >= value);
-        feeBalances[token][msg.sender] = feeBalances[token][msg.sender].sub(value);
-        success = token.safeTransfer(msg.sender, value);
-        emit TokenWithdrawn(msg.sender, token, value);
+        require(feeBalances[token][from] >= value, "amount to withdraw is too high");
+        feeBalances[token][from] = feeBalances[token][from].sub(value);
+        success = token.safeTransfer(to, value);
+        emit TokenWithdrawn(from, token, value);
     }
 
 }

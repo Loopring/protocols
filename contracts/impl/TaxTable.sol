@@ -105,7 +105,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         uint totalSupply = LRC.totalSupply();
         uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / TAX_BASE_PERCENTAGE;
-        bool success = BurnableERC20(lrcAddress).burnFrom(msg.sender, amount);
+        bool success = LRC.burnFrom(msg.sender, amount);
         require(success, "Burn needs to succeed");
 
         // Upgrade tier
