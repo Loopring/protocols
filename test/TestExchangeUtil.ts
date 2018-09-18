@@ -371,6 +371,8 @@ export class ExchangeTestUtil {
 
     const bitstream = new pjs.Bitstream();
     for (const order of orders) {
+      const broker = order.broker ? order.broker : order.owner;
+      bitstream.addAddress(broker, 32);
       bitstream.addAddress(order.owner, 32);
       bitstream.addHex(order.hash.toString("hex"));
       bitstream.addNumber(order.validSince, 32);
@@ -384,6 +386,43 @@ export class ExchangeTestUtil {
     for (const [i, order] of orders.entries()) {
         assert.equal(bits.testn(i), expectedValidValues[i], "Order cancelled status incorrect");
     }
+  }
+
+  public async registerOrderBrokerChecked(user: string, broker: string, interceptor: string) {
+    const {
+      BrokerRegistry,
+    } = new Artifacts(artifacts);
+    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    await brokerRegistry.registerBroker(broker, interceptor, {from: user});
+    await this.assertOrderBrokerRegistered(user, broker, interceptor);
+  }
+
+  public async unregisterOrderBrokerChecked(user: string, broker: string) {
+    const {
+      BrokerRegistry,
+    } = new Artifacts(artifacts);
+    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    await brokerRegistry.unregisterBroker(broker, {from: user});
+    await this.assertOrderBrokerNotRegistered(user, broker);
+  }
+
+  public async assertOrderBrokerRegistered(user: string, broker: string, interceptor: string) {
+    const {
+      BrokerRegistry,
+    } = new Artifacts(artifacts);
+    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
+    assert(isRegistered, "interceptor should be registered.");
+    assert.equal(interceptor, interceptorFromContract, "get wrong interceptor");
+  }
+
+  public async assertOrderBrokerNotRegistered(user: string, broker: string) {
+    const {
+      BrokerRegistry,
+    } = new Artifacts(artifacts);
+    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
+    assert(!isRegistered, "interceptor should not be registered.");
   }
 
   public async submitRingsAndSimulate(ringsInfo: pjs.RingsInfo,
@@ -497,15 +536,17 @@ export class ExchangeTestUtil {
       TradeDelegate,
       FeeHolder,
       WETHToken,
+      BrokerRegistry,
     } = new Artifacts(artifacts);
 
     const tradeDelegate = await TradeDelegate.new();
     const feeHolder = await FeeHolder.new(tradeDelegate.address);
+    const brokerRegistry = await BrokerRegistry.new();
     this.ringSubmitter = await RingSubmitter.new(
       this.context.lrcAddress,
       WETHToken.address,
       tradeDelegate.address,
-      this.context.orderBrokerRegistry.address,
+      brokerRegistry.address,
       this.context.minerBrokerRegistry.address,
       OrderRegistry.address,
       MinerRegistry.address,

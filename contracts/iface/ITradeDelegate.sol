@@ -156,8 +156,8 @@ library TradeDelegateData {
         uint    amount;
     }
     struct OrderCheckCancelledData {
-        address owner;
         address broker;
+        address owner;
         bytes32 hash;
         uint    validSince;
         bytes20 tradingPair;

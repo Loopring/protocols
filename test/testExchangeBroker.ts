@@ -15,31 +15,6 @@ contract("Exchange_Broker", (accounts: string[]) => {
   let dummyBrokerInterceptor: any;
   const allTokenSymbols = tokenInfos.development.map((t) => t.symbol);
 
-  const registerBrokerChecked = async (user: string, broker: string, interceptor: string) => {
-    const brokerRegistry = BrokerRegistry.at(exchangeTestUtil.context.orderBrokerRegistry.address);
-    await brokerRegistry.registerBroker(broker, interceptor, {from: user});
-    await assertRegistered(user, broker, interceptor);
-  };
-
-  const unregisterBrokerChecked = async (user: string, broker: string) => {
-    const brokerRegistry = BrokerRegistry.at(exchangeTestUtil.context.orderBrokerRegistry.address);
-    await brokerRegistry.unregisterBroker(broker, {from: user});
-    await assertNotRegistered(user, broker);
-  };
-
-  const assertRegistered = async (user: string, broker: string, interceptor: string) => {
-    const brokerRegistry = BrokerRegistry.at(exchangeTestUtil.context.orderBrokerRegistry.address);
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(isRegistered, "interceptor should be registered.");
-    assert.equal(interceptor, interceptorFromContract, "get wrong interceptor");
-  };
-
-  const assertNotRegistered = async (user: string, broker: string) => {
-    const brokerRegistry = BrokerRegistry.at(exchangeTestUtil.context.orderBrokerRegistry.address);
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(!isRegistered, "interceptor should not be registered.");
-  };
-
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
@@ -88,16 +63,13 @@ contract("Exchange_Broker", (accounts: string[]) => {
       }
 
       // Register the broker without interceptor
-      await registerBrokerChecked(owner, broker, emptyAddr);
+      await exchangeTestUtil.registerOrderBrokerChecked(owner, broker, emptyAddr);
 
       // Broker registered: transactions should happen
       {
         const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert(report.transferItems.length > 0, "Tokens should be transfered");
       }
-
-      // Unregister the broker
-      await unregisterBrokerChecked(owner, broker);
     });
 
     it("should be able to for an order to use a broker with an interceptor", async () => {
@@ -134,7 +106,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
       }
 
       // Register the broker with interceptor
-      await registerBrokerChecked(owner, broker, dummyBrokerInterceptor.address);
+      await exchangeTestUtil.registerOrderBrokerChecked(owner, broker, dummyBrokerInterceptor.address);
 
       // Make sure allowance is set to 0
       await dummyBrokerInterceptor.setAllowance(0e17);
@@ -166,9 +138,6 @@ contract("Exchange_Broker", (accounts: string[]) => {
       // Check if onTokenSpent was correctly called
       const spendS = (await dummyBrokerInterceptor.spent(owner, tokenS)).toNumber();
       exchangeTestUtil.assertNumberEqualsWithPrecision(spendS, amountS);
-
-      // Unregister the broker
-      await unregisterBrokerChecked(owner, broker);
     });
 
     it("an order using a broker with an invalid interceptor should not fail the transaction", async () => {
@@ -197,7 +166,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
       const invalidInterceptorAddress = BrokerRegistry.address;
 
       // Register the broker with interceptor
-      await registerBrokerChecked(owner, broker, invalidInterceptorAddress);
+      await exchangeTestUtil.registerOrderBrokerChecked(owner, broker, invalidInterceptorAddress);
 
       // Broker registered with invalid interceptor, should NOT throw but allowance will be set to 0
       // so no transactions should happen
@@ -207,10 +176,10 @@ contract("Exchange_Broker", (accounts: string[]) => {
       }
 
       // Unregister the broker
-      await unregisterBrokerChecked(owner, broker);
+      await exchangeTestUtil.unregisterOrderBrokerChecked(owner, broker);
 
       // Register the broker with interceptor
-      await registerBrokerChecked(owner, broker, dummyBrokerInterceptor.address);
+      await exchangeTestUtil.registerOrderBrokerChecked(owner, broker, dummyBrokerInterceptor.address);
 
       // Now set the allowance to a large number
       await dummyBrokerInterceptor.setAllowance(1e32);
@@ -224,9 +193,6 @@ contract("Exchange_Broker", (accounts: string[]) => {
         const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
       }
-
-      // Unregister the broker
-      await unregisterBrokerChecked(owner, broker);
     });
 
   });
