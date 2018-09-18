@@ -52,9 +52,13 @@ export class OrderUtil {
 
   public async checkBrokerSignature(order: OrderInfo) {
     let signatureValid = true;
-    if (!order.sig && !order.onChain) {
-      signatureValid = await this.context.orderRegistry.isOrderHashRegistered(order.broker, order.hash);
-      // console.log("check order hash registered:", order.broker, order.hash, signatureValid);
+    if (!order.sig) {
+      console.log("broker and hash:", order.broker, order.hash);
+      const orderHashHex = "0x" + order.hash.toString("hex");
+      const isRegistered = await this.context.orderRegistry.isOrderHashRegistered(order.broker,
+                                                                                  orderHashHex);
+      const isOnchainOrder = await this.context.orderBook.orderSubmitted(orderHashHex);
+      signatureValid = isRegistered || isOnchainOrder;
     } else {
       signatureValid = this.multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
     }
