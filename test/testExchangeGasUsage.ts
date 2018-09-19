@@ -84,6 +84,17 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       const paramData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(paramData);
       console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+
+      console.log("Call data: " + paramData);
+      let callDataCost = 0;
+      for (let i = 0; i < paramData.length; i += 2) {
+        if (paramData.slice(i, i + 2) === "00") {
+          callDataCost += 4;
+        } else {
+          callDataCost += 68;
+        }
+      }
+      console.log("Call data cost: " + callDataCost);
     });
 
     it("single 2-size ring, pass by arrays", async () => {
