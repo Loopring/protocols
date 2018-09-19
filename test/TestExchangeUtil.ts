@@ -425,6 +425,13 @@ export class ExchangeTestUtil {
     assert(!isRegistered, "interceptor should not be registered.");
   }
 
+  public async deserializeRing(ringsInfo: pjs.RingsInfo) {
+    const ringsGenerator = new pjs.RingsGenerator(this.context);
+    await ringsGenerator.setupRingsAsync(ringsInfo);
+    const bs = ringsGenerator.toSubmitableParam(ringsInfo);
+    return bs;
+  }
+
   public async submitRingsAndSimulate(ringsInfo: pjs.RingsInfo,
                                       dummyExchange?: any) {
     if (dummyExchange !== undefined) {
@@ -479,7 +486,7 @@ export class ExchangeTestUtil {
       tx = await pjs.expectThrow(this.ringSubmitter.submitRings(bs, {from: txOrigin}));
     } else {
       tx = await this.ringSubmitter.submitRings(bs, {from: txOrigin});
-      console.log("gas used: ", tx.receipt.gasUsed);
+      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
     }
     const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
     this.assertTransfers(deserializedRingsInfo, transferEvents, report.transferItems);
