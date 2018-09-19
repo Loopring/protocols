@@ -41,7 +41,6 @@ library MiningHelper {
                 mining.feeRecipient,
                 mining.miner
             );
-            // require(registered, "miner unregistered");
             if (registered) {
                 mining.interceptor = interceptor;
             }
