@@ -38,8 +38,8 @@ contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
         )
         public
     {
-        require(_lrcAddress != 0x0, EMPTY_ADDRESS);
-        require(_wethAddress != 0x0, EMPTY_ADDRESS);
+        require(_lrcAddress != 0x0, ZERO_ADDRESS);
+        require(_wethAddress != 0x0, ZERO_ADDRESS);
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
@@ -93,7 +93,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
         external
         returns (bool)
     {
-        require(token != 0x0, EMPTY_ADDRESS);
+        require(token != 0x0, ZERO_ADDRESS);
         require(token != lrcAddress, BURN_RATE_FROZEN);
         require(token != wethAddress, BURN_RATE_FROZEN);
 
@@ -161,7 +161,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
         external
         returns (bool)
     {
-        require(amount > 0, INVALID_TOKEN_AMOUNT);
+        require(amount > 0, INVALID_VALUE);
 
         UserData storage userData = balances[msg.sender];
 
@@ -202,10 +202,10 @@ contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
         external
         returns (bool)
     {
-        require(amount > 0, ZERO_TOKEN_AMOUNT);
+        require(amount > 0, ZERO_VALUE);
 
         uint withdrawableAmount = getWithdrawableBalance(msg.sender);
-        require(withdrawableAmount >= amount, INVALID_TOKEN_AMOUNT);
+        require(withdrawableAmount >= amount, INVALID_VALUE);
 
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         bool success = LRC.transfer(msg.sender, amount);

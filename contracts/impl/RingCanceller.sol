@@ -67,7 +67,7 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc, Errors {
         )
         public
     {
-        require(_delegateAddress != 0x0, EMPTY_ADDRESS);
+        require(_delegateAddress != 0x0, ZERO_ADDRESS);
 
         delegateAddress = _delegateAddress;
     }

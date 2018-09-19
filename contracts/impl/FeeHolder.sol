@@ -35,7 +35,7 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc, Errors {
     address public delegateAddress = 0x0;
 
     constructor(address _delegateAddress) public {
-        require(_delegateAddress != 0x0, EMPTY_ADDRESS);
+        require(_delegateAddress != 0x0, ZERO_ADDRESS);
         delegateAddress = _delegateAddress;
     }
 

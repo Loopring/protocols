@@ -95,14 +95,14 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc, Errors {
         )
         external
     {
-        require(0x0 != broker, EMPTY_ADDRESS);
+        require(0x0 != broker, ZERO_ADDRESS);
         require(
             0 == positionMap[msg.sender][broker],
-            "broker already exists"
+            ALREADY_EXIST
         );
 
         if (interceptor != 0x0) {
-            require(isContract(interceptor), INVALID_INTERCEPTOR);
+            require(isContract(interceptor), INVALID_ADDRESS);
         }
 
         Broker[] storage brokers = brokersMap[msg.sender];
@@ -127,7 +127,7 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc, Errors {
         )
         external
     {
-        require(0x0 != addr, INVALID_BROKER);
+        require(0x0 != addr, ZERO_ADDRESS);
 
         uint pos = positionMap[msg.sender][addr];
         require(pos != 0, NOT_FOUND);

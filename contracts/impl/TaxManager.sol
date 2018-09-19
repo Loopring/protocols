@@ -38,8 +38,8 @@ contract TaxManager is NoDefaultFunc, Errors {
         )
         public
     {
-        require(_feeHolderAddress != 0x0, EMPTY_ADDRESS);
-        require(_lrcAddress != 0x0, EMPTY_ADDRESS);
+        require(_feeHolderAddress != 0x0, ZERO_ADDRESS);
+        require(_lrcAddress != 0x0, ZERO_ADDRESS);
         feeHolderAddress = _feeHolderAddress;
         lrcAddress = _lrcAddress;
     }

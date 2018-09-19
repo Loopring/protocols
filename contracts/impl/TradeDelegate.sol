@@ -68,8 +68,8 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         onlyOwner
         external
     {
-        require(0x0 != addr, EMPTY_ADDRESS);
-        require(0 == positionMap[addr], ALREADY_REGISTERED);
+        require(0x0 != addr, ZERO_ADDRESS);
+        require(0 == positionMap[addr], ALREADY_EXIST);
         require(isContract(addr), INVALID_ADDRESS);
 
         authorizedAddresses.push(addr);
@@ -83,7 +83,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         onlyOwner
         external
     {
-        require(0x0 != addr, EMPTY_ADDRESS);
+        require(0x0 != addr, ZERO_ADDRESS);
 
         uint pos = positionMap[addr];
         require(pos != 0, NOT_FOUND);

@@ -58,10 +58,10 @@ contract MinerRegistry is IMinerRegistry, NoDefaultFunc, Errors {
         )
         external
     {
-        require(0x0 != miner, EMPTY_ADDRESS);
+        require(0x0 != miner, ZERO_ADDRESS);
         require(
             0 == positionMap[msg.sender][miner],
-            ALREADY_REGISTERED
+            ALREADY_EXIST
         );
 
         address[] storage miners = minersMap[msg.sender];
@@ -80,7 +80,7 @@ contract MinerRegistry is IMinerRegistry, NoDefaultFunc, Errors {
         )
         external
     {
-        require(0x0 != addr, EMPTY_ADDRESS);
+        require(0x0 != addr, ZERO_ADDRESS);
 
         uint pos = positionMap[msg.sender][addr];
         require(pos != 0, NOT_FOUND);

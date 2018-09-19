@@ -75,7 +75,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc, Errors {
         );
 
         order.updateHash();
-        require(!orderSubmitted[order.hash], ALREADY_REGISTERED);
+        require(!orderSubmitted[order.hash], ALREADY_EXIST);
 
         orderSubmitted[order.hash] = true;
         orders[order.hash] = dataArray;

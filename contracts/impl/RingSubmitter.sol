@@ -107,16 +107,16 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         public
     {
-        require(_lrcTokenAddress != 0x0, EMPTY_ADDRESS);
-        require(_wethTokenAddress != 0x0, EMPTY_ADDRESS);
-        require(_delegateAddress != 0x0, EMPTY_ADDRESS);
-        require(_orderBrokerRegistryAddress != 0x0, EMPTY_ADDRESS);
-        require(_minerBrokerRegistryAddress != 0x0, EMPTY_ADDRESS);
-        require(_orderRegistryAddress != 0x0, EMPTY_ADDRESS);
-        require(_minerRegistryAddress != 0x0, EMPTY_ADDRESS);
-        require(_feeHolderAddress != 0x0, EMPTY_ADDRESS);
-        require(_orderBookAddress != 0x0, EMPTY_ADDRESS);
-        require(_taxTableAddress != 0x0, EMPTY_ADDRESS);
+        require(_lrcTokenAddress != 0x0, ZERO_ADDRESS);
+        require(_wethTokenAddress != 0x0, ZERO_ADDRESS);
+        require(_delegateAddress != 0x0, ZERO_ADDRESS);
+        require(_orderBrokerRegistryAddress != 0x0, ZERO_ADDRESS);
+        require(_minerBrokerRegistryAddress != 0x0, ZERO_ADDRESS);
+        require(_orderRegistryAddress != 0x0, ZERO_ADDRESS);
+        require(_minerRegistryAddress != 0x0, ZERO_ADDRESS);
+        require(_feeHolderAddress != 0x0, ZERO_ADDRESS);
+        require(_orderBookAddress != 0x0, ZERO_ADDRESS);
+        require(_taxTableAddress != 0x0, ZERO_ADDRESS);
 
         lrcTokenAddress = _lrcTokenAddress;
         wethTokenAddress = _wethTokenAddress;

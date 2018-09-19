@@ -21,21 +21,18 @@ pragma experimental "ABIEncoderV2";
 
 /// @title Errors
 contract Errors {
-  string REENTRY                    = "REENTRY";
-  string EMPTY_ADDRESS              = "EMPTY_ADDRESS";
-  string ZERO_TOKEN_AMOUNT          = "ZERO_TOKEN_AMOUNT";
-  string UNAUTHORIZED               = "UNAUTHORIZED";
-  string UNIMPLEMENTED              = "UNIMPLEMENTED";
+  string ZERO_VALUE                 = "ZERO_VALUE";
+  string ZERO_ADDRESS               = "ZERO_ADDRESS";
   string INVALID_VALUE              = "INVALID_VALUE";
   string INVALID_ADDRESS            = "INVALID_ADDRESS";
-  string INVALID_STATE              = "INVALID_STATE";
-  string INVALID_SIG                = "INVALID_SIG";
   string INVALID_SIZE               = "INVALID_SIZE";
-  string INVALID_TOKEN_AMOUNT       = "INVALID_TOKEN_AMOUNT";
-  string INVALID_INTERCEPTOR        = "INVALID_INTERCEPTOR";
-  string INVALID_BROKER             = "INVALID_BROKER";
+  string INVALID_SIG                = "INVALID_SIG";
+  string INVALID_STATE              = "INVALID_STATE";
   string NOT_FOUND                  = "NOT_FOUND";
-  string ALREADY_REGISTERED         = "ALREADY_REGISTERED";
+  string ALREADY_EXIST              = "ALREADY_EXIST";
+  string REENTRY                    = "REENTRY";
+  string UNAUTHORIZED               = "UNAUTHORIZED";
+  string UNIMPLEMENTED              = "UNIMPLEMENTED";
   string TRANSFER_FAILURE           = "TRANSFER_FAILURE";
   string WITHDRAWAL_FAILURE         = "WITHDRAWAL_FAILURE";
   string BURN_FAILURE               = "BURN_FAILURE";
