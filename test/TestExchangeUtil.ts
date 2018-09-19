@@ -158,7 +158,7 @@ export class ExchangeTestUtil {
       // Set the order validSince time to a bit before the current timestamp;
       order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
     }
-    if (order.walletAddr !== undefined && !order.walletAddr.startsWith("0x")) {
+    if (order.walletAddr && !order.walletAddr.startsWith("0x")) {
       const walletIndex = parseInt(order.walletAddr, 10);
       assert(walletIndex >= 0 && walletIndex < this.testContext.wallets.length,
              "Invalid wallet index");
