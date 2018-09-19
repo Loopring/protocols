@@ -85,6 +85,29 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       const tx = await deserializerTest.deserialize(paramData);
       console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
     });
+
+    it("single 2-size ring, pass by arrays", async () => {
+
+      const uint16Data: number[] = []; // max: 6 * 2
+      const uintData: number[] = []; // max: 10 * 2
+      const addresses: string[] = []; // max: 11 * 2 + 3
+
+      for (let i = 0; i < 12; i ++) {
+        uint16Data.push(1);
+      }
+
+      for (let i = 0; i < 20; i ++) {
+        uintData.push(1e18);
+      }
+
+      for (let i = 0; i < 25; i ++) {
+        addresses.push(accounts[0]);
+      }
+
+      const tx = await deserializerTest.submitByArrays(uint16Data, uintData, addresses, 2);
+      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+    });
+
   });
 
 });
