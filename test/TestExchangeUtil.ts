@@ -539,7 +539,6 @@ export class ExchangeTestUtil {
     const {
       RingSubmitter,
       OrderRegistry,
-      MinerRegistry,
       TradeDelegate,
       FeeHolder,
       WETHToken,
@@ -556,7 +555,6 @@ export class ExchangeTestUtil {
       brokerRegistry.address,
       this.context.minerBrokerRegistry.address,
       OrderRegistry.address,
-      MinerRegistry.address,
       feeHolder.address,
       this.context.orderBook.address,
       this.context.taxTable.address,
@@ -574,7 +572,6 @@ export class ExchangeTestUtil {
                                    orderBrokerRegistryAddress,
                                    minerBrokerRegistryAddress,
                                    OrderRegistry.address,
-                                   MinerRegistry.address,
                                    feeHolder.address,
                                    this.context.orderBook.address,
                                    this.context.taxTable.address,
@@ -589,7 +586,6 @@ export class ExchangeTestUtil {
     const {
       RingSubmitter,
       OrderRegistry,
-      MinerRegistry,
       TradeDelegate,
       FeeHolder,
       OrderBook,
@@ -598,11 +594,10 @@ export class ExchangeTestUtil {
     } = new Artifacts(artifacts);
 
     const [ringSubmitter, tradeDelegate, orderRegistry,
-      minerRegistry, feeHolder, orderBook, taxTable, lrcToken] = await Promise.all([
+           feeHolder, orderBook, taxTable, lrcToken] = await Promise.all([
         RingSubmitter.deployed(),
         TradeDelegate.deployed(),
         OrderRegistry.deployed(),
-        MinerRegistry.deployed(),
         FeeHolder.deployed(),
         OrderBook.deployed(),
         TaxTable.deployed(),
@@ -623,7 +618,6 @@ export class ExchangeTestUtil {
                            orderBrokerRegistryAddress,
                            minerBrokerRegistryAddress,
                            OrderRegistry.address,
-                           MinerRegistry.address,
                            FeeHolder.address,
                            OrderBook.address,
                            TaxTable.address,

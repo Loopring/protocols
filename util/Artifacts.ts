@@ -5,7 +5,6 @@ export class Artifacts {
   public TradeDelegate: any;
   public BrokerRegistry: any;
   public OrderRegistry: any;
-  public MinerRegistry: any;
   public DummyBrokerInterceptor: any;
   public DummyExchange: any;
   public DummyTaxManager: any;
@@ -25,7 +24,6 @@ export class Artifacts {
     this.TradeDelegate = artifacts.require("impl/TradeDelegate");
     this.BrokerRegistry = artifacts.require("impl/BrokerRegistry");
     this.OrderRegistry = artifacts.require("impl/OrderRegistry");
-    this.MinerRegistry = artifacts.require("impl/MinerRegistry");
     this.DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");
     this.DummyExchange = artifacts.require("test/DummyExchange");
     this.DummyTaxManager = artifacts.require("test/DummyTaxManager");

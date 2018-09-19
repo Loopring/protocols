@@ -23,7 +23,6 @@ import "../iface/IBrokerRegistry.sol";
 import "../iface/IBrokerInterceptor.sol";
 import "../iface/IRingCanceller.sol";
 import "../iface/IFeeHolder.sol";
-import "../iface/IMinerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 

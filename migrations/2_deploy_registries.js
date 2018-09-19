@@ -1,14 +1,12 @@
 var TradeDelegate = artifacts.require("./impl/TradeDelegate");
 var BrokerRegistry = artifacts.require("./impl/BrokerRegistry");
 var OrderRegistry = artifacts.require("./impl/OrderRegistry");
-var MinerRegistry = artifacts.require("./impl/MinerRegistry");
 var FeeHolder = artifacts.require("./impl/FeeHolder");
 var OrderBook = artifacts.require("./impl/OrderBook");
 
 module.exports = function(deployer, network, accounts) {
   deployer.deploy(BrokerRegistry);
   deployer.deploy(OrderRegistry);
-  deployer.deploy(MinerRegistry);
   deployer.deploy(OrderBook);
 
   deployer.deploy(TradeDelegate).then(() => {

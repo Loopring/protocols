@@ -1,7 +1,6 @@
 var TradeDelegate = artifacts.require("./impl/TradeDelegate");
 var BrokerRegistry = artifacts.require("./impl/BrokerRegistry");
 var OrderRegistry = artifacts.require("./impl/OrderRegistry");
-var MinerRegistry = artifacts.require("./impl/MinerRegistry");
 var RingSubmitter = artifacts.require("./impl/RingSubmitter");
 var RingCanceller = artifacts.require("./impl/RingCanceller");
 var FeeHolder = artifacts.require("./impl/FeeHolder");
@@ -20,7 +19,6 @@ module.exports = function(deployer, network, accounts) {
         TradeDelegate.deployed(),
         BrokerRegistry.deployed(),
         OrderRegistry.deployed(),
-        MinerRegistry.deployed(),
         FeeHolder.deployed(),
         OrderBook.deployed(),
         LRCToken.deployed(),
@@ -45,7 +43,6 @@ module.exports = function(deployer, network, accounts) {
           orderBrokerRegistry.address,
           minerBrokerRegistry.address,
           OrderRegistry.address,
-          MinerRegistry.address,
           FeeHolder.address,
           OrderBook.address,
           TaxTable.address,

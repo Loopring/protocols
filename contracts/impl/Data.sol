@@ -21,7 +21,6 @@ pragma experimental "ABIEncoderV2";
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITradeDelegate.sol";
-import "../iface/IMinerRegistry.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IOrderBook.sol";
 import "../iface/ITaxTable.sol";
@@ -59,7 +58,6 @@ library Data {
         IBrokerRegistry orderBrokerRegistry;
         IBrokerRegistry minerBrokerRegistry;
         IOrderRegistry  orderRegistry;
-        IMinerRegistry  minerRegistry;
         IFeeHolder feeHolder;
         IOrderBook orderBook;
         ITaxTable taxTable;

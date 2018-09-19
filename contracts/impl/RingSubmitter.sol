@@ -23,7 +23,6 @@ import "../iface/IBrokerRegistry.sol";
 import "../iface/IBrokerInterceptor.sol";
 import "../iface/IRingSubmitter.sol";
 import "../iface/IFeeHolder.sol";
-import "../iface/IMinerRegistry.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 import "../iface/IOrderBook.sol";
@@ -74,7 +73,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
     address public  orderBrokerRegistryAddress  = 0x0;
     address public  minerBrokerRegistryAddress  = 0x0;
     address public  orderRegistryAddress        = 0x0;
-    address public  minerRegistryAddress        = 0x0;
     address public  feeHolderAddress            = 0x0;
     address public  orderBookAddress            = 0x0;
     address public  taxTableAddress             = 0x0;
@@ -100,7 +98,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         address _orderBrokerRegistryAddress,
         address _minerBrokerRegistryAddress,
         address _orderRegistryAddress,
-        address _minerRegistryAddress,
         address _feeHolderAddress,
         address _orderBookAddress,
         address _taxTableAddress
@@ -113,7 +110,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         require(_orderBrokerRegistryAddress != 0x0, ZERO_ADDRESS);
         require(_minerBrokerRegistryAddress != 0x0, ZERO_ADDRESS);
         require(_orderRegistryAddress != 0x0, ZERO_ADDRESS);
-        require(_minerRegistryAddress != 0x0, ZERO_ADDRESS);
         require(_feeHolderAddress != 0x0, ZERO_ADDRESS);
         require(_orderBookAddress != 0x0, ZERO_ADDRESS);
         require(_taxTableAddress != 0x0, ZERO_ADDRESS);
@@ -124,7 +120,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         orderBrokerRegistryAddress = _orderBrokerRegistryAddress;
         minerBrokerRegistryAddress = _minerBrokerRegistryAddress;
         orderRegistryAddress = _orderRegistryAddress;
-        minerRegistryAddress = _minerRegistryAddress;
         feeHolderAddress = _feeHolderAddress;
         orderBookAddress = _orderBookAddress;
         taxTableAddress = _taxTableAddress;
@@ -141,7 +136,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             IBrokerRegistry(orderBrokerRegistryAddress),
             IBrokerRegistry(minerBrokerRegistryAddress),
             IOrderRegistry(orderRegistryAddress),
-            IMinerRegistry(minerRegistryAddress),
             IFeeHolder(feeHolderAddress),
             IOrderBook(orderBookAddress),
             ITaxTable(taxTableAddress),
