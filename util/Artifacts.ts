@@ -11,6 +11,7 @@ export class Artifacts {
   public FeeHolder: any;
   public OrderBook: any;
   public BurnRateTable: any;
+  public BurnManager: any;
   public DummyToken: any;
   public LRCToken: any;
   public GTOToken: any;
@@ -30,6 +31,7 @@ export class Artifacts {
     this.FeeHolder = artifacts.require("impl/FeeHolder");
     this.OrderBook = artifacts.require("impl/OrderBook");
     this.BurnRateTable = artifacts.require("impl/BurnRateTable");
+    this.BurnManager = artifacts.require("impl/BurnManager");
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");
     this.GTOToken = artifacts.require("test/tokens/GTO");

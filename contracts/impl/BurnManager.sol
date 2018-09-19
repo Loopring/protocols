@@ -44,15 +44,17 @@ contract BurnManager is NoDefaultFunc, Errors {
         lrcAddress = _lrcAddress;
     }
 
-    function burn(address token)
+    function burn(
+        address token
+        )
         external
         returns (bool)
     {
         IFeeHolder feeHolder = IFeeHolder(feeHolderAddress);
 
         // Withdraw the complete token balance
-        uint balance = feeHolder.feeBalances(feeHolderAddress, token);
-        bool success = feeHolder.withdrawBurn(token, balance);
+        uint balance = feeHolder.feeBalances(token, feeHolderAddress);
+        bool success = feeHolder.withdrawBurned(token, balance);
         require(success, WITHDRAWAL_FAILURE);
 
         // We currently only support burning LRC directly

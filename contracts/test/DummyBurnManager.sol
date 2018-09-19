@@ -33,10 +33,10 @@ contract DummyBurnManager {
         feeHolderAddress = _feeHolderAddress;
     }
 
-    function withdrawBurn(address token, uint value)
+    function withdrawBurned(address token, uint value)
         external
         returns (bool success)
     {
-        return IFeeHolder(feeHolderAddress).withdrawBurn(token, value);
+        return IFeeHolder(feeHolderAddress).withdrawBurned(token, value);
     }
 }

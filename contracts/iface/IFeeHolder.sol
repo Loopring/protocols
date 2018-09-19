@@ -27,7 +27,7 @@ contract IFeeHolder {
     function batchAddFeeBalances(bytes32[] batch)
         external;
 
-    function withdrawBurn(address token, uint value)
+    function withdrawBurned(address token, uint value)
         external
         returns (bool success);
 

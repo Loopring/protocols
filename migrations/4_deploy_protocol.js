@@ -6,6 +6,7 @@ var RingCanceller = artifacts.require("./impl/RingCanceller");
 var FeeHolder = artifacts.require("./impl/FeeHolder");
 var OrderBook = artifacts.require("./impl/OrderBook");
 var BurnRateTable = artifacts.require("./impl/BurnRateTable");
+var BurnManager = artifacts.require("./impl/BurnManager");
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 
@@ -48,6 +49,7 @@ module.exports = function(deployer, network, accounts) {
           BurnRateTable.address,
         ),
         deployer.deploy(RingCanceller, TradeDelegate.address),
+        deployer.deploy(BurnManager, FeeHolder.address, lrcAddr),
       ]);
     });
   }

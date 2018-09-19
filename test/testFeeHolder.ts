@@ -85,14 +85,14 @@ contract("FeeHolder", (accounts: string[]) => {
     assert.equal(feeBalanceAfter, feeBalanceBefore - amount, "Withdrawal amount not correctly updated.");
   };
 
-  const withdrawBurnChecked = async (from: any, token: string, amount: number) => {
+  const withdrawBurnedChecked = async (from: any, token: string, amount: number) => {
     const dummyToken = DummyToken.at(token);
 
     const balanceFeeHolderBefore = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
     const balanceFromBefore = (await dummyToken.balanceOf(from.address)).toNumber();
     const burnBalanceBefore = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
 
-    const success = await from.withdrawBurn(token, amount);
+    const success = await from.withdrawBurned(token, amount);
     assert(success, "Withdrawal needs to succeed");
 
     const balanceFeeHolderAfter = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
@@ -154,7 +154,7 @@ contract("FeeHolder", (accounts: string[]) => {
       await batchAddFeeBalancesChecked(feePayments);
 
       // Withdraw the tokens that need to be burned
-      await withdrawBurnChecked(dummyBurnManager, token1, amount);
+      await withdrawBurnedChecked(dummyBurnManager, token1, amount);
     });
 
     it("should not be able to send fee payments in an incorrect format", async () => {
@@ -237,7 +237,7 @@ contract("FeeHolder", (accounts: string[]) => {
       await batchAddFeeBalancesChecked(feePayments);
 
       // Try to withdraw the tokens to burn
-      await expectThrow(feeHolder.withdrawBurn(token1, amount, {from: user1}));
+      await expectThrow(feeHolder.withdrawBurned(token1, amount, {from: user1}));
     });
 
     it("should not be able to add fee balances", async () => {
