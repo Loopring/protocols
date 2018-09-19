@@ -13,6 +13,5 @@ export * from "./src/participation_spec";
 export * from "./src/protocol_simulator";
 export * from "./src/ring";
 export * from "./src/rings_generator";
-export * from "./src/tax";
 export * from "./src/types";
 export * from "./src/xor";
