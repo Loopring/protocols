@@ -315,40 +315,40 @@ export class Ring {
       // Save these fee amounts before any discount the order gets for validation
       const feePercentageB = order.P2P ? order.tokenBFeePercentage : order.feePercentage;
 
-      order.rebateFee = await this.payFeesAndTaxes(mining,
-                                                   order,
-                                                   order.feeToken,
-                                                   order.fillAmountFee,
-                                                   0,
-                                                   walletPercentage,
-                                                   this.detailTransferFee[i]);
-      order.rebateS = await this.payFeesAndTaxes(mining,
-                                                 order,
-                                                 order.tokenS,
-                                                 order.fillAmountFeeS,
-                                                 order.splitS,
-                                                 walletPercentage,
-                                                 this.detailTransferS[i],
-                                                 order.tokenSFeePercentage);
-      order.rebateB = await this.payFeesAndTaxes(mining,
-                                                 order,
-                                                 order.tokenB,
-                                                 order.fillAmountFeeB,
-                                                 0,
-                                                 walletPercentage,
-                                                 this.detailTransferB[i],
-                                                 feePercentageB);
+      order.rebateFee = await this.payFeesAndBurn(mining,
+                                                  order,
+                                                  order.feeToken,
+                                                  order.fillAmountFee,
+                                                  0,
+                                                  walletPercentage,
+                                                  this.detailTransferFee[i]);
+      order.rebateS = await this.payFeesAndBurn(mining,
+                                                order,
+                                                order.tokenS,
+                                                order.fillAmountFeeS,
+                                                order.splitS,
+                                                walletPercentage,
+                                                this.detailTransferS[i],
+                                                order.tokenSFeePercentage);
+      order.rebateB = await this.payFeesAndBurn(mining,
+                                                order,
+                                                order.tokenB,
+                                                order.fillAmountFeeB,
+                                                0,
+                                                walletPercentage,
+                                                this.detailTransferB[i],
+                                                feePercentageB);
     }
   }
 
-  private async payFeesAndTaxes(mining: Mining,
-                                order: OrderInfo,
-                                token: string,
-                                amount: number,
-                                margin: number,
-                                walletSplitPercentage: number,
-                                payment: DetailedTokenTransfer,
-                                feePercentage: number = 0) {
+  private async payFeesAndBurn(mining: Mining,
+                               order: OrderInfo,
+                               token: string,
+                               amount: number,
+                               margin: number,
+                               walletSplitPercentage: number,
+                               payment: DetailedTokenTransfer,
+                               feePercentage: number = 0) {
     if (amount + margin === 0) {
       return 0;
     }
@@ -356,8 +356,8 @@ export class Ring {
       assert.equal(amount, 0, "In a P2P order no fees should be paid when no wallet is provided");
     }
 
-    // Pay the tax with the feeHolder as owner
-    const taxAddress = this.context.feeHolder.address;
+    // Pay the burn rate with the feeHolder as owner
+    const burnAddress = this.context.feeHolder.address;
 
     // BEGIN diagnostics
     const feeDesc = "Fee" + ((feePercentage > 0) ? ("@" + (feePercentage / 10)) + "%" : "");
@@ -396,24 +396,24 @@ export class Ring {
       // END diagnostics
     }
 
-    // Calculate taxes and rebates
+    // Calculate burn rates and rebates
     const [burnRate, rebateRate] =
-    await this.context.taxTable.getBurnAndRebateRate(order.owner, token, order.P2P);
+    await this.context.burnRateTable.getBurnAndRebateRate(order.owner, token, order.P2P);
     // Miner fee
-    const minerTax = Math.floor(minerFee * burnRate.toNumber() / this.context.feePercentageBase);
+    const minerBurn = Math.floor(minerFee * burnRate.toNumber() / this.context.feePercentageBase);
     const minerRebate = Math.floor(minerFee * rebateRate.toNumber() / this.context.feePercentageBase);
-    minerFee = margin + (minerFee - minerTax - minerRebate);
+    minerFee = margin + (minerFee - minerBurn - minerRebate);
     // Wallet fee
-    const walletTax = Math.floor(walletFee * burnRate.toNumber() / this.context.feePercentageBase);
+    const walletBurn = Math.floor(walletFee * burnRate.toNumber() / this.context.feePercentageBase);
     const walletRebate = Math.floor(walletFee * rebateRate.toNumber() / this.context.feePercentageBase);
-    const feeToWallet = walletFee - walletTax - walletRebate;
+    const feeToWallet = walletFee - walletBurn - walletRebate;
 
     // BEGIN diagnostics
-    this.logPayment(minerPayment, token, order.owner, taxAddress, minerTax, "Burn@" + burnRate / 10 + "%");
+    this.logPayment(minerPayment, token, order.owner, burnAddress, minerBurn, "Burn@" + burnRate / 10 + "%");
     this.logPayment(minerPayment, token, order.owner, order.owner, minerRebate, "Rebate@" + rebateRate / 10 + "%");
     const minerIncomePayment =
       this.logPayment(minerPayment, token, order.owner, mining.feeRecipient, minerFee - margin, "Income");
-    this.logPayment(walletPayment, token, order.owner, taxAddress, walletTax, "Burn@" + burnRate / 10 + "%");
+    this.logPayment(walletPayment, token, order.owner, burnAddress, walletBurn, "Burn@" + burnRate / 10 + "%");
     this.logPayment(walletPayment, token, order.owner, order.owner, walletRebate, "Rebate@" + rebateRate / 10 + "%");
     this.logPayment(walletPayment, token, order.owner, order.walletAddr, feeToWallet, "Income");
     // END diagnostics
@@ -442,11 +442,11 @@ export class Ring {
     // Do the fee payments
     await this.addFeePayment(token, order.walletAddr, feeToWallet);
     await this.addFeePayment(token, mining.feeRecipient, feeToMiner);
-    // Tax
-    await this.addFeePayment(token, taxAddress, minerTax + walletTax);
+    // Burn
+    await this.addFeePayment(token, burnAddress, minerBurn + walletBurn);
 
-    // Calculate the total fee payment after possible discounts (tax rebate + fee waiving)
-    let totalFeePaid = (feeToWallet + minerFee) + (minerTax + walletTax);
+    // Calculate the total fee payment after possible discounts (burn rate rebate + fee waiving)
+    let totalFeePaid = (feeToWallet + minerFee) + (minerBurn + walletBurn);
 
     // JS rounding errors...
     if (totalFeePaid > amount + margin && totalFeePaid < amount + margin + 10000) {
@@ -500,7 +500,7 @@ export class Ring {
   }
 
   private async validateSettlement(transfers: TransferItem[]) {
-    const expectedTotalTax: { [id: string]: number; } = {};
+    const expectedTotalBurned: { [id: string]: number; } = {};
     const ringSize = this.orders.length;
     for (let i = 0; i < ringSize; i++) {
       const prevIndex = (i + ringSize - 1) % ringSize;
@@ -609,8 +609,8 @@ export class Ring {
         }
       }
 
-      // Check rebates and taxes
-      const calculateTaxAndRebate = async (token: string, amount: number) => {
+      // Check rebates and burn rates
+      const calculateBurnAndRebate = async (token: string, amount: number) => {
         const walletSplitPercentage = order.P2P ? 100 : order.walletSplitPercentage;
         const walletFee = Math.floor(amount * walletSplitPercentage / 100);
         const minerFeeBeforeWaive = amount - walletFee;
@@ -622,14 +622,14 @@ export class Ring {
         const minerRebate = minerFeeBeforeWaive - minerFee;
         const totalFee = walletFee + minerFee;
         const [burnRate, rebateRate] =
-        await this.context.taxTable.getBurnAndRebateRate(order.owner, token, order.P2P);
-        const taxRebate = Math.floor(totalFee * rebateRate.toNumber() / this.context.feePercentageBase);
-        const tax = Math.floor(totalFee * burnRate.toNumber() / this.context.feePercentageBase);
-        return [tax, minerRebate + taxRebate];
+        await this.context.burnRateTable.getBurnAndRebateRate(order.owner, token, order.P2P);
+        const burnRebate = Math.floor(totalFee * rebateRate.toNumber() / this.context.feePercentageBase);
+        const burn = Math.floor(totalFee * burnRate.toNumber() / this.context.feePercentageBase);
+        return [burn, minerRebate + burnRebate];
       };
-      const [expectedTaxFee, expectedRebateFee] = await calculateTaxAndRebate(order.feeToken, order.fillAmountFee);
-      const [expectedTaxS, expectedRebateS] = await calculateTaxAndRebate(order.tokenS, order.fillAmountFeeS);
-      const [expectedTaxB, expectedRebateB] = await calculateTaxAndRebate(order.tokenB, order.fillAmountFeeB);
+      const [expectedBurnFee, expectedRebateFee] = await calculateBurnAndRebate(order.feeToken, order.fillAmountFee);
+      const [expectedBurnS, expectedRebateS] = await calculateBurnAndRebate(order.tokenS, order.fillAmountFeeS);
+      const [expectedBurnB, expectedRebateB] = await calculateBurnAndRebate(order.tokenB, order.fillAmountFeeB);
       this.assertNumberEqualsWithPrecision(order.rebateFee, expectedRebateFee,
                                            "Fee rebate should match expected value");
       this.assertNumberEqualsWithPrecision(order.rebateS, expectedRebateS,
@@ -637,19 +637,19 @@ export class Ring {
       this.assertNumberEqualsWithPrecision(order.rebateB, expectedRebateB,
                                            "FeeB rebate should match expected value");
 
-      // Add taxes to total expected taxes
-      if (!expectedTotalTax[order.feeToken]) {
-        expectedTotalTax[order.feeToken] = 0;
+      // Add burn rates to total expected burn rates
+      if (!expectedTotalBurned[order.feeToken]) {
+        expectedTotalBurned[order.feeToken] = 0;
       }
-      expectedTotalTax[order.feeToken] += expectedTaxFee;
-      if (!expectedTotalTax[order.tokenS]) {
-        expectedTotalTax[order.tokenS] = 0;
+      expectedTotalBurned[order.feeToken] += expectedBurnFee;
+      if (!expectedTotalBurned[order.tokenS]) {
+        expectedTotalBurned[order.tokenS] = 0;
       }
-      expectedTotalTax[order.tokenS] += expectedTaxS;
-      if (!expectedTotalTax[order.tokenB]) {
-        expectedTotalTax[order.tokenB] = 0;
+      expectedTotalBurned[order.tokenS] += expectedBurnS;
+      if (!expectedTotalBurned[order.tokenB]) {
+        expectedTotalBurned[order.tokenB] = 0;
       }
-      expectedTotalTax[order.tokenB] += expectedTaxB;
+      expectedTotalBurned[order.tokenB] += expectedBurnB;
 
       // Ensure fees in tokenB can be paid with the amount bought
       assert(prevOrder.fillAmountFeeB <= order.fillAmountS + epsilon,
@@ -761,18 +761,18 @@ export class Ring {
       }
     }
 
-    // Ensure total tax payments match expected total tax
-    for (const token of [...Object.keys(expectedTotalTax), ...Object.keys(this.feeBalances)]) {
+    // Ensure total burn payments match expected total burned
+    for (const token of [...Object.keys(expectedTotalBurned), ...Object.keys(this.feeBalances)]) {
       const feeAddress = this.context.feeHolder.address;
-      let tax = 0;
+      let burned = 0;
       let expected = 0;
       if (this.feeBalances[token] && this.feeBalances[token][feeAddress]) {
-        tax = this.feeBalances[token][feeAddress];
+        burned = this.feeBalances[token][feeAddress];
       }
-      if (expectedTotalTax[token]) {
-        expected = expectedTotalTax[token];
+      if (expectedTotalBurned[token]) {
+        expected = expectedTotalBurned[token];
       }
-      this.assertNumberEqualsWithPrecision(tax, expected, "Total tax should match expected value");
+      this.assertNumberEqualsWithPrecision(burned, expected, "Total burned should match expected value");
     }
   }
 

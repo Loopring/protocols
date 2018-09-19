@@ -14,7 +14,7 @@ export class Context {
   public BrokerInterceptorContract: any;
   public FeeHolderContract: any;
   public OrderBookContract: any;
-  public TaxTableContract: any;
+  public BurnRateTableContract: any;
 
   public tradeDelegate: any;
   public orderBrokerRegistry: any;
@@ -23,7 +23,7 @@ export class Context {
   public minerRegistry: any;
   public feeHolder: any;
   public orderBook: any;
-  public taxTable: any;
+  public burnRateTable: any;
 
   constructor(blockNumber: number,
               blockTimestamp: number,
@@ -33,7 +33,7 @@ export class Context {
               orderRegistryAddress: string,
               feeHolderAddress: string,
               orderBookAddress: string,
-              taxTableAddress: string,
+              burnRateTableAddress: string,
               lrcAddress: string,
               feePercentageBase: number) {
     this.blockNumber = blockNumber;
@@ -49,7 +49,7 @@ export class Context {
     const brokerInterceptorAbi = fs.readFileSync(ABIPath + "IBrokerInterceptor.abi", "ascii");
     const feeHolderAbi = fs.readFileSync(ABIPath + "IFeeHolder.abi", "ascii");
     const orderBookAbi = fs.readFileSync(ABIPath + "IOrderBook.abi", "ascii");
-    const taxTableAbi = fs.readFileSync(ABIPath + "ITaxTable.abi", "ascii");
+    const burnRateTableAbi = fs.readFileSync(ABIPath + "IBurnRateTable.abi", "ascii");
 
     this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
     this.TradeDelegateContract = web3.eth.contract(JSON.parse(tradeDelegateAbi));
@@ -58,7 +58,7 @@ export class Context {
     this.FeeHolderContract = web3.eth.contract(JSON.parse(feeHolderAbi));
     this.OrderBookContract = web3.eth.contract(JSON.parse(orderBookAbi));
     this.BrokerInterceptorContract = web3.eth.contract(JSON.parse(brokerInterceptorAbi));
-    this.TaxTableContract = web3.eth.contract(JSON.parse(taxTableAbi));
+    this.BurnRateTableContract = web3.eth.contract(JSON.parse(burnRateTableAbi));
 
     this.tradeDelegate = this.TradeDelegateContract.at(tradeDelegateAddress);
     this.orderBrokerRegistry = this.BrokerRegistryContract.at(orderBrokerRegistryAddress);
@@ -66,7 +66,7 @@ export class Context {
     this.orderRegistry = this.OrderRegistryContract.at(orderRegistryAddress);
     this.feeHolder = this.FeeHolderContract.at(feeHolderAddress);
     this.orderBook = this.OrderBookContract.at(orderBookAddress);
-    this.taxTable = this.TaxTableContract.at(taxTableAddress);
+    this.burnRateTable = this.BurnRateTableContract.at(burnRateTableAddress);
   }
 
 }
