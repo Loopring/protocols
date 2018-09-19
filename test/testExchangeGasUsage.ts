@@ -55,7 +55,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
     });
   });
 
