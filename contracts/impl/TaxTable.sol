@@ -173,7 +173,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
             uint withdrawableAmount = getWithdrawableBalance(msg.sender);
             require(
                 userData.amount != withdrawableAmount,
-                "User only has unlocked tokens he should first withdraw"
+                INVALID_STATE
             );
         }
 
