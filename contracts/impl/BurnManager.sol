@@ -26,7 +26,7 @@ import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TaxManager is NoDefaultFunc, Errors {
+contract BurnManager is NoDefaultFunc, Errors {
     using MathUint for uint;
 
     address public feeHolderAddress = 0x0;
@@ -52,7 +52,7 @@ contract TaxManager is NoDefaultFunc, Errors {
 
         // Withdraw the complete token balance
         uint balance = feeHolder.feeBalances(feeHolderAddress, token);
-        bool success = feeHolder.withdrawTax(token, balance);
+        bool success = feeHolder.withdrawBurn(token, balance);
         require(success, WITHDRAWAL_FAILURE);
 
         // We currently only support burning LRC directly

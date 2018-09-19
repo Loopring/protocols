@@ -23,7 +23,7 @@ import "../iface/IOrderRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IOrderBook.sol";
-import "../iface/ITaxTable.sol";
+import "../iface/IBurnRateTable.sol";
 
 
 library Data {
@@ -39,19 +39,6 @@ library Data {
         uint ringsOffset;
     }
 
-    // Update TaxHelper.getTaxRate() if you change the order of these parameters
-    struct Tax {
-        uint16 matchingIncomeLRC;
-        uint16 matchingIncomeETH;
-        uint16 matchingIncomeOther;
-        uint16 p2pIncomeLRC;
-        uint16 p2pIncomeETH;
-        uint16 p2pIncomeOther;
-        uint16 percentageBase;
-        address lrcTokenAddress;
-        address wethTokenAddress;
-    }
-
     struct Context {
         address lrcTokenAddress;
         ITradeDelegate  delegate;
@@ -60,7 +47,7 @@ library Data {
         IOrderRegistry  orderRegistry;
         IFeeHolder feeHolder;
         IOrderBook orderBook;
-        ITaxTable taxTable;
+        IBurnRateTable burnRateTable;
         uint64 ringIndex;
         uint feePercentageBase;
     }

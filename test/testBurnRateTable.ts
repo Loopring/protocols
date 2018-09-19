@@ -3,14 +3,14 @@ import { expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 
 const {
-  TaxTable,
+  BurnRateTable,
   TradeDelegate,
   DummyToken,
   LRCToken,
   WETHToken,
 } = new Artifacts(artifacts);
 
-contract("TaxTable", (accounts: string[]) => {
+contract("BurnRateTable", (accounts: string[]) => {
   const deployer = accounts[0];
   const mockedExchangeAddress = accounts[1];
   const user1 = accounts[2];
@@ -18,7 +18,7 @@ contract("TaxTable", (accounts: string[]) => {
   const user3 = accounts[4];
   const user4 = accounts[5];
 
-  let taxTable: any;
+  let burnRateTable: any;
   let tokenLRC: string;
   let tokenWETH: string;
   const token1 = "0x" + "1".repeat(40);
@@ -31,7 +31,7 @@ contract("TaxTable", (accounts: string[]) => {
   let LOCK_TIME: number;
   let LINEAR_UNLOCK_START_TIME: number;
 
-  let TAX_BASE_PERCENTAGE: number;
+  let BURN_BASE_PERCENTAGE: number;
   let LOCK_BASE_PERCENTAGE: number;
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, description: string, precision: number = 8) => {
@@ -52,20 +52,20 @@ contract("TaxTable", (accounts: string[]) => {
 
   const getTierRate = async (tier: number) => {
     if (tier === 1) {
-      const matching = (await taxTable.TAX_MATCHING_TIER1()).toNumber();
-      const P2P = (await taxTable.TAX_P2P_TIER1()).toNumber();
+      const matching = (await burnRateTable.BURN_MATCHING_TIER1()).toNumber();
+      const P2P = (await burnRateTable.BURN_P2P_TIER1()).toNumber();
       return [matching, P2P];
     } else if (tier === 2) {
-      const matching = (await taxTable.TAX_MATCHING_TIER2()).toNumber();
-      const P2P = (await taxTable.TAX_P2P_TIER2()).toNumber();
+      const matching = (await burnRateTable.BURN_MATCHING_TIER2()).toNumber();
+      const P2P = (await burnRateTable.BURN_P2P_TIER2()).toNumber();
       return [matching, P2P];
     } else if (tier === 3) {
-      const matching = (await taxTable.TAX_MATCHING_TIER3()).toNumber();
-      const P2P = (await taxTable.TAX_P2P_TIER3()).toNumber();
+      const matching = (await burnRateTable.BURN_MATCHING_TIER3()).toNumber();
+      const P2P = (await burnRateTable.BURN_P2P_TIER3()).toNumber();
       return [matching, P2P];
     } else if (tier === 4) {
-      const matching = (await taxTable.TAX_MATCHING_TIER4()).toNumber();
-      const P2P = (await taxTable.TAX_P2P_TIER4()).toNumber();
+      const matching = (await burnRateTable.BURN_MATCHING_TIER4()).toNumber();
+      const P2P = (await burnRateTable.BURN_P2P_TIER4()).toNumber();
       return [matching, P2P];
     } else {
       assert(false, "Invalid tier");
@@ -74,34 +74,34 @@ contract("TaxTable", (accounts: string[]) => {
 
   const getTokenTierValue = async (tier: number) => {
     if (tier === 1) {
-      return (await taxTable.TIER_1()).toNumber();
+      return (await burnRateTable.TIER_1()).toNumber();
     } else if (tier === 2) {
-      return (await taxTable.TIER_2()).toNumber();
+      return (await burnRateTable.TIER_2()).toNumber();
     } else if (tier === 3) {
-      return (await taxTable.TIER_3()).toNumber();
+      return (await burnRateTable.TIER_3()).toNumber();
     } else if (tier === 4) {
-      return (await taxTable.TIER_4()).toNumber();
+      return (await burnRateTable.TIER_4()).toNumber();
     } else {
       assert(false, "Invalid tier");
     }
   };
 
   const getTokenRate = async (user: string, token: string) => {
-    const [burnRateMatching, rebateRateMatching] = await taxTable.getBurnAndRebateRate(user, token, false);
-    const [burnRateP2P, rebateRateP2P] = await taxTable.getBurnAndRebateRate(user, token, true);
+    const [burnRateMatching, rebateRateMatching] = await burnRateTable.getBurnAndRebateRate(user, token, false);
+    const [burnRateP2P, rebateRateP2P] = await burnRateTable.getBurnAndRebateRate(user, token, true);
     return [burnRateMatching.toNumber(), burnRateP2P.toNumber()];
   };
 
   const getBurnAndRebateRate = async (user: string, token: string, P2P: boolean) => {
-    const [burnRate, rebateRate] = await taxTable.getBurnAndRebateRate(user, token, P2P);
+    const [burnRate, rebateRate] = await burnRateTable.getBurnAndRebateRate(user, token, P2P);
     return [burnRate.toNumber(), rebateRate.toNumber()];
   };
 
   const getTokenTierUpgradeAmount = async () => {
     const LRC = await DummyToken.at(tokenLRC);
     const totalLRCSupply = await LRC.totalSupply();
-    const upgradeCostPercentage = (await taxTable.TIER_UPGRADE_COST_PERCENTAGE()).toNumber();
-    const upgradeAmount = Math.floor(totalLRCSupply * upgradeCostPercentage / TAX_BASE_PERCENTAGE);
+    const upgradeCostPercentage = (await burnRateTable.TIER_UPGRADE_COST_PERCENTAGE()).toNumber();
+    const upgradeAmount = Math.floor(totalLRCSupply * upgradeCostPercentage / BURN_BASE_PERCENTAGE);
     return upgradeAmount;
   };
 
@@ -110,7 +110,7 @@ contract("TaxTable", (accounts: string[]) => {
     const totalLRCSupply = await LRC.totalSupply();
 
     // Calculate the needed funds to upgrade the tier
-    const maxLockPercentage = (await taxTable.MAX_LOCK_PERCENTAGE()).toNumber();
+    const maxLockPercentage = (await burnRateTable.MAX_LOCK_PERCENTAGE()).toNumber();
     const maxLockAmount = Math.floor(totalLRCSupply * maxLockPercentage / LOCK_BASE_PERCENTAGE);
     return maxLockAmount;
   };
@@ -124,13 +124,13 @@ contract("TaxTable", (accounts: string[]) => {
   const addLRCBalance = async (user: string, amount: number) => {
     const LRC = await DummyToken.at(tokenLRC);
     await LRC.transfer(user, amount, {from: deployer});
-    await LRC.approve(taxTable.address, amount, {from: user});
+    await LRC.approve(burnRateTable.address, amount, {from: user});
   };
 
   const checkTokenTier = async (user: string, token: string, expectedTier: number) => {
     const [matchingToken, P2PToken] = await getTokenRate(user, token);
     const [matchingTier, P2PTier] = await getTierRate(expectedTier);
-    const tierValue = (await taxTable.getTokenTier(token)).toNumber();
+    const tierValue = (await burnRateTable.getTokenTier(token)).toNumber();
     const expectedTierValue = await getTokenTierValue(expectedTier);
     assert.equal(tierValue, expectedTierValue, "Token tier needs to match expected tier");
     assert.equal(matchingToken, matchingTier, "matching rate needs to match tier " + expectedTier + " rate");
@@ -138,7 +138,7 @@ contract("TaxTable", (accounts: string[]) => {
   };
 
   const checkRebateRate = async (user: string, expectedRate: number) => {
-    const rate = (await taxTable.getRebateRate(user)).toNumber();
+    const rate = (await burnRateTable.getRebateRate(user)).toNumber();
     assert.equal(rate, expectedRate, "User rebate rate need to match expected rate");
   };
 
@@ -149,23 +149,23 @@ contract("TaxTable", (accounts: string[]) => {
   };
 
   const checkWithdrawableAmount = async (user: string, expectedAmount: number, allowedDelta: number = 0) => {
-    const amount = (await taxTable.getWithdrawableBalance(user)).toNumber();
+    const amount = (await burnRateTable.getWithdrawableBalance(user)).toNumber();
     assert(Math.abs(amount - expectedAmount) <= allowedDelta,
       "Withdrawable amount should roughly match expected amount");
   };
 
   const checkBalance = async (user: string, expectedBalance: number) => {
-    const balance = (await taxTable.getBalance(user)).toNumber();
+    const balance = (await burnRateTable.getBalance(user)).toNumber();
     assert.equal(balance, expectedBalance, "Balance should match expected amount");
   };
 
   const withdrawChecked = async (user: string, amount: number) => {
     const lrcBalanceBefore = await getLRCBalance(user);
-    const withdrawableAmountBefore = (await taxTable.getWithdrawableBalance(user)).toNumber();
-    const lockedBalanceBefore = (await taxTable.getBalance(user)).toNumber();
+    const withdrawableAmountBefore = (await burnRateTable.getWithdrawableBalance(user)).toNumber();
+    const lockedBalanceBefore = (await burnRateTable.getBalance(user)).toNumber();
 
     // Withdraw
-    await taxTable.withdraw(amount, {from: user});
+    await burnRateTable.withdraw(amount, {from: user});
 
     await checkLRCBalance(user, lrcBalanceBefore + amount);
     // Time has advanced so the withdrawable amount could have changed a tiny bit
@@ -175,11 +175,11 @@ contract("TaxTable", (accounts: string[]) => {
 
   const lockChecked = async (user: string, amount: number) => {
     const lrcBalanceBefore = await getLRCBalance(user);
-    const lockedBalanceBefore = (await taxTable.getBalance(user)).toNumber();
-    const lockStartTimeBefore = (await taxTable.getLockStartTime(user)).toNumber();
+    const lockedBalanceBefore = (await burnRateTable.getBalance(user)).toNumber();
+    const lockStartTimeBefore = (await burnRateTable.getLockStartTime(user)).toNumber();
 
     // Lock the amount
-    await taxTable.lock(amount, {from: user1});
+    await burnRateTable.lock(amount, {from: user1});
     const timeAtLock = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
 
     await checkLRCBalance(user, lrcBalanceBefore - amount,
@@ -187,7 +187,7 @@ contract("TaxTable", (accounts: string[]) => {
     await checkBalance(user, lockedBalanceBefore + amount);
 
     // Check if the lock start time is correctly updated
-    const lockStartTimeAfter = (await taxTable.getLockStartTime(user)).toNumber();
+    const lockStartTimeAfter = (await burnRateTable.getLockStartTime(user)).toNumber();
     if (lockedBalanceBefore === 0) {
       assert.equal(lockStartTimeBefore, 0, "Lock start time should still be uninitialized");
       assert(Math.abs(lockStartTimeAfter - timeAtLock) < 10);
@@ -205,16 +205,16 @@ contract("TaxTable", (accounts: string[]) => {
   });
 
   beforeEach(async () => {
-    // Fresh TaxTable and LRC token for each test
+    // Fresh BurnRateTable and LRC token for each test
     const LRC = await DummyToken.new("Loopring", "LRC", 18, 1e+26);
     tokenLRC = LRC.address;
-    taxTable = await TaxTable.new(tokenLRC, tokenWETH);
+    burnRateTable = await BurnRateTable.new(tokenLRC, tokenWETH);
 
-    LOCK_TIME = (await taxTable.LOCK_TIME()).toNumber();
-    LINEAR_UNLOCK_START_TIME = (await taxTable.LINEAR_UNLOCK_START_TIME()).toNumber();
+    LOCK_TIME = (await burnRateTable.LOCK_TIME()).toNumber();
+    LINEAR_UNLOCK_START_TIME = (await burnRateTable.LINEAR_UNLOCK_START_TIME()).toNumber();
 
-    TAX_BASE_PERCENTAGE = (await taxTable.TAX_BASE_PERCENTAGE()).toNumber();
-    LOCK_BASE_PERCENTAGE = (await taxTable.LOCK_BASE_PERCENTAGE()).toNumber();
+    BURN_BASE_PERCENTAGE = (await burnRateTable.BURN_BASE_PERCENTAGE()).toNumber();
+    LOCK_BASE_PERCENTAGE = (await burnRateTable.LOCK_BASE_PERCENTAGE()).toNumber();
   });
 
   describe("Token tiers", () => {
@@ -244,7 +244,7 @@ contract("TaxTable", (accounts: string[]) => {
       // Token should still be at tier 4
       await checkTokenTier(user1, token1, 4);
       // Upgrade
-      await taxTable.upgradeTokenTier(token1, {from: user1});
+      await burnRateTable.upgradeTokenTier(token1, {from: user1});
       // Token should now be at tier 3
       await checkTokenTier(user1, token1, 3);
 
@@ -273,7 +273,7 @@ contract("TaxTable", (accounts: string[]) => {
       const initialBalance = upgradeAmount / 2;
       await addLRCBalance(user1, initialBalance);
       // Try to upgrade
-      await expectThrow(taxTable.upgradeTokenTier(token1, {from: user1}));
+      await expectThrow(burnRateTable.upgradeTokenTier(token1, {from: user1}));
     });
 
     it("should not be able to upgrade the tier of LRC or WETH by burning enough tokens", async () => {
@@ -284,9 +284,9 @@ contract("TaxTable", (accounts: string[]) => {
       // Make sure the user has enough LRC
       await addLRCBalance(user1, initialBalance);
       // Try to upgrade LRC
-      await expectThrow(taxTable.upgradeTokenTier(tokenLRC, {from: user1}));
+      await expectThrow(burnRateTable.upgradeTokenTier(tokenLRC, {from: user1}));
       // Try to upgrade WETH
-      await expectThrow(taxTable.upgradeTokenTier(tokenWETH, {from: user1}));
+      await expectThrow(burnRateTable.upgradeTokenTier(tokenWETH, {from: user1}));
     });
 
     it("should not be able to upgrade the tier of a token above tier 1", async () => {
@@ -297,13 +297,13 @@ contract("TaxTable", (accounts: string[]) => {
       // Make sure the user has enough LRC
       await addLRCBalance(user1, initialBalance);
       // Tier 4 -> Tier 3
-      taxTable.upgradeTokenTier(token1, {from: user1});
+      burnRateTable.upgradeTokenTier(token1, {from: user1});
       // Tier 3 -> Tier 2
-      taxTable.upgradeTokenTier(token1, {from: user1});
+      burnRateTable.upgradeTokenTier(token1, {from: user1});
       // Tier 2 -> Tier 1
-      taxTable.upgradeTokenTier(token1, {from: user1});
+      burnRateTable.upgradeTokenTier(token1, {from: user1});
       // Tier 1 should be the limit
-      await expectThrow(taxTable.upgradeTokenTier(token1, {from: user1}));
+      await expectThrow(burnRateTable.upgradeTokenTier(token1, {from: user1}));
     });
   });
 
@@ -315,33 +315,33 @@ contract("TaxTable", (accounts: string[]) => {
       await addLRCBalance(user1, initialBalance);
 
       // Rebate rate should still be at 0%
-      await checkRebateRate(user1, 0 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 0 * BURN_BASE_PERCENTAGE);
 
       // Lock the max amount
       await lockChecked(user1, maxLockAmount);
 
       // Rebate rate needs to be set at 100%
-      await checkRebateRate(user1, 1 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
       // Rebate rate of another user should still be 0%
-      await checkRebateRate(user2, 0 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user2, 0 * BURN_BASE_PERCENTAGE);
 
       // Rebate rate should stay the same until the locking period is over and the user doesn't withdraw any tokens
       // Day 100
       await advanceBlockTimestamp(100 * DAY_TO_SECONDS);
-      await checkRebateRate(user1, 1 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
       // Day 200
       await advanceBlockTimestamp(100 * DAY_TO_SECONDS);
-      await checkRebateRate(user1, 1 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
       // Day 300
       await advanceBlockTimestamp(100 * DAY_TO_SECONDS);
-      await checkRebateRate(user1, 1 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
       // Locking period of 1 year over, back to no rebate
       // Day 370
       await advanceBlockTimestamp(70 * DAY_TO_SECONDS);
-      await checkRebateRate(user1, 0 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 0 * BURN_BASE_PERCENTAGE);
 
       // Witdraw all locked tokens
-      const withdrawableAmount = (await taxTable.getWithdrawableBalance(user1)).toNumber();
+      const withdrawableAmount = (await burnRateTable.getWithdrawableBalance(user1)).toNumber();
       assert.equal(withdrawableAmount, maxLockAmount, "Withdrawable amount should match initialy locked amount");
 
       await withdrawChecked(user1, maxLockAmount);
@@ -360,7 +360,7 @@ contract("TaxTable", (accounts: string[]) => {
       await checkWithdrawableAmount(user1, 0);
 
       // Should not be able to withdraw any tokens
-      await expectThrow(taxTable.withdraw(1, {from: user1}));
+      await expectThrow(burnRateTable.withdraw(1, {from: user1}));
 
       // Advance to just before LINEAR_UNLOCK_START_TIME
       await advanceBlockTimestamp(LINEAR_UNLOCK_START_TIME - 1 * DAY_TO_SECONDS);
@@ -369,7 +369,7 @@ contract("TaxTable", (accounts: string[]) => {
       // Advance to just after LINEAR_UNLOCK_START_TIME
       await advanceBlockTimestamp(1.1 * DAY_TO_SECONDS);
       {
-        const withdrawableAmount = (await taxTable.getWithdrawableBalance(user1)).toNumber();
+        const withdrawableAmount = (await burnRateTable.getWithdrawableBalance(user1)).toNumber();
         assert(withdrawableAmount > 0, "Withdrawable amount should be non-zero");
       }
 
@@ -419,24 +419,24 @@ contract("TaxTable", (accounts: string[]) => {
       const initialBalance = lockAmount;
       await addLRCBalance(user1, initialBalance);
       await lockChecked(user1, lockAmount);
-      await checkRebateRate(user1, 0.25 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 0.25 * BURN_BASE_PERCENTAGE);
 
       // Day 30: unlock an aditional amount
       await advanceBlockTimestamp(30 * DAY_TO_SECONDS);
       await addLRCBalance(user1, initialBalance);
       await lockChecked(user1, lockAmount);
       const timeAtSecondLock = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
-      await checkRebateRate(user1, 0.5 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 0.5 * BURN_BASE_PERCENTAGE);
 
       // Day 60: unlock an aditional amount
       await advanceBlockTimestamp(30 * DAY_TO_SECONDS);
       await addLRCBalance(user1, initialBalance);
       await lockChecked(user1, lockAmount);
-      await checkRebateRate(user1, 0.75 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 0.75 * BURN_BASE_PERCENTAGE);
 
       // Lock start time should be the weighted average of all lock times using the lock amounts,
       // which in the above case is the time at the second lock.
-      const lockStartTime = (await taxTable.getLockStartTime(user1)).toNumber();
+      const lockStartTime = (await burnRateTable.getLockStartTime(user1)).toNumber();
       assert(Math.abs(lockStartTime - timeAtSecondLock) < 100,
               "Lock start time should be updated using the old/new locked amounts as weights");
     });
@@ -446,7 +446,7 @@ contract("TaxTable", (accounts: string[]) => {
       const lockAmount = maxLockAmount * 2;
       await addLRCBalance(user1, lockAmount);
       await lockChecked(user1, lockAmount);
-      await checkRebateRate(user1, 1 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
     });
 
     it("user should not be able to have a higher rebate rate than the initial burn rate", async () => {
@@ -461,7 +461,7 @@ contract("TaxTable", (accounts: string[]) => {
       const maxLockAmount = await getMaxLockAmount();
       await addLRCBalance(user1, maxLockAmount);
       await lockChecked(user1, maxLockAmount);
-      await checkRebateRate(user1, 1 * TAX_BASE_PERCENTAGE);
+      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
 
       // User should have a 100% rebate rate and the burn rate should be 0%
       const [burnRateAfter, rebateRateAfter] = await getBurnAndRebateRate(user1, token1, false);
@@ -471,7 +471,7 @@ contract("TaxTable", (accounts: string[]) => {
 
     it("user should not be able to withdraw 0 tokens", async () => {
       // Should not be able to withdraw 0 tokens
-      await expectThrow(taxTable.withdraw(0, {from: user1}));
+      await expectThrow(burnRateTable.withdraw(0, {from: user1}));
     });
 
   });

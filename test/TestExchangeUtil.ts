@@ -263,7 +263,7 @@ export class ExchangeTestUtil {
     addAddress(addressBook, ringsInfo.transactionOrigin, "Tx.origin");
     addAddress(addressBook, miner, "Miner");
     addAddress(addressBook, feeRecipient, "FeeRecipient");
-    addAddress(addressBook, this.context.feeHolder.address, "Tax");
+    addAddress(addressBook, this.context.feeHolder.address, "FeeHolder");
     for (const [i, order] of ringsInfo.orders.entries()) {
       addAddress(addressBook, order.owner, "Owner[" + i + "]");
       if (order.owner !== order.tokenRecipient) {
@@ -514,25 +514,25 @@ export class ExchangeTestUtil {
   public async lockLRC(user: string, targetRebateRate: number) {
     const {
       DummyToken,
-      TaxTable,
+      BurnRateTable,
     } = new Artifacts(artifacts);
 
     const LRC = await DummyToken.at(this.context.lrcAddress);
-    const taxTable = await TaxTable.deployed();
+    const burnRateTable = await BurnRateTable.deployed();
     const totalLRCSupply = await LRC.totalSupply();
 
     // Calculate the needed funds to upgrade the tier
-    const LOCK_BASE_PERCENTAGE = (await this.context.taxTable.LOCK_BASE_PERCENTAGE()).toNumber();
-    const maxLockPercentage = (await this.context.taxTable.MAX_LOCK_PERCENTAGE()).toNumber();
+    const LOCK_BASE_PERCENTAGE = (await this.context.burnRateTable.LOCK_BASE_PERCENTAGE()).toNumber();
+    const maxLockPercentage = (await this.context.burnRateTable.MAX_LOCK_PERCENTAGE()).toNumber();
     const maxLockAmount = Math.floor(totalLRCSupply * maxLockPercentage / LOCK_BASE_PERCENTAGE);
 
     // How much we need to lock to get the target rebate rate
     const lockAmount = maxLockAmount * targetRebateRate;
 
     await LRC.transfer(user, lockAmount, {from: this.testContext.deployer});
-    await LRC.approve(this.context.taxTable.address, lockAmount, {from: user});
+    await LRC.approve(this.context.burnRateTable.address, lockAmount, {from: user});
 
-    await taxTable.lock(lockAmount, {from: user});
+    await burnRateTable.lock(lockAmount, {from: user});
   }
 
   public async cleanTradeHistory() {
@@ -557,7 +557,7 @@ export class ExchangeTestUtil {
       OrderRegistry.address,
       feeHolder.address,
       this.context.orderBook.address,
-      this.context.taxTable.address,
+      this.context.burnRateTable.address,
     );
 
     const orderBrokerRegistryAddress = await this.ringSubmitter.orderBrokerRegistryAddress();
@@ -574,7 +574,7 @@ export class ExchangeTestUtil {
                                    OrderRegistry.address,
                                    feeHolder.address,
                                    this.context.orderBook.address,
-                                   this.context.taxTable.address,
+                                   this.context.burnRateTable.address,
                                    this.context.lrcAddress,
                                    feePercentageBase);
 
@@ -589,18 +589,18 @@ export class ExchangeTestUtil {
       TradeDelegate,
       FeeHolder,
       OrderBook,
-      TaxTable,
+      BurnRateTable,
       LRCToken,
     } = new Artifacts(artifacts);
 
     const [ringSubmitter, tradeDelegate, orderRegistry,
-           feeHolder, orderBook, taxTable, lrcToken] = await Promise.all([
+           feeHolder, orderBook, burnRateTable, lrcToken] = await Promise.all([
         RingSubmitter.deployed(),
         TradeDelegate.deployed(),
         OrderRegistry.deployed(),
         FeeHolder.deployed(),
         OrderBook.deployed(),
-        TaxTable.deployed(),
+        BurnRateTable.deployed(),
         LRCToken.deployed(),
       ]);
 
@@ -620,7 +620,7 @@ export class ExchangeTestUtil {
                            OrderRegistry.address,
                            FeeHolder.address,
                            OrderBook.address,
-                           TaxTable.address,
+                           BurnRateTable.address,
                            LRCToken.address,
                            feePercentageBase);
   }

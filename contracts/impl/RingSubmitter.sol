@@ -26,7 +26,7 @@ import "../iface/IFeeHolder.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 import "../iface/IOrderBook.sol";
-import "../iface/ITaxTable.sol";
+import "../iface/IBurnRateTable.sol";
 
 import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
@@ -75,7 +75,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
     address public  orderRegistryAddress        = 0x0;
     address public  feeHolderAddress            = 0x0;
     address public  orderBookAddress            = 0x0;
-    address public  taxTableAddress             = 0x0;
+    address public  burnRateTableAddress        = 0x0;
 
     uint64  public  ringIndex                   = 0;
 
@@ -100,7 +100,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         address _orderRegistryAddress,
         address _feeHolderAddress,
         address _orderBookAddress,
-        address _taxTableAddress
+        address _burnRateTableAddress
         )
         public
     {
@@ -112,7 +112,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         require(_orderRegistryAddress != 0x0, ZERO_ADDRESS);
         require(_feeHolderAddress != 0x0, ZERO_ADDRESS);
         require(_orderBookAddress != 0x0, ZERO_ADDRESS);
-        require(_taxTableAddress != 0x0, ZERO_ADDRESS);
+        require(_burnRateTableAddress != 0x0, ZERO_ADDRESS);
 
         lrcTokenAddress = _lrcTokenAddress;
         wethTokenAddress = _wethTokenAddress;
@@ -122,7 +122,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         orderRegistryAddress = _orderRegistryAddress;
         feeHolderAddress = _feeHolderAddress;
         orderBookAddress = _orderBookAddress;
-        taxTableAddress = _taxTableAddress;
+        burnRateTableAddress = _burnRateTableAddress;
     }
 
     function submitRings(
@@ -138,7 +138,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             IOrderRegistry(orderRegistryAddress),
             IFeeHolder(feeHolderAddress),
             IOrderBook(orderBookAddress),
-            ITaxTable(taxTableAddress),
+            IBurnRateTable(burnRateTableAddress),
             ringIndex,
             FEE_PERCENTAGE_BASE
         );

@@ -21,7 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "../iface/IFeeHolder.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DummyTaxManager {
+contract DummyBurnManager {
 
     address public feeHolderAddress = 0x0;
 
@@ -33,10 +33,10 @@ contract DummyTaxManager {
         feeHolderAddress = _feeHolderAddress;
     }
 
-    function withdrawTax(address token, uint value)
+    function withdrawBurn(address token, uint value)
         external
         returns (bool success)
     {
-        return IFeeHolder(feeHolderAddress).withdrawTax(token, value);
+        return IFeeHolder(feeHolderAddress).withdrawBurn(token, value);
     }
 }

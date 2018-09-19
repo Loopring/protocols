@@ -5,7 +5,7 @@ var RingSubmitter = artifacts.require("./impl/RingSubmitter");
 var RingCanceller = artifacts.require("./impl/RingCanceller");
 var FeeHolder = artifacts.require("./impl/FeeHolder");
 var OrderBook = artifacts.require("./impl/OrderBook");
-var TaxTable = artifacts.require("./impl/TaxTable");
+var BurnRateTable = artifacts.require("./impl/BurnRateTable");
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 
@@ -30,10 +30,10 @@ module.exports = function(deployer, network, accounts) {
         WETHToken.address,
         BrokerRegistry.new(),
         BrokerRegistry.new(),
-        deployer.deploy(TaxTable, LRCToken.address, WETHToken.address),
+        deployer.deploy(BurnRateTable, LRCToken.address, WETHToken.address),
       ]);
     }).then(addresses => {
-      var [lrcAddr, wethAddr, orderBrokerRegistry, minerBrokerRegistry, taxTableAddr] = addresses;
+      var [lrcAddr, wethAddr, orderBrokerRegistry, minerBrokerRegistry, burnRateTableAddr] = addresses;
       return Promise.all([
         deployer.deploy(
           RingSubmitter,
@@ -45,7 +45,7 @@ module.exports = function(deployer, network, accounts) {
           OrderRegistry.address,
           FeeHolder.address,
           OrderBook.address,
-          TaxTable.address,
+          BurnRateTable.address,
         ),
         deployer.deploy(RingCanceller, TradeDelegate.address),
       ]);

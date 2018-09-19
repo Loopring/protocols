@@ -8,7 +8,7 @@ const {
   FeeHolder,
   TradeDelegate,
   DummyExchange,
-  DummyTaxManager,
+  DummyBurnManager,
   DummyToken,
   LRCToken,
   GTOToken,
@@ -27,7 +27,7 @@ contract("FeeHolder", (accounts: string[]) => {
   let tradeDelegate: any;
   let feeHolder: any;
   let dummyExchange: any;
-  let dummyTaxManager: any;
+  let dummyBurnManager: any;
   let token1: string;
   let token2: string;
   let token3: string;
@@ -85,22 +85,22 @@ contract("FeeHolder", (accounts: string[]) => {
     assert.equal(feeBalanceAfter, feeBalanceBefore - amount, "Withdrawal amount not correctly updated.");
   };
 
-  const withdrawTaxChecked = async (from: any, token: string, amount: number) => {
+  const withdrawBurnChecked = async (from: any, token: string, amount: number) => {
     const dummyToken = DummyToken.at(token);
 
     const balanceFeeHolderBefore = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
     const balanceFromBefore = (await dummyToken.balanceOf(from.address)).toNumber();
-    const taxBalanceBefore = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
+    const burnBalanceBefore = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
 
-    const success = await from.withdrawTax(token, amount);
+    const success = await from.withdrawBurn(token, amount);
     assert(success, "Withdrawal needs to succeed");
 
     const balanceFeeHolderAfter = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
     const balanceOwnerAfter = (await dummyToken.balanceOf(from.address)).toNumber();
-    const taxBalanceAfter = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
+    const burnBalanceAfter = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
     assert.equal(balanceFeeHolderAfter, balanceFeeHolderBefore - amount, "Contract balance should be reduced.");
     assert.equal(balanceOwnerAfter, balanceFromBefore + amount, "From balance should have increased.");
-    assert.equal(taxBalanceAfter, taxBalanceBefore - amount, "Withdrawal amount not correctly updated.");
+    assert.equal(burnBalanceAfter, burnBalanceBefore - amount, "Withdrawal amount not correctly updated.");
   };
 
   before(async () => {
@@ -116,9 +116,9 @@ contract("FeeHolder", (accounts: string[]) => {
     // Fresh FeeHolder for each test
     feeHolder = await FeeHolder.new(tradeDelegate.address);
     dummyExchange = await DummyExchange.new(tradeDelegate.address, feeHolder.address, "0x0");
-    dummyTaxManager = await DummyTaxManager.new(feeHolder.address);
+    dummyBurnManager = await DummyBurnManager.new(feeHolder.address);
     await authorizeAddressChecked(dummyExchange.address, deployer);
-    await authorizeAddressChecked(dummyTaxManager.address, deployer);
+    await authorizeAddressChecked(dummyBurnManager.address, deployer);
   });
 
   describe("authorized address", () => {
@@ -143,7 +143,7 @@ contract("FeeHolder", (accounts: string[]) => {
       }
     });
 
-    it("should be able to withdraw tax", async () => {
+    it("should be able to withdraw tokens to burn", async () => {
       const dummyToken1 = await DummyToken.at(token1);
       const amount = 2.4e18;
       // Make sure the contract has enough funds
@@ -153,8 +153,8 @@ contract("FeeHolder", (accounts: string[]) => {
       feePayments.add(feeHolder.address, token1, amount);
       await batchAddFeeBalancesChecked(feePayments);
 
-      // Withdraw the tax
-      await withdrawTaxChecked(dummyTaxManager, token1, amount);
+      // Withdraw the tokens that need to be burned
+      await withdrawBurnChecked(dummyBurnManager, token1, amount);
     });
 
     it("should not be able to send fee payments in an incorrect format", async () => {
@@ -226,7 +226,7 @@ contract("FeeHolder", (accounts: string[]) => {
       await expectThrow(withdrawTokenChecked(user1, token2, amount));
     });
 
-    it("should not be able to withdraw tax", async () => {
+    it("should not be able to withdraw tokens to burn", async () => {
       const dummyToken1 = await DummyToken.at(token1);
       const amount = 2.4e18;
       // Make sure the contract has enough funds
@@ -236,8 +236,8 @@ contract("FeeHolder", (accounts: string[]) => {
       feePayments.add(feeHolder.address, token1, amount);
       await batchAddFeeBalancesChecked(feePayments);
 
-      // Try to withdraw the tax
-      await expectThrow(feeHolder.withdrawTax(token1, amount, {from: user1}));
+      // Try to withdraw the tokens to burn
+      await expectThrow(feeHolder.withdrawBurn(token1, amount, {from: user1}));
     });
 
     it("should not be able to add fee balances", async () => {

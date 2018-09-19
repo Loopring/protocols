@@ -19,7 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-/// @title IFeeHolder - A contract holding fees and taxes .
+/// @title IFeeHolder - A contract holding fees.
 contract IFeeHolder {
 
     mapping(address => mapping(address => uint)) public feeBalances;
@@ -27,7 +27,7 @@ contract IFeeHolder {
     function batchAddFeeBalances(bytes32[] batch)
         external;
 
-    function withdrawTax(address token, uint value)
+    function withdrawBurn(address token, uint value)
         external
         returns (bool success);
 

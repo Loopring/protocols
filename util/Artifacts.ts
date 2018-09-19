@@ -7,10 +7,10 @@ export class Artifacts {
   public OrderRegistry: any;
   public DummyBrokerInterceptor: any;
   public DummyExchange: any;
-  public DummyTaxManager: any;
+  public DummyBurnManager: any;
   public FeeHolder: any;
   public OrderBook: any;
-  public TaxTable: any;
+  public BurnRateTable: any;
   public DummyToken: any;
   public LRCToken: any;
   public GTOToken: any;
@@ -26,10 +26,10 @@ export class Artifacts {
     this.OrderRegistry = artifacts.require("impl/OrderRegistry");
     this.DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");
     this.DummyExchange = artifacts.require("test/DummyExchange");
-    this.DummyTaxManager = artifacts.require("test/DummyTaxManager");
+    this.DummyBurnManager = artifacts.require("test/DummyBurnManager");
     this.FeeHolder = artifacts.require("impl/FeeHolder");
     this.OrderBook = artifacts.require("impl/OrderBook");
-    this.TaxTable = artifacts.require("impl/TaxTable");
+    this.BurnRateTable = artifacts.require("impl/BurnRateTable");
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");
     this.GTOToken = artifacts.require("test/tokens/GTO");

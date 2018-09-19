@@ -20,13 +20,13 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
-import "../iface/ITaxTable.sol";
+import "../iface/IBurnRateTable.sol";
 import "../lib/BurnableERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
+contract BurnRateTable is IBurnRateTable, NoDefaultFunc, Errors {
     using MathUint for uint;
 
     address public lrcAddress = 0x0;
@@ -43,7 +43,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
-        // Set fixed LRC and WETH tax rates
+        // Set fixed LRC and WETH burn rates
         setFixedTokenTier(lrcAddress, TIER_1);
         setFixedTokenTier(wethAddress, TIER_3);
     }
@@ -71,19 +71,19 @@ contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
         uint tier = getTokenTier(token);
         uint16 tokenBurnRate;
         if (tier == TIER_1) {
-            tokenBurnRate = (P2P ? TAX_P2P_TIER1 : TAX_MATCHING_TIER1);
+            tokenBurnRate = (P2P ? BURN_P2P_TIER1 : BURN_MATCHING_TIER1);
         } else if (tier == TIER_2) {
-            tokenBurnRate = (P2P ? TAX_P2P_TIER2 : TAX_MATCHING_TIER2);
+            tokenBurnRate = (P2P ? BURN_P2P_TIER2 : BURN_MATCHING_TIER2);
         } else if (tier == TIER_3) {
-            tokenBurnRate = (P2P ? TAX_P2P_TIER3 : TAX_MATCHING_TIER3);
+            tokenBurnRate = (P2P ? BURN_P2P_TIER3 : BURN_MATCHING_TIER3);
         } else {
-            tokenBurnRate = (P2P ? TAX_P2P_TIER4 : TAX_MATCHING_TIER4);
+            tokenBurnRate = (P2P ? BURN_P2P_TIER4 : BURN_MATCHING_TIER4);
         }
 
         // Reduce burn rate by the user's rebate rate
         // tokenBurnRate := burnRate + rebateRate
         uint16 userRebateRate = getRebateRate(spender);
-        rebateRate = uint16(uint(tokenBurnRate).mul(uint(userRebateRate)) / TAX_BASE_PERCENTAGE);
+        rebateRate = uint16(uint(tokenBurnRate).mul(uint(userRebateRate)) / BURN_BASE_PERCENTAGE);
         burnRate = tokenBurnRate - rebateRate;
     }
 
@@ -105,7 +105,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
         // Burn TIER_UPGRADE_COST_PERCENTAGE of total LRC supply
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         uint totalSupply = LRC.totalSupply();
-        uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / TAX_BASE_PERCENTAGE;
+        uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / BURN_BASE_PERCENTAGE;
         bool success = LRC.burnFrom(msg.sender, amount);
         require(success, BURN_FAILURE);
 
@@ -150,8 +150,8 @@ contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
         uint totalSupply = BurnableERC20(lrcAddress).totalSupply();
         uint maxLockAmount = totalSupply.mul(MAX_LOCK_PERCENTAGE) / LOCK_BASE_PERCENTAGE;
 
-        uint rebatePercentage = userData.amount.mul(TAX_BASE_PERCENTAGE) / maxLockAmount;
-        rebatePercentage = (rebatePercentage > TAX_BASE_PERCENTAGE) ? TAX_BASE_PERCENTAGE : rebatePercentage;
+        uint rebatePercentage = userData.amount.mul(BURN_BASE_PERCENTAGE) / maxLockAmount;
+        rebatePercentage = (rebatePercentage > BURN_BASE_PERCENTAGE) ? BURN_BASE_PERCENTAGE : rebatePercentage;
         return uint16(rebatePercentage);
     }
 

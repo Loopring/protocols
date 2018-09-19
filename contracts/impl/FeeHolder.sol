@@ -58,7 +58,7 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc, Errors {
         }
     }
 
-    function withdrawTax(address token, uint value)
+    function withdrawBurn(address token, uint value)
         external
         onlyAuthorized
         returns (bool)
