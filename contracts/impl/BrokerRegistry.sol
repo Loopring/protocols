@@ -19,12 +19,13 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IBrokerRegistry.sol";
+import "../iface/Errors.sol";
 import "../lib/NoDefaultFunc.sol";
 
 
 /// @title An Implementation of IBrokerRegistry.
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
+contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc, Errors {
     struct Broker {
         address owner;
         address addr;
@@ -94,14 +95,14 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
         )
         external
     {
-        require(0x0 != broker, "bad broker");
+        require(0x0 != broker, EMPTY_ADDRESS);
         require(
             0 == positionMap[msg.sender][broker],
             "broker already exists"
         );
 
         if (interceptor != 0x0) {
-            require(isContract(interceptor), "interceptor is not a contract");
+            require(isContract(interceptor), INVALID_INTERCEPTOR);
         }
 
         Broker[] storage brokers = brokersMap[msg.sender];
@@ -126,10 +127,10 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
         )
         external
     {
-        require(0x0 != addr, "bad broker");
+        require(0x0 != addr, INVALID_BROKER);
 
         uint pos = positionMap[msg.sender][addr];
-        require(pos != 0, "broker not found");
+        require(pos != 0, NOT_FOUND);
 
         Broker[] storage brokers = brokersMap[msg.sender];
         uint size = brokers.length;

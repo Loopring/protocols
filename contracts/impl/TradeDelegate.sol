@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 import "../iface/IBrokerInterceptor.sol";
 import "../iface/ITradeDelegate.sol";
 import "../lib/Claimable.sol";
@@ -31,7 +32,7 @@ import "../lib/NoDefaultFunc.sol";
 /// @title An Implementation of ITradeDelegate.
 /// @author Daniel Wang - <daniel@loopring.org>.
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
-contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
+contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
     using MathUint for uint;
     using ERC20SafeTransfer for address;
 
@@ -45,19 +46,19 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
 
     modifier onlyAuthorized()
     {
-        require(positionMap[msg.sender] > 0, "unauthorized");
+        require(positionMap[msg.sender] > 0, UNAUTHORIZED);
         _;
     }
 
     modifier notSuspended()
     {
-        require(!suspended);
+        require(!suspended, INVALID_STATE);
         _;
     }
 
     modifier isSuspended()
     {
-        require(suspended);
+        require(suspended, INVALID_STATE);
         _;
     }
 
@@ -67,12 +68,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         onlyOwner
         external
     {
-        require(0x0 != addr, "bad address");
-        require(
-            0 == positionMap[addr],
-            "address already exists"
-        );
-        require(isContract(addr), "not a contract address");
+        require(0x0 != addr, EMPTY_ADDRESS);
+        require(0 == positionMap[addr], ALREADY_REGISTERED);
+        require(isContract(addr), INVALID_ADDRESS);
 
         authorizedAddresses.push(addr);
         positionMap[addr] = authorizedAddresses.length;
@@ -85,10 +83,10 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         onlyOwner
         external
     {
-        require(0x0 != addr, "bad address");
+        require(0x0 != addr, EMPTY_ADDRESS);
 
         uint pos = positionMap[addr];
-        require(pos != 0, "address not found");
+        require(pos != 0, NOT_FOUND);
 
         uint size = authorizedAddresses.length;
         if (pos != size) {
@@ -108,7 +106,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         notSuspended
         external
     {
-        require(batch.length % 4 == 0);
+        require(batch.length % 4 == 0, INVALID_SIZE);
 
         TradeDelegateData.TokenTransferData memory transfer;
         uint transferPtr;
@@ -128,7 +126,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
                         transfer.to,
                         transfer.amount
                     ),
-                    "token transfer failure"
+                    TRANSFER_FAILURE
                 );
             }
         }
@@ -139,7 +137,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         notSuspended
         external
     {
-        require(filledInfo.length % 2 == 0);
+        require(filledInfo.length % 2 == 0, INVALID_SIZE);
         for (uint i = 0; i < filledInfo.length; i += 2) {
             filled[filledInfo[i]] = uint(filledInfo[i + 1]);
         }
@@ -196,7 +194,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         notSuspended
         external
     {
-        require(cutoffs[broker] < cutoff, "cutoff too small");
+        require(cutoffs[broker] < cutoff, INVALID_VALUE);
         cutoffs[broker] = cutoff;
     }
 
@@ -209,7 +207,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         notSuspended
         external
     {
-        require(tradingPairCutoffs[broker][tokenPair] < cutoff, "cutoff too small");
+        require(tradingPairCutoffs[broker][tokenPair] < cutoff, INVALID_VALUE);
         tradingPairCutoffs[broker][tokenPair] = cutoff;
     }
 
@@ -222,7 +220,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         notSuspended
         external
     {
-        require(cutoffsOwner[broker][owner] < cutoff, "cutoff too small");
+        require(cutoffsOwner[broker][owner] < cutoff, INVALID_VALUE);
         cutoffsOwner[broker][owner] = cutoff;
     }
 
@@ -236,7 +234,7 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         notSuspended
         external
     {
-        require(tradingPairCutoffsOwner[broker][owner][tokenPair] < cutoff, "cutoff too small");
+        require(tradingPairCutoffsOwner[broker][owner][tokenPair] < cutoff, INVALID_VALUE);
         tradingPairCutoffsOwner[broker][owner][tokenPair] = cutoff;
     }
 
@@ -247,8 +245,8 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         view
         returns (uint)
     {
-        require(batch.length % 5 == 0);
-        require(batch.length <= 256 * 5);
+        require(batch.length % 5 == 0, INVALID_SIZE);
+        require(batch.length <= 256 * 5, INVALID_SIZE);
 
         TradeDelegateData.OrderCheckCancelledData memory order;
         uint orderPtr;

@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IBrokerInterceptor.sol";
 import "../iface/IRingCanceller.sol";
@@ -57,7 +58,7 @@ import "./ExchangeDeserializer.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract RingCanceller is IRingCanceller, NoDefaultFunc {
+contract RingCanceller is IRingCanceller, NoDefaultFunc, Errors {
 
     address public delegateAddress = 0x0;
 
@@ -66,7 +67,7 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc {
         )
         public
     {
-        require(_delegateAddress != 0x0);
+        require(_delegateAddress != 0x0, EMPTY_ADDRESS);
 
         delegateAddress = _delegateAddress;
     }
@@ -77,7 +78,7 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc {
         external
     {
         uint size = orderHashes.length;
-        require(size > 0 && size % 32 == 0);
+        require(size > 0 && size % 32 == 0, INVALID_SIZE);
 
         size /= 32;
         bytes32[] memory hashes = new bytes32[](size);

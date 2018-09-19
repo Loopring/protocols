@@ -19,6 +19,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/ITradeDelegate.sol";
 import "../lib/Claimable.sol";
@@ -27,29 +28,28 @@ import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-contract FeeHolder is IFeeHolder, NoDefaultFunc {
+contract FeeHolder is IFeeHolder, NoDefaultFunc, Errors {
     using MathUint for uint;
     using ERC20SafeTransfer for address;
 
     address public delegateAddress = 0x0;
 
     constructor(address _delegateAddress) public {
-        require(_delegateAddress != 0x0);
+        require(_delegateAddress != 0x0, EMPTY_ADDRESS);
         delegateAddress = _delegateAddress;
     }
 
     modifier onlyAuthorized() {
         ITradeDelegate delegate = ITradeDelegate(delegateAddress);
         bool isAuthorized = delegate.isAddressAuthorized(msg.sender);
-        require(isAuthorized, "unauthorized address");
+        require(isAuthorized, UNAUTHORIZED);
         _;
     }
-
     function batchAddFeeBalances(bytes32[] batch)
         external
         onlyAuthorized
     {
-        require(batch.length % 3 == 0, "invalid array length");
+        require(batch.length % 3 == 0, INVALID_SIZE);
         for (uint i = 0; i < batch.length; i += 3) {
             address token = address(batch[i]);
             address owner = address(batch[i + 1]);
@@ -77,7 +77,7 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
         internal
         returns (bool success)
     {
-        require(feeBalances[token][from] >= value, "amount to withdraw is too high");
+        require(feeBalances[token][from] >= value, INVALID_VALUE);
         feeBalances[token][from] = feeBalances[token][from].sub(value);
         success = token.safeTransfer(to, value);
         emit TokenWithdrawn(from, token, value);

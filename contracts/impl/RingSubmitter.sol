@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IBrokerInterceptor.sol";
 import "../iface/IRingSubmitter.sol";
@@ -55,7 +56,7 @@ import "./ExchangeDeserializer.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
+contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
     using MathUint      for uint;
     using BytesUtil     for bytes;
     using MiningSpec    for uint16;
@@ -106,16 +107,16 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         )
         public
     {
-        require(_lrcTokenAddress != 0x0);
-        require(_wethTokenAddress != 0x0);
-        require(_delegateAddress != 0x0);
-        require(_orderBrokerRegistryAddress != 0x0);
-        require(_minerBrokerRegistryAddress != 0x0);
-        require(_orderRegistryAddress != 0x0);
-        require(_minerRegistryAddress != 0x0);
-        require(_feeHolderAddress != 0x0);
-        require(_orderBookAddress != 0x0);
-        require(_taxTableAddress != 0x0);
+        require(_lrcTokenAddress != 0x0, EMPTY_ADDRESS);
+        require(_wethTokenAddress != 0x0, EMPTY_ADDRESS);
+        require(_delegateAddress != 0x0, EMPTY_ADDRESS);
+        require(_orderBrokerRegistryAddress != 0x0, EMPTY_ADDRESS);
+        require(_minerBrokerRegistryAddress != 0x0, EMPTY_ADDRESS);
+        require(_orderRegistryAddress != 0x0, EMPTY_ADDRESS);
+        require(_minerRegistryAddress != 0x0, EMPTY_ADDRESS);
+        require(_feeHolderAddress != 0x0, EMPTY_ADDRESS);
+        require(_orderBookAddress != 0x0, EMPTY_ADDRESS);
+        require(_taxTableAddress != 0x0, EMPTY_ADDRESS);
 
         lrcTokenAddress = _lrcTokenAddress;
         wethTokenAddress = _wethTokenAddress;
@@ -149,7 +150,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         );
 
         // Check if the highest bit of ringIndex is '1'
-        require((ctx.ringIndex >> 63) == 0, "attempted to re-enter submitRings");
+        require((ctx.ringIndex >> 63) == 0, REENTRY);
 
         // Set the highest bit of ringIndex to '1' (IN STORAGE!)
         ringIndex = ctx.ringIndex | (1 << 63);
@@ -175,7 +176,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
         mining.updateHash(rings);
         mining.updateMinerAndInterceptor(ctx);
-        require(mining.checkMinerSignature(), "Invalid miner signature");
+        require(mining.checkMinerSignature(), INVALID_SIG);
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].checkDualAuthSignature(mining.hash);

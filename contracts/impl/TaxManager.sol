@@ -19,13 +19,14 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 import "../iface/IFeeHolder.sol";
 import "../lib/BurnableERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TaxManager is NoDefaultFunc {
+contract TaxManager is NoDefaultFunc, Errors {
     using MathUint for uint;
 
     address public feeHolderAddress = 0x0;
@@ -37,8 +38,8 @@ contract TaxManager is NoDefaultFunc {
         )
         public
     {
-        require(_feeHolderAddress != 0x0, "FeeHolder address needs to be valid");
-        require(_lrcAddress != 0x0, "LRC address needs to be valid");
+        require(_feeHolderAddress != 0x0, EMPTY_ADDRESS);
+        require(_lrcAddress != 0x0, EMPTY_ADDRESS);
         feeHolderAddress = _feeHolderAddress;
         lrcAddress = _lrcAddress;
     }
@@ -52,17 +53,17 @@ contract TaxManager is NoDefaultFunc {
         // Withdraw the complete token balance
         uint balance = feeHolder.feeBalances(feeHolderAddress, token);
         bool success = feeHolder.withdrawTax(token, balance);
-        require(success, "Withdraw needs to succeed");
+        require(success, WITHDRAWAL_FAILURE);
 
         // We currently only support burning LRC directly
         if (token != lrcAddress) {
-            require(false, "buying LRC using another token is currently not implemented");
+            require(false, UNIMPLEMENTED);
         }
 
         // Burn the LRC
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         success = LRC.burn(balance);
-        require(success, "Burn needs to succeed");
+        require(success, BURN_FAILURE);
 
         return true;
     }

@@ -18,13 +18,14 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 import "../iface/IMinerRegistry.sol";
 import "../lib/NoDefaultFunc.sol";
 
 
 /// @title An Implementation of IMinerRegistry.
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract MinerRegistry is IMinerRegistry, NoDefaultFunc {
+contract MinerRegistry is IMinerRegistry, NoDefaultFunc, Errors {
 
     mapping (address => mapping (address => uint)) private positionMap;
 
@@ -48,7 +49,7 @@ contract MinerRegistry is IMinerRegistry, NoDefaultFunc {
         view
         returns (address[] miners)
     {
-        require(false, "not implemented");
+        require(false, UNIMPLEMENTED);
         return;
     }
 
@@ -57,10 +58,10 @@ contract MinerRegistry is IMinerRegistry, NoDefaultFunc {
         )
         external
     {
-        require(0x0 != miner, "bad miner");
+        require(0x0 != miner, EMPTY_ADDRESS);
         require(
             0 == positionMap[msg.sender][miner],
-            "miner already exists"
+            ALREADY_REGISTERED
         );
 
         address[] storage miners = minersMap[msg.sender];
@@ -79,10 +80,10 @@ contract MinerRegistry is IMinerRegistry, NoDefaultFunc {
         )
         external
     {
-        require(0x0 != addr, "bad miner");
+        require(0x0 != addr, EMPTY_ADDRESS);
 
         uint pos = positionMap[msg.sender][addr];
-        require(pos != 0, "broker not found");
+        require(pos != 0, NOT_FOUND);
 
         address[] storage miners = minersMap[msg.sender];
         uint size = miners.length;

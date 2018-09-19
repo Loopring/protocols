@@ -19,13 +19,14 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 import "../iface/ITaxTable.sol";
 import "../lib/BurnableERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TaxTable is ITaxTable, NoDefaultFunc {
+contract TaxTable is ITaxTable, NoDefaultFunc, Errors {
     using MathUint for uint;
 
     address public lrcAddress = 0x0;
@@ -37,8 +38,8 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         )
         public
     {
-        require(_lrcAddress != 0x0, "LRC address needs to be valid");
-        require(_wethAddress != 0x0, "WETH address needs to be valid");
+        require(_lrcAddress != 0x0, EMPTY_ADDRESS);
+        require(_wethAddress != 0x0, EMPTY_ADDRESS);
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
@@ -92,21 +93,21 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         external
         returns (bool)
     {
-        require(token != 0x0, "Token address needs to be valid");
-        require(token != lrcAddress, "LRC cannot be upgraded");
-        require(token != wethAddress, "WETH cannot be upgraded");
+        require(token != 0x0, EMPTY_ADDRESS);
+        require(token != lrcAddress, BURN_RATE_FROZEN);
+        require(token != wethAddress, BURN_RATE_FROZEN);
 
         uint currentTier = getTokenTier(token);
 
         // Can't upgrade to a higher level than tier 1
-        require(currentTier != TIER_1, "Cannot upgrade to a tier higher than tier 1");
+        require(currentTier != TIER_1, BURN_RATE_MINIMIZED);
 
         // Burn TIER_UPGRADE_COST_PERCENTAGE of total LRC supply
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         uint totalSupply = LRC.totalSupply();
         uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / TAX_BASE_PERCENTAGE;
         bool success = LRC.burnFrom(msg.sender, amount);
-        require(success, "Burn needs to succeed");
+        require(success, BURN_FAILURE);
 
         // Upgrade tier
         TokenData storage tokenData = tokens[token];
@@ -160,7 +161,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         external
         returns (bool)
     {
-        require(amount > 0, "Need to lock a non-zero amount of tokens");
+        require(amount > 0, INVALID_TOKEN_AMOUNT);
 
         UserData storage userData = balances[msg.sender];
 
@@ -178,7 +179,7 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
 
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         bool success = LRC.transferFrom(msg.sender, this, amount);
-        require(success, "LRC transfer needs to succeed");
+        require(success, TRANSFER_FAILURE);
 
         // The lock time is updated by weighting the extra amount with the new total amount
         // newLockedTime := oldLockedTime + ((now - oldLockedTime) * (amount / newAmount))
@@ -201,14 +202,14 @@ contract TaxTable is ITaxTable, NoDefaultFunc {
         external
         returns (bool)
     {
-        require(amount > 0, "Need to withdraw a non-zero amount of tokens");
+        require(amount > 0, ZERO_TOKEN_AMOUNT);
 
         uint withdrawableAmount = getWithdrawableBalance(msg.sender);
-        require(withdrawableAmount >= amount, "user needs to have sufficient funds he can withdraw");
+        require(withdrawableAmount >= amount, INVALID_TOKEN_AMOUNT);
 
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         bool success = LRC.transfer(msg.sender, amount);
-        require(success, "LRC transfer needs to succeed");
+        require(success, TRANSFER_FAILURE);
 
         UserData storage userData = balances[msg.sender];
         userData.amount = userData.amount.sub(amount);

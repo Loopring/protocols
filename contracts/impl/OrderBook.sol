@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 import "../iface/IOrderBook.sol";
 import "../lib/NoDefaultFunc.sol";
 import "../impl/Data.sol";
@@ -27,13 +28,13 @@ import "../helper/OrderHelper.sol";
 /// @title An Implementation of IOrderbook.
 /// @author Daniel Wang - <daniel@loopring.org>.
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
-contract OrderBook is IOrderBook, NoDefaultFunc {
+contract OrderBook is IOrderBook, NoDefaultFunc, Errors {
     using OrderHelper     for Data.Order;
 
     function submitOrder(bytes32[] dataArray)
         external
     {
-        require(dataArray.length >= 18);
+        require(dataArray.length >= 18, INVALID_SIZE);
         bool allOrNone = false;
         if (uint(dataArray[17]) > 0) {
             allOrNone = true;
@@ -74,7 +75,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
         );
 
         order.updateHash();
-        require(!orderSubmitted[order.hash]);
+        require(!orderSubmitted[order.hash], ALREADY_REGISTERED);
 
         orderSubmitted[order.hash] = true;
         orders[order.hash] = dataArray;
