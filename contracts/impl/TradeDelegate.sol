@@ -19,7 +19,6 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
-import "../iface/IBrokerInterceptor.sol";
 import "../iface/ITradeDelegate.sol";
 import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";

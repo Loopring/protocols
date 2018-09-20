@@ -20,7 +20,6 @@ pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
 import "../iface/IBrokerRegistry.sol";
-import "../iface/IBrokerInterceptor.sol";
 import "../iface/IRingCanceller.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IOrderRegistry.sol";
