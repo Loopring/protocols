@@ -33,12 +33,13 @@ library InputsHelper {
         pure
         returns (address value)
     {
+        bytes memory tablesPtr = inputs.tablesPtr;
         bytes memory b = inputs.data;
-        uint offset = inputs.bytesOffset;
         assembly {
+            let offset := and(mload(tablesPtr), 0xFFFF)
+            mstore(inputs, add(tablesPtr, 2))
             value := mload(add(add(b, 20), offset))
         }
-        inputs.bytesOffset += 20;
     }
 
     function nextUint(
@@ -49,11 +50,12 @@ library InputsHelper {
         returns (uint value)
     {
         bytes memory b = inputs.data;
-        uint offset = inputs.bytesOffset;
+        bytes memory tablesPtr = inputs.tablesPtr;
         assembly {
+            let offset := and(mload(tablesPtr), 0xFFFF)
+            mstore(inputs, add(tablesPtr, 2))
             value := mload(add(add(b, 32), offset))
         }
-        inputs.bytesOffset += 32;
     }
 
     function nextUint16(
@@ -63,12 +65,11 @@ library InputsHelper {
         pure
         returns (uint16 value)
     {
-        bytes memory b = inputs.data;
-        uint offset = inputs.bytesOffset;
+        bytes memory tablesPtr = inputs.tablesPtr;
         assembly {
-            value := mload(add(add(b, 2), offset))
+            value := and(mload(tablesPtr), 0xFFFF)
+            mstore(inputs, add(tablesPtr, 2))
         }
-        inputs.bytesOffset += 2;
     }
 
     function nextBytes(
@@ -78,13 +79,14 @@ library InputsHelper {
         pure
         returns (bytes value)
     {
+        bytes memory tablesPtr = inputs.tablesPtr;
+        bytes memory b = inputs.data;
         // We have stored the bytes arrays just like they are in stored in memory
-        // so we can just copy the memory location at the given offset
-        bytes memory data = inputs.data;
-        uint offset = 32 + inputs.bytesOffset;
+            // so we can just copy the memory location at the given offset
         assembly {
-          value := add(data, offset)
+            let offset := and(mload(tablesPtr), 0xFFFF)
+            mstore(inputs, add(tablesPtr, 2))
+            value := add(b, add(offset, 32))
         }
-        inputs.bytesOffset += 32 + value.length;
     }
 }

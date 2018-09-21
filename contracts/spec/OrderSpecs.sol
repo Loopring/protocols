@@ -54,39 +54,39 @@ library OrderSpecs {
         pure
         returns (Data.Order memory order)
     {
-        order = Data.Order(
-            inputs.nextAddress(), // owner
-            inputs.nextAddress(), // tokenS
-            address(0x0),         // tokenB
-            inputs.nextUint(),    // amountS
-            inputs.nextUint(),    // amountB
-            inputs.nextUint(),    // validSince
-            inputs.spendableList[inputs.nextUint16()],       // tokenSpendableS
-            inputs.spendableList[inputs.nextUint16()],       // tokenSpendableFee
-            spec.hasDualAuth() ? inputs.nextAddress() : 0x0,
-            spec.hasBroker() ? inputs.nextAddress() : 0x0,
-            spec.hasBroker() ? inputs.spendableList[inputs.nextUint16()] : Data.Spendable(true, 0, 0),
-            spec.hasBroker() ? inputs.spendableList[inputs.nextUint16()] : Data.Spendable(true, 0, 0),
-            spec.hasOrderInterceptor() ? inputs.nextAddress() : 0x0,
-            spec.hasWallet() ? inputs.nextAddress() : 0x0,
-            spec.hasValidUntil() ? inputs.nextUint() : uint(0) - 1,
-            spec.hasSignature() ? inputs.nextBytes() : new bytes(0),
-            spec.hasDualAuthSig() ? inputs.nextBytes() : new bytes(0),
-            spec.allOrNone(),
-            spec.hasFeeToken() ? inputs.nextAddress() : lrcTokenAddress,
-            spec.hasFeeAmount() ? inputs.nextUint() : 0,
-            spec.hasFeePercentage() ? inputs.nextUint16() : 0,
-            spec.hasWaiveFeePercentage() ? int16(inputs.nextUint16()) : 0,
-            spec.hasTokenSFeePercentage() ? inputs.nextUint16() : 0,
-            spec.hasTokenBFeePercentage() ? inputs.nextUint16() : 0,
-            spec.hasTokenRecipient() ? inputs.nextAddress() : 0x0,
-            spec.hasWalletSplitPercentage() ? inputs.nextUint16() : 0,
-            false,        // P2P
-            bytes32(0x0), // hash
-            0x0,          // orderBrokerInterceptor
-            0,            // filledAmountS
-            true          // valid
-        );
-        order.tokenRecipient = (order.tokenRecipient == 0x0) ? order.owner : order.tokenRecipient;
+        // order = Data.Order(
+        //     inputs.nextAddress(), // owner
+        //     inputs.nextAddress(), // tokenS
+        //     address(0x0),         // tokenB
+        //     inputs.nextUint(),    // amountS
+        //     inputs.nextUint(),    // amountB
+        //     inputs.nextUint(),    // validSince
+        //     inputs.spendableList[inputs.nextUint16()],       // tokenSpendableS
+        //     inputs.spendableList[inputs.nextUint16()],       // tokenSpendableFee
+        //     spec.hasDualAuth() ? inputs.nextAddress() : 0x0,
+        //     spec.hasBroker() ? inputs.nextAddress() : 0x0,
+        //     spec.hasBroker() ? inputs.spendableList[inputs.nextUint16()] : Data.Spendable(true, 0, 0),
+        //     spec.hasBroker() ? inputs.spendableList[inputs.nextUint16()] : Data.Spendable(true, 0, 0),
+        //     spec.hasOrderInterceptor() ? inputs.nextAddress() : 0x0,
+        //     spec.hasWallet() ? inputs.nextAddress() : 0x0,
+        //     spec.hasValidUntil() ? inputs.nextUint() : uint(0) - 1,
+        //     spec.hasSignature() ? inputs.nextBytes() : new bytes(0),
+        //     spec.hasDualAuthSig() ? inputs.nextBytes() : new bytes(0),
+        //     spec.allOrNone(),
+        //     spec.hasFeeToken() ? inputs.nextAddress() : lrcTokenAddress,
+        //     spec.hasFeeAmount() ? inputs.nextUint() : 0,
+        //     spec.hasFeePercentage() ? inputs.nextUint16() : 0,
+        //     spec.hasWaiveFeePercentage() ? int16(inputs.nextUint16()) : 0,
+        //     spec.hasTokenSFeePercentage() ? inputs.nextUint16() : 0,
+        //     spec.hasTokenBFeePercentage() ? inputs.nextUint16() : 0,
+        //     spec.hasTokenRecipient() ? inputs.nextAddress() : 0x0,
+        //     spec.hasWalletSplitPercentage() ? inputs.nextUint16() : 0,
+        //     false,        // P2P
+        //     bytes32(0x0), // hash
+        //     0x0,          // orderBrokerInterceptor
+        //     0,            // filledAmountS
+        //     true          // valid
+        // );
+        // order.tokenRecipient = (order.tokenRecipient == 0x0) ? order.owner : order.tokenRecipient;
     }
 }
