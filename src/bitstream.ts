@@ -28,37 +28,39 @@ export class Bitstream {
     }
   }
 
-  public addBigNumber(x: BigNumber, numBytes = 32) {
-    this.data += this.padString(web3.toHex(x).slice(2), numBytes * 2);
+  public addBigNumber(x: BigNumber, numBytes = 32, forceAppend = true) {
+    const formattedData = this.padString(web3.toHex(x).slice(2), numBytes * 2);
+    return this.insert(formattedData, forceAppend);
   }
 
-  public addNumber(x: number, numBytes = 4) {
+  public addNumber(x: number, numBytes = 4, forceAppend = true) {
     // Check if we need to encode this number as negative
     if (x < 0) {
         const encoded = abi.rawEncode(["int256"], [x.toString(10)]);
         const hex = encoded.toString("hex").slice(-(numBytes * 2));
-        this.addHex(hex);
+        return this.addHex(hex);
     } else {
-      this.addBigNumber(new BigNumber(x), numBytes);
+      return this.addBigNumber(new BigNumber(x), numBytes);
     }
   }
 
-  public addAddress(x: string, numBytes = 20) {
-    this.data += this.padString(x.slice(2), numBytes * 2);
+  public addAddress(x: string, numBytes = 20, forceAppend = true) {
+    const formattedData = this.padString(x.slice(2), numBytes * 2);
+    return this.insert(formattedData, forceAppend);
   }
 
-  public addHex(x: string) {
+  public addHex(x: string, forceAppend = true) {
     if (x.startsWith("0x")) {
-      this.data += x.slice(2);
+      return this.insert(x.slice(2), forceAppend);
     } else {
-      this.data += x;
+      return this.insert(x, forceAppend);
     }
   }
 
-  public addRawBytes(bs: string) {
+  public addRawBytes(bs: string, forceAppend = true) {
     const bsHex = web3.toHex(bs);
     // console.log("bsHex:", bsHex);
-    this.data += bsHex.slice(2);
+    return this.insert(bsHex.slice(2), forceAppend);
   }
 
   public extractUint8(offset: number) {
@@ -94,6 +96,26 @@ export class Bitstream {
   // Returns the number of bytes of data
   public length() {
     return this.data.length / 2;
+  }
+
+  private insert(x: string, forceAppend: boolean) {
+    const offset = this.length();
+    if (!forceAppend) {
+      let start = 0;
+      while (start !== -1) {
+        start = this.data.indexOf(x, start);
+        if (start !== -1) {
+          if ((start % 2) === 0) {
+            console.log("++ Reused " + x + " at location " + start / 2);
+            return start / 2;
+          } else {
+            start++;
+          }
+        }
+      }
+    }
+    this.data += x;
+    return offset;
   }
 
   private padString(x: string, targetLength: number) {

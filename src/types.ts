@@ -89,10 +89,9 @@ export interface Participation {
 }
 
 export interface RingsSubmitParam {
-  miningSpec: number;
-  orderSpecs: number[];
   ringSpecs: number[][];
   data: Bitstream;
+  tables: Bitstream;
 }
 
 export interface RingsInfo {
