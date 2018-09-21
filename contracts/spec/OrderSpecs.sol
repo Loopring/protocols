@@ -69,7 +69,7 @@ library OrderSpecs {
             spec.hasBroker() ? inputs.spendableList[inputs.nextUint16()] : Data.Spendable(true, 0, 0),
             spec.hasOrderInterceptor() ? inputs.nextAddress() : 0x0,
             spec.hasWallet() ? inputs.nextAddress() : 0x0,
-            spec.hasValidUntil() ? inputs.nextUint() : uint(0) - 1,
+            spec.hasValidUntil() ? inputs.nextUint() : 0,
             spec.hasSignature() ? inputs.nextBytes() : new bytes(0),
             spec.hasDualAuthSig() ? inputs.nextBytes() : new bytes(0),
             spec.allOrNone(),

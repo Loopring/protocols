@@ -158,6 +158,11 @@ export class ExchangeTestUtil {
       // Set the order validSince time to a bit before the current timestamp;
       order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
     }
+    // if (!order.validUntil) {
+    //   // Set the order validSince time to a bit before the current timestamp;
+    //   order.validUntil = Math.pow(2, 32) - 1;
+    // }
+
     if (order.walletAddr && !order.walletAddr.startsWith("0x")) {
       const walletIndex = parseInt(order.walletAddr, 10);
       assert(walletIndex >= 0 && walletIndex < this.testContext.wallets.length,
@@ -493,9 +498,7 @@ export class ExchangeTestUtil {
     await this.assertFeeBalances(deserializedRingsInfo, report.feeBalances);
     await this.assertFilledAmounts(deserializedRingsInfo, report.filledAmounts);
 
-    // await this.watchAndPrintEvent(tradeDelegate, "LogTrans");
-    // await this.watchAndPrintEvent(ringSubmitter, "LogUint3");
-    // await this.watchAndPrintEvent(ringSubmitter, "LogAddress");
+    // await this.watchAndPrintEvent(this.ringSubmitter, "LogUint");
 
     return {tx, report};
   }

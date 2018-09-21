@@ -130,7 +130,7 @@ library ExchangeDeserializer {
             }
             order.orderInterceptor = (spec & 4 != 0) ? inputs.nextAddress() : 0x0;
             order.wallet = (spec & 8 != 0) ? inputs.nextAddress() : 0x0;
-            order.validUntil = (spec & 16 != 0) ? inputs.nextUint() : uint(0) - 1;
+            order.validUntil = (spec & 16 != 0) ? inputs.nextUint() : 0;
             if (spec & 64 != 0) {
                 order.sig = inputs.nextBytes();
             }

@@ -138,7 +138,7 @@ library OrderHelper {
         valid = valid && (order.walletSplitPercentage <= 100); // invalid wallet split percentage
 
         valid = valid && (order.validSince <= block.timestamp); // order is too early to match
-        valid = valid && (order.validUntil > block.timestamp);  // order is expired
+        valid = valid && (order.validUntil == 0 || order.validUntil > block.timestamp);  // order is expired
 
         order.valid = order.valid && valid;
     }
