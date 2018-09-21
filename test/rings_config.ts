@@ -194,6 +194,31 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "single 2-size ring, token bought also used for paying fees",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "WETH",
+        tokenB: "LRC",
+        amountS: 100e18,
+        amountB: 10e18,
+        feeToken: "LRC",
+        feeAmount: 1e18,
+      },
+      {
+        index: 1,
+        tokenS: "LRC",
+        tokenB: "WETH",
+        amountS: 10e18,
+        amountB: 100e18,
+        feeToken: "GTO",
+        feeAmount: 1e18,
+      },
+    ],
+  },
+
+  {
     description: "single 2-size ring, owner specifies token receiver address",
     rings: [[0, 1]],
     orders: [
@@ -285,6 +310,41 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 3e18,
         feeAmount: 1e18,
         balanceFee: 1.1e18,
+      },
+    ],
+  },
+
+  {
+    description: "self-trading in 3-size ring, same token used as feeToken and tokenS (feeToken earlier)",
+    rings: [[0, 1, 2]],
+    orders: [
+      {
+        index: 0,
+        owner: "0",
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 10e18,
+        amountB: 100e18,
+        feeToken: tokenSymbols[3],
+        feeAmount: 5e18,
+        balanceFee: 5e18,
+      },
+      {
+        index: 1,
+        owner: "0",
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[3],
+        amountS: 100e18,
+        amountB: 5e18,
+      },
+      {
+        index: 2,
+        owner: "0",
+        tokenS: tokenSymbols[3],
+        tokenB: tokenSymbols[1],
+        amountS: 5e18,
+        amountB: 10e18,
+        balanceS: 5e18,
       },
     ],
   },

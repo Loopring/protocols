@@ -138,7 +138,10 @@ library OrderHelper {
         valid = valid && (order.walletSplitPercentage <= 100); // invalid wallet split percentage
 
         valid = valid && (order.validSince <= block.timestamp); // order is too early to match
-        valid = valid && (order.validUntil > block.timestamp);  // order is expired
+        valid = valid && (order.validUntil == 0 || order.validUntil > block.timestamp);  // order is expired
+        if (order.dualAuthAddr != 0x0) { // if dualAuthAddr exists, dualAuthSig must be exist.
+            valid = valid && (order.dualAuthSig.length > 0);
+        }
 
         order.valid = order.valid && valid;
     }

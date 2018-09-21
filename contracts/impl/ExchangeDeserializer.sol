@@ -261,7 +261,6 @@ library ExchangeDeserializer {
                 )
 
                 // validUntil
-                mstore(add(data, 32), not(0))
                 offset := and(mload(add(tablesPtr,  26)), 0xFFFF)
                 mstore(
                     add(order, 448),

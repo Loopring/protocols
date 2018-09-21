@@ -145,6 +145,12 @@ export class ExchangeTestUtil {
       order.dualAuthSignAlgorithm = pjs.SignAlgorithm.Ethereum;
     }
     // no dualAuthAddr for onChain order
+    if (!order.onChain && order.dualAuthAddr && !order.dualAuthAddr.startsWith("0x")) {
+      const dualAuthorIndex = parseInt(order.dualAuthAddr, 10);
+      assert(dualAuthorIndex >= 0 && dualAuthorIndex < this.testContext.orderDualAuthAddrs.length,
+             "Invalid dual author index");
+      order.dualAuthAddr = this.testContext.orderDualAuthAddrs[dualAuthorIndex];
+    }
     if (!order.onChain &&
         order.dualAuthAddr === undefined &&
         order.dualAuthSignAlgorithm !== pjs.SignAlgorithm.None) {
@@ -158,6 +164,11 @@ export class ExchangeTestUtil {
       // Set the order validSince time to a bit before the current timestamp;
       order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
     }
+    // if (!order.validUntil) {
+    //   // Set the order validSince time to a bit before the current timestamp;
+    //   order.validUntil = Math.pow(2, 32) - 1;
+    // }
+
     if (order.walletAddr && !order.walletAddr.startsWith("0x")) {
       const walletIndex = parseInt(order.walletAddr, 10);
       assert(walletIndex >= 0 && walletIndex < this.testContext.wallets.length,
@@ -435,6 +446,9 @@ export class ExchangeTestUtil {
   public async submitRingsAndSimulate(ringsInfo: pjs.RingsInfo,
                                       dummyExchange?: any) {
     if (dummyExchange !== undefined) {
+      const {
+        DummyToken,
+      } = new Artifacts(artifacts);
       // Add an initial fee payment to all addresses to make gas use more realistic
       // (gas cost to change variable in storage: zero -> non-zero: 20,000 gas, non-zero -> non-zero: 5,000 gas)
       // Addresses getting fees will be getting a lot of fees so a balance of 0 is not realistic
@@ -450,6 +464,14 @@ export class ExchangeTestUtil {
             }
           }
         }
+        // Add balances to the feeHolder contract
+        for (const token of tokens) {
+          const Token = this.testContext.tokenAddrInstanceMap.get(token);
+          await Token.setBalance(this.context.feeHolder.address, 1);
+        }
+        // Add a balance to the owner balances
+        // const TokenB = this.testContext.tokenAddrInstanceMap.get(order.tokenB);
+        // await TokenB.setBalance(order.owner, 1);
       }
       await dummyExchange.batchAddFeeBalances(feePayments.getData());
     }
@@ -493,9 +515,7 @@ export class ExchangeTestUtil {
     await this.assertFeeBalances(deserializedRingsInfo, report.feeBalances);
     await this.assertFilledAmounts(deserializedRingsInfo, report.filledAmounts);
 
-    // await this.watchAndPrintEvent(tradeDelegate, "LogTrans");
-    // await this.watchAndPrintEvent(ringSubmitter, "LogUint3");
-    // await this.watchAndPrintEvent(ringSubmitter, "LogAddress");
+    // await this.watchAndPrintEvent(this.ringSubmitter, "LogUint");
 
     return {tx, report};
   }

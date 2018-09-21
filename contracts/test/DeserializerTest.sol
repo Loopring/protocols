@@ -75,6 +75,7 @@ contract DeserializerTest {
                            uint[] uintData,
                            address[] addresses)
         internal
+        view
         returns (Data.Order memory order)
     {
         order = Data.Order(
@@ -115,6 +116,7 @@ contract DeserializerTest {
 
     function assembleParicipation(Data.Order order)
         internal
+        pure
         returns (Data.Participation memory p)
     {
         p = Data.Participation(
