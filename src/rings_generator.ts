@@ -167,9 +167,9 @@ export class RingsGenerator {
     param.ringSpecs = ringsInfo.rings;
     ringsInfo.orders.map((o) => this.calculateOrderSpec(o, param));
 
-    console.log("transactionOrigin: " + ringsInfo.transactionOrigin);
-    console.log("feeRecipient: " + ringsInfo.feeRecipient);
-    console.log("miner: " + ringsInfo.miner);
+    // console.log("transactionOrigin: " + ringsInfo.transactionOrigin);
+    // console.log("feeRecipient: " + ringsInfo.feeRecipient);
+    // console.log("miner: " + ringsInfo.miner);
     ringsInfo.orders.forEach((o) => console.log(o));
     return param;
   }
