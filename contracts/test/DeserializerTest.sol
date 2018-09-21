@@ -32,7 +32,7 @@ contract DeserializerTest {
         lrcTokenAddress = _lrcTokenAddress;
     }
 
-    function deserialize(bytes data) view external {
+    function deserialize(bytes data) external {
         (
             Data.Mining  memory mining,
             Data.Order[] memory orders,
