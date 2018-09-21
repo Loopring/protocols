@@ -131,6 +131,14 @@ export class Ring {
       this.resize(i, smallest);
     }
 
+    // Reserve the total amount tokenS used for all the orders
+    // (e.g. the owner of order 0 could use LRC as feeToken in order 0, while
+    // the same owner can also sell LRC in order 2).
+    for (let i = 0; i < ringSize; i++) {
+      const order = this.orders[i];
+      await this.orderUtil.reserveAmountS(order, order.fillAmountS);
+    }
+
     for (let i = 0; i < ringSize; i++) {
       const prevIndex = (i + ringSize - 1) % ringSize;
       const prevOrder = this.orders[prevIndex];
@@ -165,10 +173,6 @@ export class Ring {
   }
 
   public async calculateFees(order: OrderInfo, prevOrder: OrderInfo) {
-    // Reserve the total amount tokenS used for the order, it may be used to pay fees
-    // for this order or even another order with the same owner
-    await this.orderUtil.reserveAmountS(order, order.fillAmountS);
-
     if (order.P2P) {
       // Calculate P2P fees
       order.fillAmountFee = 0;
@@ -187,10 +191,13 @@ export class Ring {
       order.fillAmountFeeS = 0;
       order.fillAmountFeeB = 0;
 
+      // If feeToken == tokenB, try to pay using fillAmountB
+      if (order.feeToken === order.tokenB && order.fillAmountB >= order.fillAmountFee) {
+        order.fillAmountFeeB = order.fillAmountFee;
+        order.fillAmountFee = 0;
+      }
+
       // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
-      // If nextOrder.feeToken == nextOrder.tokenB and the order doesn't have the necessary tokenB amount
-      // we use feePercentage instead, which should give similar results if the data is set correctly
-      // in the order
       order.ringSpendableFee = await this.orderUtil.getSpendableFee(order);
       if (order.fillAmountFee > order.ringSpendableFee) {
           order.fillAmountFeeB += Math.floor(order.fillAmountB * order.feePercentage / this.context.feePercentageBase);
@@ -360,7 +367,12 @@ export class Ring {
     const burnAddress = this.context.feeHolder.address;
 
     // BEGIN diagnostics
-    const feeDesc = "Fee" + ((feePercentage > 0) ? ("@" + (feePercentage / 10)) + "%" : "");
+    let feeDesc = "Fee";
+    if (!order.P2P && order.feeToken === order.tokenB) {
+      feeDesc += "@feeToken";
+    } else {
+      feeDesc += ((feePercentage > 0) ? ("@" + (feePercentage / 10)) + "%" : "");
+    }
     const totalPayment = this.logPayment(payment, token, order.owner, "NA", amount + margin, feeDesc + "+Margin");
     const marginPayment = this.logPayment(totalPayment, token, order.owner, mining.feeRecipient, margin, "Margin");
     const feePayment = this.logPayment(totalPayment, token, order.owner, "NA", amount, feeDesc);
@@ -550,7 +562,7 @@ export class Ring {
       if (order.fillAmountS > 0 || order.fillAmountB > 0) {
         const orderRate = order.amountS / order.amountB;
         const rate = (order.fillAmountS + order.splitS) / order.fillAmountB;
-        this.assertNumberEqualsWithPrecision(rate, orderRate, "fill rates need to match order rate");
+        this.assertAlmostEqual(rate, orderRate, "fill rates need to match order rate");
       }
       assert(order.rebateFee <= order.fillAmountFee, "order.rebateFee <= order.fillAmountFee");
       assert(order.rebateS <= order.fillAmountFeeS, "order.rebateS <= order.fillAmountFeeS");
@@ -582,14 +594,14 @@ export class Ring {
           // fees in tokenS
           {
             const rate = order.fillAmountFeeS / order.fillAmountS;
-            this.assertNumberEqualsWithPrecision(rate, order.tokenSFeePercentage,
-                                                 "tokenS fee rate needs to match given rate");
+            this.assertAlmostEqual(rate, order.tokenSFeePercentage,
+                                   "tokenS fee rate needs to match given rate");
           }
           // fees in tokenB
           {
             const rate = order.fillAmountFeeB / order.fillAmountB;
-            this.assertNumberEqualsWithPrecision(rate, order.tokenBFeePercentage,
-                                                 "tokenB fee rate needs to match given rate");
+            this.assertAlmostEqual(rate, order.tokenBFeePercentage,
+                                   "tokenB fee rate needs to match given rate");
           }
         } else {
           // No fees need to be paid when no wallet is given
@@ -602,10 +614,20 @@ export class Ring {
         // Fees need to be paid either in feeToken OR tokenB, never both at the same time
         assert(!(order.fillAmountFee > 0 && order.fillAmountFeeB > 0), "fees should be paid in tokenFee OR tokenB");
 
-        // Fees can only be paid in tokenB when the owner doesn't have enought funds to pay in feeToken
-        if (order.fillAmountFeeB > 0) {
-          const fee = Math.floor(order.feeAmount * (order.fillAmountS + order.splitS) / order.amountS);
-          assert(fee > order.ringSpendableFee, "fees should be paid in tokenFee if possible");
+        const fee = Math.floor(order.feeAmount * (order.fillAmountS + order.splitS) / order.amountS);
+        const feeB = Math.floor(order.fillAmountB * order.feePercentage / this.context.feePercentageBase);
+
+        // Fee can be paid in tokenB when the owner doesn't have enought funds to pay in feeToken
+        // or feeToken == tokenB
+        if (order.feeToken === order.tokenB && order.fillAmountB >= fee) {
+          this.assertAlmostEqual(order.fillAmountFeeB, fee, "Fee should be paid in tokenB using feeAmount");
+          assert.equal(order.fillAmountFee, 0, "Fee should not be paid in feeToken");
+        } else if (fee > order.ringSpendableFee) {
+          this.assertAlmostEqual(order.fillAmountFeeB, feeB, "Fee should be paid in tokenB using feePercentage");
+          assert.equal(order.fillAmountFee, 0, "Fee should not be paid in feeToken");
+        } else {
+          assert.equal(order.fillAmountFeeB, 0, "Fee should not be paid in tokenB");
+          this.assertAlmostEqual(order.fillAmountFee, fee, "Fee should be paid in feeToken using feeAmount");
         }
       }
 
@@ -630,12 +652,12 @@ export class Ring {
       const [expectedBurnFee, expectedRebateFee] = await calculateBurnAndRebate(order.feeToken, order.fillAmountFee);
       const [expectedBurnS, expectedRebateS] = await calculateBurnAndRebate(order.tokenS, order.fillAmountFeeS);
       const [expectedBurnB, expectedRebateB] = await calculateBurnAndRebate(order.tokenB, order.fillAmountFeeB);
-      this.assertNumberEqualsWithPrecision(order.rebateFee, expectedRebateFee,
-                                           "Fee rebate should match expected value");
-      this.assertNumberEqualsWithPrecision(order.rebateS, expectedRebateS,
-                                           "FeeS rebate should match expected value");
-      this.assertNumberEqualsWithPrecision(order.rebateB, expectedRebateB,
-                                           "FeeB rebate should match expected value");
+      this.assertAlmostEqual(order.rebateFee, expectedRebateFee,
+                             "Fee rebate should match expected value");
+      this.assertAlmostEqual(order.rebateS, expectedRebateS,
+                             "FeeS rebate should match expected value");
+      this.assertAlmostEqual(order.rebateB, expectedRebateB,
+                             "FeeB rebate should match expected value");
 
       // Add burn rates to total expected burn rates
       if (!expectedTotalBurned[order.feeToken]) {
@@ -726,20 +748,20 @@ export class Ring {
                       ? balances[order.tokenB][order.tokenRecipient] : 0;
       const balanceFeeToken = (balances[order.feeToken] && balances[order.feeToken][order.owner])
                              ? balances[order.feeToken][order.owner] : 0;
-      this.assertNumberEqualsWithPrecision(balanceS, expectedBalances[order.owner][order.tokenS],
-                                           "Order owner tokenS balance should match expected value");
-      this.assertNumberEqualsWithPrecision(balanceB, expectedBalances[order.tokenRecipient][order.tokenB],
-                                           "Order tokenRecipient tokenB balance should match expected value");
-      this.assertNumberEqualsWithPrecision(balanceFeeToken, expectedBalances[order.owner][order.feeToken],
-                                           "Order owner feeToken balance should match expected value");
+      this.assertAlmostEqual(balanceS, expectedBalances[order.owner][order.tokenS],
+                             "Order owner tokenS balance should match expected value");
+      this.assertAlmostEqual(balanceB, expectedBalances[order.tokenRecipient][order.tokenB],
+                             "Order tokenRecipient tokenB balance should match expected value");
+      this.assertAlmostEqual(balanceFeeToken, expectedBalances[order.owner][order.feeToken],
+                             "Order owner feeToken balance should match expected value");
     }
     // Check fee holder balances of all possible tokens used to pay fees
     for (const token of [...Object.keys(expectedFeeHolderBalances), ...Object.keys(balances)]) {
       const feeAddress = this.context.feeHolder.address;
       const expectedBalance = expectedFeeHolderBalances[token] ? expectedFeeHolderBalances[token] : 0;
       const balance = (balances[token] && balances[token][feeAddress]) ? balances[token][feeAddress] : 0;
-      this.assertNumberEqualsWithPrecision(balance, expectedBalance,
-                                           "FeeHolder balance after transfers should match expected value");
+      this.assertAlmostEqual(balance, expectedBalance,
+                             "FeeHolder balance after transfers should match expected value");
     }
 
     // Ensure total fee payments match transferred amounts to feeHolder contract
@@ -756,8 +778,8 @@ export class Ring {
         if (balances[token] && balances[token][feeAddress]) {
           feeHolderBalance = balances[token][feeAddress];
         }
-        this.assertNumberEqualsWithPrecision(totalFee, feeHolderBalance,
-                                             "Total fees amount in feeHolder should match total amount transferred");
+        this.assertAlmostEqual(totalFee, feeHolderBalance,
+                               "Total fees amount in feeHolder should match total amount transferred");
       }
     }
 
@@ -772,11 +794,11 @@ export class Ring {
       if (expectedTotalBurned[token]) {
         expected = expectedTotalBurned[token];
       }
-      this.assertNumberEqualsWithPrecision(burned, expected, "Total burned should match expected value");
+      this.assertAlmostEqual(burned, expected, "Total burned should match expected value");
     }
   }
 
-  private assertNumberEqualsWithPrecision(n1: number, n2: number, description: string, precision: number = 8) {
+  private assertAlmostEqual(n1: number, n2: number, description: string, precision: number = 8) {
     const numStr1 = (n1 / 1e18).toFixed(precision);
     const numStr2 = (n2 / 1e18).toFixed(precision);
     return assert.equal(Number(numStr1), Number(numStr2), description);

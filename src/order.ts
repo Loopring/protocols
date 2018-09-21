@@ -53,7 +53,6 @@ export class OrderUtil {
   public async checkBrokerSignature(order: OrderInfo) {
     let signatureValid = true;
     if (!order.sig) {
-      console.log("broker and hash:", order.broker, order.hash);
       const orderHashHex = "0x" + order.hash.toString("hex");
       const isRegistered = await this.context.orderRegistry.isOrderHashRegistered(order.broker,
                                                                                   orderHashHex);
@@ -73,13 +72,12 @@ export class OrderUtil {
   }
 
   public getOrderHash(order: OrderInfo) {
-    const MAX_UINT = new BN("f".repeat(64), 16);
     const args = [
       this.toBN(order.amountS),
       this.toBN(order.amountB),
       this.toBN(order.feeAmount),
       order.validSince ? this.toBN(order.validSince) : this.toBN(0),
-      order.validUntil ? this.toBN(order.validUntil) : MAX_UINT,
+      order.validUntil ? this.toBN(order.validUntil) : this.toBN(0),
       order.owner,
       order.tokenS,
       order.tokenB,
