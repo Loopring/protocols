@@ -105,6 +105,13 @@ library RingHelper {
             );
         }
 
+        // Reserve the total amount tokenS used for all the orders
+        // (e.g. the owner of order 0 could use LRC as feeToken in order 0, while
+        // the same owner can also sell LRC in order 2).
+        for (i = 0; i < ring.size; i++) {
+            ring.participations[i].order.reserveAmountS(p.fillAmountS);
+        }
+
         for (i = 0; i < ring.size; i++) {
             uint prevIndex = (i + ring.size - 1) % ring.size;
             Data.Participation memory prevP = ring.participations[prevIndex];

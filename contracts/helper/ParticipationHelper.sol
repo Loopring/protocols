@@ -49,10 +49,6 @@ library ParticipationHelper {
         internal
         returns (bool)
     {
-        // Reserve the total amount tokenS used for the order, it may be used to pay fees
-        // for this order or even another order with the same owner
-        p.order.reserveAmountS(p.fillAmountS);
-
         if (p.order.P2P) {
             // Calculate P2P fees
             p.feeAmount = 0;

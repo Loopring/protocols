@@ -315,6 +315,41 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "self-trading in 3-size ring, same token used as feeToken and tokenS (feeToken earlier)",
+    rings: [[0, 1, 2]],
+    orders: [
+      {
+        index: 0,
+        owner: "0",
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 10e18,
+        amountB: 100e18,
+        feeToken: tokenSymbols[3],
+        feeAmount: 5e18,
+        balanceFee: 5e18,
+      },
+      {
+        index: 1,
+        owner: "0",
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[3],
+        amountS: 100e18,
+        amountB: 5e18,
+      },
+      {
+        index: 2,
+        owner: "0",
+        tokenS: tokenSymbols[3],
+        tokenB: tokenSymbols[1],
+        amountS: 5e18,
+        amountB: 10e18,
+        balanceS: 5e18,
+      },
+    ],
+  },
+
+  {
     description: "simple single 3-size ring, prices match exactly",
     rings: [[0, 1, 2]],
     orders: [
