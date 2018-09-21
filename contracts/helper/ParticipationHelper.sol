@@ -69,15 +69,23 @@ library ParticipationHelper {
             p.feeAmountS = 0;
             p.feeAmountB = 0;
 
-            // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
-            // This and subsequent orders could use tokenS to pay fees,
-            // so we have to make sure the funds needed for this order cannot be used
-            uint spendableFee = p.order.getSpendableFee(ctx);
-            if (p.feeAmount > spendableFee) {
-                p.feeAmountB = p.fillAmountB.mul(p.order.feePercentage) / ctx.feePercentageBase;
+            // If feeToken == tokenB, try to pay using fillAmountB
+            if (p.order.feeToken == p.order.tokenB && p.fillAmountB >= p.feeAmount) {
+                p.feeAmountB = p.feeAmount;
                 p.feeAmount = 0;
-            } else {
-                p.order.reserveAmountFee(p.feeAmount);
+            }
+
+            if (p.feeAmount > 0) {
+                // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
+                // This and subsequent orders could use tokenS to pay fees,
+                // so we have to make sure the funds needed for this order cannot be used
+                uint spendableFee = p.order.getSpendableFee(ctx);
+                if (p.feeAmount > spendableFee) {
+                    p.feeAmountB = p.fillAmountB.mul(p.order.feePercentage) / ctx.feePercentageBase;
+                    p.feeAmount = 0;
+                } else {
+                    p.order.reserveAmountFee(p.feeAmount);
+                }
             }
         }
 
