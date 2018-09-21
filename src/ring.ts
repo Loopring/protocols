@@ -131,6 +131,14 @@ export class Ring {
       this.resize(i, smallest);
     }
 
+    // Reserve the total amount tokenS used for all the orders
+    // (e.g. the owner of order 0 could use LRC as feeToken in order 0, while
+    // the same owner can also sell LRC in order 2).
+    for (let i = 0; i < ringSize; i++) {
+      const order = this.orders[i];
+      await this.orderUtil.reserveAmountS(order, order.fillAmountS);
+    }
+
     for (let i = 0; i < ringSize; i++) {
       const prevIndex = (i + ringSize - 1) % ringSize;
       const prevOrder = this.orders[prevIndex];
@@ -165,10 +173,6 @@ export class Ring {
   }
 
   public async calculateFees(order: OrderInfo, prevOrder: OrderInfo) {
-    // Reserve the total amount tokenS used for the order, it may be used to pay fees
-    // for this order or even another order with the same owner
-    await this.orderUtil.reserveAmountS(order, order.fillAmountS);
-
     if (order.P2P) {
       // Calculate P2P fees
       order.fillAmountFee = 0;
