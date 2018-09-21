@@ -446,6 +446,9 @@ export class ExchangeTestUtil {
   public async submitRingsAndSimulate(ringsInfo: pjs.RingsInfo,
                                       dummyExchange?: any) {
     if (dummyExchange !== undefined) {
+      const {
+        DummyToken,
+      } = new Artifacts(artifacts);
       // Add an initial fee payment to all addresses to make gas use more realistic
       // (gas cost to change variable in storage: zero -> non-zero: 20,000 gas, non-zero -> non-zero: 5,000 gas)
       // Addresses getting fees will be getting a lot of fees so a balance of 0 is not realistic
@@ -461,6 +464,14 @@ export class ExchangeTestUtil {
             }
           }
         }
+        // Add balances to the feeHolder contract
+        for (const token of tokens) {
+          const Token = this.testContext.tokenAddrInstanceMap.get(token);
+          await Token.setBalance(this.context.feeHolder.address, 1);
+        }
+        // Add a balance to the owner balances
+        // const TokenB = this.testContext.tokenAddrInstanceMap.get(order.tokenB);
+        // await TokenB.setBalance(order.owner, 1);
       }
       await dummyExchange.batchAddFeeBalances(feePayments.getData());
     }
