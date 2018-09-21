@@ -145,6 +145,12 @@ export class ExchangeTestUtil {
       order.dualAuthSignAlgorithm = pjs.SignAlgorithm.Ethereum;
     }
     // no dualAuthAddr for onChain order
+    if (!order.onChain && order.dualAuthAddr && !order.dualAuthAddr.startsWith("0x")) {
+      const dualAuthorIndex = parseInt(order.dualAuthAddr, 10);
+      assert(dualAuthorIndex >= 0 && dualAuthorIndex < this.testContext.orderDualAuthAddrs.length,
+             "Invalid dual author index");
+      order.dualAuthAddr = this.testContext.orderDualAuthAddrs[dualAuthorIndex];
+    }
     if (!order.onChain &&
         order.dualAuthAddr === undefined &&
         order.dualAuthSignAlgorithm !== pjs.SignAlgorithm.None) {
