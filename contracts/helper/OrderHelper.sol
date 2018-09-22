@@ -162,6 +162,11 @@ library OrderHelper {
         internal
         view
     {
+        // If the order was already partially filled we don't have to check the signature again
+        if(order.filledAmountS > 0) {
+            return;
+        }
+
         if (order.sig.length == 0) {
             bool registered = ctx.orderRegistry.isOrderHashRegistered(
                 order.broker,
