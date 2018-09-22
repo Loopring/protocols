@@ -16,6 +16,9 @@ export class RingsGenerator {
   private orderUtil: OrderUtil;
   private context: Context;
 
+  private SERIALIZATION_VERSION = 0;
+  private ORDER_VERSION = 0;
+
   constructor(context: Context) {
     this.context = context;
     this.orderUtil = new OrderUtil(context);
@@ -100,17 +103,22 @@ export class RingsGenerator {
     const param = this.ringsToParam(rings);
 
     const stream = new Bitstream();
+    stream.addNumber(this.SERIALIZATION_VERSION, 2);
     stream.addNumber(rings.orders.length, 2);
     stream.addNumber(param.ringSpecs.length, 2);
-    stream.addNumber(param.data.length(), 2);
-    stream.addNumber(param.tables.length(), 2);
     stream.addNumber(numSpendables, 2);
-    stream.addHex(param.data.getData());
+    // Mining + Orders
     stream.addHex(param.tables.getData());
+    // Rings
     param.ringSpecs.forEach((ring) => {
       stream.addNumber(ring.length, 1);
       ring.forEach((o) => stream.addNumber(o, 1));
+      stream.addNumber(0, 8 - ring.length);
     });
+    // Data
+    stream.addNumber(0, 32);
+    stream.addHex(param.data.getData());
+
     return stream.getData();
   }
 
@@ -168,12 +176,12 @@ export class RingsGenerator {
       tables: new Bitstream(),
     };
 
-    // Offset 0 is the default so just add a dummy bytes at the front so we load zeros
+    // Offset 0 is the default so just add dummy bytes at the front so we load zeros
     param.data.addNumber(0, 32);
 
-    this.calculateMiningSepc(ringsInfo, param);
+    this.createMiningTable(ringsInfo, param);
     param.ringSpecs = ringsInfo.rings;
-    ringsInfo.orders.map((o) => this.calculateOrderSpec(o, param));
+    ringsInfo.orders.map((o) => this.createOrderTable(o, param));
 
     // console.log("transactionOrigin: " + ringsInfo.transactionOrigin);
     // console.log("feeRecipient: " + ringsInfo.feeRecipient);
@@ -189,7 +197,7 @@ export class RingsGenerator {
     return bitstream.getData();
   }
 
-  private calculateMiningSepc(ringsInfo: RingsInfo, param: RingsSubmitParam) {
+  private createMiningTable(ringsInfo: RingsInfo, param: RingsSubmitParam) {
     const feeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin;
     const miner = ringsInfo.miner ? ringsInfo.miner : feeRecipient;
 
@@ -220,7 +228,8 @@ export class RingsGenerator {
     param.tables.addNumber(0, 2);
   }
 
-  private calculateOrderSpec(order: OrderInfo, param: RingsSubmitParam) {
+  private createOrderTable(order: OrderInfo, param: RingsSubmitParam) {
+    this.insertOffset(param, this.ORDER_VERSION);
     this.insertOffset(param, param.data.addAddress(order.owner, 20, false));
     this.insertOffset(param, param.data.addAddress(order.tokenS, 20, false));
     this.insertOffset(param, param.data.addNumber(order.amountS, 32, false));

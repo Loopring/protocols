@@ -19,7 +19,7 @@ export class ExchangeDeserializer {
   private data: Bitstream;
   private spendableList?: Spendable[];
 
-  private headerOffset: number = 10;
+  private dataOffset: number = 12;
   private tableOffset: number = 0;
 
   constructor(context: Context) {
@@ -30,14 +30,14 @@ export class ExchangeDeserializer {
 
     this.data = new Bitstream(data);
 
-    const numOrders = this.data.extractUint16(0);
-    const numRings = this.data.extractUint16(2);
-    const dataLength = this.data.extractUint16(4);
-    const tablesLength = this.data.extractUint16(6);
-    const numSpendables = this.data.extractUint16(8);
+    const version = this.data.extractUint16(0);
+    const numOrders = this.data.extractUint16(2);
+    const numRings = this.data.extractUint16(4);
+    const numSpendables = this.data.extractUint16(6);
 
-    this.tableOffset = this.headerOffset + dataLength;
-    const ringsOffset = this.tableOffset + tablesLength;
+    this.tableOffset = 8;
+    const ringsOffset = this.tableOffset + (3 + 26 * numOrders) * 2;
+    this.dataOffset = ringsOffset + numRings * 9 + 32;
 
     this.spendableList = [];
     for (let i = 0; i < numSpendables; i++) {
@@ -74,6 +74,7 @@ export class ExchangeDeserializer {
 
   private assembleOrder() {
     const order: OrderInfo = {
+      version: this.nextUint16(),
       owner: this.nextAddress(),
       tokenS: this.nextAddress(),
       tokenB: null,
@@ -113,7 +114,7 @@ export class ExchangeDeserializer {
       const ringSize = this.data.extractUint8(offset);
       const ring = this.assembleRing(ringSize, offset + 1, orders);
       rings.push(ring);
-      offset += 1 + ringSize;
+      offset += 1 + 8;
     }
     return rings;
   }
@@ -144,7 +145,7 @@ export class ExchangeDeserializer {
   private nextAddress() {
     const offset = this.getNextOffset();
     if (offset !== 0) {
-      return this.data.extractAddress(this.headerOffset + offset);
+      return this.data.extractAddress(this.dataOffset + offset);
     } else {
       return undefined;
     }
@@ -153,7 +154,7 @@ export class ExchangeDeserializer {
   private nextUint() {
     const offset = this.getNextOffset();
     if (offset !== 0) {
-      return this.data.extractUint(this.headerOffset + offset);
+      return this.data.extractUint(this.dataOffset + offset);
     } else {
       return new BigNumber(0);
     }
@@ -167,8 +168,8 @@ export class ExchangeDeserializer {
   private nextBytes() {
     const offset = this.getNextOffset();
     if (offset !== 0) {
-      const len = this.data.extractUint(this.headerOffset + offset).toNumber();
-      const data = "0x" + this.data.extractBytesX(this.headerOffset + offset + 32, len).toString("hex");
+      const len = this.data.extractUint(this.dataOffset + offset).toNumber();
+      const data = "0x" + this.data.extractBytesX(this.dataOffset + offset + 32, len).toString("hex");
       return data;
     } else {
       return undefined;

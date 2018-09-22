@@ -19,6 +19,8 @@ export interface Spendable {
 }
 
 export interface OrderInfo {
+  version?: number;
+
   // required fields in contract
   owner?: string;
   tokenS: string;
