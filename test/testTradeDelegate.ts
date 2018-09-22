@@ -157,10 +157,11 @@ contract("TradeDelegate", (accounts: string[]) => {
     assert.equal(isAuthorizedInDelegate, false, "should be able to deauthorize an address");
   };
 
-  const assertOrdersValid = (result: BigNumber, expectedValues: boolean[]) => {
-    const bits = new BN(result.toString(16), 16);
+  const assertOrdersValid = (result: BigNumber[], expectedValues: boolean[]) => {
+    const cancelledValue = new BigNumber("F".repeat(64), 16);
     for (const [i, order] of expectedValues.entries()) {
-        assert.equal(bits.testn(i), expectedValues[i], "Order cancelled status incorrect for order " + i);
+        assert.equal(!result[i].equals(cancelledValue), expectedValues[i],
+                     "Order cancelled status incorrect for order " + i);
     }
   };
 
@@ -407,12 +408,12 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, user2, user2, 123, 1500, 4);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, true, true]);
           }
           await dummyExchange1.setCutoffs(user1, 2000);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [false, true, false, true]);
           }
         });
@@ -426,12 +427,12 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, user2, user2, tradingPairToCancel, 1000, 4);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, true, true]);
           }
           await dummyExchange1.setTradingPairCutoffs(user1, numberToBytesX(tradingPairToCancel, 20), 2000);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, false, true, true]);
           }
         });
@@ -446,17 +447,17 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, user2, user2, 123, 1000,                       4);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, true, true]);
           }
           await dummyExchange1.setCancelled(user2, numberToBytesX(orderHashOwner2ToCancel, 32));
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, false, true]);
           }
           await dummyExchange1.setCancelled(user1, numberToBytesX(orderHashOwner1ToCancel, 32));
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [false, true, false, true]);
           }
         });
@@ -483,12 +484,12 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, broker2, user1, 123, 1000, 4);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, true, true]);
           }
           await dummyExchange1.setCutoffsOfOwner(broker1, user1, 2000);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [false, true, false, true]);
           }
         });
@@ -501,12 +502,12 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, broker2,   user1, 123, 1000, 4);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, true, true]);
           }
           await dummyExchange1.setCutoffs(broker1, 2000);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [false, false, false, true]);
           }
         });
@@ -521,13 +522,13 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, broker2, user1, tradingPairToCancel, 1000, 5);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, true, true, true]);
           }
           const tradingPairEncoded = numberToBytesX(tradingPairToCancel, 20);
           await dummyExchange1.setTradingPairCutoffsOfOwner(broker1, user1, tradingPairEncoded, 2000);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, false, true, true, true]);
           }
         });
@@ -542,17 +543,17 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, broker2, user1, 123, 1000,                       4);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, true, true]);
           }
           await dummyExchange1.setCancelled(broker2, numberToBytesX(orderHashOwner2ToCancel, 32));
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, false, true]);
           }
           await dummyExchange1.setCancelled(broker1, numberToBytesX(orderHashOwner1ToCancel, 32));
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [false, true, false, true]);
           }
         });
@@ -581,12 +582,12 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, broker2, user1, 789, 1000, 3);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, true]);
           }
           await dummyExchange1.setCutoffs(user1, 2000);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [false, true, true]);
           }
         });
@@ -599,13 +600,13 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, broker2, user1, tradingPairToCancel, 1000, 3);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true, true, true]);
           }
           const tradingPairEncoded = numberToBytesX(tradingPairToCancel, 20);
           await dummyExchange1.setTradingPairCutoffs(user1, tradingPairEncoded, 2000);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [false, true, true]);
           }
         });
@@ -616,12 +617,12 @@ contract("TradeDelegate", (accounts: string[]) => {
           addOrder(orders, broker1, user1, 123, 1000, orderHashOwnerToCancel);
           const data = toCutoffBatch(orders);
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true]);
           }
           await dummyExchange1.setCancelled(user1, numberToBytesX(orderHashOwnerToCancel, 32));
           {
-            const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data, {from: owner});
+            const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data, {from: owner});
             assertOrdersValid(result, [true]);
           }
         });
@@ -635,7 +636,7 @@ contract("TradeDelegate", (accounts: string[]) => {
       const orders: Order[] = [];
       addOrder(orders, broker1, user1, 123, 1000, 123);
       const data = toCutoffBatch(orders);
-      const result = await tradeDelegate.batchCheckCutoffsAndCancelled(data);
+      const result = await tradeDelegate.batchGetFilledAndCheckCancelled(data);
       assertOrdersValid(result, [true]);
     });
 
@@ -644,7 +645,7 @@ contract("TradeDelegate", (accounts: string[]) => {
       addOrder(orders, broker1, user1, 123, 1000, 123);
       const data = toCutoffBatch(orders);
       data.pop();
-      await expectThrow(tradeDelegate.batchCheckCutoffsAndCancelled(data));
+      await expectThrow(tradeDelegate.batchGetFilledAndCheckCancelled(data));
     });
 
     it("should not be able to transfer tokens", async () => {

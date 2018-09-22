@@ -159,9 +159,11 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             orders[i].checkP2P();
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
+        }
+        batchGetFilledAndCheckCancelled(ctx, orders);
+        for (uint i = 0; i < orders.length; i++) {
             orders[i].checkBrokerSignature(ctx);
         }
-        checkCutoffsAndCancelledOrders(ctx, orders);
 
         for (uint i = 0; i < rings.length; i++) {
             rings[i].updateHash();
@@ -173,7 +175,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].checkDualAuthSignature(mining.hash);
-            orders[i].updateStates(ctx);
         }
 
         for (uint i = 0; i < rings.length; i++){
@@ -202,15 +203,23 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
 
     function updateOrdersStats(Data.Context ctx, Data.Order[] orders) internal {
         bytes32[] memory ordersFilledInfo = new bytes32[](orders.length * 2);
-        for (uint i = 0; i < orders.length; i++){
+        uint offset = 0;
+        for (uint i = 0; i < orders.length; i++) {
             Data.Order memory order = orders[i];
-            ordersFilledInfo[i * 2] = order.hash;
-            ordersFilledInfo[i * 2 + 1] = bytes32(order.filledAmountS);
+            if (order.valid) {
+                ordersFilledInfo[offset] = order.hash;
+                ordersFilledInfo[offset + 1] = bytes32(order.filledAmountS);
+                offset += 2;
+            }
+        }
+        // Patch in the correct length of the filled array
+        assembly {
+            mstore(ordersFilledInfo, offset)
         }
         ctx.delegate.batchUpdateFilled(ordersFilledInfo);
     }
 
-    function checkCutoffsAndCancelledOrders(Data.Context ctx, Data.Order[] orders)
+    function batchGetFilledAndCheckCancelled(Data.Context ctx, Data.Order[] orders)
         internal
         view
     {
@@ -232,11 +241,12 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             cancelledData.tradingPair = bytes20(order.tokenS) ^ bytes20(order.tokenB);
         }
 
-        uint ordersValid = ctx.delegate.batchCheckCutoffsAndCancelled(ordersInfo);
+        uint[] memory fills = ctx.delegate.batchGetFilledAndCheckCancelled(ordersInfo);
 
         for (uint i = 0; i < orders.length; i++) {
             Data.Order memory order = orders[i];
-            order.valid = order.valid && ((ordersValid >> i) & 1) != 0;
+            order.filledAmountS = fills[i];
+            order.valid = order.valid && (order.filledAmountS != ~uint(0));
         }
     }
 

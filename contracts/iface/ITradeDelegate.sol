@@ -131,12 +131,12 @@ contract ITradeDelegate {
         )
         external;
 
-    function batchCheckCutoffsAndCancelled(
+    function batchGetFilledAndCheckCancelled(
         bytes32[] orderInfo
         )
         external
         view
-        returns (uint);
+        returns (uint[]);
 
     function suspend()
         external;

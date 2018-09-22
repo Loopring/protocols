@@ -114,7 +114,6 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         }
 
         for (uint i = 0; i < batch.length; i += 4) {
-
             // Copy the data straight to the order struct from the call data
             MemoryUtil.copyCallDataBytesInArray(0, transferPtr, i * 32, 4 * 32);
 
@@ -237,15 +236,14 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         tradingPairCutoffsOwner[broker][owner][tokenPair] = cutoff;
     }
 
-    function batchCheckCutoffsAndCancelled(
+    function batchGetFilledAndCheckCancelled(
         bytes32[] batch
         )
         external
         view
-        returns (uint)
+        returns (uint[] fills)
     {
         require(batch.length % 5 == 0, INVALID_SIZE);
-        require(batch.length <= 256 * 5, INVALID_SIZE);
 
         TradeDelegateData.OrderCheckCancelledData memory order;
         uint orderPtr;
@@ -253,9 +251,8 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
             orderPtr := order
         }
 
-        uint cutoffsValid = 0;
+        fills = new uint[](batch.length / 5);
         for (uint i = 0; i < batch.length; i += 5) {
-
             // Copy the data straight to the order struct from the call data
             MemoryUtil.copyCallDataBytesInArray(0, orderPtr, i * 32, 5 * 32);
 
@@ -265,10 +262,8 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
             valid = valid && order.validSince > tradingPairCutoffsOwner[order.broker][order.owner][order.tradingPair];
             valid = valid && order.validSince > cutoffsOwner[order.broker][order.owner];
 
-            cutoffsValid |= valid ? (1 << (i / 5)) : 0;
+            fills[i / 5] = valid ? filled[order.hash] : ~uint(0);
         }
-
-        return cutoffsValid;
     }
 
     function suspend()

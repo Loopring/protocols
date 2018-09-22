@@ -1,3 +1,4 @@
+import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import * as pjs from "protocol2-js";
 import util = require("util");
@@ -391,11 +392,11 @@ export class ExchangeTestUtil {
       bitstream.addNumber(0, 12);
     }
 
-    const ordersValid = await this.context.tradeDelegate.batchCheckCutoffsAndCancelled(bitstream.getBytes32Array());
+    const fills = await this.context.tradeDelegate.batchGetFilledAndCheckCancelled(bitstream.getBytes32Array());
 
-    const bits = new BN(ordersValid.toString(16), 16);
+    const cancelledValue = new BigNumber("F".repeat(64), 16);
     for (const [i, order] of orders.entries()) {
-        assert.equal(bits.testn(i), expectedValidValues[i], "Order cancelled status incorrect");
+        assert.equal(!fills[i].equals(cancelledValue), expectedValidValues[i], "Order cancelled status incorrect");
     }
   }
 
