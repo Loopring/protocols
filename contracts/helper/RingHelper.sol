@@ -430,31 +430,40 @@ library RingHelper {
             return 0;
         }
 
-        uint feeToWallet = amount.mul(feeCtx.walletPercentage) / 100;
-        uint minerFee = amount - feeToWallet;
+        uint feeToWallet = 0;
+        uint minerFee = 0;
+        uint minerFeeBurn = 0;
+        uint walletFeeBurn = 0;
+        if (amount > 0) {
+            feeToWallet = amount.mul(feeCtx.walletPercentage) / 100;
+            minerFee = amount - feeToWallet;
 
-        // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
-        if (feeCtx.order.waiveFeePercentage > 0) {
-            minerFee = minerFee.mul(
-                feeCtx.ctx.feePercentageBase - uint(feeCtx.order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
-        } else if (feeCtx.order.waiveFeePercentage < 0) {
-            // No fees need to be paid by this order
-            minerFee = 0;
+            // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
+            if (feeCtx.order.waiveFeePercentage > 0) {
+                minerFee = minerFee.mul(
+                    feeCtx.ctx.feePercentageBase - uint(feeCtx.order.waiveFeePercentage)) /
+                    feeCtx.ctx.feePercentageBase;
+            } else if (feeCtx.order.waiveFeePercentage < 0) {
+                // No fees need to be paid by this order
+                minerFee = 0;
+            }
+
+            // Calculate burn rates and rebates
+            (uint16 burnRate, uint16 rebateRate) = feeCtx.ctx.burnRateTable.getBurnAndRebateRate(
+                feeCtx.order.owner,
+                token,
+                feeCtx.order.P2P
+            );
+
+            // Miner fee
+            minerFeeBurn = minerFee.mul(burnRate) / feeCtx.ctx.feePercentageBase;
+            minerFee = (minerFee - minerFeeBurn - minerFee.mul(rebateRate) / feeCtx.ctx.feePercentageBase);
+            // Wallet fee
+            walletFeeBurn = feeToWallet.mul(burnRate) / feeCtx.ctx.feePercentageBase;
+            feeToWallet = feeToWallet - walletFeeBurn - feeToWallet.mul(rebateRate) / feeCtx.ctx.feePercentageBase;
         }
-
-        // Calculate burn rates and rebates
-        (uint16 burnRate, uint16 rebateRate) = feeCtx.ctx.burnRateTable.getBurnAndRebateRate(
-            feeCtx.order.owner,
-            token,
-            feeCtx.order.P2P
-        );
-
-        // Miner fee
-        uint minerFeeBurn = minerFee.mul(burnRate) / feeCtx.ctx.feePercentageBase;
-        minerFee = margin + (minerFee - minerFeeBurn - minerFee.mul(rebateRate) / feeCtx.ctx.feePercentageBase);
-        // Wallet fee
-        uint walletFeeBurn = feeToWallet.mul(burnRate) / feeCtx.ctx.feePercentageBase;
-        feeToWallet = feeToWallet - walletFeeBurn - feeToWallet.mul(rebateRate) / feeCtx.ctx.feePercentageBase;
+        // Miner gets the margin without sharing it with the wallet or burning
+        minerFee += margin;
 
         // Fees can be paid out in different tokens so we can't easily accumulate the total fee
         // that needs to be paid out to order owners. So we pay out each part out here to all
