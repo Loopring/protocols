@@ -79,6 +79,7 @@ contract DeserializerTest {
         returns (Data.Order memory order)
     {
         order = Data.Order(
+            0,
             addresses[0], // owner
             addresses[0], // tokenS
             address(0x0),         // tokenB

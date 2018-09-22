@@ -68,21 +68,24 @@ library ExchangeDeserializer {
         )
     {
         Data.Inputs memory inputs;
-        inputs.numOrders = uint16(MemoryUtil.bytesToUintX(data, 0, 2));
-        inputs.numRings = uint16(MemoryUtil.bytesToUintX(data, 2, 2));
-        uint16 dataLength = uint16(MemoryUtil.bytesToUintX(data, 4, 2) & 0xFFFF);
-        uint16 tablesLength = uint16(MemoryUtil.bytesToUintX(data, 6, 2) & 0xFFFF);
-        uint16 numSpendables = uint16(MemoryUtil.bytesToUintX(data, 8, 2) & 0xFFFF);
+        uint version = uint16(MemoryUtil.bytesToUintX(data, 0, 2) & 0xFFFF);
+        inputs.numOrders = uint16(MemoryUtil.bytesToUintX(data, 2, 2) & 0xFFFF);
+        inputs.numRings = uint16(MemoryUtil.bytesToUintX(data, 4, 2) & 0xFFFF);
+        uint16 numSpendables = uint16(MemoryUtil.bytesToUintX(data, 6, 2) & 0xFFFF);
+
+        uint ordersOffset = 8;
+        uint ringsOffset = ordersOffset + (3 + 26 * inputs.numOrders) * 2;
+        uint dataOffset = ringsOffset + inputs.numRings * 9 + 32;
 
         assembly {
-            mstore(add(inputs,  0), add(data, add(12, dataLength)))
-            mstore(add(inputs, 32), add(data, 10))
-            mstore(add(inputs, 64), add(data, add(11, add(dataLength, tablesLength))))
+            mstore(add(inputs,  0), add(data, add(ordersOffset, 2)))
+            mstore(add(inputs, 32), add(data, add(ringsOffset, 1)))
+            mstore(add(inputs, 64), add(data, dataOffset))
         }
 
         Data.Spendable[] memory spendableList = new Data.Spendable[](numSpendables);
-
         return inputToStructedData(
+            version,
             lrcTokenAddress,
             inputs,
             spendableList
@@ -90,6 +93,7 @@ library ExchangeDeserializer {
     }
 
     function inputToStructedData(
+        uint version,
         address lrcTokenAddress,
         Data.Inputs inputs,
         Data.Spendable[] memory spendableList
@@ -107,7 +111,7 @@ library ExchangeDeserializer {
         bytes memory emptyBytes = new bytes(0);
 
         uint numOrders = inputs.numOrders;
-        uint orderSize = 32 * 31;
+        uint orderSize = 32 * 32;
         uint arrayDataSize = (numOrders + 1) * 32;
 
         bytes memory tablesPtr = inputs.tablesPtr;
@@ -169,208 +173,220 @@ library ExchangeDeserializer {
                 // Store the memory location of this order in the orders array
                 mstore(add(orders, mul(add(i, 1), 32)), order)
 
-                // Owner
+                // version
                 offset := and(mload(add(tablesPtr,  0)), 0xFFFF)
                 mstore(
                     add(order,   0),
-                    mload(add(add(data, 20), offset))
+                    offset
                 )
 
-                // tokenS
+                // Owner
                 offset := and(mload(add(tablesPtr,  2)), 0xFFFF)
                 mstore(
                     add(order,  32),
                     mload(add(add(data, 20), offset))
                 )
 
-                // amountS
+                // tokenS
                 offset := and(mload(add(tablesPtr,  4)), 0xFFFF)
                 mstore(
-                    add(order,  96),
-                    mload(add(add(data, 32), offset))
+                    add(order,  64),
+                    mload(add(add(data, 20), offset))
                 )
 
-                // amountB
+                // amountS
                 offset := and(mload(add(tablesPtr,  6)), 0xFFFF)
                 mstore(
                     add(order, 128),
                     mload(add(add(data, 32), offset))
                 )
 
-                // validSince
+                // amountB
                 offset := and(mload(add(tablesPtr,  8)), 0xFFFF)
                 mstore(
                     add(order, 160),
                     mload(add(add(data, 32), offset))
                 )
 
-                // tokenSpendableS
+                // validSince
                 offset := and(mload(add(tablesPtr, 10)), 0xFFFF)
                 mstore(
                     add(order, 192),
-                    mload(add(spendableList, mul(add(offset, 1), 32)))
+                    mload(add(add(data, 32), offset))
                 )
 
-                // tokenSpendableFee
+                // tokenSpendableS
                 offset := and(mload(add(tablesPtr, 12)), 0xFFFF)
                 mstore(
                     add(order, 224),
                     mload(add(spendableList, mul(add(offset, 1), 32)))
                 )
 
-                // dualAuthAddr
+                // tokenSpendableFee
                 offset := and(mload(add(tablesPtr, 14)), 0xFFFF)
                 mstore(
-                    add(order,  256),
+                    add(order, 256),
+                    mload(add(spendableList, mul(add(offset, 1), 32)))
+                )
+
+                // dualAuthAddr
+                offset := and(mload(add(tablesPtr, 16)), 0xFFFF)
+                mstore(
+                    add(order, 288),
                     mload(add(add(data, 20), offset))
                 )
 
                 // broker
-                offset := and(mload(add(tablesPtr, 16)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 18)), 0xFFFF)
                 mstore(
-                    add(order,  288),
+                    add(order, 320),
                     mload(add(add(data, 20), offset))
                 )
 
                 // brokerSpendableS
-                offset := and(mload(add(tablesPtr, 18)), 0xFFFF)
-                mstore(
-                    add(order, 320),
-                    mload(add(spendableList, mul(add(offset, 1), 32)))
-                )
-
-                // brokerSpendableFee
                 offset := and(mload(add(tablesPtr, 20)), 0xFFFF)
                 mstore(
                     add(order, 352),
                     mload(add(spendableList, mul(add(offset, 1), 32)))
                 )
 
-                // orderInterceptor
+                // brokerSpendableFee
                 offset := and(mload(add(tablesPtr, 22)), 0xFFFF)
                 mstore(
-                    add(order,  384),
+                    add(order, 384),
+                    mload(add(spendableList, mul(add(offset, 1), 32)))
+                )
+
+                // orderInterceptor
+                offset := and(mload(add(tablesPtr, 24)), 0xFFFF)
+                mstore(
+                    add(order, 416),
                     mload(add(add(data, 20), offset))
                 )
 
                 // wallet
-                offset := and(mload(add(tablesPtr, 24)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 26)), 0xFFFF)
                 mstore(
-                    add(order,  416),
+                    add(order, 448),
                     mload(add(add(data, 20), offset))
                 )
 
                 // validUntil
-                offset := and(mload(add(tablesPtr,  26)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 28)), 0xFFFF)
                 mstore(
-                    add(order, 448),
+                    add(order, 480),
                     mload(add(add(data, 32), offset))
                 )
 
+                // Default value sig and dualAuthSig
                 mstore(add(data, 32), emptyBytes)
 
                 // sig
-                offset := and(mload(add(tablesPtr,  28)), 0xFFFF)
-                mstore(
-                    add(order, 480),
-                    add(data, add(offset, 32))
-                )
-
-                // dualAuthSig
-                offset := and(mload(add(tablesPtr,  30)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 30)), 0xFFFF)
                 mstore(
                     add(order, 512),
                     add(data, add(offset, 32))
                 )
 
+                // dualAuthSig
+                offset := and(mload(add(tablesPtr, 32)), 0xFFFF)
+                mstore(
+                    add(order, 544),
+                    add(data, add(offset, 32))
+                )
+
+                // Restore default to 0
                 mstore(add(data, 32), 0)
 
                 // allOrNone
-                offset := and(mload(add(tablesPtr,  32)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 34)), 0xFFFF)
                 mstore(
-                    add(order, 544),
+                    add(order, 576),
                     gt(offset, 0)
                 )
 
+                // lrcTokenAddress is the default value for feeToken
                 mstore(add(data, 20), lrcTokenAddress)
 
                 // feeToken
-                offset := and(mload(add(tablesPtr, 34)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 36)), 0xFFFF)
                 mstore(
-                    add(order,  576),
+                    add(order, 608),
                     mload(add(add(data, 20), offset))
                 )
 
+                // Restore default to 0
                 mstore(add(data, 20), 0)
 
                 // feeAmount
-                offset := and(mload(add(tablesPtr,  36)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 38)), 0xFFFF)
                 mstore(
-                    add(order, 608),
+                    add(order, 640),
                     mload(add(add(data, 32), offset))
                 )
 
                 // feePercentage
-                offset := and(mload(add(tablesPtr,  38)), 0xFFFF)
-                mstore(
-                    add(order, 640),
-                    offset
-                )
-
-                // waiveFeePercentage
-                offset := and(mload(add(tablesPtr,  40)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 40)), 0xFFFF)
                 mstore(
                     add(order, 672),
                     offset
                 )
 
-                // tokenSFeePercentage
-                offset := and(mload(add(tablesPtr,  42)), 0xFFFF)
+                // waiveFeePercentage
+                offset := and(mload(add(tablesPtr, 42)), 0xFFFF)
                 mstore(
                     add(order, 704),
                     offset
                 )
 
-                // tokenBFeePercentage
-                offset := and(mload(add(tablesPtr,  44)), 0xFFFF)
+                // tokenSFeePercentage
+                offset := and(mload(add(tablesPtr, 44)), 0xFFFF)
                 mstore(
                     add(order, 736),
                     offset
                 )
 
-                // The owner is the default value of tokenRecipient
-                mstore(add(data, 20), mload(order))
-
-                // tokenRecipient
+                // tokenBFeePercentage
                 offset := and(mload(add(tablesPtr, 46)), 0xFFFF)
                 mstore(
-                    add(order,  768),
+                    add(order, 768),
+                    offset
+                )
+
+                // The owner is the default value of tokenRecipient
+                mstore(add(data, 20), mload(add(order, 32)))
+
+                // tokenRecipient
+                offset := and(mload(add(tablesPtr, 48)), 0xFFFF)
+                mstore(
+                    add(order, 800),
                     mload(add(add(data, 20), offset))
                 )
 
+                // Restore default to 0
                 mstore(add(data, 20), 0)
 
                 // walletSplitPercentage
-                offset := and(mload(add(tablesPtr,  48)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 50)), 0xFFFF)
                 mstore(
-                    add(order, 800),
+                    add(order, 832),
                     offset
                 )
 
                 // Set default  values
-
                 // P2P
-                mstore(add(order, 832), 0)
-                // hash
                 mstore(add(order, 864), 0)
-                // brokerInterceptor
+                // hash
                 mstore(add(order, 896), 0)
-                // filledAmountS
+                // brokerInterceptor
                 mstore(add(order, 928), 0)
+                // filledAmountS
+                mstore(add(order, 960), 0)
                 // valid
-                mstore(add(order, 960), 1)
+                mstore(add(order, 992), 1)
 
-                tablesPtr := add(tablesPtr, 50)
+                // Advance to the next order
+                tablesPtr := add(tablesPtr, 52)
             }
         }
 
@@ -418,7 +434,7 @@ library ExchangeDeserializer {
 
                 let ringArrayDataSize := mul(add(ringSize, 1), 32)
 
-                 // Allocate memory for all orders
+                // Allocate memory for all orders
                 let participations := mload(0x40)
                 mstore(add(participations, 0), ringSize)
                 mstore(0x40, add(participations, add(ringArrayDataSize, mul(320, ringSize))))
@@ -446,7 +462,6 @@ library ExchangeDeserializer {
                     )
 
                     // Set default  values
-
                     // splitS
                     mstore(add(participation,  32), 0)
                     // feeAmount
@@ -476,15 +491,17 @@ library ExchangeDeserializer {
                     let participation := add(participations, add(ringArrayDataSize, mul(320, i)))
                     let participationNext := add(participations, add(
                         ringArrayDataSize,
-                        mul(320, mod(add(i, 1), ringSize)))
-                    )
+                        mul(320, addmod(i, 1, ringSize))
+                    ))
 
                     mstore(
-                        add(mload(participation),  64),
-                        mload(add(mload(participationNext),  32))
+                        add(mload(participation),  96),
+                        mload(add(mload(participationNext),  64))
                     )
-
                 }
+
+                // Advance to next ring
+                data := add(data, sub(8, ringSize))
             }
         }
     }

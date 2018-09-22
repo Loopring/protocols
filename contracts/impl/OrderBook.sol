@@ -41,6 +41,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc, Errors {
         }
 
         Data.Order memory order = Data.Order(
+            0,                     // version
             address(dataArray[0]), // owner
             address(dataArray[1]), // tokenS
             address(dataArray[2]), // tokenB

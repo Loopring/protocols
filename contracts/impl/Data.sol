@@ -30,8 +30,8 @@ library Data {
 
     struct Inputs {
         bytes tablesPtr;
-        bytes data;
         bytes ringsPtr;
+        bytes data;
         uint numOrders;
         uint numRings;
     }
@@ -69,6 +69,8 @@ library Data {
     }
 
     struct Order {
+        uint      version;
+
         // required fields
         address   owner;
         address   tokenS;
