@@ -41,28 +41,26 @@ library RingHelper {
         internal
         pure
     {
-        uint hashSizePerOrder = 32 + 2;
-        bytes memory data = new bytes(hashSizePerOrder * ring.size);
-        for (uint i = 0; i < ring.size; i++) {
-            Data.Participation memory p = ring.participations[i];
-            bytes32 orderHash = p.order.hash;
-            int16 waiveFeePercentage = p.order.waiveFeePercentage;
-            assembly {
-                let dst := add(
-                    add(data, 32),
-                    mul(i, hashSizePerOrder)
-                )
-                mstore(
-                    add(dst, 2),
-                    and(waiveFeePercentage, 0xffff)
-                )
-                mstore(
-                    dst,
-                    orderHash
-                )
+        uint ringSize = ring.size;
+        bytes32 hash;
+        assembly {
+            let data := mload(0x40)
+            let ptr := data
+            for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
+                let participations := mload(add(ring, 32))
+                let order := mload(mload(add(participations, add(32, mul(i, 32)))))
+
+                let waiveFeePercentage := and(mload(add(order, 672)), 0xFFFF)
+                let orderHash := mload(add(order, 864))
+
+                mstore(add(ptr, 2), waiveFeePercentage)
+                mstore(ptr, orderHash)
+
+                ptr := add(ptr, 34)
             }
+            hash := keccak256(data, sub(ptr, data))
         }
-        ring.hash = keccak256(data);
+        ring.hash = hash;
     }
 
     function calculateFillAmountAndFee(
