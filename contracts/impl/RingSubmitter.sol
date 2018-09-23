@@ -202,51 +202,74 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
     }
 
     function updateOrdersStats(Data.Context ctx, Data.Order[] orders) internal {
-        bytes32[] memory ordersFilledInfo = new bytes32[](orders.length * 2);
-        uint offset = 0;
-        for (uint i = 0; i < orders.length; i++) {
-            Data.Order memory order = orders[i];
-            if (order.valid) {
-                ordersFilledInfo[offset] = order.hash;
-                ordersFilledInfo[offset + 1] = bytes32(order.filledAmountS);
-                offset += 2;
+        bytes4 batchUpdateFilledSelector = ctx.delegate.batchUpdateFilled.selector;
+        address tradeDelegateAddress = address(ctx.delegate);
+        assembly {
+            let data := mload(0x40)
+            mstore(data, batchUpdateFilledSelector)
+            mstore(add(data, 4), 32)
+            let ptr := add(data, 68)
+            let size := 0
+            for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
+                let order := mload(add(orders, mul(add(i, 1), 32)))
+                if gt(mload(add(order, 960)), 0) {
+                    mstore(add(ptr,   0), mload(add(order, 864)))  // hash
+                    mstore(add(ptr,  32), mload(add(order, 928)))  // filledAmountS
+
+                    ptr := add(ptr, 64)
+                    size := add(size, 2)
+                }
+            }
+            mstore(add(data, 36), size)             // length
+
+            let success := call(
+                gas,                                // forward all gas
+                tradeDelegateAddress,               // external address
+                0,                                  // wei
+                data,                               // input start
+                sub(ptr, data),                     // input length
+                data,                               // output start
+                32                                  // output length
+            )
+            if eq(success, 0) {
+                revert(0, 0)
             }
         }
-        // Patch in the correct length of the filled array
-        assembly {
-            mstore(ordersFilledInfo, offset)
-        }
-        ctx.delegate.batchUpdateFilled(ordersFilledInfo);
     }
 
     function batchGetFilledAndCheckCancelled(Data.Context ctx, Data.Order[] orders)
         internal
         view
     {
-        TradeDelegateData.OrderCheckCancelledData memory cancelledData;
-        bytes32[] memory ordersInfo = new bytes32[](orders.length * 5);
-        for (uint i = 0; i < orders.length; i++) {
-            Data.Order memory order = orders[i];
-
-            // This will make writes to cancelledData to be stored in the memory of ordersInfo
-            uint ptr = MemoryUtil.getBytes32Pointer(ordersInfo, 5 * i);
-            assembly {
-                cancelledData := ptr
+        bytes32[] memory data;
+        assembly {
+            data := mload(0x40)
+            mstore(data, mul(mload(orders), 5))                // length
+            let ptr := add(data, 32)
+            for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) }
+            {
+                let order := mload(add(orders, mul(add(i, 1), 32)))
+                mstore(add(ptr,   0), mload(add(order, 288)))  // broker
+                mstore(add(ptr,  32), mload(add(order,   0)))  // owner
+                mstore(add(ptr,  64), mload(add(order, 864)))  // hash
+                mstore(add(ptr,  96), mload(add(order, 160)))  // validSince
+                mstore(add(ptr, 128), mul(
+                    xor(
+                        mload(add(order, 32)),                 // tokenS
+                        mload(add(order, 64))                  // tokenB
+                    ),
+                    0x1000000000000000000000000)               // shift left 12 bytes
+                )
+                ptr := add(ptr, 160)
             }
-
-            cancelledData.broker = order.broker;
-            cancelledData.owner = order.owner;
-            cancelledData.hash = order.hash;
-            cancelledData.validSince = order.validSince;
-            cancelledData.tradingPair = bytes20(order.tokenS) ^ bytes20(order.tokenB);
+            mstore(0x40, ptr)
         }
 
-        uint[] memory fills = ctx.delegate.batchGetFilledAndCheckCancelled(ordersInfo);
+        uint[] memory fills = ctx.delegate.batchGetFilledAndCheckCancelled(data);
 
         for (uint i = 0; i < orders.length; i++) {
-            Data.Order memory order = orders[i];
-            order.filledAmountS = fills[i];
-            order.valid = order.valid && (order.filledAmountS != ~uint(0));
+            orders[i].filledAmountS = fills[i];
+            orders[i].valid = orders[i].valid && (orders[i].filledAmountS != ~uint(0));
         }
     }
 
