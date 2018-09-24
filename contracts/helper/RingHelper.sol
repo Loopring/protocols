@@ -112,7 +112,6 @@ library RingHelper {
 
         for (i = 0; i < ring.size; i++) {
             uint prevIndex = (i + ring.size - 1) % ring.size;
-            Data.Participation memory prevP = ring.participations[prevIndex];
             p = ring.participations[i];
 
             // Check if this order needs to be completely filled
@@ -121,7 +120,7 @@ library RingHelper {
                 break;
             }
 
-            bool valid = p.calculateFees(prevP, ctx);
+            bool valid = p.calculateFees(ring.participations[prevIndex], ctx);
             if (!valid) {
                 ring.valid = false;
                 break;
@@ -153,19 +152,15 @@ library RingHelper {
         // Default to the same smallest index
         smallest_ = smallest;
 
-        Data.Participation memory p = ring.participations[i];
-        uint j = (i + ring.size - 1) % ring.size;
-        Data.Participation memory prevP = ring.participations[j];
+        uint postFeeFillAmountS = ring.participations[i].fillAmountS
+            .mul(ctx.feePercentageBase - ring.participations[i].order.tokenSFeePercentage) / ctx.feePercentageBase;
 
-
-        uint postFeeFillAmountS = p.fillAmountS
-            .mul(ctx.feePercentageBase - p.order.tokenSFeePercentage) / ctx.feePercentageBase;
-
-        if (prevP.fillAmountB > postFeeFillAmountS) {
+        uint prevIndex = (i + ring.size - 1) % ring.size;
+        if (ring.participations[prevIndex].fillAmountB > postFeeFillAmountS) {
             smallest_ = i;
-            prevP.fillAmountB = postFeeFillAmountS;
-            prevP.fillAmountS = prevP.fillAmountB
-                .mul(prevP.order.amountS) / prevP.order.amountB;
+            ring.participations[prevIndex].fillAmountB = postFeeFillAmountS;
+            ring.participations[prevIndex].fillAmountS = ring.participations[prevIndex].fillAmountB
+                .mul(ring.participations[prevIndex].order.amountS) / ring.participations[prevIndex].order.amountB;
         }
     }
 
@@ -177,8 +172,7 @@ library RingHelper {
     {
         ring.valid = ring.valid && (ring.size > 1 && ring.size <= 8); // invalid ring size
         for (uint i = 0; i < ring.size; i++) {
-            Data.Participation memory p = ring.participations[i];
-            ring.valid = ring.valid && p.order.valid;
+            ring.valid = ring.valid && ring.participations[i].order.valid;
         }
     }
 
@@ -208,8 +202,7 @@ library RingHelper {
 
         // Adjust the orders
         for (uint i = 0; i < ring.size; i++) {
-            Data.Participation memory p = ring.participations[i];
-            p.adjustOrderState();
+            ring.participations[i].adjustOrderState();
         }
     }
 
@@ -221,15 +214,13 @@ library RingHelper {
         returns (IRingSubmitter.Fill[])
     {
         IRingSubmitter.Fill[] memory fills = new IRingSubmitter.Fill[](ring.size);
-        Data.Participation memory p;
         for (uint i = 0; i < ring.size; i++) {
-            p = ring.participations[i];
-            fills[i].orderHash = p.order.hash;
-            fills[i].owner = p.order.owner;
-            fills[i].tokenS = p.order.tokenS;
-            fills[i].amountS = p.fillAmountS;
-            fills[i].split = p.splitS;
-            fills[i].feeAmount = p.feeAmount;
+            fills[i].orderHash = ring.participations[i].order.hash;
+            fills[i].owner = ring.participations[i].order.owner;
+            fills[i].tokenS = ring.participations[i].order.tokenS;
+            fills[i].amountS = ring.participations[i].fillAmountS;
+            fills[i].split = ring.participations[i].splitS;
+            fills[i].feeAmount = ring.participations[i].feeAmount;
         }
         return fills;
     }
@@ -256,11 +247,13 @@ library RingHelper {
                 .sub(p.feeAmountS)
                 .sub(prevP.feeAmountB.sub(prevP.rebateB));
 
-            uint amountSToFeeHolder = p.feeAmountS.sub(p.rebateS)
+            uint amountSToFeeHolder = p.feeAmountS
+                .sub(p.rebateS)
                 .add(prevP.feeAmountB.sub(prevP.rebateB))
                 .add(p.splitS);
 
-            uint amountFeeToFeeHolder = p.feeAmount.sub(p.rebateFee);
+            uint amountFeeToFeeHolder = p.feeAmount
+                .sub(p.rebateFee);
 
             if (p.order.tokenS == p.order.feeToken) {
                 amountSToFeeHolder += amountFeeToFeeHolder;
