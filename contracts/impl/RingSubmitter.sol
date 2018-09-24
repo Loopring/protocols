@@ -239,15 +239,16 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
 
     function batchGetFilledAndCheckCancelled(Data.Context ctx, Data.Order[] orders)
         internal
-        view
     {
-        bytes32[] memory data;
+        bytes4 batchGetFilledAndCheckCancelledSelector = ctx.delegate.batchGetFilledAndCheckCancelled.selector;
+        address tradeDelegateAddress = address(ctx.delegate);
         assembly {
-            data := mload(0x40)
-            mstore(data, mul(mload(orders), 5))                // length
-            let ptr := add(data, 32)
-            for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) }
-            {
+            let data := mload(0x40)
+            mstore(data, batchGetFilledAndCheckCancelledSelector)
+            mstore(add(data,  4), 32)
+            mstore(add(data, 36), mul(mload(orders), 5))       // length
+            let ptr := add(data, 68)
+            for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
                 mstore(add(ptr,   0), mload(add(order, 288)))  // broker
                 mstore(add(ptr,  32), mload(add(order,   0)))  // owner
@@ -260,16 +261,37 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                     ),
                     0x1000000000000000000000000)               // shift left 12 bytes
                 )
-                ptr := add(ptr, 160)
+                ptr := add(ptr, 160)                           // 5 * 32
             }
-            mstore(0x40, ptr)
-        }
-
-        uint[] memory fills = ctx.delegate.batchGetFilledAndCheckCancelled(data);
-
-        for (uint i = 0; i < orders.length; i++) {
-            orders[i].filledAmountS = fills[i];
-            orders[i].valid = orders[i].valid && (orders[i].filledAmountS != ~uint(0));
+            // Return data is stored just like the call data without the signature:
+            // 0x00: Offset to data
+            // 0x20: Array length
+            // 0x40: Array data
+            let returnDataSize := mul(add(2, mload(orders)), 32)
+            let success := call(
+                gas,                                // forward all gas
+                tradeDelegateAddress,               // external address
+                0,                                  // wei
+                data,                               // input start
+                sub(ptr, data),                     // input length
+                data,                               // output start
+                returnDataSize                      // output length
+            )
+            if or(eq(success, 0), sub(1, eq(returndatasize(), returnDataSize)))  {
+                revert(0, 0)
+            }
+            for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
+                let order := mload(add(orders, mul(add(i, 1), 32)))
+                let fill := mload(add(data,  mul(add(i, 2), 32)))
+                mstore(add(order, 928), fill)                           // filledAmountS
+                // order.valid = order.valid && (order.filledAmountS != ~uint(0));
+                mstore(add(order, 960),                                 // valid
+                    and(
+                        gt(mload(add(order, 960)), 0),
+                        sub(1, eq(fill, not(0)))
+                    )
+                )
+            }
         }
     }
 
