@@ -78,24 +78,38 @@ library MultihashUtil {
         pure
         returns (bool)
     {
-        require(multihash.length >= 2, "invalid multihash format");
-        uint8 algorithm = uint8(multihash[0]);
-        uint8 size = uint8(multihash[1]);
-        require(multihash.length == (2 + size), "bad multihash size");
+        uint length = multihash.length;
+        require(length >= 2, "invalid multihash format");
+        uint8 algorithm;
+        uint8 size;
+        assembly {
+            algorithm := mload(add(multihash, 1))
+            size := mload(add(multihash, 2))
+        }
+        require(length == (2 + size), "bad multihash size");
 
         if (algorithm == uint8(HashAlgorithm.Ethereum)) {
             require(signer != 0x0, "invalid signer address");
             require(size == 65, "bad Ethereum multihash size");
+            bytes32 hash;
+            uint8 v;
+            bytes32 r;
+            bytes32 s;
+            assembly {
+                let data := mload(0x40)
+                mstore(data, 0x19457468657265756d205369676e6564204d6573736167653a0a333200000000) // SIG_PREFIX
+                mstore(add(data, 28), plaintext)                                                 // plaintext
+                hash := keccak256(data, 60)                                                      // 28 + 32
+                // Extract v, r and s from the multihash data
+                v := mload(add(multihash, 3))
+                r := mload(add(multihash, 35))
+                s := mload(add(multihash, 67))
+            }
             return signer == ecrecover(
-                keccak256(
-                    abi.encodePacked(
-                        SIG_PREFIX,
-                        plaintext
-                    )
-                ),
-                uint8(multihash[2]),
-                BytesUtil.bytesToBytes32(multihash, 3),
-                BytesUtil.bytesToBytes32(multihash, 3 + 32)
+                hash,
+                v,
+                r,
+                s
             );
         } else if (algorithm == uint8(HashAlgorithm.EIP712)) {
             require(signer != 0x0, "invalid signer address");
