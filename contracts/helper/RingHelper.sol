@@ -231,62 +231,98 @@ library RingHelper {
         )
         internal
     {
-        // It only costs 3 gas/word for extra memory, so just create the maximum array size needed
-        bytes32[] memory data = new bytes32[](ring.size * 3 * 4);
-        uint offset = 0;
-        Data.Participation memory p;
-        Data.Participation memory prevP;
-        address feeHolder = address(ctx.feeHolder);
+        bytes4 batchTransferSelector = ctx.delegate.batchTransfer.selector;
+        address tradeDelegateAddress = address(ctx.delegate);
+        uint data;
+        uint ptr;
+        assembly {
+            data := mload(0x40)
+            mstore(data, batchTransferSelector)
+            mstore(add(data, 4), 32)
+            ptr := add(data, 68)
+            mstore(0x40, add(ptr, mul(mul(mload(ring), 12), 32)))
+        }
         for (uint i = 0; i < ring.size; i++) {
-            p = ring.participations[i];
-            prevP = ring.participations[(i + ring.size - 1) % ring.size];
+            ptr = transferTokensForParticipation(
+                ptr,
+                ctx,
+                ring.participations[i],
+                ring.participations[(i + ring.size - 1) % ring.size]
+            );
+        }
+        assembly {
+            mstore(add(data, 36), div(sub(ptr, add(data, 68)), 32))             // length
 
-            // If the buyer needs to pay fees in tokenB, the seller needs
-            // to send the tokenS amount to the fee holder contract
-            uint amountSToBuyer = p.fillAmountS
-                .sub(p.feeAmountS)
-                .sub(prevP.feeAmountB.sub(prevP.rebateB));
-
-            uint amountSToFeeHolder = p.feeAmountS
-                .sub(p.rebateS)
-                .add(prevP.feeAmountB.sub(prevP.rebateB))
-                .add(p.splitS);
-
-            uint amountFeeToFeeHolder = p.feeAmount
-                .sub(p.rebateFee);
-
-            if (p.order.tokenS == p.order.feeToken) {
-                amountSToFeeHolder += amountFeeToFeeHolder;
-                amountFeeToFeeHolder = 0;
+            let success := call(
+                gas,                                // forward all gas
+                tradeDelegateAddress,               // external address
+                0,                                  // wei
+                data,                               // input start
+                sub(ptr, data),                     // input length
+                data,                               // output start
+                32                                  // output length
+            )
+            if eq(success, 0) {
+                revert(0, 0)
             }
+        }
+    }
 
-            // Transfers
-            offset = addTokenTransfer(
-                data,
-                offset,
-                p.order.tokenS,
-                p.order.owner,
-                prevP.order.tokenRecipient,
-                amountSToBuyer
-            );
-            offset = addTokenTransfer(
-                data,
-                offset,
-                p.order.tokenS,
-                p.order.owner,
-                feeHolder,
-                amountSToFeeHolder
-            );
-            offset = addTokenTransfer(
-                data,
-                offset,
-                p.order.feeToken,
-                p.order.owner,
-                feeHolder,
-                amountFeeToFeeHolder
-            );
+    function transferTokensForParticipation(
+        uint ptr,
+        Data.Context ctx,
+        Data.Participation p,
+        Data.Participation prevP
+        )
+        internal
+        returns (uint)
+    {
+        uint buyerFeeAmountAfterRebateB = prevP.feeAmountB.sub(prevP.rebateB);
 
-            // onTokenSpent broker callbacks
+        // If the buyer needs to pay fees in tokenB, the seller needs
+        // to send the tokenS amount to the fee holder contract
+        uint amountSToBuyer = p.fillAmountS
+            .sub(p.feeAmountS)
+            .sub(buyerFeeAmountAfterRebateB);
+
+        uint amountSToFeeHolder = p.feeAmountS
+            .sub(p.rebateS)
+            .add(buyerFeeAmountAfterRebateB)
+            .add(p.splitS);
+
+        uint amountFeeToFeeHolder = p.feeAmount
+            .sub(p.rebateFee);
+
+        if (p.order.tokenS == p.order.feeToken) {
+            amountSToFeeHolder += amountFeeToFeeHolder;
+            amountFeeToFeeHolder = 0;
+        }
+
+        // Transfers
+        ptr = addTokenTransfer(
+            ptr,
+            p.order.tokenS,
+            p.order.owner,
+            prevP.order.tokenRecipient,
+            amountSToBuyer
+        );
+        ptr = addTokenTransfer(
+            ptr,
+            p.order.tokenS,
+            p.order.owner,
+            address(ctx.feeHolder),
+            amountSToFeeHolder
+        );
+        ptr = addTokenTransfer(
+            ptr,
+            p.order.feeToken,
+            p.order.owner,
+            address(ctx.feeHolder),
+            amountFeeToFeeHolder
+        );
+
+        // onTokenSpent broker callbacks
+        if (p.order.brokerInterceptor != 0x0) {
             onTokenSpent(
                 p.order.brokerInterceptor,
                 p.order.owner,
@@ -302,16 +338,12 @@ library RingHelper {
                 amountFeeToFeeHolder
             );
         }
-        // Patch in the correct length of the data array
-        assembly {
-            mstore(data, offset)
-        }
-        ctx.delegate.batchTransfer(data);
+
+        return ptr;
     }
 
     function addTokenTransfer(
-        bytes32[] data,
-        uint offset,
+        uint ptr,
         address token,
         address from,
         address to,
@@ -321,17 +353,16 @@ library RingHelper {
         pure
         returns (uint)
     {
-        if (from != to && amount > 0) {
+        if (amount > 0 && from != to) {
             assembly {
-                let start := add(data, mul(add(offset, 1), 32))
-                mstore(add(start,  0), token)
-                mstore(add(start, 32), from)
-                mstore(add(start, 64), to)
-                mstore(add(start, 96), amount)
+                mstore(add(ptr,  0), token)
+                mstore(add(ptr, 32), from)
+                mstore(add(ptr, 64), to)
+                mstore(add(ptr, 96), amount)
             }
-            return offset + 4;
+            return ptr + 128;
         } else {
-            return offset;
+            return ptr;
         }
     }
 
