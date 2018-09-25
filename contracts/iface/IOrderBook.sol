@@ -35,10 +35,8 @@ contract IOrderBook {
 
     event OrderSubmitted(address owner, bytes32 orderHash);
 
-    /// order's owner is msg.sender, so no signature needed.
+    /// no signature needed. order can only be submitted by its owner or broker.
     /// order's owner can be a contract's address.
-    /// only support LRC as fee for now.
-    /// no fee split to wallet. (wallet is 0x0)
     function submitOrder(
         bytes32[] dataArray
     )
