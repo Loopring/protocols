@@ -160,7 +160,7 @@ contract("TradeDelegate", (accounts: string[]) => {
   const assertOrdersValid = (result: BigNumber[], expectedValues: boolean[]) => {
     const cancelledValue = new BigNumber("F".repeat(64), 16);
     for (const [i, order] of expectedValues.entries()) {
-        assert.equal(!result[i].equals(cancelledValue), expectedValues[i],
+        assert.equal(!result[i].isEqualTo(cancelledValue), expectedValues[i],
                      "Order cancelled status incorrect for order " + i);
     }
   };
