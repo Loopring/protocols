@@ -7,8 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "compile": "./node_modules/.bin/truffle compile",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "truffle": "truffle",
+    "compile": "truffle compile"
   },
   "keywords": [
     "vite",
@@ -18,7 +19,7 @@
   "author": "kongliangzhong",
   "license": "ISC",
   "dependencies": {
-    "truffle": "4.1.5",
+    "truffle": "4.1.14",
     "zeppelin-solidity": "^1.8.0"
   }
 }

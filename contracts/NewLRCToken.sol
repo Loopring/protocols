@@ -107,6 +107,8 @@ contract ERC20 is ERC20Basic {
  * @dev Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
  */
 contract StandardToken is ERC20, BasicToken {
+    uint public constant MAX_UINT = 2**256 - 1;
+
     mapping (address => mapping (address => uint256)) internal allowed;
     /**
      * @dev Transfer tokens from one address to another
@@ -120,7 +122,12 @@ contract StandardToken is ERC20, BasicToken {
         require(_value <= allowed[_from][msg.sender]);
         balances[_from] = balances[_from].sub(_value);
         balances[_to] = balances[_to].add(_value);
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
+
+        /// an allowance of MAX_UINT represents an unlimited allowance.
+        /// @dev see https://github.com/ethereum/EIPs/issues/717
+        if (allowed[_from][msg.sender] < MAX_UINT) {
+            allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
+        }
         emit Transfer(_from, _to, _value);
         return true;
     }
