@@ -36,7 +36,7 @@ contract IRingSubmitter {
 
     event RingMined(
         uint            _ringIndex,
-        address indexed _broker,        // TODO: broker is different for every order
+        bytes32 indexed _ringHash,
         address indexed _feeRecipient,
         Fill[]          _fills
     );

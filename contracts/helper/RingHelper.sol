@@ -218,18 +218,34 @@ library RingHelper {
         )
         internal
         pure
-        returns (IRingSubmitter.Fill[])
+        returns (IRingSubmitter.Fill[] memory fills)
     {
-        IRingSubmitter.Fill[] memory fills = new IRingSubmitter.Fill[](ring.size);
-        for (uint i = 0; i < ring.size; i++) {
-            fills[i].orderHash = ring.participations[i].order.hash;
-            fills[i].owner = ring.participations[i].order.owner;
-            fills[i].tokenS = ring.participations[i].order.tokenS;
-            fills[i].amountS = ring.participations[i].fillAmountS;
-            fills[i].split = ring.participations[i].splitS;
-            fills[i].feeAmount = ring.participations[i].feeAmount;
+        uint ringSize = ring.size;
+        uint arrayDataSize = (ringSize + 1) * 32;
+        assembly {
+            fills := mload(0x40)
+            mstore(add(fills, 0), ringSize)
+            let fill := add(fills, arrayDataSize)
+            let participations := mload(add(ring, 32))                                  // participations
+
+            for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
+                // Store the memory location of this fill in the fills array
+                mstore(add(fills, mul(add(i, 1), 32)), fill)
+
+                let participation := mload(add(participations, add(32, mul(i, 32))))
+                let order := mload(participation)
+
+                mstore(add(fill,   0), mload(add(order, 864)))                           // hash
+                mstore(add(fill,  32), mload(add(order,   0)))                           // owner
+                mstore(add(fill,  64), mload(add(order,  32)))                           // tokenS
+                mstore(add(fill,  96), mload(add(participation, 256)))                   // fillAmountS
+                mstore(add(fill, 128), mload(add(participation,  32)))                   // splitS
+                mstore(add(fill, 160), mload(add(participation,  64)))                   // feeAmount
+
+                fill := add(fill, 192)
+            }
+            mstore(0x40, fill)
         }
-        return fills;
     }
 
     function transferTokens(
