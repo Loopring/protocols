@@ -1,20 +1,17 @@
 import fs = require("fs");
-import { ExchangeDeserializer } from "./exchange_deserializer";
-import { OrderInfo, RingsInfo } from "./types";
-import { Mining } from "./mining";
+import { RingsInfo } from "./types";
+import { ProtocolSimulator } from "./protocol_simulator";
 
 function parseArgs(): [boolean, string] {
   const args = process.argv.slice(2);
   let isBinary = true;
   let ringData = "";
   if (args.length == 0) {
-    console.log("error: no ringData found");
-    process.exit(1);
+    throw new Error("error: no ringData found");
   }
   if (args[0] === "-f") {
     const fileName = args[1];
     const fileContent = fs.readFileSync(fileName, 'utf8');
-    console.log(fileContent);
     try {
       const ringsInfo: RingsInfo = JSON.parse(fileContent);
       isBinary = false;
@@ -26,8 +23,7 @@ function parseArgs(): [boolean, string] {
     console.log(binData);
   } else {
     if (args[0].startsWith("-")) {
-      console.log("error: invalid argument:", args[0]);
-      process.exit(1);
+      throw new Error("error: invalid argument:" + args[0]);
     } else {
       ringData = args[0];
     }
@@ -39,19 +35,18 @@ function parseArgs(): [boolean, string] {
 
 function main() {
   const [isBinData, data] = parseArgs();
-  // console.log(isBinData);
-  // console.log(data);
-
   let ringsInfo: RingsInfo;
 
-  const deserializer: ExchangeDeserializer = new ExchangeDeserializer(undefined);
+  const protocolSimulator = new ProtocolSimulator(undefined);
   if (isBinData) {
-    const [mining, orders, rings] = deserializer.deserialize(data);
-    console.log(mining, orders, rings);
+    console.log("receive binary data, deserializing...");
+    ringsInfo = protocolSimulator.deserialize(data, "");
+    console.log("deserialize result:", ringsInfo);
   } else {
     ringsInfo = JSON.parse(data);
+    console.log("receive ringsInfo data:", ringsInfo);
   }
-  console.log(ringsInfo);
+
 }
 
 main();

@@ -9,7 +9,6 @@ import { OrderInfo, Spendable } from "./types";
 export class OrderUtil {
 
   private context: Context;
-  private multiHashUtil = new MultiHashUtil();
 
   constructor(context: Context) {
     this.context = context;
@@ -62,14 +61,16 @@ export class OrderUtil {
       const isOnchainOrder = await this.context.orderBook.orderSubmitted(orderHashHex);
       signatureValid = isRegistered || isOnchainOrder;
     } else {
-      signatureValid = this.multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
+      const multiHashUtil = new MultiHashUtil();
+      signatureValid = multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
     }
     order.valid = order.valid && ensure(signatureValid, "invalid order signature");
   }
 
   public checkDualAuthSignature(order: OrderInfo, miningHash: Buffer) {
     if (order.dualAuthSig) {
-      const signatureValid = this.multiHashUtil.verifySignature(order.dualAuthAddr, miningHash, order.dualAuthSig);
+      const multiHashUtil = new MultiHashUtil();
+      const signatureValid = multiHashUtil.verifySignature(order.dualAuthAddr, miningHash, order.dualAuthSig);
       order.valid = order.valid && ensure(signatureValid, "invalid order dual auth signature");
     }
   }
