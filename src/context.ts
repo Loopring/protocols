@@ -1,4 +1,5 @@
 import fs = require("fs");
+import Web3 = require("web3");
 
 export class Context {
 
@@ -50,6 +51,10 @@ export class Context {
     const feeHolderAbi = fs.readFileSync(ABIPath + "IFeeHolder.abi", "ascii");
     const orderBookAbi = fs.readFileSync(ABIPath + "IOrderBook.abi", "ascii");
     const burnRateTableAbi = fs.readFileSync(ABIPath + "IBurnRateTable.abi", "ascii");
+
+    if (!web3) {
+      web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    }
 
     this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
     this.TradeDelegateContract = web3.eth.contract(JSON.parse(tradeDelegateAbi));

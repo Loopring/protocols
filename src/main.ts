@@ -33,7 +33,7 @@ function parseArgs(): [boolean, string] {
 }
 
 
-function main() {
+async function main() {
   const [isBinData, data] = parseArgs();
   let ringsInfo: RingsInfo;
 
@@ -47,6 +47,9 @@ function main() {
     console.log("receive ringsInfo data:", ringsInfo);
   }
 
+  console.log("run simulator and report:");
+  const report = await protocolSimulator.simulateAndReport(ringsInfo);
+  console.log(report);
 }
 
 main();

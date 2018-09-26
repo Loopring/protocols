@@ -13,6 +13,7 @@ import { xor } from "./xor";
 export class ProtocolSimulator {
 
   public context: Context;
+  public offLineMode: boolean = false;
 
   private ringIndex: number = 0;
   private orderUtil: OrderUtil;
