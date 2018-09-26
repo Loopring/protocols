@@ -188,7 +188,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                 IRingSubmitter.Fill[] memory fills = ring.generateFills();
                 emit RingMined(
                     ctx.ringIndex++,
-                    0x0,
+                    ring.hash,
                     mining.feeRecipient,
                     fills
                 );
