@@ -135,12 +135,15 @@ library Data {
     }
 
     struct FeeContext {
-        bytes32[] data;
-        uint offset;
+        uint data;
+        uint ptr;
         Data.Ring ring;
         Data.Context ctx;
-        Data.Mining mining;
-        Data.Order order;
+        address feeRecipient;
         uint walletPercentage;
+        int16 waiveFeePercentage;
+        address owner;
+        address wallet;
+        bool P2P;
     }
 }

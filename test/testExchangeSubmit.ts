@@ -226,7 +226,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
           {
             tokenS: "GTO",
             tokenB: "WETH",
-p            amountS: 23e17,
+            amountS: 23e17,
             amountB: 31e17,
           },
         ],
