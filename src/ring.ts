@@ -409,15 +409,16 @@ export class Ring {
     }
 
     // Calculate burn rates and rebates
-    const [burnRate, rebateRate] =
-    await this.context.burnRateTable.getBurnAndRebateRate(order.owner, token, order.P2P);
+    const burnRateToken = (await this.context.burnRateTable.getBurnRate(token)).toNumber();
+    const burnRate = order.P2P ? (burnRateToken >> 16) : (burnRateToken & 0xFFFF);
+    const rebateRate = 0;
     // Miner fee
-    const minerBurn = Math.floor(minerFee * burnRate.toNumber() / this.context.feePercentageBase);
-    const minerRebate = Math.floor(minerFee * rebateRate.toNumber() / this.context.feePercentageBase);
+    const minerBurn = Math.floor(minerFee * burnRate / this.context.feePercentageBase);
+    const minerRebate = Math.floor(minerFee * rebateRate / this.context.feePercentageBase);
     minerFee = margin + (minerFee - minerBurn - minerRebate);
     // Wallet fee
-    const walletBurn = Math.floor(walletFee * burnRate.toNumber() / this.context.feePercentageBase);
-    const walletRebate = Math.floor(walletFee * rebateRate.toNumber() / this.context.feePercentageBase);
+    const walletBurn = Math.floor(walletFee * burnRate / this.context.feePercentageBase);
+    const walletRebate = Math.floor(walletFee * rebateRate / this.context.feePercentageBase);
     const feeToWallet = walletFee - walletBurn - walletRebate;
 
     // BEGIN diagnostics
@@ -643,10 +644,11 @@ export class Ring {
                                     this.context.feePercentageBase);
         const minerRebate = minerFeeBeforeWaive - minerFee;
         const totalFee = walletFee + minerFee;
-        const [burnRate, rebateRate] =
-        await this.context.burnRateTable.getBurnAndRebateRate(order.owner, token, order.P2P);
-        const burnRebate = Math.floor(totalFee * rebateRate.toNumber() / this.context.feePercentageBase);
-        const burn = Math.floor(totalFee * burnRate.toNumber() / this.context.feePercentageBase);
+        const burnRateToken = (await this.context.burnRateTable.getBurnRate(token)).toNumber();
+        const burnRate = order.P2P ? (burnRateToken >> 16) : (burnRateToken & 0xFFFF);
+        const rebateRate = 0;
+        const burnRebate = Math.floor(totalFee * rebateRate / this.context.feePercentageBase);
+        const burn = Math.floor(totalFee * burnRate / this.context.feePercentageBase);
         return [burn, minerRebate + burnRebate];
       };
       const [expectedBurnFee, expectedRebateFee] = await calculateBurnAndRebate(order.feeToken, order.fillAmountFee);
