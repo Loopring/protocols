@@ -114,7 +114,7 @@ library RingHelper {
         }
 
         for (i = 0; i < ring.size; i++) {
-            uint prevIndex = (i + ring.size - 1) % ring.size;
+            prevIndex = (i + ring.size - 1) % ring.size;
 
             // Check if this order needs to be completely filled
             if(ring.participations[i].order.allOrNone &&
@@ -530,19 +530,14 @@ library RingHelper {
                 minerFee = 0;
             }
 
-            // Calculate burn rates and rebates
-            (uint16 burnRate, uint16 rebateRate) = feeCtx.ctx.burnRateTable.getBurnAndRebateRate(
-                feeCtx.owner,
-                token,
-                feeCtx.P2P
-            );
+            uint32 burnRate = getBurnRate(feeCtx, token);
 
             // Miner fee
             minerFeeBurn = minerFee.mul(burnRate) / feeCtx.ctx.feePercentageBase;
-            minerFee = (minerFee - minerFeeBurn - minerFee.mul(rebateRate) / feeCtx.ctx.feePercentageBase);
+            minerFee = minerFee - minerFeeBurn;
             // Wallet fee
             walletFeeBurn = feeToWallet.mul(burnRate) / feeCtx.ctx.feePercentageBase;
-            feeToWallet = feeToWallet - walletFeeBurn - feeToWallet.mul(rebateRate) / feeCtx.ctx.feePercentageBase;
+            feeToWallet = feeToWallet - walletFeeBurn;
         }
         // Miner gets the margin without sharing it with the wallet or burning
         minerFee += margin;
@@ -590,6 +585,33 @@ library RingHelper {
         // Calculate the total fee payment after possible discounts (burn rebate + fee waiving)
         // and return the total rebate
         return (amount + margin).sub((feeToWallet + minerFee) + (minerFeeBurn + walletFeeBurn));
+    }
+
+    function getBurnRate(
+        Data.FeeContext memory feeCtx,
+        address token
+        )
+        internal
+        view
+        returns (uint32)
+    {
+        bytes32[] memory tokenBurnRates = feeCtx.ctx.tokenBurnRates;
+        uint length = tokenBurnRates.length;
+        for (uint i = 0; i < length; i += 2) {
+            if (token == address(tokenBurnRates[i])) {
+                uint32 burnRate = uint32(tokenBurnRates[i + 1]);
+                return feeCtx.P2P ? (burnRate / 0x10000) : (burnRate & 0xFFFF);
+            }
+        }
+        // Not found, add it to the list
+        uint32 burnRate = feeCtx.ctx.burnRateTable.getBurnRate(token);
+        assembly {
+            let ptr := add(tokenBurnRates, mul(add(1, length), 32))
+            mstore(ptr, token)                              // Token
+            mstore(add(ptr, 32), burnRate)                  // Burn rate
+            mstore(tokenBurnRates, add(length, 2))          // Lenght
+        }
+        return feeCtx.P2P ? (burnRate / 0x10000) : (burnRate & 0xFFFF);
     }
 
     function distributeMinerFeeToOwners(

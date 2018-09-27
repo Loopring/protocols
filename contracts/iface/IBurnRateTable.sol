@@ -74,14 +74,12 @@ contract IBurnRateTable {
         uint            tier
     );
 
-    function getBurnAndRebateRate(
-        address spender,
-        address token,
-        bool P2P
+    function getBurnRate(
+        address token
         )
         external
         view
-        returns (uint16, uint16);
+        returns (uint32 burnRate);
 
     function getTokenTier(
         address token

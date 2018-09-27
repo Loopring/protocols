@@ -50,6 +50,7 @@ library Data {
         IBurnRateTable burnRateTable;
         uint64 ringIndex;
         uint feePercentageBase;
+        bytes32[] tokenBurnRates;
     }
 
     struct Mining {

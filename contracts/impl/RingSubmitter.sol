@@ -129,6 +129,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         external
     {
+        bytes32[] memory tokenBurnRates;
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
             ITradeDelegate(delegateAddress),
@@ -139,8 +140,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             IOrderBook(orderBookAddress),
             IBurnRateTable(burnRateTableAddress),
             ringIndex,
-            FEE_PERCENTAGE_BASE
+            FEE_PERCENTAGE_BASE,
+            tokenBurnRates
         );
+
 
         // Check if the highest bit of ringIndex is '1'
         require((ctx.ringIndex >> 63) == 0, REENTRY);
@@ -153,6 +156,18 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             Data.Order[] memory orders,
             Data.Ring[]  memory rings
         ) = ExchangeDeserializer.deserialize(lrcTokenAddress, data);
+
+        // Allocate enough memory to store burn rates for all tokens even
+        // if every token is unique (max 2 unique tokens / order)
+        assembly {
+            tokenBurnRates := mload(0x40)
+            mstore(tokenBurnRates, 0)                               // Length
+            mstore(0x40, add(
+                tokenBurnRates,
+                add(32, mul(mload(orders), 64))
+            ))
+        }
+        ctx.tokenBurnRates = tokenBurnRates;
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].validateInfo(ctx);
@@ -212,7 +227,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             let size := 0
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
-                if gt(mload(add(order, 960)), 0) {
+                if gt(mload(add(order, 960)), 0) {                 // valid
                     mstore(add(ptr,   0), mload(add(order, 864)))  // hash
                     mstore(add(ptr,  32), mload(add(order, 928)))  // filledAmountS
 
@@ -294,5 +309,4 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             }
         }
     }
-
 }
