@@ -1,17 +1,17 @@
 import fs = require("fs");
-import { RingsInfo } from "./types";
 import { ProtocolSimulator } from "./protocol_simulator";
+import { RingsInfo } from "./types";
 
 function parseArgs(): [boolean, string] {
   const args = process.argv.slice(2);
   let isBinary = true;
   let ringData = "";
-  if (args.length == 0) {
+  if (args.length === 0) {
     throw new Error("error: no ringData found");
   }
   if (args[0] === "-f") {
     const fileName = args[1];
-    const fileContent = fs.readFileSync(fileName, 'utf8');
+    const fileContent = fs.readFileSync(fileName, "utf8");
     try {
       const ringsInfo: RingsInfo = JSON.parse(fileContent);
       isBinary = false;
@@ -31,7 +31,6 @@ function parseArgs(): [boolean, string] {
 
   return [isBinary, ringData];
 }
-
 
 async function main() {
   const [isBinData, data] = parseArgs();
