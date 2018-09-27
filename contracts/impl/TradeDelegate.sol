@@ -105,28 +105,30 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         notSuspended
         external
     {
-        require(batch.length % 4 == 0, INVALID_SIZE);
+        uint length = batch.length;
+        require(length % 4 == 0, INVALID_SIZE);
 
-        TradeDelegateData.TokenTransferData memory transfer;
-        uint transferPtr;
-        assembly {
-            transferPtr := transfer
-        }
-
-        for (uint i = 0; i < batch.length; i += 4) {
-            // Copy the data straight to the order struct from the call data
-            MemoryUtil.copyCallDataBytesInArray(0, transferPtr, i * 32, 4 * 32);
-
-            if (transfer.from != transfer.to && transfer.amount > 0) {
-                require(
-                    transfer.token.safeTransferFrom(
-                        transfer.from,
-                        transfer.to,
-                        transfer.amount
-                    ),
-                    TRANSFER_FAILURE
-                );
+        uint start = 68;
+        uint end = start + length * 32;
+        for (uint p = start; p < end; p += 128) {
+            address token;
+            address from;
+            address to;
+            uint amount;
+            assembly {
+                token := calldataload(add(p,  0))
+                from := calldataload(add(p, 32))
+                to := calldataload(add(p, 64))
+                amount := calldataload(add(p, 96))
             }
+            require(
+                token.safeTransferFrom(
+                    from,
+                    to,
+                    amount
+                ),
+                TRANSFER_FAILURE
+            );
         }
     }
 
@@ -135,9 +137,19 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         notSuspended
         external
     {
-        require(filledInfo.length % 2 == 0, INVALID_SIZE);
-        for (uint i = 0; i < filledInfo.length; i += 2) {
-            filled[filledInfo[i]] = uint(filledInfo[i + 1]);
+        uint length = filledInfo.length;
+        require(length % 2 == 0, INVALID_SIZE);
+
+        uint start = 68;
+        uint end = start + length * 32;
+        for (uint p = start; p < end; p += 64) {
+            bytes32 hash;
+            uint filledAmount;
+            assembly {
+                hash := calldataload(add(p,  0))
+                filledAmount := calldataload(add(p, 32))
+            }
+            filled[hash] = filledAmount;
         }
     }
 
@@ -243,26 +255,33 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         view
         returns (uint[] fills)
     {
-        require(batch.length % 5 == 0, INVALID_SIZE);
+        uint length = batch.length;
+        require(length % 5 == 0, INVALID_SIZE);
 
-        TradeDelegateData.OrderCheckCancelledData memory order;
-        uint orderPtr;
-        assembly {
-            orderPtr := order
-        }
+        uint start = 68;
+        uint end = start + length * 32;
+        uint i = 0;
+        fills = new uint[](length / 5);
+        for (uint p = start; p < end; p += 160) {
+            address broker;
+            address owner;
+            bytes32 hash;
+            uint validSince;
+            bytes20 tradingPair;
+            assembly {
+                broker := calldataload(add(p,  0))
+                owner := calldataload(add(p, 32))
+                hash := calldataload(add(p, 64))
+                validSince := calldataload(add(p, 96))
+                tradingPair := calldataload(add(p, 128))
+            }
+            bool valid = !cancelled[broker][hash];
+            valid = valid && validSince > tradingPairCutoffs[broker][tradingPair];
+            valid = valid && validSince > cutoffs[broker];
+            valid = valid && validSince > tradingPairCutoffsOwner[broker][owner][tradingPair];
+            valid = valid && validSince > cutoffsOwner[broker][owner];
 
-        fills = new uint[](batch.length / 5);
-        for (uint i = 0; i < batch.length; i += 5) {
-            // Copy the data straight to the order struct from the call data
-            MemoryUtil.copyCallDataBytesInArray(0, orderPtr, i * 32, 5 * 32);
-
-            bool valid = !cancelled[order.broker][order.hash];
-            valid = valid && order.validSince > tradingPairCutoffs[order.broker][order.tradingPair];
-            valid = valid && order.validSince > cutoffs[order.broker];
-            valid = valid && order.validSince > tradingPairCutoffsOwner[order.broker][order.owner][order.tradingPair];
-            valid = valid && order.validSince > cutoffsOwner[order.broker][order.owner];
-
-            fills[i / 5] = valid ? filled[order.hash] : ~uint(0);
+            fills[i++] = valid ? filled[hash] : ~uint(0);
         }
     }
 
