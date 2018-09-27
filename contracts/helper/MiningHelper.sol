@@ -33,18 +33,21 @@ library MiningHelper {
         internal
         pure
     {
+
         if (mining.miner == 0x0) {
             mining.miner = mining.feeRecipient;
-        } else {
-            // We do not support any interceptors for now
-            // (bool registered, address interceptor) = ctx.minerBrokerRegistry.getBroker(
-            //     mining.feeRecipient,
-            //     mining.miner
-            // );
-            // if (registered) {
-            //     mining.interceptor = interceptor;
-            // }
         }
+
+        // We do not support any interceptors for now
+        /* else { */
+        /*     (bool registered, address interceptor) = ctx.minerBrokerRegistry.getBroker( */
+        /*         mining.feeRecipient, */
+        /*         mining.miner */
+        /*     ); */
+        /*     if (registered) { */
+        /*         mining.interceptor = interceptor; */
+        /*     } */
+        /* } */
     }
 
     function updateHash(
