@@ -97,7 +97,21 @@ export class ProtocolSimulator {
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring, mining, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);
-        transferItems.push(...ringReport.transferItems);
+        // Merge transfer items if possible
+        for (const ringTransferItem of ringReport.transferItems) {
+          let addNew = true;
+          for (const transferItem of transferItems) {
+            if (transferItem.token === ringTransferItem.token &&
+                transferItem.from === ringTransferItem.from &&
+                transferItem.to === ringTransferItem.to) {
+                transferItem.amount += ringTransferItem.amount;
+                addNew = false;
+            }
+          }
+          if (addNew) {
+            transferItems.push(ringTransferItem);
+          }
+        }
       }
     }
 
