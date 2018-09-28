@@ -50,6 +50,10 @@ library Data {
         uint64 ringIndex;
         uint feePercentageBase;
         bytes32[] tokenBurnRates;
+        uint feeData;
+        uint feePtr;
+        uint transferData;
+        uint transferPtr;
     }
 
     struct Mining {
@@ -135,8 +139,6 @@ library Data {
     }
 
     struct FeeContext {
-        uint data;
-        uint ptr;
         Data.Ring ring;
         Data.Context ctx;
         address feeRecipient;

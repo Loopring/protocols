@@ -254,45 +254,16 @@ library RingHelper {
         )
         internal
     {
-        bytes4 batchTransferSelector = ctx.delegate.batchTransfer.selector;
-        address tradeDelegateAddress = address(ctx.delegate);
-        uint data;
-        uint ptr;
-        assembly {
-            data := mload(0x40)
-            mstore(data, batchTransferSelector)
-            mstore(add(data, 4), 32)
-            ptr := add(data, 68)
-            mstore(0x40, add(ptr, mul(mul(mload(ring), 12), 32)))
-        }
         for (uint i = 0; i < ring.size; i++) {
-            ptr = transferTokensForParticipation(
-                ptr,
+            transferTokensForParticipation(
                 ctx,
                 ring.participations[i],
                 ring.participations[(i + ring.size - 1) % ring.size]
             );
         }
-        assembly {
-            mstore(add(data, 36), div(sub(ptr, add(data, 68)), 32))             // length
-
-            let success := call(
-                gas,                                // forward all gas
-                tradeDelegateAddress,               // external address
-                0,                                  // wei
-                data,                               // input start
-                sub(ptr, data),                     // input length
-                data,                               // output start
-                32                                  // output length
-            )
-            if eq(success, 0) {
-                revert(0, 0)
-            }
-        }
     }
 
     function transferTokensForParticipation(
-        uint ptr,
         Data.Context ctx,
         Data.Participation p,
         Data.Participation prevP
@@ -322,22 +293,25 @@ library RingHelper {
         }
 
         // Transfers
-        ptr = addTokenTransfer(
-            ptr,
+        ctx.transferPtr = addTokenTransfer(
+            ctx.transferData,
+            ctx.transferPtr,
             p.order.tokenS,
             p.order.owner,
             prevP.order.tokenRecipient,
             amountSToBuyer
         );
-        ptr = addTokenTransfer(
-            ptr,
+        ctx.transferPtr = addTokenTransfer(
+            ctx.transferData,
+            ctx.transferPtr,
             p.order.tokenS,
             p.order.owner,
             address(ctx.feeHolder),
             amountSToFeeHolder
         );
-        ptr = addTokenTransfer(
-            ptr,
+        ctx.transferPtr = addTokenTransfer(
+            ctx.transferData,
+            ctx.transferPtr,
             p.order.feeToken,
             p.order.owner,
             address(ctx.feeHolder),
@@ -361,11 +335,10 @@ library RingHelper {
                 amountFeeToFeeHolder
             );
         }
-
-        return ptr;
     }
 
     function addTokenTransfer(
+        uint data,
         uint ptr,
         address token,
         address from,
@@ -378,12 +351,35 @@ library RingHelper {
     {
         if (amount > 0 && from != to) {
             assembly {
-                mstore(add(ptr,  0), token)
-                mstore(add(ptr, 32), from)
-                mstore(add(ptr, 64), to)
-                mstore(add(ptr, 96), amount)
+                // Try to find an existing fee payment of the same token to the same owner
+                let addNew := 1
+                for { let p := data } and(lt(p, ptr), eq(addNew, 1)) { p := add(p, 128) } {
+                    let dataToken := mload(add(p,  0))
+                    let dataFrom := mload(add(p, 32))
+                    let dataTo := mload(add(p, 64))
+                    let dataAmount := mload(add(p, 96))
+                    // if(token == dataToken && from == dataFrom && to == dataTo)
+                    if and(and(eq(token, dataToken), eq(from, dataFrom)), eq(to, dataTo)) {
+                        // dataAmount = amount.add(dataAmount);
+                        dataAmount := add(amount, dataAmount)
+                        // require(dataAmount > amount) (safe math)
+                        if sub(1, gt(dataAmount, amount)) {
+                            revert(0, 0)
+                        }
+                        mstore(add(p, 96), dataAmount)
+                        addNew := 0
+                    }
+                }
+                // Only update the position if we add a new transfer
+                if eq(addNew, 1) {
+                    mstore(add(ptr,  0), token)
+                    mstore(add(ptr, 32), from)
+                    mstore(add(ptr, 64), to)
+                    mstore(add(ptr, 96), amount)
+                    ptr := add(ptr, 128)
+                }
             }
-            return ptr + 128;
+            return ptr;
         } else {
             return ptr;
         }
@@ -417,22 +413,7 @@ library RingHelper {
         )
         internal
     {
-        uint maxSize = (ring.size + 3) * 3 * ring.size * 3;
-        bytes4 batchAddFeeBalancesSelector = ctx.feeHolder.batchAddFeeBalances.selector;
-        address feeHolderAddress = address(ctx.feeHolder);
-        uint data;
-        uint ptr;
-        assembly {
-            data := mload(0x40)
-            mstore(data, batchAddFeeBalancesSelector)
-            mstore(add(data, 4), 32)
-            ptr := add(data, 68)
-            mstore(0x40, add(ptr, mul(maxSize, 32)))
-        }
-
         Data.FeeContext memory feeCtx;
-        feeCtx.data = ptr;
-        feeCtx.ptr = ptr;
         feeCtx.ring = ring;
         feeCtx.ctx = ctx;
         feeCtx.feeRecipient = mining.feeRecipient;
@@ -441,24 +422,6 @@ library RingHelper {
                 feeCtx,
                 ring.participations[i]
             );
-        }
-        ptr = feeCtx.ptr;
-
-        assembly {
-            mstore(add(data, 36), div(sub(ptr, add(data, 68)), 32))             // length
-
-            let success := call(
-                gas,                                // forward all gas
-                feeHolderAddress,                   // external address
-                0,                                  // wei
-                data,                               // input start
-                sub(ptr, data),                     // input length
-                data,                               // output start
-                32                                  // output length
-            )
-            if eq(success, 0) {
-                revert(0, 0)
-            }
         }
     }
 
@@ -559,24 +522,24 @@ library RingHelper {
                 feeCtx.ctx.feePercentageBase;
         }
 
-        feeCtx.ptr = addFeePayment(
-            feeCtx.data,
-            feeCtx.ptr,
+        feeCtx.ctx.feePtr = addFeePayment(
+            feeCtx.ctx.feeData,
+            feeCtx.ctx.feePtr,
             token,
             feeCtx.wallet,
             feeToWallet
         );
-        feeCtx.ptr = addFeePayment(
-            feeCtx.data,
-            feeCtx.ptr,
+        feeCtx.ctx.feePtr = addFeePayment(
+            feeCtx.ctx.feeData,
+            feeCtx.ctx.feePtr,
             token,
             feeCtx.feeRecipient,
             feeToMiner
         );
         // Pay the burn rate with the feeHolder as owner
-        feeCtx.ptr = addFeePayment(
-            feeCtx.data,
-            feeCtx.ptr,
+        feeCtx.ctx.feePtr = addFeePayment(
+            feeCtx.ctx.feeData,
+            feeCtx.ctx.feePtr,
             token,
             address(feeCtx.ctx.feeHolder),
             minerFeeBurn + walletFeeBurn
@@ -628,9 +591,9 @@ library RingHelper {
                 uint feeToOwner = minerFee
                     .mul(uint(-p.order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
 
-                feeCtx.ptr = addFeePayment(
-                    feeCtx.data,
-                    feeCtx.ptr,
+                feeCtx.ctx.feePtr = addFeePayment(
+                    feeCtx.ctx.feeData,
+                    feeCtx.ctx.feePtr,
                     token,
                     p.order.owner,
                     feeToOwner);
@@ -652,31 +615,33 @@ library RingHelper {
         if (amount == 0) {
             return ptr;
         } else {
-            // Try to find an existing fee payment of the same token to the same owner
-            for (uint p = data; p < ptr; p += 96) {
-                address dataToken;
-                address dataOwner;
-                uint dataAmount;
-                assembly {
-                    dataToken := mload(add(p,  0))
-                    dataOwner := mload(add(p, 32))
-                    dataAmount := mload(add(p, 64))
-                }
-                if(token == dataToken && owner == dataOwner) {
-                    dataAmount = dataAmount.add(amount);
-                    assembly {
-                        mstore(add(p,  64), dataAmount)
-                    }
-                    return ptr;
-                }
-
-            }
             assembly {
-                mstore(add(ptr,  0), token)
-                mstore(add(ptr, 32), owner)
-                mstore(add(ptr, 64), amount)
+                // Try to find an existing fee payment of the same token to the same owner
+                let addNew := 1
+                for { let p := data } and(lt(p, ptr), eq(addNew, 1)) { p := add(p, 96) } {
+                    let dataToken := mload(add(p,  0))
+                    let dataOwner := mload(add(p, 32))
+                    let dataAmount := mload(add(p, 64))
+                    // if(token == dataToken && owner == dataOwner)
+                    if and(eq(token, dataToken), eq(owner, dataOwner)) {
+                        // dataAmount = amount.add(dataAmount);
+                        dataAmount := add(amount, dataAmount)
+                        // require(dataAmount > amount) (safe math)
+                        if sub(1, gt(dataAmount, amount)) {
+                            revert(0, 0)
+                        }
+                        mstore(add(p, 64), dataAmount)
+                        addNew := 0
+                    }
+                }
+                if eq(addNew, 1) {
+                    mstore(add(ptr,  0), token)
+                    mstore(add(ptr, 32), owner)
+                    mstore(add(ptr, 64), amount)
+                    ptr := add(ptr, 96)
+                }
             }
-            return ptr + 96;
+            return ptr;
         }
     }
 

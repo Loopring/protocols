@@ -136,7 +136,11 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             IBurnRateTable(burnRateTableAddress),
             ringIndex,
             FEE_PERCENTAGE_BASE,
-            tokenBurnRates
+            tokenBurnRates,
+            0,
+            0,
+            0,
+            0
         );
 
 
@@ -152,17 +156,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             Data.Ring[]  memory rings
         ) = ExchangeDeserializer.deserialize(lrcTokenAddress, data);
 
-        // Allocate enough memory to store burn rates for all tokens even
-        // if every token is unique (max 2 unique tokens / order)
-        assembly {
-            tokenBurnRates := mload(0x40)
-            mstore(tokenBurnRates, 0)                               // Length
-            mstore(0x40, add(
-                tokenBurnRates,
-                add(32, mul(mload(orders), 64))
-            ))
-        }
-        ctx.tokenBurnRates = tokenBurnRates;
+        // Allocate memory that is used to batch things for all rings
+        setupLists(ctx, orders, rings);
 
         for (uint i = 0; i < orders.length; i++) {
             orders[i].validateInfo(ctx);
@@ -206,12 +201,110 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                 emit InvalidRing(ring.hash);
             }
         }
+        // Do all token transfers for all rings
+        batchTransferTokens(ctx);
+        // Do all fee payments for all rings
+        batchPayFees(ctx);
+        // Update all order stats
         updateOrdersStats(ctx, orders);
 
         ringIndex = ctx.ringIndex;
     }
 
-    function updateOrdersStats(Data.Context ctx, Data.Order[] orders) internal {
+    function setupLists(
+        Data.Context ctx,
+        Data.Order[] orders,
+        Data.Ring[] rings
+        )
+        internal
+        pure
+    {
+        setupTokenBurnRateList(ctx, orders);
+        setupFeePaymentList(ctx, rings);
+        setupTokenTransferList(ctx, rings);
+    }
+
+    function setupTokenBurnRateList(
+        Data.Context ctx,
+        Data.Order[] orders
+        )
+        internal
+        pure
+    {
+        // Allocate enough memory to store burn rates for all tokens even
+        // if every token is unique (max 2 unique tokens / order)
+        uint maxNumTokenBurnRates = orders.length * 2;
+        bytes32[] memory tokenBurnRates;
+        assembly {
+            tokenBurnRates := mload(0x40)
+            mstore(tokenBurnRates, 0)                               // Length
+            mstore(0x40, add(
+                tokenBurnRates,
+                add(32, mul(maxNumTokenBurnRates, 64))
+            ))
+        }
+        ctx.tokenBurnRates = tokenBurnRates;
+    }
+
+    function setupFeePaymentList(
+        Data.Context ctx,
+        Data.Ring[] rings
+        )
+        internal
+        pure
+    {
+        uint totalMaxSizeFeePayments = 0;
+        for (uint i = 0; i < rings.length; i++) {
+            // Up to (ringSize + 3) * 3 payments per order (because of fee sharing by miner)
+            uint ringSize = rings[i].size;
+            uint maxSize = (ringSize + 3) * 3 * ringSize * 3;
+            totalMaxSizeFeePayments += maxSize;
+        }
+        bytes4 batchAddFeeBalancesSelector = ctx.feeHolder.batchAddFeeBalances.selector;
+        uint ptr;
+        assembly {
+            let data := mload(0x40)
+            mstore(data, batchAddFeeBalancesSelector)
+            mstore(add(data, 4), 32)
+            ptr := add(data, 68)
+            mstore(0x40, add(ptr, mul(totalMaxSizeFeePayments, 32)))
+        }
+        ctx.feeData = ptr;
+        ctx.feePtr = ptr;
+    }
+
+    function setupTokenTransferList(
+        Data.Context ctx,
+        Data.Ring[] rings
+        )
+        internal
+        pure
+    {
+        uint totalMaxSizeTransfers = 0;
+        for (uint i = 0; i < rings.length; i++) {
+            // Up to 3 transfers per order
+            uint maxSize = 3 * rings[i].size * 4;
+            totalMaxSizeTransfers += maxSize;
+        }
+        bytes4 batchTransferSelector = ctx.delegate.batchTransfer.selector;
+        uint ptr;
+        assembly {
+            let data := mload(0x40)
+            mstore(data, batchTransferSelector)
+            mstore(add(data, 4), 32)
+            ptr := add(data, 68)
+            mstore(0x40, add(ptr, mul(totalMaxSizeTransfers, 32)))
+        }
+        ctx.transferData = ptr;
+        ctx.transferPtr = ptr;
+    }
+
+    function updateOrdersStats(
+        Data.Context ctx,
+        Data.Order[] orders
+        )
+        internal
+    {
         bytes4 batchUpdateFilledSelector = ctx.delegate.batchUpdateFilled.selector;
         address tradeDelegateAddress = address(ctx.delegate);
         assembly {
@@ -222,6 +315,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             let size := 0
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
+                // if (order.valid)
                 if gt(mload(add(order, 960)), 0) {                 // valid
                     mstore(add(ptr,   0), mload(add(order, 864)))  // hash
                     mstore(add(ptr,  32), mload(add(order, 928)))  // filledAmountS
@@ -247,7 +341,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         }
     }
 
-    function batchGetFilledAndCheckCancelled(Data.Context ctx, Data.Order[] orders)
+    function batchGetFilledAndCheckCancelled(
+        Data.Context ctx,
+        Data.Order[] orders
+        )
         internal
     {
         bytes4 batchGetFilledAndCheckCancelledSelector = ctx.delegate.batchGetFilledAndCheckCancelled.selector;
@@ -256,22 +353,23 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             let data := mload(0x40)
             mstore(data, batchGetFilledAndCheckCancelledSelector)
             mstore(add(data,  4), 32)
-            mstore(add(data, 36), mul(mload(orders), 5))       // length
+            mstore(add(data, 36), mul(mload(orders), 5))            // length
             let ptr := add(data, 68)
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
-                mstore(add(ptr,   0), mload(add(order, 288)))  // broker
-                mstore(add(ptr,  32), mload(add(order,   0)))  // owner
-                mstore(add(ptr,  64), mload(add(order, 864)))  // hash
-                mstore(add(ptr,  96), mload(add(order, 160)))  // validSince
+                mstore(add(ptr,   0), mload(add(order, 288)))       // broker
+                mstore(add(ptr,  32), mload(add(order,   0)))       // owner
+                mstore(add(ptr,  64), mload(add(order, 864)))       // hash
+                mstore(add(ptr,  96), mload(add(order, 160)))       // validSince
+                // bytes20(order.tokenS) ^ bytes20(order.tokenB)    // tradingPair
                 mstore(add(ptr, 128), mul(
                     xor(
                         mload(add(order, 32)),                 // tokenS
                         mload(add(order, 64))                  // tokenB
                     ),
-                    0x1000000000000000000000000)               // shift left 12 bytes
+                    0x1000000000000000000000000)               // shift left 12 bytes (bytes20 is padded on the right)
                 )
-                ptr := add(ptr, 160)                           // 5 * 32
+                ptr := add(ptr, 160)                                // 5 * 32
             }
             // Return data is stored just like the call data without the signature:
             // 0x00: Offset to data
@@ -287,6 +385,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                 data,                               // output start
                 returnDataSize                      // output length
             )
+            // Check if the call was successful and the return data is the expected size
             if or(eq(success, 0), sub(1, eq(returndatasize(), returnDataSize)))  {
                 revert(0, 0)
             }
@@ -294,7 +393,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
                 let fill := mload(add(data,  mul(add(i, 2), 32)))
                 mstore(add(order, 928), fill)                           // filledAmountS
-                // order.valid = order.valid && (order.filledAmountS != ~uint(0));
+                // order.valid = order.valid && (order.filledAmountS != ~uint(0))
                 mstore(add(order, 960),                                 // valid
                     and(
                         gt(mload(add(order, 960)), 0),
@@ -304,4 +403,57 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             }
         }
     }
+
+    function batchTransferTokens(
+        Data.Context ctx
+        )
+        internal
+    {
+        address tradeDelegateAddress = address(ctx.delegate);
+        uint data = ctx.transferData - 68;
+        uint ptr = ctx.transferPtr;
+        assembly {
+            mstore(add(data, 36), div(sub(ptr, add(data, 68)), 32))             // length
+
+            let success := call(
+                gas,                                // forward all gas
+                tradeDelegateAddress,               // external address
+                0,                                  // wei
+                data,                               // input start
+                sub(ptr, data),                     // input length
+                data,                               // output start
+                32                                  // output length
+            )
+            if eq(success, 0) {
+                revert(0, 0)
+            }
+        }
+    }
+
+    function batchPayFees(
+        Data.Context ctx
+        )
+        internal
+    {
+        address feeHolderAddress = address(ctx.feeHolder);
+        uint data = ctx.feeData - 68;
+        uint ptr = ctx.feePtr;
+        assembly {
+            mstore(add(data, 36), div(sub(ptr, add(data, 68)), 32))             // length
+
+            let success := call(
+                gas,                                // forward all gas
+                feeHolderAddress,                   // external address
+                0,                                  // wei
+                data,                               // input start
+                sub(ptr, data),                     // input length
+                data,                               // output start
+                32                                  // output length
+            )
+            if eq(success, 0) {
+                revert(0, 0)
+            }
+        }
+    }
+
 }
