@@ -574,7 +574,6 @@ export class ExchangeTestUtil {
       WETHToken.address,
       tradeDelegate.address,
       brokerRegistry.address,
-      this.context.minerBrokerRegistry.address,
       OrderRegistry.address,
       feeHolder.address,
       this.context.orderBook.address,
@@ -582,7 +581,7 @@ export class ExchangeTestUtil {
     );
 
     const orderBrokerRegistryAddress = await this.ringSubmitter.orderBrokerRegistryAddress();
-    const minerBrokerRegistryAddress = await this.ringSubmitter.minerBrokerRegistryAddress();
+    // const minerBrokerRegistryAddress = await this.ringSubmitter.minerBrokerRegistryAddress();
     const feePercentageBase = (await this.ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
 
     const currBlockNumber = web3.eth.blockNumber;
@@ -591,7 +590,6 @@ export class ExchangeTestUtil {
                                    currBlockTimestamp,
                                    tradeDelegate.address,
                                    orderBrokerRegistryAddress,
-                                   minerBrokerRegistryAddress,
                                    OrderRegistry.address,
                                    feeHolder.address,
                                    this.context.orderBook.address,
@@ -628,7 +626,6 @@ export class ExchangeTestUtil {
     this.ringSubmitter = ringSubmitter;
 
     const orderBrokerRegistryAddress = await ringSubmitter.orderBrokerRegistryAddress();
-    const minerBrokerRegistryAddress = await ringSubmitter.minerBrokerRegistryAddress();
     const feePercentageBase = (await ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
 
     const currBlockNumber = web3.eth.blockNumber;
@@ -637,7 +634,6 @@ export class ExchangeTestUtil {
                            currBlockTimestamp,
                            TradeDelegate.address,
                            orderBrokerRegistryAddress,
-                           minerBrokerRegistryAddress,
                            OrderRegistry.address,
                            FeeHolder.address,
                            OrderBook.address,

@@ -70,7 +70,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
     address public  wethTokenAddress            = 0x0;
     address public  delegateAddress             = 0x0;
     address public  orderBrokerRegistryAddress  = 0x0;
-    address public  minerBrokerRegistryAddress  = 0x0;
     address public  orderRegistryAddress        = 0x0;
     address public  feeHolderAddress            = 0x0;
     address public  orderBookAddress            = 0x0;
@@ -95,7 +94,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         address _wethTokenAddress,
         address _delegateAddress,
         address _orderBrokerRegistryAddress,
-        address _minerBrokerRegistryAddress,
         address _orderRegistryAddress,
         address _feeHolderAddress,
         address _orderBookAddress,
@@ -107,7 +105,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         require(_wethTokenAddress != 0x0, ZERO_ADDRESS);
         require(_delegateAddress != 0x0, ZERO_ADDRESS);
         require(_orderBrokerRegistryAddress != 0x0, ZERO_ADDRESS);
-        require(_minerBrokerRegistryAddress != 0x0, ZERO_ADDRESS);
         require(_orderRegistryAddress != 0x0, ZERO_ADDRESS);
         require(_feeHolderAddress != 0x0, ZERO_ADDRESS);
         require(_orderBookAddress != 0x0, ZERO_ADDRESS);
@@ -117,7 +114,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         wethTokenAddress = _wethTokenAddress;
         delegateAddress = _delegateAddress;
         orderBrokerRegistryAddress = _orderBrokerRegistryAddress;
-        minerBrokerRegistryAddress = _minerBrokerRegistryAddress;
         orderRegistryAddress = _orderRegistryAddress;
         feeHolderAddress = _feeHolderAddress;
         orderBookAddress = _orderBookAddress;
@@ -134,7 +130,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             lrcTokenAddress,
             ITradeDelegate(delegateAddress),
             IBrokerRegistry(orderBrokerRegistryAddress),
-            IBrokerRegistry(minerBrokerRegistryAddress),
             IOrderRegistry(orderRegistryAddress),
             IFeeHolder(feeHolderAddress),
             IOrderBook(orderBookAddress),

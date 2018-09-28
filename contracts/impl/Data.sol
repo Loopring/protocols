@@ -43,7 +43,6 @@ library Data {
         address lrcTokenAddress;
         ITradeDelegate  delegate;
         IBrokerRegistry orderBrokerRegistry;
-        IBrokerRegistry minerBrokerRegistry;
         IOrderRegistry  orderRegistry;
         IFeeHolder feeHolder;
         IOrderBook orderBook;
