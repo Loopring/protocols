@@ -32,14 +32,14 @@ export class Mining {
     if (!this.miner) {
       this.miner = this.feeRecipient;
     } else {
-      const [registered, interceptor] = await this.context.minerBrokerRegistry.getBroker(
-        this.feeRecipient,
-        this.miner,
-      );
-      // assert(registered, "miner unregistered");
-      if (registered) {
-        this.interceptor = interceptor;
-      }
+      // const [registered, interceptor] = await this.context.minerBrokerRegistry.getBroker(
+      //   this.feeRecipient,
+      //   this.miner,
+      // );
+      // // assert(registered, "miner unregistered");
+      // if (registered) {
+      //   this.interceptor = interceptor;
+      // }
     }
   }
 

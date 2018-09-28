@@ -30,7 +30,6 @@ export class Context {
               blockTimestamp: number,
               tradeDelegateAddress: string,
               orderBrokerRegistryAddress: string,
-              minerBrokerRegistryAddress: string,
               orderRegistryAddress: string,
               feeHolderAddress: string,
               orderBookAddress: string,
@@ -67,7 +66,6 @@ export class Context {
 
     this.tradeDelegate = this.TradeDelegateContract.at(tradeDelegateAddress);
     this.orderBrokerRegistry = this.BrokerRegistryContract.at(orderBrokerRegistryAddress);
-    this.minerBrokerRegistry = this.BrokerRegistryContract.at(minerBrokerRegistryAddress);
     this.orderRegistry = this.OrderRegistryContract.at(orderRegistryAddress);
     this.feeHolder = this.FeeHolderContract.at(feeHolderAddress);
     this.orderBook = this.OrderBookContract.at(orderBookAddress);
