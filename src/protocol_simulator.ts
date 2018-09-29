@@ -13,6 +13,7 @@ import { xor } from "./xor";
 export class ProtocolSimulator {
 
   public context: Context;
+  public offLineMode: boolean = false;
 
   private ringIndex: number = 0;
   private orderUtil: OrderUtil;
@@ -68,9 +69,11 @@ export class ProtocolSimulator {
       this.orderUtil.checkP2P(order);
       order.hash = this.orderUtil.getOrderHash(order);
       await this.orderUtil.updateBrokerAndInterceptor(order);
+    }
+    await this.batchGetFilledAndCheckCancelled(orders);
+    for (const order of orders) {
       await this.orderUtil.checkBrokerSignature(order);
     }
-    await this.checkCutoffsAndCancelledOrders(orders);
 
     for (const ring of rings) {
       ring.updateHash();
@@ -85,21 +88,30 @@ export class ProtocolSimulator {
       this.orderUtil.checkDualAuthSignature(order, mining.hash);
     }
 
-    for (const order of orders) {
-      await this.orderUtil.updateStates(order);
-    }
-
     const ringMinedEvents: RingMinedEvent[] = [];
     const transferItems: TransferItem[] = [];
     const feeBalances: { [id: string]: any; } = {};
     for (const ring of rings) {
       ring.checkOrdersValid();
       ring.checkForSubRings();
-      // await ring.checkTokensRegistered();
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring, mining, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);
-        transferItems.push(...ringReport.transferItems);
+        // Merge transfer items if possible
+        for (const ringTransferItem of ringReport.transferItems) {
+          let addNew = true;
+          for (const transferItem of transferItems) {
+            if (transferItem.token === ringTransferItem.token &&
+                transferItem.from === ringTransferItem.from &&
+                transferItem.to === ringTransferItem.to) {
+                transferItem.amount += ringTransferItem.amount;
+                addNew = false;
+            }
+          }
+          if (addNew) {
+            transferItems.push(ringTransferItem);
+          }
+        }
       }
     }
 
@@ -132,7 +144,11 @@ export class ProtocolSimulator {
 
     const filledAmounts: { [hash: string]: number; } = {};
     for (const order of orders) {
-      filledAmounts[order.hash.toString("hex")] = order.filledAmountS ? order.filledAmountS : 0;
+      let filledAmountS = order.filledAmountS ? order.filledAmountS : 0;
+      if (!order.valid) {
+        filledAmountS = await this.context.tradeDelegate.filled("0x" + order.hash.toString("hex")).toNumber();
+      }
+      filledAmounts[order.hash.toString("hex")] = filledAmountS;
     }
 
     const payments: TransactionPayments = {
@@ -161,7 +177,7 @@ export class ProtocolSimulator {
     return {ringMinedEvent, transferItems};
   }
 
-  private async checkCutoffsAndCancelledOrders(orders: OrderInfo[]) {
+  private async batchGetFilledAndCheckCancelled(orders: OrderInfo[]) {
     const bitstream = new Bitstream();
     for (const order of orders) {
       bitstream.addAddress(order.broker, 32);
@@ -172,11 +188,12 @@ export class ProtocolSimulator {
       bitstream.addNumber(0, 12);
     }
 
-    const ordersValid = await this.context.tradeDelegate.batchCheckCutoffsAndCancelled(bitstream.getBytes32Array());
+    const fills = await this.context.tradeDelegate.batchGetFilledAndCheckCancelled(bitstream.getBytes32Array());
 
-    const bits = new BN(ordersValid.toString(16), 16);
+    const cancelledValue = new BigNumber("F".repeat(64), 16);
     for (const [i, order] of orders.entries()) {
-        order.valid = order.valid && ensure(bits.testn(i), "order is cancelled or cut off");
+      order.filledAmountS = fills[i].toNumber();
+      order.valid = order.valid && ensure(!fills[i].equals(cancelledValue), "order is cancelled");
     }
   }
 }

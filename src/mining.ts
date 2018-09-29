@@ -18,8 +18,6 @@ export class Mining {
 
   private context: Context;
 
-  private multiHashUtil = new MultiHashUtil();
-
   constructor(context: Context,
               feeRecipient: string,
               miner: string,
@@ -34,14 +32,14 @@ export class Mining {
     if (!this.miner) {
       this.miner = this.feeRecipient;
     } else {
-      const [registered, interceptor] = await this.context.minerBrokerRegistry.getBroker(
-        this.feeRecipient,
-        this.miner,
-      );
-      // assert(registered, "miner unregistered");
-      if (registered) {
-        this.interceptor = interceptor;
-      }
+      // const [registered, interceptor] = await this.context.minerBrokerRegistry.getBroker(
+      //   this.feeRecipient,
+      //   this.miner,
+      // );
+      // // assert(registered, "miner unregistered");
+      // if (registered) {
+      //   this.interceptor = interceptor;
+      // }
     }
   }
 
@@ -64,10 +62,12 @@ export class Mining {
   }
 
   public checkMinerSignature(transactionOrigin: string) {
+    const multiHashUtil = new MultiHashUtil();
+
     if (!this.sig) {
       return (transactionOrigin === this.miner);
     } else {
-      return this.multiHashUtil.verifySignature(this.miner, this.hash, this.sig);
+      return multiHashUtil.verifySignature(this.miner, this.hash, this.sig);
     }
   }
 

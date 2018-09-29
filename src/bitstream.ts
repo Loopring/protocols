@@ -90,6 +90,11 @@ export class Bitstream {
   public extractBytesX(offset: number, length: number) {
     const start = offset * 2;
     const end = start + length * 2;
+
+    if (this.data.length < end) {
+      throw new Error("substring index out of range:[" + start + ", " + end + "]");
+    }
+
     return new Buffer(this.data.substring(start, end), "hex");
   }
 

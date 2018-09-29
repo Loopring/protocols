@@ -1,4 +1,5 @@
 import fs = require("fs");
+import Web3 = require("web3");
 
 export class Context {
 
@@ -29,7 +30,6 @@ export class Context {
               blockTimestamp: number,
               tradeDelegateAddress: string,
               orderBrokerRegistryAddress: string,
-              minerBrokerRegistryAddress: string,
               orderRegistryAddress: string,
               feeHolderAddress: string,
               orderBookAddress: string,
@@ -51,6 +51,10 @@ export class Context {
     const orderBookAbi = fs.readFileSync(ABIPath + "IOrderBook.abi", "ascii");
     const burnRateTableAbi = fs.readFileSync(ABIPath + "IBurnRateTable.abi", "ascii");
 
+    if (!web3) {
+      web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    }
+
     this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
     this.TradeDelegateContract = web3.eth.contract(JSON.parse(tradeDelegateAbi));
     this.BrokerRegistryContract = web3.eth.contract(JSON.parse(brokerRegistryAbi));
@@ -62,7 +66,6 @@ export class Context {
 
     this.tradeDelegate = this.TradeDelegateContract.at(tradeDelegateAddress);
     this.orderBrokerRegistry = this.BrokerRegistryContract.at(orderBrokerRegistryAddress);
-    this.minerBrokerRegistry = this.BrokerRegistryContract.at(minerBrokerRegistryAddress);
     this.orderRegistry = this.OrderRegistryContract.at(orderRegistryAddress);
     this.feeHolder = this.FeeHolderContract.at(feeHolderAddress);
     this.orderBook = this.OrderBookContract.at(orderBookAddress);

@@ -15,6 +15,8 @@ export class MultiHashUtil {
     try {
       if (web3) {
         this.web3Instance = web3;
+      } else {
+        this.web3Instance = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
       }
     } catch (err) {
       console.log("get web3 instance in Order class failed. err:", err);

@@ -9,7 +9,6 @@ import { OrderInfo, Spendable } from "./types";
 export class OrderUtil {
 
   private context: Context;
-  private multiHashUtil = new MultiHashUtil();
 
   constructor(context: Context) {
     this.context = context;
@@ -52,21 +51,26 @@ export class OrderUtil {
 
   public async checkBrokerSignature(order: OrderInfo) {
     let signatureValid = true;
-    if (!order.sig) {
+    // If the order was already partially filled we don't have to check the signature again
+    if (order.filledAmountS > 0) {
+      signatureValid = true;
+    } else if (!order.sig) {
       const orderHashHex = "0x" + order.hash.toString("hex");
       const isRegistered = await this.context.orderRegistry.isOrderHashRegistered(order.broker,
                                                                                   orderHashHex);
       const isOnchainOrder = await this.context.orderBook.orderSubmitted(orderHashHex);
       signatureValid = isRegistered || isOnchainOrder;
     } else {
-      signatureValid = this.multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
+      const multiHashUtil = new MultiHashUtil();
+      signatureValid = multiHashUtil.verifySignature(order.broker, order.hash, order.sig);
     }
     order.valid = order.valid && ensure(signatureValid, "invalid order signature");
   }
 
   public checkDualAuthSignature(order: OrderInfo, miningHash: Buffer) {
     if (order.dualAuthSig) {
-      const signatureValid = this.multiHashUtil.verifySignature(order.dualAuthAddr, miningHash, order.dualAuthSig);
+      const multiHashUtil = new MultiHashUtil();
+      const signatureValid = multiHashUtil.verifySignature(order.dualAuthAddr, miningHash, order.dualAuthSig);
       order.valid = order.valid && ensure(signatureValid, "invalid order dual auth signature");
     }
   }
@@ -169,10 +173,6 @@ export class OrderUtil {
 
   public checkP2P(orderInfo: OrderInfo) {
     orderInfo.P2P = (orderInfo.tokenSFeePercentage > 0 || orderInfo.tokenBFeePercentage > 0);
-  }
-
-  public async updateStates(orderInfo: OrderInfo) {
-    orderInfo.filledAmountS = await this.context.tradeDelegate.filled("0x" + orderInfo.hash.toString("hex")).toNumber();
   }
 
   public async getSpendableS(order: OrderInfo) {
