@@ -47,11 +47,12 @@ library RingHelper {
             let data := mload(0x40)
             let ptr := data
             for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
-                let participations := mload(add(ring, 32))
-                let order := mload(mload(add(participations, add(32, mul(i, 32)))))
+                let participations := mload(add(ring, 32))                              // ring.participations
+                let participation := mload(add(participations, add(32, mul(i, 32))))    // participations[i]
+                let order := mload(participation)                                       // participation.order
 
-                let waiveFeePercentage := and(mload(add(order, 672)), 0xFFFF)
-                let orderHash := mload(add(order, 864))
+                let waiveFeePercentage := and(mload(add(order, 704)), 0xFFFF)           // order.waiveFeePercentage
+                let orderHash := mload(add(order, 896))                                 // order.hash
 
                 mstore(add(ptr, 2), waiveFeePercentage)
                 mstore(ptr, orderHash)
@@ -226,23 +227,23 @@ library RingHelper {
             fills := mload(0x40)
             mstore(add(fills, 0), ringSize)
             let fill := add(fills, arrayDataSize)
-            let participations := mload(add(ring, 32))                                  // participations
+            let participations := mload(add(ring, 32))                                 // ring.participations
 
             for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
                 // Store the memory location of this fill in the fills array
                 mstore(add(fills, mul(add(i, 1), 32)), fill)
 
-                let participation := mload(add(participations, add(32, mul(i, 32))))
-                let order := mload(participation)
+                let participation := mload(add(participations, add(32, mul(i, 32))))   // participations[i]
+                let order := mload(participation)                                      // participation.order
 
-                mstore(add(fill,   0), mload(add(order, 864)))                           // hash
-                mstore(add(fill,  32), mload(add(order,   0)))                           // owner
-                mstore(add(fill,  64), mload(add(order,  32)))                           // tokenS
-                mstore(add(fill,  96), mload(add(participation, 256)))                   // fillAmountS
-                mstore(add(fill, 128), mload(add(participation,  32)))                   // splitS
-                mstore(add(fill, 160), mload(add(participation,  64)))                   // feeAmount
+                mstore(add(fill,   0), mload(add(order, 896)))                         // order.hash
+                mstore(add(fill,  32), mload(add(order,  32)))                         // order.owner
+                mstore(add(fill,  64), mload(add(order,  64)))                         // order.tokenS
+                mstore(add(fill,  96), mload(add(participation, 256)))                 // participation.fillAmountS
+                mstore(add(fill, 128), mload(add(participation,  32)))                 // participation.splitS
+                mstore(add(fill, 160), mload(add(participation,  64)))                 // participation.feeAmount
 
-                fill := add(fill, 192)
+                fill := add(fill, 192)                                                 // 6 * 32
             }
             mstore(0x40, fill)
         }
