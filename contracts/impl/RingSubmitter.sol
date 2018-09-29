@@ -316,9 +316,9 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
                 // if (order.valid)
-                if gt(mload(add(order, 960)), 0) {                 // valid
-                    mstore(add(ptr,   0), mload(add(order, 864)))  // hash
-                    mstore(add(ptr,  32), mload(add(order, 928)))  // filledAmountS
+                if gt(mload(add(order, 960)), 0) {                          // order.valid
+                    mstore(add(ptr,   0), mload(add(order, 864)))           // order.hash
+                    mstore(add(ptr,  32), mload(add(order, 928)))           // order.filledAmountS
 
                     ptr := add(ptr, 64)
                     size := add(size, 2)
@@ -353,23 +353,23 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             let data := mload(0x40)
             mstore(data, batchGetFilledAndCheckCancelledSelector)
             mstore(add(data,  4), 32)
-            mstore(add(data, 36), mul(mload(orders), 5))            // length
+            mstore(add(data, 36), mul(mload(orders), 5))                // orders.length
             let ptr := add(data, 68)
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
-                let order := mload(add(orders, mul(add(i, 1), 32)))
-                mstore(add(ptr,   0), mload(add(order, 288)))       // broker
-                mstore(add(ptr,  32), mload(add(order,   0)))       // owner
-                mstore(add(ptr,  64), mload(add(order, 864)))       // hash
-                mstore(add(ptr,  96), mload(add(order, 160)))       // validSince
-                // bytes20(order.tokenS) ^ bytes20(order.tokenB)    // tradingPair
+                let order := mload(add(orders, mul(add(i, 1), 32)))     // orders[i]
+                mstore(add(ptr,   0), mload(add(order, 288)))           // order.broker
+                mstore(add(ptr,  32), mload(add(order,   0)))           // order.owner
+                mstore(add(ptr,  64), mload(add(order, 864)))           // order.hash
+                mstore(add(ptr,  96), mload(add(order, 160)))           // order.validSince
+                // bytes20(order.tokenS) ^ bytes20(order.tokenB)        // tradingPair
                 mstore(add(ptr, 128), mul(
                     xor(
-                        mload(add(order, 32)),                 // tokenS
-                        mload(add(order, 64))                  // tokenB
+                        mload(add(order, 32)),                 // order.tokenS
+                        mload(add(order, 64))                  // order.tokenB
                     ),
                     0x1000000000000000000000000)               // shift left 12 bytes (bytes20 is padded on the right)
                 )
-                ptr := add(ptr, 160)                                // 5 * 32
+                ptr := add(ptr, 160)                                    // 5 * 32
             }
             // Return data is stored just like the call data without the signature:
             // 0x00: Offset to data
@@ -390,14 +390,14 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                 revert(0, 0)
             }
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
-                let order := mload(add(orders, mul(add(i, 1), 32)))
-                let fill := mload(add(data,  mul(add(i, 2), 32)))
-                mstore(add(order, 928), fill)                           // filledAmountS
+                let order := mload(add(orders, mul(add(i, 1), 32)))     // orders[i]
+                let fill := mload(add(data,  mul(add(i, 2), 32)))       // fills[i]
+                mstore(add(order, 928), fill)                           // order.filledAmountS
                 // order.valid = order.valid && (order.filledAmountS != ~uint(0))
-                mstore(add(order, 960),                                 // valid
+                mstore(add(order, 960),                                 // order.valid
                     and(
-                        gt(mload(add(order, 960)), 0),
-                        sub(1, eq(fill, not(0)))
+                        gt(mload(add(order, 960)), 0),                  // order.valid
+                        sub(1, eq(fill, not(0)))                        // fill != ~uint(0
                     )
                 )
             }

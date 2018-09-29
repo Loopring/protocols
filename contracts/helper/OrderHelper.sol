@@ -65,25 +65,25 @@ library OrderHelper {
 
             // We store the members back to front so we can overwrite data for members smaller than 32
             // (mstore always writes 32 bytes)
-            mstore(add(ptr, sub(348, 31)), mload(add(order, 544)))   // allOrNone
-            mstore(add(ptr, sub(346, 30)), mload(add(order, 736)))   // tokenBFeePercentage
-            mstore(add(ptr, sub(344, 30)), mload(add(order, 704)))   // tokenSFeePercentage
-            mstore(add(ptr, sub(342, 30)), mload(add(order, 640)))   // feePercentage
-            mstore(add(ptr, sub(340, 30)), mload(add(order, 800)))   // walletSplitPercentage
-            mstore(add(ptr, sub(320, 12)), mload(add(order, 576)))   // feeToken
-            mstore(add(ptr, sub(300, 12)), mload(add(order, 768)))   // tokenRecipient
-            mstore(add(ptr, sub(280, 12)), mload(add(order, 416)))   // wallet
-            mstore(add(ptr, sub(260, 12)), mload(add(order, 384)))   // orderInterceptor
-            mstore(add(ptr, sub(240, 12)), mload(add(order, 288)))   // broker
-            mstore(add(ptr, sub(220, 12)), mload(add(order, 256)))   // dualAuthAddr
-            mstore(add(ptr, sub(200, 12)), mload(add(order,  64)))   // tokenB
-            mstore(add(ptr, sub(180, 12)), mload(add(order,  32)))   // tokenS
-            mstore(add(ptr, sub(160, 12)), mload(add(order,   0)))   // owner
-            mstore(add(ptr, sub(128,  0)), mload(add(order, 448)))   // validUntil
-            mstore(add(ptr, sub( 96,  0)), mload(add(order, 160)))   // validSince
-            mstore(add(ptr, sub( 64,  0)), mload(add(order, 608)))   // feeAmount
-            mstore(add(ptr, sub( 32,  0)), mload(add(order, 128)))   // amountB
-            mstore(add(ptr, sub(  0,  0)), mload(add(order,  96)))   // amountS
+            mstore(add(ptr, sub(348, 31)), mload(add(order, 544)))   // order.allOrNone
+            mstore(add(ptr, sub(346, 30)), mload(add(order, 736)))   // order.tokenBFeePercentage
+            mstore(add(ptr, sub(344, 30)), mload(add(order, 704)))   // order.tokenSFeePercentage
+            mstore(add(ptr, sub(342, 30)), mload(add(order, 640)))   // order.feePercentage
+            mstore(add(ptr, sub(340, 30)), mload(add(order, 800)))   // order.walletSplitPercentage
+            mstore(add(ptr, sub(320, 12)), mload(add(order, 576)))   // order.feeToken
+            mstore(add(ptr, sub(300, 12)), mload(add(order, 768)))   // order.tokenRecipient
+            mstore(add(ptr, sub(280, 12)), mload(add(order, 416)))   // order.wallet
+            mstore(add(ptr, sub(260, 12)), mload(add(order, 384)))   // order.orderInterceptor
+            mstore(add(ptr, sub(240, 12)), mload(add(order, 288)))   // order.broker
+            mstore(add(ptr, sub(220, 12)), mload(add(order, 256)))   // order.dualAuthAddr
+            mstore(add(ptr, sub(200, 12)), mload(add(order,  64)))   // order.tokenB
+            mstore(add(ptr, sub(180, 12)), mload(add(order,  32)))   // order.tokenS
+            mstore(add(ptr, sub(160, 12)), mload(add(order,   0)))   // order.owner
+            mstore(add(ptr, sub(128,  0)), mload(add(order, 448)))   // order.validUntil
+            mstore(add(ptr, sub( 96,  0)), mload(add(order, 160)))   // order.validSince
+            mstore(add(ptr, sub( 64,  0)), mload(add(order, 608)))   // order.feeAmount
+            mstore(add(ptr, sub( 32,  0)), mload(add(order, 128)))   // order.amountB
+            mstore(add(ptr, sub(  0,  0)), mload(add(order,  96)))   // order.amountS
 
             hash := keccak256(ptr, 349)  // 5*32 + 9*20 + 4*2 + 1*1
         }

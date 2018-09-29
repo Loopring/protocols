@@ -59,18 +59,18 @@ library MiningHelper {
     {
         bytes32 hash;
         assembly {
-            let ring := mload(add(rings, 32))
-            let ringHashes := mload(add(ring, 64))                          // hash
+            let ring := mload(add(rings, 32))                               // rings[0]
+            let ringHashes := mload(add(ring, 64))                          // ring.hash
             for { let i := 1 } lt(i, mload(rings)) { i := add(i, 1) } {
-                ring := mload(add(rings, mul(add(i, 1), 32)))
-                ringHashes := xor(ringHashes, mload(add(ring, 64)))         // hash
+                ring := mload(add(rings, mul(add(i, 1), 32)))               // rings[i]
+                ringHashes := xor(ringHashes, mload(add(ring, 64)))         // ring.hash
             }
             let data := mload(0x40)
             data := add(data, 12)
             // Store data back to front to allow overwriting data at the front because of padding
             mstore(add(data, 40), ringHashes)                               // ringHashes
-            mstore(sub(add(data, 20), 12), mload(add(mining, 32)))          // miner
-            mstore(sub(data, 12),          mload(add(mining,  0)))          // feeRecipient
+            mstore(sub(add(data, 20), 12), mload(add(mining, 32)))          // mining.miner
+            mstore(sub(data, 12),          mload(add(mining,  0)))          // mining.feeRecipient
             hash := keccak256(data, 72)                                     // 20 + 20 + 32
         }
         mining.hash = hash;
