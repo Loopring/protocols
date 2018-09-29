@@ -41,28 +41,26 @@ library RingHelper {
         internal
         pure
     {
-        uint hashSizePerOrder = 32 + 2;
-        bytes memory data = new bytes(hashSizePerOrder * ring.size);
-        for (uint i = 0; i < ring.size; i++) {
-            Data.Participation memory p = ring.participations[i];
-            bytes32 orderHash = p.order.hash;
-            int16 waiveFeePercentage = p.order.waiveFeePercentage;
-            assembly {
-                let dst := add(
-                    add(data, 32),
-                    mul(i, hashSizePerOrder)
-                )
-                mstore(
-                    add(dst, 2),
-                    and(waiveFeePercentage, 0xffff)
-                )
-                mstore(
-                    dst,
-                    orderHash
-                )
+        uint ringSize = ring.size;
+        bytes32 hash;
+        assembly {
+            let data := mload(0x40)
+            let ptr := data
+            for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
+                let participations := mload(add(ring, 32))
+                let order := mload(mload(add(participations, add(32, mul(i, 32)))))
+
+                let waiveFeePercentage := and(mload(add(order, 672)), 0xFFFF)
+                let orderHash := mload(add(order, 864))
+
+                mstore(add(ptr, 2), waiveFeePercentage)
+                mstore(ptr, orderHash)
+
+                ptr := add(ptr, 34)
             }
+            hash := keccak256(data, sub(ptr, data))
         }
-        ring.hash = keccak256(data);
+        ring.hash = hash;
     }
 
     function calculateFillAmountAndFee(
@@ -78,28 +76,31 @@ library RingHelper {
 
         uint i;
         int j;
-        Data.Participation memory p;
+        uint prevIndex;
 
         for (i = 0; i < ring.size; i++) {
-            p = ring.participations[i];
-            p.setMaxFillAmounts(
+            ring.participations[i].setMaxFillAmounts(
                 ctx
             );
         }
 
         uint smallest = 0;
         for (j = int(ring.size) - 1; j >= 0; j--) {
+            prevIndex = (uint(j) + ring.size - 1) % ring.size;
             smallest = calculateOrderFillAmounts(
-                ring,
                 ctx,
+                ring.participations[uint(j)],
+                ring.participations[prevIndex],
                 uint(j),
                 smallest
             );
         }
         for (j = int(ring.size) - 1; j >= int(smallest); j--) {
+            prevIndex = (uint(j) + ring.size - 1) % ring.size;
             calculateOrderFillAmounts(
-                ring,
                 ctx,
+                ring.participations[uint(j)],
+                ring.participations[prevIndex],
                 uint(j),
                 smallest
             );
@@ -109,27 +110,28 @@ library RingHelper {
         // (e.g. the owner of order 0 could use LRC as feeToken in order 0, while
         // the same owner can also sell LRC in order 2).
         for (i = 0; i < ring.size; i++) {
-            ring.participations[i].order.reserveAmountS(p.fillAmountS);
+            ring.participations[i].order.reserveAmountS(ring.participations[i].fillAmountS);
         }
 
         for (i = 0; i < ring.size; i++) {
-            uint prevIndex = (i + ring.size - 1) % ring.size;
-            Data.Participation memory prevP = ring.participations[prevIndex];
-            p = ring.participations[i];
+            prevIndex = (i + ring.size - 1) % ring.size;
 
             // Check if this order needs to be completely filled
-            if(p.order.allOrNone && p.fillAmountB != p.order.amountB) {
+            if(ring.participations[i].order.allOrNone &&
+               ring.participations[i].fillAmountB != ring.participations[i].order.amountB) {
                 ring.valid = false;
                 break;
             }
 
-            bool valid = p.calculateFees(prevP, ctx);
+            bool valid = ring.participations[i].calculateFees(ring.participations[prevIndex], ctx);
             if (!valid) {
                 ring.valid = false;
                 break;
             }
-            if (p.order.waiveFeePercentage < 0) {
-                ring.minerFeesToOrdersPercentage += uint(-p.order.waiveFeePercentage);
+
+            int16 waiveFeePercentage = ring.participations[i].order.waiveFeePercentage;
+            if (waiveFeePercentage < 0) {
+                ring.minerFeesToOrdersPercentage += uint(-waiveFeePercentage);
             }
         }
         // Miner can only distribute 100% of its fees to all orders combined
@@ -137,14 +139,14 @@ library RingHelper {
 
         // Ring calculations are done. Make sure te remove all spendable reservations for this ring
         for (i = 0; i < ring.size; i++) {
-            p = ring.participations[i];
-            p.order.resetReservations();
+            ring.participations[i].order.resetReservations();
         }
     }
 
     function calculateOrderFillAmounts(
-        Data.Ring ring,
         Data.Context ctx,
+        Data.Participation p,
+        Data.Participation prevP,
         uint i,
         uint smallest
         )
@@ -155,19 +157,17 @@ library RingHelper {
         // Default to the same smallest index
         smallest_ = smallest;
 
-        Data.Participation memory p = ring.participations[i];
-        uint j = (i + ring.size - 1) % ring.size;
-        Data.Participation memory prevP = ring.participations[j];
-
-
-        uint postFeeFillAmountS = p.fillAmountS
-            .mul(ctx.feePercentageBase - p.order.tokenSFeePercentage) / ctx.feePercentageBase;
+        uint postFeeFillAmountS = p.fillAmountS;
+        uint tokenSFeePercentage = p.order.tokenSFeePercentage;
+        if (tokenSFeePercentage > 0) {
+            postFeeFillAmountS = p.fillAmountS
+                .mul(ctx.feePercentageBase - tokenSFeePercentage) / ctx.feePercentageBase;
+        }
 
         if (prevP.fillAmountB > postFeeFillAmountS) {
             smallest_ = i;
             prevP.fillAmountB = postFeeFillAmountS;
-            prevP.fillAmountS = prevP.fillAmountB
-                .mul(prevP.order.amountS) / prevP.order.amountB;
+            prevP.fillAmountS = postFeeFillAmountS.mul(prevP.order.amountS) / prevP.order.amountB;
         }
     }
 
@@ -179,8 +179,7 @@ library RingHelper {
     {
         ring.valid = ring.valid && (ring.size > 1 && ring.size <= 8); // invalid ring size
         for (uint i = 0; i < ring.size; i++) {
-            Data.Participation memory p = ring.participations[i];
-            ring.valid = ring.valid && p.order.valid;
+            ring.valid = ring.valid && ring.participations[i].order.valid;
         }
     }
 
@@ -210,8 +209,7 @@ library RingHelper {
 
         // Adjust the orders
         for (uint i = 0; i < ring.size; i++) {
-            Data.Participation memory p = ring.participations[i];
-            p.adjustOrderState();
+            ring.participations[i].adjustOrderState();
         }
     }
 
@@ -220,20 +218,34 @@ library RingHelper {
         )
         internal
         pure
-        returns (IRingSubmitter.Fill[])
+        returns (IRingSubmitter.Fill[] memory fills)
     {
-        IRingSubmitter.Fill[] memory fills = new IRingSubmitter.Fill[](ring.size);
-        Data.Participation memory p;
-        for (uint i = 0; i < ring.size; i++) {
-            p = ring.participations[i];
-            fills[i].orderHash = p.order.hash;
-            fills[i].owner = p.order.owner;
-            fills[i].tokenS = p.order.tokenS;
-            fills[i].amountS = p.fillAmountS;
-            fills[i].split = p.splitS;
-            fills[i].feeAmount = p.feeAmount;
+        uint ringSize = ring.size;
+        uint arrayDataSize = (ringSize + 1) * 32;
+        assembly {
+            fills := mload(0x40)
+            mstore(add(fills, 0), ringSize)
+            let fill := add(fills, arrayDataSize)
+            let participations := mload(add(ring, 32))                                  // participations
+
+            for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
+                // Store the memory location of this fill in the fills array
+                mstore(add(fills, mul(add(i, 1), 32)), fill)
+
+                let participation := mload(add(participations, add(32, mul(i, 32))))
+                let order := mload(participation)
+
+                mstore(add(fill,   0), mload(add(order, 864)))                           // hash
+                mstore(add(fill,  32), mload(add(order,   0)))                           // owner
+                mstore(add(fill,  64), mload(add(order,  32)))                           // tokenS
+                mstore(add(fill,  96), mload(add(participation, 256)))                   // fillAmountS
+                mstore(add(fill, 128), mload(add(participation,  32)))                   // splitS
+                mstore(add(fill, 160), mload(add(participation,  64)))                   // feeAmount
+
+                fill := add(fill, 192)
+            }
+            mstore(0x40, fill)
         }
-        return fills;
     }
 
     function transferTokens(
@@ -242,60 +254,72 @@ library RingHelper {
         )
         internal
     {
-        // It only costs 3 gas/word for extra memory, so just create the maximum array size needed
-        bytes32[] memory data = new bytes32[](ring.size * 3 * 4);
-        uint offset = 0;
-        Data.Participation memory p;
-        Data.Participation memory prevP;
-        address feeHolder = address(ctx.feeHolder);
         for (uint i = 0; i < ring.size; i++) {
-            p = ring.participations[i];
-            prevP = ring.participations[(i + ring.size - 1) % ring.size];
-
-            // If the buyer needs to pay fees in tokenB, the seller needs
-            // to send the tokenS amount to the fee holder contract
-            uint amountSToBuyer = p.fillAmountS
-                .sub(p.feeAmountS)
-                .sub(prevP.feeAmountB.sub(prevP.rebateB));
-
-            uint amountSToFeeHolder = p.feeAmountS.sub(p.rebateS)
-                .add(prevP.feeAmountB.sub(prevP.rebateB))
-                .add(p.splitS);
-
-            uint amountFeeToFeeHolder = p.feeAmount.sub(p.rebateFee);
-
-            if (p.order.tokenS == p.order.feeToken) {
-                amountSToFeeHolder += amountFeeToFeeHolder;
-                amountFeeToFeeHolder = 0;
-            }
-
-            // Transfers
-            offset = addTokenTransfer(
-                data,
-                offset,
-                p.order.tokenS,
-                p.order.owner,
-                prevP.order.tokenRecipient,
-                amountSToBuyer
+            transferTokensForParticipation(
+                ctx,
+                ring.participations[i],
+                ring.participations[(i + ring.size - 1) % ring.size]
             );
-            offset = addTokenTransfer(
-                data,
-                offset,
-                p.order.tokenS,
-                p.order.owner,
-                feeHolder,
-                amountSToFeeHolder
-            );
-            offset = addTokenTransfer(
-                data,
-                offset,
-                p.order.feeToken,
-                p.order.owner,
-                feeHolder,
-                amountFeeToFeeHolder
-            );
+        }
+    }
 
-            // onTokenSpent broker callbacks
+    function transferTokensForParticipation(
+        Data.Context ctx,
+        Data.Participation p,
+        Data.Participation prevP
+        )
+        internal
+        returns (uint)
+    {
+        uint buyerFeeAmountAfterRebateB = prevP.feeAmountB.sub(prevP.rebateB);
+
+        // If the buyer needs to pay fees in tokenB, the seller needs
+        // to send the tokenS amount to the fee holder contract
+        uint amountSToBuyer = p.fillAmountS
+            .sub(p.feeAmountS)
+            .sub(buyerFeeAmountAfterRebateB);
+
+        uint amountSToFeeHolder = p.feeAmountS
+            .sub(p.rebateS)
+            .add(buyerFeeAmountAfterRebateB)
+            .add(p.splitS);
+
+        uint amountFeeToFeeHolder = p.feeAmount
+            .sub(p.rebateFee);
+
+        if (p.order.tokenS == p.order.feeToken) {
+            amountSToFeeHolder += amountFeeToFeeHolder;
+            amountFeeToFeeHolder = 0;
+        }
+
+        // Transfers
+        ctx.transferPtr = addTokenTransfer(
+            ctx.transferData,
+            ctx.transferPtr,
+            p.order.tokenS,
+            p.order.owner,
+            prevP.order.tokenRecipient,
+            amountSToBuyer
+        );
+        ctx.transferPtr = addTokenTransfer(
+            ctx.transferData,
+            ctx.transferPtr,
+            p.order.tokenS,
+            p.order.owner,
+            address(ctx.feeHolder),
+            amountSToFeeHolder
+        );
+        ctx.transferPtr = addTokenTransfer(
+            ctx.transferData,
+            ctx.transferPtr,
+            p.order.feeToken,
+            p.order.owner,
+            address(ctx.feeHolder),
+            amountFeeToFeeHolder
+        );
+
+        // onTokenSpent broker callbacks
+        if (p.order.brokerInterceptor != 0x0) {
             onTokenSpent(
                 p.order.brokerInterceptor,
                 p.order.owner,
@@ -311,16 +335,11 @@ library RingHelper {
                 amountFeeToFeeHolder
             );
         }
-        // Patch in the correct length of the data array
-        assembly {
-            mstore(data, offset)
-        }
-        ctx.delegate.batchTransfer(data);
     }
 
     function addTokenTransfer(
-        bytes32[] data,
-        uint offset,
+        uint data,
+        uint ptr,
         address token,
         address from,
         address to,
@@ -330,17 +349,39 @@ library RingHelper {
         pure
         returns (uint)
     {
-        if (from != to && amount > 0) {
+        if (amount > 0 && from != to) {
             assembly {
-                let start := add(data, mul(add(offset, 1), 32))
-                mstore(add(start,  0), token)
-                mstore(add(start, 32), from)
-                mstore(add(start, 64), to)
-                mstore(add(start, 96), amount)
+                // Try to find an existing fee payment of the same token to the same owner
+                let addNew := 1
+                for { let p := data } and(lt(p, ptr), eq(addNew, 1)) { p := add(p, 128) } {
+                    let dataToken := mload(add(p,  0))
+                    let dataFrom := mload(add(p, 32))
+                    let dataTo := mload(add(p, 64))
+                    let dataAmount := mload(add(p, 96))
+                    // if(token == dataToken && from == dataFrom && to == dataTo)
+                    if and(and(eq(token, dataToken), eq(from, dataFrom)), eq(to, dataTo)) {
+                        // dataAmount = amount.add(dataAmount);
+                        dataAmount := add(amount, dataAmount)
+                        // require(dataAmount > amount) (safe math)
+                        if sub(1, gt(dataAmount, amount)) {
+                            revert(0, 0)
+                        }
+                        mstore(add(p, 96), dataAmount)
+                        addNew := 0
+                    }
+                }
+                // Only update the position if we add a new transfer
+                if eq(addNew, 1) {
+                    mstore(add(ptr,  0), token)
+                    mstore(add(ptr, 32), from)
+                    mstore(add(ptr, 64), to)
+                    mstore(add(ptr, 96), amount)
+                    ptr := add(ptr, 128)
+                }
             }
-            return offset + 4;
+            return ptr;
         } else {
-            return offset;
+            return ptr;
         }
     }
 
@@ -372,48 +413,52 @@ library RingHelper {
         )
         internal
     {
-        // It only costs 3 gas/word for extra memory, so just create the maximum array size needed
-        bytes32[] memory data = new bytes32[]((ring.size + 3) * 3 * ring.size * 3);
-
         Data.FeeContext memory feeCtx;
-        feeCtx.data = data;
         feeCtx.ring = ring;
         feeCtx.ctx = ctx;
-        feeCtx.mining = mining;
-
-        Data.Participation memory p;
+        feeCtx.feeRecipient = mining.feeRecipient;
         for (uint i = 0; i < ring.size; i++) {
-            p = ring.participations[i];
-
-            uint walletPercentage = p.order.P2P ? 100 : (p.order.wallet == 0x0 ? 0 : p.order.walletSplitPercentage);
-            feeCtx.order = p.order;
-            feeCtx.walletPercentage = walletPercentage;
-
-            p.rebateFee = payFeesAndBurn(
+            payFeesForParticipation(
                 feeCtx,
-                p.order.feeToken,
-                p.feeAmount,
-                0
-            );
-            p.rebateS = payFeesAndBurn(
-                feeCtx,
-                p.order.tokenS,
-                p.feeAmountS,
-                p.splitS
-            );
-            p.rebateB = payFeesAndBurn(
-                feeCtx,
-                p.order.tokenB,
-                p.feeAmountB,
-                0
+                ring.participations[i]
             );
         }
-        // Patch in the correct length of the data array
-        uint offset = feeCtx.offset;
-        assembly {
-            mstore(data, offset)
-        }
-        ctx.feeHolder.batchAddFeeBalances(data);
+    }
+
+    function payFeesForParticipation(
+        Data.FeeContext memory feeCtx,
+        Data.Participation memory p
+        )
+        internal
+        view
+        returns (uint)
+    {
+        uint walletPercentage = p.order.P2P ? 100 : (p.order.wallet == 0x0 ? 0 : p.order.walletSplitPercentage);
+        feeCtx.walletPercentage = walletPercentage;
+
+        feeCtx.waiveFeePercentage = p.order.waiveFeePercentage;
+        feeCtx.owner = p.order.owner;
+        feeCtx.wallet = p.order.wallet;
+        feeCtx.P2P = p.order.P2P;
+
+        p.rebateFee = payFeesAndBurn(
+            feeCtx,
+            p.order.feeToken,
+            p.feeAmount,
+            0
+        );
+        p.rebateS = payFeesAndBurn(
+            feeCtx,
+            p.order.tokenS,
+            p.feeAmountS,
+            p.splitS
+        );
+        p.rebateB = payFeesAndBurn(
+            feeCtx,
+            p.order.tokenB,
+            p.feeAmountB,
+            0
+        );
     }
 
     function payFeesAndBurn(
@@ -430,31 +475,35 @@ library RingHelper {
             return 0;
         }
 
-        uint feeToWallet = amount.mul(feeCtx.walletPercentage) / 100;
-        uint minerFee = amount - feeToWallet;
+        uint feeToWallet = 0;
+        uint minerFee = 0;
+        uint minerFeeBurn = 0;
+        uint walletFeeBurn = 0;
+        if (amount > 0) {
+            feeToWallet = amount.mul(feeCtx.walletPercentage) / 100;
+            minerFee = amount - feeToWallet;
 
-        // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
-        if (feeCtx.order.waiveFeePercentage > 0) {
-            minerFee = minerFee.mul(
-                feeCtx.ctx.feePercentageBase - uint(feeCtx.order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
-        } else if (feeCtx.order.waiveFeePercentage < 0) {
-            // No fees need to be paid by this order
-            minerFee = 0;
+            // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
+            if (feeCtx.waiveFeePercentage > 0) {
+                minerFee = minerFee.mul(
+                    feeCtx.ctx.feePercentageBase - uint(feeCtx.waiveFeePercentage)) /
+                    feeCtx.ctx.feePercentageBase;
+            } else if (feeCtx.waiveFeePercentage < 0) {
+                // No fees need to be paid by this order
+                minerFee = 0;
+            }
+
+            uint32 burnRate = getBurnRate(feeCtx, token);
+
+            // Miner fee
+            minerFeeBurn = minerFee.mul(burnRate) / feeCtx.ctx.feePercentageBase;
+            minerFee = minerFee - minerFeeBurn;
+            // Wallet fee
+            walletFeeBurn = feeToWallet.mul(burnRate) / feeCtx.ctx.feePercentageBase;
+            feeToWallet = feeToWallet - walletFeeBurn;
         }
-
-        // Calculate burn rates and rebates
-        (uint16 burnRate, uint16 rebateRate) = feeCtx.ctx.burnRateTable.getBurnAndRebateRate(
-            feeCtx.order.owner,
-            token,
-            feeCtx.order.P2P
-        );
-
-        // Miner fee
-        uint minerFeeBurn = minerFee.mul(burnRate) / feeCtx.ctx.feePercentageBase;
-        minerFee = margin + (minerFee - minerFeeBurn - minerFee.mul(rebateRate) / feeCtx.ctx.feePercentageBase);
-        // Wallet fee
-        uint walletFeeBurn = feeToWallet.mul(burnRate) / feeCtx.ctx.feePercentageBase;
-        feeToWallet = feeToWallet - walletFeeBurn - feeToWallet.mul(rebateRate) / feeCtx.ctx.feePercentageBase;
+        // Miner gets the margin without sharing it with the wallet or burning
+        minerFee += margin;
 
         // Fees can be paid out in different tokens so we can't easily accumulate the total fee
         // that needs to be paid out to order owners. So we pay out each part out here to all
@@ -473,24 +522,24 @@ library RingHelper {
                 feeCtx.ctx.feePercentageBase;
         }
 
-        feeCtx.offset = addFeePayment(
-            feeCtx.data,
-            feeCtx.offset,
+        feeCtx.ctx.feePtr = addFeePayment(
+            feeCtx.ctx.feeData,
+            feeCtx.ctx.feePtr,
             token,
-            feeCtx.order.wallet,
+            feeCtx.wallet,
             feeToWallet
         );
-        feeCtx.offset = addFeePayment(
-            feeCtx.data,
-            feeCtx.offset,
+        feeCtx.ctx.feePtr = addFeePayment(
+            feeCtx.ctx.feeData,
+            feeCtx.ctx.feePtr,
             token,
-            feeCtx.mining.feeRecipient,
+            feeCtx.feeRecipient,
             feeToMiner
         );
         // Pay the burn rate with the feeHolder as owner
-        feeCtx.offset = addFeePayment(
-            feeCtx.data,
-            feeCtx.offset,
+        feeCtx.ctx.feePtr = addFeePayment(
+            feeCtx.ctx.feeData,
+            feeCtx.ctx.feePtr,
             token,
             address(feeCtx.ctx.feeHolder),
             minerFeeBurn + walletFeeBurn
@@ -499,6 +548,33 @@ library RingHelper {
         // Calculate the total fee payment after possible discounts (burn rebate + fee waiving)
         // and return the total rebate
         return (amount + margin).sub((feeToWallet + minerFee) + (minerFeeBurn + walletFeeBurn));
+    }
+
+    function getBurnRate(
+        Data.FeeContext memory feeCtx,
+        address token
+        )
+        internal
+        view
+        returns (uint32)
+    {
+        bytes32[] memory tokenBurnRates = feeCtx.ctx.tokenBurnRates;
+        uint length = tokenBurnRates.length;
+        for (uint i = 0; i < length; i += 2) {
+            if (token == address(tokenBurnRates[i])) {
+                uint32 burnRate = uint32(tokenBurnRates[i + 1]);
+                return feeCtx.P2P ? (burnRate / 0x10000) : (burnRate & 0xFFFF);
+            }
+        }
+        // Not found, add it to the list
+        uint32 burnRate = feeCtx.ctx.burnRateTable.getBurnRate(token);
+        assembly {
+            let ptr := add(tokenBurnRates, mul(add(1, length), 32))
+            mstore(ptr, token)                              // Token
+            mstore(add(ptr, 32), burnRate)                  // Burn rate
+            mstore(tokenBurnRates, add(length, 2))          // Lenght
+        }
+        return feeCtx.P2P ? (burnRate / 0x10000) : (burnRate & 0xFFFF);
     }
 
     function distributeMinerFeeToOwners(
@@ -515,9 +591,9 @@ library RingHelper {
                 uint feeToOwner = minerFee
                     .mul(uint(-p.order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
 
-                feeCtx.offset = addFeePayment(
-                    feeCtx.data,
-                    feeCtx.offset,
+                feeCtx.ctx.feePtr = addFeePayment(
+                    feeCtx.ctx.feeData,
+                    feeCtx.ctx.feePtr,
                     token,
                     p.order.owner,
                     feeToOwner);
@@ -526,8 +602,8 @@ library RingHelper {
     }
 
     function addFeePayment(
-        bytes32[] data,
-        uint offset,
+        uint data,
+        uint ptr,
         address token,
         address owner,
         uint amount
@@ -537,22 +613,35 @@ library RingHelper {
         returns (uint)
     {
         if (amount == 0) {
-            return offset;
+            return ptr;
         } else {
-            // Try to find an existing fee payment of the same token to the same owner
-            for (uint i = 0; i < offset; i += 3) {
-                if(token == address(data[i]) && owner == address(data[i + 1])) {
-                    data[i + 2] = bytes32(uint(data[i + 2]).add(amount));
-                    return offset;
+            assembly {
+                // Try to find an existing fee payment of the same token to the same owner
+                let addNew := 1
+                for { let p := data } and(lt(p, ptr), eq(addNew, 1)) { p := add(p, 96) } {
+                    let dataToken := mload(add(p,  0))
+                    let dataOwner := mload(add(p, 32))
+                    let dataAmount := mload(add(p, 64))
+                    // if(token == dataToken && owner == dataOwner)
+                    if and(eq(token, dataToken), eq(owner, dataOwner)) {
+                        // dataAmount = amount.add(dataAmount);
+                        dataAmount := add(amount, dataAmount)
+                        // require(dataAmount > amount) (safe math)
+                        if sub(1, gt(dataAmount, amount)) {
+                            revert(0, 0)
+                        }
+                        mstore(add(p, 64), dataAmount)
+                        addNew := 0
+                    }
+                }
+                if eq(addNew, 1) {
+                    mstore(add(ptr,  0), token)
+                    mstore(add(ptr, 32), owner)
+                    mstore(add(ptr, 64), amount)
+                    ptr := add(ptr, 96)
                 }
             }
-            assembly {
-                let start := add(data, mul(add(offset, 1), 32))
-                mstore(add(start,  0), token)
-                mstore(add(start, 32), owner)
-                mstore(add(start, 64), amount)
-            }
-            return offset + 3;
+            return ptr;
         }
     }
 

@@ -40,6 +40,14 @@ contract OrderBook is IOrderBook, NoDefaultFunc, Errors {
             allOrNone = true;
         }
 
+        /// msg.sender must be order's owner or broker.
+        /// no need to check order's broker is registered here. it will be checked during
+        /// ring settlement.
+        require(
+            msg.sender == address(dataArray[0]) || msg.sender == address(dataArray[6]),
+            UNAUTHORIZED_ONCHAIN_ORDER
+        );
+
         Data.Order memory order = Data.Order(
             0,                     // version
             address(dataArray[0]), // owner

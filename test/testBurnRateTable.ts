@@ -87,14 +87,8 @@ contract("BurnRateTable", (accounts: string[]) => {
   };
 
   const getTokenRate = async (user: string, token: string) => {
-    const [burnRateMatching, rebateRateMatching] = await burnRateTable.getBurnAndRebateRate(user, token, false);
-    const [burnRateP2P, rebateRateP2P] = await burnRateTable.getBurnAndRebateRate(user, token, true);
-    return [burnRateMatching.toNumber(), burnRateP2P.toNumber()];
-  };
-
-  const getBurnAndRebateRate = async (user: string, token: string, P2P: boolean) => {
-    const [burnRate, rebateRate] = await burnRateTable.getBurnAndRebateRate(user, token, P2P);
-    return [burnRate.toNumber(), rebateRate.toNumber()];
+    const burnRateToken = (await burnRateTable.getBurnRate(token)).toNumber();
+    return [(burnRateToken & 0xFFFF), (burnRateToken >> 16)];
   };
 
   const getTokenTierUpgradeAmount = async () => {
@@ -447,26 +441,6 @@ contract("BurnRateTable", (accounts: string[]) => {
       await addLRCBalance(user1, lockAmount);
       await lockChecked(user1, lockAmount);
       await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
-    });
-
-    it("user should not be able to have a higher rebate rate than the initial burn rate", async () => {
-      const [burnRateMatchingTier4, burnRateP2PTier4] = await getTierRate(4);
-
-      // User currently has no rebate
-      const [burnRateBefore, rebateRateBefore] = await getBurnAndRebateRate(user1, token1, false);
-      assert.equal(burnRateBefore, burnRateMatchingTier4, "Default burn rate of token should be tier 4 burn rate");
-      assert.equal(rebateRateBefore, 0, "Default rebate rate of a user should 0");
-
-      // Let the user stake the max LRC amount for 100% rebate
-      const maxLockAmount = await getMaxLockAmount();
-      await addLRCBalance(user1, maxLockAmount);
-      await lockChecked(user1, maxLockAmount);
-      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
-
-      // User should have a 100% rebate rate and the burn rate should be 0%
-      const [burnRateAfter, rebateRateAfter] = await getBurnAndRebateRate(user1, token1, false);
-      assert.equal(rebateRateAfter, burnRateMatchingTier4, "Rebate rate should match the burn rate");
-      assert.equal(burnRateAfter, 0, "Burn rate should have been reduces to 0%");
     });
 
     it("user should not be able to withdraw 0 tokens", async () => {

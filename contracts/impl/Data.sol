@@ -40,13 +40,17 @@ library Data {
         address lrcTokenAddress;
         ITradeDelegate  delegate;
         IBrokerRegistry orderBrokerRegistry;
-        IBrokerRegistry minerBrokerRegistry;
         IOrderRegistry  orderRegistry;
         IFeeHolder feeHolder;
         IOrderBook orderBook;
         IBurnRateTable burnRateTable;
         uint64 ringIndex;
         uint feePercentageBase;
+        bytes32[] tokenBurnRates;
+        uint feeData;
+        uint feePtr;
+        uint transferData;
+        uint transferPtr;
     }
 
     struct Mining {
@@ -134,12 +138,13 @@ library Data {
     }
 
     struct FeeContext {
-        bytes32[] data;
-        uint offset;
         Data.Ring ring;
         Data.Context ctx;
-        Data.Mining mining;
-        Data.Order order;
+        address feeRecipient;
         uint walletPercentage;
+        int16 waiveFeePercentage;
+        address owner;
+        address wallet;
+        bool P2P;
     }
 }

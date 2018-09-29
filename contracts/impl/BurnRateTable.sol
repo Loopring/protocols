@@ -59,32 +59,23 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc, Errors {
         tokenData.tier = tier;
     }
 
-    function getBurnAndRebateRate(
-        address spender,
-        address token,
-        bool P2P
+    function getBurnRate(
+        address token
         )
         external
         view
-        returns (uint16 burnRate, uint16 rebateRate)
+        returns (uint32 burnRate)
     {
         uint tier = getTokenTier(token);
-        uint16 tokenBurnRate;
         if (tier == TIER_1) {
-            tokenBurnRate = (P2P ? BURN_P2P_TIER1 : BURN_MATCHING_TIER1);
+            burnRate = uint32(BURN_P2P_TIER1) * 0x10000 + BURN_MATCHING_TIER1;
         } else if (tier == TIER_2) {
-            tokenBurnRate = (P2P ? BURN_P2P_TIER2 : BURN_MATCHING_TIER2);
+            burnRate = uint32(BURN_P2P_TIER2) * 0x10000 + BURN_MATCHING_TIER2;
         } else if (tier == TIER_3) {
-            tokenBurnRate = (P2P ? BURN_P2P_TIER3 : BURN_MATCHING_TIER3);
+            burnRate = uint32(BURN_P2P_TIER3) * 0x10000 + BURN_MATCHING_TIER3;
         } else {
-            tokenBurnRate = (P2P ? BURN_P2P_TIER4 : BURN_MATCHING_TIER4);
+            burnRate = uint32(BURN_P2P_TIER4) * 0x10000 + BURN_MATCHING_TIER4;
         }
-
-        // Reduce burn rate by the user's rebate rate
-        // tokenBurnRate := burnRate + rebateRate
-        uint16 userRebateRate = getRebateRate(spender);
-        rebateRate = uint16(uint(tokenBurnRate).mul(uint(userRebateRate)) / BURN_BASE_PERCENTAGE);
-        burnRate = tokenBurnRate - rebateRate;
     }
 
     function upgradeTokenTier(
@@ -124,15 +115,11 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc, Errors {
         )
         public
         view
-        returns (uint)
+        returns (uint tier)
     {
         TokenData storage tokenData = tokens[token];
-        uint tier = tokenData.tier;
-        if(now > tokenData.validUntil) {
-            // Fall back to lowest tier
-            tier = TIER_4;
-        }
-        return tier;
+        // Fall back to lowest tier
+        tier = (now > tokenData.validUntil) ? TIER_4 : tokenData.tier;
     }
 
     function getRebateRate(

@@ -97,7 +97,7 @@ library OrderHelper {
         internal
         view
     {
-        if (order.broker == address(0x0)) {
+        if (order.broker == 0x0) {
             order.broker = order.owner;
         } else {
             bool registered;
@@ -107,16 +107,6 @@ library OrderHelper {
             );
             order.valid = order.valid && registered;
         }
-    }
-
-    function updateStates(
-        Data.Order order,
-        Data.Context ctx
-        )
-        internal
-        view
-    {
-        order.filledAmountS = ctx.delegate.filled(order.hash);
     }
 
     function validateInfo(Data.Order order, Data.Context ctx)
@@ -137,8 +127,8 @@ library OrderHelper {
         valid = valid && (order.tokenBFeePercentage < ctx.feePercentageBase); // invalid tokenB percentage
         valid = valid && (order.walletSplitPercentage <= 100); // invalid wallet split percentage
 
-        valid = valid && (order.validSince <= block.timestamp); // order is too early to match
-        valid = valid && (order.validUntil == 0 || order.validUntil > block.timestamp);  // order is expired
+        valid = valid && (order.validSince <= now); // order is too early to match
+        valid = valid && (order.validUntil == 0 || order.validUntil > now);  // order is expired
         if (order.dualAuthAddr != 0x0) { // if dualAuthAddr exists, dualAuthSig must be exist.
             valid = valid && (order.dualAuthSig.length > 0);
         }
@@ -162,6 +152,11 @@ library OrderHelper {
         internal
         view
     {
+        // If the order was already partially filled we don't have to check the signature again
+        if(order.filledAmountS > 0) {
+            return;
+        }
+
         if (order.sig.length == 0) {
             bool registered = ctx.orderRegistry.isOrderHashRegistered(
                 order.broker,

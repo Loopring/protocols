@@ -97,7 +97,7 @@ contract("OrderBook", (accounts: string[]) => {
 
       const bytes32Array = orderUtil.toOrderBookSubmitParams(orderInfo);
 
-      const tx = await orderBook.submitOrder(bytes32Array);
+      const tx = await orderBook.submitOrder(bytes32Array, {from: orderOwner});
 
       const events: any = await getEventsFromContract(orderBook, "OrderSubmitted", 0);
       const orderHash = events[0].args.orderHash;

@@ -131,12 +131,12 @@ contract ITradeDelegate {
         )
         external;
 
-    function batchCheckCutoffsAndCancelled(
+    function batchGetFilledAndCheckCancelled(
         bytes32[] orderInfo
         )
         external
         view
-        returns (uint);
+        returns (uint[]);
 
     function suspend()
         external;
@@ -146,20 +146,4 @@ contract ITradeDelegate {
 
     function kill()
         external;
-}
-
-library TradeDelegateData {
-    struct TokenTransferData {
-        address token;
-        address from;
-        address to;
-        uint    amount;
-    }
-    struct OrderCheckCancelledData {
-        address broker;
-        address owner;
-        bytes32 hash;
-        uint    validSince;
-        bytes20 tradingPair;
-    }
 }

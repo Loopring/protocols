@@ -30,11 +30,10 @@ module.exports = function(deployer, network, accounts) {
         LRCToken.address,
         WETHToken.address,
         BrokerRegistry.new(),
-        BrokerRegistry.new(),
         deployer.deploy(BurnRateTable, LRCToken.address, WETHToken.address),
       ]);
     }).then(addresses => {
-      var [lrcAddr, wethAddr, orderBrokerRegistry, minerBrokerRegistry, burnRateTableAddr] = addresses;
+      var [lrcAddr, wethAddr, orderBrokerRegistry, burnRateTableAddr] = addresses;
       return Promise.all([
         deployer.deploy(
           RingSubmitter,
@@ -42,7 +41,6 @@ module.exports = function(deployer, network, accounts) {
           wethAddr,
           TradeDelegate.address,
           orderBrokerRegistry.address,
-          minerBrokerRegistry.address,
           OrderRegistry.address,
           FeeHolder.address,
           OrderBook.address,

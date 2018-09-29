@@ -31,20 +31,23 @@ library MiningHelper {
         Data.Context ctx
         )
         internal
-        view
-        returns (bytes32)
+        pure
     {
+
         if (mining.miner == 0x0) {
             mining.miner = mining.feeRecipient;
-        } else {
-            (bool registered, address interceptor) = ctx.minerBrokerRegistry.getBroker(
-                mining.feeRecipient,
-                mining.miner
-            );
-            if (registered) {
-                mining.interceptor = interceptor;
-            }
         }
+
+        // We do not support any interceptors for now
+        /* else { */
+        /*     (bool registered, address interceptor) = ctx.minerBrokerRegistry.getBroker( */
+        /*         mining.feeRecipient, */
+        /*         mining.miner */
+        /*     ); */
+        /*     if (registered) { */
+        /*         mining.interceptor = interceptor; */
+        /*     } */
+        /* } */
     }
 
     function updateHash(
@@ -54,17 +57,23 @@ library MiningHelper {
         internal
         pure
     {
-        bytes32 ringHashes = rings[0].hash;
-        for (uint i = 1; i < rings.length; i++) {
-            ringHashes ^= rings[i].hash;
+        bytes32 hash;
+        assembly {
+            let ring := mload(add(rings, 32))
+            let ringHashes := mload(add(ring, 64))                          // hash
+            for { let i := 1 } lt(i, mload(rings)) { i := add(i, 1) } {
+                ring := mload(add(rings, mul(add(i, 1), 32)))
+                ringHashes := xor(ringHashes, mload(add(ring, 64)))         // hash
+            }
+            let data := mload(0x40)
+            data := add(data, 12)
+            // Store data back to front to allow overwriting data at the front because of padding
+            mstore(add(data, 40), ringHashes)                               // ringHashes
+            mstore(sub(add(data, 20), 12), mload(add(mining, 32)))          // miner
+            mstore(sub(data, 12),          mload(add(mining,  0)))          // feeRecipient
+            hash := keccak256(data, 72)                                     // 20 + 20 + 32
         }
-        mining.hash = keccak256(
-            abi.encodePacked(
-                mining.feeRecipient,
-                mining.miner,
-                ringHashes
-            )
-        );
+        mining.hash = hash;
     }
 
     function checkMinerSignature(

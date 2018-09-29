@@ -45,15 +45,25 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc, Errors {
         require(isAuthorized, UNAUTHORIZED);
         _;
     }
+
     function batchAddFeeBalances(bytes32[] batch)
         external
         onlyAuthorized
     {
-        require(batch.length % 3 == 0, INVALID_SIZE);
-        for (uint i = 0; i < batch.length; i += 3) {
-            address token = address(batch[i]);
-            address owner = address(batch[i + 1]);
-            uint value = uint(batch[i + 2]);
+        uint length = batch.length;
+        require(length % 3 == 0, INVALID_SIZE);
+
+        address token;
+        address owner;
+        uint value;
+        uint start = 68;
+        uint end = start + length * 32;
+        for (uint p = start; p < end; p += 96) {
+            assembly {
+                token := calldataload(add(p,  0))
+                owner := calldataload(add(p, 32))
+                value := calldataload(add(p, 64))
+            }
             feeBalances[token][owner] = feeBalances[token][owner].add(value);
         }
     }
