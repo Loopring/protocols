@@ -52,13 +52,8 @@ library ParticipationHelper {
         if (p.order.P2P) {
             // Calculate P2P fees
             p.feeAmount = 0;
-            if (p.order.wallet != 0x0) {
-                p.feeAmountS = p.fillAmountS.mul(p.order.tokenSFeePercentage) / ctx.feePercentageBase;
-                p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / ctx.feePercentageBase;
-            } else {
-                p.feeAmountS = 0;
-                p.feeAmountB = 0;
-            }
+            p.feeAmountS = p.fillAmountS.mul(p.order.tokenSFeePercentage) / ctx.feePercentageBase;
+            p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / ctx.feePercentageBase;
         } else {
             // Calculate matching fees
             p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;

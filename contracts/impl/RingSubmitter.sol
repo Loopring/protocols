@@ -181,8 +181,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         for (i = 0; i < orders.length; i++) {
             // We don't need to verify the dual author signature again if it uses the same
             // dual author address as the previous order (the miner can optimize the order of the orders
-            // to optimize for this). We don't need to check if the signature is the same because the same
-            // mining hash is signed for all orders.
+            // so this happens as much as possible). We don't need to check if the signature is the same
+            // because the same mining hash is signed for all orders.
             if(i > 0 && orders[i].dualAuthAddr == orders[i - 1].dualAuthAddr) {
                 continue;
             }

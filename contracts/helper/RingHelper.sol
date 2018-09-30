@@ -413,6 +413,7 @@ library RingHelper {
         Data.Mining mining
         )
         internal
+        view
     {
         Data.FeeContext memory feeCtx;
         feeCtx.ring = ring;
@@ -434,9 +435,7 @@ library RingHelper {
         view
         returns (uint)
     {
-        uint walletPercentage = p.order.P2P ? 100 : (p.order.wallet == 0x0 ? 0 : p.order.walletSplitPercentage);
-        feeCtx.walletPercentage = walletPercentage;
-
+        feeCtx.walletPercentage = p.order.P2P ? 100 : (p.order.wallet == 0x0 ? 0 : p.order.walletSplitPercentage);
         feeCtx.waiveFeePercentage = p.order.waiveFeePercentage;
         feeCtx.owner = p.order.owner;
         feeCtx.wallet = p.order.wallet;
@@ -465,15 +464,22 @@ library RingHelper {
     function payFeesAndBurn(
         Data.FeeContext memory feeCtx,
         address token,
-        uint amount,
+        uint totalAmount,
         uint margin
         )
         internal
         view
         returns (uint)
     {
-        if (amount + margin == 0) {
+        if (totalAmount + margin == 0) {
             return 0;
+        }
+
+        uint amount = totalAmount;
+        // No need to pay any fees in a P2P order without a wallet
+        // (but the fee amount is a part of amountS of the order, so the fee amount is rebated).
+        if (feeCtx.P2P && feeCtx.wallet == 0x0) {
+            amount = 0;
         }
 
         uint feeToWallet = 0;
@@ -548,7 +554,7 @@ library RingHelper {
 
         // Calculate the total fee payment after possible discounts (burn rebate + fee waiving)
         // and return the total rebate
-        return (amount + margin).sub((feeToWallet + minerFee) + (minerFeeBurn + walletFeeBurn));
+        return (totalAmount + margin).sub((feeToWallet + minerFee) + (minerFeeBurn + walletFeeBurn));
     }
 
     function getBurnRate(
