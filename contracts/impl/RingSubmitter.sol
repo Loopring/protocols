@@ -125,6 +125,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         external
     {
+        uint i;
         bytes32[] memory tokenBurnRates;
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
@@ -143,7 +144,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             0
         );
 
-
         // Check if the highest bit of ringIndex is '1'
         require((ctx.ringIndex >> 63) == 0, REENTRY);
 
@@ -159,30 +159,37 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         // Allocate memory that is used to batch things for all rings
         setupLists(ctx, orders, rings);
 
-        for (uint i = 0; i < orders.length; i++) {
+        for (i = 0; i < orders.length; i++) {
             orders[i].validateInfo(ctx);
             orders[i].checkP2P();
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
         }
         batchGetFilledAndCheckCancelled(ctx, orders);
-        for (uint i = 0; i < orders.length; i++) {
+        for (i = 0; i < orders.length; i++) {
             orders[i].checkBrokerSignature(ctx);
         }
 
-        for (uint i = 0; i < rings.length; i++) {
+        for (i = 0; i < rings.length; i++) {
             rings[i].updateHash();
         }
 
         mining.updateHash(rings);
-        mining.updateMinerAndInterceptor(ctx);
+        mining.updateMinerAndInterceptor();
         require(mining.checkMinerSignature(), INVALID_SIG);
 
-        for (uint i = 0; i < orders.length; i++) {
+        for (i = 0; i < orders.length; i++) {
+            // We don't need to verify the dual author signature again if it uses the same
+            // dual author address as the previous order (the miner can optimize the order of the orders
+            // to optimize for this). We don't need to check if the signature is the same because the same
+            // mining hash is signed for all orders.
+            if(i > 0 && orders[i].dualAuthAddr == orders[i - 1].dualAuthAddr) {
+                continue;
+            }
             orders[i].checkDualAuthSignature(mining.hash);
         }
 
-        for (uint i = 0; i < rings.length; i++){
+        for (i = 0; i < rings.length; i++) {
             Data.Ring memory ring = rings[i];
             ring.checkOrdersValid();
             ring.checkForSubRings();
@@ -409,7 +416,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
-        address tradeDelegateAddress = address(ctx.delegate);
+        address _tradeDelegateAddress = address(ctx.delegate);
         uint data = ctx.transferData - 68;
         uint ptr = ctx.transferPtr;
         assembly {
@@ -417,7 +424,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
 
             let success := call(
                 gas,                                // forward all gas
-                tradeDelegateAddress,               // external address
+                _tradeDelegateAddress,              // external address
                 0,                                  // wei
                 data,                               // input start
                 sub(ptr, data),                     // input length
@@ -435,7 +442,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
-        address feeHolderAddress = address(ctx.feeHolder);
+        address _feeHolderAddress = address(ctx.feeHolder);
         uint data = ctx.feeData - 68;
         uint ptr = ctx.feePtr;
         assembly {
@@ -443,7 +450,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
 
             let success := call(
                 gas,                                // forward all gas
-                feeHolderAddress,                   // external address
+                _feeHolderAddress,                  // external address
                 0,                                  // wei
                 data,                               // input start
                 sub(ptr, data),                     // input length

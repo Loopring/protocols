@@ -27,8 +27,7 @@ import "../lib/MultihashUtil.sol";
 library MiningHelper {
 
     function updateMinerAndInterceptor(
-        Data.Mining mining,
-        Data.Context ctx
+        Data.Mining mining
         )
         internal
         pure
