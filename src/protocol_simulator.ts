@@ -7,7 +7,8 @@ import { ExchangeDeserializer } from "./exchange_deserializer";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
-import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, TransactionPayments, TransferItem } from "./types";
+import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, Spendable,
+         TransactionPayments, TransferItem } from "./types";
 import { xor } from "./xor";
 
 export class ProtocolSimulator {
@@ -71,8 +72,8 @@ export class ProtocolSimulator {
       await this.orderUtil.updateBrokerAndInterceptor(order);
     }
     await this.batchGetFilledAndCheckCancelled(orders);
-    for (const [i, order] of orders.entries()) {
-      this.orderUtil.validateBrokerSpendables(order, orders, i);
+    this.updateBrokerSpendables(orders);
+    for (const order of orders) {
       await this.orderUtil.checkBrokerSignature(order);
     }
 
@@ -195,6 +196,49 @@ export class ProtocolSimulator {
     for (const [i, order] of orders.entries()) {
       order.filledAmountS = fills[i].toNumber();
       order.valid = order.valid && ensure(!fills[i].equals(cancelledValue), "order is cancelled");
+    }
+  }
+
+  private updateBrokerSpendables(orders: OrderInfo[]) {
+    // Spendables for brokers need to be setup just right for the allowances to work, we cannot trust
+    // the miner to do this for us. Spendables for tokens don't need to be correct, if they are incorrect
+    // the transaction will fail, so the miner will want to send those correctly.
+    interface BrokerSpendable {
+      broker: string;
+      owner: string;
+      token: string;
+      spendable: Spendable;
+    }
+
+    const brokerSpendables: BrokerSpendable[] = [];
+    const addBrokerSpendable = (broker: string, owner: string, token: string) => {
+      // Find an existing one
+      for (const spendable of brokerSpendables) {
+        if (spendable.broker === broker && spendable.owner === owner && spendable.token === token) {
+          return spendable.spendable;
+        }
+      }
+      // Create a new one
+      const newSpendable = {
+        initialized: false,
+        amount: 0,
+        reserved: 0,
+      };
+      const newBrokerSpendable = {
+        broker,
+        owner,
+        token,
+        spendable: newSpendable,
+      };
+      brokerSpendables.push(newBrokerSpendable);
+      return newBrokerSpendable.spendable;
+    };
+
+    for (const order of orders) {
+      if (order.brokerInterceptor) {
+        order.brokerSpendableS = addBrokerSpendable(order.broker, order.owner, order.tokenS);
+        order.brokerSpendableFee = addBrokerSpendable(order.broker, order.owner, order.feeToken);
+      }
     }
   }
 }

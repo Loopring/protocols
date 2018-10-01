@@ -49,37 +49,6 @@ export class OrderUtil {
     order.valid = order.valid && valid;
   }
 
-  public validateBrokerSpendables(order: OrderInfo, orders: OrderInfo[], index: number) {
-    // We have to make sure the miner has correctly sent the same broker spendable index
-    // for all (broker, owner, token) pairs, otherwise the broker could spend more than allowed.
-    if (order.broker !== order.owner) {
-      if (order.tokenS === order.feeToken) {
-        order.valid = order.valid && ensure(order.brokerSpendableS === order.brokerSpendableFee,
-                                            "Every (broker, owner, token) set needs the same spendable");
-      }
-      for (let i = index + 1; i < orders.length; i++) {
-        if (orders[i].broker === order.broker && orders[i].owner === order.owner) {
-          if (orders[i].tokenS === order.tokenS) {
-            order.valid = order.valid && ensure(orders[i].brokerSpendableS === order.brokerSpendableS,
-                                                "Every (broker, owner, token) set needs the same spendable");
-          }
-          if (orders[i].tokenS === order.feeToken) {
-            order.valid = order.valid && ensure(orders[i].brokerSpendableS === order.brokerSpendableFee,
-                                                "Every (broker, owner, token) set needs the same spendable");
-          }
-          if (orders[i].feeToken === order.tokenS) {
-            order.valid = order.valid && ensure(orders[i].brokerSpendableFee === order.brokerSpendableS,
-                                                "Every (broker, owner, token) set needs the same spendable");
-          }
-          if (orders[i].feeToken === order.feeToken) {
-            order.valid = order.valid && ensure(orders[i].brokerSpendableFee === order.brokerSpendableFee,
-                                                "Every (broker, owner, token) set needs the same spendable");
-          }
-        }
-      }
-    }
-  }
-
   public async checkBrokerSignature(order: OrderInfo) {
     let signatureValid = true;
     // If the order was already partially filled we don't have to check the signature again
@@ -240,7 +209,7 @@ export class OrderUtil {
     assert((await this.getSpendableFee(order)) >= amount, "spendableFee >= reserve amount");
     order.tokenSpendableFee.reserved += amount;
     if (order.brokerInterceptor) {
-      order.tokenSpendableFee.reserved += amount;
+      order.brokerSpendableFee.reserved += amount;
     }
   }
 

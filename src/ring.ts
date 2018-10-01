@@ -224,6 +224,8 @@ export class Ring {
     if (order.brokerInterceptor) {
       order.brokerSpendableS.amount -= totalAmountS;
       order.brokerSpendableFee.amount -= totalAmountFee;
+      assert(order.brokerSpendableS.amount >= 0, "brokerSpendableS should be positive");
+      assert(order.tokenSpendableFee.amount >= 0, "tokenSpendableFee should be positive");
     }
     // Checks
     assert(order.tokenSpendableS.amount >= 0, "spendableS should be positive");
