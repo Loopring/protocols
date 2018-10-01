@@ -71,7 +71,8 @@ export class ProtocolSimulator {
       await this.orderUtil.updateBrokerAndInterceptor(order);
     }
     await this.batchGetFilledAndCheckCancelled(orders);
-    for (const order of orders) {
+    for (const [i, order] of orders.entries()) {
+      this.orderUtil.validateBrokerSpendables(order, orders, i);
       await this.orderUtil.checkBrokerSignature(order);
     }
 

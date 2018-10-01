@@ -49,6 +49,37 @@ export class OrderUtil {
     order.valid = order.valid && valid;
   }
 
+  public validateBrokerSpendables(order: OrderInfo, orders: OrderInfo[], index: number) {
+    // We have to make sure the miner has correctly sent the same broker spendable index
+    // for all (broker, owner, token) pairs, otherwise the broker could spend more than allowed.
+    if (order.broker !== order.owner) {
+      if (order.tokenS === order.feeToken) {
+        order.valid = order.valid && ensure(order.brokerSpendableS === order.brokerSpendableFee,
+                                            "Every (broker, owner, token) set needs the same spendable");
+      }
+      for (let i = index + 1; i < orders.length; i++) {
+        if (orders[i].broker === order.broker && orders[i].owner === order.owner) {
+          if (orders[i].tokenS === order.tokenS) {
+            order.valid = order.valid && ensure(orders[i].brokerSpendableS === order.brokerSpendableS,
+                                                "Every (broker, owner, token) set needs the same spendable");
+          }
+          if (orders[i].tokenS === order.feeToken) {
+            order.valid = order.valid && ensure(orders[i].brokerSpendableS === order.brokerSpendableFee,
+                                                "Every (broker, owner, token) set needs the same spendable");
+          }
+          if (orders[i].feeToken === order.tokenS) {
+            order.valid = order.valid && ensure(orders[i].brokerSpendableFee === order.brokerSpendableS,
+                                                "Every (broker, owner, token) set needs the same spendable");
+          }
+          if (orders[i].feeToken === order.feeToken) {
+            order.valid = order.valid && ensure(orders[i].brokerSpendableFee === order.brokerSpendableFee,
+                                                "Every (broker, owner, token) set needs the same spendable");
+          }
+        }
+      }
+    }
+  }
+
   public async checkBrokerSignature(order: OrderInfo) {
     let signatureValid = true;
     // If the order was already partially filled we don't have to check the signature again
@@ -199,17 +230,27 @@ export class OrderUtil {
                               amount: number) {
     assert((await this.getSpendableS(order)) >= amount, "spendableS >= reserve amount");
     order.tokenSpendableS.reserved += amount;
+    if (order.brokerInterceptor) {
+      order.brokerSpendableS.reserved += amount;
+    }
   }
 
   public async reserveAmountFee(order: OrderInfo,
                                 amount: number) {
     assert((await this.getSpendableFee(order)) >= amount, "spendableFee >= reserve amount");
     order.tokenSpendableFee.reserved += amount;
+    if (order.brokerInterceptor) {
+      order.tokenSpendableFee.reserved += amount;
+    }
   }
 
   public resetReservations(order: OrderInfo) {
     order.tokenSpendableS.reserved = 0;
     order.tokenSpendableFee.reserved = 0;
+    if (order.brokerInterceptor) {
+      order.tokenSpendableS.reserved = 0;
+      order.tokenSpendableFee.reserved = 0;
+    }
   }
 
   public async getERC20Spendable(spender: string,
@@ -249,7 +290,8 @@ export class OrderUtil {
                                                            owner);
       tokenSpendable.initialized = true;
     }
-    let spendable = tokenSpendable.amount;
+    let spendable = tokenSpendable.amount - tokenSpendable.reserved;
+    assert(spendable >= 0, "spendable >= 0");
     if (brokerInterceptor) {
       if (!brokerSpendable.initialized) {
         brokerSpendable.amount = await this.getBrokerAllowance(token,
@@ -258,9 +300,11 @@ export class OrderUtil {
                                                                   brokerInterceptor);
         brokerSpendable.initialized = true;
       }
-      spendable = (brokerSpendable.amount < spendable) ? brokerSpendable.amount : spendable;
+      const brokerSpendableAmount = brokerSpendable.amount - brokerSpendable.reserved;
+      assert(brokerSpendableAmount >= 0, "brokerSpendable >= 0");
+      spendable = (brokerSpendableAmount < spendable) ? brokerSpendableAmount : spendable;
     }
-    return spendable - tokenSpendable.reserved;
+    return spendable;
   }
 
   private toBN(n: number) {
