@@ -167,6 +167,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         }
         batchGetFilledAndCheckCancelled(ctx, orders);
         for (i = 0; i < orders.length; i++) {
+            orders[i].validateBrokerSpendables(orders, i);
             orders[i].checkBrokerSignature(ctx);
         }
 

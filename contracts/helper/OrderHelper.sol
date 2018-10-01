@@ -145,6 +145,63 @@ library OrderHelper {
         order.P2P = (order.tokenSFeePercentage > 0 || order.tokenBFeePercentage > 0);
     }
 
+    function validateBrokerSpendables(
+        Data.Order order,
+        Data.Order[] orders,
+        uint index
+        )
+        internal
+        pure
+    {
+        // We have to make sure the miner has correctly sent the same broker spendable index
+        // for all (broker, owner, token) pairs, otherwise the broker could spend more than allowed.
+        if (order.broker != order.owner) {
+            bool valid = true;
+            // Use assembly to compare the spendable memory locations
+            if (order.tokenS == order.feeToken) {
+                assembly {
+                    let brokerSpendableS := mload(add(order, 320))                          // order.brokerSpendableS
+                    let brokerSpendableFee := mload(add(order, 352))                        // order.brokerSpendableFee
+                    valid := and(valid, eq(brokerSpendableS, brokerSpendableFee))
+                }
+            }
+            for (uint i = index + 1; i < orders.length; i++) {
+                if(orders[i].broker == order.broker && orders[i].owner == order.owner) {
+                    Data.Order memory otherOrder = orders[i];
+                    if (otherOrder.tokenS == order.tokenS) {
+                        assembly {
+                            let brokerSpendableS := mload(add(order, 320))                  // order.brokerSpendableS
+                            let otherBrokerSpendableS := mload(add(otherOrder, 320))        // order.brokerSpendableS
+                            valid := and(valid, eq(brokerSpendableS, otherBrokerSpendableS))
+                        }
+                    }
+                    if (otherOrder.tokenS == order.feeToken) {
+                        assembly {
+                            let brokerSpendableS := mload(add(order, 320))                  // order.brokerSpendableS
+                            let otherBrokerSpendableFee := mload(add(otherOrder, 352))      // order.brokerSpendableFee
+                            valid := and(valid, eq(brokerSpendableS, otherBrokerSpendableFee))
+                        }
+                    }
+                    if (otherOrder.feeToken == order.tokenS) {
+                        assembly {
+                            let brokerSpendableFee := mload(add(order, 352))                // order.brokerSpendableFee
+                            let otherBrokerSpendableS := mload(add(otherOrder, 320))        // order.brokerSpendableS
+                            valid := and(valid, eq(brokerSpendableFee, otherBrokerSpendableS))
+                        }
+                    }
+                    if (otherOrder.feeToken == order.feeToken) {
+                        assembly {
+                            let brokerSpendableFee := mload(add(order, 352))                // order.brokerSpendableFee
+                            let otherBrokerSpendableFee := mload(add(otherOrder, 352))      // order.brokerSpendableFee
+                            valid := and(valid, eq(brokerSpendableFee, otherBrokerSpendableFee))
+                        }
+                    }
+                }
+            }
+            order.valid = order.valid && valid;
+        }
+    }
+
     function checkBrokerSignature(
         Data.Order order,
         Data.Context ctx
@@ -235,6 +292,9 @@ library OrderHelper {
         pure
     {
         order.tokenSpendableS.reserved += amount;
+        if (order.brokerInterceptor != 0x0) {
+            order.brokerSpendableS.reserved += amount;
+        }
     }
 
     function reserveAmountFee(
@@ -245,6 +305,9 @@ library OrderHelper {
         pure
     {
         order.tokenSpendableFee.reserved += amount;
+        if (order.brokerInterceptor != 0x0) {
+            order.brokerSpendableFee.reserved += amount;
+        }
     }
 
     function resetReservations(
@@ -255,6 +318,10 @@ library OrderHelper {
     {
         order.tokenSpendableS.reserved = 0;
         order.tokenSpendableFee.reserved = 0;
+        if (order.brokerInterceptor != 0x0) {
+            order.brokerSpendableS.reserved = 0;
+            order.brokerSpendableFee.reserved = 0;
+        }
     }
 
     /// @return Amount of ERC20 token that can be spent by this contract.
@@ -316,7 +383,7 @@ library OrderHelper {
             );
             tokenSpendable.initialized = true;
         }
-        spendable = tokenSpendable.amount;
+        spendable = tokenSpendable.amount.sub(tokenSpendable.reserved);
         if (brokerInterceptor != 0x0) {
             if (!brokerSpendable.initialized) {
                 brokerSpendable.amount = getBrokerAllowance(
@@ -327,8 +394,8 @@ library OrderHelper {
                 );
                 brokerSpendable.initialized = true;
             }
-            spendable = (brokerSpendable.amount < spendable) ? brokerSpendable.amount : spendable;
+            uint brokerSpendableAmount = brokerSpendable.amount.sub(brokerSpendable.reserved);
+            spendable = (brokerSpendableAmount < spendable) ? brokerSpendableAmount : spendable;
         }
-        spendable = spendable.sub(tokenSpendable.reserved);
     }
 }
