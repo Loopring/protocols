@@ -145,63 +145,6 @@ library OrderHelper {
         order.P2P = (order.tokenSFeePercentage > 0 || order.tokenBFeePercentage > 0);
     }
 
-    function validateBrokerSpendables(
-        Data.Order order,
-        Data.Order[] orders,
-        uint index
-        )
-        internal
-        pure
-    {
-        // We have to make sure the miner has correctly sent the same broker spendable index
-        // for all (broker, owner, token) pairs, otherwise the broker could spend more than allowed.
-        if (order.broker != order.owner) {
-            bool valid = true;
-            // Use assembly to compare the spendable memory locations
-            if (order.tokenS == order.feeToken) {
-                assembly {
-                    let brokerSpendableS := mload(add(order, 320))                          // order.brokerSpendableS
-                    let brokerSpendableFee := mload(add(order, 352))                        // order.brokerSpendableFee
-                    valid := and(valid, eq(brokerSpendableS, brokerSpendableFee))
-                }
-            }
-            for (uint i = index + 1; i < orders.length; i++) {
-                if(orders[i].broker == order.broker && orders[i].owner == order.owner) {
-                    Data.Order memory otherOrder = orders[i];
-                    if (otherOrder.tokenS == order.tokenS) {
-                        assembly {
-                            let brokerSpendableS := mload(add(order, 320))                  // order.brokerSpendableS
-                            let otherBrokerSpendableS := mload(add(otherOrder, 320))        // order.brokerSpendableS
-                            valid := and(valid, eq(brokerSpendableS, otherBrokerSpendableS))
-                        }
-                    }
-                    if (otherOrder.tokenS == order.feeToken) {
-                        assembly {
-                            let brokerSpendableS := mload(add(order, 320))                  // order.brokerSpendableS
-                            let otherBrokerSpendableFee := mload(add(otherOrder, 352))      // order.brokerSpendableFee
-                            valid := and(valid, eq(brokerSpendableS, otherBrokerSpendableFee))
-                        }
-                    }
-                    if (otherOrder.feeToken == order.tokenS) {
-                        assembly {
-                            let brokerSpendableFee := mload(add(order, 352))                // order.brokerSpendableFee
-                            let otherBrokerSpendableS := mload(add(otherOrder, 320))        // order.brokerSpendableS
-                            valid := and(valid, eq(brokerSpendableFee, otherBrokerSpendableS))
-                        }
-                    }
-                    if (otherOrder.feeToken == order.feeToken) {
-                        assembly {
-                            let brokerSpendableFee := mload(add(order, 352))                // order.brokerSpendableFee
-                            let otherBrokerSpendableFee := mload(add(otherOrder, 352))      // order.brokerSpendableFee
-                            valid := and(valid, eq(brokerSpendableFee, otherBrokerSpendableFee))
-                        }
-                    }
-                }
-            }
-            order.valid = order.valid && valid;
-        }
-    }
-
     function checkBrokerSignature(
         Data.Order order,
         Data.Context ctx

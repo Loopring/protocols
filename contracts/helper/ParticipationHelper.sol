@@ -105,8 +105,8 @@ library ParticipationHelper {
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
         if (p.order.brokerInterceptor != 0x0) {
-            p.order.brokerSpendableS.amount = p.order.brokerSpendableS.amount.sub(totalAmountFee);
-            p.order.brokerSpendableFee.amount = p.order.brokerSpendableFee.amount.sub(totalAmountS);
+            p.order.brokerSpendableS.amount = p.order.brokerSpendableS.amount.sub(totalAmountS);
+            p.order.brokerSpendableFee.amount = p.order.brokerSpendableFee.amount.sub(totalAmountFee);
         }
     }
 

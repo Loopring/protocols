@@ -163,7 +163,7 @@ export class ExchangeTestUtil {
     }
     if (!order.validSince) {
       // Set the order validSince time to a bit before the current timestamp;
-      order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
+      order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 2000;
     }
     // if (!order.validUntil) {
     //   // Set the order validSince time to a bit before the current timestamp;
@@ -215,6 +215,10 @@ export class ExchangeTestUtil {
       const tokenFee = this.testContext.tokenAddrInstanceMap.get(feeToken);
       await tokenFee.setBalance(order.owner, balanceFee);
     }
+  }
+
+  public async getFilled(hash: Buffer) {
+    return await this.context.tradeDelegate.filled("0x" + hash.toString("hex")).toNumber();
   }
 
   public assertEqualsRingsInfo(ringsInfoA: pjs.RingsInfo, ringsInfoB: pjs.RingsInfo) {
