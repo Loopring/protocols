@@ -175,14 +175,14 @@ library ExchangeDeserializer {
                 // version
                 offset := and(mload(add(tablesPtr,  0)), 0xFFFF)
                 mstore(
-                    add(order,   0),
+                    add(order,   0),                                           // order.version
                     offset
                 )
 
                 // Owner
                 offset := and(mload(add(tablesPtr,  2)), 0xFFFF)
                 mstore(
-                    add(order,  32),
+                    add(order,  32),                                           // order.owner
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
@@ -211,7 +211,7 @@ library ExchangeDeserializer {
                 offset := and(mload(add(tablesPtr, 10)), 0xFFFF)
                 mstore(
                     add(order, 192),
-                    mload(add(add(data, 32), offset))
+                    and(mload(add(add(data, 4), offset)), 0xFFFFFFFF)
                 )
 
                 // tokenSpendableS
@@ -278,7 +278,7 @@ library ExchangeDeserializer {
                 offset := and(mload(add(tablesPtr, 28)), 0xFFFF)
                 mstore(
                     add(order, 480),
-                    mload(add(add(data, 32), offset))
+                    and(mload(add(add(data, 32), offset)), 0xFFFFFFFF)
                 )
 
                 // Default value sig and dualAuthSig
