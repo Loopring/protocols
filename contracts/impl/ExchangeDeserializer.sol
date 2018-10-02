@@ -72,6 +72,7 @@ library ExchangeDeserializer {
         inputs.numOrders = uint16(MemoryUtil.bytesToUintX(data, 2, 2) & 0xFFFF);
         inputs.numRings = uint16(MemoryUtil.bytesToUintX(data, 4, 2) & 0xFFFF);
         uint16 numSpendables = uint16(MemoryUtil.bytesToUintX(data, 6, 2) & 0xFFFF);
+        require(numSpendables > 0, "Invalid number of spendables");
 
         uint ordersOffset = 8;
         uint ringsOffset = ordersOffset + (3 + 26 * inputs.numOrders) * 2;
@@ -113,6 +114,8 @@ library ExchangeDeserializer {
         uint numOrders = inputs.numOrders;
         uint orderSize = 32 * 32;
         uint arrayDataSize = (numOrders + 1) * 32;
+
+        uint numSpendables = spendableList.length;
 
         bytes memory tablesPtr = inputs.tablesPtr;
         uint offset;
@@ -163,11 +166,7 @@ library ExchangeDeserializer {
             mstore(add(orders, 0), numOrders)
             mstore(0x40, add(orders, add(arrayDataSize, mul(orderSize, numOrders))))
 
-            for
-                { i := 0 }
-                lt(i, numOrders)
-                { i := add(i, 1) }
-            {
+            for { i := 0 } lt(i, numOrders) { i := add(i, 1) } {
                 let order := add(orders, add(arrayDataSize, mul(orderSize, i)))
 
                 // Store the memory location of this order in the orders array
@@ -217,6 +216,8 @@ library ExchangeDeserializer {
 
                 // tokenSpendableS
                 offset := and(mload(add(tablesPtr, 12)), 0xFFFF)
+                // Force the spendable index to 0 if it's invalid
+                // offset := mul(offset, lt(offset, numSpendables))
                 mstore(
                     add(order, 224),
                     mload(add(spendableList, mul(add(offset, 1), 32)))
@@ -224,6 +225,8 @@ library ExchangeDeserializer {
 
                 // tokenSpendableFee
                 offset := and(mload(add(tablesPtr, 14)), 0xFFFF)
+                // Force the spendable index to 0 if it's invalid
+                // offset := mul(offset, lt(offset, numSpendables))
                 mstore(
                     add(order, 256),
                     mload(add(spendableList, mul(add(offset, 1), 32)))
@@ -410,11 +413,7 @@ library ExchangeDeserializer {
             mstore(add(rings, 0), numRings)
             mstore(0x40, add(rings, add(ringsArrayDataSize, mul(160, numRings))))
 
-            for
-                { let r := 0 }
-                lt(r, numRings)
-                { r := add(r, 1) }
-            {
+            for { let r := 0 } lt(r, numRings) { r := add(r, 1) } {
                 let ring := add(rings, add(ringsArrayDataSize, mul(160, r)))
 
                 // Store the memory location of this ring in the rings array
@@ -442,11 +441,7 @@ library ExchangeDeserializer {
                 // participations
                 mstore(add(ring, 32), participations)
 
-                for
-                    { let i := 0 }
-                    lt(i, ringSize)
-                    { i := add(i, 1) }
-                {
+                for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
                     let participation := add(participations, add(ringArrayDataSize, mul(320, i)))
 
                     // Store the memory location of this participation in the participations array
@@ -483,11 +478,7 @@ library ExchangeDeserializer {
                 }
 
                 // Set tokenB of orders using the tokenS from the next order
-                for
-                    { let i := 0 }
-                    lt(i, ringSize)
-                    { i := add(i, 1) }
-                {
+                for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
                     let participation := add(participations, add(ringArrayDataSize, mul(320, i)))
                     let participationNext := add(participations, add(
                         ringArrayDataSize,
