@@ -38,9 +38,9 @@ export class Bitstream {
     if (x < 0) {
         const encoded = abi.rawEncode(["int256"], [x.toString(10)]);
         const hex = encoded.toString("hex").slice(-(numBytes * 2));
-        return this.addHex(hex);
+        return this.addHex(hex, forceAppend);
     } else {
-      return this.addBigNumber(new BigNumber(x), numBytes);
+      return this.addBigNumber(new BigNumber(x), numBytes, forceAppend);
     }
   }
 
