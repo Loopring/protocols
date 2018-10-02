@@ -80,7 +80,7 @@ export class ExchangeDeserializer {
       tokenB: null,
       amountS: this.nextUint().toNumber(),
       amountB: this.nextUint().toNumber(),
-      validSince: this.nextUint().toNumber(),
+      validSince: this.nextUint32(),
       tokenSpendableS: this.spendableList[this.nextUint16()],
       tokenSpendableFee: this.spendableList[this.nextUint16()],
       dualAuthAddr: this.nextAddress(),
@@ -89,7 +89,7 @@ export class ExchangeDeserializer {
       brokerSpendableFee: this.spendableList[this.nextUint16()],
       orderInterceptor: this.nextAddress(),
       walletAddr: this.nextAddress(),
-      validUntil: this.nextUint().toNumber(),
+      validUntil: this.nextUint32(),
       sig: this.nextBytes(),
       dualAuthSig: this.nextBytes(),
       allOrNone: this.nextUint16() > 0,
@@ -163,6 +163,15 @@ export class ExchangeDeserializer {
   private nextUint16() {
     const offset = this.getNextOffset();
     return offset;
+  }
+
+  private nextUint32() {
+    const offset = this.getNextOffset();
+    if (offset !== 0) {
+      return this.data.extractUint32(this.dataOffset + offset);
+    } else {
+      return 0;
+    }
   }
 
   private nextBytes() {

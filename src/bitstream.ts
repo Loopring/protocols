@@ -71,6 +71,10 @@ export class Bitstream {
     return parseInt(this.extractBytesX(offset, 2).toString("hex"), 16);
   }
 
+  public extractUint32(offset: number) {
+    return parseInt(this.extractBytesX(offset, 4).toString("hex"), 16);
+  }
+
   public extractUint(offset: number) {
     return new BigNumber(this.extractBytesX(offset, 32).toString("hex"), 16);
   }

@@ -234,7 +234,7 @@ export class RingsGenerator {
     this.insertOffset(param, param.data.addAddress(order.tokenS, 20, false));
     this.insertOffset(param, param.data.addNumber(order.amountS, 32, false));
     this.insertOffset(param, param.data.addNumber(order.amountB, 32, false));
-    this.insertOffset(param, param.data.addNumber(order.validSince, 32, false));
+    this.insertOffset(param, param.data.addNumber(order.validSince, 4, false));
     param.tables.addNumber(order.tokenSpendableS.index, 2);
     param.tables.addNumber(order.tokenSpendableFee.index, 2);
 
@@ -267,7 +267,7 @@ export class RingsGenerator {
     }
 
     if (order.validUntil) {
-      this.insertOffset(param, param.data.addNumber(order.validUntil, 32, false));
+      this.insertOffset(param, param.data.addNumber(order.validUntil, 4, false));
     } else {
       this.insertDefault(param);
     }
