@@ -125,6 +125,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         external
     {
+        uint i;
         bytes32[] memory tokenBurnRates;
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
@@ -143,7 +144,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             0
         );
 
-
         // Check if the highest bit of ringIndex is '1'
         require((ctx.ringIndex >> 63) == 0, REENTRY);
 
@@ -159,30 +159,38 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         // Allocate memory that is used to batch things for all rings
         setupLists(ctx, orders, rings);
 
-        for (uint i = 0; i < orders.length; i++) {
+        for (i = 0; i < orders.length; i++) {
             orders[i].validateInfo(ctx);
             orders[i].checkP2P();
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
         }
         batchGetFilledAndCheckCancelled(ctx, orders);
-        for (uint i = 0; i < orders.length; i++) {
+        updateBrokerSpendables(orders);
+        for (i = 0; i < orders.length; i++) {
             orders[i].checkBrokerSignature(ctx);
         }
 
-        for (uint i = 0; i < rings.length; i++) {
+        for (i = 0; i < rings.length; i++) {
             rings[i].updateHash();
         }
 
         mining.updateHash(rings);
-        mining.updateMinerAndInterceptor(ctx);
+        mining.updateMinerAndInterceptor();
         require(mining.checkMinerSignature(), INVALID_SIG);
 
-        for (uint i = 0; i < orders.length; i++) {
+        for (i = 0; i < orders.length; i++) {
+            // We don't need to verify the dual author signature again if it uses the same
+            // dual author address as the previous order (the miner can optimize the order of the orders
+            // so this happens as much as possible). We don't need to check if the signature is the same
+            // because the same mining hash is signed for all orders.
+            if(i > 0 && orders[i].dualAuthAddr == orders[i - 1].dualAuthAddr) {
+                continue;
+            }
             orders[i].checkDualAuthSignature(mining.hash);
         }
 
-        for (uint i = 0; i < rings.length; i++){
+        for (i = 0; i < rings.length; i++) {
             Data.Ring memory ring = rings[i];
             ring.checkOrdersValid();
             ring.checkForSubRings();
@@ -209,6 +217,92 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         updateOrdersStats(ctx, orders);
 
         ringIndex = ctx.ringIndex;
+    }
+
+    function updateBrokerSpendables(
+        Data.Order[] orders
+        )
+        internal
+        pure
+    {
+        // Spendables for brokers need to be setup just right for the allowances to work, we cannot trust
+        // the miner to do this for us. Spendables for tokens don't need to be correct, if they are incorrect
+        // the transaction will fail, so the miner will want to send those correctly.
+        uint data;
+        uint ptr;
+        assembly {
+            data := mload(0x40)
+            ptr := data
+        }
+        for (uint i = 0; i < orders.length; i++) {
+            if (orders[i].brokerInterceptor != 0) {
+                uint brokerSpendableS;
+                (ptr, brokerSpendableS) = addBrokerSpendable(
+                    data,
+                    ptr,
+                    orders[i].broker,
+                    orders[i].owner,
+                    orders[i].tokenS
+                );
+                uint brokerSpendableFee;
+                (ptr, brokerSpendableFee) = addBrokerSpendable(
+                    data,
+                    ptr,
+                    orders[i].broker,
+                    orders[i].owner,
+                    orders[i].feeToken
+                );
+                // Store the spendables in the order
+                assembly {
+                    let order := mload(add(orders, mul(add(1, i), 32)))             // orders[i]
+                    mstore(add(order, 320), brokerSpendableS)                       // order.brokerSpendableS
+                    mstore(add(order, 352), brokerSpendableFee)                     // order.brokerSpendableFee
+                }
+            }
+        }
+        assembly {
+            mstore(0x40, ptr)
+        }
+    }
+
+    function addBrokerSpendable(
+        uint data,
+        uint ptr,
+        address broker,
+        address owner,
+        address token
+        )
+        internal
+        pure
+        returns (uint newPtr, uint spendable)
+    {
+        assembly {
+            // Try to find the spendable for the same (broker, owner, token) set
+            let addNew := 1
+            for { let p := data } and(lt(p, ptr), eq(addNew, 1)) { p := add(p, 192) } {
+                let dataBroker := mload(add(p,  0))
+                let dataOwner := mload(add(p, 32))
+                let dataToken := mload(add(p, 64))
+                // if(broker == dataBroker && owner == dataOwner && token == dataToken)
+                if and(and(eq(broker, dataBroker), eq(owner, dataOwner)), eq(token, dataToken)) {
+                    spendable := add(p, 96)
+                    addNew := 0
+                }
+            }
+            if eq(addNew, 1) {
+                mstore(add(ptr,  0), broker)
+                mstore(add(ptr, 32), owner)
+                mstore(add(ptr, 64), token)
+                // Initialize spendable
+                mstore(add(ptr, 96), 0)
+                mstore(add(ptr, 128), 0)
+                mstore(add(ptr, 160), 0)
+
+                spendable := add(ptr, 96)
+                ptr := add(ptr, 192)
+            }
+            newPtr := ptr
+        }
     }
 
     function setupLists(
@@ -409,7 +503,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
-        address tradeDelegateAddress = address(ctx.delegate);
+        address _tradeDelegateAddress = address(ctx.delegate);
         uint data = ctx.transferData - 68;
         uint ptr = ctx.transferPtr;
         assembly {
@@ -417,7 +511,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
 
             let success := call(
                 gas,                                // forward all gas
-                tradeDelegateAddress,               // external address
+                _tradeDelegateAddress,              // external address
                 0,                                  // wei
                 data,                               // input start
                 sub(ptr, data),                     // input length
@@ -435,7 +529,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
-        address feeHolderAddress = address(ctx.feeHolder);
+        address _feeHolderAddress = address(ctx.feeHolder);
         uint data = ctx.feeData - 68;
         uint ptr = ctx.feePtr;
         assembly {
@@ -443,7 +537,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
 
             let success := call(
                 gas,                                // forward all gas
-                feeHolderAddress,                   // external address
+                _feeHolderAddress,                  // external address
                 0,                                  // wei
                 data,                               // input start
                 sub(ptr, data),                     // input length

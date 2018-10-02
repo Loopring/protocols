@@ -235,6 +235,9 @@ library OrderHelper {
         pure
     {
         order.tokenSpendableS.reserved += amount;
+        if (order.brokerInterceptor != 0x0) {
+            order.brokerSpendableS.reserved += amount;
+        }
     }
 
     function reserveAmountFee(
@@ -245,6 +248,9 @@ library OrderHelper {
         pure
     {
         order.tokenSpendableFee.reserved += amount;
+        if (order.brokerInterceptor != 0x0) {
+            order.brokerSpendableFee.reserved += amount;
+        }
     }
 
     function resetReservations(
@@ -255,6 +261,10 @@ library OrderHelper {
     {
         order.tokenSpendableS.reserved = 0;
         order.tokenSpendableFee.reserved = 0;
+        if (order.brokerInterceptor != 0x0) {
+            order.brokerSpendableS.reserved = 0;
+            order.brokerSpendableFee.reserved = 0;
+        }
     }
 
     /// @return Amount of ERC20 token that can be spent by this contract.
@@ -316,7 +326,7 @@ library OrderHelper {
             );
             tokenSpendable.initialized = true;
         }
-        spendable = tokenSpendable.amount;
+        spendable = tokenSpendable.amount.sub(tokenSpendable.reserved);
         if (brokerInterceptor != 0x0) {
             if (!brokerSpendable.initialized) {
                 brokerSpendable.amount = getBrokerAllowance(
@@ -327,8 +337,8 @@ library OrderHelper {
                 );
                 brokerSpendable.initialized = true;
             }
-            spendable = (brokerSpendable.amount < spendable) ? brokerSpendable.amount : spendable;
+            uint brokerSpendableAmount = brokerSpendable.amount.sub(brokerSpendable.reserved);
+            spendable = (brokerSpendableAmount < spendable) ? brokerSpendableAmount : spendable;
         }
-        spendable = spendable.sub(tokenSpendable.reserved);
     }
 }

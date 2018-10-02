@@ -24,10 +24,10 @@ import "../iface/IRingSubmitter.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract DummyBrokerInterceptor is IBrokerInterceptor {
 
-    mapping(address => mapping(address => uint)) public spent;
+    mapping(address => mapping(address => mapping(address => uint))) public spent;
+    mapping(address => mapping(address => mapping(address => uint))) public allowance;
 
     address public exchangeAddress = 0x0;
-    uint public allowance = 0;
 
     bool public doReentrancyAttack = false;
     bytes public submitRingsData;
@@ -55,7 +55,7 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         if (doFailAllFunctions) {
             assert(owner == 0x0);
         }
-        return allowance;
+        return allowance[broker][owner][token];
     }
 
     function onTokenSpent(
@@ -73,16 +73,19 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         if (doReentrancyAttack) {
             IRingSubmitter(exchangeAddress).submitRings(submitRingsData);
         }
-        spent[owner][token] += amount;
+        spent[broker][owner][token] += amount;
         ok = true;
     }
 
     function setAllowance(
-        uint _allowance
+        address broker,
+        address owner,
+        address token,
+        uint amount
         )
         public
     {
-        allowance = _allowance;
+        allowance[broker][owner][token] = amount;
     }
 
     function setReentrancyAttackEnabled(

@@ -52,13 +52,8 @@ library ParticipationHelper {
         if (p.order.P2P) {
             // Calculate P2P fees
             p.feeAmount = 0;
-            if (p.order.wallet != 0x0) {
-                p.feeAmountS = p.fillAmountS.mul(p.order.tokenSFeePercentage) / ctx.feePercentageBase;
-                p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / ctx.feePercentageBase;
-            } else {
-                p.feeAmountS = 0;
-                p.feeAmountB = 0;
-            }
+            p.feeAmountS = p.fillAmountS.mul(p.order.tokenSFeePercentage) / ctx.feePercentageBase;
+            p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / ctx.feePercentageBase;
         } else {
             // Calculate matching fees
             p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
@@ -110,8 +105,8 @@ library ParticipationHelper {
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
         if (p.order.brokerInterceptor != 0x0) {
-            p.order.brokerSpendableS.amount = p.order.brokerSpendableS.amount.sub(totalAmountFee);
-            p.order.brokerSpendableFee.amount = p.order.brokerSpendableFee.amount.sub(totalAmountS);
+            p.order.brokerSpendableS.amount = p.order.brokerSpendableS.amount.sub(totalAmountS);
+            p.order.brokerSpendableFee.amount = p.order.brokerSpendableFee.amount.sub(totalAmountFee);
         }
     }
 

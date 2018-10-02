@@ -743,6 +743,36 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "P2P: fee percentages non-zero but no wallet specified",
+    transactionOrigin: "1",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        owner: "0",
+        tokenS: "GTO",
+        tokenB: "WETH",
+        amountS: 100e18,
+        amountB: 380e18,
+        tokenSFeePercentage: 60,  // == 6.0%
+        tokenBFeePercentage: 100,  // == 10.0%
+        walletAddr: null,
+      },
+      {
+        index: 1,
+        owner: "1",
+        tokenS: "WETH",
+        tokenB: "GTO",
+        amountS: 400e18,
+        amountB: 94e18,
+        tokenSFeePercentage: 50,  // == 5.0%
+        tokenBFeePercentage: 25,  // == 2.5%
+        walletAddr: null,
+      },
+    ],
+  },
+
+  {
     description: "P2P: invalid tokenSFeePercentage",
     transactionOrigin: "0",
     rings: [[0, 1]],
