@@ -184,14 +184,14 @@ library ExchangeDeserializer {
                 offset := and(mload(add(tablesPtr,  2)), 0xFFFF)
                 mstore(
                     add(order,  32),
-                    mload(add(add(data, 20), offset))
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // tokenS
                 offset := and(mload(add(tablesPtr,  4)), 0xFFFF)
                 mstore(
                     add(order,  64),
-                    mload(add(add(data, 20), offset))
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // amountS
@@ -233,14 +233,14 @@ library ExchangeDeserializer {
                 offset := and(mload(add(tablesPtr, 16)), 0xFFFF)
                 mstore(
                     add(order, 288),
-                    mload(add(add(data, 20), offset))
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // broker
                 offset := and(mload(add(tablesPtr, 18)), 0xFFFF)
                 mstore(
                     add(order, 320),
-                    mload(add(add(data, 20), offset))
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // brokerSpendableS
@@ -261,14 +261,14 @@ library ExchangeDeserializer {
                 offset := and(mload(add(tablesPtr, 24)), 0xFFFF)
                 mstore(
                     add(order, 416),
-                    mload(add(add(data, 20), offset))
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // wallet
                 offset := and(mload(add(tablesPtr, 26)), 0xFFFF)
                 mstore(
                     add(order, 448),
-                    mload(add(add(data, 20), offset))
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // validUntil
@@ -312,7 +312,7 @@ library ExchangeDeserializer {
                 offset := and(mload(add(tablesPtr, 36)), 0xFFFF)
                 mstore(
                     add(order, 608),
-                    mload(add(add(data, 20), offset))
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // Restore default to 0
@@ -360,7 +360,7 @@ library ExchangeDeserializer {
                 offset := and(mload(add(tablesPtr, 48)), 0xFFFF)
                 mstore(
                     add(order, 800),
-                    mload(add(add(data, 20), offset))
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // Restore default to 0
