@@ -217,7 +217,7 @@ library ExchangeDeserializer {
                 // tokenSpendableS
                 offset := and(mload(add(tablesPtr, 12)), 0xFFFF)
                 // Force the spendable index to 0 if it's invalid
-                // offset := mul(offset, lt(offset, numSpendables))
+                offset := mul(offset, lt(offset, numSpendables))
                 mstore(
                     add(order, 224),
                     mload(add(spendableList, mul(add(offset, 1), 32)))
@@ -226,7 +226,7 @@ library ExchangeDeserializer {
                 // tokenSpendableFee
                 offset := and(mload(add(tablesPtr, 14)), 0xFFFF)
                 // Force the spendable index to 0 if it's invalid
-                // offset := mul(offset, lt(offset, numSpendables))
+                offset := mul(offset, lt(offset, numSpendables))
                 mstore(
                     add(order, 256),
                     mload(add(spendableList, mul(add(offset, 1), 32)))

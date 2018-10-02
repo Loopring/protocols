@@ -255,8 +255,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                 // Store the spendables in the order
                 assembly {
                     let order := mload(add(orders, mul(add(1, i), 32)))             // orders[i]
-                    mstore(add(order, 320), brokerSpendableS)                       // order.brokerSpendableS
-                    mstore(add(order, 352), brokerSpendableFee)                     // order.brokerSpendableFee
+                    mstore(add(order, 352), brokerSpendableS)                       // order.brokerSpendableS
+                    mstore(add(order, 384), brokerSpendableFee)                     // order.brokerSpendableFee
                 }
             }
         }
