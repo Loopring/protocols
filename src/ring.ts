@@ -176,15 +176,10 @@ export class Ring {
     if (order.P2P) {
       // Calculate P2P fees
       order.fillAmountFee = 0;
-      if (order.walletAddr) {
-        order.fillAmountFeeS = Math.floor(order.fillAmountS * order.tokenSFeePercentage /
-                               this.context.feePercentageBase);
-        order.fillAmountFeeB = Math.floor(order.fillAmountB * order.tokenBFeePercentage /
-                               this.context.feePercentageBase);
-      } else {
-        order.fillAmountFeeS = 0;
-        order.fillAmountFeeB = 0;
-      }
+      order.fillAmountFeeS = Math.floor(order.fillAmountS * order.tokenSFeePercentage /
+                              this.context.feePercentageBase);
+      order.fillAmountFeeB = Math.floor(order.fillAmountB * order.tokenBFeePercentage /
+                              this.context.feePercentageBase);
     } else {
       // Calculate matching fees
       order.fillAmountFee = Math.floor(order.feeAmount * order.fillAmountS / order.amountS);
@@ -229,6 +224,8 @@ export class Ring {
     if (order.brokerInterceptor) {
       order.brokerSpendableS.amount -= totalAmountS;
       order.brokerSpendableFee.amount -= totalAmountFee;
+      assert(order.brokerSpendableS.amount >= 0, "brokerSpendableS should be positive");
+      assert(order.tokenSpendableFee.amount >= 0, "tokenSpendableFee should be positive");
     }
     // Checks
     assert(order.tokenSpendableS.amount >= 0, "spendableS should be positive");
@@ -351,16 +348,20 @@ export class Ring {
   private async payFeesAndBurn(mining: Mining,
                                order: OrderInfo,
                                token: string,
-                               amount: number,
+                               totalAmount: number,
                                margin: number,
                                walletSplitPercentage: number,
                                payment: DetailedTokenTransfer,
                                feePercentage: number = 0) {
-    if (amount + margin === 0) {
+    if (totalAmount + margin === 0) {
       return 0;
     }
+
+    let amount = totalAmount;
+    // No need to pay any fees in a P2P order without a wallet
+    // (but the fee amount is a part of amountS of the order, so the fee amount is rebated).
     if (order.P2P && !order.walletAddr) {
-      assert.equal(amount, 0, "In a P2P order no fees should be paid when no wallet is provided");
+      amount = 0;
     }
 
     // Pay the burn rate with the feeHolder as owner
@@ -462,13 +463,13 @@ export class Ring {
     let totalFeePaid = (feeToWallet + minerFee) + (minerBurn + walletBurn);
 
     // JS rounding errors...
-    if (totalFeePaid > amount + margin && totalFeePaid < amount + margin + 10000) {
-      totalFeePaid = amount + margin;
+    if (totalFeePaid > totalAmount + margin && totalFeePaid < totalAmount + margin + 10000) {
+      totalFeePaid = totalAmount + margin;
     }
-    assert(totalFeePaid <= amount + margin, "Total fee paid cannot exceed the total fee amount");
+    assert(totalFeePaid <= totalAmount + margin, "Total fee paid cannot exceed the total fee amount");
 
     // Return the rebate this order got
-    return (amount + margin) - totalFeePaid;
+    return (totalAmount + margin) - totalFeePaid;
   }
 
   private async addFeePayment(token: string,
@@ -606,8 +607,8 @@ export class Ring {
           }
         } else {
           // No fees need to be paid when no wallet is given
-          assert.equal(order.fillAmountFeeS, 0, "No fees need to paid without wallet in a P2P order");
-          assert.equal(order.fillAmountFeeB, 0, "No fees need to paid without wallet in a P2P order");
+          assert.equal(order.fillAmountFeeS, order.rebateS, "No fees need to paid without wallet in a P2P order");
+          assert.equal(order.fillAmountFeeB, order.rebateB, "No fees need to paid without wallet in a P2P order");
         }
       } else {
         // Fee cannot be paid in tokenS
@@ -652,14 +653,19 @@ export class Ring {
         return [burn, minerRebate + burnRebate];
       };
       const [expectedBurnFee, expectedRebateFee] = await calculateBurnAndRebate(order.feeToken, order.fillAmountFee);
-      const [expectedBurnS, expectedRebateS] = await calculateBurnAndRebate(order.tokenS, order.fillAmountFeeS);
-      const [expectedBurnB, expectedRebateB] = await calculateBurnAndRebate(order.tokenB, order.fillAmountFeeB);
-      this.assertAlmostEqual(order.rebateFee, expectedRebateFee,
-                             "Fee rebate should match expected value");
-      this.assertAlmostEqual(order.rebateS, expectedRebateS,
-                             "FeeS rebate should match expected value");
-      this.assertAlmostEqual(order.rebateB, expectedRebateB,
-                             "FeeB rebate should match expected value");
+      let [expectedBurnS, expectedRebateS] = await calculateBurnAndRebate(order.tokenS, order.fillAmountFeeS);
+      let [expectedBurnB, expectedRebateB] = await calculateBurnAndRebate(order.tokenB, order.fillAmountFeeB);
+
+      if (order.P2P && !order.walletAddr) {
+        expectedRebateS = order.fillAmountFeeS;
+        expectedBurnS = 0;
+        expectedRebateB = order.fillAmountFeeB;
+        expectedBurnB = 0;
+      }
+
+      this.assertAlmostEqual(order.rebateFee, expectedRebateFee, "Fee rebate should match expected value");
+      this.assertAlmostEqual(order.rebateS, expectedRebateS, "FeeS rebate should match expected value");
+      this.assertAlmostEqual(order.rebateB, expectedRebateB, "FeeB rebate should match expected value");
 
       // Add burn rates to total expected burn rates
       if (!expectedTotalBurned[order.feeToken]) {

@@ -199,17 +199,27 @@ export class OrderUtil {
                               amount: number) {
     assert((await this.getSpendableS(order)) >= amount, "spendableS >= reserve amount");
     order.tokenSpendableS.reserved += amount;
+    if (order.brokerInterceptor) {
+      order.brokerSpendableS.reserved += amount;
+    }
   }
 
   public async reserveAmountFee(order: OrderInfo,
                                 amount: number) {
     assert((await this.getSpendableFee(order)) >= amount, "spendableFee >= reserve amount");
     order.tokenSpendableFee.reserved += amount;
+    if (order.brokerInterceptor) {
+      order.brokerSpendableFee.reserved += amount;
+    }
   }
 
   public resetReservations(order: OrderInfo) {
     order.tokenSpendableS.reserved = 0;
     order.tokenSpendableFee.reserved = 0;
+    if (order.brokerInterceptor) {
+      order.tokenSpendableS.reserved = 0;
+      order.tokenSpendableFee.reserved = 0;
+    }
   }
 
   public async getERC20Spendable(spender: string,
@@ -249,7 +259,8 @@ export class OrderUtil {
                                                            owner);
       tokenSpendable.initialized = true;
     }
-    let spendable = tokenSpendable.amount;
+    let spendable = tokenSpendable.amount - tokenSpendable.reserved;
+    assert(spendable >= 0, "spendable >= 0");
     if (brokerInterceptor) {
       if (!brokerSpendable.initialized) {
         brokerSpendable.amount = await this.getBrokerAllowance(token,
@@ -258,9 +269,11 @@ export class OrderUtil {
                                                                   brokerInterceptor);
         brokerSpendable.initialized = true;
       }
-      spendable = (brokerSpendable.amount < spendable) ? brokerSpendable.amount : spendable;
+      const brokerSpendableAmount = brokerSpendable.amount - brokerSpendable.reserved;
+      assert(brokerSpendableAmount >= 0, "brokerSpendable >= 0");
+      spendable = (brokerSpendableAmount < spendable) ? brokerSpendableAmount : spendable;
     }
-    return spendable - tokenSpendable.reserved;
+    return spendable;
   }
 
   private toBN(n: number) {
