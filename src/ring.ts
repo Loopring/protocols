@@ -217,7 +217,7 @@ export class Ring {
     order.filledAmountS += order.fillAmountS + order.splitS;
 
     // Update spendables
-    const totalAmountS = order.fillAmountS;
+    const totalAmountS = order.fillAmountS + order.splitS;
     const totalAmountFee = order.fillAmountFee;
     order.tokenSpendableS.amount -= totalAmountS;
     order.tokenSpendableFee.amount -= totalAmountFee;
