@@ -75,7 +75,7 @@ library ExchangeDeserializer {
         require(numSpendables > 0, "Invalid number of spendables");
 
         uint ordersOffset = 8;
-        uint ringsOffset = ordersOffset + (3 + 26 * inputs.numOrders) * 2;
+        uint ringsOffset = ordersOffset + (3 + 27 * inputs.numOrders) * 2;
         uint dataOffset = ringsOffset + inputs.numRings * 9 + 32;
 
         assembly {
@@ -193,29 +193,36 @@ library ExchangeDeserializer {
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
-                // amountS
+                // tokenB
                 offset := mul(and(mload(add(tablesPtr,  6)), 0xFFFF), 4)
+                mstore(
+                    add(order,  96),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // amountS
+                offset := mul(and(mload(add(tablesPtr,  8)), 0xFFFF), 4)
                 mstore(
                     add(order, 128),
                     mload(add(add(data, 32), offset))
                 )
 
                 // amountB
-                offset := mul(and(mload(add(tablesPtr,  8)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 10)), 0xFFFF), 4)
                 mstore(
                     add(order, 160),
                     mload(add(add(data, 32), offset))
                 )
 
                 // validSince
-                offset := mul(and(mload(add(tablesPtr, 10)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 12)), 0xFFFF), 4)
                 mstore(
                     add(order, 192),
                     and(mload(add(add(data, 4), offset)), 0xFFFFFFFF)
                 )
 
                 // tokenSpendableS
-                offset := and(mload(add(tablesPtr, 12)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 14)), 0xFFFF)
                 // Force the spendable index to 0 if it's invalid
                 offset := mul(offset, lt(offset, numSpendables))
                 mstore(
@@ -224,7 +231,7 @@ library ExchangeDeserializer {
                 )
 
                 // tokenSpendableFee
-                offset := and(mload(add(tablesPtr, 14)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 16)), 0xFFFF)
                 // Force the spendable index to 0 if it's invalid
                 offset := mul(offset, lt(offset, numSpendables))
                 mstore(
@@ -233,49 +240,49 @@ library ExchangeDeserializer {
                 )
 
                 // dualAuthAddr
-                offset := mul(and(mload(add(tablesPtr, 16)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 18)), 0xFFFF), 4)
                 mstore(
                     add(order, 288),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // broker
-                offset := mul(and(mload(add(tablesPtr, 18)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 20)), 0xFFFF), 4)
                 mstore(
                     add(order, 320),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // brokerSpendableS
-                offset := and(mload(add(tablesPtr, 20)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 22)), 0xFFFF)
                 mstore(
                     add(order, 352),
                     mload(add(spendableList, mul(add(offset, 1), 32)))
                 )
 
                 // brokerSpendableFee
-                offset := and(mload(add(tablesPtr, 22)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 24)), 0xFFFF)
                 mstore(
                     add(order, 384),
                     mload(add(spendableList, mul(add(offset, 1), 32)))
                 )
 
                 // orderInterceptor
-                offset := mul(and(mload(add(tablesPtr, 24)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 26)), 0xFFFF), 4)
                 mstore(
                     add(order, 416),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // wallet
-                offset := mul(and(mload(add(tablesPtr, 26)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 28)), 0xFFFF), 4)
                 mstore(
                     add(order, 448),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // validUntil
-                offset := mul(and(mload(add(tablesPtr, 28)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 30)), 0xFFFF), 4)
                 mstore(
                     add(order, 480),
                     and(mload(add(add(data, 32), offset)), 0xFFFFFFFF)
@@ -285,14 +292,14 @@ library ExchangeDeserializer {
                 mstore(add(data, 32), emptyBytes)
 
                 // sig
-                offset := mul(and(mload(add(tablesPtr, 30)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 32)), 0xFFFF), 4)
                 mstore(
                     add(order, 512),
                     add(data, add(offset, 32))
                 )
 
                 // dualAuthSig
-                offset := mul(and(mload(add(tablesPtr, 32)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 34)), 0xFFFF), 4)
                 mstore(
                     add(order, 544),
                     add(data, add(offset, 32))
@@ -302,7 +309,7 @@ library ExchangeDeserializer {
                 mstore(add(data, 32), 0)
 
                 // allOrNone
-                offset := and(mload(add(tablesPtr, 34)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 36)), 0xFFFF)
                 mstore(
                     add(order, 576),
                     gt(offset, 0)
@@ -312,7 +319,7 @@ library ExchangeDeserializer {
                 mstore(add(data, 20), lrcTokenAddress)
 
                 // feeToken
-                offset := mul(and(mload(add(tablesPtr, 36)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 38)), 0xFFFF), 4)
                 mstore(
                     add(order, 608),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
@@ -322,35 +329,35 @@ library ExchangeDeserializer {
                 mstore(add(data, 20), 0)
 
                 // feeAmount
-                offset := mul(and(mload(add(tablesPtr, 38)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 40)), 0xFFFF), 4)
                 mstore(
                     add(order, 640),
                     mload(add(add(data, 32), offset))
                 )
 
                 // feePercentage
-                offset := and(mload(add(tablesPtr, 40)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 42)), 0xFFFF)
                 mstore(
                     add(order, 672),
                     offset
                 )
 
                 // waiveFeePercentage
-                offset := and(mload(add(tablesPtr, 42)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 44)), 0xFFFF)
                 mstore(
                     add(order, 704),
                     offset
                 )
 
                 // tokenSFeePercentage
-                offset := and(mload(add(tablesPtr, 44)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 46)), 0xFFFF)
                 mstore(
                     add(order, 736),
                     offset
                 )
 
                 // tokenBFeePercentage
-                offset := and(mload(add(tablesPtr, 46)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 48)), 0xFFFF)
                 mstore(
                     add(order, 768),
                     offset
@@ -360,7 +367,7 @@ library ExchangeDeserializer {
                 mstore(add(data, 20), mload(add(order, 32)))
 
                 // tokenRecipient
-                offset := mul(and(mload(add(tablesPtr, 48)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 50)), 0xFFFF), 4)
                 mstore(
                     add(order, 800),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
@@ -370,7 +377,7 @@ library ExchangeDeserializer {
                 mstore(add(data, 20), 0)
 
                 // walletSplitPercentage
-                offset := and(mload(add(tablesPtr, 50)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 52)), 0xFFFF)
                 mstore(
                     add(order, 832),
                     offset
@@ -389,7 +396,7 @@ library ExchangeDeserializer {
                 mstore(add(order, 992), 1)
 
                 // Advance to the next order
-                tablesPtr := add(tablesPtr, 52)
+                tablesPtr := add(tablesPtr, 54)
             }
         }
 
@@ -475,20 +482,6 @@ library ExchangeDeserializer {
                     mstore(add(participation, 256), 0)
                     // fillAmountB
                     mstore(add(participation, 288), 0)
-                }
-
-                // Set tokenB of orders using the tokenS from the next order
-                for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
-                    let participation := add(participations, add(ringArrayDataSize, mul(320, i)))
-                    let participationNext := add(participations, add(
-                        ringArrayDataSize,
-                        mul(320, addmod(i, 1, ringSize))
-                    ))
-
-                    mstore(
-                        add(mload(participation),  96),
-                        mload(add(mload(participationNext),  64))
-                    )
                 }
 
                 // Advance to next ring
