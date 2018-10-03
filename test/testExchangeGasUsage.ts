@@ -283,6 +283,52 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       showCallDataStats(callData);
     });
 
+    it("single 3-size ring, fee token the same (not LRC)", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            index: 0,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            feeToken: "REP",
+            amountS: 100e18,
+            amountB: 10e18,
+            feeAmount: 7e18,
+            walletAddr: "0",
+            dualAuthAddr: "0",
+          },
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "LRC",
+            feeToken: "REP",
+            amountS: 5e18,
+            amountB: 45e18,
+            feeAmount: 8e18,
+            walletAddr: "1",
+            dualAuthAddr: "1",
+          },
+          {
+            index: 2,
+            tokenS: "LRC",
+            tokenB: "WETH",
+            feeToken: "REP",
+            amountS: 3e18,
+            amountB: 2e18,
+            feeAmount: 9e18,
+            walletAddr: "2",
+            dualAuthAddr: "2",
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
+      const tx = await deserializerTest.deserialize(callData);
+      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      showCallDataStats(callData);
+    });
+
     it("single 3-size ring, wallet shared", async () => {
       const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 1]],
@@ -359,6 +405,59 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
             feeAmount: 9e18,
             walletAddr: "2",
             dualAuthAddr: "0",
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
+      const tx = await deserializerTest.deserialize(callData);
+      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      showCallDataStats(callData);
+    });
+
+    it("order filled by 3 other orders", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1], [0, 2], [0, 3]],
+        orders: [
+          {
+            index: 0,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 150e18,
+            amountB: 15e18,
+            feeAmount: 1e18,
+            walletAddr: "0",
+            dualAuthAddr: "0",
+          },
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 5e18,
+            amountB: 50e18,
+            feeAmount: 2e18,
+            walletAddr: "1",
+            dualAuthAddr: "1",
+          },
+          {
+            index: 2,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 5e18,
+            amountB: 50e18,
+            feeAmount: 2e18,
+            walletAddr: "2",
+            dualAuthAddr: "2",
+          },
+          {
+            index: 3,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 5e18,
+            amountB: 50e18,
+            feeAmount: 2e18,
+            walletAddr: "3",
+            dualAuthAddr: "3",
           },
         ],
       };
