@@ -127,7 +127,7 @@ library ExchangeDeserializer {
             mstore(add(data, 20), origin)
 
             // feeRecipient
-            offset := and(mload(add(tablesPtr,  0)), 0xFFFF)
+            offset := mul(and(mload(add(tablesPtr,  0)), 0xFFFF), 4)
             mstore(
                 add(mining,   0),
                 mload(add(add(data, 20), offset))
@@ -137,7 +137,7 @@ library ExchangeDeserializer {
             mstore(add(data, 20), 0)
 
             // miner
-            offset := and(mload(add(tablesPtr,  2)), 0xFFFF)
+            offset := mul(and(mload(add(tablesPtr,  2)), 0xFFFF), 4)
             mstore(
                 add(mining,  32),
                 mload(add(add(data, 20), offset))
@@ -147,7 +147,7 @@ library ExchangeDeserializer {
             mstore(add(data, 32), emptyBytes)
 
             // sig
-            offset := and(mload(add(tablesPtr,  4)), 0xFFFF)
+            offset := mul(and(mload(add(tablesPtr,  4)), 0xFFFF), 4)
             mstore(
                 add(mining, 64),
                 add(data, add(offset, 32))
@@ -180,35 +180,35 @@ library ExchangeDeserializer {
                 )
 
                 // Owner
-                offset := and(mload(add(tablesPtr,  2)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr,  2)), 0xFFFF), 4)
                 mstore(
                     add(order,  32),                                           // order.owner
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // tokenS
-                offset := and(mload(add(tablesPtr,  4)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr,  4)), 0xFFFF), 4)
                 mstore(
                     add(order,  64),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // amountS
-                offset := and(mload(add(tablesPtr,  6)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr,  6)), 0xFFFF), 4)
                 mstore(
                     add(order, 128),
                     mload(add(add(data, 32), offset))
                 )
 
                 // amountB
-                offset := and(mload(add(tablesPtr,  8)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr,  8)), 0xFFFF), 4)
                 mstore(
                     add(order, 160),
                     mload(add(add(data, 32), offset))
                 )
 
                 // validSince
-                offset := and(mload(add(tablesPtr, 10)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 10)), 0xFFFF), 4)
                 mstore(
                     add(order, 192),
                     and(mload(add(add(data, 4), offset)), 0xFFFFFFFF)
@@ -233,14 +233,14 @@ library ExchangeDeserializer {
                 )
 
                 // dualAuthAddr
-                offset := and(mload(add(tablesPtr, 16)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 16)), 0xFFFF), 4)
                 mstore(
                     add(order, 288),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // broker
-                offset := and(mload(add(tablesPtr, 18)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 18)), 0xFFFF), 4)
                 mstore(
                     add(order, 320),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
@@ -261,21 +261,21 @@ library ExchangeDeserializer {
                 )
 
                 // orderInterceptor
-                offset := and(mload(add(tablesPtr, 24)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 24)), 0xFFFF), 4)
                 mstore(
                     add(order, 416),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // wallet
-                offset := and(mload(add(tablesPtr, 26)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 26)), 0xFFFF), 4)
                 mstore(
                     add(order, 448),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
                 // validUntil
-                offset := and(mload(add(tablesPtr, 28)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 28)), 0xFFFF), 4)
                 mstore(
                     add(order, 480),
                     and(mload(add(add(data, 32), offset)), 0xFFFFFFFF)
@@ -285,14 +285,14 @@ library ExchangeDeserializer {
                 mstore(add(data, 32), emptyBytes)
 
                 // sig
-                offset := and(mload(add(tablesPtr, 30)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 30)), 0xFFFF), 4)
                 mstore(
                     add(order, 512),
                     add(data, add(offset, 32))
                 )
 
                 // dualAuthSig
-                offset := and(mload(add(tablesPtr, 32)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 32)), 0xFFFF), 4)
                 mstore(
                     add(order, 544),
                     add(data, add(offset, 32))
@@ -312,7 +312,7 @@ library ExchangeDeserializer {
                 mstore(add(data, 20), lrcTokenAddress)
 
                 // feeToken
-                offset := and(mload(add(tablesPtr, 36)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 36)), 0xFFFF), 4)
                 mstore(
                     add(order, 608),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
@@ -322,7 +322,7 @@ library ExchangeDeserializer {
                 mstore(add(data, 20), 0)
 
                 // feeAmount
-                offset := and(mload(add(tablesPtr, 38)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 38)), 0xFFFF), 4)
                 mstore(
                     add(order, 640),
                     mload(add(add(data, 32), offset))
@@ -360,7 +360,7 @@ library ExchangeDeserializer {
                 mstore(add(data, 20), mload(add(order, 32)))
 
                 // tokenRecipient
-                offset := and(mload(add(tablesPtr, 48)), 0xFFFF)
+                offset := mul(and(mload(add(tablesPtr, 48)), 0xFFFF), 4)
                 mstore(
                     add(order, 800),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
