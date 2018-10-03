@@ -241,6 +241,7 @@ export class RingsGenerator {
     this.insertOffset(param, this.ORDER_VERSION);
     this.insertOffset(param, param.data.addAddress(order.owner, 20, false));
     this.insertOffset(param, param.data.addAddress(order.tokenS, 20, false));
+    this.insertOffset(param, param.data.addAddress(order.tokenB, 20, false));
     this.insertOffset(param, param.data.addNumber(order.amountS, 32, false));
     this.insertOffset(param, param.data.addNumber(order.amountB, 32, false));
     this.insertOffset(param, param.data.addNumber(order.validSince, 4, false));

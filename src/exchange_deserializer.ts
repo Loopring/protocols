@@ -36,7 +36,7 @@ export class ExchangeDeserializer {
     const numSpendables = this.data.extractUint16(6);
 
     this.tableOffset = 8;
-    const ringsOffset = this.tableOffset + (3 + 26 * numOrders) * 2;
+    const ringsOffset = this.tableOffset + (3 + 27 * numOrders) * 2;
     this.dataOffset = ringsOffset + numRings * 9 + 32;
 
     this.spendableList = [];
@@ -77,7 +77,7 @@ export class ExchangeDeserializer {
       version: this.nextUint16(),
       owner: this.nextAddress(),
       tokenS: this.nextAddress(),
-      tokenB: null,
+      tokenB: this.nextAddress(),
       amountS: this.nextUint().toNumber(),
       amountB: this.nextUint().toNumber(),
       validSince: this.nextUint32(),
@@ -126,11 +126,6 @@ export class ExchangeDeserializer {
       offset += 1;
       const pspec = new ParticipationSpec(specData);
       ring.push(pspec.orderIndex());
-    }
-
-    // Set tokenB of orders using the tokenS from the next order
-    for (let i = 0; i < ring.length; i++) {
-      orders[ring[i]].tokenB = orders[ring[(i + 1) % ring.length]].tokenS;
     }
 
     return ring;
