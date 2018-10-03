@@ -215,20 +215,29 @@ export class RingsGenerator {
 
     if (ringsInfo.sig && miner !== ringsInfo.transactionOrigin) {
       this.insertOffset(param, param.data.addHex(this.createBytes(ringsInfo.sig), false));
+      this.addPadding(param);
     } else {
       this.insertDefault(param);
     }
   }
 
   private insertOffset(param: RingsSubmitParam, offset: number) {
-    param.tables.addNumber(offset, 2);
+    assert(offset % 4 === 0);
+    param.tables.addNumber(offset / 4, 2);
   }
 
   private insertDefault(param: RingsSubmitParam) {
     param.tables.addNumber(0, 2);
   }
 
+  private addPadding(param: RingsSubmitParam) {
+    if (param.data.length() % 4 !== 0) {
+      param.data.addNumber(0, 4 - (param.data.length() % 4));
+    }
+  }
+
   private createOrderTable(order: OrderInfo, param: RingsSubmitParam) {
+    this.addPadding(param);
     this.insertOffset(param, this.ORDER_VERSION);
     this.insertOffset(param, param.data.addAddress(order.owner, 20, false));
     this.insertOffset(param, param.data.addAddress(order.tokenS, 20, false));
@@ -274,12 +283,14 @@ export class RingsGenerator {
 
     if (order.sig) {
       this.insertOffset(param, param.data.addHex(this.createBytes(order.sig), false));
+      this.addPadding(param);
     } else {
       this.insertDefault(param);
     }
 
     if (order.dualAuthSig) {
       this.insertOffset(param, param.data.addHex(this.createBytes(order.dualAuthSig), false));
+      this.addPadding(param);
     } else {
       this.insertDefault(param);
     }

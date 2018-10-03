@@ -143,7 +143,7 @@ export class ExchangeDeserializer {
   }
 
   private nextAddress() {
-    const offset = this.getNextOffset();
+    const offset = this.getNextOffset() * 4;
     if (offset !== 0) {
       return this.data.extractAddress(this.dataOffset + offset);
     } else {
@@ -152,7 +152,7 @@ export class ExchangeDeserializer {
   }
 
   private nextUint() {
-    const offset = this.getNextOffset();
+    const offset = this.getNextOffset() * 4;
     if (offset !== 0) {
       return this.data.extractUint(this.dataOffset + offset);
     } else {
@@ -166,7 +166,7 @@ export class ExchangeDeserializer {
   }
 
   private nextUint32() {
-    const offset = this.getNextOffset();
+    const offset = this.getNextOffset() * 4;
     if (offset !== 0) {
       return this.data.extractUint32(this.dataOffset + offset);
     } else {
@@ -175,7 +175,7 @@ export class ExchangeDeserializer {
   }
 
   private nextBytes() {
-    const offset = this.getNextOffset();
+    const offset = this.getNextOffset() * 4;
     if (offset !== 0) {
       const len = this.data.extractUint(this.dataOffset + offset).toNumber();
       const data = "0x" + this.data.extractBytesX(this.dataOffset + offset + 32, len).toString("hex");
