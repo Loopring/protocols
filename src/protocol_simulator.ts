@@ -96,6 +96,22 @@ export class ProtocolSimulator {
     for (const ring of rings) {
       ring.checkOrdersValid();
       ring.checkForSubRings();
+      await ring.calculateFillAmountAndFee();
+      if (ring.valid) {
+        ring.adjustOrderStates();
+      }
+    }
+
+    for (const order of orders) {
+      // Check if this order needs to be completely filled
+      if (order.allOrNone) {
+        order.valid = order.valid && (order.filledAmountS === order.amountS);
+      }
+    }
+
+    for (const ring of rings) {
+      const validBefore = ring.valid;
+      ring.checkOrdersValid();
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring, mining, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);
@@ -113,6 +129,15 @@ export class ProtocolSimulator {
           if (addNew) {
             transferItems.push(ringTransferItem);
           }
+        }
+      } else {
+        // If the ring was valid before the completely filled check we have to revert the filled amountS
+        // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
+        if (validBefore) {
+          for (const p of ring.participations) {
+                p.order.filledAmountS = p.order.filledAmountS - (p.fillAmountS + p.splitS);
+                assert(p.order.filledAmountS >= 0, "p.order.filledAmountS >= 0");
+            }
         }
       }
     }
@@ -171,8 +196,7 @@ export class ProtocolSimulator {
   }
 
   private async simulateAndReportSingle(ring: Ring, mining: Mining, feeBalances: { [id: string]: any; }) {
-    await ring.calculateFillAmountAndFee();
-    const transferItems = await ring.getRingTransferItems(mining, feeBalances);
+    const transferItems = await ring.doPayments(mining, feeBalances);
     const ringMinedEvent: RingMinedEvent = {
       ringIndex: new BigNumber(this.ringIndex++),
     };
