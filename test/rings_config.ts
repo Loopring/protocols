@@ -288,6 +288,65 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "multiple 2-size rings, order is allOrNone, filled in multiple rings (successful)",
+    rings: [[0, 1], [0, 2]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 100e18,
+        amountB: 10e18,
+        allOrNone: true,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 6e18,
+        amountB: 60e18,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 5e18,
+        amountB: 50e18,
+      },
+    ],
+  },
+
+  {
+    description: "multiple 2-size rings, order is allOrNone, filled in multiple rings (unsuccessful)",
+    rings: [[0, 1], [0, 2]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 100e18,
+        amountB: 10e18,
+        allOrNone: true,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 6e18,
+        amountB: 60e18,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 5e18,
+        amountB: 50e18,
+        balanceS: 2e18,
+      },
+    ],
+  },
+
+  {
     description: "self-trading in 2-size ring",
     rings: [[0, 1]],
     orders: [
