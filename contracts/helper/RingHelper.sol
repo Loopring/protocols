@@ -117,13 +117,6 @@ library RingHelper {
         for (i = 0; i < ring.size; i++) {
             prevIndex = (i + ring.size - 1) % ring.size;
 
-            // Check if this order needs to be completely filled
-            if(ring.participations[i].order.allOrNone &&
-               ring.participations[i].fillAmountB != ring.participations[i].order.amountB) {
-                ring.valid = false;
-                break;
-            }
-
             bool valid = ring.participations[i].calculateFees(ring.participations[prevIndex], ctx);
             if (!valid) {
                 ring.valid = false;
@@ -198,7 +191,32 @@ library RingHelper {
         }
     }
 
-    function settleRing(
+    function adjustOrderStates(
+        Data.Ring ring
+        )
+        internal
+        pure
+    {
+        // Adjust the orders
+        for (uint i = 0; i < ring.size; i++) {
+            ring.participations[i].adjustOrderState();
+        }
+    }
+
+
+    function revertOrderStats(
+        Data.Ring ring
+        )
+        internal
+        pure
+    {
+        for (uint j = 0; j < ring.size; j++) {
+            Data.Participation memory p = ring.participations[j];
+            p.order.filledAmountS = p.order.filledAmountS.sub(p.fillAmountS + p.splitS);
+        }
+    }
+
+    function doPayments(
         Data.Ring ring,
         Data.Context ctx,
         Data.Mining mining
@@ -207,11 +225,6 @@ library RingHelper {
     {
         payFees(ring, ctx, mining);
         transferTokens(ring, ctx);
-
-        // Adjust the orders
-        for (uint i = 0; i < ring.size; i++) {
-            ring.participations[i].adjustOrderState();
-        }
     }
 
     function generateFills(
