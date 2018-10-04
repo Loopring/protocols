@@ -93,14 +93,16 @@ contract("Exchange_Security", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupRings(ringsInfoAttack);
 
-      const owner = ringsInfo.orders[0].owner;
+      const order = ringsInfo.orders[0];
+      const owner = order.owner;
       const attackBrokerInterceptor = await DummyBrokerInterceptor.new(exchangeTestUtil.ringSubmitter.address);
 
       // Register the broker with interceptor
       await registerBrokerChecked(owner, broker, attackBrokerInterceptor.address);
 
       // Set the allowance to a large number
-      await attackBrokerInterceptor.setAllowance(1e32);
+      await attackBrokerInterceptor.setAllowance(broker, owner, order.tokenS, 1e32);
+      await attackBrokerInterceptor.setAllowance(broker, owner, order.feeToken, 1e32);
 
       // Enable the Reentrancy attack
       // Create a valid ring that can be submitted by the interceptor
