@@ -96,6 +96,22 @@ export class ProtocolSimulator {
     for (const ring of rings) {
       ring.checkOrdersValid();
       ring.checkForSubRings();
+      await ring.calculateFillAmountAndFee();
+      if (ring.valid) {
+        ring.adjustOrderStates();
+      }
+    }
+
+    for (const order of orders) {
+      // Check if this order needs to be completely filled
+      if (order.allOrNone) {
+        order.valid = order.valid && (order.filledAmountS === order.amountS);
+      }
+    }
+
+    for (const ring of rings) {
+      const validBefore = ring.valid;
+      ring.checkOrdersValid();
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring, mining, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);
@@ -113,6 +129,15 @@ export class ProtocolSimulator {
           if (addNew) {
             transferItems.push(ringTransferItem);
           }
+        }
+      } else {
+        // If the ring was valid before the completely filled check we have to revert the filled amountS
+        // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
+        if (validBefore) {
+          for (const p of ring.participations) {
+                p.order.filledAmountS = p.order.filledAmountS - (p.fillAmountS + p.splitS);
+                assert(p.order.filledAmountS >= 0, "p.order.filledAmountS >= 0");
+            }
         }
       }
     }
@@ -144,6 +169,36 @@ export class ProtocolSimulator {
       }
     }
 
+    // Check if the spendables were updated correctly
+    for (const order of orders) {
+      if (order.tokenSpendableS.initialized) {
+        let amountTransferredS = 0;
+        let amountTransferredFee = 0;
+        for (const transfer of transferItems) {
+          if (transfer.from === order.owner && transfer.token === order.tokenS) {
+            amountTransferredS += transfer.amount;
+          }
+          if (transfer.from === order.owner && transfer.token === order.feeToken) {
+            amountTransferredFee += transfer.amount;
+          }
+        }
+        const amountSpentS = order.tokenSpendableS.initialAmount - order.tokenSpendableS.amount;
+        const amountSpentFee = order.tokenSpendableFee.initialAmount - order.tokenSpendableFee.amount;
+        // amountTransferred could be less than amountSpent because of rebates
+        const epsilon = 100000;
+        assert(amountSpentS >= amountTransferredS - epsilon, "amountSpentS >= amountTransferredS");
+        assert(amountSpentFee >= amountTransferredFee - epsilon, "amountSpentFee >= amountTransferredFee");
+      }
+    }
+
+    // Check if the allOrNone orders were correctly filled
+    for (const order of orders) {
+      if (order.allOrNone) {
+        assert(order.filledAmountS === 0 || order.filledAmountS === order.amountS,
+               "allOrNone orders should either be completely fill or not at all.");
+      }
+    }
+
     const filledAmounts: { [hash: string]: number; } = {};
     for (const order of orders) {
       let filledAmountS = order.filledAmountS ? order.filledAmountS : 0;
@@ -171,8 +226,7 @@ export class ProtocolSimulator {
   }
 
   private async simulateAndReportSingle(ring: Ring, mining: Mining, feeBalances: { [id: string]: any; }) {
-    await ring.calculateFillAmountAndFee();
-    const transferItems = await ring.getRingTransferItems(mining, feeBalances);
+    const transferItems = await ring.doPayments(mining, feeBalances);
     const ringMinedEvent: RingMinedEvent = {
       ringIndex: new BigNumber(this.ringIndex++),
     };

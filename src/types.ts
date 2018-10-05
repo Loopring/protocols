@@ -16,6 +16,9 @@ export interface Spendable {
   amount?: number;
   reserved?: number;
   index?: number;
+
+  // Testing
+  initialAmount?: number;
 }
 
 export interface OrderInfo {
@@ -66,10 +69,6 @@ export interface OrderInfo {
   brokerInterceptor?: string;
   valid?: boolean;
 
-  // test fields
-  ringSpendableS?: number;
-  ringSpendableFee?: number;
-
   hash?: Buffer;
   signAlgorithm?: SignAlgorithm;
   dualAuthSignAlgorithm?: SignAlgorithm;
@@ -84,10 +83,21 @@ export interface OrderInfo {
 
 export interface Participation {
   order: OrderInfo;
+
+  // computed fields
   splitS?: number;
   feeAmount?: number;
+  feeAmountS?: number;
+  feeAmountB?: number;
+  rebateFee?: number;
+  rebateS?: number;
+  rebateB?: number;
   fillAmountS?: number;
   fillAmountB?: number;
+
+  // test fields
+  ringSpendableS?: number;
+  ringSpendableFee?: number;
 }
 
 export interface RingsSubmitParam {
