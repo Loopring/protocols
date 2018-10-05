@@ -20,9 +20,9 @@ pragma experimental "ABIEncoderV2";
 
 
 /// @title IBrokerRegistry
-/// @dev A broker is an account that can submit order on behalf of other
-///      accounts. When register a broker, the owner can also specify a
-///      pre-deployed BrokerInterceptor to hook into Exchange smart contract.
+/// @dev A broker is an account that can submit orders on behalf of other
+///      accounts. When registering a broker, the owner can also specify a
+///      pre-deployed BrokerInterceptor to hook into the exchange smart contracts.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract IBrokerRegistry {
     event BrokerRegistered(
@@ -41,6 +41,12 @@ contract IBrokerRegistry {
         address owner
     );
 
+    /// @dev   Validates if the broker was registered for the order owner and
+    ///        returns the possible BrokerInterceptor to be used.
+    /// @param owner The owner of the order
+    /// @param broker The broker of the order
+    /// @return True if the broker was registered for the owner
+    ///         and the BrokerInterceptor to use.
     function getBroker(
         address owner,
         address broker
@@ -52,6 +58,11 @@ contract IBrokerRegistry {
             address interceptor
         );
 
+    /// @dev   Gets all registered brokers for an owner.
+    /// @param owner The owner
+    /// @param start The start index of the list of brokers
+    /// @param count The number of brokers to return
+    /// @return The list of requested brokers and corresponding BrokerInterceptors
     function getBrokers(
         address owner,
         uint    start,
@@ -64,17 +75,24 @@ contract IBrokerRegistry {
             address[] interceptors
         );
 
+    /// @dev   Registers a broker for msg.sender and an optional
+    ///        corresponding BrokerInterceptor.
+    /// @param broker The broker to register
+    /// @param interceptor The optional BrokerInterceptor to use (0x0 allowed)
     function registerBroker(
         address broker,
-        address interceptor  // 0x0 allowed
+        address interceptor
         )
         external;
 
+    /// @dev   Unregisters a broker for msg.sender
+    /// @param broker The broker to unregister
     function unregisterBroker(
         address broker
         )
         external;
 
+    /// @dev   Unregisters all brokers for msg.sender
     function unregisterAllBrokers(
         )
         external;

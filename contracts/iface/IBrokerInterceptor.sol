@@ -21,7 +21,11 @@ pragma experimental "ABIEncoderV2";
 
 /// @title IBrokerInterceptor
 contract IBrokerInterceptor {
-    /// @dev Returns the max amount the broker can buy or sell.
+    /// @dev   Returns the maximum amount of tokens the broker can sell for the owner
+    /// @param owner The owner for which the broker can spend funds
+    /// @param broker The broker of the owner
+    /// @param token The token to spend
+    /// @return The allowance
     function getAllowance(
         address owner,
         address broker,
@@ -31,10 +35,16 @@ contract IBrokerInterceptor {
         view
         returns (uint allowance);
 
-    /// @dev This method will be called from TradeDelegateImpl, so
-    ///      it must check `msg.sender` is the address of LoopringProtocol.
+    /// @dev Lets the interceptor know how much the broker has spent for an owner.
+    ///      This method will be called from RingSubmitter, so
+    ///      it must check `msg.sender` is the address of the Loopring Protocol.
     ///      Check https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md
-    ///      for the current address of TradeDelegateImpl deployment.
+    ///      for the current address of RingSubmitter deployment.
+    /// @param owner The owner for which the broker has spent funds
+    /// @param broker The broker of the owner
+    /// @param token The token spent
+    /// @param amount The amount spent
+    /// @return True if successful, false otherwise.
     function onTokenSpent(
         address owner,
         address broker,
