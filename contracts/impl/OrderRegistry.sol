@@ -28,6 +28,8 @@ contract OrderRegistry is IOrderRegistry, NoDefaultFunc {
 
     mapping (address => mapping (bytes32 => bool)) public hashMap;
 
+    event OrderRegistered(address orderOwner, bytes32 hash);
+
     function isOrderHashRegistered(
         address owner,
         bytes32 hash
@@ -37,5 +39,10 @@ contract OrderRegistry is IOrderRegistry, NoDefaultFunc {
         returns (bool)
     {
         return hashMap[owner][hash];
+    }
+
+    function registerOrderHash(bytes32 orderHash) external {
+        hashMap[msg.sender][orderHash] = true;
+        emit OrderRegistered(msg.sender, orderHash);
     }
 }

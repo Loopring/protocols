@@ -45,7 +45,8 @@ contract IRingSubmitter {
         bytes32 ringHash
     );
 
-    /// @dev Submit a order-ring for validation and settlement.
+    /// @dev   Submit order-rings for validation and settlement.
+    /// @param data Packed data of all rings.
     function submitRings(
         bytes data
         )

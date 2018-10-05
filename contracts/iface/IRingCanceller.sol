@@ -62,7 +62,7 @@ contract IRingCanceller {
     );
 
     /// @dev Cancel multiple orders.
-    /// @param orderHashes        Hashes of orders to be cancelled.
+    /// @param orderHashes Hashes of the orders to be cancelled.
     function cancelOrders(
         bytes   orderHashes
         )
@@ -71,6 +71,8 @@ contract IRingCanceller {
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
     ///        timestamp, for a specific trading pair.
+    /// @param token1 The first token of the trading pair
+    /// @param token2 The second token of the trading pair
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
     function cancelAllOrdersForTradingPair(
@@ -93,6 +95,10 @@ contract IRingCanceller {
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
     ///        timestamp, for a specific trading pair.
+    //         This function can be used by brokers to cancel orders of an owner.
+    /// @param owner The owner of the orders the broker wants to cancel
+    /// @param token1 The first token of the trading pair
+    /// @param token2 The second token of the trading pair
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
     function cancelAllOrdersForTradingPairOfOwner(
@@ -106,6 +112,8 @@ contract IRingCanceller {
     /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp
     ///        is smaller than or equal to the new value of the address's cutoff
     ///        timestamp.
+    //         This function can be used by brokers to cancel orders of an owner.
+    /// @param owner The owner of the orders the broker wants to cancel
     /// @param cutoff The cutoff timestamp, will default to `block.timestamp`
     ///        if it is 0.
     function cancelAllOrdersOfOwner(

@@ -32,6 +32,7 @@ contract ITradeDelegate {
         address indexed addr
     );
 
+    // The list of all authorized addresses
     address[] authorizedAddresses;
 
     // The following map is used to keep trace of order fill and cancellation

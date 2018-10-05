@@ -35,13 +35,20 @@ contract IOrderBook {
 
     event OrderSubmitted(address owner, bytes32 orderHash);
 
-    /// no signature needed. order can only be submitted by its owner or broker.
-    /// order's owner can be a contract's address.
+    /// @dev   Submits an order to the on-chain order book.
+    ///        No signature is needed. The order can only be sumbitted by its
+    ///        owner of its broker (the owner can be the address of a contract).
+    /// @param dataArray The data of the order.
+    ///        see OrderData
     function submitOrder(
         bytes32[] dataArray
-    )
+        )
         external;
 
+    /// @dev   Returns the order data of an order submitted in the order book.
+    /// @param orderHash The hash of the order to return the data for.
+    /// @return The order data
+    ///         see OrderData
     function getOrderData(bytes32 orderHash)
         view
         external

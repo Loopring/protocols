@@ -100,7 +100,7 @@ library ParticipationHelper {
         p.order.filledAmountS += p.fillAmountS + p.splitS;
 
         // Update spendables
-        uint totalAmountS = p.fillAmountS;
+        uint totalAmountS = p.fillAmountS + p.splitS;
         uint totalAmountFee = p.feeAmount;
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
@@ -108,6 +108,18 @@ library ParticipationHelper {
             p.order.brokerSpendableS.amount = p.order.brokerSpendableS.amount.sub(totalAmountS);
             p.order.brokerSpendableFee.amount = p.order.brokerSpendableFee.amount.sub(totalAmountFee);
         }
+    }
+
+    function revertOrderState(
+        Data.Participation p
+        )
+        internal
+        pure
+    {
+        // Revert filled amount
+        p.order.filledAmountS = p.order.filledAmountS.sub(p.fillAmountS + p.splitS);
+
+        // We do not revert any spendables. Rings will not get rebalanced so this doesn't matter.
     }
 
 }

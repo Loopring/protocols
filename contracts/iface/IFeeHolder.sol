@@ -22,22 +22,38 @@ pragma experimental "ABIEncoderV2";
 /// @title IFeeHolder - A contract holding fees.
 contract IFeeHolder {
 
-    mapping(address => mapping(address => uint)) public feeBalances;
-
-    function batchAddFeeBalances(bytes32[] batch)
-        external;
-
-    function withdrawBurned(address token, uint value)
-        external
-        returns (bool success);
-
-    function withdrawToken(address token, uint value)
-        external
-        returns (bool success);
-
     event TokenWithdrawn(
         address owner,
         address token,
         uint value
     );
+
+    // A map of all fee balances
+    mapping(address => mapping(address => uint)) public feeBalances;
+
+    /// @dev   Allows withdrawing the tokens to be burned by
+    ///        authorized contracts.
+    /// @param token The token to be used to burn buy and burn LRC
+    /// @param value The amount of tokens to withdraw
+    function withdrawBurned(
+        address token,
+        uint value
+        )
+        external
+        returns (bool success);
+
+    /// @dev   Allows withdrawing the fee payments funds
+    /// @param token The token to withdraw
+    /// @param value The amount of tokens to withdraw
+    function withdrawToken(
+        address token,
+        uint value
+        )
+        external
+        returns (bool success);
+
+    function batchAddFeeBalances(
+        bytes32[] batch
+        )
+        external;
 }

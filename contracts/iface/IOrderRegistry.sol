@@ -23,6 +23,10 @@ pragma experimental "ABIEncoderV2";
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract IOrderRegistry {
 
+    /// @dev   Returns wether the order hash was registered in the registry.
+    /// @param owner The owner of the order
+    /// @param hash The hash of the order
+    /// @return True if the order hash was registered, else false.
     function isOrderHashRegistered(
         address owner,
         bytes32 hash

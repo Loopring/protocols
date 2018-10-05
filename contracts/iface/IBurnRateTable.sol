@@ -74,6 +74,11 @@ contract IBurnRateTable {
         uint            tier
     );
 
+    /// @dev   Returns the P2P and matching burn rate for the token.
+    /// @param token The token to get the burn rate for.
+    /// @return The burn rate. The P2P burn rate and matching burn rate
+    ///         are packed together in the lowest 4 bytes.
+    ///         (2 bytes P2P, 2 bytes matching)
     function getBurnRate(
         address token
         )
@@ -81,6 +86,9 @@ contract IBurnRateTable {
         view
         returns (uint32 burnRate);
 
+    /// @dev   Returns the tier of a token.
+    /// @param token The token to get the token tier for.
+    /// @return The tier of the token
     function getTokenTier(
         address token
         )
@@ -88,14 +96,19 @@ contract IBurnRateTable {
         view
         returns (uint);
 
-    // Before calling this function, msg.sender needs to approve this contract for the neccessary funds
+    /// @dev   Upgrades the tier of a token. Before calling this function,
+    ///        msg.sender needs to approve this contract for the neccessary funds.
+    /// @param token The token to upgrade the tier for.
+    /// @return True if successful, false otherwise.
     function upgradeTokenTier(
         address token
         )
         external
         returns (bool);
 
-
+    /// @dev   Gets the rebate rate of an order owner
+    /// @param user The order owner
+    /// @return The rebate rate
     function getRebateRate(
         address user
         )
@@ -103,19 +116,28 @@ contract IBurnRateTable {
         view
         returns (uint16);
 
-    // Before calling this function, msg.sender needs to approve this contract for the neccessary funds
+    /// @dev   Locks LRC from msg.sender to lower the burn rate on the fees he pays.
+    ///        msg.sender needs to approve this contract for the neccessary funds.
+    /// @param amount The amount of LRC to lock.
+    /// @return True if successful, false otherwise.
     function lock(
         uint amount
         )
         external
         returns (bool);
 
+    /// @dev   Withdraws LRC that was previously locked to lower the burn rate.
+    /// @param amount The amount of LRC to withdraw.
+    /// @return True if successful, false otherwise.
     function withdraw(
         uint amount
         )
         external
         returns (bool);
 
+    /// @dev   Gets the total amount of LRC that is or was locked for a user
+    /// @param user The user to get the balance for
+    /// @return The total balance available in this contract
     function getBalance(
         address user
         )
@@ -123,6 +145,9 @@ contract IBurnRateTable {
         view
         returns (uint);
 
+    /// @dev   Gets the withdrawable amount of LRC from this contract
+    /// @param user The user to get the withdrawable balance for
+    /// @return The amount of LRC the user can withdraw
     function getWithdrawableBalance(
         address user
         )
@@ -130,6 +155,9 @@ contract IBurnRateTable {
         view
         returns (uint);
 
+    /// @dev   Gets the time the user started locking the LRC in this contract
+    /// @param user The user to get the lock start time for
+    /// @return The lock start time for the given user
     function getLockStartTime(
         address user
         )

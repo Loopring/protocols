@@ -196,8 +196,26 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             ring.checkForSubRings();
             ring.calculateFillAmountAndFee(ctx);
             if (ring.valid) {
+                ring.adjustOrderStates();
+            }
+        }
+
+        bool reevaluateRings = false;
+        for (i = 0; i < orders.length; i++) {
+            bool validBefore = orders[i].valid;
+            orders[i].validateAllOrNone();
+            reevaluateRings = reevaluateRings || (validBefore != orders[i].valid);
+        }
+
+        for (i = 0; i < rings.length; i++) {
+            Data.Ring memory ring = rings[i];
+            bool validBefore = ring.valid;
+            if (reevaluateRings) {
+                ring.checkOrdersValid();
+            }
+            if (ring.valid) {
                 // Only settle rings we have checked to be valid
-                ring.settleRing(ctx, mining);
+                ring.doPayments(ctx, mining);
                 IRingSubmitter.Fill[] memory fills = ring.generateFills();
                 emit RingMined(
                     ctx.ringIndex++,
@@ -206,9 +224,15 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                     fills
                 );
             } else {
+                // If the ring was valid before the completely filled check we have to revert the filled amountS
+                // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
+                if (validBefore) {
+                    ring.revertOrderStats();
+                }
                 emit InvalidRing(ring.hash);
             }
         }
+
         // Do all token transfers for all rings
         batchTransferTokens(ctx);
         // Do all fee payments for all rings
