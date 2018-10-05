@@ -173,13 +173,9 @@ export class ProtocolSimulator {
     for (const order of orders) {
       if (order.tokenSpendableS.initialized) {
         let amountTransferredS = 0;
-        let amountTransferredFee = 0;
         for (const transfer of transferItems) {
           if (transfer.from === order.owner && transfer.token === order.tokenS) {
             amountTransferredS += transfer.amount;
-          }
-          if (transfer.from === order.owner && transfer.token === order.feeToken) {
-            amountTransferredFee += transfer.amount;
           }
         }
         const amountSpentS = order.tokenSpendableS.initialAmount - order.tokenSpendableS.amount;
@@ -187,6 +183,17 @@ export class ProtocolSimulator {
         // amountTransferred could be less than amountSpent because of rebates
         const epsilon = 100000;
         assert(amountSpentS >= amountTransferredS - epsilon, "amountSpentS >= amountTransferredS");
+      }
+      if (order.tokenSpendableFee.initialized) {
+        let amountTransferredFee = 0;
+        for (const transfer of transferItems) {
+          if (transfer.from === order.owner && transfer.token === order.feeToken) {
+            amountTransferredFee += transfer.amount;
+          }
+        }
+        const amountSpentFee = order.tokenSpendableFee.initialAmount - order.tokenSpendableFee.amount;
+        // amountTransferred could be less than amountSpent because of rebates
+        const epsilon = 100000;
         assert(amountSpentFee >= amountTransferredFee - epsilon, "amountSpentFee >= amountTransferredFee");
       }
     }
