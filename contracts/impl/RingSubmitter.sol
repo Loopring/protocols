@@ -31,12 +31,6 @@ import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
-import "../spec/EncodeSpec.sol";
-import "../spec/MiningSpec.sol";
-import "../spec/OrderSpecs.sol";
-import "../spec/RingSpecs.sol";
-
-import "../helper/InputsHelper.sol";
 import "../helper/MiningHelper.sol";
 import "../helper/OrderHelper.sol";
 import "../helper/RingHelper.sol";
@@ -57,13 +51,8 @@ import "./ExchangeDeserializer.sol";
 contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
     using MathUint      for uint;
     using BytesUtil     for bytes;
-    using MiningSpec    for uint16;
-    using EncodeSpec    for uint16[];
-    using OrderSpecs    for uint16[];
-    using RingSpecs     for uint8[][];
     using OrderHelper     for Data.Order;
     using RingHelper      for Data.Ring;
-    using InputsHelper    for Data.Inputs;
     using MiningHelper    for Data.Mining;
 
     address public  lrcTokenAddress             = 0x0;
