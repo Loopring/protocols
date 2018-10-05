@@ -202,11 +202,9 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
 
         bool reevaluateRings = false;
         for (i = 0; i < orders.length; i++) {
-            // Check if this order needs to be completely filled
-            if(orders[i].allOrNone) {
-                orders[i].valid = orders[i].valid && (orders[i].filledAmountS == orders[i].amountS);
-                reevaluateRings = true;
-            }
+            bool validBefore = orders[i].valid;
+            orders[i].validateAllOrNone();
+            reevaluateRings = reevaluateRings || (validBefore != orders[i].valid);
         }
 
         for (i = 0; i < rings.length; i++) {

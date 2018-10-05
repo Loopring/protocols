@@ -191,6 +191,18 @@ library OrderHelper {
         }
     }
 
+    function validateAllOrNone(
+        Data.Order order
+        )
+        internal
+        pure
+    {
+        // Check if this order needs to be completely filled
+        if(order.allOrNone) {
+            order.valid = order.valid && (order.filledAmountS == order.amountS);
+        }
+    }
+
     function getSpendableS(
         Data.Order order,
         Data.Context ctx
