@@ -210,9 +210,8 @@ library RingHelper {
         internal
         pure
     {
-        for (uint j = 0; j < ring.size; j++) {
-            Data.Participation memory p = ring.participations[j];
-            p.order.filledAmountS = p.order.filledAmountS.sub(p.fillAmountS + p.splitS);
+        for (uint i = 0; i < ring.size; i++) {
+            ring.participations[i].revertOrderState();
         }
     }
 

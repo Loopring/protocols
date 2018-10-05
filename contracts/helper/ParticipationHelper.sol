@@ -110,4 +110,16 @@ library ParticipationHelper {
         }
     }
 
+    function revertOrderState(
+        Data.Participation p
+        )
+        internal
+        pure
+    {
+        // Revert filled amount
+        p.order.filledAmountS = p.order.filledAmountS.sub(p.fillAmountS + p.splitS);
+
+        // We do not revert any spendables. Rings will not get rebalanced so this doesn't matter.
+    }
+
 }
