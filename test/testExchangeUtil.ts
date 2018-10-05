@@ -163,7 +163,7 @@ export class ExchangeTestUtil {
     }
     if (!order.validSince) {
       // Set the order validSince time to a bit before the current timestamp;
-      order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 2000;
+      order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
     }
     // if (!order.validUntil) {
     //   // Set the order validSince time to a bit before the current timestamp;
@@ -484,6 +484,10 @@ export class ExchangeTestUtil {
     const ringsGenerator = new pjs.RingsGenerator(this.context);
     await ringsGenerator.setupRingsAsync(ringsInfo);
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
+
+    // Update block number and block timestamp
+    this.context.blockNumber = web3.eth.blockNumber;
+    this.context.blockTimestamp = web3.eth.getBlock(this.context.blockNumber).timestamp;
 
     const simulator = new pjs.ProtocolSimulator(this.context);
     const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin :
