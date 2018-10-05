@@ -179,7 +179,6 @@ export class ProtocolSimulator {
           }
         }
         const amountSpentS = order.tokenSpendableS.initialAmount - order.tokenSpendableS.amount;
-        const amountSpentFee = order.tokenSpendableFee.initialAmount - order.tokenSpendableFee.amount;
         // amountTransferred could be less than amountSpent because of rebates
         const epsilon = 100000;
         assert(amountSpentS >= amountTransferredS - epsilon, "amountSpentS >= amountTransferredS");
