@@ -258,6 +258,8 @@ export class OrderUtil {
                                                            token,
                                                            owner);
       tokenSpendable.initialized = true;
+      // Testing
+      tokenSpendable.initialAmount = tokenSpendable.amount;
     }
     let spendable = tokenSpendable.amount - tokenSpendable.reserved;
     assert(spendable >= 0, "spendable >= 0");
@@ -268,6 +270,8 @@ export class OrderUtil {
                                                                   broker,
                                                                   brokerInterceptor);
         brokerSpendable.initialized = true;
+        // Testing
+        brokerSpendable.initialAmount = brokerSpendable.amount;
       }
       const brokerSpendableAmount = brokerSpendable.amount - brokerSpendable.reserved;
       assert(brokerSpendableAmount >= 0, "brokerSpendable >= 0");

@@ -16,6 +16,9 @@ export interface Spendable {
   amount?: number;
   reserved?: number;
   index?: number;
+
+  // Testing
+  initialAmount?: number;
 }
 
 export interface OrderInfo {
