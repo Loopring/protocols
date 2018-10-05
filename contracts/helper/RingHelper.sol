@@ -302,7 +302,7 @@ library RingHelper {
             .sub(p.rebateFee);
 
         if (p.order.tokenS == p.order.feeToken) {
-            amountSToFeeHolder += amountFeeToFeeHolder;
+            amountSToFeeHolder = amountSToFeeHolder.add(amountFeeToFeeHolder);
             amountFeeToFeeHolder = 0;
         }
 
@@ -521,6 +521,24 @@ library RingHelper {
             // Wallet fee
             walletFeeBurn = feeToWallet.mul(burnRate) / feeCtx.ctx.feePercentageBase;
             feeToWallet = feeToWallet - walletFeeBurn;
+
+            // Pay the wallet
+            feeCtx.ctx.feePtr = addFeePayment(
+                feeCtx.ctx.feeData,
+                feeCtx.ctx.feePtr,
+                token,
+                feeCtx.wallet,
+                feeToWallet
+            );
+
+            // Pay the burn rate with the feeHolder as owner
+            feeCtx.ctx.feePtr = addFeePayment(
+                feeCtx.ctx.feeData,
+                feeCtx.ctx.feePtr,
+                token,
+                address(feeCtx.ctx.feeHolder),
+                minerFeeBurn + walletFeeBurn
+            );
         }
         // Miner gets the margin without sharing it with the wallet or burning
         minerFee += margin;
@@ -542,27 +560,13 @@ library RingHelper {
                 feeCtx.ctx.feePercentageBase;
         }
 
-        feeCtx.ctx.feePtr = addFeePayment(
-            feeCtx.ctx.feeData,
-            feeCtx.ctx.feePtr,
-            token,
-            feeCtx.wallet,
-            feeToWallet
-        );
+        // Pay the miner
         feeCtx.ctx.feePtr = addFeePayment(
             feeCtx.ctx.feeData,
             feeCtx.ctx.feePtr,
             token,
             feeCtx.feeRecipient,
             feeToMiner
-        );
-        // Pay the burn rate with the feeHolder as owner
-        feeCtx.ctx.feePtr = addFeePayment(
-            feeCtx.ctx.feeData,
-            feeCtx.ctx.feePtr,
-            token,
-            address(feeCtx.ctx.feeHolder),
-            minerFeeBurn + walletFeeBurn
         );
 
         // Calculate the total fee payment after possible discounts (burn rebate + fee waiving)
@@ -606,16 +610,15 @@ library RingHelper {
         pure
     {
         for (uint i = 0; i < feeCtx.ring.size; i++) {
-            Data.Participation memory p = feeCtx.ring.participations[i];
-            if (p.order.waiveFeePercentage < 0) {
+            if (feeCtx.ring.participations[i].order.waiveFeePercentage < 0) {
                 uint feeToOwner = minerFee
-                    .mul(uint(-p.order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
+                    .mul(uint(-feeCtx.ring.participations[i].order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
 
                 feeCtx.ctx.feePtr = addFeePayment(
                     feeCtx.ctx.feeData,
                     feeCtx.ctx.feePtr,
                     token,
-                    p.order.owner,
+                    feeCtx.ring.participations[i].order.owner,
                     feeToOwner);
             }
         }
