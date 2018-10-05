@@ -3,12 +3,8 @@ import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
 import { Bitstream } from "./bitstream";
 import { Context } from "./context";
-import { EncodeSpec } from "./encode_spec";
 import { Mining } from "./mining";
-import { MiningSpec } from "./mining_spec";
 import { OrderUtil } from "./order";
-import { OrderSpec } from "./order_spec";
-import { ParticipationSpec } from "./participation_spec";
 import { Ring } from "./ring";
 import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, Spendable, TransferItem } from "./types";
 
@@ -36,7 +32,7 @@ export class ExchangeDeserializer {
     const numSpendables = this.data.extractUint16(6);
 
     this.tableOffset = 8;
-    const ringsOffset = this.tableOffset + (3 + 27 * numOrders) * 2;
+    const ringsOffset = this.tableOffset + (3 + 25 * numOrders) * 2;
     this.dataOffset = ringsOffset + numRings * 9 + 32;
 
     this.spendableList = [];
@@ -59,6 +55,7 @@ export class ExchangeDeserializer {
     const orders = this.assembleOrders(numOrders);
     const rings = this.assembleRings(numRings, ringsOffset, orders);
 
+    // Testing
     this.validateSpendables(orders);
 
     return [mining, orders, rings];
@@ -85,8 +82,6 @@ export class ExchangeDeserializer {
       tokenSpendableFee: this.spendableList[this.nextUint16()],
       dualAuthAddr: this.nextAddress(),
       broker: this.nextAddress(),
-      brokerSpendableS: this.spendableList[this.nextUint16()],
-      brokerSpendableFee: this.spendableList[this.nextUint16()],
       orderInterceptor: this.nextAddress(),
       walletAddr: this.nextAddress(),
       validUntil: this.nextUint32(),
@@ -122,10 +117,9 @@ export class ExchangeDeserializer {
   private assembleRing(ringSize: number, offset: number, orders: OrderInfo[]) {
     const ring: number[] = [];
     for (let i = 0; i < ringSize; i++) {
-      const specData = this.data.extractUint8(offset);
+      const orderIndex = this.data.extractUint8(offset);
       offset += 1;
-      const pspec = new ParticipationSpec(specData);
-      ring.push(pspec.orderIndex());
+      ring.push(orderIndex);
     }
 
     return ring;
@@ -208,25 +202,6 @@ export class ExchangeDeserializer {
       }
       assert.equal(order.tokenSpendableFee, ownerSpendables[order.owner][order.feeToken],
                    "Spendable for feeToken should match");
-      // Broker allowances
-      if (order.broker) {
-        if (!brokerSpendables[order.owner]) {
-          brokerSpendables[order.owner] = {};
-        }
-        if (!brokerSpendables[order.owner][order.broker]) {
-          brokerSpendables[order.owner][order.broker] = {};
-        }
-        if (!brokerSpendables[order.owner][order.broker][order.tokenS]) {
-          brokerSpendables[order.owner][order.broker][order.tokenS] = order.brokerSpendableS;
-        }
-        assert.equal(order.brokerSpendableS, brokerSpendables[order.owner][order.broker][order.tokenS],
-                     "broker spendable for tokenS should match");
-        if (!brokerSpendables[order.owner][order.broker][order.feeToken]) {
-          brokerSpendables[order.owner][order.broker][order.feeToken] = order.brokerSpendableFee;
-        }
-        assert.equal(order.brokerSpendableFee, brokerSpendables[order.owner][order.broker][order.feeToken],
-                     "broker spendable for tokenFee should match");
-      }
     }
   }
 }

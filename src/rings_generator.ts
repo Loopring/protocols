@@ -144,27 +144,6 @@ export class RingsGenerator {
         };
       }
       order.tokenSpendableFee = ownerTokens[order.owner][tokenFee];
-      // Broker allowances
-      if (order.broker) {
-        if (!ownerBrokerTokens[order.owner]) {
-          ownerBrokerTokens[order.owner] = {};
-        }
-        if (!ownerBrokerTokens[order.owner][order.broker]) {
-          ownerBrokerTokens[order.owner][order.broker] = {};
-        }
-        if (!ownerBrokerTokens[order.owner][order.broker][order.tokenS]) {
-          ownerBrokerTokens[order.owner][order.broker][order.tokenS] = {
-            index: numSpendables++,
-          };
-        }
-        order.brokerSpendableS = ownerBrokerTokens[order.owner][order.broker][order.tokenS];
-        if (!ownerBrokerTokens[order.owner][order.broker][tokenFee]) {
-          ownerBrokerTokens[order.owner][order.broker][tokenFee] = {
-            index: numSpendables++,
-          };
-        }
-        order.brokerSpendableFee = ownerBrokerTokens[order.owner][order.broker][tokenFee];
-      }
     }
     return numSpendables;
   }
@@ -256,11 +235,7 @@ export class RingsGenerator {
 
     if (order.broker) {
       this.insertOffset(param, param.data.addAddress(order.broker, 20, false));
-      param.tables.addNumber(order.brokerSpendableS.index, 2);
-      param.tables.addNumber(order.brokerSpendableFee.index, 2);
     } else {
-      this.insertDefault(param);
-      this.insertDefault(param);
       this.insertDefault(param);
     }
 
