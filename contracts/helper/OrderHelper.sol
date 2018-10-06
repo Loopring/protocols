@@ -114,6 +114,7 @@ library OrderHelper {
         view
     {
         bool valid = true;
+        valid = valid && (order.version == 0); // unsupported order version
         valid = valid && (order.owner != 0x0); // invalid order owner
         valid = valid && (order.tokenS != 0x0); // invalid order tokenS
         valid = valid && (order.tokenB != 0x0); // invalid order tokenB
