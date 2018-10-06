@@ -28,12 +28,11 @@ import "../iface/IBurnRateTable.sol";
 
 library Data {
 
-    struct Inputs {
-        bytes tablesPtr;
-        bytes ringsPtr;
-        bytes data;
+    struct Header {
+        uint version;
         uint numOrders;
         uint numRings;
+        uint numSpendables;
     }
 
     struct Context {

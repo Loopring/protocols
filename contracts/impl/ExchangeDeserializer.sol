@@ -33,65 +33,50 @@ library ExchangeDeserializer {
         internal
         view
         returns (
-            Data.Mining,
-            Data.Order[],
-            Data.Ring[]
+            Data.Mining memory mining,
+            Data.Order[] memory orders,
+            Data.Ring[] memory rings
         )
     {
-        Data.Inputs memory inputs;
-        uint version = uint16(MemoryUtil.bytesToUintX(data, 0, 2) & 0xFFFF);
-        inputs.numOrders = uint16(MemoryUtil.bytesToUintX(data, 2, 2) & 0xFFFF);
-        inputs.numRings = uint16(MemoryUtil.bytesToUintX(data, 4, 2) & 0xFFFF);
-        uint16 numSpendables = uint16(MemoryUtil.bytesToUintX(data, 6, 2) & 0xFFFF);
-        require(numSpendables > 0, "Invalid number of spendables");
+        // Read the header
+        Data.Header memory header;
+        header.version = uint16(MemoryUtil.bytesToUintX(data, 0, 2) & 0xFFFF);
+        header.numOrders = uint16(MemoryUtil.bytesToUintX(data, 2, 2) & 0xFFFF);
+        header.numRings = uint16(MemoryUtil.bytesToUintX(data, 4, 2) & 0xFFFF);
+        header.numSpendables = uint16(MemoryUtil.bytesToUintX(data, 6, 2) & 0xFFFF);
 
-        uint ordersOffset = 8;
-        uint ringsOffset = ordersOffset + (3 + 25 * inputs.numOrders) * 2;
-        uint dataOffset = ringsOffset + inputs.numRings * 9 + 32;
+        // Validation
+        require(header.version == 0, "Unsupported serialization format");
+        require(header.numSpendables > 0, "Invalid number of spendables");
 
+        // Calculate data pointers
+        uint dataPtr;
         assembly {
-            mstore(add(inputs,  0), add(data, add(ordersOffset, 2)))
-            mstore(add(inputs, 32), add(data, add(ringsOffset, 1)))
-            mstore(add(inputs, 64), add(data, dataOffset))
+            dataPtr := data
         }
+        uint miningDataPtr = dataPtr + 8;
+        uint orderDataPtr = miningDataPtr + 3 * 2;
+        uint ringDataPtr = orderDataPtr + (25 * header.numOrders) * 2;
+        uint dataBlobPtr = ringDataPtr + (header.numRings * 9) + 32;
 
-        return inputToStructedData(
-            version,
-            lrcTokenAddress,
-            inputs,
-            numSpendables
-        );
+        // Setup the rings
+        mining = setupMiningData(dataBlobPtr, miningDataPtr + 2);
+        orders = setupOrders(dataBlobPtr, orderDataPtr + 2, header.numOrders, header.numSpendables, lrcTokenAddress);
+        rings = assembleRings(ringDataPtr + 1, header.numRings, orders);
     }
 
-    function inputToStructedData(
-        uint version,
-        address lrcTokenAddress,
-        Data.Inputs inputs,
-        uint numSpendables
+    function setupMiningData(
+        uint data,
+        uint tablesPtr
         )
         internal
         view
-        returns (
-            Data.Mining mining,
-            Data.Order[] orders,
-            Data.Ring[] rings
-        )
+        returns (Data.Mining mining)
     {
-        bytes memory data = inputs.data;
         bytes memory emptyBytes = new bytes(0);
-
-        uint numOrders = inputs.numOrders;
-        uint orderSize = 32 * 32;
-        uint arrayDataSize = (numOrders + 1) * 32;
-
-        Data.Spendable[] memory spendableList = new Data.Spendable[](numSpendables);
-
-        bytes memory tablesPtr = inputs.tablesPtr;
         uint offset;
 
         assembly {
-            /* Setup mining */
-
             // Default to transaction origin for feeRecipient
             mstore(add(data, 20), origin)
 
@@ -124,12 +109,27 @@ library ExchangeDeserializer {
 
             // Restore default to 0
             mstore(add(data, 32), 0)
+        }
+    }
 
-            // Advance table pointer to start of orders
-            tablesPtr := add(tablesPtr, 6)
+    function setupOrders(
+        uint data,
+        uint tablesPtr,
+        uint numOrders,
+        uint numSpendables,
+        address lrcTokenAddress
+        )
+        internal
+        pure
+        returns (Data.Order[] orders)
+    {
+        bytes memory emptyBytes = new bytes(0);
+        uint orderSize = 32 * 32;
+        uint arrayDataSize = (numOrders + 1) * 32;
+        Data.Spendable[] memory spendableList = new Data.Spendable[](numSpendables);
+        uint offset;
 
-            /* Setup orders */
-
+        assembly {
             // Allocate memory for all orders
             orders := mload(0x40)
             mstore(add(orders, 0), numOrders)
@@ -349,17 +349,15 @@ library ExchangeDeserializer {
                 tablesPtr := add(tablesPtr, 50)
             }
         }
-
-        rings = assembleRings(inputs.ringsPtr, inputs.numRings, orders);
     }
 
     function assembleRings(
-        bytes memory data,
+        uint data,
         uint numRings,
         Data.Order[] orders
         )
         internal
-        view
+        pure
         returns (Data.Ring[] rings)
     {
         uint ringsArrayDataSize = (numRings + 1) * 32;
