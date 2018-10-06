@@ -116,6 +116,8 @@ export class RingsGenerator {
       stream.addNumber(0, 8 - ring.length);
     });
     // Data
+    // Add a buffer zone of 32 bytes of zeros before the start of the data blob
+    // to allow overwriting the starting bytes.
     stream.addNumber(0, 32);
     stream.addHex(param.data.getData());
 

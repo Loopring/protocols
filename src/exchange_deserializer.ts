@@ -26,14 +26,21 @@ export class ExchangeDeserializer {
 
     this.data = new Bitstream(data);
 
+    // Header
     const version = this.data.extractUint16(0);
     const numOrders = this.data.extractUint16(2);
     const numRings = this.data.extractUint16(4);
     const numSpendables = this.data.extractUint16(6);
 
-    this.tableOffset = 8;
-    const ringsOffset = this.tableOffset + (3 + 25 * numOrders) * 2;
-    this.dataOffset = ringsOffset + numRings * 9 + 32;
+    // Validation
+    assert.equal(version, 0, "Unsupported serialization format");
+    assert(numSpendables > 0, "Invalid number of spendables");
+
+    // Calculate data pointers
+    const miningDataPtr = 8;
+    const orderDataPtr = miningDataPtr + 3 * 2;
+    const ringDataPtr = orderDataPtr + (25 * numOrders) * 2;
+    const dataBlobPtr = ringDataPtr + (numRings * 9) + 32;
 
     this.spendableList = [];
     for (let i = 0; i < numSpendables; i++) {
@@ -45,15 +52,12 @@ export class ExchangeDeserializer {
       this.spendableList.push(spendable);
     }
 
-    const mining = new Mining(
-      this.context,
-      this.nextAddress(),
-      this.nextAddress(),
-      this.nextBytes(),
-    );
+    this.dataOffset = dataBlobPtr;
 
-    const orders = this.assembleOrders(numOrders);
-    const rings = this.assembleRings(numRings, ringsOffset, orders);
+    // Setup the rings
+    const mining = this.setupMiningData(miningDataPtr);
+    const orders = this.setupOrders(orderDataPtr, numOrders);
+    const rings = this.assembleRings(numRings, ringDataPtr, orders);
 
     // Testing
     this.validateSpendables(orders);
@@ -61,7 +65,19 @@ export class ExchangeDeserializer {
     return [mining, orders, rings];
   }
 
-  private assembleOrders(numOrders: number) {
+  private setupMiningData(tablesPtr: number) {
+    this.tableOffset = tablesPtr;
+    const mining = new Mining(
+      this.context,
+      this.nextAddress(),
+      this.nextAddress(),
+      this.nextBytes(),
+    );
+    return mining;
+  }
+
+  private setupOrders(tablesPtr: number, numOrders: number) {
+    this.tableOffset = tablesPtr;
     const orders: OrderInfo[] = [];
     for (let i = 0; i < numOrders; i++) {
       orders.push(this.assembleOrder());
