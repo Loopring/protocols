@@ -97,7 +97,7 @@ library ExchangeDeserializer {
                 mload(add(add(data, 20), offset))
             )
 
-            // Default empty bytes array
+            // Default to empty bytes array
             mstore(add(data, 32), emptyBytes)
 
             // mining.sig
@@ -124,22 +124,24 @@ library ExchangeDeserializer {
         returns (Data.Order[] orders)
     {
         bytes memory emptyBytes = new bytes(0);
-        uint orderSize = 32 * 32;
-        uint arrayDataSize = (numOrders + 1) * 32;
+        uint orderStructSize = 32 * 32;
+        // Memory for orders length + numOrders order pointers
+        uint arrayDataSize = (1 + numOrders) * 32;
         Data.Spendable[] memory spendableList = new Data.Spendable[](numSpendables);
         uint offset;
 
         assembly {
             // Allocate memory for all orders
             orders := mload(0x40)
-            mstore(add(orders, 0), numOrders)
-            mstore(0x40, add(orders, add(arrayDataSize, mul(orderSize, numOrders))))
+            mstore(add(orders, 0), numOrders)                       // orders.length
+            // Reserve the memory for the orders array
+            mstore(0x40, add(orders, add(arrayDataSize, mul(orderStructSize, numOrders))))
 
             for { let i := 0 } lt(i, numOrders) { i := add(i, 1) } {
-                let order := add(orders, add(arrayDataSize, mul(orderSize, i)))
+                let order := add(orders, add(arrayDataSize, mul(orderStructSize, i)))
 
                 // Store the memory location of this order in the orders array
-                mstore(add(orders, mul(add(i, 1), 32)), order)
+                mstore(add(orders, mul(add(1, i), 32)), order)
 
                 // order.version
                 offset := and(mload(add(tablesPtr,  0)), 0xFFFF)
@@ -243,7 +245,7 @@ library ExchangeDeserializer {
                     and(mload(add(add(data, 32), offset)), 0xFFFFFFFF)
                 )
 
-                // Default value sig and dualAuthSig
+                // Default to empty bytes array for value sig and dualAuthSig
                 mstore(add(data, 32), emptyBytes)
 
                 // order.sig
@@ -360,16 +362,19 @@ library ExchangeDeserializer {
         pure
         returns (Data.Ring[] rings)
     {
-        uint ringsArrayDataSize = (numRings + 1) * 32;
+        uint ringsArrayDataSize = (1 + numRings) * 32;
+        uint ringStructSize = 5 * 32;
+        uint participationStructSize = 10 * 32;
 
         assembly {
             // Allocate memory for all rings
             rings := mload(0x40)
-            mstore(add(rings, 0), numRings)
-            mstore(0x40, add(rings, add(ringsArrayDataSize, mul(160, numRings))))
+            mstore(add(rings, 0), numRings)                      // rings.length
+            // Reserve the memory for the rings array
+            mstore(0x40, add(rings, add(ringsArrayDataSize, mul(ringStructSize, numRings))))
 
             for { let r := 0 } lt(r, numRings) { r := add(r, 1) } {
-                let ring := add(rings, add(ringsArrayDataSize, mul(160, r)))
+                let ring := add(rings, add(ringsArrayDataSize, mul(ringStructSize, r)))
 
                 // Store the memory location of this ring in the rings array
                 mstore(add(rings, mul(add(r, 1), 32)), ring)
@@ -378,21 +383,23 @@ library ExchangeDeserializer {
                 let ringSize := and(mload(data), 0xFF)
                 data := add(data, 1)
 
-                let participationsArrayDataSize := mul(add(ringSize, 1), 32)
-
                 // Allocate memory for all participations
                 let participations := mload(0x40)
-                mstore(add(participations, 0), ringSize)
-                mstore(0x40, add(participations, add(participationsArrayDataSize, mul(320, ringSize))))
+                mstore(add(participations, 0), ringSize)         // participations.length
+                // Memory for participations length + ringSize participation pointers
+                let participationsData := add(participations, mul(add(1, ringSize), 32))
+                // Reserve the memory for the participations
+                mstore(0x40, add(participationsData, mul(participationStructSize, ringSize)))
 
+                // Initialize ring properties
                 mstore(add(ring,   0), ringSize)                 // ring.size
                 mstore(add(ring,  32), participations)           // ring.participations
-                mstore(add(ring,  64), 0)                        // rings.hash
+                mstore(add(ring,  64), 0)                        // ring.hash
                 mstore(add(ring,  96), 0)                        // ring.minerFeesToOrdersPercentage
                 mstore(add(ring, 128), 1)                        // ring.valid
 
                 for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
-                    let participation := add(participations, add(participationsArrayDataSize, mul(320, i)))
+                    let participation := add(participationsData, mul(participationStructSize, i))
 
                     // Store the memory location of this participation in the participations array
                     mstore(add(participations, mul(add(i, 1), 32)), participation)
@@ -407,7 +414,7 @@ library ExchangeDeserializer {
                         mload(add(orders, mul(add(orderIndex, 1), 32)))
                     )
 
-                    // Set default  values
+                    // Set default values
                     mstore(add(participation,  32), 0)          // participation.splitS
                     mstore(add(participation,  64), 0)          // participation.feeAmount
                     mstore(add(participation,  96), 0)          // participation.feeAmountS
