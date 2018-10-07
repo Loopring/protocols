@@ -110,12 +110,14 @@ export class Bitstream {
   private insert(x: string, forceAppend: boolean) {
     const offset = this.length();
     if (!forceAppend) {
+      // Check if the data we're inserting is already available in the bitstream.
+      // If so, return the offset to the location.
       let start = 0;
       while (start !== -1) {
         start = this.data.indexOf(x, start);
         if (start !== -1) {
           if ((start % 2) === 0) {
-            console.log("++ Reused " + x + " at location " + start / 2);
+            // console.log("++ Reused " + x + " at location " + start / 2);
             return start / 2;
           } else {
             start++;

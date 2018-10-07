@@ -15,7 +15,7 @@ export class ExchangeDeserializer {
   private data: Bitstream;
   private spendableList?: Spendable[];
 
-  private dataOffset: number = 12;
+  private dataOffset: number = 0;
   private tableOffset: number = 0;
 
   constructor(context: Context) {
