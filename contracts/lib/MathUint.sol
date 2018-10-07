@@ -58,28 +58,4 @@ library MathUint {
         c = a + b;
         require(c >= a);
     }
-
-    function tolerantSub(
-        uint a,
-        uint b
-        )
-        internal
-        pure
-        returns (uint c)
-    {
-        return (a >= b) ? a - b : 0;
-    }
-
-    function calculatePreTradingPercentage(
-        uint value,
-        uint percentage,
-        uint percentageBase
-        )
-        internal
-        pure
-        returns (uint)
-    {
-        assert(percentage < percentageBase);
-        return mul(value, percentageBase) / (percentageBase - percentage) - value;
-    }
 }

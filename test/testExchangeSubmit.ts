@@ -6,6 +6,7 @@ import { ExchangeTestUtil } from "./testExchangeUtil";
 const {
   DummyExchange,
   OrderBook,
+  OrderRegistry,
 } = new Artifacts(artifacts);
 
 contract("Exchange_Submit", (accounts: string[]) => {
@@ -14,6 +15,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
   let dummyExchange: any;
   let orderBook: any;
+  let orderRegistry: any;
 
   const checkFilled = async (order: pjs.OrderInfo, expected: number) => {
     const filled = await exchangeTestUtil.context.tradeDelegate.filled("0x" + order.hash.toString("hex")).toNumber();
@@ -24,6 +26,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
     orderBook = await OrderBook.deployed();
+    orderRegistry = await OrderRegistry.deployed();
 
     // Create dummy exchange and authorize it
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
@@ -211,6 +214,41 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // assert.equal(onChainOrder.hash, orderHashOnChain, "order hash not equal");
 
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+    });
+
+    it("Should be able to use an order registered in the order registry", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 100e18,
+            amountB: 10e18,
+          },
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 1e18,
+            amountB: 10e18,
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      const order = ringsInfo.orders[1];
+      // Don't send the signature for the order so it needs to be validated differently
+      order.sig = null;
+
+      // No signature and the hash is not registered
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      await exchangeTestUtil.checkFilled(order.hash, 0);
+
+      // Register the order hash
+      await orderRegistry.registerOrderHash("0x" + order.hash.toString("hex"), {from: order.owner});
+
+      // Retry again now the order hash is registered
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      await exchangeTestUtil.checkFilled(order.hash, order.amountS);
     });
 
     it("user should be able to get a rebate by locking LRC", async () => {
