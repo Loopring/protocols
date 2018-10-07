@@ -248,7 +248,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             ptr := data
         }
         for (uint i = 0; i < orders.length; i++) {
-            if (orders[i].brokerInterceptor != 0) {
+            if (orders[i].brokerInterceptor != 0x0) {
                 uint brokerSpendableS;
                 (ptr, brokerSpendableS) = addBrokerSpendable(
                     data,
@@ -363,10 +363,16 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         uint totalMaxSizeFeePayments = 0;
         for (uint i = 0; i < rings.length; i++) {
             // Up to (ringSize + 3) * 3 payments per order (because of fee sharing by miner)
+            // (3 x 32 bytes for every fee payment)
             uint ringSize = rings[i].size;
             uint maxSize = (ringSize + 3) * 3 * ringSize * 3;
             totalMaxSizeFeePayments += maxSize;
         }
+        // Store the data directly in the call data format as expected by batchAddFeeBalances:
+        // - 0x00: batchAddFeeBalances selector (4 bytes)
+        // - 0x04: parameter offset (batchAddFeeBalances has a single function parameter) (32 bytes)
+        // - 0x24: length of the array passed into the function (32 bytes)
+        // - 0x44: the array data (32 bytes x length)
         bytes4 batchAddFeeBalancesSelector = ctx.feeHolder.batchAddFeeBalances.selector;
         uint ptr;
         assembly {
@@ -390,9 +396,15 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         uint totalMaxSizeTransfers = 0;
         for (uint i = 0; i < rings.length; i++) {
             // Up to 3 transfers per order
+            // (4 x 32 bytes for every transfer)
             uint maxSize = 3 * rings[i].size * 4;
             totalMaxSizeTransfers += maxSize;
         }
+        // Store the data directly in the call data format as expected by batchTransfer:
+        // - 0x00: batchTransfer selector (4 bytes)
+        // - 0x04: parameter offset (batchTransfer has a single function parameter) (32 bytes)
+        // - 0x24: length of the array passed into the function (32 bytes)
+        // - 0x44: the array data (32 bytes x length)
         bytes4 batchTransferSelector = ctx.delegate.batchTransfer.selector;
         uint ptr;
         assembly {
@@ -412,6 +424,14 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
+        // Store the data directly in the call data format as expected by batchUpdateFilled:
+        // - 0x00: batchUpdateFilled selector (4 bytes)
+        // - 0x04: parameter offset (batchUpdateFilled has a single function parameter) (32 bytes)
+        // - 0x24: length of the array passed into the function (32 bytes)
+        // - 0x44: the array data (32 bytes x length)
+        // For every (valid) order we store 2 words:
+        // - order.hash
+        // - order.filledAmountS after all rings
         bytes4 batchUpdateFilledSelector = ctx.delegate.batchUpdateFilled.selector;
         address tradeDelegateAddress = address(ctx.delegate);
         assembly {
@@ -454,6 +474,17 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
+        // Store the data directly in the call data format as expected by batchGetFilledAndCheckCancelled:
+        // - 0x00: batchGetFilledAndCheckCancelled selector (4 bytes)
+        // - 0x04: parameter offset (batchGetFilledAndCheckCancelled has a single function parameter) (32 bytes)
+        // - 0x24: length of the array passed into the function (32 bytes)
+        // - 0x44: the array data (32 bytes x length)
+        // For every order we store 5 words:
+        // - order.broker
+        // - order.owner
+        // - order.hash
+        // - order.validSince
+        // - The trading pair of the order: order.tokenS ^ order.tokenB
         bytes4 batchGetFilledAndCheckCancelledSelector = ctx.delegate.batchGetFilledAndCheckCancelled.selector;
         address tradeDelegateAddress = address(ctx.delegate);
         assembly {
@@ -493,13 +524,14 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                 returnDataSize                      // output length
             )
             // Check if the call was successful and the return data is the expected size
-            if or(eq(success, 0), sub(1, eq(returndatasize(), returnDataSize)))  {
+            if or(eq(success, 0), sub(1, eq(returndatasize(), returnDataSize))) {
                 revert(0, 0)
             }
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))     // orders[i]
                 let fill := mload(add(data,  mul(add(i, 2), 32)))       // fills[i]
                 mstore(add(order, 960), fill)                           // order.filledAmountS
+                // If fills[i] == ~uint(0) the order was cancelled
                 // order.valid = order.valid && (order.filledAmountS != ~uint(0))
                 mstore(add(order, 992),                                 // order.valid
                     and(
@@ -516,6 +548,9 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
+        // We stored the transfers in the call data as expected by batchAddFeeBalances.
+        // The only thing we still need to do is update the final length of the array and call
+        // the function on the FeeHolder contract with the generated data.
         address _tradeDelegateAddress = address(ctx.delegate);
         uint data = ctx.transferData - 68;
         uint ptr = ctx.transferPtr;
@@ -542,6 +577,9 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
+        // We stored the fee payments in the call data as expected by batchTransfer.
+        // The only thing we still need to do is update the final length of the array and call
+        // the function on the TradeDelegate contract with the generated data.
         address _feeHolderAddress = address(ctx.feeHolder);
         uint data = ctx.feeData - 68;
         uint ptr = ctx.feePtr;
