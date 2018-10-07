@@ -216,7 +216,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
     });
 
-    it.only("Should be able to use an order registered in the order registry", async () => {
+    it("Should be able to use an order registered in the order registry", async () => {
       const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 1]],
         orders: [
