@@ -38,48 +38,4 @@ library BytesUtil {
         }
         return temp;
     }
-
-    function copyToUint16Array(bytes b, uint offset, uint arraySize)
-        internal
-        pure
-        returns (uint16[]) {
-        uint16[] memory resultArray = new uint16[](arraySize);
-        for (uint i = 0; i < arraySize; i++) {
-            resultArray[i] = uint16(MemoryUtil.bytesToUintX(b, offset + i * 2, 2));
-        }
-        return resultArray;
-    }
-
-    function copyToUint8ArrayList(bytes b, uint offset, uint[] innerArraySizeList)
-        internal
-        pure
-        returns (uint8[][] memory) {
-        uint arraySize = innerArraySizeList.length;
-        uint8[][] memory resultArray = new uint8[][](arraySize);
-        for (uint i = 0; i < arraySize; i++) {
-            uint len = innerArraySizeList[i];
-            uint8[] memory innerArray = new uint8[](len);
-            for (uint j = 0; j < len; j++) {
-                innerArray[j] = uint8(MemoryUtil.bytesToUintX(b, offset + j, 1));
-            }
-            resultArray[i] = innerArray;
-            offset += len;
-        }
-        return resultArray;
-    }
-
-    function copyToBytesArray(bytes b, uint offset, uint[] innerBytesSizeList)
-        internal
-        pure
-        returns (bytes[]) {
-        uint arraySize = innerBytesSizeList.length;
-        bytes[] memory resultArray = new bytes[](arraySize);
-        for (uint i = 0; i < arraySize; i++) {
-            uint len = innerBytesSizeList[i];
-            resultArray[i] = MemoryUtil.copyBytes(b, offset, len);
-            offset += len;
-        }
-        return resultArray;
-    }
-
 }
