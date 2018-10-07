@@ -221,6 +221,11 @@ export class ExchangeTestUtil {
     return await this.context.tradeDelegate.filled("0x" + hash.toString("hex")).toNumber();
   }
 
+  public async checkFilled(hash: Buffer, expected: number) {
+    const filled = await this.getFilled(hash);
+    this.assertNumberEqualsWithPrecision(filled, expected);
+  }
+
   public assertEqualsRingsInfo(ringsInfoA: pjs.RingsInfo, ringsInfoB: pjs.RingsInfo) {
     // Revert defaults back to undefined
     ringsInfoA.miner = (ringsInfoA.miner === ringsInfoA.feeRecipient) ? undefined : ringsInfoA.miner;
