@@ -174,28 +174,6 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         cancelled[broker][orderHash] = true;
     }
 
-    function addFilled(
-        bytes32 orderHash,
-        uint    amount
-        )
-        onlyAuthorized
-        notSuspended
-        external
-    {
-        filled[orderHash] = filled[orderHash].add(amount);
-    }
-
-    function setFilled(
-        bytes32 orderHash,
-        uint    amount
-        )
-        onlyAuthorized
-        notSuspended
-        external
-    {
-        filled[orderHash] = amount;
-    }
-
     function setCutoffs(
         address broker,
         uint    cutoff

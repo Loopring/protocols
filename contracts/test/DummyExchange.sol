@@ -82,24 +82,6 @@ contract DummyExchange {
         ITradeDelegate(tradeDelegateAddress).setCancelled(broker, orderHash);
     }
 
-    function addFilled(
-        bytes32 orderHash,
-        uint amount
-        )
-        external
-    {
-        ITradeDelegate(tradeDelegateAddress).addFilled(orderHash, amount);
-    }
-
-    function setFilled(
-        bytes32 orderHash,
-        uint amount
-        )
-        external
-    {
-        ITradeDelegate(tradeDelegateAddress).setFilled(orderHash, amount);
-    }
-
     function setCutoffs(
         address broker,
         uint cutoff

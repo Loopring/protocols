@@ -92,18 +92,6 @@ contract ITradeDelegate {
         )
         external;
 
-    function addFilled(
-        bytes32 orderHash,
-        uint amount
-        )
-        external;
-
-    function setFilled(
-        bytes32 orderHash,
-        uint amount
-        )
-        external;
-
     function setCutoffs(
         address broker,
         uint cutoff
