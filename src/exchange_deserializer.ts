@@ -3,12 +3,8 @@ import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
 import { Bitstream } from "./bitstream";
 import { Context } from "./context";
-import { EncodeSpec } from "./encode_spec";
 import { Mining } from "./mining";
-import { MiningSpec } from "./mining_spec";
 import { OrderUtil } from "./order";
-import { OrderSpec } from "./order_spec";
-import { ParticipationSpec } from "./participation_spec";
 import { Ring } from "./ring";
 import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, Spendable, TransferItem } from "./types";
 
@@ -18,7 +14,9 @@ export class ExchangeDeserializer {
 
   private data: Bitstream;
   private spendableList?: Spendable[];
-  private bytesOffset: number = 0;
+
+  private dataOffset: number = 0;
+  private tableOffset: number = 0;
 
   constructor(context: Context) {
     this.context = context;
@@ -28,23 +26,21 @@ export class ExchangeDeserializer {
 
     this.data = new Bitstream(data);
 
-    const numOrders = this.data.extractUint16(0);
-    const numRings = this.data.extractUint16(2);
-    const numSpendables = this.data.extractUint16(4);
-    const dataLength = this.data.extractUint16(6);
+    // Header
+    const version = this.data.extractUint16(0);
+    const numOrders = this.data.extractUint16(2);
+    const numRings = this.data.extractUint16(4);
+    const numSpendables = this.data.extractUint16(6);
 
-    let offset = 2 * 4;
+    // Validation
+    assert.equal(version, 0, "Unsupported serialization format");
+    assert(numSpendables > 0, "Invalid number of spendables");
 
-    const miningSpec = new MiningSpec(this.data.extractUint16(offset));
-    offset += 2;
-
-    const orderOffset = offset;
-    offset += 2 * numOrders;
-
-    this.bytesOffset = offset;
-    offset += dataLength;
-
-    const ringSpecsOffset = offset;
+    // Calculate data pointers
+    const miningDataPtr = 8;
+    const orderDataPtr = miningDataPtr + 3 * 2;
+    const ringDataPtr = orderDataPtr + (25 * numOrders) * 2;
+    const dataBlobPtr = ringDataPtr + (numRings * 9) + 32;
 
     this.spendableList = [];
     for (let i = 0; i < numSpendables; i++) {
@@ -56,61 +52,70 @@ export class ExchangeDeserializer {
       this.spendableList.push(spendable);
     }
 
-    const mining = new Mining(
-      this.context,
-      (miningSpec.hasFeeRecipient() ? this.nextAddress() : undefined),
-      (miningSpec.hasMiner() ? this.nextAddress() : undefined),
-      (miningSpec.hasSignature() ? this.nextBytes() : undefined),
-    );
+    this.dataOffset = dataBlobPtr;
 
-    const orders = this.assembleOrders(numOrders, orderOffset);
-    const rings = this.assembleRings(numRings, ringSpecsOffset, orders);
+    // Setup the rings
+    const mining = this.setupMiningData(miningDataPtr);
+    const orders = this.setupOrders(orderDataPtr, numOrders);
+    const rings = this.assembleRings(numRings, ringDataPtr, orders);
 
+    // Testing
     this.validateSpendables(orders);
 
     return [mining, orders, rings];
   }
 
-  private assembleOrders(numOrders: number, offset: number) {
+  private setupMiningData(tablesPtr: number) {
+    this.tableOffset = tablesPtr;
+    const mining = new Mining(
+      this.context,
+      this.nextAddress(),
+      this.nextAddress(),
+      this.nextBytes(),
+    );
+    return mining;
+  }
+
+  private setupOrders(tablesPtr: number, numOrders: number) {
+    this.tableOffset = tablesPtr;
     const orders: OrderInfo[] = [];
     for (let i = 0; i < numOrders; i++) {
-      const spec = this.data.extractUint16(offset + i * 2);
-      orders.push(this.assembleOrder(spec));
+      orders.push(this.assembleOrder());
     }
     return orders;
   }
 
-  private assembleOrder(specData: number) {
-    const spec = new OrderSpec(specData);
+  private assembleOrder() {
     const order: OrderInfo = {
+      version: this.nextUint16(),
       owner: this.nextAddress(),
       tokenS: this.nextAddress(),
-      tokenB: null,
+      tokenB: this.nextAddress(),
       amountS: this.nextUint().toNumber(),
       amountB: this.nextUint().toNumber(),
-      validSince: this.nextUint().toNumber(),
+      validSince: this.nextUint32(),
       tokenSpendableS: this.spendableList[this.nextUint16()],
       tokenSpendableFee: this.spendableList[this.nextUint16()],
-      dualAuthAddr: spec.hasDualAuth() ? this.nextAddress() : undefined,
-      broker: spec.hasBroker() ? this.nextAddress() : undefined,
-      brokerSpendableS: spec.hasBroker() ? this.spendableList[this.nextUint16()] : undefined,
-      brokerSpendableFee: spec.hasBroker() ? this.spendableList[this.nextUint16()] : undefined,
-      orderInterceptor: spec.hasOrderInterceptor() ? this.nextAddress() : undefined,
-      walletAddr: spec.hasWallet() ? this.nextAddress() : undefined,
-      validUntil: spec.hasValidUntil() ? this.nextUint().toNumber() : undefined,
-      sig: spec.hasSignature() ? this.nextBytes() : undefined,
-      dualAuthSig: spec.hasDualAuthSig() ? this.nextBytes() : undefined,
-      allOrNone: spec.allOrNone(),
-      feeToken: spec.hasFeeToken() ? this.nextAddress() : this.context.lrcAddress,
-      feeAmount: spec.hasFeeAmount() ? this.nextUint().toNumber() : 0,
-      feePercentage: spec.hasFeePercentage() ? this.nextUint16() : 0,
-      waiveFeePercentage: spec.hasWaiveFeePercentage() ? this.toInt16(this.nextUint16()) : 0,
-      tokenSFeePercentage: spec.hasTokenSFeePercentage() ? this.nextUint16() : 0,
-      tokenBFeePercentage: spec.hasTokenBFeePercentage() ? this.nextUint16() : 0,
-      tokenRecipient: spec.hasTokenRecipient() ? this.nextAddress() : undefined,
-      walletSplitPercentage: spec.hasWalletSplitPercentage() ? this.nextUint16() : 0,
+      dualAuthAddr: this.nextAddress(),
+      broker: this.nextAddress(),
+      orderInterceptor: this.nextAddress(),
+      walletAddr: this.nextAddress(),
+      validUntil: this.nextUint32(),
+      sig: this.nextBytes(),
+      dualAuthSig: this.nextBytes(),
+      allOrNone: this.nextUint16() > 0,
+      feeToken: this.nextAddress(),
+      feeAmount: this.nextUint().toNumber(),
+      feePercentage: this.nextUint16(),
+      waiveFeePercentage: this.toInt16(this.nextUint16()),
+      tokenSFeePercentage: this.nextUint16(),
+      tokenBFeePercentage: this.nextUint16(),
+      tokenRecipient: this.nextAddress(),
+      walletSplitPercentage: this.nextUint16(),
     };
+    order.feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
     order.tokenRecipient = order.tokenRecipient ? order.tokenRecipient : order.owner;
+    order.validUntil = order.validUntil > 0 ? order.validUntil : undefined;
     return order;
   }
 
@@ -120,7 +125,7 @@ export class ExchangeDeserializer {
       const ringSize = this.data.extractUint8(offset);
       const ring = this.assembleRing(ringSize, offset + 1, orders);
       rings.push(ring);
-      offset += 1 + ringSize;
+      offset += 1 + 8;
     }
     return rings;
   }
@@ -128,43 +133,61 @@ export class ExchangeDeserializer {
   private assembleRing(ringSize: number, offset: number, orders: OrderInfo[]) {
     const ring: number[] = [];
     for (let i = 0; i < ringSize; i++) {
-      const specData = this.data.extractUint8(offset);
+      const orderIndex = this.data.extractUint8(offset);
       offset += 1;
-      const pspec = new ParticipationSpec(specData);
-      ring.push(pspec.orderIndex());
-    }
-
-    // Set tokenB of orders using the tokenS from the next order
-    for (let i = 0; i < ring.length; i++) {
-      orders[ring[i]].tokenB = orders[ring[(i + 1) % ring.length]].tokenS;
+      ring.push(orderIndex);
     }
 
     return ring;
   }
 
+  private getNextOffset() {
+    const offset = this.data.extractUint16(this.tableOffset);
+    this.tableOffset += 2;
+    return offset;
+  }
+
   private nextAddress() {
-    const value = this.data.extractAddress(this.bytesOffset);
-    this.bytesOffset += 20;
-    return value;
+    const offset = this.getNextOffset() * 4;
+    if (offset !== 0) {
+      return this.data.extractAddress(this.dataOffset + offset);
+    } else {
+      return undefined;
+    }
   }
 
   private nextUint() {
-    const value = this.data.extractUint(this.bytesOffset);
-    this.bytesOffset += 32;
-    return value;
+    const offset = this.getNextOffset() * 4;
+    if (offset !== 0) {
+      return this.data.extractUint(this.dataOffset + offset);
+    } else {
+      return new BigNumber(0);
+    }
   }
 
   private nextUint16() {
-    const value = this.data.extractUint16(this.bytesOffset);
-    this.bytesOffset += 2;
-    return value;
+    const offset = this.getNextOffset();
+    return offset;
+  }
+
+  private nextUint32() {
+    const offset = this.getNextOffset() * 4;
+    if (offset !== 0) {
+      return this.data.extractUint32(this.dataOffset + offset);
+    } else {
+      return 0;
+    }
   }
 
   private nextBytes() {
-    const len = this.data.extractUint(this.bytesOffset).toNumber();
-    const data = "0x" + this.data.extractBytesX(this.bytesOffset + 32, len).toString("hex");
-    this.bytesOffset += 32 + len;
-    return data;
+    const offset = this.getNextOffset() * 4;
+    if (offset !== 0) {
+      const len = this.data.extractUint(this.dataOffset + offset).toNumber();
+      const data = "0x" + this.data.extractBytesX(this.dataOffset + offset + 32, len).toString("hex");
+      return data;
+    } else {
+      return undefined;
+    }
   }
 
   private toInt16(x: number) {
@@ -195,25 +218,6 @@ export class ExchangeDeserializer {
       }
       assert.equal(order.tokenSpendableFee, ownerSpendables[order.owner][order.feeToken],
                    "Spendable for feeToken should match");
-      // Broker allowances
-      if (order.broker) {
-        if (!brokerSpendables[order.owner]) {
-          brokerSpendables[order.owner] = {};
-        }
-        if (!brokerSpendables[order.owner][order.broker]) {
-          brokerSpendables[order.owner][order.broker] = {};
-        }
-        if (!brokerSpendables[order.owner][order.broker][order.tokenS]) {
-          brokerSpendables[order.owner][order.broker][order.tokenS] = order.brokerSpendableS;
-        }
-        assert.equal(order.brokerSpendableS, brokerSpendables[order.owner][order.broker][order.tokenS],
-                     "broker spendable for tokenS should match");
-        if (!brokerSpendables[order.owner][order.broker][order.feeToken]) {
-          brokerSpendables[order.owner][order.broker][order.feeToken] = order.brokerSpendableFee;
-        }
-        assert.equal(order.brokerSpendableFee, brokerSpendables[order.owner][order.broker][order.feeToken],
-                     "broker spendable for tokenFee should match");
-      }
     }
   }
 }

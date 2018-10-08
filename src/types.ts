@@ -22,6 +22,8 @@ export interface Spendable {
 }
 
 export interface OrderInfo {
+  version?: number;
+
   // required fields in contract
   owner?: string;
   tokenS: string;
@@ -99,10 +101,9 @@ export interface Participation {
 }
 
 export interface RingsSubmitParam {
-  miningSpec: number;
-  orderSpecs: number[];
   ringSpecs: number[][];
   data: Bitstream;
+  tables: Bitstream;
 }
 
 export interface RingsInfo {

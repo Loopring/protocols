@@ -30,6 +30,7 @@ export class OrderUtil {
 
   public async validateInfo(order: OrderInfo) {
     let valid = true;
+    valid = valid && ensure(order.version === 0, "unsupported order version");
     valid = valid && ensure(order.owner ? true : false, "invalid order owner");
     valid = valid && ensure(order.tokenS ? true : false, "invalid order tokenS");
     valid = valid && ensure(order.tokenB ? true : false, "invalid order tokenB");

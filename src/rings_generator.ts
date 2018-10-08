@@ -16,6 +16,9 @@ export class RingsGenerator {
   private orderUtil: OrderUtil;
   private context: Context;
 
+  private SERIALIZATION_VERSION = 0;
+  private ORDER_VERSION = 0;
+
   constructor(context: Context) {
     this.context = context;
     this.orderUtil = new OrderUtil(context);
@@ -99,13 +102,26 @@ export class RingsGenerator {
     const numSpendables = this.setupSpendables(rings);
     const param = this.ringsToParam(rings);
 
-    const encodeSpecs: number[] = [];
-    encodeSpecs.push(param.orderSpecs.length);
-    encodeSpecs.push(param.ringSpecs.length);
-    encodeSpecs.push(numSpendables);
-    encodeSpecs.push(param.data.length());
+    const stream = new Bitstream();
+    stream.addNumber(this.SERIALIZATION_VERSION, 2);
+    stream.addNumber(rings.orders.length, 2);
+    stream.addNumber(param.ringSpecs.length, 2);
+    stream.addNumber(numSpendables, 2);
+    // Mining + Orders
+    stream.addHex(param.tables.getData());
+    // Rings
+    param.ringSpecs.forEach((ring) => {
+      stream.addNumber(ring.length, 1);
+      ring.forEach((o) => stream.addNumber(o, 1));
+      stream.addNumber(0, 8 - ring.length);
+    });
+    // Data
+    // Add a buffer zone of 32 bytes of zeros before the start of the data blob
+    // to allow overwriting the starting bytes.
+    stream.addNumber(0, 32);
+    stream.addHex(param.data.getData());
 
-    return this.submitParamToBytes(param, encodeSpecs);
+    return stream.getData();
   }
 
   private setupSpendables(rings: RingsInfo) {
@@ -130,42 +146,23 @@ export class RingsGenerator {
         };
       }
       order.tokenSpendableFee = ownerTokens[order.owner][tokenFee];
-      // Broker allowances
-      if (order.broker) {
-        if (!ownerBrokerTokens[order.owner]) {
-          ownerBrokerTokens[order.owner] = {};
-        }
-        if (!ownerBrokerTokens[order.owner][order.broker]) {
-          ownerBrokerTokens[order.owner][order.broker] = {};
-        }
-        if (!ownerBrokerTokens[order.owner][order.broker][order.tokenS]) {
-          ownerBrokerTokens[order.owner][order.broker][order.tokenS] = {
-            index: numSpendables++,
-          };
-        }
-        order.brokerSpendableS = ownerBrokerTokens[order.owner][order.broker][order.tokenS];
-        if (!ownerBrokerTokens[order.owner][order.broker][tokenFee]) {
-          ownerBrokerTokens[order.owner][order.broker][tokenFee] = {
-            index: numSpendables++,
-          };
-        }
-        order.brokerSpendableFee = ownerBrokerTokens[order.owner][order.broker][tokenFee];
-      }
     }
     return numSpendables;
   }
 
   private ringsToParam(ringsInfo: RingsInfo) {
     const param: RingsSubmitParam = {
-      miningSpec: 0,
-      orderSpecs: [],
       ringSpecs: [],
       data: new Bitstream(),
+      tables: new Bitstream(),
     };
 
-    this.calculateMiningSepc(ringsInfo, param);
+    // Offset 0 is the default so just add dummy bytes at the front so we load zeros
+    param.data.addNumber(0, 32);
+
+    this.createMiningTable(ringsInfo, param);
     param.ringSpecs = ringsInfo.rings;
-    ringsInfo.orders.map((o) => this.calculateOrderSpec(o, param));
+    ringsInfo.orders.map((o) => this.createOrderTable(o, param));
 
     // console.log("transactionOrigin: " + ringsInfo.transactionOrigin);
     // console.log("feeRecipient: " + ringsInfo.feeRecipient);
@@ -174,144 +171,134 @@ export class RingsGenerator {
     return param;
   }
 
-  private calculateMiningSepc(ringsInfo: RingsInfo, param: RingsSubmitParam) {
+  private createBytes(data: string) {
+    const bitstream = new Bitstream();
+    bitstream.addNumber((data.length - 2) / 2, 32);
+    bitstream.addRawBytes(data);
+    return bitstream.getData();
+  }
 
+  private createMiningTable(ringsInfo: RingsInfo, param: RingsSubmitParam) {
     const feeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin;
     const miner = ringsInfo.miner ? ringsInfo.miner : feeRecipient;
 
-    let miningSpec = 0;
     if (feeRecipient !== ringsInfo.transactionOrigin) {
-      miningSpec += 1;
-      param.data.addAddress(ringsInfo.feeRecipient);
+      this.insertOffset(param, param.data.addAddress(ringsInfo.feeRecipient, 20, false));
+    } else {
+      this.insertDefault(param);
     }
 
     if (miner !== feeRecipient) {
-      miningSpec += 1 << 1;
-      param.data.addAddress(ringsInfo.miner);
+      this.insertOffset(param, param.data.addAddress(ringsInfo.miner, 20, false));
+    } else {
+      this.insertDefault(param);
     }
 
     if (ringsInfo.sig && miner !== ringsInfo.transactionOrigin) {
-      miningSpec += 1 << 2;
-      param.data.addNumber((ringsInfo.sig.length - 2) / 2, 32);
-      param.data.addRawBytes(ringsInfo.sig);
+      this.insertOffset(param, param.data.addHex(this.createBytes(ringsInfo.sig), false));
+      this.addPadding(param);
+    } else {
+      this.insertDefault(param);
     }
-
-    param.miningSpec = miningSpec;
   }
 
-  private calculateOrderSpec(order: OrderInfo, param: RingsSubmitParam) {
-    param.data.addAddress(order.owner);
-    param.data.addAddress(order.tokenS);
-    param.data.addNumber(order.amountS, 32);
-    param.data.addNumber(order.amountB, 32);
-    param.data.addNumber(order.validSince, 32);
-    param.data.addNumber(order.tokenSpendableS.index, 2);
-    param.data.addNumber(order.tokenSpendableFee.index, 2);
+  private insertOffset(param: RingsSubmitParam, offset: number) {
+    assert(offset % 4 === 0);
+    param.tables.addNumber(offset / 4, 2);
+  }
 
-    let spec = 0;
+  private insertDefault(param: RingsSubmitParam) {
+    param.tables.addNumber(0, 2);
+  }
+
+  private addPadding(param: RingsSubmitParam) {
+    if (param.data.length() % 4 !== 0) {
+      param.data.addNumber(0, 4 - (param.data.length() % 4));
+    }
+  }
+
+  private createOrderTable(order: OrderInfo, param: RingsSubmitParam) {
+    this.addPadding(param);
+    this.insertOffset(param, this.ORDER_VERSION);
+    this.insertOffset(param, param.data.addAddress(order.owner, 20, false));
+    this.insertOffset(param, param.data.addAddress(order.tokenS, 20, false));
+    this.insertOffset(param, param.data.addAddress(order.tokenB, 20, false));
+    this.insertOffset(param, param.data.addNumber(order.amountS, 32, false));
+    this.insertOffset(param, param.data.addNumber(order.amountB, 32, false));
+    this.insertOffset(param, param.data.addNumber(order.validSince, 4, false));
+    param.tables.addNumber(order.tokenSpendableS.index, 2);
+    param.tables.addNumber(order.tokenSpendableFee.index, 2);
+
     if (order.dualAuthAddr) {
-      spec += 1;
-      param.data.addAddress(order.dualAuthAddr);
+      this.insertOffset(param, param.data.addAddress(order.dualAuthAddr, 20, false));
+    } else {
+      this.insertDefault(param);
     }
 
     if (order.broker) {
-      spec += 1 << 1;
-      param.data.addAddress(order.broker);
-      param.data.addNumber(order.brokerSpendableS.index, 2);
-      param.data.addNumber(order.brokerSpendableFee.index, 2);
+      this.insertOffset(param, param.data.addAddress(order.broker, 20, false));
+    } else {
+      this.insertDefault(param);
     }
+
     if (order.orderInterceptor) {
-      spec += 1 << 2;
-      param.data.addAddress(order.orderInterceptor);
+      this.insertOffset(param, param.data.addAddress(order.orderInterceptor, 20, false));
+    } else {
+      this.insertDefault(param);
     }
+
     if (order.walletAddr) {
-      spec += 1 << 3;
-      param.data.addAddress(order.walletAddr);
+      this.insertOffset(param, param.data.addAddress(order.walletAddr, 20, false));
+    } else {
+      this.insertDefault(param);
     }
 
     if (order.validUntil) {
-      spec += 1 << 4;
-      param.data.addNumber(order.validUntil, 32);
-    }
-    if (order.allOrNone) {
-      spec += 1 << 5;
+      this.insertOffset(param, param.data.addNumber(order.validUntil, 4, false));
+    } else {
+      this.insertDefault(param);
     }
 
     if (order.sig) {
-      spec += 1 << 6;
-      param.data.addNumber((order.sig.length - 2) / 2, 32);
-      param.data.addRawBytes(order.sig);
+      this.insertOffset(param, param.data.addHex(this.createBytes(order.sig), false));
+      this.addPadding(param);
+    } else {
+      this.insertDefault(param);
     }
 
     if (order.dualAuthSig) {
-      spec += 1 << 7;
-      param.data.addNumber((order.dualAuthSig.length - 2) / 2, 32);
-      param.data.addRawBytes(order.dualAuthSig);
+      this.insertOffset(param, param.data.addHex(this.createBytes(order.dualAuthSig), false));
+      this.addPadding(param);
+    } else {
+      this.insertDefault(param);
     }
 
+    param.tables.addNumber(order.allOrNone ? 1 : 0, 2);
+
     if (order.feeToken && order.feeToken !== this.context.lrcAddress) {
-      spec += 1 << 8;
-      param.data.addAddress(order.feeToken);
+      this.insertOffset(param, param.data.addAddress(order.feeToken, 20, false));
+    } else {
+      this.insertDefault(param);
     }
 
     if (order.feeAmount) {
-      spec += 1 << 9;
-      param.data.addNumber(order.feeAmount, 32);
+      this.insertOffset(param, param.data.addNumber(order.feeAmount, 32, false));
+    } else {
+      this.insertDefault(param);
     }
 
-    if (order.feePercentage) {
-      spec += 1 << 10;
-      param.data.addNumber(order.feePercentage, 2);
-    }
-
-    if (order.waiveFeePercentage) {
-      spec += 1 << 11;
-      param.data.addNumber(order.waiveFeePercentage, 2);
-    }
-
-    if (order.tokenSFeePercentage) {
-      spec += 1 << 12;
-      param.data.addNumber(order.tokenSFeePercentage, 2);
-    }
-
-    if (order.tokenBFeePercentage) {
-      spec += 1 << 13;
-      param.data.addNumber(order.tokenBFeePercentage, 2);
-    }
+    param.tables.addNumber(order.feePercentage ? order.feePercentage : 0, 2);
+    param.tables.addNumber(order.waiveFeePercentage ? order.waiveFeePercentage : 0, 2);
+    param.tables.addNumber(order.tokenSFeePercentage ? order.tokenSFeePercentage : 0, 2);
+    param.tables.addNumber(order.tokenBFeePercentage ? order.tokenBFeePercentage : 0, 2);
 
     if (order.tokenRecipient && order.tokenRecipient !== order.owner) {
-      spec += 1 << 14;
-      param.data.addAddress(order.tokenRecipient);
+      this.insertOffset(param, param.data.addAddress(order.tokenRecipient, 20, false));
+    } else {
+      this.insertDefault(param);
     }
 
-    if (order.walletSplitPercentage) {
-      spec += 1 << 15;
-      param.data.addNumber(order.walletSplitPercentage, 2);
-    }
-
-    param.orderSpecs.push(spec);
-  }
-
-  private submitParamToBytes(param: RingsSubmitParam, encodeSpecs: number[]) {
-    // console.log("encodeSpecs:", encodeSpecs);
-    // console.log("param.orderSpecs:", param.orderSpecs);
-    // console.log("addrList:", param.addressList);
-    // console.log("uintList:", param.uintList);
-    // console.log("bytesList:", param.bytesList);
-    // console.log("param.orderSpecs:", param.orderSpecs);
-    // console.log("param.ringSpecs:", param.ringSpecs);
-
-    const stream = new Bitstream();
-    encodeSpecs.forEach((i) => stream.addNumber(i, 2));
-    stream.addNumber(param.miningSpec, 2);
-    param.orderSpecs.forEach((i) => stream.addNumber(i, 2));
-    stream.addHex(param.data.getData());
-    param.ringSpecs.forEach((ring) => {
-      stream.addNumber(ring.length, 1);
-      ring.forEach((o) => stream.addNumber(o, 1));
-    });
-
-    return stream.getData();
+    param.tables.addNumber(order.walletSplitPercentage ? order.walletSplitPercentage : 0, 2);
   }
 
   private xor(s1: string, s2: string, numBytes: number) {
