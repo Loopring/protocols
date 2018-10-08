@@ -33,6 +33,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc, Errors {
 
     function submitOrder(bytes32[] dataArray)
         external
+        returns (bytes32)
     {
         require(dataArray.length >= 18, INVALID_SIZE);
         bool allOrNone = false;
@@ -88,6 +89,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc, Errors {
         orderSubmitted[order.hash] = true;
         orders[order.hash] = dataArray;
         emit OrderSubmitted(msg.sender, order.hash);
+        return order.hash;
     }
 
     function getOrderData(bytes32 orderHash)
