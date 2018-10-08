@@ -57,6 +57,9 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: 100e18,
             amountB: 10e18,
+            balanceS: 1e21,
+            balanceFee: 1e21,
+            balanceB: 1e21,
           },
           {
             index: 1,
@@ -64,6 +67,94 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: 5e18,
             amountB: 45e18,
+            balanceS: 1e21,
+            balanceFee: 1e21,
+            balanceB: 1e21,
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
+    });
+
+    it.only("single 3-size ring, with price gap", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        description: "simple single 3-size ring, with price gap",
+        rings: [[0, 1, 2]],
+        orders: [
+          {
+            index: 0,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 100e18,
+            amountB: 10e18,
+            balanceS: 1e21,
+            balanceFee: 1e21,
+            balanceB: 1e21,
+          },
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "REP",
+            amountS: 5e18,
+            amountB: 45e18,
+            balanceS: 1e21,
+            balanceFee: 1e21,
+            balanceB: 1e21,
+          },
+          {
+            index: 2,
+            tokenS: "REP",
+            tokenB: "WETH",
+            amountS: 3e18,
+            amountB: 2e18,
+            balanceS: 1e21,
+            balanceFee: 1e21,
+            balanceB: 1e21,
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
+    });
+
+    it.only("single 3-size ring, with price gap, same dual author", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        description: "simple single 3-size ring, with price gap",
+        rings: [[0, 1, 2]],
+        orders: [
+          {
+            index: 0,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 100e18,
+            amountB: 10e18,
+            dualAuthAddr: "0",
+            balanceS: 1e21,
+            balanceFee: 1e21,
+            balanceB: 1e21,
+          },
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "REP",
+            amountS: 5e18,
+            amountB: 45e18,
+            dualAuthAddr: "0",
+            balanceS: 1e21,
+            balanceFee: 1e21,
+            balanceB: 1e21,
+          },
+          {
+            index: 2,
+            tokenS: "REP",
+            tokenB: "WETH",
+            amountS: 3e18,
+            amountB: 2e18,
+            dualAuthAddr: "0",
+            balanceS: 1e21,
+            balanceFee: 1e21,
+            balanceB: 1e21,
           },
         ],
       };

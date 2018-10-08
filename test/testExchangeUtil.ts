@@ -216,6 +216,11 @@ export class ExchangeTestUtil {
       const tokenFee = this.testContext.tokenAddrInstanceMap.get(feeToken);
       await tokenFee.setBalance(order.owner, balanceFee);
     }
+
+    if (order.balanceB) {
+      const tokenB = this.testContext.tokenAddrInstanceMap.get(order.tokenB);
+      await tokenB.setBalance(order.owner, order.balanceB);
+    }
   }
 
   public async getFilled(hash: Buffer) {
@@ -239,7 +244,7 @@ export class ExchangeTestUtil {
       "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
       "balanceS", "balanceFee", "tokenSpendableS", "tokenSpendableFee",
-      "brokerSpendableS", "brokerSpendableFee", "onChain",
+      "brokerSpendableS", "brokerSpendableFee", "onChain", "balanceB",
     ];
     // Make sure to get the keys from both objects to make sure we get all keys defined in both
     for (const key of [...Object.keys(ringsInfoA), ...Object.keys(ringsInfoB)]) {
