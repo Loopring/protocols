@@ -76,6 +76,7 @@ export interface OrderInfo {
   index?: number;
   balanceS?: number;
   balanceFee?: number;
+  balanceB?: number;
   onChain?: boolean;
 
   [key: string]: any;
