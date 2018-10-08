@@ -33,12 +33,6 @@ import "../lib/MemoryUtil.sol";
 import "../lib/NoDefaultFunc.sol";
 import "../lib/MultihashUtil.sol";
 
-import "../spec/EncodeSpec.sol";
-import "../spec/MiningSpec.sol";
-import "../spec/OrderSpecs.sol";
-import "../spec/RingSpecs.sol";
-
-import "../helper/InputsHelper.sol";
 import "../helper/MiningHelper.sol";
 import "../helper/OrderHelper.sol";
 import "../helper/RingHelper.sol";

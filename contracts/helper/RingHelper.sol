@@ -51,8 +51,8 @@ library RingHelper {
                 let participation := mload(add(participations, add(32, mul(i, 32))))    // participations[i]
                 let order := mload(participation)                                       // participation.order
 
-                let waiveFeePercentage := and(mload(add(order, 672)), 0xFFFF)           // order.waiveFeePercentage
-                let orderHash := mload(add(order, 864))                                 // order.hash
+                let waiveFeePercentage := and(mload(add(order, 704)), 0xFFFF)           // order.waiveFeePercentage
+                let orderHash := mload(add(order, 896))                                 // order.hash
 
                 mstore(add(ptr, 2), waiveFeePercentage)
                 mstore(ptr, orderHash)
@@ -248,9 +248,9 @@ library RingHelper {
                 let participation := mload(add(participations, add(32, mul(i, 32))))   // participations[i]
                 let order := mload(participation)                                      // participation.order
 
-                mstore(add(fill,   0), mload(add(order, 864)))                         // order.hash
-                mstore(add(fill,  32), mload(add(order,   0)))                         // order.owner
-                mstore(add(fill,  64), mload(add(order,  32)))                         // order.tokenS
+                mstore(add(fill,   0), mload(add(order, 896)))                         // order.hash
+                mstore(add(fill,  32), mload(add(order,  32)))                         // order.owner
+                mstore(add(fill,  64), mload(add(order,  64)))                         // order.tokenS
                 mstore(add(fill,  96), mload(add(participation, 256)))                 // participation.fillAmountS
                 mstore(add(fill, 128), mload(add(participation,  32)))                 // participation.splitS
                 mstore(add(fill, 160), mload(add(participation,  64)))                 // participation.feeAmount

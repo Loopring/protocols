@@ -18,43 +18,14 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../lib/AddressUtil.sol";
-import "../lib/BytesUtil.sol";
+
 import "../lib/MemoryUtil.sol";
-import "../lib/ERC20.sol";
-import "../lib/MathUint.sol";
-import "../lib/MultihashUtil.sol";
-import "../lib/NoDefaultFunc.sol";
-
-import "../spec/EncodeSpec.sol";
-import "../spec/OrderSpec.sol";
-import "../spec/OrderSpecs.sol";
-import "../spec/MiningSpec.sol";
-import "../spec/RingSpecs.sol";
-
-import "../helper/InputsHelper.sol";
-import "../helper/OrderHelper.sol";
-import "../helper/RingHelper.sol";
-import "../helper/MiningHelper.sol";
-
 import "./Data.sol";
 
-
-/// @title An Implementation of IExchange.
+/// @title Deserializes the data passed to submitRings
 /// @author Daniel Wang - <daniel@loopring.org>,
 library ExchangeDeserializer {
-    using MathUint      for uint;
-    using BytesUtil     for bytes;
-    using MiningSpec    for uint16;
-    using EncodeSpec    for uint16[];
-    using OrderSpecs    for uint16[];
-    using RingSpecs     for uint8[][];
-    using OrderHelper     for Data.Order;
-    using RingHelper      for Data.Ring;
-    using InputsHelper    for Data.Inputs;
-    using MiningHelper    for Data.Mining;
 
-    /// @dev Submit a order-ring for validation and settlement.
     function deserialize(
         address lrcTokenAddress,
         bytes data
@@ -62,108 +33,401 @@ library ExchangeDeserializer {
         internal
         view
         returns (
-            Data.Mining,
-            Data.Order[],
-            Data.Ring[]
+            Data.Mining memory mining,
+            Data.Order[] memory orders,
+            Data.Ring[] memory rings
         )
     {
-        Data.Inputs memory inputs;
-        inputs.data = data;
-        inputs.numOrders = uint16(MemoryUtil.bytesToUintX(data, 0, 2));
-        inputs.numRings = uint16(MemoryUtil.bytesToUintX(data, 2, 2));
-        uint16 numSpendables = uint16(MemoryUtil.bytesToUintX(data, 4, 2));
-        uint16 dataLength = uint16(MemoryUtil.bytesToUintX(data, 6, 2));
+        // Read the header
+        Data.Header memory header;
+        header.version = uint16(MemoryUtil.bytesToUintX(data, 0, 2) & 0xFFFF);
+        header.numOrders = uint16(MemoryUtil.bytesToUintX(data, 2, 2) & 0xFFFF);
+        header.numRings = uint16(MemoryUtil.bytesToUintX(data, 4, 2) & 0xFFFF);
+        header.numSpendables = uint16(MemoryUtil.bytesToUintX(data, 6, 2) & 0xFFFF);
 
-        inputs.spendableList = new Data.Spendable[](numSpendables);
+        // Validation
+        require(header.version == 0, "Unsupported serialization format");
+        require(header.numSpendables > 0, "Invalid number of spendables");
 
-        uint offset = 2 * 4;
-        inputs.miningSpec = uint16(MemoryUtil.bytesToUintX(data, offset, 2));
-        offset += 2;
-        inputs.ordersOffset = offset;
-        offset += 2 * inputs.numOrders;
-        inputs.bytesOffset = offset;
-        offset += dataLength;
+        // Calculate data pointers
+        uint dataPtr;
+        assembly {
+            dataPtr := data
+        }
+        uint miningDataPtr = dataPtr + 8;
+        uint orderDataPtr = miningDataPtr + 3 * 2;
+        uint ringDataPtr = orderDataPtr + (25 * header.numOrders) * 2;
+        uint dataBlobPtr = ringDataPtr + (header.numRings * 9) + 32;
 
-        inputs.ringsOffset = offset;
-
-        return inputToStructedData(
-            lrcTokenAddress,
-            inputs
-        );
+        // Setup the rings
+        mining = setupMiningData(dataBlobPtr, miningDataPtr + 2);
+        orders = setupOrders(dataBlobPtr, orderDataPtr + 2, header.numOrders, header.numSpendables, lrcTokenAddress);
+        rings = assembleRings(ringDataPtr + 1, header.numRings, orders);
     }
 
-    function inputToStructedData(
-        address lrcTokenAddress,
-        Data.Inputs inputs
+    function setupMiningData(
+        uint data,
+        uint tablesPtr
         )
         internal
         view
-        returns (
-            Data.Mining mining,
-            Data.Order[] orders,
-            Data.Ring[] rings
-        )
+        returns (Data.Mining mining)
     {
-        uint i;
+        bytes memory emptyBytes = new bytes(0);
+        uint offset;
 
-        mining.feeRecipient = inputs.miningSpec.hasFeeRecipient() ? inputs.nextAddress() : tx.origin;
-        mining.miner = inputs.miningSpec.hasMiner() ? inputs.nextAddress() : address(0x0);
-        mining.sig = inputs.miningSpec.hasSignature() ? inputs.nextBytes() : new bytes(0);
+        assembly {
+            // Default to transaction origin for feeRecipient
+            mstore(add(data, 20), origin)
 
-        orders = new Data.Order[](inputs.numOrders);
-        for (i = 0; i < inputs.numOrders; i++) {
-            Data.Order memory order = orders[i];
-            uint16 spec = uint16(MemoryUtil.bytesToUintX(inputs.data, inputs.ordersOffset + i * 2, 2));
+            // mining.feeRecipient
+            offset := mul(and(mload(add(tablesPtr,  0)), 0xFFFF), 4)
+            mstore(
+                add(mining,   0),
+                mload(add(add(data, 20), offset))
+            )
 
-            order.owner = inputs.nextAddress();
-            order.tokenS = inputs.nextAddress();
-            order.amountS = inputs.nextUint();
-            order.amountB = inputs.nextUint();
-            order.validSince = inputs.nextUint();
-            order.tokenSpendableS = inputs.spendableList[inputs.nextUint16()];
-            order.tokenSpendableFee = inputs.spendableList[inputs.nextUint16()];
-            order.dualAuthAddr = (spec & 1 != 0) ? inputs.nextAddress() : 0x0;
-            if (spec & 2 != 0) {
-                order.broker = inputs.nextAddress();
-                order.brokerSpendableS = inputs.spendableList[inputs.nextUint16()];
-                order.brokerSpendableFee = inputs.spendableList[inputs.nextUint16()];
-            }
-            order.orderInterceptor = (spec & 4 != 0) ? inputs.nextAddress() : 0x0;
-            order.wallet = (spec & 8 != 0) ? inputs.nextAddress() : 0x0;
-            order.validUntil = (spec & 16 != 0) ? inputs.nextUint() : 0;
-            if (spec & 64 != 0) {
-                order.sig = inputs.nextBytes();
-            }
-            if (spec & 128 != 0) {
-                order.dualAuthSig = inputs.nextBytes();
-            }
-            order.allOrNone = (spec & 32 != 0);
-            order.feeToken = (spec & 256 != 0) ? inputs.nextAddress() : lrcTokenAddress;
-            order.feeAmount = (spec & 512 != 0) ? inputs.nextUint() : 0;
-            order.feePercentage = (spec & 1024 != 0) ? inputs.nextUint16() : 0;
-            order.waiveFeePercentage = (spec & 2048 != 0) ? int16(inputs.nextUint16()) : 0;
-            order.tokenSFeePercentage = (spec & 4096 != 0) ? inputs.nextUint16() : 0;
-            order.tokenBFeePercentage = (spec & 8192 != 0) ? inputs.nextUint16() : 0;
-            order.tokenRecipient = (spec & 16384 != 0) ? inputs.nextAddress() : order.owner;
-            order.walletSplitPercentage = (spec & 32768 != 0) ? inputs.nextUint16() : 0;
-            order.valid = true;
+            // Restore default to 0
+            mstore(add(data, 20), 0)
+
+            // mining.miner
+            offset := mul(and(mload(add(tablesPtr,  2)), 0xFFFF), 4)
+            mstore(
+                add(mining,  32),
+                mload(add(add(data, 20), offset))
+            )
+
+            // Default to empty bytes array
+            mstore(add(data, 32), emptyBytes)
+
+            // mining.sig
+            offset := mul(and(mload(add(tablesPtr,  4)), 0xFFFF), 4)
+            mstore(
+                add(mining, 64),
+                add(data, add(offset, 32))
+            )
+
+            // Restore default to 0
+            mstore(add(data, 32), 0)
         }
+    }
 
-        rings = new Data.Ring[](inputs.numRings);
-        for (uint r = 0; r < inputs.numRings; r++) {
-            uint ringSize = uint(inputs.data[inputs.ringsOffset++]);
+    function setupOrders(
+        uint data,
+        uint tablesPtr,
+        uint numOrders,
+        uint numSpendables,
+        address lrcTokenAddress
+        )
+        internal
+        pure
+        returns (Data.Order[] orders)
+    {
+        bytes memory emptyBytes = new bytes(0);
+        uint orderStructSize = 32 * 32;
+        // Memory for orders length + numOrders order pointers
+        uint arrayDataSize = (1 + numOrders) * 32;
+        Data.Spendable[] memory spendableList = new Data.Spendable[](numSpendables);
+        uint offset;
 
-            Data.Ring memory ring = rings[r];
-            ring.size = ringSize;
-            ring.valid = true;
-            ring.participations = new Data.Participation[](ringSize);
-            for (i = 0; i < ringSize; i++) {
-                ring.participations[i].order = orders[uint(inputs.data[inputs.ringsOffset++])];
+        assembly {
+            // Allocate memory for all orders
+            orders := mload(0x40)
+            mstore(add(orders, 0), numOrders)                       // orders.length
+            // Reserve the memory for the orders array
+            mstore(0x40, add(orders, add(arrayDataSize, mul(orderStructSize, numOrders))))
+
+            for { let i := 0 } lt(i, numOrders) { i := add(i, 1) } {
+                let order := add(orders, add(arrayDataSize, mul(orderStructSize, i)))
+
+                // Store the memory location of this order in the orders array
+                mstore(add(orders, mul(add(1, i), 32)), order)
+
+                // order.version
+                offset := and(mload(add(tablesPtr,  0)), 0xFFFF)
+                mstore(
+                    add(order,   0),
+                    offset
+                )
+
+                // order.owner
+                offset := mul(and(mload(add(tablesPtr,  2)), 0xFFFF), 4)
+                mstore(
+                    add(order,  32),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // order.tokenS
+                offset := mul(and(mload(add(tablesPtr,  4)), 0xFFFF), 4)
+                mstore(
+                    add(order,  64),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // order.tokenB
+                offset := mul(and(mload(add(tablesPtr,  6)), 0xFFFF), 4)
+                mstore(
+                    add(order,  96),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // order.amountS
+                offset := mul(and(mload(add(tablesPtr,  8)), 0xFFFF), 4)
+                mstore(
+                    add(order, 128),
+                    mload(add(add(data, 32), offset))
+                )
+
+                // order.amountB
+                offset := mul(and(mload(add(tablesPtr, 10)), 0xFFFF), 4)
+                mstore(
+                    add(order, 160),
+                    mload(add(add(data, 32), offset))
+                )
+
+                // order.validSince
+                offset := mul(and(mload(add(tablesPtr, 12)), 0xFFFF), 4)
+                mstore(
+                    add(order, 192),
+                    and(mload(add(add(data, 4), offset)), 0xFFFFFFFF)
+                )
+
+                // order.tokenSpendableS
+                offset := and(mload(add(tablesPtr, 14)), 0xFFFF)
+                // Force the spendable index to 0 if it's invalid
+                offset := mul(offset, lt(offset, numSpendables))
+                mstore(
+                    add(order, 224),
+                    mload(add(spendableList, mul(add(offset, 1), 32)))
+                )
+
+                // order.tokenSpendableFee
+                offset := and(mload(add(tablesPtr, 16)), 0xFFFF)
+                // Force the spendable index to 0 if it's invalid
+                offset := mul(offset, lt(offset, numSpendables))
+                mstore(
+                    add(order, 256),
+                    mload(add(spendableList, mul(add(offset, 1), 32)))
+                )
+
+                // order.dualAuthAddr
+                offset := mul(and(mload(add(tablesPtr, 18)), 0xFFFF), 4)
+                mstore(
+                    add(order, 288),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // order.broker
+                offset := mul(and(mload(add(tablesPtr, 20)), 0xFFFF), 4)
+                mstore(
+                    add(order, 320),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // order.orderInterceptor
+                offset := mul(and(mload(add(tablesPtr, 22)), 0xFFFF), 4)
+                mstore(
+                    add(order, 416),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // order.wallet
+                offset := mul(and(mload(add(tablesPtr, 24)), 0xFFFF), 4)
+                mstore(
+                    add(order, 448),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // order.validUntil
+                offset := mul(and(mload(add(tablesPtr, 26)), 0xFFFF), 4)
+                mstore(
+                    add(order, 480),
+                    and(mload(add(add(data, 32), offset)), 0xFFFFFFFF)
+                )
+
+                // Default to empty bytes array for value sig and dualAuthSig
+                mstore(add(data, 32), emptyBytes)
+
+                // order.sig
+                offset := mul(and(mload(add(tablesPtr, 28)), 0xFFFF), 4)
+                mstore(
+                    add(order, 512),
+                    add(data, add(offset, 32))
+                )
+
+                // order.dualAuthSig
+                offset := mul(and(mload(add(tablesPtr, 30)), 0xFFFF), 4)
+                mstore(
+                    add(order, 544),
+                    add(data, add(offset, 32))
+                )
+
+                // Restore default to 0
+                mstore(add(data, 32), 0)
+
+                // order.allOrNone
+                offset := and(mload(add(tablesPtr, 32)), 0xFFFF)
+                mstore(
+                    add(order, 576),
+                    gt(offset, 0)
+                )
+
+                // lrcTokenAddress is the default value for feeToken
+                mstore(add(data, 20), lrcTokenAddress)
+
+                // order.feeToken
+                offset := mul(and(mload(add(tablesPtr, 34)), 0xFFFF), 4)
+                mstore(
+                    add(order, 608),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // Restore default to 0
+                mstore(add(data, 20), 0)
+
+                // order.feeAmount
+                offset := mul(and(mload(add(tablesPtr, 36)), 0xFFFF), 4)
+                mstore(
+                    add(order, 640),
+                    mload(add(add(data, 32), offset))
+                )
+
+                // order.feePercentage
+                offset := and(mload(add(tablesPtr, 38)), 0xFFFF)
+                mstore(
+                    add(order, 672),
+                    offset
+                )
+
+                // order.waiveFeePercentage
+                offset := and(mload(add(tablesPtr, 40)), 0xFFFF)
+                mstore(
+                    add(order, 704),
+                    offset
+                )
+
+                // order.tokenSFeePercentage
+                offset := and(mload(add(tablesPtr, 42)), 0xFFFF)
+                mstore(
+                    add(order, 736),
+                    offset
+                )
+
+                // order.tokenBFeePercentage
+                offset := and(mload(add(tablesPtr, 44)), 0xFFFF)
+                mstore(
+                    add(order, 768),
+                    offset
+                )
+
+                // The owner is the default value of tokenRecipient
+                mstore(add(data, 20), mload(add(order, 32)))                // order.owner
+
+                // order.tokenRecipient
+                offset := mul(and(mload(add(tablesPtr, 46)), 0xFFFF), 4)
+                mstore(
+                    add(order, 800),
+                    and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                )
+
+                // Restore default to 0
+                mstore(add(data, 20), 0)
+
+                // order.walletSplitPercentage
+                offset := and(mload(add(tablesPtr, 48)), 0xFFFF)
+                mstore(
+                    add(order, 832),
+                    offset
+                )
+
+                // Set default  values
+                mstore(add(order, 864), 0)          // order.P2P
+                mstore(add(order, 896), 0)          // order.hash
+                mstore(add(order, 928), 0)          // order.brokerInterceptor
+                mstore(add(order, 960), 0)          // order.filledAmountS
+                mstore(add(order, 992), 1)          // order.valid
+
+                // Advance to the next order
+                tablesPtr := add(tablesPtr, 50)
             }
+        }
+    }
 
-            // Set tokenB of orders using the tokenS from the next order
-            for (i = 0; i < ringSize; i++) {
-                ring.participations[i].order.tokenB = ring.participations[(i + 1) % ringSize].order.tokenS;
+    function assembleRings(
+        uint data,
+        uint numRings,
+        Data.Order[] orders
+        )
+        internal
+        pure
+        returns (Data.Ring[] rings)
+    {
+        uint ringsArrayDataSize = (1 + numRings) * 32;
+        uint ringStructSize = 5 * 32;
+        uint participationStructSize = 10 * 32;
+
+        assembly {
+            // Allocate memory for all rings
+            rings := mload(0x40)
+            mstore(add(rings, 0), numRings)                      // rings.length
+            // Reserve the memory for the rings array
+            mstore(0x40, add(rings, add(ringsArrayDataSize, mul(ringStructSize, numRings))))
+
+            for { let r := 0 } lt(r, numRings) { r := add(r, 1) } {
+                let ring := add(rings, add(ringsArrayDataSize, mul(ringStructSize, r)))
+
+                // Store the memory location of this ring in the rings array
+                mstore(add(rings, mul(add(r, 1), 32)), ring)
+
+                // Get the ring size
+                let ringSize := and(mload(data), 0xFF)
+                data := add(data, 1)
+
+                // Allocate memory for all participations
+                let participations := mload(0x40)
+                mstore(add(participations, 0), ringSize)         // participations.length
+                // Memory for participations length + ringSize participation pointers
+                let participationsData := add(participations, mul(add(1, ringSize), 32))
+                // Reserve the memory for the participations
+                mstore(0x40, add(participationsData, mul(participationStructSize, ringSize)))
+
+                // Initialize ring properties
+                mstore(add(ring,   0), ringSize)                 // ring.size
+                mstore(add(ring,  32), participations)           // ring.participations
+                mstore(add(ring,  64), 0)                        // ring.hash
+                mstore(add(ring,  96), 0)                        // ring.minerFeesToOrdersPercentage
+                mstore(add(ring, 128), 1)                        // ring.valid
+
+                for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
+                    let participation := add(participationsData, mul(participationStructSize, i))
+
+                    // Store the memory location of this participation in the participations array
+                    mstore(add(participations, mul(add(i, 1), 32)), participation)
+
+                    // Get the order index
+                    let orderIndex := and(mload(data), 0xFF)
+                    data := add(data, 1)
+
+                    // participation.order
+                    mstore(
+                        add(participation,   0),
+                        mload(add(orders, mul(add(orderIndex, 1), 32)))
+                    )
+
+                    // Set default values
+                    mstore(add(participation,  32), 0)          // participation.splitS
+                    mstore(add(participation,  64), 0)          // participation.feeAmount
+                    mstore(add(participation,  96), 0)          // participation.feeAmountS
+                    mstore(add(participation, 128), 0)          // participation.feeAmountB
+                    mstore(add(participation, 160), 0)          // participation.rebateFee
+                    mstore(add(participation, 192), 0)          // participation.rebateS
+                    mstore(add(participation, 224), 0)          // participation.rebateB
+                    mstore(add(participation, 256), 0)          // participation.fillAmountS
+                    mstore(add(participation, 288), 0)          // participation.fillAmountB
+                }
+
+                // Advance to the next ring
+                data := add(data, sub(8, ringSize))
             }
         }
     }

@@ -28,15 +28,11 @@ import "../iface/IBurnRateTable.sol";
 
 library Data {
 
-    struct Inputs {
-        bytes data;
-        Spendable[] spendableList;
-        uint bytesOffset;
-        uint16 miningSpec;
+    struct Header {
+        uint version;
         uint numOrders;
-        uint ordersOffset;
         uint numRings;
-        uint ringsOffset;
+        uint numSpendables;
     }
 
     struct Context {
@@ -76,6 +72,8 @@ library Data {
     }
 
     struct Order {
+        uint      version;
+
         // required fields
         address   owner;
         address   tokenS;

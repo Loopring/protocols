@@ -65,25 +65,25 @@ library OrderHelper {
 
             // We store the members back to front so we can overwrite data for members smaller than 32
             // (mstore always writes 32 bytes)
-            mstore(add(ptr, sub(348, 31)), mload(add(order, 544)))   // order.allOrNone
-            mstore(add(ptr, sub(346, 30)), mload(add(order, 736)))   // order.tokenBFeePercentage
-            mstore(add(ptr, sub(344, 30)), mload(add(order, 704)))   // order.tokenSFeePercentage
-            mstore(add(ptr, sub(342, 30)), mload(add(order, 640)))   // order.feePercentage
-            mstore(add(ptr, sub(340, 30)), mload(add(order, 800)))   // order.walletSplitPercentage
-            mstore(add(ptr, sub(320, 12)), mload(add(order, 576)))   // order.feeToken
-            mstore(add(ptr, sub(300, 12)), mload(add(order, 768)))   // order.tokenRecipient
-            mstore(add(ptr, sub(280, 12)), mload(add(order, 416)))   // order.wallet
-            mstore(add(ptr, sub(260, 12)), mload(add(order, 384)))   // order.orderInterceptor
-            mstore(add(ptr, sub(240, 12)), mload(add(order, 288)))   // order.broker
-            mstore(add(ptr, sub(220, 12)), mload(add(order, 256)))   // order.dualAuthAddr
-            mstore(add(ptr, sub(200, 12)), mload(add(order,  64)))   // order.tokenB
-            mstore(add(ptr, sub(180, 12)), mload(add(order,  32)))   // order.tokenS
-            mstore(add(ptr, sub(160, 12)), mload(add(order,   0)))   // order.owner
-            mstore(add(ptr, sub(128,  0)), mload(add(order, 448)))   // order.validUntil
-            mstore(add(ptr, sub( 96,  0)), mload(add(order, 160)))   // order.validSince
-            mstore(add(ptr, sub( 64,  0)), mload(add(order, 608)))   // order.feeAmount
-            mstore(add(ptr, sub( 32,  0)), mload(add(order, 128)))   // order.amountB
-            mstore(add(ptr, sub(  0,  0)), mload(add(order,  96)))   // order.amountS
+            mstore(add(ptr, sub(348, 31)), mload(add(order, 576)))   // order.allOrNone
+            mstore(add(ptr, sub(346, 30)), mload(add(order, 768)))   // order.tokenBFeePercentage
+            mstore(add(ptr, sub(344, 30)), mload(add(order, 736)))   // order.tokenSFeePercentage
+            mstore(add(ptr, sub(342, 30)), mload(add(order, 672)))   // order.feePercentage
+            mstore(add(ptr, sub(340, 30)), mload(add(order, 832)))   // order.walletSplitPercentage
+            mstore(add(ptr, sub(320, 12)), mload(add(order, 608)))   // order.feeToken
+            mstore(add(ptr, sub(300, 12)), mload(add(order, 800)))   // order.tokenRecipient
+            mstore(add(ptr, sub(280, 12)), mload(add(order, 448)))   // order.wallet
+            mstore(add(ptr, sub(260, 12)), mload(add(order, 416)))   // order.orderInterceptor
+            mstore(add(ptr, sub(240, 12)), mload(add(order, 320)))   // order.broker
+            mstore(add(ptr, sub(220, 12)), mload(add(order, 288)))   // order.dualAuthAddr
+            mstore(add(ptr, sub(200, 12)), mload(add(order,  96)))   // order.tokenB
+            mstore(add(ptr, sub(180, 12)), mload(add(order,  64)))   // order.tokenS
+            mstore(add(ptr, sub(160, 12)), mload(add(order,  32)))   // order.owner
+            mstore(add(ptr, sub(128,  0)), mload(add(order, 480)))   // order.validUntil
+            mstore(add(ptr, sub( 96,  0)), mload(add(order, 192)))   // order.validSince
+            mstore(add(ptr, sub( 64,  0)), mload(add(order, 640)))   // order.feeAmount
+            mstore(add(ptr, sub( 32,  0)), mload(add(order, 160)))   // order.amountB
+            mstore(add(ptr, sub(  0,  0)), mload(add(order, 128)))   // order.amountS
 
             hash := keccak256(ptr, 349)  // 5*32 + 9*20 + 4*2 + 1*1
         }
@@ -114,6 +114,7 @@ library OrderHelper {
         view
     {
         bool valid = true;
+        valid = valid && (order.version == 0); // unsupported order version
         valid = valid && (order.owner != 0x0); // invalid order owner
         valid = valid && (order.tokenS != 0x0); // invalid order tokenS
         valid = valid && (order.tokenB != 0x0); // invalid order tokenB

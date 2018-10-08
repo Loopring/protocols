@@ -189,6 +189,7 @@ export class ExchangeTestUtil {
       order.tokenRecipient = this.testContext.allOrderTokenRecipients[accountIndex];
     }
     // Fill in defaults (default, so these will not get serialized)
+    order.version = 0;
     order.tokenRecipient = order.tokenRecipient ? order.tokenRecipient : order.owner;
     order.feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
     order.feeAmount = order.feeAmount ? order.feeAmount : 0;

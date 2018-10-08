@@ -82,12 +82,14 @@ contract("Exchange_Security", (accounts: string[]) => {
             tokenB: allTokenSymbols[1],
             amountS: 35e17,
             amountB: 25e17,
+            dualAuthSignAlgorithm: psc.SignAlgorithm.None,
           },
           {
             tokenS: allTokenSymbols[1],
             tokenB: allTokenSymbols[0],
             amountS: 23e17,
             amountB: 32e17,
+            dualAuthSignAlgorithm: psc.SignAlgorithm.None,
           },
         ],
       };
