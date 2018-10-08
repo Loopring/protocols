@@ -31,7 +31,7 @@ contract DummyToken is LRCToken {
         _symbol,
         _decimals,
         _totalSupply,
-        tx.origin
+        msg.sender
         )
         public
     {

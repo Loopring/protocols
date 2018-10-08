@@ -85,11 +85,11 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc, Errors {
 
         for (uint i = 0; i < size; i++) {
             hashes[i] = BytesUtil.bytesToBytes32(orderHashes, i * 32);
-            delegate.setCancelled(tx.origin, hashes[i]);
+            delegate.setCancelled(msg.sender, hashes[i]);
         }
 
         emit OrdersCancelled(
-            tx.origin,
+            msg.sender,
             hashes
         );
     }
@@ -106,13 +106,13 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc, Errors {
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
 
         ITradeDelegate(delegateAddress).setTradingPairCutoffs(
-            tx.origin,
+            msg.sender,
             tokenPair,
             t
         );
 
         emit AllOrdersCancelledForTradingPair(
-            tx.origin,
+            msg.sender,
             token1,
             token2,
             t
@@ -126,10 +126,10 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc, Errors {
     {
         uint t = (cutoff == 0) ? block.timestamp : cutoff;
 
-        ITradeDelegate(delegateAddress).setCutoffs(tx.origin, t);
+        ITradeDelegate(delegateAddress).setCutoffs(msg.sender, t);
 
         emit AllOrdersCancelled(
-            tx.origin,
+            msg.sender,
             t
         );
     }
@@ -147,14 +147,14 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc, Errors {
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
 
         ITradeDelegate(delegateAddress).setTradingPairCutoffsOfOwner(
-            tx.origin,
+            msg.sender,
             owner,
             tokenPair,
             t
         );
 
         emit AllOrdersCancelledForTradingPairByBroker(
-            tx.origin,
+            msg.sender,
             owner,
             token1,
             token2,
@@ -171,13 +171,13 @@ contract RingCanceller is IRingCanceller, NoDefaultFunc, Errors {
         uint t = (cutoff == 0) ? block.timestamp : cutoff;
 
         ITradeDelegate(delegateAddress).setCutoffsOfOwner(
-            tx.origin,
+            msg.sender,
             owner,
             t
         );
 
         emit AllOrdersCancelledByBroker(
-            tx.origin,
+            msg.sender,
             owner,
             t
         );

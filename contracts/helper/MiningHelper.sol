@@ -83,7 +83,7 @@ library MiningHelper {
         returns (bool)
     {
         if (mining.sig.length == 0) {
-            return (tx.origin == mining.miner);
+            return (msg.sender == mining.miner);
         } else {
             return MultihashUtil.verifySignature(
                 mining.miner,
