@@ -25,7 +25,6 @@ import "../iface/IFeeHolder.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITradeDelegate.sol";
 
-import "../lib/AddressUtil.sol";
 import "../lib/BytesUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";

@@ -18,7 +18,6 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "./AddressUtil.sol";
 import "./ERC20.sol";
 import "./MathUint.sol";
 
