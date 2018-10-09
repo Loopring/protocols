@@ -26,6 +26,20 @@ export const ringsInfoList: RingsInfo[] = [
         dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -47,6 +61,20 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 45e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.5,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -71,6 +99,20 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 100e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -95,6 +137,20 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 100e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -117,6 +173,20 @@ export const ringsInfoList: RingsInfo[] = [
         balanceS: 0,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.0,
+            },
+            {
+              filledFraction: 0.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -141,6 +211,21 @@ export const ringsInfoList: RingsInfo[] = [
         balanceFee: 0,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+              payFeeInTokenB: true,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -166,6 +251,20 @@ export const ringsInfoList: RingsInfo[] = [
         balanceFee: 1.01e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -191,6 +290,21 @@ export const ringsInfoList: RingsInfo[] = [
         balanceFee: 0.5e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.75,
+            },
+            {
+              filledFraction: 0.75,
+              payFeeInTokenB: true,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -216,6 +330,20 @@ export const ringsInfoList: RingsInfo[] = [
         feeAmount: 1e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -240,6 +368,20 @@ export const ringsInfoList: RingsInfo[] = [
         tokenRecipient: "2",
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -262,6 +404,20 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 200e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 0.5,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -285,6 +441,13 @@ export const ringsInfoList: RingsInfo[] = [
         balanceS: 5e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -314,6 +477,30 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 50e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.6,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.4,
+            },
+            {
+              filledFraction: 4 / 5,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -344,6 +531,16 @@ export const ringsInfoList: RingsInfo[] = [
         balanceS: 2e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -371,6 +568,21 @@ export const ringsInfoList: RingsInfo[] = [
         balanceFee: 1.1e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+              payFeeInTokenB: true,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -406,6 +618,25 @@ export const ringsInfoList: RingsInfo[] = [
         balanceS: 5e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+              payFeeInTokenB: true,
+            },
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+              payFeeInTokenB: true,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -434,6 +665,23 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 10e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -462,6 +710,23 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 2e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: (3.0 * (5.0 / 45.0) / 10.0),
+            },
+            {
+              filledFraction: (3.0 / 45.0),
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -556,6 +821,13 @@ export const ringsInfoList: RingsInfo[] = [
         waiveFeePercentage: -450, // = -45%
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -584,6 +856,13 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 3e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -619,6 +898,30 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 50e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.5,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -662,6 +965,31 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 100e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+              payFeeInTokenB: true,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -690,6 +1018,30 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 45e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.5,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.5,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -720,6 +1072,22 @@ export const ringsInfoList: RingsInfo[] = [
         walletAddr: "1",
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+              P2P: true,
+            },
+            {
+              filledFraction: 1.0,
+              P2P: true,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -746,6 +1114,22 @@ export const ringsInfoList: RingsInfo[] = [
         tokenBFeePercentage: 25,  // == 2.5%
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.01,
+              P2P: true,
+            },
+            {
+              filledFraction: 1.0,
+              P2P: true,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -772,10 +1156,26 @@ export const ringsInfoList: RingsInfo[] = [
         tokenBFeePercentage: 25,  // == 2.5%
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.02,
+              P2P: true,
+            },
+            {
+              filledFraction: 1.0,
+              P2P: true,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
-    description: "P2P: single 2-size ring, insufficient funds",
+    description: "P2P: single 2-size ring, partial fill caused by balance",
     transactionOrigin: "1",
     rings: [[0, 1]],
     orders: [
@@ -799,6 +1199,22 @@ export const ringsInfoList: RingsInfo[] = [
         balanceS: 0.012e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.012 * 0.975,
+              P2P: true,
+            },
+            {
+              filledFraction: 0.6,
+              P2P: true,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -829,6 +1245,22 @@ export const ringsInfoList: RingsInfo[] = [
         walletAddr: null,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+              P2P: true,
+            },
+            {
+              filledFraction: 1.0,
+              P2P: true,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -855,6 +1287,13 @@ export const ringsInfoList: RingsInfo[] = [
         tokenBFeePercentage: 25,  // == 2.5%
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -882,6 +1321,21 @@ export const ringsInfoList: RingsInfo[] = [
         feeAmount: 1.5e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.02,
+              P2P: true,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -904,6 +1358,13 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 0,
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -918,6 +1379,13 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 2e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -967,6 +1435,13 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 100e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -991,6 +1466,13 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 3e18,
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -1015,6 +1497,13 @@ export const ringsInfoList: RingsInfo[] = [
                      "e0331e79746060f7effb569df13c1aaf42e15efc3ef4dea04",
       },
     ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
   },
 
   {
@@ -1039,5 +1528,8 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 3e18,
       },
     ],
+    expected: {
+      revert: true,
+    },
   },
 ];
