@@ -223,7 +223,7 @@ library RingHelper {
         internal
     {
         payFees(ring, ctx, mining);
-        transferTokens(ring, ctx);
+        transferTokens(ring, ctx, mining.feeRecipient);
     }
 
     function generateFills(
@@ -263,13 +263,15 @@ library RingHelper {
 
     function transferTokens(
         Data.Ring ring,
-        Data.Context ctx
+        Data.Context ctx,
+        address feeRecipient
         )
         internal
     {
         for (uint i = 0; i < ring.size; i++) {
             transferTokensForParticipation(
                 ctx,
+                feeRecipient,
                 ring.participations[i],
                 ring.participations[(i + ring.size - 1) % ring.size]
             );
@@ -278,6 +280,7 @@ library RingHelper {
 
     function transferTokensForParticipation(
         Data.Context ctx,
+        address feeRecipient,
         Data.Participation p,
         Data.Participation prevP
         )
@@ -294,8 +297,7 @@ library RingHelper {
 
         uint amountSToFeeHolder = p.feeAmountS
             .sub(p.rebateS)
-            .add(buyerFeeAmountAfterRebateB)
-            .add(p.splitS);
+            .add(buyerFeeAmountAfterRebateB);
 
         uint amountFeeToFeeHolder = p.feeAmount
             .sub(p.rebateFee);
@@ -330,6 +332,15 @@ library RingHelper {
             address(ctx.feeHolder),
             amountFeeToFeeHolder
         );
+        // Miner (or for P2P the taker) gets the margin without sharing it with the wallet or burning
+        ctx.transferPtr = addTokenTransfer(
+            ctx.transferData,
+            ctx.transferPtr,
+            p.order.tokenS,
+            p.order.owner,
+            feeRecipient,
+            p.splitS
+        );
 
         // onTokenSpent broker callbacks
         if (p.order.brokerInterceptor != 0x0) {
@@ -338,7 +349,7 @@ library RingHelper {
                 p.order.owner,
                 p.order.broker,
                 p.order.tokenS,
-                amountSToBuyer + amountSToFeeHolder
+                amountSToBuyer + amountSToFeeHolder + p.splitS
             );
             onTokenSpent(
                 p.order.brokerInterceptor,
@@ -456,34 +467,30 @@ library RingHelper {
         p.rebateFee = payFeesAndBurn(
             feeCtx,
             p.order.feeToken,
-            p.feeAmount,
-            0
+            p.feeAmount
         );
         p.rebateS = payFeesAndBurn(
             feeCtx,
             p.order.tokenS,
-            p.feeAmountS,
-            p.splitS
+            p.feeAmountS
         );
         p.rebateB = payFeesAndBurn(
             feeCtx,
             p.order.tokenB,
-            p.feeAmountB,
-            0
+            p.feeAmountB
         );
     }
 
     function payFeesAndBurn(
         Data.FeeContext memory feeCtx,
         address token,
-        uint totalAmount,
-        uint margin
+        uint totalAmount
         )
         internal
         view
         returns (uint)
     {
-        if (totalAmount + margin == 0) {
+        if (totalAmount == 0) {
             return 0;
         }
 
@@ -538,39 +545,37 @@ library RingHelper {
                 address(feeCtx.ctx.feeHolder),
                 minerFeeBurn + walletFeeBurn
             );
-        }
-        // Miner gets the margin without sharing it with the wallet or burning
-        minerFee += margin;
 
-        // Fees can be paid out in different tokens so we can't easily accumulate the total fee
-        // that needs to be paid out to order owners. So we pay out each part out here to all
-        // orders that need it.
-        uint feeToMiner = minerFee;
-        if (feeCtx.ring.minerFeesToOrdersPercentage > 0 && minerFee > 0) {
-            // Pay out the fees to the orders
-            distributeMinerFeeToOwners(
-                feeCtx,
+            // Fees can be paid out in different tokens so we can't easily accumulate the total fee
+            // that needs to be paid out to order owners. So we pay out each part out here to all
+            // orders that need it.
+            uint feeToMiner = minerFee;
+            if (feeCtx.ring.minerFeesToOrdersPercentage > 0 && minerFee > 0) {
+                // Pay out the fees to the orders
+                distributeMinerFeeToOwners(
+                    feeCtx,
+                    token,
+                    minerFee
+                );
+                // Subtract all fees the miner pays to the orders
+                feeToMiner = minerFee.mul(feeCtx.ctx.feePercentageBase -
+                    feeCtx.ring.minerFeesToOrdersPercentage) /
+                    feeCtx.ctx.feePercentageBase;
+            }
+
+            // Pay the miner
+            feeCtx.ctx.feePtr = addFeePayment(
+                feeCtx.ctx.feeData,
+                feeCtx.ctx.feePtr,
                 token,
-                minerFee
+                feeCtx.feeRecipient,
+                feeToMiner
             );
-            // Subtract all fees the miner pays to the orders
-            feeToMiner = minerFee.mul(feeCtx.ctx.feePercentageBase -
-                feeCtx.ring.minerFeesToOrdersPercentage) /
-                feeCtx.ctx.feePercentageBase;
         }
-
-        // Pay the miner
-        feeCtx.ctx.feePtr = addFeePayment(
-            feeCtx.ctx.feeData,
-            feeCtx.ctx.feePtr,
-            token,
-            feeCtx.feeRecipient,
-            feeToMiner
-        );
 
         // Calculate the total fee payment after possible discounts (burn rebate + fee waiving)
         // and return the total rebate
-        return (totalAmount + margin).sub((feeToWallet + minerFee) + (minerFeeBurn + walletFeeBurn));
+        return totalAmount.sub((feeToWallet + minerFee) + (minerFeeBurn + walletFeeBurn));
     }
 
     function getBurnRate(

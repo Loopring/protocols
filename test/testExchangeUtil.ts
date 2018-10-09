@@ -16,6 +16,7 @@ interface OrderSettlement {
   rebateFee: number;
   rebateS: number;
   rebateB: number;
+  splitS: number;
 }
 
 export class ExchangeTestUtil {
@@ -491,10 +492,12 @@ export class ExchangeTestUtil {
             }
           }
         }
+        const minerFeeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin;
         // Add balances to the feeHolder contract
         for (const token of tokens) {
           const Token = this.testContext.tokenAddrInstanceMap.get(token);
           await Token.setBalance(this.context.feeHolder.address, 1);
+          await Token.addBalance(minerFeeRecipient, 1);
         }
         // Add a balance to the owner balances
         // const TokenB = this.testContext.tokenAddrInstanceMap.get(order.tokenB);
@@ -741,7 +744,9 @@ export class ExchangeTestUtil {
 
   // Currently done here because it's easier
   private async calculateOrderSettlement(order: pjs.OrderInfo,
-                                         orderExpectation: pjs.OrderExpectation) {
+                                         orderExpectation: pjs.OrderExpectation,
+                                         prevOrder: pjs.OrderInfo,
+                                         prevOrderExpectation: pjs.OrderExpectation) {
     if (orderExpectation.P2P) {
       // Fill amounts
       const amountS = order.amountS * orderExpectation.filledFraction;
@@ -758,6 +763,9 @@ export class ExchangeTestUtil {
         rebateB = amountFeeB;
       }
 
+      const prevAmountB = prevOrder.amountB * prevOrderExpectation.filledFraction;
+      const splitS = (amountS - amountFeeS) - prevAmountB;
+
       const orderSettlement: OrderSettlement = {
         amountS,
         amountB,
@@ -767,6 +775,7 @@ export class ExchangeTestUtil {
         rebateFee: 0,
         rebateS,
         rebateB,
+        splitS,
       };
       return orderSettlement;
     } else {
@@ -795,6 +804,9 @@ export class ExchangeTestUtil {
         amountFeeB = 0;
       }
 
+      const prevAmountB = prevOrder.amountB * prevOrderExpectation.filledFraction;
+      const splitS = amountS - prevAmountB;
+
       const orderSettlement: OrderSettlement = {
         amountS,
         amountB,
@@ -804,6 +816,7 @@ export class ExchangeTestUtil {
         rebateFee,
         rebateS: 0,
         rebateB,
+        splitS,
       };
       return orderSettlement;
     }
@@ -847,10 +860,16 @@ export class ExchangeTestUtil {
       if (ringsInfo.expected.rings[r].fail) {
         continue;
       }
-      for (const [o, orderIndex] of ring.entries()) {
-        const order = ringsInfo.orders[orderIndex];
+      for (let o = 0; o < ring.length; o++) {
+        const order = ringsInfo.orders[ring[o]];
+        const orderExpectation = ringsInfo.expected.rings[r].orders[o];
+        const prevIndex = (o + ring.length - 1) % ring.length;
+        const prevOrder = ringsInfo.orders[ring[prevIndex]];
+        const prevOrderExpectation = ringsInfo.expected.rings[r].orders[prevIndex];
         const orderSettlement = await this.calculateOrderSettlement(order,
-                                                                    ringsInfo.expected.rings[r].orders[o]);
+                                                                    orderExpectation,
+                                                                    prevOrder,
+                                                                    prevOrderExpectation);
 
         // Balances
         const totalS = orderSettlement.amountS - orderSettlement.rebateS;
@@ -859,9 +878,16 @@ export class ExchangeTestUtil {
         // console.log("totalS: " + totalS / 1e18);
         // console.log("totalB: " + totalB / 1e18);
         // console.log("totalFee: " + totalFee / 1e18);
+        // console.log("splitS: " + orderSettlement.splitS);
         expectedBalances[order.tokenS][order.owner] -= totalS;
         expectedBalances[order.tokenB][order.tokenRecipient] += totalB;
         expectedBalances[order.feeToken][order.owner] -= totalFee;
+
+        // Add margin given to the feeRecipient
+        const feeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin;
+        if (expectedBalances[order.tokenS][feeRecipient]) {
+          expectedBalances[order.tokenS][feeRecipient] += orderSettlement.splitS;
+        }
 
         // Filled
         const expectedFilledAmount = order.amountS * ringsInfo.expected.rings[r].orders[o].filledFraction;
