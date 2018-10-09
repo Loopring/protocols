@@ -193,8 +193,10 @@ export class Ring {
       p.feeAmountS = 0;
       p.feeAmountB = 0;
 
-      // If feeToken == tokenB, try to pay using fillAmountB
-      if (p.order.feeToken === p.order.tokenB && p.fillAmountB >= p.feeAmount) {
+      // If feeToken == tokenB AND owner == tokenRecipient, try to pay using fillAmountB
+      if (p.order.feeToken === p.order.tokenB &&
+          p.order.owner === p.order.tokenRecipient &&
+          p.fillAmountB >= p.feeAmount) {
         p.feeAmountB = p.feeAmount;
         p.feeAmount = 0;
       }
@@ -636,7 +638,7 @@ export class Ring {
 
         // Fee can be paid in tokenB when the owner doesn't have enought funds to pay in feeToken
         // or feeToken == tokenB
-        if (p.order.feeToken === p.order.tokenB && p.fillAmountB >= fee) {
+        if (p.order.feeToken === p.order.tokenB && p.order.owner === p.order.tokenRecipient && p.fillAmountB >= fee) {
           this.assertAlmostEqual(p.feeAmountB, fee, "Fee should be paid in tokenB using feeAmount");
           assert.equal(p.feeAmount, 0, "Fee should not be paid in feeToken");
         } else if (fee > p.ringSpendableFee) {
