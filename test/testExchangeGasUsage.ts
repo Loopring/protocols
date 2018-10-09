@@ -77,7 +77,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
     });
 
-    it.only("single 3-size ring, with price gap", async () => {
+    it("single 3-size ring, with price gap", async () => {
       const ringsInfo: pjs.RingsInfo = {
         description: "simple single 3-size ring, with price gap",
         rings: [[0, 1, 2]],
@@ -118,7 +118,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
     });
 
-    it.only("single 3-size ring, with price gap, same dual author", async () => {
+    it("single 3-size ring, with price gap, same dual author", async () => {
       const ringsInfo: pjs.RingsInfo = {
         description: "simple single 3-size ring, with price gap",
         rings: [[0, 1, 2]],
