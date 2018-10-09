@@ -57,15 +57,6 @@ export interface OrderInfo {
   // helper field
   P2P?: boolean;
   filledAmountS?: number;
-  fillAmountS?: number;
-  fillAmountB?: number;
-  fillAmountFee?: number;
-  fillAmountFeeS?: number;
-  fillAmountFeeB?: number;
-  rebateFee?: number;
-  rebateS?: number;
-  rebateB?: number;
-  splitS?: number;
   brokerInterceptor?: string;
   valid?: boolean;
 
@@ -107,6 +98,22 @@ export interface RingsSubmitParam {
   tables: Bitstream;
 }
 
+export interface OrderExpectation {
+  filledFraction: number;
+  payFeeInTokenB?: boolean;
+  P2P?: boolean;
+}
+
+export interface RingExpectation {
+  fail?: boolean;
+  orders?: OrderExpectation[];
+}
+
+export interface TransactionExpectation {
+  revert?: boolean;
+  rings?: RingExpectation[];
+}
+
 export interface RingsInfo {
   description?: string;
   feeRecipient?: string; // spec value: 1
@@ -118,6 +125,8 @@ export interface RingsInfo {
   signAlgorithm?: SignAlgorithm;
   hash?: Buffer;
   transactionOrigin?: string;
+
+  expected?: TransactionExpectation;
 
   [key: string]: any;
 }
@@ -148,6 +157,8 @@ export interface SimulatorReport {
   transferItems: TransferItem[];
   feeBalances: { [id: string]: any; };
   filledAmounts: { [hash: string]: number; };
+  balancesBefore: { [id: string]: any; };
+  balancesAfter: { [id: string]: any; };
   payments: TransactionPayments;
 }
 

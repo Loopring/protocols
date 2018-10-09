@@ -142,30 +142,65 @@ export class ProtocolSimulator {
       }
     }
 
-    // Simulate the token transfers of all rings
-    const balances: { [id: string]: any; } = {};
-    for (const transfer of transferItems) {
-      if (!balances[transfer.token]) {
-        balances[transfer.token] = {};
+    const balancesBefore: { [id: string]: any; } = {};
+    for (const order of orders) {
+      if (!balancesBefore[order.tokenS]) {
+        balancesBefore[order.tokenS] = {};
       }
-      if (!balances[transfer.token][transfer.from]) {
-        balances[transfer.token][transfer.from] = 0;
+      if (!balancesBefore[order.tokenB]) {
+        balancesBefore[order.tokenB] = {};
       }
-      if (!balances[transfer.token][transfer.to]) {
-        balances[transfer.token][transfer.to] = 0;
+      if (!balancesBefore[order.feeToken]) {
+        balancesBefore[order.feeToken] = {};
       }
-      balances[transfer.token][transfer.from] -= transfer.amount;
-      balances[transfer.token][transfer.to] += transfer.amount;
+      if (!balancesBefore[order.tokenS][order.owner]) {
+        balancesBefore[order.tokenS][order.owner] =
+          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+                                                  order.tokenS,
+                                                  order.owner);
+      }
+      if (!balancesBefore[order.tokenB][order.tokenRecipient]) {
+        balancesBefore[order.tokenB][order.tokenRecipient] =
+          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+                                                 order.tokenB,
+                                                 order.tokenRecipient);
+      }
+      if (!balancesBefore[order.feeToken][order.owner]) {
+        balancesBefore[order.feeToken][order.owner] =
+          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+                                                 order.feeToken,
+                                                 order.owner);
+      }
     }
-    // Check if we haven't spent more funds than the owner owns
-    for (const token of Object.keys(balances)) {
-      for (const owner of Object.keys(balances[token])) {
-        const spendable = await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
-                                                                 token,
-                                                                 owner);
-        const finalBalance = spendable + balances[token][owner];
+
+    // Simulate the token transfers of all rings
+    const balanceDeltas: { [id: string]: any; } = {};
+    for (const transfer of transferItems) {
+      if (!balanceDeltas[transfer.token]) {
+        balanceDeltas[transfer.token] = {};
+      }
+      if (!balanceDeltas[transfer.token][transfer.from]) {
+        balanceDeltas[transfer.token][transfer.from] = 0;
+      }
+      if (!balanceDeltas[transfer.token][transfer.to]) {
+        balanceDeltas[transfer.token][transfer.to] = 0;
+      }
+      balanceDeltas[transfer.token][transfer.from] -= transfer.amount;
+      balanceDeltas[transfer.token][transfer.to] += transfer.amount;
+    }
+
+    const balancesAfter: { [id: string]: any; } = {};
+    for (const token of Object.keys(balancesBefore)) {
+      for (const owner of Object.keys(balancesBefore[token])) {
+        if (!balancesAfter[token]) {
+          balancesAfter[token] = {};
+        }
+        const delta = (balanceDeltas[token] && balanceDeltas[token][owner]) ? balanceDeltas[token][owner] : 0;
+        balancesAfter[token][owner] = balancesBefore[token][owner] + delta;
+
+        // Check if we haven't spent more funds than the owner owns
         const epsilon = 1000;
-        assert(finalBalance >= -epsilon, "can't sell more tokens than the owner owns");
+        assert(balancesAfter[token][owner] >= -epsilon, "can't sell more tokens than the owner owns");
       }
     }
 
@@ -226,6 +261,8 @@ export class ProtocolSimulator {
       transferItems,
       feeBalances,
       filledAmounts,
+      balancesBefore,
+      balancesAfter,
       payments,
     };
     return simulatorReport;
