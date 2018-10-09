@@ -255,10 +255,10 @@ export class Ring {
     }
 
     await this.payFees(mining);
-    const transferItems = await this.transferTokens();
+    const transferItems = await this.transferTokens(mining);
 
     // Validate how the ring is settled
-    await this.validateSettlement(transferItems);
+    await this.validateSettlement(mining, transferItems);
 
     // Add the fee balances to the global fee list
     for (const token of Object.keys(this.feeBalances)) {
@@ -276,7 +276,7 @@ export class Ring {
     return transferItems;
   }
 
-  private transferTokens() {
+  private transferTokens(mining: Mining) {
     const ringSize = this.participations.length;
     const transferItems: TransferItem[] = [];
     for (let i = 0; i < ringSize; i++) {
@@ -294,8 +294,7 @@ export class Ring {
                              p.feeAmountS -
                              buyerFeeAmountAfterRebateB;
       let amountSToFeeHolder = (p.feeAmountS - p.rebateS) +
-                               buyerFeeAmountAfterRebateB +
-                               p.splitS;
+                               buyerFeeAmountAfterRebateB;
       let amountFeeToFeeHolder = p.feeAmount - p.rebateFee;
       if (p.order.tokenS === p.order.feeToken) {
         amountSToFeeHolder += amountFeeToFeeHolder;
@@ -305,11 +304,14 @@ export class Ring {
       this.addTokenTransfer(transferItems, p.order.tokenS, p.order.owner, prevP.order.tokenRecipient, amountSToBuyer);
       this.addTokenTransfer(transferItems, p.order.tokenS, p.order.owner, feeHolder, amountSToFeeHolder);
       this.addTokenTransfer(transferItems, p.order.feeToken, p.order.owner, feeHolder, amountFeeToFeeHolder);
+      this.addTokenTransfer(transferItems, p.order.tokenS, p.order.owner, mining.feeRecipient, p.splitS);
 
       // BEGIN diagnostics
       this.detailTransferS[i].amount = p.fillAmountS + p.splitS;
       this.logPayment(this.detailTransferS[i], p.order.tokenS, p.order.owner, prevP.order.tokenRecipient,
                       p.fillAmountS - p.feeAmountS, "ToBuyer");
+      this.logPayment(this.detailTransferS[i], p.order.tokenS, p.order.owner, mining.feeRecipient,
+                      p.splitS, "Margin");
       this.detailTransferB[i].amount = p.fillAmountB;
       this.detailTransferFee[i].amount = p.feeAmount;
       // END diagnostics
@@ -338,14 +340,12 @@ export class Ring {
                                               p,
                                               p.order.feeToken,
                                               p.feeAmount,
-                                              0,
                                               walletPercentage,
                                               this.detailTransferFee[i]);
       p.rebateS = await this.payFeesAndBurn(mining,
                                             p,
                                             p.order.tokenS,
                                             p.feeAmountS,
-                                            p.splitS,
                                             walletPercentage,
                                             this.detailTransferS[i],
                                             p.order.tokenSFeePercentage);
@@ -353,7 +353,6 @@ export class Ring {
                                             p,
                                             p.order.tokenB,
                                             p.feeAmountB,
-                                            0,
                                             walletPercentage,
                                             this.detailTransferB[i],
                                             feePercentageB);
@@ -364,11 +363,10 @@ export class Ring {
                                p: Participation,
                                token: string,
                                totalAmount: number,
-                               margin: number,
                                walletSplitPercentage: number,
                                payment: DetailedTokenTransfer,
                                feePercentage: number = 0) {
-    if (totalAmount + margin === 0) {
+    if (totalAmount === 0) {
       return 0;
     }
 
@@ -389,9 +387,7 @@ export class Ring {
     } else {
       feeDesc += ((feePercentage > 0) ? ("@" + (feePercentage / 10)) + "%" : "");
     }
-    const totalPayment = this.logPayment(payment, token, p.order.owner, "NA", amount + margin, feeDesc + "+Margin");
-    const marginPayment = this.logPayment(totalPayment, token, p.order.owner, mining.feeRecipient, margin, "Margin");
-    const feePayment = this.logPayment(totalPayment, token, p.order.owner, "NA", amount, feeDesc);
+    const feePayment = this.logPayment(payment, token, p.order.owner, "NA", amount, feeDesc);
     // END diagnostics
 
     const walletFee = Math.floor(amount * walletSplitPercentage / 100);
@@ -431,7 +427,7 @@ export class Ring {
     // Miner fee
     const minerBurn = Math.floor(minerFee * burnRate / this.context.feePercentageBase);
     const minerRebate = Math.floor(minerFee * rebateRate / this.context.feePercentageBase);
-    minerFee = margin + (minerFee - minerBurn - minerRebate);
+    minerFee = (minerFee - minerBurn - minerRebate);
     // Wallet fee
     const walletBurn = Math.floor(walletFee * burnRate / this.context.feePercentageBase);
     const walletRebate = Math.floor(walletFee * rebateRate / this.context.feePercentageBase);
@@ -441,7 +437,7 @@ export class Ring {
     this.logPayment(minerPayment, token, p.order.owner, burnAddress, minerBurn, "Burn@" + burnRate / 10 + "%");
     this.logPayment(minerPayment, token, p.order.owner, p.order.owner, minerRebate, "Rebate@" + rebateRate / 10 + "%");
     const minerIncomePayment =
-      this.logPayment(minerPayment, token, p.order.owner, mining.feeRecipient, minerFee - margin, "Income");
+      this.logPayment(minerPayment, token, p.order.owner, mining.feeRecipient, minerFee, "Income");
     this.logPayment(walletPayment, token, p.order.owner, burnAddress, walletBurn, "Burn@" + burnRate / 10 + "%");
     this.logPayment(walletPayment, token, p.order.owner, p.order.owner, walletRebate,
                     "Rebate@" + rebateRate / 10 + "%");
@@ -461,7 +457,7 @@ export class Ring {
 
           // BEGIN diagnostics
           this.logPayment(minerIncomePayment, token, p.order.owner, otherP.order.owner, feeToOwner,
-            "Share_Income+Margin@" + (-otherP.order.waiveFeePercentage) / 10 + "%");
+            "Share_Income@" + (-otherP.order.waiveFeePercentage) / 10 + "%");
           // END diagnostics
         }
       }
@@ -480,13 +476,13 @@ export class Ring {
     let totalFeePaid = (feeToWallet + minerFee) + (minerBurn + walletBurn);
 
     // JS rounding errors...
-    if (totalFeePaid > totalAmount + margin && totalFeePaid < totalAmount + margin + 10000) {
-      totalFeePaid = totalAmount + margin;
+    if (totalFeePaid > totalAmount && totalFeePaid < totalAmount + 10000) {
+      totalFeePaid = totalAmount;
     }
-    assert(totalFeePaid <= totalAmount + margin, "Total fee paid cannot exceed the total fee amount");
+    assert(totalFeePaid <= totalAmount, "Total fee paid cannot exceed the total fee amount");
 
     // Return the rebate this order got
-    return (totalAmount + margin) - totalFeePaid;
+    return totalAmount - totalFeePaid;
   }
 
   private async addFeePayment(token: string,
@@ -525,12 +521,7 @@ export class Ring {
     return newSmallest;
   }
 
-  private calculatePreTradingPercentage(value: number, percentage: number, percentageBase: number) {
-    assert(percentage < percentageBase);
-    return Math.floor((value * percentageBase) / (percentageBase - percentage)) - value;
-  }
-
-  private async validateSettlement(transfers: TransferItem[]) {
+  private async validateSettlement(mining: Mining, transfers: TransferItem[]) {
     const expectedTotalBurned: { [id: string]: number; } = {};
     const ringSize = this.participations.length;
     for (let i = 0; i < ringSize; i++) {
@@ -538,15 +529,15 @@ export class Ring {
       const p = this.participations[i];
       const prevP = this.participations[prevIndex];
 
-      console.log("order.spendableS:       " + p.ringSpendableS / 1e18);
-      console.log("order.spendableFee:     " + p.ringSpendableFee / 1e18);
+      console.log("p.spendableS:           " + p.ringSpendableS / 1e18);
+      console.log("p.spendableFee:         " + p.ringSpendableFee / 1e18);
       console.log("order.amountS:          " + p.order.amountS / 1e18);
       console.log("order.amountB:          " + p.order.amountB / 1e18);
       console.log("order.feeAmount:        " + p.order.feeAmount / 1e18);
       console.log("order expected rate:    " + p.order.amountS / p.order.amountB);
-      console.log("order.fillAmountS:      " + p.fillAmountS / 1e18);
-      console.log("order.fillAmountB:      " + p.fillAmountB / 1e18);
-      console.log("order.splitS:           " + p.splitS / 1e18);
+      console.log("p.fillAmountS:          " + p.fillAmountS / 1e18);
+      console.log("p.fillAmountB:          " + p.fillAmountB / 1e18);
+      console.log("p.splitS:               " + p.splitS / 1e18);
       console.log("order actual rate:      " + (p.fillAmountS + p.splitS) / p.fillAmountB);
       console.log("p.feeAmount:            " + p.feeAmount / 1e18);
       console.log("p.feeAmountS:           " + p.feeAmountS / 1e18);
@@ -746,9 +737,16 @@ export class Ring {
       if (!expectedBalances[p.order.owner][p.order.feeToken]) {
         expectedBalances[p.order.owner][p.order.feeToken] = 0;
       }
+      if (!expectedBalances[mining.feeRecipient]) {
+        expectedBalances[mining.feeRecipient] = {};
+      }
+      if (!expectedBalances[mining.feeRecipient][p.order.tokenS]) {
+        expectedBalances[mining.feeRecipient][p.order.tokenS] = 0;
+      }
       expectedBalances[p.order.owner][p.order.tokenS] += expectedBalanceS;
       expectedBalances[p.order.tokenRecipient][p.order.tokenB] += expectedBalanceB;
       expectedBalances[p.order.owner][p.order.feeToken] += expectedBalanceFeeToken;
+      expectedBalances[mining.feeRecipient][p.order.tokenS] += p.splitS;
 
       // Accumulate fees
       if (!expectedFeeHolderBalances[p.order.tokenS]) {
@@ -760,7 +758,7 @@ export class Ring {
       if (!expectedFeeHolderBalances[p.order.feeToken]) {
         expectedFeeHolderBalances[p.order.feeToken] = 0;
       }
-      expectedFeeHolderBalances[p.order.tokenS] += p.feeAmountS - p.rebateS + p.splitS;
+      expectedFeeHolderBalances[p.order.tokenS] += p.feeAmountS - p.rebateS;
       expectedFeeHolderBalances[p.order.tokenB] += p.feeAmountB - p.rebateB;
       expectedFeeHolderBalances[p.order.feeToken] += p.feeAmount - p.rebateFee;
     }
