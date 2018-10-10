@@ -46,6 +46,11 @@ export default class Order
     {
         return setTempStore(this.host, key, value);
     }
+
+    getOrderByHash (filter)
+    {
+        return getOrderHash(this.host, filter);
+    }
 }
 
 /**
@@ -83,9 +88,7 @@ export function getOrders (host, filter)
 /**
  * @description Get cut off time of the address.
  * @param host
- * @param address
- * @param delegateAddress
- * @param blockNumber
+ * @param filter
  * @returns {Promise.<*>}
  */
 export function getCutoff (host, filter)
@@ -313,4 +316,17 @@ export function cancelOrder (host, {sign, orderHash, tokenS, tokenB, cutoff, typ
     {
         return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
     }
+}
+
+export function getOrderByHash (host, filter)
+{
+    const body = {};
+    body.method = 'loopring_getOrderByHash';
+    body.params = [{orderHash: filter.orderHash}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
