@@ -143,187 +143,16 @@ export class ProtocolSimulator {
       }
     }
 
-    const balancesBefore: { [id: string]: any; } = {};
-    for (const order of orders) {
-      if (!balancesBefore[order.tokenS]) {
-        balancesBefore[order.tokenS] = {};
-      }
-      if (!balancesBefore[order.tokenB]) {
-        balancesBefore[order.tokenB] = {};
-      }
-      if (!balancesBefore[order.feeToken]) {
-        balancesBefore[order.feeToken] = {};
-      }
-      if (!balancesBefore[order.tokenS][order.owner]) {
-        balancesBefore[order.tokenS][order.owner] =
-          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
-                                                  order.tokenS,
-                                                  order.owner);
-      }
-      if (!balancesBefore[order.tokenB][order.tokenRecipient]) {
-        balancesBefore[order.tokenB][order.tokenRecipient] =
-          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
-                                                 order.tokenB,
-                                                 order.tokenRecipient);
-      }
-      if (!balancesBefore[order.feeToken][order.owner]) {
-        balancesBefore[order.feeToken][order.owner] =
-          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
-                                                 order.feeToken,
-                                                 order.owner);
-      }
-    }
-    for (const order of orders) {
-      const tokens = [order.tokenS, order.tokenB, order.feeToken];
-      for (const token of tokens) {
-        const Token = this.context.ERC20Contract.at(order.tokenS);
-        // feeRecipient
-        if (!balancesBefore[token][mining.feeRecipient]) {
-          balancesBefore[token][mining.feeRecipient] = (await Token.balanceOf(mining.feeRecipient)).toNumber();
-        }
-      }
-    }
+    const report = await this.collectReport(ringsInfo,
+                                           mining,
+                                           rings,
+                                           transferItems,
+                                           feeBalances,
+                                           ringMinedEvents);
 
-    // Simulate the token transfers of all rings
-    const balanceDeltas: { [id: string]: any; } = {};
-    for (const transfer of transferItems) {
-      if (!balanceDeltas[transfer.token]) {
-        balanceDeltas[transfer.token] = {};
-      }
-      if (!balanceDeltas[transfer.token][transfer.from]) {
-        balanceDeltas[transfer.token][transfer.from] = 0;
-      }
-      if (!balanceDeltas[transfer.token][transfer.to]) {
-        balanceDeltas[transfer.token][transfer.to] = 0;
-      }
-      balanceDeltas[transfer.token][transfer.from] -= transfer.amount;
-      balanceDeltas[transfer.token][transfer.to] += transfer.amount;
-    }
+    await this.validateRings(ringsInfo, report);
 
-    // Calculate the balances after all token transfers
-    const balancesAfter: { [id: string]: any; } = {};
-    for (const token of Object.keys(balancesBefore)) {
-      for (const owner of Object.keys(balancesBefore[token])) {
-        if (!balancesAfter[token]) {
-          balancesAfter[token] = {};
-        }
-        const delta = (balanceDeltas[token] && balanceDeltas[token][owner]) ? balanceDeltas[token][owner] : 0;
-        balancesAfter[token][owner] = balancesBefore[token][owner] + delta;
-
-        // Check if we haven't spent more funds than the owner owns
-        const epsilon = 10000;
-        console.log("balancesAfter[token][owner]: " + balancesAfter[token][owner]);
-        assert(balancesAfter[token][owner] >= -epsilon, "can't sell more tokens than the owner owns");
-      }
-    }
-
-    // Check if the spendables were updated correctly
-    for (const order of orders) {
-      if (order.tokenSpendableS.initialized) {
-        let amountTransferredS = 0;
-        for (const transfer of transferItems) {
-          if (transfer.from === order.owner && transfer.token === order.tokenS) {
-            amountTransferredS += transfer.amount;
-          }
-        }
-        const amountSpentS = order.tokenSpendableS.initialAmount - order.tokenSpendableS.amount;
-        // amountTransferred could be less than amountSpent because of rebates
-        const epsilon = 100000;
-        assert(amountSpentS >= amountTransferredS - epsilon, "amountSpentS >= amountTransferredS");
-      }
-      if (order.tokenSpendableFee.initialized) {
-        let amountTransferredFee = 0;
-        for (const transfer of transferItems) {
-          if (transfer.from === order.owner && transfer.token === order.feeToken) {
-            amountTransferredFee += transfer.amount;
-          }
-        }
-        const amountSpentFee = order.tokenSpendableFee.initialAmount - order.tokenSpendableFee.amount;
-        // amountTransferred could be less than amountSpent because of rebates
-        const epsilon = 100000;
-        assert(amountSpentFee >= amountTransferredFee - epsilon, "amountSpentFee >= amountTransferredFee");
-      }
-    }
-
-    // Check if the allOrNone orders were correctly filled
-    for (const order of orders) {
-      if (order.allOrNone) {
-        assert(order.filledAmountS === 0 || order.filledAmountS === order.amountS,
-               "allOrNone orders should either be completely filled or not at all.");
-      }
-    }
-
-    // Get the initial fee balances
-    const feeBalancesBefore: { [id: string]: any; } = {};
-    for (const order of orders) {
-      const tokens = [order.tokenS, order.tokenB, order.feeToken];
-      for (const token of tokens) {
-        if (!feeBalancesBefore[token]) {
-          feeBalancesBefore[token] = {};
-        }
-        // Owner
-        if (!feeBalancesBefore[token][order.owner]) {
-          feeBalancesBefore[token][order.owner] =
-            await this.context.feeHolder.feeBalances(token, order.owner).toNumber();
-        }
-        // Wallet
-        if (order.walletAddr && !feeBalancesBefore[token][order.walletAddr]) {
-          feeBalancesBefore[token][order.walletAddr] =
-            await this.context.feeHolder.feeBalances(token, order.walletAddr).toNumber();
-        }
-        // FeeRecipient
-        if (!feeBalancesBefore[token][mining.feeRecipient]) {
-          feeBalancesBefore[token][mining.feeRecipient] =
-            await this.context.feeHolder.feeBalances(token, mining.feeRecipient).toNumber();
-        }
-        // Burned
-        const feeHolder = this.context.feeHolder.address;
-        if (!feeBalancesBefore[token][feeHolder]) {
-          feeBalancesBefore[token][feeHolder] =
-            await this.context.feeHolder.feeBalances(token, feeHolder).toNumber();
-        }
-      }
-    }
-
-    // Calculate the balances after all token transfers
-    const feeBalancesAfter: { [id: string]: any; } = {};
-    for (const token of Object.keys(feeBalancesBefore)) {
-      for (const owner of Object.keys(feeBalancesBefore[token])) {
-        if (!feeBalancesAfter[token]) {
-          feeBalancesAfter[token] = {};
-        }
-        const delta = (feeBalances[token] && feeBalances[token][owner]) ? feeBalances[token][owner] : 0;
-        feeBalancesAfter[token][owner] = feeBalancesBefore[token][owner] + delta;
-      }
-    }
-
-    const filledAmounts: { [hash: string]: number; } = {};
-    for (const order of orders) {
-      let filledAmountS = order.filledAmountS ? order.filledAmountS : 0;
-      if (!order.valid) {
-        filledAmountS = await this.context.tradeDelegate.filled("0x" + order.hash.toString("hex")).toNumber();
-      }
-      filledAmounts[order.hash.toString("hex")] = filledAmountS;
-    }
-
-    const payments: TransactionPayments = {
-      rings: [],
-    };
-    for (const ring of rings) {
-      payments.rings.push(ring.payments);
-    }
-
-    const simulatorReport: SimulatorReport = {
-      ringMinedEvents,
-      transferItems,
-      feeBalancesBefore,
-      feeBalancesAfter,
-      filledAmounts,
-      balancesBefore,
-      balancesAfter,
-      payments,
-    };
-    return simulatorReport;
+    return report;
   }
 
   private async simulateAndReportSingle(ring: Ring, mining: Mining, feeBalances: { [id: string]: any; }) {
@@ -393,6 +222,210 @@ export class ProtocolSimulator {
       if (order.brokerInterceptor) {
         order.brokerSpendableS = addBrokerSpendable(order.broker, order.owner, order.tokenS);
         order.brokerSpendableFee = addBrokerSpendable(order.broker, order.owner, order.feeToken);
+      }
+    }
+  }
+
+  private async collectReport(ringsInfo: RingsInfo,
+                              mining: Mining,
+                              rings: Ring[],
+                              transferItems: TransferItem[],
+                              feeBalances: { [id: string]: any; },
+                              ringMinedEvents: RingMinedEvent[]) {
+    const orders = ringsInfo.orders;
+
+    // Collect balances before the transaction
+    const balancesBefore: { [id: string]: any; } = {};
+    for (const order of orders) {
+      if (!balancesBefore[order.tokenS]) {
+        balancesBefore[order.tokenS] = {};
+      }
+      if (!balancesBefore[order.tokenB]) {
+        balancesBefore[order.tokenB] = {};
+      }
+      if (!balancesBefore[order.feeToken]) {
+        balancesBefore[order.feeToken] = {};
+      }
+      if (!balancesBefore[order.tokenS][order.owner]) {
+        balancesBefore[order.tokenS][order.owner] =
+          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+                                                  order.tokenS,
+                                                  order.owner);
+      }
+      if (!balancesBefore[order.tokenB][order.tokenRecipient]) {
+        balancesBefore[order.tokenB][order.tokenRecipient] =
+          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+                                                 order.tokenB,
+                                                 order.tokenRecipient);
+      }
+      if (!balancesBefore[order.feeToken][order.owner]) {
+        balancesBefore[order.feeToken][order.owner] =
+          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+                                                 order.feeToken,
+                                                 order.owner);
+      }
+    }
+    for (const order of orders) {
+      const tokens = [order.tokenS, order.tokenB, order.feeToken];
+      for (const token of tokens) {
+        const Token = this.context.ERC20Contract.at(order.tokenS);
+        // feeRecipient
+        if (!balancesBefore[token][mining.feeRecipient]) {
+          balancesBefore[token][mining.feeRecipient] = (await Token.balanceOf(mining.feeRecipient)).toNumber();
+        }
+      }
+    }
+
+    // Simulate the token transfers of all rings
+    const balanceDeltas: { [id: string]: any; } = {};
+    for (const transfer of transferItems) {
+      if (!balanceDeltas[transfer.token]) {
+        balanceDeltas[transfer.token] = {};
+      }
+      if (!balanceDeltas[transfer.token][transfer.from]) {
+        balanceDeltas[transfer.token][transfer.from] = 0;
+      }
+      if (!balanceDeltas[transfer.token][transfer.to]) {
+        balanceDeltas[transfer.token][transfer.to] = 0;
+      }
+      balanceDeltas[transfer.token][transfer.from] -= transfer.amount;
+      balanceDeltas[transfer.token][transfer.to] += transfer.amount;
+    }
+
+    // Calculate the balances after the transaction
+    const balancesAfter: { [id: string]: any; } = {};
+    for (const token of Object.keys(balancesBefore)) {
+      for (const owner of Object.keys(balancesBefore[token])) {
+        if (!balancesAfter[token]) {
+          balancesAfter[token] = {};
+        }
+        const delta = (balanceDeltas[token] && balanceDeltas[token][owner]) ? balanceDeltas[token][owner] : 0;
+        balancesAfter[token][owner] = balancesBefore[token][owner] + delta;
+      }
+    }
+
+    // Get the fee balances before the transaction
+    const feeBalancesBefore: { [id: string]: any; } = {};
+    for (const order of orders) {
+      const tokens = [order.tokenS, order.tokenB, order.feeToken];
+      for (const token of tokens) {
+        if (!feeBalancesBefore[token]) {
+          feeBalancesBefore[token] = {};
+        }
+        // Owner
+        if (!feeBalancesBefore[token][order.owner]) {
+          feeBalancesBefore[token][order.owner] =
+            await this.context.feeHolder.feeBalances(token, order.owner).toNumber();
+        }
+        // Wallet
+        if (order.walletAddr && !feeBalancesBefore[token][order.walletAddr]) {
+          feeBalancesBefore[token][order.walletAddr] =
+            await this.context.feeHolder.feeBalances(token, order.walletAddr).toNumber();
+        }
+        // FeeRecipient
+        if (!feeBalancesBefore[token][mining.feeRecipient]) {
+          feeBalancesBefore[token][mining.feeRecipient] =
+            await this.context.feeHolder.feeBalances(token, mining.feeRecipient).toNumber();
+        }
+        // Burned
+        const feeHolder = this.context.feeHolder.address;
+        if (!feeBalancesBefore[token][feeHolder]) {
+          feeBalancesBefore[token][feeHolder] =
+            await this.context.feeHolder.feeBalances(token, feeHolder).toNumber();
+        }
+      }
+    }
+
+    // Calculate the balances after the transaction
+    const feeBalancesAfter: { [id: string]: any; } = {};
+    for (const token of Object.keys(feeBalancesBefore)) {
+      for (const owner of Object.keys(feeBalancesBefore[token])) {
+        if (!feeBalancesAfter[token]) {
+          feeBalancesAfter[token] = {};
+        }
+        const delta = (feeBalances[token] && feeBalances[token][owner]) ? feeBalances[token][owner] : 0;
+        feeBalancesAfter[token][owner] = feeBalancesBefore[token][owner] + delta;
+      }
+    }
+
+    // Get the filled amounts
+    const filledAmounts: { [hash: string]: number; } = {};
+    for (const order of orders) {
+      let filledAmountS = order.filledAmountS ? order.filledAmountS : 0;
+      if (!order.valid) {
+        filledAmountS = await this.context.tradeDelegate.filled("0x" + order.hash.toString("hex")).toNumber();
+      }
+      filledAmounts[order.hash.toString("hex")] = filledAmountS;
+    }
+
+    // Collect the payments
+    const payments: TransactionPayments = {
+      rings: [],
+    };
+    for (const ring of rings) {
+      payments.rings.push(ring.payments);
+    }
+
+    // Create the report
+    const simulatorReport: SimulatorReport = {
+      reverted: false,
+      ringMinedEvents,
+      transferItems,
+      feeBalancesBefore,
+      feeBalancesAfter,
+      filledAmounts,
+      balancesBefore,
+      balancesAfter,
+      payments,
+    };
+    return simulatorReport;
+  }
+
+  private async validateRings(ringsInfo: RingsInfo,
+                              report: SimulatorReport) {
+    const orders = ringsInfo.orders;
+
+    // Check if we haven't spent more funds than the owner owns
+    for (const token of Object.keys(report.balancesAfter)) {
+      for (const owner of Object.keys(report.balancesAfter[token])) {
+        const epsilon = 1000;
+        assert(report.balancesAfter[token][owner] >= -epsilon, "can't sell more tokens than the owner owns");
+      }
+    }
+
+    // Check if the spendables were updated correctly
+    for (const order of orders) {
+      if (order.tokenSpendableS.initialized) {
+        let amountTransferredS = 0;
+        for (const transfer of report.transferItems) {
+          if (transfer.from === order.owner && transfer.token === order.tokenS) {
+            amountTransferredS += transfer.amount;
+          }
+        }
+        const amountSpentS = order.tokenSpendableS.initialAmount - order.tokenSpendableS.amount;
+        // amountTransferred could be less than amountSpent because of rebates
+        const epsilon = 100000;
+        assert(amountSpentS >= amountTransferredS - epsilon, "amountSpentS >= amountTransferredS");
+      }
+      if (order.tokenSpendableFee.initialized) {
+        let amountTransferredFee = 0;
+        for (const transfer of report.transferItems) {
+          if (transfer.from === order.owner && transfer.token === order.feeToken) {
+            amountTransferredFee += transfer.amount;
+          }
+        }
+        const amountSpentFee = order.tokenSpendableFee.initialAmount - order.tokenSpendableFee.amount;
+        // amountTransferred could be less than amountSpent because of rebates
+        const epsilon = 100000;
+        assert(amountSpentFee >= amountTransferredFee - epsilon, "amountSpentFee >= amountTransferredFee");
+      }
+    }
+
+    // Check if the allOrNone orders were correctly filled
+    for (const order of orders) {
+      if (order.allOrNone) {
+        assert(order.filledAmountS === 0 || order.filledAmountS === order.amountS,
+               "allOrNone orders should either be completely filled or not at all.");
       }
     }
   }

@@ -7,6 +7,7 @@ export * from "./src/mining";
 export * from "./src/multihash";
 export * from "./src/order";
 export * from "./src/protocol_simulator";
+export * from "./src/protocol_validator";
 export * from "./src/ring";
 export * from "./src/rings_generator";
 export * from "./src/types";

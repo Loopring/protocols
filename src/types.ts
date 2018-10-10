@@ -153,6 +153,7 @@ export interface TransactionPayments {
 }
 
 export interface SimulatorReport {
+  reverted: boolean;
   ringMinedEvents: RingMinedEvent[];
   transferItems: TransferItem[];
   feeBalancesBefore: { [id: string]: any; };
