@@ -41,6 +41,7 @@ export class ProtocolSimulator {
   }
 
   public async simulateAndReport(ringsInfo: RingsInfo) {
+
     const mining = new Mining(
       this.context,
       ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin,
@@ -172,6 +173,16 @@ export class ProtocolSimulator {
                                                  order.owner);
       }
     }
+    for (const order of orders) {
+      const tokens = [order.tokenS, order.tokenB, order.feeToken];
+      for (const token of tokens) {
+        const Token = this.context.ERC20Contract.at(order.tokenS);
+        // feeRecipient
+        if (!balancesBefore[token][mining.feeRecipient]) {
+          balancesBefore[token][mining.feeRecipient] = (await Token.balanceOf(mining.feeRecipient)).toNumber();
+        }
+      }
+    }
 
     // Simulate the token transfers of all rings
     const balanceDeltas: { [id: string]: any; } = {};
@@ -189,6 +200,7 @@ export class ProtocolSimulator {
       balanceDeltas[transfer.token][transfer.to] += transfer.amount;
     }
 
+    // Calculate the balances after all token transfers
     const balancesAfter: { [id: string]: any; } = {};
     for (const token of Object.keys(balancesBefore)) {
       for (const owner of Object.keys(balancesBefore[token])) {
@@ -199,7 +211,8 @@ export class ProtocolSimulator {
         balancesAfter[token][owner] = balancesBefore[token][owner] + delta;
 
         // Check if we haven't spent more funds than the owner owns
-        const epsilon = 1000;
+        const epsilon = 10000;
+        console.log("balancesAfter[token][owner]: " + balancesAfter[token][owner]);
         assert(balancesAfter[token][owner] >= -epsilon, "can't sell more tokens than the owner owns");
       }
     }
@@ -236,7 +249,51 @@ export class ProtocolSimulator {
     for (const order of orders) {
       if (order.allOrNone) {
         assert(order.filledAmountS === 0 || order.filledAmountS === order.amountS,
-               "allOrNone orders should either be completely fill or not at all.");
+               "allOrNone orders should either be completely filled or not at all.");
+      }
+    }
+
+    // Get the initial fee balances
+    const feeBalancesBefore: { [id: string]: any; } = {};
+    for (const order of orders) {
+      const tokens = [order.tokenS, order.tokenB, order.feeToken];
+      for (const token of tokens) {
+        if (!feeBalancesBefore[token]) {
+          feeBalancesBefore[token] = {};
+        }
+        // Owner
+        if (!feeBalancesBefore[token][order.owner]) {
+          feeBalancesBefore[token][order.owner] =
+            await this.context.feeHolder.feeBalances(token, order.owner).toNumber();
+        }
+        // Wallet
+        if (order.walletAddr && !feeBalancesBefore[token][order.walletAddr]) {
+          feeBalancesBefore[token][order.walletAddr] =
+            await this.context.feeHolder.feeBalances(token, order.walletAddr).toNumber();
+        }
+        // FeeRecipient
+        if (!feeBalancesBefore[token][mining.feeRecipient]) {
+          feeBalancesBefore[token][mining.feeRecipient] =
+            await this.context.feeHolder.feeBalances(token, mining.feeRecipient).toNumber();
+        }
+        // Burned
+        const feeHolder = this.context.feeHolder.address;
+        if (!feeBalancesBefore[token][feeHolder]) {
+          feeBalancesBefore[token][feeHolder] =
+            await this.context.feeHolder.feeBalances(token, feeHolder).toNumber();
+        }
+      }
+    }
+
+    // Calculate the balances after all token transfers
+    const feeBalancesAfter: { [id: string]: any; } = {};
+    for (const token of Object.keys(feeBalancesBefore)) {
+      for (const owner of Object.keys(feeBalancesBefore[token])) {
+        if (!feeBalancesAfter[token]) {
+          feeBalancesAfter[token] = {};
+        }
+        const delta = (feeBalances[token] && feeBalances[token][owner]) ? feeBalances[token][owner] : 0;
+        feeBalancesAfter[token][owner] = feeBalancesBefore[token][owner] + delta;
       }
     }
 
@@ -259,7 +316,8 @@ export class ProtocolSimulator {
     const simulatorReport: SimulatorReport = {
       ringMinedEvents,
       transferItems,
-      feeBalances,
+      feeBalancesBefore,
+      feeBalancesAfter,
       filledAmounts,
       balancesBefore,
       balancesAfter,

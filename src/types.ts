@@ -155,7 +155,8 @@ export interface TransactionPayments {
 export interface SimulatorReport {
   ringMinedEvents: RingMinedEvent[];
   transferItems: TransferItem[];
-  feeBalances: { [id: string]: any; };
+  feeBalancesBefore: { [id: string]: any; };
+  feeBalancesAfter: { [id: string]: any; };
   filledAmounts: { [hash: string]: number; };
   balancesBefore: { [id: string]: any; };
   balancesAfter: { [id: string]: any; };

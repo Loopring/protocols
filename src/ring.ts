@@ -267,7 +267,7 @@ export class Ring {
           feeBalances[token] = {};
         }
         if (!feeBalances[token][owner]) {
-          feeBalances[token][owner] = await this.context.feeHolder.feeBalances(token, owner).toNumber();
+          feeBalances[token][owner] = 0;
         }
         feeBalances[token][owner] += this.feeBalances[token][owner];
       }
