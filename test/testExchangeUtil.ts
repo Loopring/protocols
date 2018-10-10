@@ -1041,8 +1041,8 @@ export class ExchangeTestUtil {
       for (const owner of Object.keys(expectedFeeBalances[token])) {
         const ownerName = addressBook[owner];
         const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
-        console.log("[Sim]" + ownerName + ": " + report.feeBalancesAfter[token][owner] / 1e18 + " " + tokenSymbol);
-        console.log("[Exp]" + ownerName + ": " + expectedFeeBalances[token][owner] / 1e18 + " " + tokenSymbol);
+        // console.log("[Sim]" + ownerName + ": " + report.feeBalancesAfter[token][owner] / 1e18 + " " + tokenSymbol);
+        // console.log("[Exp]" + ownerName + ": " + expectedFeeBalances[token][owner] / 1e18 + " " + tokenSymbol);
         this.assertNumberEqualsWithPrecision(report.feeBalancesAfter[token][owner],
                                              expectedFeeBalances[token][owner]);
       }
