@@ -757,6 +757,23 @@ export const ringsInfoList: RingsInfo[] = [
         waiveFeePercentage: 660, // = 66%
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {
@@ -789,6 +806,23 @@ export const ringsInfoList: RingsInfo[] = [
         waiveFeePercentage: 250, // = 25%
       },
     ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
   },
 
   {

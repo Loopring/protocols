@@ -770,6 +770,8 @@ export class ExchangeTestUtil {
   }
 
   private async collectFeePayments(feePayments: FeePayment[],
+                                   orders: pjs.OrderInfo[],
+                                   ring: number[],
                                    order: pjs.OrderInfo,
                                    orderExpectation: pjs.OrderExpectation,
                                    token: string,
@@ -816,7 +818,23 @@ export class ExchangeTestUtil {
 
     // Fees can be paid out in different tokens so we can't easily accumulate the total fee
     // that needs to be paid out to order owners. So we pay out each part out here to all orders that need it.
-    const feeToMiner = minerFee;
+    let feeToMiner = minerFee;
+    if (minerFee > 0) {
+      // Pay out the fees to the orders
+      let minerFeesToOrdersPercentage = 0;
+      for (const ringOrderIndex of ring) {
+        const ringOrder = orders[ringOrderIndex];
+        if (ringOrder.waiveFeePercentage < 0) {
+          const feeToOwner = Math.floor(minerFee *
+                             (-ringOrder.waiveFeePercentage) / this.context.feePercentageBase);
+          await this.addFeePayment(feePayments, token, ringOrder.owner, feeToOwner);
+          minerFeesToOrdersPercentage += -ringOrder.waiveFeePercentage;
+        }
+      }
+      // Subtract all fees the miner pays to the orders
+      feeToMiner = Math.floor(minerFee * (this.context.feePercentageBase - minerFeesToOrdersPercentage) /
+                              this.context.feePercentageBase);
+    }
 
     // Do the fee payments
     await this.addFeePayment(feePayments, token, order.walletAddr, feeToWallet);
@@ -837,7 +855,9 @@ export class ExchangeTestUtil {
   }
 
   // Currently done here because it's easier
-  private async calculateOrderSettlement(order: pjs.OrderInfo,
+  private async calculateOrderSettlement(orders: pjs.OrderInfo[],
+                                         ring: number[],
+                                         order: pjs.OrderInfo,
                                          orderExpectation: pjs.OrderExpectation,
                                          prevOrder: pjs.OrderInfo,
                                          prevOrderExpectation: pjs.OrderExpectation,
@@ -860,6 +880,8 @@ export class ExchangeTestUtil {
       const amountFeeS = Math.floor(amountS * order.tokenSFeePercentage / this.context.feePercentageBase);
       const amountFeeB = Math.floor(amountB * order.tokenBFeePercentage / this.context.feePercentageBase);
       const rebateS = await this.collectFeePayments(feePayments,
+                                                    orders,
+                                                    ring,
                                                     order,
                                                     orderExpectation,
                                                     order.tokenS,
@@ -867,6 +889,8 @@ export class ExchangeTestUtil {
                                                     walletSplitPercentage,
                                                     feeRecipient);
       const rebateB = await this.collectFeePayments(feePayments,
+                                                    orders,
+                                                    ring,
                                                     order,
                                                     orderExpectation,
                                                     order.tokenB,
@@ -906,6 +930,8 @@ export class ExchangeTestUtil {
       }
 
       const rebateFee = await this.collectFeePayments(feePayments,
+                                                      orders,
+                                                      ring,
                                                       order,
                                                       orderExpectation,
                                                       order.feeToken,
@@ -913,6 +939,8 @@ export class ExchangeTestUtil {
                                                       walletSplitPercentage,
                                                       feeRecipient);
       const rebateB = await this.collectFeePayments(feePayments,
+                                                    orders,
+                                                    ring,
                                                     order,
                                                     orderExpectation,
                                                     order.tokenB,
@@ -994,7 +1022,9 @@ export class ExchangeTestUtil {
         const prevIndex = (o + ring.length - 1) % ring.length;
         const prevOrder = ringsInfo.orders[ring[prevIndex]];
         const prevOrderExpectation = ringsInfo.expected.rings[r].orders[prevIndex];
-        const orderSettlement = await this.calculateOrderSettlement(order,
+        const orderSettlement = await this.calculateOrderSettlement(ringsInfo.orders,
+                                                                    ring,
+                                                                    order,
                                                                     orderExpectation,
                                                                     prevOrder,
                                                                     prevOrderExpectation,
