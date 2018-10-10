@@ -311,10 +311,10 @@ library RingHelper {
         ctx.transferPtr = addTokenTransfer(
             ctx.transferData,
             ctx.transferPtr,
-            p.order.tokenS,
+            p.order.feeToken,
             p.order.owner,
-            prevP.order.tokenRecipient,
-            amountSToBuyer
+            address(ctx.feeHolder),
+            amountFeeToFeeHolder
         );
         ctx.transferPtr = addTokenTransfer(
             ctx.transferData,
@@ -327,11 +327,12 @@ library RingHelper {
         ctx.transferPtr = addTokenTransfer(
             ctx.transferData,
             ctx.transferPtr,
-            p.order.feeToken,
+            p.order.tokenS,
             p.order.owner,
-            address(ctx.feeHolder),
-            amountFeeToFeeHolder
+            prevP.order.tokenRecipient,
+            amountSToBuyer
         );
+
         // Miner (or for P2P the taker) gets the margin without sharing it with the wallet or burning
         ctx.transferPtr = addTokenTransfer(
             ctx.transferData,
@@ -377,7 +378,7 @@ library RingHelper {
             assembly {
                 // Try to find an existing fee payment of the same token to the same owner
                 let addNew := 1
-                for { let p := data } and(lt(p, ptr), eq(addNew, 1)) { p := add(p, 128) } {
+                for { let p := data } lt(p, ptr) { p := add(p, 128) } {
                     let dataToken := mload(add(p,  0))
                     let dataFrom := mload(add(p, 32))
                     let dataTo := mload(add(p, 64))
@@ -392,9 +393,11 @@ library RingHelper {
                         }
                         mstore(add(p, 96), dataAmount)
                         addNew := 0
+                        // End the loop
+                        p := ptr
                     }
                 }
-                // Only update the position if we add a new transfer
+                // Add a new transfer
                 if eq(addNew, 1) {
                     mstore(add(ptr,  0), token)
                     mstore(add(ptr, 32), from)
@@ -645,7 +648,7 @@ library RingHelper {
             assembly {
                 // Try to find an existing fee payment of the same token to the same owner
                 let addNew := 1
-                for { let p := data } and(lt(p, ptr), eq(addNew, 1)) { p := add(p, 96) } {
+                for { let p := data } lt(p, ptr) { p := add(p, 96) } {
                     let dataToken := mload(add(p,  0))
                     let dataOwner := mload(add(p, 32))
                     let dataAmount := mload(add(p, 64))
@@ -659,8 +662,11 @@ library RingHelper {
                         }
                         mstore(add(p, 64), dataAmount)
                         addNew := 0
+                        // End the loop
+                        p := ptr
                     }
                 }
+                // Add a new fee payment
                 if eq(addNew, 1) {
                     mstore(add(ptr,  0), token)
                     mstore(add(ptr, 32), owner)

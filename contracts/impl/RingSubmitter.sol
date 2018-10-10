@@ -193,6 +193,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         for (i = 0; i < orders.length; i++) {
             bool validBefore = orders[i].valid;
             orders[i].validateAllOrNone();
+            // Check if the order valid status has changed
             reevaluateRings = reevaluateRings || (validBefore != orders[i].valid);
         }
 
@@ -229,6 +230,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         // Update all order stats
         updateOrdersStats(ctx, orders);
 
+        // Update ringIndex while setting the highest bit of ringIndex back to '0'
         ringIndex = ctx.ringIndex;
     }
 
@@ -442,28 +444,35 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
             let size := 0
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
-                // if (order.valid)
-                if gt(mload(add(order, 992)), 0) {                          // order.valid
-                    mstore(add(ptr,   0), mload(add(order, 896)))           // order.hash
-                    mstore(add(ptr,  32), mload(add(order, 960)))           // order.filledAmountS
+                let filledAmount := mload(add(order, 960))                               // order.filledAmountS
+                let initialFilledAmount := mload(add(order, 992))                        // order.initialFilledAmountS
+                let filledAmountChanged := sub(1, eq(filledAmount, initialFilledAmount))
+                // if (order.valid && filledAmountChanged)
+                if and(gt(mload(add(order, 1024)), 0), filledAmountChanged) {            // order.valid
+                    mstore(add(ptr,   0), mload(add(order, 896)))                        // order.hash
+                    mstore(add(ptr,  32), filledAmount)
 
                     ptr := add(ptr, 64)
                     size := add(size, 2)
                 }
             }
-            mstore(add(data, 36), size)             // length
 
-            let success := call(
-                gas,                                // forward all gas
-                tradeDelegateAddress,               // external address
-                0,                                  // wei
-                data,                               // input start
-                sub(ptr, data),                     // input length
-                data,                               // output start
-                32                                  // output length
-            )
-            if eq(success, 0) {
-                revert(0, 0)
+            // Only do the external call if the list is not empty
+            if gt(size, 0) {
+                mstore(add(data, 36), size)             // length
+
+                let success := call(
+                    gas,                                // forward all gas
+                    tradeDelegateAddress,               // external address
+                    0,                                  // wei
+                    data,                               // input start
+                    sub(ptr, data),                     // input length
+                    data,                               // output start
+                    32                                  // output length
+                )
+                if eq(success, 0) {
+                    revert(0, 0)
+                }
             }
         }
     }
@@ -531,11 +540,12 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
                 let order := mload(add(orders, mul(add(i, 1), 32)))     // orders[i]
                 let fill := mload(add(data,  mul(add(i, 2), 32)))       // fills[i]
                 mstore(add(order, 960), fill)                           // order.filledAmountS
+                mstore(add(order, 992), fill)                           // order.initialFilledAmountS
                 // If fills[i] == ~uint(0) the order was cancelled
                 // order.valid = order.valid && (order.filledAmountS != ~uint(0))
-                mstore(add(order, 992),                                 // order.valid
+                mstore(add(order, 1024),                                // order.valid
                     and(
-                        gt(mload(add(order, 992)), 0),                  // order.valid
+                        gt(mload(add(order, 1024)), 0),                 // order.valid
                         sub(1, eq(fill, not(0)))                        // fill != ~uint(0
                     )
                 )
@@ -548,6 +558,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
+        // Check if there are any transfers
+        if (ctx.transferData == ctx.transferPtr) {
+            return;
+        }
         // We stored the transfers in the call data as expected by batchAddFeeBalances.
         // The only thing we still need to do is update the final length of the array and call
         // the function on the FeeHolder contract with the generated data.
@@ -577,6 +591,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         )
         internal
     {
+        // Check if there are any fee payments
+        if (ctx.feeData == ctx.feePtr) {
+            return;
+        }
         // We stored the fee payments in the call data as expected by batchTransfer.
         // The only thing we still need to do is update the final length of the array and call
         // the function on the TradeDelegate contract with the generated data.

@@ -124,7 +124,7 @@ library ExchangeDeserializer {
         returns (Data.Order[] orders)
     {
         bytes memory emptyBytes = new bytes(0);
-        uint orderStructSize = 32 * 32;
+        uint orderStructSize = 33 * 32;
         // Memory for orders length + numOrders order pointers
         uint arrayDataSize = (1 + numOrders) * 32;
         Data.Spendable[] memory spendableList = new Data.Spendable[](numSpendables);
@@ -341,11 +341,12 @@ library ExchangeDeserializer {
                 )
 
                 // Set default  values
-                mstore(add(order, 864), 0)          // order.P2P
-                mstore(add(order, 896), 0)          // order.hash
-                mstore(add(order, 928), 0)          // order.brokerInterceptor
-                mstore(add(order, 960), 0)          // order.filledAmountS
-                mstore(add(order, 992), 1)          // order.valid
+                mstore(add(order,  864), 0)         // order.P2P
+                mstore(add(order,  896), 0)         // order.hash
+                mstore(add(order,  928), 0)         // order.brokerInterceptor
+                mstore(add(order,  960), 0)         // order.filledAmountS
+                mstore(add(order,  992), 0)         // order.initialFilledAmountS
+                mstore(add(order, 1024), 1)         // order.valid
 
                 // Advance to the next order
                 tablesPtr := add(tablesPtr, 50)

@@ -110,6 +110,7 @@ contract DeserializerTest {
             bytes32(0x0), // hash
             0x0,          // orderBrokerInterceptor
             0,            // filledAmountS
+            0,            // initialFilledAmountS
             true          // valid
         );
 

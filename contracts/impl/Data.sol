@@ -109,6 +109,7 @@ library Data {
         bytes32 hash;
         address brokerInterceptor;
         uint    filledAmountS;
+        uint    initialFilledAmountS;
         bool    valid;
     }
 
