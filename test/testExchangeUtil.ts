@@ -19,6 +19,12 @@ interface OrderSettlement {
   splitS: number;
 }
 
+interface FeePayment {
+  token: string;
+  owner: string;
+  amount: number;
+}
+
 export class ExchangeTestUtil {
   public context: pjs.Context;
   public testContext: ExchangeTestContext;
@@ -363,18 +369,22 @@ export class ExchangeTestUtil {
     }
   }
 
-  public async assertFeeBalances(ringsInfo: pjs.RingsInfo, feeBalances: { [id: string]: any; }) {
+  public async assertFeeBalances(ringsInfo: pjs.RingsInfo,
+                                 feeBalancesBefore: { [id: string]: any; },
+                                 feeBalancesAfter: { [id: string]: any; }) {
     const addressBook = this.getAddressBook(ringsInfo);
     console.log("Fee balances:");
-    for (const token of Object.keys(feeBalances)) {
-      for (const owner of Object.keys(feeBalances[token])) {
-        const balanceFromSimulator = feeBalances[token][owner];
+    for (const token of Object.keys(feeBalancesAfter)) {
+      for (const owner of Object.keys(feeBalancesAfter[token])) {
+        const balanceFromSimulator = feeBalancesAfter[token][owner];
         const balanceFromContract = await this.context.feeHolder.feeBalances(token, owner);
-        const ownerName = addressBook[owner] ? addressBook[owner] : owner;
-        const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
-        console.log(ownerName + ": " +
-                    balanceFromContract  / 1e18 + " " + tokenSymbol + " " +
-                    "(Simulator: " + balanceFromSimulator  / 1e18 + ")");
+        if (feeBalancesBefore[token][owner] !== feeBalancesAfter[token][owner]) {
+          const ownerName = addressBook[owner] ? addressBook[owner] : owner;
+          const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
+          console.log(ownerName + ": " +
+                      balanceFromContract  / 1e18 + " " + tokenSymbol + " " +
+                      "(Simulator: " + balanceFromSimulator  / 1e18 + ")");
+        }
         this.assertNumberEqualsWithPrecision(balanceFromContract, balanceFromSimulator);
       }
     }
@@ -523,8 +533,11 @@ export class ExchangeTestUtil {
     let report: any = {
       ringMinedEvents: [],
       transferItems: [],
-      feeBalances: [],
+      feeBalancesBefore: [],
+      feeBalancesAfter: [],
       filledAmounts: [],
+      balancesBefore: [],
+      balancesAfter: [],
       payments: {rings: []},
     };
     let tx = null;
@@ -546,7 +559,7 @@ export class ExchangeTestUtil {
     }
     const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
     this.assertTransfers(deserializedRingsInfo, transferEvents, report.transferItems);
-    await this.assertFeeBalances(deserializedRingsInfo, report.feeBalances);
+    await this.assertFeeBalances(deserializedRingsInfo, report.feeBalancesBefore, report.feeBalancesAfter);
     await this.assertFilledAmounts(deserializedRingsInfo, report.filledAmounts);
     await this.verifyTransaction(shouldThrow, report, ringsInfo);
 
@@ -742,11 +755,102 @@ export class ExchangeTestUtil {
                                    allTokens);
   }
 
+  private addFeePayment(feePayments: FeePayment[],
+                        token: string,
+                        owner: string,
+                        amount: number) {
+    if (amount > 0) {
+      const feePayment: FeePayment = {
+        token,
+        owner,
+        amount,
+      };
+      feePayments.push(feePayment);
+    }
+  }
+
+  private async collectFeePayments(feePayments: FeePayment[],
+                                   order: pjs.OrderInfo,
+                                   orderExpectation: pjs.OrderExpectation,
+                                   token: string,
+                                   totalAmount: number,
+                                   walletSplitPercentage: number,
+                                   feeRecipient: string) {
+    if (totalAmount === 0) {
+      return 0;
+    }
+
+    let amount = totalAmount;
+    if (orderExpectation.P2P && !order.walletAddr) {
+      amount = 0;
+    }
+
+    // Pay the burn rate with the feeHolder as owner
+    const burnAddress = this.context.feeHolder.address;
+
+    const walletFee = Math.floor(amount * walletSplitPercentage / 100);
+    let minerFee = amount - walletFee;
+
+    // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
+    if (order.waiveFeePercentage > 0) {
+      minerFee = Math.floor(minerFee *
+                            (this.context.feePercentageBase - order.waiveFeePercentage) /
+                            this.context.feePercentageBase);
+    } else if (order.waiveFeePercentage < 0) {
+      // No fees need to be paid to the miner by this order
+      minerFee = 0;
+    }
+
+    // Calculate burn rates and rebates
+    const burnRateToken = (await this.context.burnRateTable.getBurnRate(token)).toNumber();
+    const burnRate = orderExpectation.P2P ? (burnRateToken >> 16) : (burnRateToken & 0xFFFF);
+    const rebateRate = 0;
+    // Miner fee
+    const minerBurn = Math.floor(minerFee * burnRate / this.context.feePercentageBase);
+    const minerRebate = Math.floor(minerFee * rebateRate / this.context.feePercentageBase);
+    minerFee = minerFee - minerBurn - minerRebate;
+    // Wallet fee
+    const walletBurn = Math.floor(walletFee * burnRate / this.context.feePercentageBase);
+    const walletRebate = Math.floor(walletFee * rebateRate / this.context.feePercentageBase);
+    const feeToWallet = walletFee - walletBurn - walletRebate;
+
+    // Fees can be paid out in different tokens so we can't easily accumulate the total fee
+    // that needs to be paid out to order owners. So we pay out each part out here to all orders that need it.
+    const feeToMiner = minerFee;
+
+    // Do the fee payments
+    await this.addFeePayment(feePayments, token, order.walletAddr, feeToWallet);
+    await this.addFeePayment(feePayments, token, feeRecipient, feeToMiner);
+    // Burn
+    await this.addFeePayment(feePayments, token, burnAddress, minerBurn + walletBurn);
+
+    // Calculate the total fee payment after possible discounts (burn rate rebate + fee waiving)
+    let totalFeePaid = (feeToWallet + minerFee) + (minerBurn + walletBurn);
+
+    // JS rounding errors...
+    if (totalFeePaid > totalAmount && totalFeePaid < totalAmount + 10000) {
+      totalFeePaid = totalAmount;
+    }
+
+    // Return the rebate this order got
+    return totalAmount - totalFeePaid;
+  }
+
   // Currently done here because it's easier
   private async calculateOrderSettlement(order: pjs.OrderInfo,
                                          orderExpectation: pjs.OrderExpectation,
                                          prevOrder: pjs.OrderInfo,
-                                         prevOrderExpectation: pjs.OrderExpectation) {
+                                         prevOrderExpectation: pjs.OrderExpectation,
+                                         feeRecipient: string,
+                                         feePayments: FeePayment[]) {
+    let walletSplitPercentage = order.walletSplitPercentage;
+    if (!order.walletAddr) {
+      walletSplitPercentage = 0;
+    }
+    if (orderExpectation.P2P) {
+      walletSplitPercentage = 100;
+    }
+
     if (orderExpectation.P2P) {
       // Fill amounts
       const amountS = order.amountS * orderExpectation.filledFraction;
@@ -755,13 +859,20 @@ export class ExchangeTestUtil {
       // Fees
       const amountFeeS = Math.floor(amountS * order.tokenSFeePercentage / this.context.feePercentageBase);
       const amountFeeB = Math.floor(amountB * order.tokenBFeePercentage / this.context.feePercentageBase);
-      let rebateS = 0;
-      let rebateB = 0;
-      // No fees need to be paid when the order has no wallet
-      if (!order.walletAddr) {
-        rebateS = amountFeeS;
-        rebateB = amountFeeB;
-      }
+      const rebateS = await this.collectFeePayments(feePayments,
+                                                    order,
+                                                    orderExpectation,
+                                                    order.tokenS,
+                                                    amountFeeS,
+                                                    walletSplitPercentage,
+                                                    feeRecipient);
+      const rebateB = await this.collectFeePayments(feePayments,
+                                                    order,
+                                                    orderExpectation,
+                                                    order.tokenB,
+                                                    amountFeeB,
+                                                    walletSplitPercentage,
+                                                    feeRecipient);
 
       const prevAmountB = prevOrder.amountB * prevOrderExpectation.filledFraction;
       const splitS = (amountS - amountFeeS) - prevAmountB;
@@ -787,22 +898,27 @@ export class ExchangeTestUtil {
       let amountFee = order.feeAmount * orderExpectation.filledFraction;
       let amountFeeB = Math.floor(amountB * order.feePercentage / this.context.feePercentageBase);
 
-      let rebateFee = 0;
-      let rebateB = 0;
-      // Waive fees before tax
-      if (order.waiveFeePercentage > 0) {
-        rebateFee = Math.floor(amountFee * order.waiveFeePercentage / this.context.feePercentageBase);
-        rebateB = Math.floor(amountFeeB * order.waiveFeePercentage / this.context.feePercentageBase);
-      } else if (order.waiveFeePercentage < 0) {
-        rebateFee = amountFee;
-        rebateB = amountFeeB;
-      }
       // Pay in either feeToken or tokenB
       if (orderExpectation.payFeeInTokenB) {
         amountFee = 0;
       } else {
         amountFeeB = 0;
       }
+
+      const rebateFee = await this.collectFeePayments(feePayments,
+                                                      order,
+                                                      orderExpectation,
+                                                      order.feeToken,
+                                                      amountFee,
+                                                      walletSplitPercentage,
+                                                      feeRecipient);
+      const rebateB = await this.collectFeePayments(feePayments,
+                                                    order,
+                                                    orderExpectation,
+                                                    order.tokenB,
+                                                    amountFeeB,
+                                                    walletSplitPercentage,
+                                                    feeRecipient);
 
       const prevAmountB = prevOrder.amountB * prevOrderExpectation.filledFraction;
       const splitS = amountS - prevAmountB;
@@ -846,6 +962,16 @@ export class ExchangeTestUtil {
         expectedBalances[token][owner] = report.balancesBefore[token][owner];
       }
     }
+    // Copy fee balances before
+    const expectedFeeBalances: { [id: string]: any; } = {};
+    for (const token of Object.keys(report.feeBalancesBefore)) {
+      for (const owner of Object.keys(report.feeBalancesBefore[token])) {
+        if (!expectedFeeBalances[token]) {
+          expectedFeeBalances[token] = {};
+        }
+        expectedFeeBalances[token][owner] = report.feeBalancesBefore[token][owner];
+      }
+    }
     // Intialize filled amounts
     const expectedfilledAmounts: { [id: string]: any; } = {};
     for (const order of ringsInfo.orders) {
@@ -855,6 +981,8 @@ export class ExchangeTestUtil {
       }
     }
 
+    const feeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin;
+    const feePayments: FeePayment[] = [];
     // Simulate order settlement in rings using the given expectations
     for (const [r, ring] of ringsInfo.rings.entries()) {
       if (ringsInfo.expected.rings[r].fail) {
@@ -869,7 +997,9 @@ export class ExchangeTestUtil {
         const orderSettlement = await this.calculateOrderSettlement(order,
                                                                     orderExpectation,
                                                                     prevOrder,
-                                                                    prevOrderExpectation);
+                                                                    prevOrderExpectation,
+                                                                    feeRecipient,
+                                                                    feePayments);
 
         // Balances
         const totalS = orderSettlement.amountS - orderSettlement.rebateS;
@@ -884,10 +1014,7 @@ export class ExchangeTestUtil {
         expectedBalances[order.feeToken][order.owner] -= totalFee;
 
         // Add margin given to the feeRecipient
-        const feeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin;
-        if (expectedBalances[order.tokenS][feeRecipient]) {
-          expectedBalances[order.tokenS][feeRecipient] += orderSettlement.splitS;
-        }
+        expectedBalances[order.tokenS][feeRecipient] += orderSettlement.splitS;
 
         // Filled
         const expectedFilledAmount = order.amountS * ringsInfo.expected.rings[r].orders[o].filledFraction;
@@ -904,6 +1031,20 @@ export class ExchangeTestUtil {
         // console.log("[Sim]" + ownerName + ": " + report.balancesAfter[token][owner] / 1e18 + " " + tokenSymbol);
         // console.log("[Exp]" + ownerName + ": " + expectedBalances[token][owner] / 1e18 + " " + tokenSymbol);
         this.assertNumberEqualsWithPrecision(report.balancesAfter[token][owner], expectedBalances[token][owner]);
+      }
+    }
+    // Check fee balances
+    for (const feePayment of feePayments) {
+      expectedFeeBalances[feePayment.token][feePayment.owner] += feePayment.amount;
+    }
+    for (const token of Object.keys(expectedFeeBalances)) {
+      for (const owner of Object.keys(expectedFeeBalances[token])) {
+        const ownerName = addressBook[owner];
+        const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
+        console.log("[Sim]" + ownerName + ": " + report.feeBalancesAfter[token][owner] / 1e18 + " " + tokenSymbol);
+        console.log("[Exp]" + ownerName + ": " + expectedFeeBalances[token][owner] / 1e18 + " " + tokenSymbol);
+        this.assertNumberEqualsWithPrecision(report.feeBalancesAfter[token][owner],
+                                             expectedFeeBalances[token][owner]);
       }
     }
     // Check filled
