@@ -43,6 +43,11 @@ export default class Market
     {
         return getTrend(this.host, filter);
     }
+
+    getTickerBySource (filter)
+    {
+        return getTickerBySource(this.host, filter);
+    }
 }
 
 /**
@@ -163,6 +168,19 @@ export function getTickers (host, market)
     const body = {};
     body.method = 'loopring_getTickers';
     body.params = [{market}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
+}
+
+export function getTickerBySource (host, filter)
+{
+    const body = {};
+    body.method = 'loopring_getTickerBySource';
+    body.params = [{...filter}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {

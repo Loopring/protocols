@@ -51,6 +51,16 @@ export default class Order
     {
         return getOrderHash(this.host, filter);
     }
+
+    getUnmergedOrderBook (filter)
+    {
+        return getUnmergedOrderBook(this.host, filter);
+    }
+
+    getTempStore (filter)
+    {
+        return getTempStore(this.host, filter);
+    }
 }
 
 /**
@@ -265,6 +275,19 @@ export function setTempStore (host, key, value)
     });
 }
 
+export function getTempStore (host, filter)
+{
+    const body = {};
+    body.method = 'loopring_getTempStore';
+    body.params = [{...filter}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
+}
+
 /**
  * Cancel order by Relay
  * @param host
@@ -316,6 +339,21 @@ export function cancelOrder (host, {sign, orderHash, tokenS, tokenB, cutoff, typ
     {
         return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
     }
+}
+
+export function getUnmergedOrderBook (host, filter)
+{
+    const {delegateAddress} = filter;
+    validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
+    const body = {};
+    body.method = 'loopring_getUnmergedOrderBook';
+    body.params = [{...filter}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 export function getOrderByHash (host, filter)

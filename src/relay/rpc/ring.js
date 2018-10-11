@@ -1,10 +1,10 @@
-import request, {id} from '../../common/request';
+import request, { id } from '../../common/request';
 import validator from '../validator';
 import Response from '../../common/response';
 import code from '../../common/code';
-import {toBig, toHex} from '../../common/formatter';
-import {getOrderHash} from './order';
-import {soliditySHA3} from 'ethereumjs-abi';
+import { toBig, toHex } from '../../common/formatter';
+import { getOrderHash } from './order';
+import { soliditySHA3 } from 'ethereumjs-abi';
 
 export default class Ring
 {
@@ -31,6 +31,11 @@ export default class Ring
     getRingHash (orders, feeRecipient, feeSelections)
     {
         return getRingHash(orders, feeRecipient, feeSelections);
+    }
+
+    submitRingForP2P (filter)
+    {
+        return submitRingForP2P(this.host, filter);
     }
 }
 
@@ -60,7 +65,8 @@ export function getRings (host, filter)
     }
     catch (e)
     {
-        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+        return Promise.resolve(
+            new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
     }
     const body = {};
     body.method = 'loopring_getRingMined';
@@ -76,8 +82,7 @@ export function getRings (host, filter)
 /**
  * @description Get ring mined detail
  * @param host
- * @param ringIndex
- * @param delegateAddress
+ * @param filter
  * @returns {Promise}
  */
 export function getRingMinedDetail (host, filter)
@@ -89,12 +94,13 @@ export function getRingMinedDetail (host, filter)
     }
     catch (e)
     {
-        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+        return Promise.resolve(
+            new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
     }
     ringIndex = toHex(toBig(ringIndex));
     const body = {};
     body.method = 'loopring_getRingMinedDetail';
-    body.params = [{...filter}];
+    body.params = [{...filter, ringIndex}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {
@@ -140,7 +146,8 @@ export function getFills (host, filter)
     }
     catch (e)
     {
-        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+        return Promise.resolve(
+            new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
     }
     const body = {};
     body.method = 'loopring_getFills';
@@ -161,6 +168,22 @@ export function getRingHash (orders, feeRecipient, feeSelections)
         feeRecipient,
         feeSelectionListToNumber(feeSelections)
     ]);
+}
+
+export function submitRingForP2P (host, filter)
+{
+    const {takerOrderHash, makerOrderHash} = filter;
+    validator.validate({value: takerOrderHash, type: 'HASH'});
+    validator.validate({value: makerOrderHash, type: 'HASH'});
+    const body = {};
+    body.method = 'loopring_submitRingForP2P';
+    body.params = [filter];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
 }
 
 function xorReduceStr (strArr)
