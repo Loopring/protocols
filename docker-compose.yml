@@ -8,7 +8,10 @@ services:
       - "8545"
     ports:
       - "8545:8545"
-  protocol2test:
+    logging:
+      driver: none
+
+  test:
     depends_on:
       - ganache
     build:

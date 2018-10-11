@@ -14,7 +14,7 @@
     "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc",
     "pretest": "solium --dir contracts && tslint --project .",
     "test": "npm run transpile && truffle test",
-    "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f protocol2test",
+    "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
     "compile": "rm -rf build/contracts && truffle compile",
     "migrate": "npm run transpile && truffle migrate",
