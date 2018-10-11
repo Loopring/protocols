@@ -61,6 +61,11 @@ export default class Order
     {
         return getTempStore(this.host, filter);
     }
+
+    getContracts ()
+    {
+        return getContracts(this.host);
+    }
 }
 
 /**
@@ -361,6 +366,18 @@ export function getOrderByHash (host, filter)
     const body = {};
     body.method = 'loopring_getOrderByHash';
     body.params = [{orderHash: filter.orderHash}];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
+}
+export function getContracts (host)
+{
+    const body = {};
+    body.method = 'loopring_getContracts';
+    body.params = [{}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {
