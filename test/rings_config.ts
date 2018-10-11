@@ -458,23 +458,23 @@ export const ringsInfoList: RingsInfo[] = [
         index: 0,
         tokenS: tokenSymbols[0],
         tokenB: tokenSymbols[1],
-        amountS: 100e17,
-        amountB: 10e17,
+        amountS: 100e18,
+        amountB: 10e18,
         allOrNone: true,
       },
       {
         index: 1,
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[0],
-        amountS: 6e17,
-        amountB: 60e17,
+        amountS: 6e18,
+        amountB: 60e18,
       },
       {
         index: 2,
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[0],
-        amountS: 5e17,
-        amountB: 50e17,
+        amountS: 5e18,
+        amountB: 50e18,
       },
     ],
     expected: {
@@ -1564,6 +1564,298 @@ export const ringsInfoList: RingsInfo[] = [
     ],
     expected: {
       revert: true,
+    },
+  },
+
+  {
+    description: "one to many match: big order filled by 5 small orders",
+    rings: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[1],
+        amountS: 10000e18,
+        amountB: 1000e18,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 3,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 4,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 5,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "one to many match: one big order filled by 10 small orders",
+    rings: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8], [0, 9], [0, 10]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[1],
+        amountS: 10000e18,
+        amountB: 1000e18,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 3,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 4,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 5,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 6,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 7,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 8,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 9,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+      {
+        index: 10,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.005,
+            },
+            {
+              filledFraction: 1.0,
+              payFeeInTokenB: true,     // owner[0] == owner[10]
+            },
+          ],
+        },
+      ],
     },
   },
 ];

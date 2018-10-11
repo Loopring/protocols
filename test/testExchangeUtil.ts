@@ -45,11 +45,11 @@ export class ExchangeTestUtil {
   }
 
   public async getTransferEvents(tokens: any[], fromBlock: number) {
-    let transferItems: Array<[string, string, string, number]> = [];
+    let transferItems: Array<[string, string, string, BigNumber]> = [];
     for (const tokenContractInstance of tokens) {
       const eventArr: any = await this.getEventsFromContract(tokenContractInstance, "Transfer", fromBlock);
       const items = eventArr.map((eventObj: any) => {
-        return [tokenContractInstance.address, eventObj.args.from, eventObj.args.to, eventObj.args.value.toNumber()];
+        return [tokenContractInstance.address, eventObj.args.from, eventObj.args.to, eventObj.args.value];
       });
       transferItems = transferItems.concat(items);
     }
@@ -303,15 +303,15 @@ export class ExchangeTestUtil {
   }
 
   public assertTransfers(ringsInfo: pjs.RingsInfo,
-                         tranferEvents: Array<[string, string, string, number]>,
+                         tranferEvents: Array<[string, string, string, BigNumber]>,
                          transferList: pjs.TransferItem[]) {
-    const transfersFromSimulator: Array<[string, string, string, number]> = [];
+    const transfersFromSimulator: Array<[string, string, string, BigNumber]> = [];
     transferList.forEach((item) => transfersFromSimulator.push([item.token, item.from, item.to, item.amount]));
-    const sorter = (a: [string, string, string, number], b: [string, string, string, number]) => {
+    const sorter = (a: [string, string, string, BigNumber], b: [string, string, string, BigNumber]) => {
       if (a[0] === b[0]) {
         if (a[1] === b[1]) {
           if (a[2] === b[2]) {
-            return a[3] - b[3];
+            return a[3].minus(b[3]).toNumber();
           } else {
             return a[2] > b[2] ? 1 : -1;
           }
@@ -331,23 +331,23 @@ export class ExchangeTestUtil {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
       const fromName = addressBook[t[1]];
       const toName = addressBook[t[2]];
-      console.log(fromName + " -> " + toName + " : " + t[3] / 1e18 + " " + tokenSymbol);
+      console.log(fromName + " -> " + toName + " : " + t[3].toNumber() / 1e18 + " " + tokenSymbol);
     });
     console.log("transfer items from contract:");
     tranferEvents.forEach((t) => {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
       const fromName = addressBook[t[1]];
       const toName = addressBook[t[2]];
-      console.log(fromName + " -> " + toName + " : " + t[3] / 1e18 + " " + tokenSymbol);
+      console.log(fromName + " -> " + toName + " : " + t[3].toNumber() / 1e18 + " " + tokenSymbol);
     });
-    assert.equal(tranferEvents.length, transfersFromSimulator.length, "transfer amounts not match");
+    assert.equal(tranferEvents.length, transfersFromSimulator.length, "Number of transfers do not match");
     for (let i = 0; i < tranferEvents.length; i++) {
       const transferFromEvent = tranferEvents[i];
       const transferFromSimulator = transfersFromSimulator[i];
       assert.equal(transferFromEvent[0], transferFromSimulator[0]);
       assert.equal(transferFromEvent[1], transferFromSimulator[1]);
       assert.equal(transferFromEvent[2], transferFromSimulator[2]);
-      this.assertNumberEqualsWithPrecision(transferFromEvent[3], transferFromSimulator[3]);
+      assert(transferFromEvent[3].eq(transferFromSimulator[3]), "Transfer amount does not match");
     }
   }
 
@@ -360,20 +360,20 @@ export class ExchangeTestUtil {
       for (const owner of Object.keys(feeBalancesAfter[token])) {
         const balanceFromSimulator = feeBalancesAfter[token][owner];
         const balanceFromContract = await this.context.feeHolder.feeBalances(token, owner);
-        if (feeBalancesBefore[token][owner] !== feeBalancesAfter[token][owner]) {
+        if (!feeBalancesBefore[token][owner].eq(feeBalancesAfter[token][owner])) {
           const ownerName = addressBook[owner] ? addressBook[owner] : owner;
           const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
           console.log(ownerName + ": " +
                       balanceFromContract  / 1e18 + " " + tokenSymbol + " " +
                       "(Simulator: " + balanceFromSimulator  / 1e18 + ")");
         }
-        this.assertNumberEqualsWithPrecision(balanceFromContract, balanceFromSimulator);
+        assert(balanceFromContract.eq(balanceFromSimulator));
       }
     }
   }
 
   public async assertFilledAmounts(ringsInfo: pjs.RingsInfo,
-                                   filledAmounts: { [hash: string]: number; }) {
+                                   filledAmounts: { [hash: string]: BigNumber; }) {
     const addressBook = this.getAddressBook(ringsInfo);
     console.log("Filled amounts:");
     for (const hash of Object.keys(filledAmounts)) {
@@ -384,16 +384,16 @@ export class ExchangeTestUtil {
         }
       }
       const filledFromSimulator = filledAmounts[hash];
-      const filledFromContract = await this.context.tradeDelegate.filled("0x" + hash).toNumber();
+      const filledFromContract = await this.context.tradeDelegate.filled("0x" + hash);
       let percentageFilled = 0;
       if (hashOrder) {
-        percentageFilled = filledFromContract * 100 / hashOrder.amountS;
+        percentageFilled = filledFromContract.toNumber() * 100 / hashOrder.amountS;
       }
       const hashName = addressBook[hash];
-      console.log(hashName + ": " + filledFromContract / 1e18 +
-                  " (Simulator: " + filledFromSimulator / 1e18 + ")" +
+      console.log(hashName + ": " + filledFromContract.toNumber() / 1e18 +
+                  " (Simulator: " + filledFromSimulator.toNumber() / 1e18 + ")" +
                   " (" + percentageFilled + "%)");
-      this.assertNumberEqualsWithPrecision(filledFromContract, filledFromSimulator);
+      assert(filledFromContract.eq(filledFromSimulator));
     }
   }
 
@@ -718,11 +718,11 @@ export class ExchangeTestUtil {
     const transactionOrigin = accounts[1];
     const feeRecipient = accounts[2];
     const miner = accounts[3];
-    const orderOwners = accounts.slice(4, 9);
-    const orderDualAuthAddr = accounts.slice(9, 13);
-    const allOrderTokenRecipients = accounts.slice(13, 17);
-    const wallets = accounts.slice(17, 21);
-    const brokers =  accounts.slice(21, 25);
+    const orderOwners = accounts.slice(4, 14);
+    const orderDualAuthAddr = accounts.slice(14, 24);
+    const allOrderTokenRecipients = accounts.slice(24, 28);
+    const wallets = accounts.slice(28, 32);
+    const brokers =  accounts.slice(32, 36);
 
     return new ExchangeTestContext(deployer,
                                    transactionOrigin,
