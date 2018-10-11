@@ -1,0 +1,7 @@
+FROM mhart/alpine-node:8
+
+RUN npm install -g ganache-cli@6.1.8
+
+EXPOSE 8545
+
+CMD ganache-cli -a 25

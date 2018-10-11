@@ -40,11 +40,11 @@ module.exports = {
       gasPrice: 0x01      // <-- Use this low gas price
     },
     docker: {
-      host: "testrpc",
+      host: "ganache",
       port: 8545,
       network_id: "*", // Match any network id
       gasPrice: 21000000000,
-      gas: 4500000
+      gas: 6700000
     }
   },
   test_directory: 'transpiled/test',
