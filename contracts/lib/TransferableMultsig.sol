@@ -19,7 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "./ITransferableMultsig.sol";
-
+import "../iface/Errors.sol";
 
 /// @title An Implementation of ITransferableMultsig
 /// @author Daniel Wang - <daniel@loopring.org>.
@@ -41,8 +41,8 @@ contract TransferableMultsig is ITransferableMultsig {
 
     // default function does nothing.
     function ()
-        payable
         external
+        payable
     {
     }
 
@@ -120,13 +120,13 @@ contract TransferableMultsig is ITransferableMultsig {
         bytes32[] sigS,
         bytes32   txHash
         )
-        view
         internal
+        view
     {
         uint _threshold = threshold;
-        require(_threshold == sigR.length);
-        require(_threshold == sigS.length);
-        require(_threshold == sigV.length);
+        require(_threshold == sigR.length, INVALID_SIZE);
+        require(_threshold == sigS.length, INVALID_SIZE);
+        require(_threshold == sigV.length, INVALID_SIZE);
 
         address lastAddr = 0x0; // cannot have 0x0 as an owner
         for (uint i = 0; i < threshold; i++) {
@@ -137,7 +137,7 @@ contract TransferableMultsig is ITransferableMultsig {
                 sigS[i]
             );
 
-            require(recovered > lastAddr && ownerMap[recovered]);
+            require(recovered > lastAddr && ownerMap[recovered], INVALID_ADDRESS);
             lastAddr = recovered;
         }
     }
@@ -148,9 +148,9 @@ contract TransferableMultsig is ITransferableMultsig {
         )
         internal
     {
-        require(_owners.length <= 10);
-        require(_threshold <= _owners.length);
-        require(_threshold != 0);
+        require(_owners.length <= 10, INVALID_SIZE);
+        require(_threshold <= _owners.length, INVALID_SIZE);
+        require(_threshold != 0, INVALID_VALUE);
 
         // remove all current owners from ownerMap.
         address[] memory currentOwners = owners;
@@ -161,7 +161,7 @@ contract TransferableMultsig is ITransferableMultsig {
         address lastAddr = 0x0;
         for (uint i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
-            require(owner > lastAddr);
+            require(owner > lastAddr, INVALID_ADDRESS);
 
             ownerMap[owner] = true;
             lastAddr = owner;

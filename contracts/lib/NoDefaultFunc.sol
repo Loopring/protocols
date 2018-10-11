@@ -23,8 +23,8 @@ pragma experimental "ABIEncoderV2";
 /// @dev Disable default functions.
 contract NoDefaultFunc {
     function ()
-        payable
         external
+        payable
     {
         revert();
     }

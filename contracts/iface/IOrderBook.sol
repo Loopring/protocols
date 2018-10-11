@@ -51,7 +51,7 @@ contract IOrderBook {
     /// @return The order data
     ///         see OrderData
     function getOrderData(bytes32 orderHash)
-        view
         external
+        view
         returns (bytes32[]);
 }

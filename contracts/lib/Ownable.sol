@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 
 /// @title Ownable
 /// @dev The Ownable contract has an owner address, and provides basic
@@ -42,7 +43,7 @@ contract Ownable {
     /// @dev Throws if called by any account other than the owner.
     modifier onlyOwner()
     {
-        require(msg.sender == owner);
+        require(msg.sender == owner, NOT_OWNER);
         _;
     }
 
@@ -52,10 +53,10 @@ contract Ownable {
     function transferOwnership(
         address newOwner
         )
-        onlyOwner
         public
+        onlyOwner
     {
-        require(newOwner != 0x0);
+        require(newOwner != 0x0, ZERO_ADDRESS);
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
     }
