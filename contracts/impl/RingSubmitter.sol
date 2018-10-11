@@ -149,15 +149,15 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
         setupLists(ctx, orders, rings);
 
         for (i = 0; i < orders.length; i++) {
-            orders[i].validateInfo(ctx);
-            orders[i].checkP2P();
             orders[i].updateHash();
             orders[i].updateBrokerAndInterceptor(ctx);
         }
+
         batchGetFilledAndCheckCancelled(ctx, orders);
         updateBrokerSpendables(orders);
+
         for (i = 0; i < orders.length; i++) {
-            orders[i].checkBrokerSignature(ctx);
+            orders[i].check(ctx);
         }
 
         for (i = 0; i < rings.length; i++) {

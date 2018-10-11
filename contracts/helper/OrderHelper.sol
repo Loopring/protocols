@@ -109,6 +109,22 @@ library OrderHelper {
         }
     }
 
+    function check(Data.Order order, Data.Context ctx)
+        internal
+        view
+    {
+        // If the order was already partially filled we don't have to check the basicInfo, P2P and signature again
+        if(order.filledAmountS > 0) {
+            bool valid = true;
+            valid = valid && (order.validUntil == 0 || order.validUntil > now);  // order is expired
+            order.valid = order.valid && valid;
+        } else {
+            validateInfo(order, ctx);
+            checkP2P(order);
+            checkBrokerSignature(order, ctx);
+        }
+    }
+
     function validateInfo(Data.Order order, Data.Context ctx)
         internal
         view
@@ -153,11 +169,6 @@ library OrderHelper {
         internal
         view
     {
-        // If the order was already partially filled we don't have to check the signature again
-        if(order.filledAmountS > 0) {
-            return;
-        }
-
         if (order.sig.length == 0) {
             bool registered = ctx.orderRegistry.isOrderHashRegistered(
                 order.broker,
