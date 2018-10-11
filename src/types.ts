@@ -13,12 +13,12 @@ export enum SignAlgorithm {
 
 export interface Spendable {
   initialized?: boolean;
-  amount?: number;
-  reserved?: number;
+  amount?: BigNumber;
+  reserved?: BigNumber;
   index?: number;
 
   // Testing
-  initialAmount?: number;
+  initialAmount?: BigNumber;
 }
 
 export interface OrderInfo {
@@ -56,7 +56,7 @@ export interface OrderInfo {
 
   // helper field
   P2P?: boolean;
-  filledAmountS?: number;
+  filledAmountS?: BigNumber;
   brokerInterceptor?: string;
   valid?: boolean;
 
@@ -77,19 +77,19 @@ export interface Participation {
   order: OrderInfo;
 
   // computed fields
-  splitS?: number;
-  feeAmount?: number;
-  feeAmountS?: number;
-  feeAmountB?: number;
-  rebateFee?: number;
-  rebateS?: number;
-  rebateB?: number;
-  fillAmountS?: number;
-  fillAmountB?: number;
+  splitS: BigNumber;
+  feeAmount: BigNumber;
+  feeAmountS: BigNumber;
+  feeAmountB: BigNumber;
+  rebateFee: BigNumber;
+  rebateS: BigNumber;
+  rebateB: BigNumber;
+  fillAmountS: BigNumber;
+  fillAmountB: BigNumber;
 
   // test fields
-  ringSpendableS?: number;
-  ringSpendableFee?: number;
+  ringSpendableS: BigNumber;
+  ringSpendableFee: BigNumber;
 }
 
 export interface RingsSubmitParam {
@@ -158,7 +158,7 @@ export interface SimulatorReport {
   transferItems: TransferItem[];
   feeBalancesBefore: { [id: string]: any; };
   feeBalancesAfter: { [id: string]: any; };
-  filledAmounts: { [hash: string]: number; };
+  filledAmounts: { [hash: string]: BigNumber; };
   balancesBefore: { [id: string]: any; };
   balancesAfter: { [id: string]: any; };
   payments: TransactionPayments;
@@ -168,7 +168,7 @@ export interface TransferItem {
   token: string;
   from: string;
   to: string;
-  amount: number;
+  amount: BigNumber;
 }
 
 export interface RingMinedEvent {

@@ -46,8 +46,8 @@ export class ExchangeDeserializer {
     for (let i = 0; i < numSpendables; i++) {
       const spendable = {
         initialized: false,
-        amount: 0,
-        reserved: 0,
+        amount: new BigNumber(0),
+        reserved: new BigNumber(0),
       };
       this.spendableList.push(spendable);
     }

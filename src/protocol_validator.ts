@@ -1,23 +1,24 @@
+import { BigNumber } from "bignumber.js";
 import { Context } from "./context";
 import { OrderUtil } from "./order";
 import { OrderExpectation, OrderInfo, RingsInfo, SimulatorReport } from "./types";
 
 interface OrderSettlement {
-  amountS: number;
-  amountB: number;
-  amountFee: number;
-  amountFeeS: number;
-  amountFeeB: number;
-  rebateFee: number;
-  rebateS: number;
-  rebateB: number;
-  splitS: number;
+  amountS: BigNumber;
+  amountB: BigNumber;
+  amountFee: BigNumber;
+  amountFeeS: BigNumber;
+  amountFeeB: BigNumber;
+  rebateFee: BigNumber;
+  rebateS: BigNumber;
+  rebateB: BigNumber;
+  splitS: BigNumber;
 }
 
 interface FeePayment {
   token: string;
   owner: string;
-  amount: number;
+  amount: BigNumber;
 }
 
 export class ProtocolValidator {
@@ -63,11 +64,11 @@ export class ProtocolValidator {
       }
     }
     // Intialize filled amounts
-    const expectedfilledAmounts: { [id: string]: any; } = {};
+    const expectedfilledAmounts: { [id: string]: BigNumber; } = {};
     for (const order of ringsInfo.orders) {
       const orderHash = order.hash.toString("hex");
       if (!expectedfilledAmounts[orderHash]) {
-        expectedfilledAmounts[orderHash] = 0;
+        expectedfilledAmounts[orderHash] = new BigNumber(0);
       }
     }
 
@@ -94,23 +95,30 @@ export class ProtocolValidator {
                                                                     feePayments);
 
         // Balances
-        const totalS = orderSettlement.amountS - orderSettlement.rebateS;
-        const totalB = orderSettlement.amountB - orderSettlement.amountFeeB + orderSettlement.rebateB;
-        const totalFee = orderSettlement.amountFee - orderSettlement.rebateFee;
+        const totalS = orderSettlement.amountS.minus(orderSettlement.rebateS);
+        const totalB = orderSettlement.amountB.minus(orderSettlement.amountFeeB).plus(orderSettlement.rebateB);
+        const totalFee = orderSettlement.amountFee.minus(orderSettlement.rebateFee);
         // console.log("totalS: " + totalS / 1e18);
         // console.log("totalB: " + totalB / 1e18);
         // console.log("totalFee: " + totalFee / 1e18);
         // console.log("splitS: " + orderSettlement.splitS);
-        expectedBalances[order.tokenS][order.owner] -= totalS;
-        expectedBalances[order.tokenB][order.tokenRecipient] += totalB;
-        expectedBalances[order.feeToken][order.owner] -= totalFee;
+        expectedBalances[order.tokenS][order.owner] =
+          expectedBalances[order.tokenS][order.owner].minus(totalS);
+        expectedBalances[order.tokenB][order.tokenRecipient] =
+          expectedBalances[order.tokenB][order.tokenRecipient].plus(totalB);
+        expectedBalances[order.feeToken][order.owner] =
+          expectedBalances[order.feeToken][order.owner].minus(totalFee);
 
         // Add margin given to the feeRecipient
-        expectedBalances[order.tokenS][feeRecipient] += orderSettlement.splitS;
+        expectedBalances[order.tokenS][feeRecipient] =
+          expectedBalances[order.tokenS][feeRecipient].plus(orderSettlement.splitS);
 
         // Filled
-        const expectedFilledAmount = order.amountS * ringsInfo.expected.rings[r].orders[o].filledFraction;
-        expectedfilledAmounts[order.hash.toString("hex")] += expectedFilledAmount;
+        const expectedFilledAmount = new BigNumber(order.amountS)
+                                    .times(ringsInfo.expected.rings[r].orders[o].filledFraction.toString())
+                                    .floor();
+        expectedfilledAmounts[order.hash.toString("hex")] =
+          expectedfilledAmounts[order.hash.toString("hex")].plus(expectedFilledAmount);
       }
     }
 
@@ -120,15 +128,19 @@ export class ProtocolValidator {
       for (const owner of Object.keys(expectedBalances[token])) {
         // const ownerName = addressBook[owner];
         // const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
-        // console.log("[Sim]" + ownerName + ": " + report.balancesAfter[token][owner] / 1e18 + " " + tokenSymbol);
-        // console.log("[Exp]" + ownerName + ": " + expectedBalances[token][owner] / 1e18 + " " + tokenSymbol);
-        this.assertAlmostEqual(report.balancesAfter[token][owner], expectedBalances[token][owner],
-                               "Balance differant than expected");
+        // console.log("[Sim]" + ownerName + ": " +
+        //   report.balancesAfter[token][owner].toNumber() / 1e18 + " " + tokenSymbol);
+        // console.log("[Exp]" + ownerName + ": " +
+        //   expectedBalances[token][owner].toNumber() / 1e18 + " " + tokenSymbol);
+        this.assertAlmostEqual(report.balancesAfter[token][owner].toNumber(),
+                               expectedBalances[token][owner].toNumber(),
+                               "Balance different than expected");
       }
     }
     // Check fee balances
     for (const feePayment of feePayments) {
-      expectedFeeBalances[feePayment.token][feePayment.owner] += feePayment.amount;
+      expectedFeeBalances[feePayment.token][feePayment.owner] =
+        expectedFeeBalances[feePayment.token][feePayment.owner].plus(feePayment.amount);
     }
     for (const token of Object.keys(expectedFeeBalances)) {
       for (const owner of Object.keys(expectedFeeBalances[token])) {
@@ -136,14 +148,16 @@ export class ProtocolValidator {
         // const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
         // console.log("[Sim]" + ownerName + ": " + report.feeBalancesAfter[token][owner] / 1e18 + " " + tokenSymbol);
         // console.log("[Exp]" + ownerName + ": " + expectedFeeBalances[token][owner] / 1e18 + " " + tokenSymbol);
-        this.assertAlmostEqual(report.feeBalancesAfter[token][owner], expectedFeeBalances[token][owner],
+        this.assertAlmostEqual(report.feeBalancesAfter[token][owner].toNumber(),
+                               expectedFeeBalances[token][owner].toNumber(),
                                "Fee balance different than expected");
       }
     }
     // Check filled
     for (const order of ringsInfo.orders) {
       const orderHash = order.hash.toString("hex");
-      this.assertAlmostEqual(report.filledAmounts[orderHash], expectedfilledAmounts[orderHash],
+      this.assertAlmostEqual(report.filledAmounts[orderHash].toNumber(),
+                             expectedfilledAmounts[orderHash].toNumber(),
                              "Filled amount different than expected");
     }
   }
@@ -166,12 +180,12 @@ export class ProtocolValidator {
 
     if (orderExpectation.P2P) {
       // Fill amounts
-      const amountS = order.amountS * orderExpectation.filledFraction;
-      const amountB = order.amountB * orderExpectation.filledFraction;
+      const amountS = new BigNumber(order.amountS).times(orderExpectation.filledFraction.toString()).floor();
+      const amountB = new BigNumber(order.amountB).times(orderExpectation.filledFraction.toString()).floor();
 
       // Fees
-      const amountFeeS = Math.floor(amountS * order.tokenSFeePercentage / this.context.feePercentageBase);
-      const amountFeeB = Math.floor(amountB * order.tokenBFeePercentage / this.context.feePercentageBase);
+      const amountFeeS = amountS.times(order.tokenSFeePercentage).dividedToIntegerBy(this.context.feePercentageBase);
+      const amountFeeB = amountB.times(order.tokenBFeePercentage).dividedToIntegerBy(this.context.feePercentageBase);
       const rebateS = await this.collectFeePayments(feePayments,
                                                     orders,
                                                     ring,
@@ -191,16 +205,18 @@ export class ProtocolValidator {
                                                     walletSplitPercentage,
                                                     feeRecipient);
 
-      const prevAmountB = prevOrder.amountB * prevOrderExpectation.filledFraction;
-      const splitS = (amountS - amountFeeS) - prevAmountB;
+      const prevAmountB = new BigNumber(prevOrder.amountB)
+                         .times(prevOrderExpectation.filledFraction.toString())
+                         .floor();
+      const splitS = amountS.minus(amountFeeS).minus(prevAmountB);
 
       const orderSettlement: OrderSettlement = {
         amountS,
         amountB,
-        amountFee: 0,
+        amountFee: new BigNumber(0),
         amountFeeS,
         amountFeeB,
-        rebateFee: 0,
+        rebateFee: new BigNumber(0),
         rebateS,
         rebateB,
         splitS,
@@ -208,18 +224,18 @@ export class ProtocolValidator {
       return orderSettlement;
     } else {
       // Fill amounts
-      const amountS = order.amountS * orderExpectation.filledFraction;
-      const amountB = order.amountB * orderExpectation.filledFraction;
+      const amountS = new BigNumber(order.amountS).times(orderExpectation.filledFraction.toString()).floor();
+      const amountB = new BigNumber(order.amountB).times(orderExpectation.filledFraction.toString()).floor();
 
       // Fees
-      let amountFee = order.feeAmount * orderExpectation.filledFraction;
-      let amountFeeB = Math.floor(amountB * order.feePercentage / this.context.feePercentageBase);
+      let amountFee = new BigNumber(order.feeAmount).times(orderExpectation.filledFraction.toString()).floor();
+      let amountFeeB = amountB.times(order.feePercentage).dividedToIntegerBy(this.context.feePercentageBase);
 
       // Pay in either feeToken or tokenB
       if (orderExpectation.payFeeInTokenB) {
-        amountFee = 0;
+        amountFee = new BigNumber(0);
       } else {
-        amountFeeB = 0;
+        amountFeeB = new BigNumber(0);
       }
 
       const rebateFee = await this.collectFeePayments(feePayments,
@@ -241,17 +257,19 @@ export class ProtocolValidator {
                                                     walletSplitPercentage,
                                                     feeRecipient);
 
-      const prevAmountB = prevOrder.amountB * prevOrderExpectation.filledFraction;
-      const splitS = amountS - prevAmountB;
+      const prevAmountB = new BigNumber(prevOrder.amountB)
+                          .times(prevOrderExpectation.filledFraction.toString())
+                          .floor();
+      const splitS = amountS.minus(prevAmountB);
 
       const orderSettlement: OrderSettlement = {
         amountS,
         amountB,
         amountFee,
-        amountFeeS: 0,
+        amountFeeS: new BigNumber(0),
         amountFeeB,
         rebateFee,
-        rebateS: 0,
+        rebateS: new BigNumber(0),
         rebateB,
         splitS,
       };
@@ -265,32 +283,32 @@ export class ProtocolValidator {
                                    order: OrderInfo,
                                    orderExpectation: OrderExpectation,
                                    token: string,
-                                   totalAmount: number,
+                                   totalAmount: BigNumber,
                                    walletSplitPercentage: number,
                                    feeRecipient: string) {
-    if (totalAmount === 0) {
-      return 0;
+    if (totalAmount.isZero()) {
+      return new BigNumber(0);
     }
 
     let amount = totalAmount;
     if (orderExpectation.P2P && !order.walletAddr) {
-      amount = 0;
+      amount = new BigNumber(0);
     }
 
     // Pay the burn rate with the feeHolder as owner
     const burnAddress = this.context.feeHolder.address;
 
-    const walletFee = Math.floor(amount * walletSplitPercentage / 100);
-    let minerFee = amount - walletFee;
+    const walletFee = amount.times(walletSplitPercentage).dividedToIntegerBy(100);
+    let minerFee = amount.minus(walletFee);
 
     // Miner can waive fees for this order. If waiveFeePercentage > 0 this is a simple reduction in fees.
     if (order.waiveFeePercentage > 0) {
-      minerFee = Math.floor(minerFee *
-                            (this.context.feePercentageBase - order.waiveFeePercentage) /
-                            this.context.feePercentageBase);
+      minerFee = minerFee
+                 .times(this.context.feePercentageBase - order.waiveFeePercentage)
+                 .dividedToIntegerBy(this.context.feePercentageBase);
     } else if (order.waiveFeePercentage < 0) {
       // No fees need to be paid to the miner by this order
-      minerFee = 0;
+      minerFee = new BigNumber(0);
     }
 
     // Calculate burn rates and rebates
@@ -298,57 +316,54 @@ export class ProtocolValidator {
     const burnRate = orderExpectation.P2P ? (burnRateToken >> 16) : (burnRateToken & 0xFFFF);
     const rebateRate = 0;
     // Miner fee
-    const minerBurn = Math.floor(minerFee * burnRate / this.context.feePercentageBase);
-    const minerRebate = Math.floor(minerFee * rebateRate / this.context.feePercentageBase);
-    minerFee = minerFee - minerBurn - minerRebate;
+    const minerBurn = minerFee.times(burnRate).dividedToIntegerBy(this.context.feePercentageBase);
+    const minerRebate = minerFee.times(rebateRate).dividedToIntegerBy(this.context.feePercentageBase);
+    minerFee = minerFee.minus(minerBurn).minus(minerRebate);
     // Wallet fee
-    const walletBurn = Math.floor(walletFee * burnRate / this.context.feePercentageBase);
-    const walletRebate = Math.floor(walletFee * rebateRate / this.context.feePercentageBase);
-    const feeToWallet = walletFee - walletBurn - walletRebate;
+    const walletBurn = walletFee.times(burnRate).dividedToIntegerBy(this.context.feePercentageBase);
+    const walletRebate = walletFee.times(rebateRate).dividedToIntegerBy(this.context.feePercentageBase);
+    const feeToWallet = walletFee.minus(walletBurn).minus(walletRebate);
 
     // Fees can be paid out in different tokens so we can't easily accumulate the total fee
     // that needs to be paid out to order owners. So we pay out each part out here to all orders that need it.
     let feeToMiner = minerFee;
-    if (minerFee > 0) {
+    if (minerFee.gt(0)) {
       // Pay out the fees to the orders
       let minerFeesToOrdersPercentage = 0;
       for (const ringOrderIndex of ring) {
         const ringOrder = orders[ringOrderIndex];
         if (ringOrder.waiveFeePercentage < 0) {
-          const feeToOwner = Math.floor(minerFee *
-                             (-ringOrder.waiveFeePercentage) / this.context.feePercentageBase);
+          const feeToOwner = minerFee
+                             .times(-ringOrder.waiveFeePercentage)
+                             .dividedToIntegerBy(this.context.feePercentageBase);
           await this.addFeePayment(feePayments, token, ringOrder.owner, feeToOwner);
           minerFeesToOrdersPercentage += -ringOrder.waiveFeePercentage;
         }
       }
       // Subtract all fees the miner pays to the orders
-      feeToMiner = Math.floor(minerFee * (this.context.feePercentageBase - minerFeesToOrdersPercentage) /
-                              this.context.feePercentageBase);
+      feeToMiner = minerFee
+                   .times(this.context.feePercentageBase - minerFeesToOrdersPercentage)
+                   .dividedToIntegerBy(this.context.feePercentageBase);
     }
 
     // Do the fee payments
     await this.addFeePayment(feePayments, token, order.walletAddr, feeToWallet);
     await this.addFeePayment(feePayments, token, feeRecipient, feeToMiner);
     // Burn
-    await this.addFeePayment(feePayments, token, burnAddress, minerBurn + walletBurn);
+    await this.addFeePayment(feePayments, token, burnAddress, minerBurn.plus(walletBurn));
 
     // Calculate the total fee payment after possible discounts (burn rate rebate + fee waiving)
-    let totalFeePaid = (feeToWallet + minerFee) + (minerBurn + walletBurn);
-
-    // JS rounding errors...
-    if (totalFeePaid > totalAmount && totalFeePaid < totalAmount + 10000) {
-      totalFeePaid = totalAmount;
-    }
+    const totalFeePaid = (feeToWallet.plus(minerFee)).plus(minerBurn.plus(walletBurn));
 
     // Return the rebate this order got
-    return totalAmount - totalFeePaid;
+    return totalAmount.minus(totalFeePaid);
   }
 
   private addFeePayment(feePayments: FeePayment[],
                         token: string,
                         owner: string,
-                        amount: number) {
-    if (amount > 0) {
+                        amount: BigNumber) {
+    if (amount.gt(0)) {
       const feePayment: FeePayment = {
         token,
         owner,

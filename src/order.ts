@@ -53,7 +53,7 @@ export class OrderUtil {
   public async checkBrokerSignature(order: OrderInfo) {
     let signatureValid = true;
     // If the order was already partially filled we don't have to check the signature again
-    if (order.filledAmountS > 0) {
+    if (order.filledAmountS.gt(0)) {
       signatureValid = true;
     } else if (!order.sig) {
       const orderHashHex = "0x" + order.hash.toString("hex");
@@ -197,29 +197,30 @@ export class OrderUtil {
   }
 
   public async reserveAmountS(order: OrderInfo,
-                              amount: number) {
-    assert((await this.getSpendableS(order)) >= amount, "spendableS >= reserve amount");
-    order.tokenSpendableS.reserved += amount;
+                              amount: BigNumber) {
+    const spendableS = await this.getSpendableS(order);
+    assert(spendableS.gte(amount), "spendableS >= reserve amount");
+    order.tokenSpendableS.reserved = order.tokenSpendableS.reserved.plus(amount);
     if (order.brokerInterceptor) {
-      order.brokerSpendableS.reserved += amount;
+      order.brokerSpendableS.reserved = order.brokerSpendableS.reserved.plus(amount);
     }
   }
 
   public async reserveAmountFee(order: OrderInfo,
-                                amount: number) {
-    assert((await this.getSpendableFee(order)) >= amount, "spendableFee >= reserve amount");
-    order.tokenSpendableFee.reserved += amount;
+                                amount: BigNumber) {
+    assert((await this.getSpendableFee(order)).gte(amount), "spendableFee >= reserve amount");
+    order.tokenSpendableFee.reserved = order.tokenSpendableFee.reserved.plus(amount);
     if (order.brokerInterceptor) {
-      order.brokerSpendableFee.reserved += amount;
+      order.brokerSpendableFee.reserved = order.brokerSpendableFee.reserved.plus(amount);
     }
   }
 
   public resetReservations(order: OrderInfo) {
-    order.tokenSpendableS.reserved = 0;
-    order.tokenSpendableFee.reserved = 0;
+    order.tokenSpendableS.reserved = new BigNumber(0);
+    order.tokenSpendableFee.reserved = new BigNumber(0);
     if (order.brokerInterceptor) {
-      order.tokenSpendableS.reserved = 0;
-      order.tokenSpendableFee.reserved = 0;
+      order.tokenSpendableS.reserved = new BigNumber(0);
+      order.tokenSpendableFee.reserved = new BigNumber(0);
     }
   }
 
@@ -229,7 +230,7 @@ export class OrderUtil {
     const token = this.context.ERC20Contract.at(tokenAddress);
     const balance = await token.balanceOf(owner);
     const allowance = await token.allowance(owner, spender);
-    const spendable = Math.min(balance, allowance);
+    const spendable = BigNumber.min(balance, allowance);
     return spendable;
   }
 
@@ -262,8 +263,8 @@ export class OrderUtil {
       // Testing
       tokenSpendable.initialAmount = tokenSpendable.amount;
     }
-    let spendable = tokenSpendable.amount - tokenSpendable.reserved;
-    assert(spendable >= 0, "spendable >= 0");
+    let spendable = tokenSpendable.amount.minus(tokenSpendable.reserved);
+    assert(spendable.gte(0), "spendable >= 0");
     if (brokerInterceptor) {
       if (!brokerSpendable.initialized) {
         brokerSpendable.amount = await this.getBrokerAllowance(token,
@@ -274,9 +275,9 @@ export class OrderUtil {
         // Testing
         brokerSpendable.initialAmount = brokerSpendable.amount;
       }
-      const brokerSpendableAmount = brokerSpendable.amount - brokerSpendable.reserved;
-      assert(brokerSpendableAmount >= 0, "brokerSpendable >= 0");
-      spendable = (brokerSpendableAmount < spendable) ? brokerSpendableAmount : spendable;
+      const brokerSpendableAmount = brokerSpendable.amount.minus(brokerSpendable.reserved);
+      assert(brokerSpendableAmount.gte(0), "brokerSpendable >= 0");
+      spendable = (brokerSpendableAmount.lt(spendable)) ? brokerSpendableAmount : spendable;
     }
     return spendable;
   }

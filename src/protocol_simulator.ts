@@ -106,7 +106,7 @@ export class ProtocolSimulator {
     for (const order of orders) {
       // Check if this order needs to be completely filled
       if (order.allOrNone) {
-        order.valid = order.valid && (order.filledAmountS === order.amountS);
+        order.valid = order.valid && (order.filledAmountS.eq(order.amountS));
       }
     }
 
@@ -123,7 +123,7 @@ export class ProtocolSimulator {
             if (transferItem.token === ringTransferItem.token &&
                 transferItem.from === ringTransferItem.from &&
                 transferItem.to === ringTransferItem.to) {
-                transferItem.amount += ringTransferItem.amount;
+                transferItem.amount = transferItem.amount.plus(ringTransferItem.amount);
                 addNew = false;
             }
           }
@@ -136,8 +136,8 @@ export class ProtocolSimulator {
         // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
         if (validBefore) {
           for (const p of ring.participations) {
-                p.order.filledAmountS = p.order.filledAmountS - (p.fillAmountS + p.splitS);
-                assert(p.order.filledAmountS >= 0, "p.order.filledAmountS >= 0");
+                p.order.filledAmountS = p.order.filledAmountS.minus(p.fillAmountS.plus(p.splitS));
+                assert(p.order.filledAmountS.gte(0), "p.order.filledAmountS >= 0");
             }
         }
       }
@@ -178,7 +178,7 @@ export class ProtocolSimulator {
 
     const cancelledValue = new BigNumber("F".repeat(64), 16);
     for (const [i, order] of orders.entries()) {
-      order.filledAmountS = fills[i].toNumber();
+      order.filledAmountS = fills[i];
       order.valid = order.valid && ensure(!fills[i].equals(cancelledValue), "order is cancelled");
     }
   }
@@ -205,8 +205,8 @@ export class ProtocolSimulator {
       // Create a new one
       const newSpendable = {
         initialized: false,
-        amount: 0,
-        reserved: 0,
+        amount: new BigNumber(0),
+        reserved: new BigNumber(0),
       };
       const newBrokerSpendable = {
         broker,
@@ -271,7 +271,7 @@ export class ProtocolSimulator {
         const Token = this.context.ERC20Contract.at(order.tokenS);
         // feeRecipient
         if (!balancesBefore[token][mining.feeRecipient]) {
-          balancesBefore[token][mining.feeRecipient] = (await Token.balanceOf(mining.feeRecipient)).toNumber();
+          balancesBefore[token][mining.feeRecipient] = await Token.balanceOf(mining.feeRecipient);
         }
       }
     }
@@ -283,13 +283,15 @@ export class ProtocolSimulator {
         balanceDeltas[transfer.token] = {};
       }
       if (!balanceDeltas[transfer.token][transfer.from]) {
-        balanceDeltas[transfer.token][transfer.from] = 0;
+        balanceDeltas[transfer.token][transfer.from] = new BigNumber(0);
       }
       if (!balanceDeltas[transfer.token][transfer.to]) {
-        balanceDeltas[transfer.token][transfer.to] = 0;
+        balanceDeltas[transfer.token][transfer.to] = new BigNumber(0);
       }
-      balanceDeltas[transfer.token][transfer.from] -= transfer.amount;
-      balanceDeltas[transfer.token][transfer.to] += transfer.amount;
+      balanceDeltas[transfer.token][transfer.from] =
+        balanceDeltas[transfer.token][transfer.from].minus(transfer.amount);
+      balanceDeltas[transfer.token][transfer.to] =
+        balanceDeltas[transfer.token][transfer.to].plus(transfer.amount);
     }
 
     // Calculate the balances after the transaction
@@ -299,8 +301,9 @@ export class ProtocolSimulator {
         if (!balancesAfter[token]) {
           balancesAfter[token] = {};
         }
-        const delta = (balanceDeltas[token] && balanceDeltas[token][owner]) ? balanceDeltas[token][owner] : 0;
-        balancesAfter[token][owner] = balancesBefore[token][owner] + delta;
+        const delta = (balanceDeltas[token] && balanceDeltas[token][owner]) ?
+                      balanceDeltas[token][owner] : new BigNumber(0);
+        balancesAfter[token][owner] = balancesBefore[token][owner].plus(delta);
       }
     }
 
@@ -315,23 +318,23 @@ export class ProtocolSimulator {
         // Owner
         if (!feeBalancesBefore[token][order.owner]) {
           feeBalancesBefore[token][order.owner] =
-            await this.context.feeHolder.feeBalances(token, order.owner).toNumber();
+            await this.context.feeHolder.feeBalances(token, order.owner);
         }
         // Wallet
         if (order.walletAddr && !feeBalancesBefore[token][order.walletAddr]) {
           feeBalancesBefore[token][order.walletAddr] =
-            await this.context.feeHolder.feeBalances(token, order.walletAddr).toNumber();
+            await this.context.feeHolder.feeBalances(token, order.walletAddr);
         }
         // FeeRecipient
         if (!feeBalancesBefore[token][mining.feeRecipient]) {
           feeBalancesBefore[token][mining.feeRecipient] =
-            await this.context.feeHolder.feeBalances(token, mining.feeRecipient).toNumber();
+            await this.context.feeHolder.feeBalances(token, mining.feeRecipient);
         }
         // Burned
         const feeHolder = this.context.feeHolder.address;
         if (!feeBalancesBefore[token][feeHolder]) {
           feeBalancesBefore[token][feeHolder] =
-            await this.context.feeHolder.feeBalances(token, feeHolder).toNumber();
+            await this.context.feeHolder.feeBalances(token, feeHolder);
         }
       }
     }
@@ -343,17 +346,18 @@ export class ProtocolSimulator {
         if (!feeBalancesAfter[token]) {
           feeBalancesAfter[token] = {};
         }
-        const delta = (feeBalances[token] && feeBalances[token][owner]) ? feeBalances[token][owner] : 0;
-        feeBalancesAfter[token][owner] = feeBalancesBefore[token][owner] + delta;
+        const delta = (feeBalances[token] && feeBalances[token][owner]) ?
+                      feeBalances[token][owner] : new BigNumber(0);
+        feeBalancesAfter[token][owner] = feeBalancesBefore[token][owner].plus(delta);
       }
     }
 
     // Get the filled amounts
-    const filledAmounts: { [hash: string]: number; } = {};
+    const filledAmounts: { [hash: string]: BigNumber; } = {};
     for (const order of orders) {
-      let filledAmountS = order.filledAmountS ? order.filledAmountS : 0;
+      let filledAmountS = order.filledAmountS ? order.filledAmountS : new BigNumber(0);
       if (!order.valid) {
-        filledAmountS = await this.context.tradeDelegate.filled("0x" + order.hash.toString("hex")).toNumber();
+        filledAmountS = await this.context.tradeDelegate.filled("0x" + order.hash.toString("hex"));
       }
       filledAmounts[order.hash.toString("hex")] = filledAmountS;
     }
@@ -388,43 +392,40 @@ export class ProtocolSimulator {
     // Check if we haven't spent more funds than the owner owns
     for (const token of Object.keys(report.balancesAfter)) {
       for (const owner of Object.keys(report.balancesAfter[token])) {
-        const epsilon = 1000;
-        assert(report.balancesAfter[token][owner] >= -epsilon, "can't sell more tokens than the owner owns");
+        assert(report.balancesAfter[token][owner] >= 0, "can't sell more tokens than the owner owns");
       }
     }
 
     // Check if the spendables were updated correctly
     for (const order of orders) {
       if (order.tokenSpendableS.initialized) {
-        let amountTransferredS = 0;
+        let amountTransferredS = new BigNumber(0);
         for (const transfer of report.transferItems) {
           if (transfer.from === order.owner && transfer.token === order.tokenS) {
-            amountTransferredS += transfer.amount;
+            amountTransferredS = amountTransferredS.plus(transfer.amount);
           }
         }
-        const amountSpentS = order.tokenSpendableS.initialAmount - order.tokenSpendableS.amount;
+        const amountSpentS = order.tokenSpendableS.initialAmount.minus(order.tokenSpendableS.amount);
         // amountTransferred could be less than amountSpent because of rebates
-        const epsilon = 100000;
-        assert(amountSpentS >= amountTransferredS - epsilon, "amountSpentS >= amountTransferredS");
+        assert(amountSpentS.gte(amountTransferredS), "amountSpentS >= amountTransferredS");
       }
       if (order.tokenSpendableFee.initialized) {
-        let amountTransferredFee = 0;
+        let amountTransferredFee = new BigNumber(0);
         for (const transfer of report.transferItems) {
           if (transfer.from === order.owner && transfer.token === order.feeToken) {
-            amountTransferredFee += transfer.amount;
+            amountTransferredFee = amountTransferredFee.plus(transfer.amount);
           }
         }
-        const amountSpentFee = order.tokenSpendableFee.initialAmount - order.tokenSpendableFee.amount;
+        const amountSpentFee = order.tokenSpendableFee.initialAmount.minus(order.tokenSpendableFee.amount);
         // amountTransferred could be less than amountSpent because of rebates
-        const epsilon = 100000;
-        assert(amountSpentFee >= amountTransferredFee - epsilon, "amountSpentFee >= amountTransferredFee");
+        assert(amountSpentFee.gte(amountTransferredFee), "amountSpentFee >= amountTransferredFee");
       }
     }
 
     // Check if the allOrNone orders were correctly filled
     for (const order of orders) {
       if (order.allOrNone) {
-        assert(order.filledAmountS === 0 || order.filledAmountS === order.amountS,
+        assert(order.filledAmountS.eq(0) || order.filledAmountS.eq(order.amountS),
                "allOrNone orders should either be completely filled or not at all.");
       }
     }
