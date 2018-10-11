@@ -31,16 +31,16 @@ contract ERC20 {
     function balanceOf(
         address who
         )
-        view
         public
+        view
         returns (uint256);
 
     function allowance(
         address owner,
         address spender
         )
-        view
         public
+        view
         returns (uint256);
 
     function transfer(

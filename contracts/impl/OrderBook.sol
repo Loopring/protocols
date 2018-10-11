@@ -95,8 +95,8 @@ contract OrderBook is IOrderBook, NoDefaultFunc, Errors {
     }
 
     function getOrderData(bytes32 orderHash)
-        view
         external
+        view
         returns (bytes32[])
     {
         return orders[orderHash];

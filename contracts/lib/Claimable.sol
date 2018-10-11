@@ -19,6 +19,7 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "./Ownable.sol";
+import "../iface/Errors.sol";
 
 
 /// @title Claimable
@@ -29,7 +30,7 @@ contract Claimable is Ownable {
 
     /// @dev Modifier throws if called by any account other than the pendingOwner.
     modifier onlyPendingOwner() {
-        require(msg.sender == pendingOwner);
+        require(msg.sender == pendingOwner, INVALID_ADDRESS);
         _;
     }
 
@@ -38,17 +39,17 @@ contract Claimable is Ownable {
     function transferOwnership(
         address newOwner
         )
-        onlyOwner
         public
+        onlyOwner
     {
-        require(newOwner != 0x0 && newOwner != owner);
+        require(newOwner != 0x0 && newOwner != owner, INVALID_ADDRESS);
         pendingOwner = newOwner;
     }
 
     /// @dev Allows the pendingOwner address to finalize the transfer.
     function claimOwnership()
-        onlyPendingOwner
         public
+        onlyPendingOwner
     {
         emit OwnershipTransferred(owner, pendingOwner);
         owner = pendingOwner;

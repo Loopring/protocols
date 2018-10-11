@@ -64,8 +64,8 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
     function authorizeAddress(
         address addr
         )
-        onlyOwner
         external
+        onlyOwner
     {
         require(0x0 != addr, ZERO_ADDRESS);
         require(0 == positionMap[addr], ALREADY_EXIST);
@@ -79,8 +79,8 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
     function deauthorizeAddress(
         address addr
         )
-        onlyOwner
         external
+        onlyOwner
     {
         require(0x0 != addr, ZERO_ADDRESS);
 
@@ -101,9 +101,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
     }
 
     function batchTransfer(bytes32[] batch)
+        external
         onlyAuthorized
         notSuspended
-        external
     {
         uint length = batch.length;
         require(length % 4 == 0, INVALID_SIZE);
@@ -133,9 +133,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
     }
 
     function batchUpdateFilled(bytes32[] filledInfo)
+        external
         onlyAuthorized
         notSuspended
-        external
     {
         uint length = filledInfo.length;
         require(length % 2 == 0, INVALID_SIZE);
@@ -167,9 +167,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         address broker,
         bytes32 orderHash
         )
+        external
         onlyAuthorized
         notSuspended
-        external
     {
         cancelled[broker][orderHash] = true;
     }
@@ -178,9 +178,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         address broker,
         uint    cutoff
         )
+        external
         onlyAuthorized
         notSuspended
-        external
     {
         require(cutoffs[broker] < cutoff, INVALID_VALUE);
         cutoffs[broker] = cutoff;
@@ -191,9 +191,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         bytes20 tokenPair,
         uint    cutoff
         )
+        external
         onlyAuthorized
         notSuspended
-        external
     {
         require(tradingPairCutoffs[broker][tokenPair] < cutoff, INVALID_VALUE);
         tradingPairCutoffs[broker][tokenPair] = cutoff;
@@ -204,9 +204,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         address owner,
         uint    cutoff
         )
+        external
         onlyAuthorized
         notSuspended
-        external
     {
         require(cutoffsOwner[broker][owner] < cutoff, INVALID_VALUE);
         cutoffsOwner[broker][owner] = cutoff;
@@ -218,9 +218,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
         bytes20 tokenPair,
         uint    cutoff
         )
+        external
         onlyAuthorized
         notSuspended
-        external
     {
         require(tradingPairCutoffsOwner[broker][owner][tokenPair] < cutoff, INVALID_VALUE);
         tradingPairCutoffsOwner[broker][owner][tokenPair] = cutoff;
@@ -264,26 +264,26 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
     }
 
     function suspend()
+        external
         onlyOwner
         notSuspended
-        external
     {
         suspended = true;
     }
 
     function resume()
+        external
         onlyOwner
         isSuspended
-        external
     {
         suspended = false;
     }
 
     /// owner must suspend the delegate first before invoking the kill method.
     function kill()
+        external
         onlyOwner
         isSuspended
-        external
     {
         owner = 0x0;
         emit OwnershipTransferred(owner, 0x0);

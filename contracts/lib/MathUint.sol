@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 
 /// @title Utility Functions for uint
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -32,7 +33,7 @@ library MathUint {
         returns (uint c)
     {
         c = a * b;
-        require(a == 0 || c / a == b);
+        require(a == 0 || c / a == b, INVALID_VALUE);
     }
 
     function sub(
@@ -43,7 +44,7 @@ library MathUint {
         pure
         returns (uint)
     {
-        require(b <= a);
+        require(b <= a, INVALID_VALUE);
         return a - b;
     }
 
@@ -56,6 +57,6 @@ library MathUint {
         returns (uint c)
     {
         c = a + b;
-        require(c >= a);
+        require(c >= a, INVALID_VALUE);
     }
 }

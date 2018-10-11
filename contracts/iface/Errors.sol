@@ -39,4 +39,7 @@ contract Errors {
     string constant BURN_RATE_FROZEN           = "BURN_RATE_FROZEN";
     string constant BURN_RATE_MINIMIZED        = "BURN_RATE_MINIMIZED";
     string constant UNAUTHORIZED_ONCHAIN_ORDER = "UNAUTHORIZED_ONCHAIN_ORDER";
+    string constant INVALID_CANDIDATE          = "INVALID_CANDIDATE";
+    string constant ALREADY_VOTED              = "ALREADY_VOTED";
+    string constant NOT_OWNER                  = "NOT_OWNER";
 }

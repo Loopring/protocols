@@ -37,15 +37,15 @@ contract Migrations {
     }
 
     function setCompleted(uint completed)
-        restricted
         public
+        restricted
     {
         last_completed_migration = completed;
     }
 
     function upgrade(address newAddress)
-        restricted
         public
+        restricted
     {
         Migrations upgraded = Migrations(newAddress);
         upgraded.setCompleted(last_completed_migration);

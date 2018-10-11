@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "../lib/ERC20.sol";
+import "../iface/Errors.sol";
 
 contract Voting {
     /*
@@ -30,7 +31,7 @@ contract Voting {
         view
         returns (uint256)
     {
-        require(validCandidate(candidate));
+        require(validCandidate(candidate), INVALID_CANDIDATE);
 
         return votesReceived[candidate];
     }
@@ -40,8 +41,8 @@ contract Voting {
         )
         public
     {
-        require(validCandidate(candidate));
-        require(voteFlag[msg.sender] != true);
+        require(validCandidate(candidate), INVALID_CANDIDATE);
+        require(voteFlag[msg.sender] != true, ALREADY_VOTED);
 
         uint256 balance = ERC20(lrcAddress).balanceOf(msg.sender);
         votesReceived[candidate] += balance;
