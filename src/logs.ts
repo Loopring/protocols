@@ -1,6 +1,6 @@
 
 export function logInfo(...args: any[]) {
-  if (process.argv.indexOf("-i") > -1) {
+  if (process.argv.indexOf("-i") > -1 || process.argv.indexOf("-x") > -1) {
     console.log(...args);
   }
 }
