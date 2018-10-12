@@ -19,7 +19,7 @@
     "compile": "rm -rf build/contracts && truffle compile",
     "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
-    "testrpc": "ganache-cli -a 25",
+    "testrpc": "ganache-cli -a 50",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "truffle": "truffle"
   },

@@ -34,7 +34,9 @@ contract DeserializerTest {
 
     function deserialize(bytes data)
         external
-        view
+    /// we should not decorate this function as a view function because view function will not
+    /// return tx recipient info after calling in uint test.
+    // view
     {
         (
             Data.Mining  memory mining,
@@ -49,7 +51,7 @@ contract DeserializerTest {
                             address[] addresses,
                             uint ringSize)
         external
-        view
+    // view
     {
         // Data.Mining  memory mining = Data.Mining(
         //     addresses[0],
