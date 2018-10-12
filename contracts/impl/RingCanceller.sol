@@ -18,23 +18,22 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/Errors.sol";
+import "../helper/MiningHelper.sol";
+import "../helper/OrderHelper.sol";
+import "../helper/RingHelper.sol";
+
 import "../iface/IBrokerRegistry.sol";
-import "../iface/IRingCanceller.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IOrderRegistry.sol";
+import "../iface/IRingCanceller.sol";
 import "../iface/ITradeDelegate.sol";
 
 import "../lib/BytesUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/MemoryUtil.sol";
-import "../lib/NoDefaultFunc.sol";
 import "../lib/MultihashUtil.sol";
-
-import "../helper/MiningHelper.sol";
-import "../helper/OrderHelper.sol";
-import "../helper/RingHelper.sol";
+import "../lib/NoDefaultFunc.sol";
 
 import "./Data.sol";
 import "./ExchangeDeserializer.sol";
@@ -49,7 +48,7 @@ import "./ExchangeDeserializer.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract RingCanceller is IRingCanceller, NoDefaultFunc, Errors {
+contract RingCanceller is IRingCanceller, NoDefaultFunc {
 
     address public delegateAddress = 0x0;
 

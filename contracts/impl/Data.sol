@@ -19,11 +19,11 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IBrokerRegistry.sol";
-import "../iface/IOrderRegistry.sol";
-import "../iface/ITradeDelegate.sol";
+import "../iface/IBurnRateTable.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IOrderBook.sol";
-import "../iface/IBurnRateTable.sol";
+import "../iface/IOrderRegistry.sol";
+import "../iface/ITradeDelegate.sol";
 
 
 library Data {

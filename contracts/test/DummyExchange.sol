@@ -18,9 +18,10 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/ITradeDelegate.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IRingSubmitter.sol";
+import "../iface/ITradeDelegate.sol";
+
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract DummyExchange {

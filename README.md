@@ -12,6 +12,7 @@ npm install --global --production windows-build-tools
 Then run the following commands from project's root directory:
 
 ```
+npm install sha3
 npm install
 npm run compile
 ```

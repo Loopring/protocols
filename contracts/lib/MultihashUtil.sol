@@ -20,6 +20,7 @@ pragma experimental "ABIEncoderV2";
 
 import "./BytesUtil.sol";
 
+
 /// @title Utility Functions for Multihash signature verificaiton
 /// @author Daniel Wang - <daniel@loopring.org>
 /// For more information:

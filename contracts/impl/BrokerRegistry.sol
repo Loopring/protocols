@@ -18,14 +18,14 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/IBrokerRegistry.sol";
 import "../iface/Errors.sol";
+import "../iface/IBrokerRegistry.sol";
 import "../lib/NoDefaultFunc.sol";
 
 
 /// @title An Implementation of IBrokerRegistry.
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc, Errors {
+contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
     struct Broker {
         address owner;
         address addr;

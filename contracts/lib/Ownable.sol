@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+
 /// @title Ownable
 /// @dev The Ownable contract has an owner address, and provides basic
 ///      authorization control functions, this simplifies the implementation of

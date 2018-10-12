@@ -20,6 +20,7 @@ pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
 
+
 /**
  * @title ERC20Basic
  * @dev Simpler version of ERC20 interface
@@ -205,7 +206,7 @@ contract StandardToken is ERC20, BasicToken {
     }
 }
 
-contract LRCToken is StandardToken {
+contract LRCToken is StandardToken, Errors {
     using SafeMath for uint256;
 
     string     public name = "New Loopring token on ethereum";
@@ -289,7 +290,7 @@ contract LRCToken is StandardToken {
         external
         payable
     {
-        revert();
+        revert(UNSUPPORTED);
     }
 
 }

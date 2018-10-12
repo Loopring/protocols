@@ -18,7 +18,6 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/Errors.sol";
 import "../iface/ITradeDelegate.sol";
 import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
@@ -31,7 +30,7 @@ import "../lib/NoDefaultFunc.sol";
 /// @title An Implementation of ITradeDelegate.
 /// @author Daniel Wang - <daniel@loopring.org>.
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
-contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc, Errors {
+contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
     using MathUint for uint;
     using ERC20SafeTransfer for address;
 

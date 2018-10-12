@@ -18,13 +18,15 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
 import "./ERC20.sol";
 import "./MathUint.sol";
+
 
 /// @title ERC20 Token Implementation
 /// @dev see https://github.com/ethereum/EIPs/issues/20
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ERC20Token is ERC20 {
+contract ERC20Token is ERC20, Errors{
     using MathUint for uint;
 
     string  public name;
@@ -72,7 +74,7 @@ contract ERC20Token is ERC20 {
         external
         payable
     {
-        revert();
+        revert(UNSUPPORTED);
     }
 
     /**

@@ -61,6 +61,7 @@ library ParticipationHelper {
             p.feeAmountB = 0;
 
             // If feeToken == tokenB AND owner == tokenRecipient, try to pay using fillAmountB
+
             if (p.order.feeToken == p.order.tokenB &&
                 p.order.owner == p.order.tokenRecipient &&
                 p.fillAmountB >= p.feeAmount) {
