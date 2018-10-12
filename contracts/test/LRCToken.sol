@@ -92,8 +92,8 @@ contract BasicToken is ERC20Basic {
      * @param _value The amount to be transferred.
      */
     function transfer(address _to, uint256 _value) public returns (bool) {
-        require(_to != 0x0, ZERO_ADDRESS);
-        require(_value <= balances[msg.sender], INVALID_VALUE);
+        require(_to != 0x0, "ZERO_ADDRESS");
+        require(_value <= balances[msg.sender], "INVALID_VALUE");
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
         balances[_to] = balances[_to].add(_value);
@@ -135,9 +135,9 @@ contract StandardToken is ERC20, BasicToken {
      * @param _value uint256 the amount of tokens to be transferred
      */
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
-        require(_to != 0x0, ZERO_ADDRESS);
-        require(_value <= balances[_from], INVALID_VALUE);
-        require(_value <= allowed[_from][msg.sender], INVALID_VALUE);
+        require(_to != 0x0, "ZERO_ADDRESS");
+        require(_value <= balances[_from], "INVALID_VALUE");
+        require(_value <= allowed[_from][msg.sender], "INVALID_VALUE");
         balances[_from] = balances[_from].sub(_value);
         balances[_to] = balances[_to].add(_value);
         allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
@@ -215,7 +215,7 @@ contract LRCToken is StandardToken {
     event Burn(address indexed burner, uint256 value);
 
     function burn(uint256 _value) public returns (bool) {
-        require(_value <= balances[msg.sender], INVALID_VALUE);
+        require(_value <= balances[msg.sender], "INVALID_VALUE");
 
         address burner = msg.sender;
         balances[burner] = balances[burner].sub(_value);
@@ -226,9 +226,9 @@ contract LRCToken is StandardToken {
     }
 
     function burnFrom(address _owner, uint256 _value) public returns (bool) {
-        require(_owner != 0x0, ZERO_ADDRESS);
-        require(_value <= balances[_owner], INVALID_VALUE);
-        require(_value <= allowed[_owner][msg.sender], INVALID_VALUE);
+        require(_owner != 0x0, "ZERO_ADDRESS");
+        require(_value <= balances[_owner], "INVALID_VALUE");
+        require(_value <= allowed[_owner][msg.sender], "INVALID_VALUE");
 
         balances[_owner] = balances[_owner].sub(_value);
         allowed[_owner][msg.sender] = allowed[_owner][msg.sender].sub(_value);
@@ -248,8 +248,8 @@ contract LRCToken is StandardToken {
         )
         public
     {
-        require(_totalSupply > 0, INVALID_VALUE);
-        require(_firstHolder != 0x0, ZERO_ADDRESS);
+        require(_totalSupply > 0, "INVALID_VALUE");
+        require(_firstHolder != 0x0, "ZERO_ADDRESS");
         checkSymbolAndName(_symbol,_name);
 
         name = _name;
@@ -269,19 +269,19 @@ contract LRCToken is StandardToken {
         pure
     {
         bytes memory s = bytes(_symbol);
-        require(s.length >= 3 && s.length <= 8, INVALID_SIZE);
+        require(s.length >= 3 && s.length <= 8, "INVALID_SIZE");
         for (uint i = 0; i < s.length; i++) {
             // make sure symbol contains only [A-Za-z._]
             require(
                 s[i] == 0x2E || (
                 s[i] == 0x5F) || (
                 s[i] >= 0x41 && s[i] <= 0x5A) || (
-                s[i] >= 0x61 && s[i] <= 0x7A), INVALID_VALUE);
+                s[i] >= 0x61 && s[i] <= 0x7A), "INVALID_VALUE");
         }
         bytes memory n = bytes(_name);
-        require(n.length >= s.length && n.length <= 128, INVALID_SIZE);
+        require(n.length >= s.length && n.length <= 128, "INVALID_SIZE");
         for (uint i = 0; i < n.length; i++) {
-            require(n[i] >= 0x20 && n[i] <= 0x7E, INVALID_VALUE);
+            require(n[i] >= 0x20 && n[i] <= 0x7E, "INVALID_VALUE");
         }
     }
 

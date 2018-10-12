@@ -19,7 +19,6 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 import "./MemoryUtil.sol";
-import "../iface/Errors.sol";
 
 /// @title Utility Functions for bytes
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -32,7 +31,7 @@ library BytesUtil {
         pure
         returns (bytes32 out)
     {
-        require(b.length >= offset + 32, INVALID_SIZE);
+        require(b.length >= offset + 32, "INVALID_SIZE");
         bytes32 temp;
         assembly {
             temp := mload(add(add(b, 0x20), offset))

@@ -17,7 +17,6 @@
 pragma solidity 0.4.24;
 
 import "./LRCToken.sol";
-import "../iface/Errors.sol";
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract DummyToken is LRCToken {
@@ -60,7 +59,7 @@ contract DummyToken is LRCToken {
         public
     {
         uint currBalance = balanceOf(_target);
-        require(_value + currBalance >= currBalancei, INVALID_VALUE);
+        require(_value + currBalance >= currBalance, "INVALID_VALUE");
         totalSupply_ = totalSupply_.add(_value);
         balances[_target] = currBalance.add(_value);
     }

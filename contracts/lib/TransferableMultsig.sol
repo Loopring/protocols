@@ -23,7 +23,7 @@ import "../iface/Errors.sol";
 
 /// @title An Implementation of ITransferableMultsig
 /// @author Daniel Wang - <daniel@loopring.org>.
-contract TransferableMultsig is ITransferableMultsig {
+contract TransferableMultsig is ITransferableMultsig, Errors {
 
     uint public nonce;                  // (only) mutable state
     uint public threshold;              // immutable state
