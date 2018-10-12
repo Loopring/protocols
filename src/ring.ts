@@ -531,7 +531,6 @@ export class Ring {
       const p = this.participations[i];
       const prevP = this.participations[prevIndex];
 
-
       logDebug("p.spendableS:           " + p.ringSpendableS.toNumber() / 1e18);
       logDebug("p.spendableFee:         " + p.ringSpendableFee.toNumber() / 1e18);
       logDebug("order.amountS:          " + p.order.amountS / 1e18);
