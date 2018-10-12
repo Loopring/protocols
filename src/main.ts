@@ -1,4 +1,5 @@
 import fs = require("fs");
+import { logDebug } from "./logs";
 import { ProtocolSimulator } from "./protocol_simulator";
 import { RingsInfo } from "./types";
 
@@ -20,7 +21,7 @@ function parseArgs(): [boolean, string] {
     }
   } else if (args[0] === "-b") {
     const binData = args[1];
-    console.log(binData);
+    logDebug(binData);
   } else {
     if (args[0].startsWith("-")) {
       throw new Error("error: invalid argument:" + args[0]);
@@ -38,17 +39,17 @@ async function main() {
 
   const protocolSimulator = new ProtocolSimulator(undefined);
   if (isBinData) {
-    console.log("receive binary data, deserializing...");
+    logDebug("receive binary data, deserializing...");
     ringsInfo = protocolSimulator.deserialize(data, "");
-    console.log("deserialize result:", ringsInfo);
+    logDebug("deserialize result:", ringsInfo);
   } else {
     ringsInfo = JSON.parse(data);
-    console.log("receive ringsInfo data:", ringsInfo);
+    logDebug("receive ringsInfo data:", ringsInfo);
   }
 
-  console.log("run simulator and report:");
+  logDebug("run simulator and report:");
   const report = await protocolSimulator.simulateAndReport(ringsInfo);
-  console.log(report);
+  logDebug(report);
 }
 
 main();

@@ -6,6 +6,7 @@ import ethUtil = require("ethereumjs-util");
 import Web3 = require("web3");
 import { Bitstream } from "./bitstream";
 import { Context } from "./context";
+import { logDebug } from "./logs";
 import { MultiHashUtil } from "./multihash";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
@@ -164,10 +165,10 @@ export class RingsGenerator {
     param.ringSpecs = ringsInfo.rings;
     ringsInfo.orders.map((o) => this.createOrderTable(o, param));
 
-    // console.log("transactionOrigin: " + ringsInfo.transactionOrigin);
-    // console.log("feeRecipient: " + ringsInfo.feeRecipient);
-    // console.log("miner: " + ringsInfo.miner);
-    ringsInfo.orders.forEach((o) => console.log(o));
+    // logDebug("transactionOrigin: " + ringsInfo.transactionOrigin);
+    // logDebug("feeRecipient: " + ringsInfo.feeRecipient);
+    // logDebug("miner: " + ringsInfo.miner);
+    ringsInfo.orders.forEach((o) => logDebug(o));
     return param;
   }
 

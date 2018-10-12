@@ -3,6 +3,7 @@ import ABI = require("ethereumjs-abi");
 import { Bitstream } from "./bitstream";
 import { Context } from "./context";
 import { ensure } from "./ensure";
+import { logDebug } from "./logs";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
 import { DetailedTokenTransfer, OrderInfo, OrderPayments, Participation, RingPayments, TransferItem } from "./types";
@@ -530,29 +531,30 @@ export class Ring {
       const p = this.participations[i];
       const prevP = this.participations[prevIndex];
 
-      console.log("p.spendableS:           " + p.ringSpendableS.toNumber() / 1e18);
-      console.log("p.spendableFee:         " + p.ringSpendableFee.toNumber() / 1e18);
-      console.log("order.amountS:          " + p.order.amountS / 1e18);
-      console.log("order.amountB:          " + p.order.amountB / 1e18);
-      console.log("order.feeAmount:        " + p.order.feeAmount / 1e18);
-      console.log("order expected rate:    " + p.order.amountS / p.order.amountB);
-      console.log("p.fillAmountS:          " + p.fillAmountS.toNumber() / 1e18);
-      console.log("p.fillAmountB:          " + p.fillAmountB.toNumber() / 1e18);
-      console.log("p.splitS:               " + p.splitS.toNumber() / 1e18);
-      console.log("order actual rate:      " + p.fillAmountS.plus(p.splitS).div(p.fillAmountB).toNumber());
-      console.log("p.feeAmount:            " + p.feeAmount.toNumber() / 1e18);
-      console.log("p.feeAmountS:           " + p.feeAmountS.toNumber() / 1e18);
-      console.log("p.feeAmountB:           " + p.feeAmountB.toNumber() / 1e18);
-      console.log("p.rebateFee:            " + p.rebateFee.toNumber() / 1e18);
-      console.log("p.rebateS:              " + p.rebateS.toNumber() / 1e18);
-      console.log("p.rebateB:              " + p.rebateB.toNumber() / 1e18);
-      console.log("tokenS percentage:      " + (p.order.P2P ? p.order.tokenSFeePercentage : 0) /
+
+      logDebug("p.spendableS:           " + p.ringSpendableS.toNumber() / 1e18);
+      logDebug("p.spendableFee:         " + p.ringSpendableFee.toNumber() / 1e18);
+      logDebug("order.amountS:          " + p.order.amountS / 1e18);
+      logDebug("order.amountB:          " + p.order.amountB / 1e18);
+      logDebug("order.feeAmount:        " + p.order.feeAmount / 1e18);
+      logDebug("order expected rate:    " + p.order.amountS / p.order.amountB);
+      logDebug("p.fillAmountS:          " + p.fillAmountS.toNumber() / 1e18);
+      logDebug("p.fillAmountB:          " + p.fillAmountB.toNumber() / 1e18);
+      logDebug("p.splitS:               " + p.splitS.toNumber() / 1e18);
+      logDebug("order actual rate:      " + p.fillAmountS.plus(p.splitS).div(p.fillAmountB).toNumber());
+      logDebug("p.feeAmount:            " + p.feeAmount.toNumber() / 1e18);
+      logDebug("p.feeAmountS:           " + p.feeAmountS.toNumber() / 1e18);
+      logDebug("p.feeAmountB:           " + p.feeAmountB.toNumber() / 1e18);
+      logDebug("p.rebateFee:            " + p.rebateFee.toNumber() / 1e18);
+      logDebug("p.rebateS:              " + p.rebateS.toNumber() / 1e18);
+      logDebug("p.rebateB:              " + p.rebateB.toNumber() / 1e18);
+      logDebug("tokenS percentage:      " + (p.order.P2P ? p.order.tokenSFeePercentage : 0) /
                                                this.context.feePercentageBase);
-      console.log("tokenS real percentage: " + p.feeAmountS.toNumber() / p.order.amountS);
-      console.log("tokenB percentage:      " +
+      logDebug("tokenS real percentage: " + p.feeAmountS.toNumber() / p.order.amountS);
+      logDebug("tokenB percentage:      " +
         (p.order.P2P ? p.order.tokenBFeePercentage : p.order.feePercentage) / this.context.feePercentageBase);
-      console.log("tokenB real percentage: " + p.feeAmountB.toNumber() / p.fillAmountB.toNumber());
-      console.log("----------------------------------------------");
+      logDebug("tokenB real percentage: " + p.feeAmountB.toNumber() / p.fillAmountB.toNumber());
+      logDebug("----------------------------------------------");
 
       // Sanity checks
       assert(p.fillAmountS.gte(0), "fillAmountS should be positive");

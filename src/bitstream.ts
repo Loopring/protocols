@@ -59,7 +59,7 @@ export class Bitstream {
 
   public addRawBytes(bs: string, forceAppend = true) {
     const bsHex = web3.toHex(bs);
-    // console.log("bsHex:", bsHex);
+    // logDebug("bsHex:", bsHex);
     return this.insert(bsHex.slice(2), forceAppend);
   }
 
@@ -117,7 +117,7 @@ export class Bitstream {
         start = this.data.indexOf(x, start);
         if (start !== -1) {
           if ((start % 2) === 0) {
-            // console.log("++ Reused " + x + " at location " + start / 2);
+            // logDebug("++ Reused " + x + " at location " + start / 2);
             return start / 2;
           } else {
             start++;

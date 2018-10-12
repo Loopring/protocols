@@ -1,7 +1,8 @@
+import { logDebug } from "./logs";
 
 export function ensure(valid: boolean, description: string) {
   if (!valid) {
-    console.log(description);
+    logDebug(description);
   }
   return valid;
 }

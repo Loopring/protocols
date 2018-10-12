@@ -5,6 +5,7 @@ import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import Web3 = require("web3");
 import { Bitstream } from "./bitstream";
+import { logDebug } from "./logs";
 import { OrderInfo, RingsInfo, SignAlgorithm } from "./types";
 
 export class MultiHashUtil {
@@ -19,7 +20,7 @@ export class MultiHashUtil {
         this.web3Instance = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
       }
     } catch (err) {
-      console.log("get web3 instance in Order class failed. err:", err);
+      logDebug("get web3 instance in Order class failed. err:", err);
     }
   }
 
@@ -103,7 +104,7 @@ export class MultiHashUtil {
     //   method: "eth_signTypedData",
     //   params: [msgParams, order.owner],
     //   from: order.owner,
-    // }, (err?: Error, result?: Web3.JSONRPCResponsePayload) => { console.log("Hashing: " + result.result); });
+    // }, (err?: Error, result?: Web3.JSONRPCResponsePayload) => { logDebug("Hashing: " + result.result); });
 
     sig.addNumber(1 + 32 + 32, 1);
     sig.addNumber(v, 1);

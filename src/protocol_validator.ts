@@ -1,5 +1,6 @@
 import { BigNumber } from "bignumber.js";
 import { Context } from "./context";
+import { logDebug } from "./logs";
 import { OrderUtil } from "./order";
 import { OrderExpectation, OrderInfo, RingsInfo, SimulatorReport } from "./types";
 
@@ -95,6 +96,7 @@ export class ProtocolValidator {
                                                                     feePayments);
 
         // Balances
+
         const totalS = orderSettlement.amountS.minus(orderSettlement.rebateS);
         const totalB = orderSettlement.amountB.minus(orderSettlement.amountFeeB).plus(orderSettlement.rebateB);
         const totalFee = orderSettlement.amountFee.minus(orderSettlement.rebateFee);
@@ -128,6 +130,7 @@ export class ProtocolValidator {
       for (const owner of Object.keys(expectedBalances[token])) {
         // const ownerName = addressBook[owner];
         // const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
+
         // console.log("[Sim]" + ownerName + ": " +
         //   report.balancesAfter[token][owner].toNumber() / 1e18 + " " + tokenSymbol);
         // console.log("[Exp]" + ownerName + ": " +
@@ -146,6 +149,7 @@ export class ProtocolValidator {
       for (const owner of Object.keys(expectedFeeBalances[token])) {
         // const ownerName = addressBook[owner];
         // const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
+
         // console.log("[Sim]" + ownerName + ": " + report.feeBalancesAfter[token][owner] / 1e18 + " " + tokenSymbol);
         // console.log("[Exp]" + ownerName + ": " + expectedFeeBalances[token][owner] / 1e18 + " " + tokenSymbol);
         this.assertAlmostEqual(report.feeBalancesAfter[token][owner].toNumber(),
