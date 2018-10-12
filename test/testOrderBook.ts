@@ -1,6 +1,6 @@
 import { BN } from "bn.js";
 import abi = require("ethereumjs-abi");
-import { expectThrow, OrderInfo, OrderUtil } from "protocol2-js";
+import { expectThrow, logDebug, OrderInfo, OrderUtil } from "protocol2-js";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 
@@ -43,7 +43,7 @@ contract("OrderBook", (accounts: string[]) => {
     const events: any = await getEventsFromContract(contract, eventName, 0);
 
     events.forEach((e: any) => {
-      console.log("event:", util.inspect(e.args, false, null));
+      logDebug("event:", util.inspect(e.args, false, null));
     });
   };
 

@@ -61,7 +61,7 @@ export class ExchangeTestUtil {
     const events: any = await this.getEventsFromContract(contract, eventName, 0);
 
     events.forEach((e: any) => {
-      console.log("event:", util.inspect(e.args, false, null));
+      pjs.logDebug("event:", util.inspect(e.args, false, null));
     });
   }
 
@@ -77,9 +77,9 @@ export class ExchangeTestUtil {
     const amount = (payment.amount / 1e18);
     if (payment.subPayments.length === 0) {
       const toName =  addressBook[payment.to];
-      console.log(whiteSpace + "- " + " [" + description + "] " + amount + " " + tokenSymbol + " -> " + toName);
+      pjs.logDebug(whiteSpace + "- " + " [" + description + "] " + amount + " " + tokenSymbol + " -> " + toName);
     } else {
-      console.log(whiteSpace + "+ " + " [" + description + "] " + amount + " " + tokenSymbol);
+      pjs.logDebug(whiteSpace + "+ " + " [" + description + "] " + amount + " " + tokenSymbol);
       for (const subPayment of payment.subPayments) {
         this.logDetailedTokenTransfer(addressBook, subPayment, depth + 1);
       }
@@ -89,9 +89,9 @@ export class ExchangeTestUtil {
   public logDetailedTokenTransfers(ringsInfo: pjs.RingsInfo, report: pjs.SimulatorReport) {
     const addressBook = this.getAddressBook(ringsInfo);
     for (const [r, ring] of report.payments.rings.entries()) {
-      console.log("# Payments for ring " + r + ": ");
+      pjs.logDebug("# Payments for ring " + r + ": ");
       for (const [o, order] of ring.orders.entries()) {
-        console.log("## Order " + o + ": ");
+        pjs.logDebug("## Order " + o + ": ");
         for (const payment of order.payments) {
           this.logDetailedTokenTransfer(addressBook, payment, 1);
         }
@@ -326,19 +326,19 @@ export class ExchangeTestUtil {
     transfersFromSimulator.sort(sorter);
     tranferEvents.sort(sorter);
     const addressBook = this.getAddressBook(ringsInfo);
-    console.log("transfer items from simulator:");
+    pjs.logDebug("transfer items from simulator:");
     transfersFromSimulator.forEach((t) => {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
       const fromName = addressBook[t[1]];
       const toName = addressBook[t[2]];
-      console.log(fromName + " -> " + toName + " : " + t[3].toNumber() / 1e18 + " " + tokenSymbol);
+      pjs.logDebug(fromName + " -> " + toName + " : " + t[3].toNumber() / 1e18 + " " + tokenSymbol);
     });
-    console.log("transfer items from contract:");
+    pjs.logDebug("transfer items from contract:");
     tranferEvents.forEach((t) => {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
       const fromName = addressBook[t[1]];
       const toName = addressBook[t[2]];
-      console.log(fromName + " -> " + toName + " : " + t[3].toNumber() / 1e18 + " " + tokenSymbol);
+      pjs.logDebug(fromName + " -> " + toName + " : " + t[3].toNumber() / 1e18 + " " + tokenSymbol);
     });
     assert.equal(tranferEvents.length, transfersFromSimulator.length, "Number of transfers do not match");
     for (let i = 0; i < tranferEvents.length; i++) {
@@ -355,7 +355,7 @@ export class ExchangeTestUtil {
                                  feeBalancesBefore: { [id: string]: any; },
                                  feeBalancesAfter: { [id: string]: any; }) {
     const addressBook = this.getAddressBook(ringsInfo);
-    console.log("Fee balances:");
+    pjs.logDebug("Fee balances:");
     for (const token of Object.keys(feeBalancesAfter)) {
       for (const owner of Object.keys(feeBalancesAfter[token])) {
         const balanceFromSimulator = feeBalancesAfter[token][owner];
@@ -363,7 +363,7 @@ export class ExchangeTestUtil {
         if (!feeBalancesBefore[token][owner].eq(feeBalancesAfter[token][owner])) {
           const ownerName = addressBook[owner] ? addressBook[owner] : owner;
           const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
-          console.log(ownerName + ": " +
+          pjs.logDebug(ownerName + ": " +
                       balanceFromContract  / 1e18 + " " + tokenSymbol + " " +
                       "(Simulator: " + balanceFromSimulator  / 1e18 + ")");
         }
@@ -375,7 +375,7 @@ export class ExchangeTestUtil {
   public async assertFilledAmounts(ringsInfo: pjs.RingsInfo,
                                    filledAmounts: { [hash: string]: BigNumber; }) {
     const addressBook = this.getAddressBook(ringsInfo);
-    console.log("Filled amounts:");
+    pjs.logDebug("Filled amounts:");
     for (const hash of Object.keys(filledAmounts)) {
       let hashOrder: pjs.OrderInfo = null;
       for (const order of ringsInfo.orders) {
@@ -390,7 +390,7 @@ export class ExchangeTestUtil {
         percentageFilled = filledFromContract.toNumber() * 100 / hashOrder.amountS;
       }
       const hashName = addressBook[hash];
-      console.log(hashName + ": " + filledFromContract.toNumber() / 1e18 +
+      pjs.logDebug(hashName + ": " + filledFromContract.toNumber() / 1e18 +
                   " (Simulator: " + filledFromSimulator.toNumber() / 1e18 + ")" +
                   " (" + percentageFilled + "%)");
       assert(filledFromContract.eq(filledFromSimulator));
@@ -527,16 +527,16 @@ export class ExchangeTestUtil {
       report = await simulator.simulateAndReport(deserializedRingsInfo);
       this.logDetailedTokenTransfers(ringsInfo, report);
     } catch (err) {
-      console.log("Simulator reverted -> " + err);
+      pjs.logDebug("Simulator reverted -> " + err);
     }
 
-    console.log("shouldThrow:", report.reverted);
+    pjs.logDebug("shouldThrow:", report.reverted);
 
     if (report.reverted) {
       tx = await pjs.expectThrow(this.ringSubmitter.submitRings(bs, {from: txOrigin}));
     } else {
       tx = await this.ringSubmitter.submitRings(bs, {from: txOrigin});
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
     }
     const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
     this.assertTransfers(deserializedRingsInfo, transferEvents, report.transferItems);

@@ -209,8 +209,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const events: any = await exchangeTestUtil.getEventsFromContract(orderBook, "OrderSubmitted", fromBlock);
       const orderHashOnChain = events[0].args.orderHash;
       const orderHashBuffer = orderUtil.getOrderHash(onChainOrder);
-      console.log("orderHash:", "0x" + orderHashBuffer.toString("hex"));
-      console.log("orderHashOnChain:", orderHashOnChain);
+      pjs.logDebug("orderHash:", "0x" + orderHashBuffer.toString("hex"));
+      pjs.logDebug("orderHashOnChain:", orderHashOnChain);
       // assert.equal(onChainOrder.hash, orderHashOnChain, "order hash not equal");
 
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);

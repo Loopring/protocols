@@ -30,7 +30,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
         callDataCost += 68;
       }
     }
-    console.log("Call data cost: " + callDataCost);
+    pjs.logDebug("Call data cost: " + callDataCost);
   };
 
   before( async () => {
@@ -193,7 +193,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -226,7 +226,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -259,7 +259,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -294,7 +294,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -327,7 +327,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -370,7 +370,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -416,7 +416,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -459,7 +459,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -502,7 +502,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -555,7 +555,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
       const tx = await deserializerTest.deserialize(callData);
-      console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
       showCallDataStats(callData);
     });
 
@@ -579,7 +579,7 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
     }
 
     const tx = await deserializerTest.submitByArrays(uint16Data, uintData, addresses, 2);
-    console.log("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
   });
 
 });
