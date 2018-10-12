@@ -3,6 +3,7 @@ pragma solidity ^0.4.24;
 import "../lib/ERC20.sol";
 import "../iface/Errors.sol";
 
+
 contract Voting is Errors {
     /*
     The key of the mapping is candidate name stored as type bytes32 and value is

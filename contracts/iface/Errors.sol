@@ -33,6 +33,7 @@ contract Errors {
     string constant REENTRY                    = "REENTRY";
     string constant UNAUTHORIZED               = "UNAUTHORIZED";
     string constant UNIMPLEMENTED              = "UNIMPLEMENTED";
+    string constant UNSUPPORTED                = "UNSUPPORTED";
     string constant TRANSFER_FAILURE           = "TRANSFER_FAILURE";
     string constant WITHDRAWAL_FAILURE         = "WITHDRAWAL_FAILURE";
     string constant BURN_FAILURE               = "BURN_FAILURE";

@@ -16,6 +16,9 @@
 */
 
 pragma solidity 0.4.24;
+pragma experimental "v0.5.0";
+pragma experimental "ABIEncoderV2";
+
 
 /// @title Utility Functions for memory related operations
 /// @author Brechtpd https://github.com/Brechtpd

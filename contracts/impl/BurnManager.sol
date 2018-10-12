@@ -19,14 +19,14 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/Errors.sol";
 import "../iface/IFeeHolder.sol";
 import "../lib/BurnableERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
+
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BurnManager is NoDefaultFunc, Errors {
+contract BurnManager is NoDefaultFunc {
     using MathUint for uint;
 
     address public feeHolderAddress = 0x0;

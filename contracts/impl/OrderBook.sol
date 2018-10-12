@@ -18,17 +18,16 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/Errors.sol";
-import "../iface/IOrderBook.sol";
-import "../lib/NoDefaultFunc.sol";
-import "../impl/Data.sol";
 import "../helper/OrderHelper.sol";
+import "../iface/IOrderBook.sol";
+import "../impl/Data.sol";
+import "../lib/NoDefaultFunc.sol";
 
 
 /// @title An Implementation of IOrderbook.
 /// @author Daniel Wang - <daniel@loopring.org>.
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
-contract OrderBook is IOrderBook, NoDefaultFunc, Errors {
+contract OrderBook is IOrderBook, NoDefaultFunc {
     using OrderHelper     for Data.Order;
 
     function submitOrder(bytes32[] dataArray)

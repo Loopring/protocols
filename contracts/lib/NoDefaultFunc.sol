@@ -18,14 +18,16 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../iface/Errors.sol";
+
 
 /// @title NoDefaultFunc
 /// @dev Disable default functions.
-contract NoDefaultFunc {
+contract NoDefaultFunc is Errors {
     function ()
         external
         payable
     {
-        revert();
+        revert(UNSUPPORTED);
     }
 }

@@ -19,7 +19,6 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/Errors.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/ITradeDelegate.sol";
 import "../lib/Claimable.sol";
@@ -27,8 +26,9 @@ import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
+
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-contract FeeHolder is IFeeHolder, NoDefaultFunc, Errors {
+contract FeeHolder is IFeeHolder, NoDefaultFunc {
     using MathUint for uint;
     using ERC20SafeTransfer for address;
 

@@ -20,6 +20,7 @@ pragma experimental "ABIEncoderV2";
 
 import "./MemoryUtil.sol";
 
+
 /// @title Utility Functions for bytes
 /// @author Daniel Wang - <daniel@loopring.org>
 library BytesUtil {

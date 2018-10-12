@@ -32,12 +32,16 @@ contract DeserializerTest {
         lrcTokenAddress = _lrcTokenAddress;
     }
 
-    function deserialize(bytes data) external {
+    function deserialize(bytes data)
+        external
+        view
+    {
         (
             Data.Mining  memory mining,
             Data.Order[] memory orders,
             Data.Ring[]  memory rings
         ) = ExchangeDeserializer.deserialize(lrcTokenAddress, data);
+        (mining, orders, rings); // To disable compilation warning
     }
 
     function submitByArrays(uint16[] uint16Data,
@@ -45,14 +49,15 @@ contract DeserializerTest {
                             address[] addresses,
                             uint ringSize)
         external
+        view
     {
-        Data.Mining  memory mining = Data.Mining(
-            addresses[0],
-            addresses[1],
-            new bytes(0),
-            bytes32(0x0),
-            0x0
-        );
+        // Data.Mining  memory mining = Data.Mining(
+        //     addresses[0],
+        //     addresses[1],
+        //     new bytes(0),
+        //     bytes32(0x0),
+        //     0x0
+        // );
 
         Data.Order[] memory orders = new Data.Order[](ringSize);
         Data.Participation[] memory participations = new Data.Participation[](ringSize);

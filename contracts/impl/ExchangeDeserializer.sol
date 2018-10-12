@@ -18,9 +18,9 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-
 import "../lib/MemoryUtil.sol";
 import "./Data.sol";
+
 
 /// @title Deserializes the data passed to submitRings
 /// @author Daniel Wang - <daniel@loopring.org>,

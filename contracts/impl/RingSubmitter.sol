@@ -18,22 +18,21 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../iface/Errors.sol";
+import "../helper/MiningHelper.sol";
+import "../helper/OrderHelper.sol";
+import "../helper/RingHelper.sol";
+
 import "../iface/IBrokerRegistry.sol";
-import "../iface/IRingSubmitter.sol";
+import "../iface/IBurnRateTable.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IOrderRegistry.sol";
-import "../iface/ITradeDelegate.sol";
 import "../iface/IOrderBook.sol";
-import "../iface/IBurnRateTable.sol";
+import "../iface/IRingSubmitter.sol";
+import "../iface/ITradeDelegate.sol";
 
 import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
-
-import "../helper/MiningHelper.sol";
-import "../helper/OrderHelper.sol";
-import "../helper/RingHelper.sol";
 
 import "./Data.sol";
 import "./ExchangeDeserializer.sol";
@@ -48,7 +47,7 @@ import "./ExchangeDeserializer.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract RingSubmitter is IRingSubmitter, NoDefaultFunc, Errors {
+contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     using MathUint      for uint;
     using BytesUtil     for bytes;
     using OrderHelper     for Data.Order;

@@ -18,6 +18,7 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @title IBurnRateTable - A contract for managing burn rates for tokens
 contract IBurnRateTable {

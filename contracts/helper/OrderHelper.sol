@@ -18,8 +18,8 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../impl/Data.sol";
 import "../impl/BrokerInterceptorProxy.sol";
+import "../impl/Data.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
