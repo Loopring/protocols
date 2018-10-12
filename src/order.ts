@@ -245,7 +245,7 @@ export class OrderUtil {
           tokenAddr,
       );
     } catch {
-      return 0;
+      return new BigNumber(0);
     }
   }
 
