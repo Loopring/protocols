@@ -382,9 +382,9 @@ library RingHelper {
                     let dataToken := mload(add(p,  0))
                     let dataFrom := mload(add(p, 32))
                     let dataTo := mload(add(p, 64))
-                    let dataAmount := mload(add(p, 96))
                     // if(token == dataToken && from == dataFrom && to == dataTo)
                     if and(and(eq(token, dataToken), eq(from, dataFrom)), eq(to, dataTo)) {
+                        let dataAmount := mload(add(p, 96))
                         // dataAmount = amount.add(dataAmount);
                         dataAmount := add(amount, dataAmount)
                         // require(dataAmount > amount) (safe math)
@@ -651,9 +651,9 @@ library RingHelper {
                 for { let p := data } lt(p, ptr) { p := add(p, 96) } {
                     let dataToken := mload(add(p,  0))
                     let dataOwner := mload(add(p, 32))
-                    let dataAmount := mload(add(p, 64))
                     // if(token == dataToken && owner == dataOwner)
                     if and(eq(token, dataToken), eq(owner, dataOwner)) {
+                        let dataAmount := mload(add(p, 64))
                         // dataAmount = amount.add(dataAmount);
                         dataAmount := add(amount, dataAmount)
                         // require(dataAmount > amount) (safe math)
