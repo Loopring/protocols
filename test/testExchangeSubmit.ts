@@ -275,6 +275,58 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
     });
 
+    it("should be able to submit an order without the broker signature when partially filled", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 100e18,
+            amountB: 100e18,
+          },
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 100e18,
+            amountB: 100e18,
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      const order = ringsInfo.orders[0];
+      order.balanceS = order.amountS / 2;
+      await exchangeTestUtil.setOrderBalances(order);
+
+      const sig = order.sig;
+
+      // Don't send the signature
+      order.sig = null;
+      // Order should be invalid so nothing should get filled
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      // Check fills
+      await checkFilled(ringsInfo.orders[0], 0);
+      await checkFilled(ringsInfo.orders[1], 0);
+
+      // Send the signature this time
+      order.sig = sig;
+      // Fill the orders 50%
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      // Check fills
+      await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS / 2);
+      await checkFilled(ringsInfo.orders[1], ringsInfo.orders[1].amountS / 2);
+
+      // Don't send the signature anymore
+      order.sig = null;
+      // Give the order enough balance to fill 100%
+      await exchangeTestUtil.setOrderBalances(order);
+      // Fill the orders 100%
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      // Check fills
+      await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS);
+      await checkFilled(ringsInfo.orders[1], ringsInfo.orders[1].amountS);
+    });
+
   });
 
 });

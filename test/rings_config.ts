@@ -1373,6 +1373,60 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "multiple rings, one ring fails, another succeeds",
+    rings: [[0, 1], [2, 3]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 100e18,
+        amountB: 10e18,
+        allOrNone: true,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 20e18,
+        amountB: 200e18,
+        balanceS: 5e18,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 100e18,
+        amountB: 10e18,
+      },
+      {
+        index: 3,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 5e18,
+        amountB: 50e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.5,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     description: "ring with invalid order",
     rings: [[0, 1]],
     orders: [
