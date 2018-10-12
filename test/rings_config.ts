@@ -1456,6 +1456,64 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "ring with an order with validSince > now",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 1e18,
+        amountB: 3e18,
+        validSince: 0xFFFFFFFF,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 3e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
+  },
+
+  {
+    description: "ring with an order with validUntil < now",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 1e18,
+        amountB: 3e18,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 3e18,
+        validUntil: 1,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
+  },
+
+  {
     description: "single order ring",
     rings: [[0]],
     orders: [
@@ -1583,6 +1641,36 @@ export const ringsInfoList: RingsInfo[] = [
         dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
         dualAuthSig: "0x00411c8ddc1f9062d1968d1333fa5488b7af57fb17250c18918de6ed31349a39834f787805224fdb56500" +
                      "e0331e79746060f7effb569df13c1aaf42e15efc3ef4dea04",
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
+  },
+
+  {
+    description: "missing dual-author order signature",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 3e18,
+        amountB: 1e18,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 3e18,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+        dualAuthSig: null,
       },
     ],
     expected: {
@@ -1725,85 +1813,142 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "one to many match: one big order filled by 10 small orders",
-    rings: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8], [0, 9], [0, 10]],
+    description: "one to many match: one big order filled by may small orders",
+    rings: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8], [0, 9], [0, 10], [0, 11, 12]],
     orders: [
       {
         index: 0,
+        owner: "0",
         tokenS: tokenSymbols[2],
         tokenB: tokenSymbols[1],
         amountS: 10000e18,
         amountB: 1000e18,
+        walletAddr: "0",
+        dualAuthAddr: "2",
       },
       {
         index: 1,
+        owner: "1",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 5e18,
         amountB: 45e18,
+        walletAddr: "0",
+        dualAuthAddr: "0",
       },
       {
         index: 2,
+        owner: "2",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 5e18,
-        amountB: 45e18,
+        amountB: 50e18,
+        balanceS: 7.5e18,
+        walletAddr: "0",
+        dualAuthAddr: "0",
       },
       {
         index: 3,
+        owner: "2",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 5e18,
         amountB: 45e18,
+        balanceS: 7.5e18,
+        walletAddr: "1",
+        dualAuthAddr: "1",
       },
       {
         index: 4,
+        owner: "3",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 5e18,
-        amountB: 45e18,
+        amountB: 48e18,
+        balanceS: 100e18,
+        walletAddr: "2",
+        dualAuthAddr: "2",
       },
       {
         index: 5,
+        owner: "3",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
-        amountS: 5e18,
+        amountS: 0,
         amountB: 45e18,
+        balanceS: 100e18,
+        walletAddr: "2",
+        dualAuthAddr: "2",
       },
       {
         index: 6,
+        owner: "4",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 5e18,
-        amountB: 45e18,
+        amountB: 50e18,
+        balanceS: 100e18,
+        walletAddr: "3",
+        dualAuthAddr: "3",
       },
       {
         index: 7,
+        owner: "4",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
-        amountS: 5e18,
-        amountB: 45e18,
+        amountS: 4e18,
+        amountB: 50e18,
+        balanceS: 100e18,
+        walletAddr: "0",
+        dualAuthAddr: "4",
       },
       {
         index: 8,
+        owner: "5",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 5e18,
-        amountB: 45e18,
+        amountB: 49e18,
+        walletAddr: "0",
+        dualAuthSignAlgorithm: SignAlgorithm.None,
       },
       {
         index: 9,
+        owner: "6",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
-        amountS: 5e18,
-        amountB: 45e18,
+        amountS: 10e18,
+        amountB: 90e18,
+        walletAddr: "1",
+        dualAuthSignAlgorithm: SignAlgorithm.None,
       },
       {
         index: 10,
+        owner: "7",
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
+        amountS: 20e18,
+        amountB: 100e18,
+        walletAddr: "2",
+        dualAuthAddr: "1",
+      },
+      {
+        index: 11,
+        owner: "8",
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[3],
         amountS: 5e18,
         amountB: 45e18,
+        walletAddr: "2",
+        dualAuthAddr: "1",
+      },
+      {
+        index: 12,
+        owner: "9",
+        tokenS: tokenSymbols[3],
+        tokenB: tokenSymbols[2],
+        amountS: 3e18,
+        amountB: 2e18,
       },
     ],
     expected: {
@@ -1831,20 +1976,11 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 0.005,
+              filledFraction: 0.0025,
             },
             {
-              filledFraction: 1.0,
-            },
-          ],
-        },
-        {
-          orders: [
-            {
-              filledFraction: 0.005,
-            },
-            {
-              filledFraction: 1.0,
+              filledFraction: 0.5,
+              payFeeInTokenB: true,
             },
           ],
         },
@@ -1859,6 +1995,9 @@ export const ringsInfoList: RingsInfo[] = [
           ],
         },
         {
+          fail: true,
+        },
+        {
           orders: [
             {
               filledFraction: 0.005,
@@ -1867,6 +2006,9 @@ export const ringsInfoList: RingsInfo[] = [
               filledFraction: 1.0,
             },
           ],
+        },
+        {
+          fail: true,
         },
         {
           orders: [
@@ -1881,7 +2023,7 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 0.005,
+              filledFraction: 0.01,
             },
             {
               filledFraction: 1.0,
@@ -1891,7 +2033,7 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 0.005,
+              filledFraction: 0.02,
             },
             {
               filledFraction: 1.0,
@@ -1901,11 +2043,13 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 0.005,
+              filledFraction: (3.0 * (5.0 / 45.0) / 1000.0),
+            },
+            {
+              filledFraction: (3.0 / 45.0),
             },
             {
               filledFraction: 1.0,
-              payFeeInTokenB: true,     // owner[0] == owner[10]
             },
           ],
         },

@@ -165,10 +165,10 @@ export class ExchangeTestUtil {
       // Set the order validSince time to a bit before the current timestamp;
       order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
     }
-    // if (!order.validUntil) {
-    //   // Set the order validSince time to a bit before the current timestamp;
-    //   order.validUntil = Math.pow(2, 32) - 1;
-    // }
+    if (!order.validUntil && (order.index % 2) === 1) {
+      // Set the order validUntil time to a bit after the current timestamp;
+      order.validUntil = web3.eth.getBlock(web3.eth.blockNumber).timestamp + 2500;
+    }
 
     if (order.walletAddr && !order.walletAddr.startsWith("0x")) {
       const walletIndex = parseInt(order.walletAddr, 10);
@@ -190,6 +190,7 @@ export class ExchangeTestUtil {
     }
     // Fill in defaults (default, so these will not get serialized)
     order.version = 0;
+    order.validUntil = order.validUntil ? order.validUntil : 0;
     order.tokenRecipient = order.tokenRecipient ? order.tokenRecipient : order.owner;
     order.feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
     order.feeAmount = order.feeAmount ? order.feeAmount : 0;
