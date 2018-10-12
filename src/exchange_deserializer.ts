@@ -115,7 +115,6 @@ export class ExchangeDeserializer {
     };
     order.feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
     order.tokenRecipient = order.tokenRecipient ? order.tokenRecipient : order.owner;
-    order.validUntil = order.validUntil > 0 ? order.validUntil : undefined;
     return order;
   }
 

@@ -42,6 +42,9 @@ export class OrderUtil {
     valid = valid && ensure(order.tokenSFeePercentage < this.context.feePercentageBase, "invalid tokenS percentage");
     valid = valid && ensure(order.tokenBFeePercentage < this.context.feePercentageBase, "invalid tokenB percentage");
     valid = valid && ensure(order.walletSplitPercentage <= 100, "invalid wallet split percentage");
+    if (order.dualAuthAddr) {
+      valid = valid && ensure(order.dualAuthSig && order.dualAuthSig.length > 0, "missing dual author signature");
+    }
 
     const blockTimestamp = this.context.blockTimestamp;
     valid = valid && ensure(order.validSince <= blockTimestamp, "order is too early to match");
