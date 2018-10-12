@@ -109,23 +109,25 @@ library OrderHelper {
         }
     }
 
+
+    // If the order was already partially filled 
+    // we don't have to check all of the infos and the signature again
     function check(Data.Order order, Data.Context ctx)
         internal
         view
-    {
-        // If the order was already partially filled we don't have to check the basicInfo, P2P and signature again
-        if(order.filledAmountS > 0) {
-            bool valid = true;
-            valid = valid && (order.validUntil == 0 || order.validUntil > now);  // order is expired
-            order.valid = order.valid && valid;
-        } else {
-            validateInfo(order, ctx);
-            checkP2P(order);
+    {        
+        if(order.filledAmountS == 0) {
+            validateAllInfo(order, ctx);
             checkBrokerSignature(order, ctx);
+        } else {
+            validateUnstableInfo(order, ctx);
         }
+
+        checkP2P(order);
     }
 
-    function validateInfo(Data.Order order, Data.Context ctx)
+
+    function validateAllInfo(Data.Order order, Data.Context ctx)
         internal
         view
     {
@@ -138,20 +140,34 @@ library OrderHelper {
         valid = valid && (order.amountB != 0); // invalid order amountB
         valid = valid && (order.feeToken != 0x0); // invalid fee token
         valid = valid && (order.feePercentage < ctx.feePercentageBase); // invalid fee percentage
-        valid = valid && (order.waiveFeePercentage <= int16(ctx.feePercentageBase)); // invalid waive percentage
-        valid = valid && (order.waiveFeePercentage >= -int16(ctx.feePercentageBase)); // invalid waive percentage
+
         valid = valid && (order.tokenSFeePercentage < ctx.feePercentageBase); // invalid tokenS percentage
         valid = valid && (order.tokenBFeePercentage < ctx.feePercentageBase); // invalid tokenB percentage
         valid = valid && (order.walletSplitPercentage <= 100); // invalid wallet split percentage
 
         valid = valid && (order.validSince <= now); // order is too early to match
         valid = valid && (order.validUntil == 0 || order.validUntil > now);  // order is expired
+
+        order.valid = order.valid && valid;
+
+        validateUnstableInfo(order, ctx);
+    }
+
+
+    function validateUnstableInfo(Data.Order order, Data.Context ctx)
+        internal
+        view
+    {
+        bool valid = true;
+        valid = valid && (order.validUntil == 0 || order.validUntil > now);  // order is expired
+        valid = valid && (order.waiveFeePercentage <= int16(ctx.feePercentageBase)); // invalid waive percentage
+        valid = valid && (order.waiveFeePercentage >= -int16(ctx.feePercentageBase)); // invalid waive percentage
         if (order.dualAuthAddr != 0x0) { // if dualAuthAddr exists, dualAuthSig must be exist.
             valid = valid && (order.dualAuthSig.length > 0);
         }
-
         order.valid = order.valid && valid;
     }
+
 
     function checkP2P(
         Data.Order order
@@ -161,6 +177,7 @@ library OrderHelper {
     {
         order.P2P = (order.tokenSFeePercentage > 0 || order.tokenBFeePercentage > 0);
     }
+
 
     function checkBrokerSignature(
         Data.Order order,
