@@ -440,7 +440,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             mstore(data, batchUpdateFilledSelector)
             mstore(add(data, 4), 32)
             let ptr := add(data, 68)
-            let size := 0
+            let arrayLength := 0
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
                 let filledAmount := mload(add(order, 960))                               // order.filledAmountS
@@ -452,13 +452,13 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                     mstore(add(ptr,  32), filledAmount)
 
                     ptr := add(ptr, 64)
-                    size := add(size, 2)
+                    arrayLength := add(arrayLength, 2)
                 }
             }
 
             // Only do the external call if the list is not empty
-            if gt(size, 0) {
-                mstore(add(data, 36), size)             // length
+            if gt(arrayLength, 0) {
+                mstore(add(data, 36), arrayLength)      // length
 
                 let success := call(
                     gas,                                // forward all gas
@@ -565,10 +565,11 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         // The only thing we still need to do is update the final length of the array and call
         // the function on the FeeHolder contract with the generated data.
         address _tradeDelegateAddress = address(ctx.delegate);
+        uint arrayLength = (ctx.transferPtr - ctx.transferData) / 32;
         uint data = ctx.transferData - 68;
         uint ptr = ctx.transferPtr;
         assembly {
-            mstore(add(data, 36), div(sub(ptr, add(data, 68)), 32))             // length
+            mstore(add(data, 36), arrayLength)      // length
 
             let success := call(
                 gas,                                // forward all gas
@@ -598,10 +599,11 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         // The only thing we still need to do is update the final length of the array and call
         // the function on the TradeDelegate contract with the generated data.
         address _feeHolderAddress = address(ctx.feeHolder);
+        uint arrayLength = (ctx.feePtr - ctx.feeData) / 32;
         uint data = ctx.feeData - 68;
         uint ptr = ctx.feePtr;
         assembly {
-            mstore(add(data, 36), div(sub(ptr, add(data, 68)), 32))             // length
+            mstore(add(data, 36), arrayLength)      // length
 
             let success := call(
                 gas,                                // forward all gas
