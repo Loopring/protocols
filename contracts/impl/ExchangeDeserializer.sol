@@ -242,7 +242,7 @@ library ExchangeDeserializer {
                 offset := mul(and(mload(add(tablesPtr, 26)), 0xFFFF), 4)
                 mstore(
                     add(order, 480),
-                    and(mload(add(add(data, 32), offset)), 0xFFFFFFFF)
+                    and(mload(add(add(data,  4), offset)), 0xFFFFFFFF)
                 )
 
                 // Default to empty bytes array for value sig and dualAuthSig
