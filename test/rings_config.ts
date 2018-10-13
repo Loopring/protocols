@@ -32,9 +32,11 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: 1.0,
+              margin: 0,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
           ],
         },
@@ -67,9 +69,11 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: 0.5,
+              margin: 5e18,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
           ],
         },
@@ -712,12 +716,15 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: 1.0,
+              margin: 0,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
           ],
         },
@@ -757,12 +764,15 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: (3.0 * (5.0 / 45.0) / 10.0),
+              margin: (4 / 3) * 1e18,
             },
             {
               filledFraction: (3.0 / 45.0),
+              margin: 0,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
           ],
         },
@@ -979,9 +989,11 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: 1.0,
+              margin: 0,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
           ],
         },
@@ -989,9 +1001,11 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: 0.5,
+              margin: 0,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
           ],
         },
@@ -1068,7 +1082,7 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "multiple 2-size rings, share the same order, prices match exactly",
+    description: "multiple 2-size rings, share the same order",
     rings: [[0, 1], [0, 2]],
     orders: [
       {
@@ -1083,7 +1097,7 @@ export const ringsInfoList: RingsInfo[] = [
         tokenS: tokenSymbols[1],
         tokenB: tokenSymbols[2],
         amountS: 5e18,
-        amountB: 45e18,
+        amountB: 50e18,
       },
       {
         index: 2,
@@ -1099,9 +1113,11 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: 0.5,
+              margin: 0,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
           ],
         },
@@ -1109,9 +1125,11 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: 0.5,
+              margin: 5e18,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
           ],
         },
@@ -1154,10 +1172,12 @@ export const ringsInfoList: RingsInfo[] = [
             {
               filledFraction: 1.0,
               P2P: true,
+              margin: 0,
             },
             {
               filledFraction: 1.0,
               P2P: true,
+              margin: 0,
             },
           ],
         },
@@ -1196,10 +1216,12 @@ export const ringsInfoList: RingsInfo[] = [
             {
               filledFraction: 0.01,
               P2P: true,
+              margin: 0,
             },
             {
               filledFraction: 1.0,
               P2P: true,
+              margin: 0,
             },
           ],
         },
@@ -1220,6 +1242,7 @@ export const ringsInfoList: RingsInfo[] = [
         amountS: 100e18,
         amountB: 1e18,
         tokenSFeePercentage: 15,  // == 1.5%
+        tokenBFeePercentage: 25,  // == 2.5%
       },
       {
         index: 1,
@@ -1228,7 +1251,8 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[1],
         amountS: 0.02e18,
         amountB: 1e18,
-        tokenBFeePercentage: 25,  // == 2.5%
+        tokenSFeePercentage: 35,  // == 3.5%
+        tokenBFeePercentage: 45,  // == 4.5%
       },
     ],
     expected: {
@@ -1236,12 +1260,14 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 0.02,
+              filledFraction: 0.02 * (1 - 0.035),
               P2P: true,
+              margin: ((0.02 * (1 - 0.035) * 100) * (1 - 0.015) - 1) * 1e18,
             },
             {
               filledFraction: 1.0,
               P2P: true,
+              margin: 0,
             },
           ],
         },
@@ -1261,7 +1287,8 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[2],
         amountS: 100e18,
         amountB: 1e18,
-        tokenBFeePercentage: 15,  // == 1.5%
+        tokenSFeePercentage: 15,  // == 1.5%
+        tokenBFeePercentage: 25,  // == 2.5%
       },
       {
         index: 1,
@@ -1270,7 +1297,8 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[1],
         amountS: 0.02e18,
         amountB: 1e18,
-        tokenSFeePercentage: 25,  // == 2.5%
+        tokenSFeePercentage: 35,  // == 3.5%
+        tokenBFeePercentage: 45,  // == 4.5%
         balanceS: 0.012e18,
       },
     ],
@@ -1279,12 +1307,14 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 0.012 * 0.975,
+              filledFraction: 0.012 * (1 - 0.035),
               P2P: true,
+              margin: ((0.012 * (1 - 0.035) * 100) * (1 - 0.015) - 1 * 0.6) * 1e18,
             },
             {
               filledFraction: 0.6,
               P2P: true,
+              margin: 0,
             },
           ],
         },
@@ -1403,9 +1433,11 @@ export const ringsInfoList: RingsInfo[] = [
             {
               filledFraction: 0.02,
               P2P: true,
+              margin: ((0.02 * 100) * (1 - 0.015) - 1) * 1e18,
             },
             {
               filledFraction: 1.0,
+              margin: 0,
             },
           ],
         },
