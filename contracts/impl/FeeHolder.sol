@@ -90,6 +90,7 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
         require(feeBalances[token][from] >= value, INVALID_VALUE);
         feeBalances[token][from] = feeBalances[token][from].sub(value);
         success = token.safeTransfer(to, value);
+        require(success, TRANSFER_FAILURE);
         emit TokenWithdrawn(from, token, value);
     }
 
