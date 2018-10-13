@@ -385,6 +385,47 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "single 2-size ring, wallet split percentage > 0 but no wallet specified",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 100e18,
+        amountB: 10e18,
+        walletAddr: null,
+        walletSplitPercentage: 20,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[1],
+        amountS: 20e18,
+        amountB: 200e18,
+        balanceFee: 0,
+        walletAddr: null,
+        walletSplitPercentage: 20,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 0.5,
+              payFeeInTokenB: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     description: "single 2-size ring, order is allOrNone (successful)",
     rings: [[0, 1]],
     orders: [

@@ -1,3 +1,4 @@
+import { BigNumber } from "bignumber.js";
 import * as pjs from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 import { ringsInfoList } from "./rings_config";
@@ -251,28 +252,73 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.checkFilled(order.hash, order.amountS);
     });
 
-    it("user should be able to get a rebate by locking LRC", async () => {
+    it("should be able to get different burn rates by using different tokens to pay fees", async () => {
       const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 1]],
         orders: [
           {
             tokenS: "WETH",
             tokenB: "GTO",
-            amountS: 35e17,
-            amountB: 22e17,
+            amountS: 10e18,
+            amountB: 10e18,
+            feeToken: "LRC",
+            feeAmount: 1e18,
+            walletAddr: "0",
+            walletSplitPercentage: 25,
+            balanceS: 5e18,
           },
           {
             tokenS: "GTO",
             tokenB: "WETH",
-            amountS: 23e17,
-            amountB: 31e17,
+            amountS: 10e18,
+            amountB: 10e18,
+            feeToken: "REP",
+            feeAmount: 1e18,
+            walletAddr: "0",
+            walletSplitPercentage: 25,
           },
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      // Give the owner of the first order a burn rate rebate of 50%
-      await exchangeTestUtil.lockLRC(ringsInfo.orders[0].owner, 0.5);
-      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      const order0 = ringsInfo.orders[0];
+      const order1 = ringsInfo.orders[1];
+      const feeRecipient = ringsInfo.feeRecipient;
+      const burnRateTable = exchangeTestUtil.context.burnRateTable;
+
+      // Get the burn rates of the tokens
+      const BURN_BASE_PERCENTAGE = (await burnRateTable.BURN_BASE_PERCENTAGE()).toNumber();
+      const burnRate0 = (await burnRateTable.getBurnRate(order0.feeToken)).toNumber() & 0xFFFF;
+      const burnRate1 = (await burnRateTable.getBurnRate(order1.feeToken)).toNumber() & 0xFFFF;
+      assert(burnRate0 !== burnRate1, "Tokens should have different burn rates");
+
+      // Orders will be filled 50%
+      const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      const feeReceivedMiner0 = report.feeBalancesAfter[order0.feeToken][feeRecipient]
+                                      .minus(report.feeBalancesBefore[order0.feeToken][feeRecipient]);
+      const feeReceivedWallet0 = report.feeBalancesAfter[order0.feeToken][order0.walletAddr]
+                                       .minus(report.feeBalancesBefore[order0.feeToken][order0.walletAddr]);
+      const feeReceivedMiner1 = report.feeBalancesAfter[order1.feeToken][feeRecipient]
+                                      .minus(report.feeBalancesBefore[order1.feeToken][feeRecipient]);
+      const feeReceivedWallet1 = report.feeBalancesAfter[order1.feeToken][order1.walletAddr]
+                                       .minus(report.feeBalancesBefore[order1.feeToken][order1.walletAddr]);
+      // Wallet percentage split is 25% so miner gets 3x the fee as the wallet
+      assert.equal(feeReceivedMiner0.toNumber(), 3 * feeReceivedWallet0.toNumber(),
+                   "Wallet fee == Miner fee");
+      assert.equal(feeReceivedMiner1.toNumber(), 3 * feeReceivedWallet1.toNumber(),
+                   "Wallet fee == Miner fee");
+
+      // Orders will be filled 50% and walletSplitPercentage is set to 25%
+      const expectedFee0 = new BigNumber(order0.feeAmount / 8)
+                           .mul(BURN_BASE_PERCENTAGE - burnRate0)
+                           .dividedToIntegerBy(BURN_BASE_PERCENTAGE);
+      const expectedFee1 = new BigNumber(order1.feeAmount / 8)
+                           .mul(BURN_BASE_PERCENTAGE - burnRate1)
+                           .dividedToIntegerBy(BURN_BASE_PERCENTAGE);
+      // Verify the fee payments
+      assert.equal(feeReceivedMiner0.toNumber(), 3 * expectedFee0.toNumber(), "fee should match expected value");
+      assert.equal(feeReceivedWallet0.toNumber(), expectedFee0.toNumber(), "fee should match expected value");
+      assert.equal(feeReceivedMiner1.toNumber(), 3 * expectedFee1.toNumber(), "fee should match expected value");
+      assert.equal(feeReceivedWallet1.toNumber(), expectedFee1.toNumber(), "fee should match expected value");
     });
 
     it("should be able to submit an order without the broker signature when partially filled", async () => {
