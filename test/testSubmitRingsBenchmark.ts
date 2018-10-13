@@ -50,17 +50,23 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
             tokenB: "LRC",
             amountS: 1e18,
             amountB: 1000e18,
+            balanceS: 1e26,
+            balanceFee: 1e26,
+            balanceB: 1e26,
           },
           {
             tokenS: "LRC",
             tokenB: "WETH",
             amountS: 1000e18,
             amountB: 1e18,
+            balanceS: 1e26,
+            balanceFee: 1e26,
+            balanceB: 1e26,
           },
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
     });
 
     it("single simple ring", async () => {
@@ -72,17 +78,23 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: 1e18,
             amountB: 3000e18,
+            balanceS: 1e26,
+            balanceFee: 1e26,
+            balanceB: 1e26,
           },
           {
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: 3000e18,
             amountB: 1e18,
+            balanceS: 1e26,
+            balanceFee: 1e26,
+            balanceB: 1e26,
           },
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      const res = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      const res = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
       simpleRingGas = res.tx.receipt.gasUsed;
     });
 
@@ -95,17 +107,23 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: 100e18,
             amountB: 10e18,
+            balanceS: 1e26,
+            balanceFee: 1e26,
+            balanceB: 1e26,
           },
           {
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: 5e18,
             amountB: 45e18,
+            balanceS: 1e26,
+            balanceFee: 1e26,
+            balanceB: 1e26,
           },
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      const res = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      const res = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
       typicalRingGas = res.tx.receipt.gasUsed;
     });
 
@@ -122,6 +140,8 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
             tokenSFeePercentage: 60,  // == 6.0%
             tokenBFeePercentage: 100,  // == 10.0%
             walletAddr: "0",
+            balanceS: 1e26,
+            balanceB: 1e26,
           },
           {
             owner: "1",
@@ -132,11 +152,13 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
             tokenSFeePercentage: 50,  // == 5.0%
             tokenBFeePercentage: 25,  // == 2.5%
             walletAddr: "1",
+            balanceS: 1e26,
+            balanceB: 1e26,
           },
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      const res = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      const res = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
       p2pRingGas = res.tx.receipt.gasUsed;
     });
 
