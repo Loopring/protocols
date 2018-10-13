@@ -28,20 +28,25 @@ contract OrderRegistry is IOrderRegistry, NoDefaultFunc {
 
     mapping (address => mapping (bytes32 => bool)) public hashMap;
 
-    event OrderRegistered(address orderOwner, bytes32 hash);
+    event OrderRegistered(address broker, bytes32 orderHash);
 
     function isOrderHashRegistered(
-        address owner,
-        bytes32 hash
+        address broker,
+        bytes32 orderHash
         )
-        public
+        external
         view
         returns (bool)
     {
-        return hashMap[owner][hash];
+        return hashMap[broker][orderHash];
     }
 
-    function registerOrderHash(bytes32 orderHash) external {
+    function registerOrderHash(
+        bytes32 orderHash
+        )
+        external
+    {
+        require(hashMap[msg.sender][orderHash] == false, ALREADY_EXIST);
         hashMap[msg.sender][orderHash] = true;
         emit OrderRegistered(msg.sender, orderHash);
     }

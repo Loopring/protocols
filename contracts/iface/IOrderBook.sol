@@ -50,7 +50,9 @@ contract IOrderBook {
     /// @param orderHash The hash of the order to return the data for.
     /// @return The order data
     ///         see OrderData
-    function getOrderData(bytes32 orderHash)
+    function getOrderData(
+        bytes32 orderHash
+        )
         external
         view
         returns (bytes32[]);

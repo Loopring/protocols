@@ -109,13 +109,15 @@ library OrderHelper {
         }
     }
 
-
-    // If the order was already partially filled 
-    // we don't have to check all of the infos and the signature again
-    function check(Data.Order order, Data.Context ctx)
+    function check(
+        Data.Order order,
+        Data.Context ctx
+        )
         internal
         view
-    {        
+    {
+        // If the order was already partially filled
+        // we don't have to check all of the infos and the signature again
         if(order.filledAmountS == 0) {
             validateAllInfo(order, ctx);
             checkBrokerSignature(order, ctx);
@@ -126,8 +128,10 @@ library OrderHelper {
         checkP2P(order);
     }
 
-
-    function validateAllInfo(Data.Order order, Data.Context ctx)
+    function validateAllInfo(
+        Data.Order order,
+        Data.Context ctx
+        )
         internal
         view
     {
@@ -146,7 +150,6 @@ library OrderHelper {
         valid = valid && (order.walletSplitPercentage <= 100); // invalid wallet split percentage
 
         valid = valid && (order.validSince <= now); // order is too early to match
-        valid = valid && (order.validUntil == 0 || order.validUntil > now);  // order is expired
 
         order.valid = order.valid && valid;
 
@@ -154,7 +157,10 @@ library OrderHelper {
     }
 
 
-    function validateUnstableInfo(Data.Order order, Data.Context ctx)
+    function validateUnstableInfo(
+        Data.Order order,
+        Data.Context ctx
+        )
         internal
         view
     {

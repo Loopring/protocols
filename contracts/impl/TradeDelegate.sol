@@ -99,7 +99,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         emit AddressDeauthorized(addr);
     }
 
-    function batchTransfer(bytes32[] batch)
+    function batchTransfer(
+        bytes32[] batch
+        )
         external
         onlyAuthorized
         notSuspended
@@ -131,7 +133,9 @@ contract TradeDelegate is ITradeDelegate, Claimable, NoDefaultFunc {
         }
     }
 
-    function batchUpdateFilled(bytes32[] filledInfo)
+    function batchUpdateFilled(
+        bytes32[] filledInfo
+        )
         external
         onlyAuthorized
         notSuspended

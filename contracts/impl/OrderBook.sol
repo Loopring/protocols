@@ -30,7 +30,9 @@ import "../lib/NoDefaultFunc.sol";
 contract OrderBook is IOrderBook, NoDefaultFunc {
     using OrderHelper     for Data.Order;
 
-    function submitOrder(bytes32[] dataArray)
+    function submitOrder(
+        bytes32[] dataArray
+        )
         external
         returns (bytes32)
     {
@@ -93,7 +95,9 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
         return order.hash;
     }
 
-    function getOrderData(bytes32 orderHash)
+    function getOrderData(
+        bytes32 orderHash
+        )
         external
         view
         returns (bytes32[])

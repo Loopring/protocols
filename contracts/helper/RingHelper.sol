@@ -601,9 +601,9 @@ library RingHelper {
         uint32 burnRate = feeCtx.ctx.burnRateTable.getBurnRate(token);
         assembly {
             let ptr := add(tokenBurnRates, mul(add(1, length), 32))
-            mstore(ptr, token)                              // Token
-            mstore(add(ptr, 32), burnRate)                  // Burn rate
-            mstore(tokenBurnRates, add(length, 2))          // Lenght
+            mstore(ptr, token)                              // token
+            mstore(add(ptr, 32), burnRate)                  // burn rate
+            mstore(tokenBurnRates, add(length, 2))          // length
         }
         return feeCtx.P2P ? (burnRate / 0x10000) : (burnRate & 0xFFFF);
     }

@@ -44,6 +44,8 @@ contract IFeeHolder {
         returns (bool success);
 
     /// @dev   Allows withdrawing the fee payments funds
+    ///        msg.sender is the recipient of the fee and the address
+    ///        to which the tokens will be sent.
     /// @param token The token to withdraw
     /// @param value The amount of tokens to withdraw
     function withdrawToken(

@@ -24,14 +24,22 @@ pragma experimental "ABIEncoderV2";
 contract IOrderRegistry {
 
     /// @dev   Returns wether the order hash was registered in the registry.
-    /// @param owner The owner of the order
-    /// @param hash The hash of the order
+    /// @param broker The broker of the order
+    /// @param orderHash The hash of the order
     /// @return True if the order hash was registered, else false.
     function isOrderHashRegistered(
-        address owner,
-        bytes32 hash
+        address broker,
+        bytes32 orderHash
         )
-        public
+        external
         view
         returns (bool);
+
+    /// @dev   Registers an order in the registry.
+    ///        msg.sender needs to be the broker of the order.
+    /// @param orderHash The hash of the order
+    function registerOrderHash(
+        bytes32 orderHash
+        )
+        external;
 }
