@@ -95,6 +95,12 @@ export class ProtocolValidator {
                                                                     feeRecipient,
                                                                     feePayments);
 
+        if (orderExpectation.margin !== undefined) {
+          // Check if the margin is as expected
+          this.assertAlmostEqual(orderSettlement.splitS.toNumber(), orderExpectation.margin,
+                                 "Margin does not match the expected value");
+        }
+
         // Balances
 
         const totalS = orderSettlement.amountS.minus(orderSettlement.rebateS);

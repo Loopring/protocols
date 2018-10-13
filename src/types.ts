@@ -102,6 +102,7 @@ export interface OrderExpectation {
   filledFraction: number;
   payFeeInTokenB?: boolean;
   P2P?: boolean;
+  margin?: number;
 }
 
 export interface RingExpectation {
