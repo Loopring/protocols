@@ -59,6 +59,10 @@ library ExchangeDeserializer {
         uint ringDataPtr = orderDataPtr + (25 * header.numOrders) * 2;
         uint dataBlobPtr = ringDataPtr + (header.numRings * 9) + 32;
 
+        // The data stream needs to be at least large enough for the
+        // header/mining/orders/rings data + 64 bytes of zeros in the data blob.
+        require(data.length >= (dataBlobPtr - dataPtr) + 32, "Invalid input data");
+
         // Setup the rings
         mining = setupMiningData(dataBlobPtr, miningDataPtr + 2);
         orders = setupOrders(dataBlobPtr, orderDataPtr + 2, header.numOrders, header.numSpendables, lrcTokenAddress);
