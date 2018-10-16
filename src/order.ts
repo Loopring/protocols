@@ -23,8 +23,8 @@ export class OrderUtil {
         order.broker,
       );
       order.valid = order.valid && ensure(registered, "order broker is not registered");
-      order.brokerInterceptor =
-        (brokerInterceptor === "0x0000000000000000000000000000000000000000") ? undefined : brokerInterceptor;
+      // order.brokerInterceptor =
+      //   (brokerInterceptor === "0x0000000000000000000000000000000000000000") ? undefined : brokerInterceptor;
     }
   }
 
