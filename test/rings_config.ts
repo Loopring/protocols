@@ -1138,6 +1138,53 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "multiple 2-size rings, share the same order, tokenS/tokenB mismatch",
+    rings: [[0, 1], [0, 2]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[2],
+        tokenB: tokenSymbols[1],
+        amountS: 100e18,
+        amountB: 10e18,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[2],
+        amountS: 5e18,
+        amountB: 50e18,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[3],
+        tokenB: tokenSymbols[1],
+        amountS: 5e18,
+        amountB: 45e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.5,
+              margin: 0,
+            },
+            {
+              filledFraction: 1.0,
+              margin: 0,
+            },
+          ],
+        },
+        {
+          fail: true,
+        },
+      ],
+    },
+  },
+
+  {
     description: "P2P: Daniel's example",
     transactionOrigin: "1",
     rings: [[0, 1]],

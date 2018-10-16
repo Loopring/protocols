@@ -173,7 +173,9 @@ library RingHelper {
     {
         ring.valid = ring.valid && (ring.size > 1 && ring.size <= 8); // invalid ring size
         for (uint i = 0; i < ring.size; i++) {
+            uint prev = (i + ring.size - 1) % ring.size;
             ring.valid = ring.valid && ring.participations[i].order.valid;
+            ring.valid = ring.valid && ring.participations[i].order.tokenS == ring.participations[prev].order.tokenB;
         }
     }
 
