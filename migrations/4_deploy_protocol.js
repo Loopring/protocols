@@ -2,7 +2,7 @@ var TradeDelegate = artifacts.require("./impl/TradeDelegate");
 var BrokerRegistry = artifacts.require("./impl/BrokerRegistry");
 var OrderRegistry = artifacts.require("./impl/OrderRegistry");
 var RingSubmitter = artifacts.require("./impl/RingSubmitter");
-var RingCanceller = artifacts.require("./impl/RingCanceller");
+var OrderCanceller = artifacts.require("./impl/OrderCanceller");
 var FeeHolder = artifacts.require("./impl/FeeHolder");
 var OrderBook = artifacts.require("./impl/OrderBook");
 var BurnRateTable = artifacts.require("./impl/BurnRateTable");
@@ -46,7 +46,7 @@ module.exports = function(deployer, network, accounts) {
           OrderBook.address,
           BurnRateTable.address,
         ),
-        deployer.deploy(RingCanceller, TradeDelegate.address),
+        deployer.deploy(OrderCanceller, TradeDelegate.address),
         deployer.deploy(BurnManager, FeeHolder.address, lrcAddr),
       ]);
     });

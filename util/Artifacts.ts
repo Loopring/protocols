@@ -1,7 +1,7 @@
 
 export class Artifacts {
   public RingSubmitter: any;
-  public RingCanceller: any;
+  public OrderCanceller: any;
   public TradeDelegate: any;
   public BrokerRegistry: any;
   public OrderRegistry: any;
@@ -21,7 +21,7 @@ export class Artifacts {
   public DeserializerTest: any;
   constructor(artifacts: any) {
     this.RingSubmitter = artifacts.require("impl/RingSubmitter");
-    this.RingCanceller = artifacts.require("impl/RingCanceller");
+    this.OrderCanceller = artifacts.require("impl/OrderCanceller");
     this.TradeDelegate = artifacts.require("impl/TradeDelegate");
     this.BrokerRegistry = artifacts.require("impl/BrokerRegistry");
     this.OrderRegistry = artifacts.require("impl/OrderRegistry");

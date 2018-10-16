@@ -5,14 +5,14 @@ import { Artifacts } from "../util/Artifacts";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
 const {
-  RingCanceller,
+  OrderCanceller,
 } = new Artifacts(artifacts);
 
 contract("Exchange_Cancel", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
 
-  let ringCanceller: any;
+  let orderCanceller: any;
   const allTokenSymbols = tokenInfos.development.map((t) => t.symbol);
 
   const emptyAddr = "0x0000000000000000000000000000000000000000";
@@ -29,9 +29,9 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     // could potentially hide bugs
     beforeEach(async () => {
       await exchangeTestUtil.cleanTradeHistory();
-      ringCanceller = await RingCanceller.new(exchangeTestUtil.context.tradeDelegate.address);
+      orderCanceller = await OrderCanceller.new(exchangeTestUtil.context.tradeDelegate.address);
       await exchangeTestUtil.context.tradeDelegate.authorizeAddress(
-        ringCanceller.address,
+        orderCanceller.address,
         {from: exchangeTestUtil.testContext.deployer},
       );
     });
@@ -66,7 +66,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
         const orderToCancel = ringsInfo.orders[orderToCancelIdx];
         const hashes = new psc.Bitstream();
         hashes.addHex(orderToCancel.hash.toString("hex"));
-        const cancelTx = await ringCanceller.cancelOrders(hashes.getData(), {from: orderToCancel.owner});
+        const cancelTx = await orderCanceller.cancelOrders(hashes.getData(), {from: orderToCancel.owner});
 
         // Check the TradeDelegate contract to see if the order is indeed cancelled
         const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
@@ -106,7 +106,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
         // Cancel the first order using trading pairs
         const orderToCancelIdx = 0;
         const orderToCancel = ringsInfo.orders[orderToCancelIdx];
-        const cancelTx = await ringCanceller.cancelAllOrdersForTradingPair(
+        const cancelTx = await orderCanceller.cancelAllOrdersForTradingPair(
           orderToCancel.tokenS, orderToCancel.tokenB, orderToCancel.validSince + 500, {from: orderToCancel.owner});
 
         // Check the TradeDelegate contract to see if the order is indeed cancelled
@@ -147,7 +147,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
         // Cancel the first order using trading pairs
         const orderToCancelIdx = 1;
         const orderToCancel = ringsInfo.orders[orderToCancelIdx];
-        await ringCanceller.cancelAllOrders(orderToCancel.validSince + 500, {from: orderToCancel.owner});
+        await orderCanceller.cancelAllOrders(orderToCancel.validSince + 500, {from: orderToCancel.owner});
 
         // Check the TradeDelegate contract to see if the order is indeed cancelled
         const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
@@ -197,7 +197,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
 
         const hashes = new psc.Bitstream();
         hashes.addHex(orderToCancel.hash.toString("hex"));
-        await ringCanceller.cancelOrders(hashes.getData(), {from: orderToCancel.broker});
+        await orderCanceller.cancelOrders(hashes.getData(), {from: orderToCancel.broker});
 
         // Check the TradeDelegate contract to see if the order is indeed cancelled
         const expectedValidValues = ringsInfo.orders.map((element, index) => (index !== orderToCancelIdx));
@@ -243,7 +243,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
         // Register the broker without interceptor
         await exchangeTestUtil.registerOrderBrokerChecked(orderToCancel.owner, orderToCancel.broker, emptyAddr);
 
-        await ringCanceller.cancelAllOrdersForTradingPairOfOwner(orderToCancel.owner,
+        await orderCanceller.cancelAllOrdersForTradingPairOfOwner(orderToCancel.owner,
                                                                  orderToCancel.tokenS,
                                                                  orderToCancel.tokenB,
                                                                  orderToCancel.validSince + 500,
@@ -293,7 +293,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
         // Register the broker without interceptor
         await exchangeTestUtil.registerOrderBrokerChecked(orderToCancel.owner, orderToCancel.broker, emptyAddr);
 
-        await ringCanceller.cancelAllOrdersOfOwner(orderToCancel.owner,
+        await orderCanceller.cancelAllOrdersOfOwner(orderToCancel.owner,
                                                    orderToCancel.validSince + 500,
                                                    {from: orderToCancel.broker});
 

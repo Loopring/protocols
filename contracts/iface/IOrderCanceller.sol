@@ -19,10 +19,10 @@ pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
 
-/// @title IRingCanceller
+/// @title IOrderCanceller
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Kongliang Zhong - <kongliang@loopring.org>
-contract IRingCanceller {
+contract IOrderCanceller {
 
     event OrdersCancelled(
         address indexed _broker,

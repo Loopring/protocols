@@ -25,7 +25,7 @@ import "../helper/RingHelper.sol";
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IFeeHolder.sol";
 import "../iface/IOrderRegistry.sol";
-import "../iface/IRingCanceller.sol";
+import "../iface/IOrderCanceller.sol";
 import "../iface/ITradeDelegate.sol";
 
 import "../lib/BytesUtil.sol";
@@ -48,7 +48,7 @@ import "./ExchangeDeserializer.sol";
 ///     https://github.com/BenjaminPrice
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
-contract RingCanceller is IRingCanceller, NoDefaultFunc {
+contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
 
     address public delegateAddress = 0x0;
 
