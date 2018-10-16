@@ -116,8 +116,12 @@ export class Ring {
   public checkOrdersValid() {
     this.valid = this.valid &&
                  ensure(this.participations.length > 1 && this.participations.length <= 8, "invald ring size");
-    for (const p of this.participations) {
-      this.valid = this.valid && ensure(p.order.valid, "ring contains invalid order");
+    for (let i = 0; i < this.participations.length; i++) {
+      const prevIndex = (i + this.participations.length - 1) % this.participations.length;
+      this.valid = this.valid && ensure(this.participations[i].order.valid, "ring contains invalid order");
+      this.valid = this.valid &&
+                   ensure(this.participations[i].order.tokenS === this.participations[prevIndex].order.tokenB,
+                          "tokenS/tokenB mismatch");
     }
   }
 
