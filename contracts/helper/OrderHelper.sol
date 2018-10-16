@@ -101,7 +101,7 @@ library OrderHelper {
             order.broker = order.owner;
         } else {
             bool registered;
-            (registered, order.brokerInterceptor) = ctx.orderBrokerRegistry.getBroker(
+            (registered, /*order.brokerInterceptor*/) = ctx.orderBrokerRegistry.getBroker(
                 order.owner,
                 order.broker
             );
