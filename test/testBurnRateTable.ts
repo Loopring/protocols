@@ -178,11 +178,11 @@ contract("BurnRateTable", (accounts: string[]) => {
         "LRC total supply should have beed reduces by the amount burned",
       );
 
-      // The tier of the token should still be the same after ~1 year
-      await advanceBlockTimestamp(366 * DAY_TO_SECONDS);
+      // The tier of the token should still be the same within 1 year
+      await advanceBlockTimestamp(364 * DAY_TO_SECONDS);
       await checkTokenTier(user1, token1, 3);
-      // The tier of the token should have reverted back to tier 4 after 2 years
-      await advanceBlockTimestamp(366 * DAY_TO_SECONDS);
+      // The tier of the token should have reverted back to tier 4 after 1 years
+      await advanceBlockTimestamp(2 * DAY_TO_SECONDS);
       await checkTokenTier(user1, token1, 4);
     });
 

@@ -41,7 +41,7 @@ contract IBurnRateTable {
     uint16 public constant BURN_BASE_PERCENTAGE           =                 100 * 10; // 100%
 
     // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
-    uint16 public constant TIER_UPGRADE_COST_PERCENTAGE   =                        5; // 0.5%
+    uint16 public constant TIER_UPGRADE_COST_PERCENTAGE   =                        1; // 0.1%
 
     // Burn rates
     // Matching

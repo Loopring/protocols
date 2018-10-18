@@ -102,7 +102,7 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
 
         // Upgrade tier
         TokenData storage tokenData = tokens[token];
-        tokenData.validUntil = now.add(2 * YEAR_TO_SECONDS);
+        tokenData.validUntil = now.add(YEAR_TO_SECONDS);
         tokenData.tier = currentTier + 1;
 
         emit TokenTierUpgraded(token, tokenData.tier);
