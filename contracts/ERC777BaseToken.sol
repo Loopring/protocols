@@ -206,7 +206,7 @@ contract ERC777BaseToken is ERC777Token, ERC820Implementer {
     )
         internal
     {
-        /// allow _to == 0x0, send lrc to 0x0 means burning.
+        // allow _to == 0x0, send lrc to 0x0 means burning.
         if ( _to == 0x0) {
             doBurn(_operator, _from, _amount, _userData, _operatorData);
         } else {
@@ -214,7 +214,6 @@ contract ERC777BaseToken is ERC777Token, ERC820Implementer {
 
             callSender(_operator, _from, _to, _amount, _userData, _operatorData);
 
-            // require(_to != address(0));          // forbid sending to 0x0 (=burning)
             require(mBalances[_from] >= _amount); // ensure enough funds
 
             mBalances[_from] = mBalances[_from].sub(_amount);
