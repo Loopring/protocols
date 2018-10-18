@@ -28,14 +28,7 @@ contract IBurnRateTable {
         uint    validUntil;
     }
 
-    struct UserData {
-        uint    amount;
-        uint    lockedSince;
-        uint    amountWithdrawn;
-    }
-
     mapping(address => TokenData) public tokens;
-    mapping(address => UserData) public balances;
 
     uint public constant YEAR_TO_SECONDS = 31556952;
 
@@ -61,14 +54,6 @@ contract IBurnRateTable {
     uint16 public constant BURN_P2P_TIER2                 =                   2 * 10; //   2%
     uint16 public constant BURN_P2P_TIER3                 =                   3 * 10; //   3%
     uint16 public constant BURN_P2P_TIER4                 =                   6 * 10; //   6%
-
-    // Locking
-    uint32 public constant LOCK_BASE_PERCENTAGE           =               100 * 1000; // 100%
-    uint32 public constant MAX_LOCK_PERCENTAGE            =                       10;
-
-    uint public constant LOCK_TIME                    =    1 * YEAR_TO_SECONDS;
-    uint public constant LINEAR_UNLOCK_START_TIME     =    YEAR_TO_SECONDS / 2;
-
 
     event TokenTierUpgraded(
         address indexed addr,
@@ -106,64 +91,5 @@ contract IBurnRateTable {
         )
         external
         returns (bool);
-
-    /// @dev   Gets the rebate rate of an order owner
-    /// @param user The order owner
-    /// @return The rebate rate
-    function getRebateRate(
-        address user
-        )
-        public
-        view
-        returns (uint16);
-
-    /// @dev   Locks LRC from msg.sender to lower the burn rate on the fees he pays.
-    ///        msg.sender needs to approve this contract for the neccessary funds.
-    /// @param amount The amount of LRC to lock.
-    /// @return True if successful, false otherwise.
-    function lock(
-        uint amount
-        )
-        external
-        returns (bool);
-
-    /// @dev   Withdraws LRC that was previously locked to lower the burn rate.
-    /// @param amount The amount of LRC to withdraw.
-    /// @return True if successful, false otherwise.
-    function withdraw(
-        uint amount
-        )
-        external
-        returns (bool);
-
-    /// @dev   Gets the total amount of LRC that is or was locked for a user
-    /// @param user The user to get the balance for
-    /// @return The total balance available in this contract
-    function getBalance(
-        address user
-        )
-        external
-        view
-        returns (uint);
-
-    /// @dev   Gets the withdrawable amount of LRC from this contract
-    /// @param user The user to get the withdrawable balance for
-    /// @return The amount of LRC the user can withdraw
-    function getWithdrawableBalance(
-        address user
-        )
-        public
-        view
-        returns (uint);
-
-    /// @dev   Gets the time the user started locking the LRC in this contract
-    /// @param user The user to get the lock start time for
-    /// @return The lock start time for the given user
-    function getLockStartTime(
-        address user
-        )
-        external
-        view
-        returns (uint);
 
 }

@@ -28,11 +28,7 @@ contract("BurnRateTable", (accounts: string[]) => {
 
   const DAY_TO_SECONDS = 3600 * 24;
 
-  let LOCK_TIME: number;
-  let LINEAR_UNLOCK_START_TIME: number;
-
   let BURN_BASE_PERCENTAGE: number;
-  let LOCK_BASE_PERCENTAGE: number;
 
   const assertNumberEqualsWithPrecision = (n1: number, n2: number, description: string, precision: number = 8) => {
     const numStr1 = (n1 / 1e18).toFixed(precision);
@@ -99,16 +95,6 @@ contract("BurnRateTable", (accounts: string[]) => {
     return upgradeAmount;
   };
 
-  const getMaxLockAmount = async () => {
-    const LRC = await DummyToken.at(tokenLRC);
-    const totalLRCSupply = await LRC.totalSupply();
-
-    // Calculate the needed funds to upgrade the tier
-    const maxLockPercentage = (await burnRateTable.MAX_LOCK_PERCENTAGE()).toNumber();
-    const maxLockAmount = Math.floor(totalLRCSupply * maxLockPercentage / LOCK_BASE_PERCENTAGE);
-    return maxLockAmount;
-  };
-
   const getLRCBalance = async (user: string) => {
     const LRC = await DummyToken.at(tokenLRC);
     const balance = (await LRC.balanceOf(user)).toNumber();
@@ -131,66 +117,10 @@ contract("BurnRateTable", (accounts: string[]) => {
     assert.equal(P2PToken, P2PTier, "P2P rate needs to match tier " + expectedTier + " rate");
   };
 
-  const checkRebateRate = async (user: string, expectedRate: number) => {
-    const rate = (await burnRateTable.getRebateRate(user)).toNumber();
-    assert.equal(rate, expectedRate, "User rebate rate need to match expected rate");
-  };
-
   const checkLRCBalance = async (user: string, expectedBalance: number, description?: string) => {
     const balance = await getLRCBalance(user);
     assertNumberEqualsWithPrecision(balance, expectedBalance,
                                     description ? description : "Balance of the user should match expected balance");
-  };
-
-  const checkWithdrawableAmount = async (user: string, expectedAmount: number, allowedDelta: number = 0) => {
-    const amount = (await burnRateTable.getWithdrawableBalance(user)).toNumber();
-    assert(Math.abs(amount - expectedAmount) <= allowedDelta,
-      "Withdrawable amount should roughly match expected amount");
-  };
-
-  const checkBalance = async (user: string, expectedBalance: number) => {
-    const balance = (await burnRateTable.getBalance(user)).toNumber();
-    assert.equal(balance, expectedBalance, "Balance should match expected amount");
-  };
-
-  const withdrawChecked = async (user: string, amount: number) => {
-    const lrcBalanceBefore = await getLRCBalance(user);
-    const withdrawableAmountBefore = (await burnRateTable.getWithdrawableBalance(user)).toNumber();
-    const lockedBalanceBefore = (await burnRateTable.getBalance(user)).toNumber();
-
-    // Withdraw
-    await burnRateTable.withdraw(amount, {from: user});
-
-    await checkLRCBalance(user, lrcBalanceBefore + amount);
-    // Time has advanced so the withdrawable amount could have changed a tiny bit
-    await checkWithdrawableAmount(user, withdrawableAmountBefore - amount, lockedBalanceBefore / 100000);
-    await checkBalance(user, lockedBalanceBefore - amount);
-  };
-
-  const lockChecked = async (user: string, amount: number) => {
-    const lrcBalanceBefore = await getLRCBalance(user);
-    const lockedBalanceBefore = (await burnRateTable.getBalance(user)).toNumber();
-    const lockStartTimeBefore = (await burnRateTable.getLockStartTime(user)).toNumber();
-
-    // Lock the amount
-    await burnRateTable.lock(amount, {from: user1});
-    const timeAtLock = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
-
-    await checkLRCBalance(user, lrcBalanceBefore - amount,
-                          "Balance of the user should be depleted by the locked amount");
-    await checkBalance(user, lockedBalanceBefore + amount);
-
-    // Check if the lock start time is correctly updated
-    const lockStartTimeAfter = (await burnRateTable.getLockStartTime(user)).toNumber();
-    if (lockedBalanceBefore === 0) {
-      assert.equal(lockStartTimeBefore, 0, "Lock start time should still be uninitialized");
-      assert(Math.abs(lockStartTimeAfter - timeAtLock) < 10);
-    } else {
-      const timeWeight = amount / (lockedBalanceBefore + amount);
-      const expectedNewStartTime = lockStartTimeBefore + (timeAtLock - lockStartTimeBefore) * timeWeight;
-      assert(Math.abs(lockStartTimeAfter - expectedNewStartTime) < 10,
-             "Lock start time should be updated using the old/new locked amounts as weights");
-    }
   };
 
   before(async () => {
@@ -204,11 +134,7 @@ contract("BurnRateTable", (accounts: string[]) => {
     tokenLRC = LRC.address;
     burnRateTable = await BurnRateTable.new(tokenLRC, tokenWETH);
 
-    LOCK_TIME = (await burnRateTable.LOCK_TIME()).toNumber();
-    LINEAR_UNLOCK_START_TIME = (await burnRateTable.LINEAR_UNLOCK_START_TIME()).toNumber();
-
     BURN_BASE_PERCENTAGE = (await burnRateTable.BURN_BASE_PERCENTAGE()).toNumber();
-    LOCK_BASE_PERCENTAGE = (await burnRateTable.LOCK_BASE_PERCENTAGE()).toNumber();
   });
 
   describe("Token tiers", () => {
@@ -301,152 +227,4 @@ contract("BurnRateTable", (accounts: string[]) => {
     });
   });
 
-  describe("LRC locking", () => {
-    it("user should be able to lower the burn rate by locking LRC", async () => {
-      const maxLockAmount = await getMaxLockAmount();
-      // Have the user have a bit more balance
-      const initialBalance = maxLockAmount + 1e20;
-      await addLRCBalance(user1, initialBalance);
-
-      // Rebate rate should still be at 0%
-      await checkRebateRate(user1, 0 * BURN_BASE_PERCENTAGE);
-
-      // Lock the max amount
-      await lockChecked(user1, maxLockAmount);
-
-      // Rebate rate needs to be set at 100%
-      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
-      // Rebate rate of another user should still be 0%
-      await checkRebateRate(user2, 0 * BURN_BASE_PERCENTAGE);
-
-      // Rebate rate should stay the same until the locking period is over and the user doesn't withdraw any tokens
-      // Day 100
-      await advanceBlockTimestamp(100 * DAY_TO_SECONDS);
-      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
-      // Day 200
-      await advanceBlockTimestamp(100 * DAY_TO_SECONDS);
-      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
-      // Day 300
-      await advanceBlockTimestamp(100 * DAY_TO_SECONDS);
-      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
-      // Locking period of 1 year over, back to no rebate
-      // Day 370
-      await advanceBlockTimestamp(70 * DAY_TO_SECONDS);
-      await checkRebateRate(user1, 0 * BURN_BASE_PERCENTAGE);
-
-      // Witdraw all locked tokens
-      const withdrawableAmount = (await burnRateTable.getWithdrawableBalance(user1)).toNumber();
-      assert.equal(withdrawableAmount, maxLockAmount, "Withdrawable amount should match initialy locked amount");
-
-      await withdrawChecked(user1, maxLockAmount);
-    });
-
-    it("user should be able to withdraw tokens after they unlock", async () => {
-      const maxLockAmount = await getMaxLockAmount();
-      const lockAmount = maxLockAmount / 2;
-      const initialBalance = lockAmount;
-      await addLRCBalance(user1, initialBalance);
-
-      // Lock the  amount
-      await lockChecked(user1, lockAmount);
-
-      // Witdrawable amount should be 0 until LINEAR_UNLOCK_START_TIME seconds have passed
-      await checkWithdrawableAmount(user1, 0);
-
-      // Should not be able to withdraw any tokens
-      await expectThrow(burnRateTable.withdraw(1, {from: user1}));
-
-      // Advance to just before LINEAR_UNLOCK_START_TIME
-      await advanceBlockTimestamp(LINEAR_UNLOCK_START_TIME - 1 * DAY_TO_SECONDS);
-      await checkWithdrawableAmount(user1, 0);
-
-      // Advance to just after LINEAR_UNLOCK_START_TIME
-      await advanceBlockTimestamp(1.1 * DAY_TO_SECONDS);
-      {
-        const withdrawableAmount = (await burnRateTable.getWithdrawableBalance(user1)).toNumber();
-        assert(withdrawableAmount > 0, "Withdrawable amount should be non-zero");
-      }
-
-      // Keep track how much we have withdrawn
-      let amountWithdrawn = 0;
-
-      // Day 30 (~1/6th into the unlock period)
-      // Should be able to withdraw rougly 1/6th of the total locked amount
-      await advanceBlockTimestamp(30.5 * DAY_TO_SECONDS);
-      await checkWithdrawableAmount(user1, lockAmount / 6, lockAmount / 100);
-
-      // Day 60 (~2/6th into the unlock period)
-      // Should be able to withdraw rougly 2/6th of the total locked amount
-      await advanceBlockTimestamp(30.5 * DAY_TO_SECONDS);
-      await checkWithdrawableAmount(user1,  2 * lockAmount / 6, lockAmount / 100);
-
-      // Withdraw 1/4th of locked amount
-      await withdrawChecked(user1, lockAmount / 4);
-      amountWithdrawn += lockAmount / 4;
-      // Should not be able to withdraw another 1/4th
-      await expectThrow(withdrawChecked(user1, lockAmount / 4));
-
-      // Day 120 (~1/2th into the unlock period)
-      // Should be able to withdraw another 1/4th of the initial amount
-      await advanceBlockTimestamp(30.5 * DAY_TO_SECONDS);
-      await checkWithdrawableAmount(user1,  (lockAmount / 2) - amountWithdrawn, lockAmount / 100);
-      await withdrawChecked(user1, lockAmount / 4);
-      amountWithdrawn += lockAmount / 4;
-
-      // Advance until the end of the lock period and withdraw all remaining tokens
-      await advanceBlockTimestamp(100 * DAY_TO_SECONDS);
-      await withdrawChecked(user1, lockAmount - amountWithdrawn);
-
-      // Everything should be as it was before the user locked anything
-      await checkWithdrawableAmount(user1, 0);
-      await checkBalance(user1, 0);
-      await checkLRCBalance(user1, initialBalance);
-    });
-
-    it("user should be able to lock tokens at multiple times", async () => {
-      // The maximum amount we can lock
-      const maxLockAmount = await getMaxLockAmount();
-      // Let's have the user first lock 1/4th the maximum amount
-      const lockAmount = maxLockAmount / 4;
-
-      // Day 0: Lock the first amount
-      const initialBalance = lockAmount;
-      await addLRCBalance(user1, initialBalance);
-      await lockChecked(user1, lockAmount);
-      await checkRebateRate(user1, 0.25 * BURN_BASE_PERCENTAGE);
-
-      // Day 30: unlock an aditional amount
-      await advanceBlockTimestamp(30 * DAY_TO_SECONDS);
-      await addLRCBalance(user1, initialBalance);
-      await lockChecked(user1, lockAmount);
-      const timeAtSecondLock = web3.eth.getBlock(web3.eth.blockNumber).timestamp;
-      await checkRebateRate(user1, 0.5 * BURN_BASE_PERCENTAGE);
-
-      // Day 60: unlock an aditional amount
-      await advanceBlockTimestamp(30 * DAY_TO_SECONDS);
-      await addLRCBalance(user1, initialBalance);
-      await lockChecked(user1, lockAmount);
-      await checkRebateRate(user1, 0.75 * BURN_BASE_PERCENTAGE);
-
-      // Lock start time should be the weighted average of all lock times using the lock amounts,
-      // which in the above case is the time at the second lock.
-      const lockStartTime = (await burnRateTable.getLockStartTime(user1)).toNumber();
-      assert(Math.abs(lockStartTime - timeAtSecondLock) < 100,
-              "Lock start time should be updated using the old/new locked amounts as weights");
-    });
-
-    it("user should not be able to get more than a 100% rebate", async () => {
-      const maxLockAmount = await getMaxLockAmount();
-      const lockAmount = maxLockAmount * 2;
-      await addLRCBalance(user1, lockAmount);
-      await lockChecked(user1, lockAmount);
-      await checkRebateRate(user1, 1 * BURN_BASE_PERCENTAGE);
-    });
-
-    it("user should not be able to withdraw 0 tokens", async () => {
-      // Should not be able to withdraw 0 tokens
-      await expectThrow(burnRateTable.withdraw(0, {from: user1}));
-    });
-
-  });
 });
