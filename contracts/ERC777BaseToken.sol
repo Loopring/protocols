@@ -206,19 +206,23 @@ contract ERC777BaseToken is ERC777Token, ERC820Implementer {
     )
         internal
     {
-        requireMultiple(_amount);
+        // allow _to == 0x0, send lrc to 0x0 means burning.
+        if ( _to == 0x0) {
+            doBurn(_operator, _from, _amount, _userData, _operatorData);
+        } else {
+            requireMultiple(_amount);
 
-        callSender(_operator, _from, _to, _amount, _userData, _operatorData);
+            callSender(_operator, _from, _to, _amount, _userData, _operatorData);
 
-        require(_to != address(0));          // forbid sending to 0x0 (=burning)
-        require(mBalances[_from] >= _amount); // ensure enough funds
+            require(mBalances[_from] >= _amount); // ensure enough funds
 
-        mBalances[_from] = mBalances[_from].sub(_amount);
-        mBalances[_to] = mBalances[_to].add(_amount);
+            mBalances[_from] = mBalances[_from].sub(_amount);
+            mBalances[_to] = mBalances[_to].add(_amount);
 
-        callRecipient(_operator, _from, _to, _amount, _userData, _operatorData, _preventLocking);
+            callRecipient(_operator, _from, _to, _amount, _userData, _operatorData, _preventLocking);
 
-        emit Sent(_operator, _from, _to, _amount, _userData, _operatorData);
+            emit Sent(_operator, _from, _to, _amount, _userData, _operatorData);
+        }
     }
 
     /// @notice Helper function actually performing the burning of tokens.
