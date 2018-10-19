@@ -237,16 +237,8 @@ export class ProtocolValidator {
       const amountS = new BigNumber(order.amountS).times(orderExpectation.filledFraction.toString()).floor();
       const amountB = new BigNumber(order.amountB).times(orderExpectation.filledFraction.toString()).floor();
 
-      // Fees
-      let amountFee = new BigNumber(order.feeAmount).times(orderExpectation.filledFraction.toString()).floor();
-      let amountFeeB = amountB.times(order.feePercentage).dividedToIntegerBy(this.context.feePercentageBase);
-
-      // Pay in either feeToken or tokenB
-      if (orderExpectation.payFeeInTokenB) {
-        amountFee = new BigNumber(0);
-      } else {
-        amountFeeB = new BigNumber(0);
-      }
+      // Fee
+      const amountFee = new BigNumber(order.feeAmount).times(orderExpectation.filledFraction.toString()).floor();
 
       const rebateFee = await this.collectFeePayments(feePayments,
                                                       orders,
@@ -257,15 +249,6 @@ export class ProtocolValidator {
                                                       amountFee,
                                                       walletSplitPercentage,
                                                       feeRecipient);
-      const rebateB = await this.collectFeePayments(feePayments,
-                                                    orders,
-                                                    ring,
-                                                    order,
-                                                    orderExpectation,
-                                                    order.tokenB,
-                                                    amountFeeB,
-                                                    walletSplitPercentage,
-                                                    feeRecipient);
 
       const prevAmountB = new BigNumber(prevOrder.amountB)
                           .times(prevOrderExpectation.filledFraction.toString())
@@ -277,10 +260,10 @@ export class ProtocolValidator {
         amountB,
         amountFee,
         amountFeeS: new BigNumber(0),
-        amountFeeB,
+        amountFeeB: new BigNumber(0),
         rebateFee,
         rebateS: new BigNumber(0),
-        rebateB,
+        rebateB: new BigNumber(0),
         splitS,
       };
       return orderSettlement;

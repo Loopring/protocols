@@ -288,7 +288,6 @@ export class RingsGenerator {
       this.insertDefault(param);
     }
 
-    param.tables.addNumber(order.feePercentage ? order.feePercentage : 0, 2);
     param.tables.addNumber(order.waiveFeePercentage ? order.waiveFeePercentage : 0, 2);
     param.tables.addNumber(order.tokenSFeePercentage ? order.tokenSFeePercentage : 0, 2);
     param.tables.addNumber(order.tokenBFeePercentage ? order.tokenBFeePercentage : 0, 2);

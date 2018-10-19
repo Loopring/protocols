@@ -39,7 +39,7 @@ export class ExchangeDeserializer {
     // Calculate data pointers
     const miningDataPtr = 8;
     const orderDataPtr = miningDataPtr + 3 * 2;
-    const ringDataPtr = orderDataPtr + (25 * numOrders) * 2;
+    const ringDataPtr = orderDataPtr + (24 * numOrders) * 2;
     const dataBlobPtr = ringDataPtr + (numRings * 9) + 32;
 
     this.spendableList = [];
@@ -106,7 +106,6 @@ export class ExchangeDeserializer {
       allOrNone: this.nextUint16() > 0,
       feeToken: this.nextAddress(),
       feeAmount: this.nextUint().toNumber(),
-      feePercentage: this.nextUint16(),
       waiveFeePercentage: this.toInt16(this.nextUint16()),
       tokenSFeePercentage: this.nextUint16(),
       tokenBFeePercentage: this.nextUint16(),

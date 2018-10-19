@@ -184,6 +184,26 @@ export class Ring {
     const remainingS = new BigNumber(p.order.amountS).minus(p.order.filledAmountS);
     p.ringSpendableS = await this.orderUtil.getSpendableS(p.order);
     p.fillAmountS = BigNumber.min(p.ringSpendableS, remainingS);
+
+    if (!p.order.P2P) {
+      // Check how much fee needs to be paid. We limit fillAmountS to how much
+      // fee the order owner can pay.
+      let feeAmount = new BigNumber(p.order.feeAmount).times(p.fillAmountS).dividedToIntegerBy(p.order.amountS);
+      if (feeAmount.gt(0)) {
+        const spendableFee = await this.orderUtil.getSpendableFee(p.order);
+        if (p.order.feeToken === p.order.tokenS && p.fillAmountS.add(feeAmount).gt(p.ringSpendableS)) {
+          assert(spendableFee.eq(p.ringSpendableS), "spendableFee == spendableS when feeToken == tokenS");
+          // Equally divide the available tokens between fillAmountS and feeAmount
+          const totalAmount = new BigNumber(p.order.amountS).add(p.order.feeAmount);
+          p.fillAmountS = p.ringSpendableS.times(p.order.amountS).dividedToIntegerBy(totalAmount);
+          feeAmount = p.ringSpendableS.mul(p.order.feeAmount).dividedToIntegerBy(totalAmount);
+        } else if (feeAmount.gt(spendableFee)) {
+          feeAmount = spendableFee;
+          p.fillAmountS = feeAmount.times(p.order.amountS).dividedToIntegerBy(p.order.feeAmount);
+        }
+      }
+    }
+
     p.fillAmountB = p.fillAmountS.times(p.order.amountB).dividedToIntegerBy(p.order.amountS);
   }
 
@@ -209,12 +229,11 @@ export class Ring {
         p.feeAmount = new BigNumber(0);
       }
 
-      // We have to pay with tokenB if the owner can't pay the complete feeAmount in feeToken
+      // Make sure we can pay the feeAmount
       p.ringSpendableFee = await this.orderUtil.getSpendableFee(p.order);
       if (p.feeAmount.gt(p.ringSpendableFee)) {
-          p.feeAmountB = p.feeAmountB.plus(p.fillAmountB.times(p.order.feePercentage)
-                                           .dividedToIntegerBy(this.context.feePercentageBase));
-          p.feeAmount = new BigNumber(0);
+          // This normally should not happen, but this is possible when self-trading
+          return false;
       } else {
         await this.orderUtil.reserveAmountFee(p.order, p.feeAmount);
       }
@@ -630,20 +649,15 @@ export class Ring {
 
         const fee = new BigNumber(p.order.feeAmount).times(p.fillAmountS.plus(p.splitS))
                                                     .dividedToIntegerBy(p.order.amountS);
-        const feeB = p.fillAmountB.times(p.order.feePercentage)
-                                  .dividedToIntegerBy(this.context.feePercentageBase);
 
-        // Fee can be paid in tokenB when the owner doesn't have enought funds to pay in feeToken
-        // or feeToken == tokenB
+        // Fee can only be paid in tokenB when feeToken == tokenB
         if (p.order.feeToken === p.order.tokenB && p.order.owner === p.order.tokenRecipient && p.fillAmountB.gte(fee)) {
           assert(p.feeAmountB.eq(fee), "Fee should be paid in tokenB using feeAmount");
-          assert(p.feeAmount.isZero(), "Fee should not be paid in feeToken");
-        } else if (fee.gt(p.ringSpendableFee)) {
-          assert(p.feeAmountB.eq(feeB), "Fee should be paid in tokenB using feePercentage");
           assert(p.feeAmount.isZero(), "Fee should not be paid in feeToken");
         } else {
           assert(p.feeAmountB.isZero(), "Fee should not be paid in tokenB");
           assert(p.feeAmount.eq(fee), "Fee should be paid in feeToken using feeAmount");
+          assert(p.feeAmount.lte(p.ringSpendableFee), "Fee <= spendableFee");
         }
       }
 

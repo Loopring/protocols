@@ -35,24 +35,23 @@ export interface OrderInfo {
   tokenSpendableFee?: Spendable;
 
   // optional fields
-  dualAuthAddr?: string;            // spec value 1
-  broker?: string;                  // spec value 1 << 1
+  dualAuthAddr?: string;
+  broker?: string;
   brokerSpendableS?: Spendable;
   brokerSpendableFee?: Spendable;
-  orderInterceptor?: string;        // spec value 1 << 2
-  walletAddr?: string;              // spec value 1 << 3
-  validUntil?: number;              // spec value 1 << 4
-  allOrNone?: boolean;              // spec value 1 << 5
-  sig?: string;                     // spec value 1 << 6
-  dualAuthSig?: string;             // spec value 1 << 7
-  feeToken?: string;                // spec value 1 << 8
-  feeAmount?: number;               // spec value 1 << 9
-  feePercentage?: number;           // spec value 1 << 10
-  waiveFeePercentage?: number;      // spec value 1 << 11
-  tokenSFeePercentage?: number;     // spec value 1 << 12
-  tokenBFeePercentage?: number;     // spec value 1 << 13
-  tokenRecipient?: string;          // spec value 1 << 14
-  walletSplitPercentage?: number;   // spec value 1 << 15
+  orderInterceptor?: string;
+  walletAddr?: string;
+  validUntil?: number;
+  allOrNone?: boolean;
+  sig?: string;
+  dualAuthSig?: string;
+  feeToken?: string;
+  feeAmount?: number;
+  waiveFeePercentage?: number;
+  tokenSFeePercentage?: number;
+  tokenBFeePercentage?: number;
+  tokenRecipient?: string;
+  walletSplitPercentage?: number;
 
   // helper field
   P2P?: boolean;
@@ -100,7 +99,6 @@ export interface RingsSubmitParam {
 
 export interface OrderExpectation {
   filledFraction: number;
-  payFeeInTokenB?: boolean;
   P2P?: boolean;
   margin?: number;
 }
