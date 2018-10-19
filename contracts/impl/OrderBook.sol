@@ -36,9 +36,9 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
         external
         returns (bytes32)
     {
-        require(dataArray.length >= 18, INVALID_SIZE);
+        require(dataArray.length >= 17, INVALID_SIZE);
         bool allOrNone = false;
-        if (uint(dataArray[17]) > 0) {
+        if (uint(dataArray[16]) > 0) {
             allOrNone = true;
         }
 
@@ -72,12 +72,11 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
             allOrNone,
             address(dataArray[10]), // feeToken
             uint(dataArray[11]), // feeAmount
-            uint16(dataArray[12]), // feePercentage
             0,
-            uint16(dataArray[13]), // tokenSFeePercentage
-            uint16(dataArray[14]), // tokenBFeePercentage
-            address(dataArray[15]), // tokenRecipient
-            uint16(dataArray[16]), // walletSplitPercentage
+            uint16(dataArray[12]), // tokenSFeePercentage
+            uint16(dataArray[13]), // tokenBFeePercentage
+            address(dataArray[14]), // tokenRecipient
+            uint16(dataArray[15]), // walletSplitPercentage
             false,
             bytes32(0x0),
             0x0,

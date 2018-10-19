@@ -194,7 +194,7 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "single 2-size ring, insufficient fee funds available (tokenB fallback)",
+    description: "single 2-size ring, no fee funds available ",
     rings: [[0, 1]],
     orders: [
       {
@@ -220,11 +220,48 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 1.0,
+              filledFraction: 0.0,
             },
             {
-              filledFraction: 1.0,
-              payFeeInTokenB: true,
+              filledFraction: 0.0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "single 2-size ring, insufficient fee funds available",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "WETH",
+        tokenB: "GTO",
+        amountS: 8e18,
+        amountB: 1e18,
+      },
+      {
+        index: 1,
+        tokenS: "GTO",
+        tokenB: "WETH",
+        amountS: 1e18,
+        amountB: 8e18,
+        feeToken: "LRC",
+        feeAmount: 1.0e18,
+        balanceFee: 0.8e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.8,
+            },
+            {
+              filledFraction: 0.8,
             },
           ],
         },
@@ -299,11 +336,10 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 0.75,
+              filledFraction: (7.5 * 10.0 / (10.0 + 1.0)) / 10.0,
             },
             {
-              filledFraction: 0.75,
-              payFeeInTokenB: true,
+              filledFraction: (7.5 * 10.0 / (10.0 + 1.0)) / 10.0,
             },
           ],
         },
@@ -407,7 +443,6 @@ export const ringsInfoList: RingsInfo[] = [
         tokenB: tokenSymbols[1],
         amountS: 20e18,
         amountB: 200e18,
-        balanceFee: 0,
         walletAddr: null,
         walletSplitPercentage: 20,
       },
@@ -421,7 +456,6 @@ export const ringsInfoList: RingsInfo[] = [
             },
             {
               filledFraction: 0.5,
-              payFeeInTokenB: true,
             },
           ],
         },
@@ -600,7 +634,7 @@ export const ringsInfoList: RingsInfo[] = [
         amountS: 3e18,
         amountB: 1e18,
         feeAmount: 1e18,
-        balanceFee: 1.1e18,
+        balanceFee: 2.0e18,
       },
       {
         index: 1,
@@ -610,7 +644,7 @@ export const ringsInfoList: RingsInfo[] = [
         amountS: 1e18,
         amountB: 3e18,
         feeAmount: 1e18,
-        balanceFee: 1.1e18,
+        balanceFee: 2.0e18,
       },
     ],
     expected: {
@@ -622,7 +656,6 @@ export const ringsInfoList: RingsInfo[] = [
             },
             {
               filledFraction: 1.0,
-              payFeeInTokenB: true,
             },
           ],
         },
@@ -668,15 +701,13 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 1.0,
-              payFeeInTokenB: true,
+              filledFraction: 0.0,
             },
             {
-              filledFraction: 1.0,
+              filledFraction: 0.0,
             },
             {
-              filledFraction: 1.0,
-              payFeeInTokenB: true,
+              filledFraction: 0.0,
             },
           ],
         },
@@ -1069,11 +1100,10 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 1.0,
-              payFeeInTokenB: true,
+              filledFraction: 0.1,
             },
             {
-              filledFraction: 1.0,
+              filledFraction: 0.1,
             },
           ],
         },
@@ -2096,11 +2126,10 @@ export const ringsInfoList: RingsInfo[] = [
         {
           orders: [
             {
-              filledFraction: 0.0025,
+              filledFraction: 0.0,
             },
             {
-              filledFraction: 0.5,
-              payFeeInTokenB: true,
+              filledFraction: 0.0,
             },
           ],
         },

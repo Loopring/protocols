@@ -56,7 +56,7 @@ library ExchangeDeserializer {
         }
         uint miningDataPtr = dataPtr + 8;
         uint orderDataPtr = miningDataPtr + 3 * 2;
-        uint ringDataPtr = orderDataPtr + (25 * header.numOrders) * 2;
+        uint ringDataPtr = orderDataPtr + (24 * header.numOrders) * 2;
         uint dataBlobPtr = ringDataPtr + (header.numRings * 9) + 32;
 
         // The data stream needs to be at least large enough for the
@@ -296,31 +296,24 @@ library ExchangeDeserializer {
                     mload(add(add(data, 32), offset))
                 )
 
-                // order.feePercentage
+                // order.waiveFeePercentage
                 offset := and(mload(add(tablesPtr, 38)), 0xFFFF)
                 mstore(
                     add(order, 672),
                     offset
                 )
 
-                // order.waiveFeePercentage
+                // order.tokenSFeePercentage
                 offset := and(mload(add(tablesPtr, 40)), 0xFFFF)
                 mstore(
                     add(order, 704),
                     offset
                 )
 
-                // order.tokenSFeePercentage
+                // order.tokenBFeePercentage
                 offset := and(mload(add(tablesPtr, 42)), 0xFFFF)
                 mstore(
                     add(order, 736),
-                    offset
-                )
-
-                // order.tokenBFeePercentage
-                offset := and(mload(add(tablesPtr, 44)), 0xFFFF)
-                mstore(
-                    add(order, 768),
                     offset
                 )
 
@@ -328,9 +321,9 @@ library ExchangeDeserializer {
                 mstore(add(data, 20), mload(add(order, 32)))                // order.owner
 
                 // order.tokenRecipient
-                offset := mul(and(mload(add(tablesPtr, 46)), 0xFFFF), 4)
+                offset := mul(and(mload(add(tablesPtr, 44)), 0xFFFF), 4)
                 mstore(
-                    add(order, 800),
+                    add(order, 768),
                     and(mload(add(add(data, 20), offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
                 )
 
@@ -338,22 +331,22 @@ library ExchangeDeserializer {
                 mstore(add(data, 20), 0)
 
                 // order.walletSplitPercentage
-                offset := and(mload(add(tablesPtr, 48)), 0xFFFF)
+                offset := and(mload(add(tablesPtr, 46)), 0xFFFF)
                 mstore(
-                    add(order, 832),
+                    add(order, 800),
                     offset
                 )
 
                 // Set default  values
-                mstore(add(order,  864), 0)         // order.P2P
-                mstore(add(order,  896), 0)         // order.hash
-                mstore(add(order,  928), 0)         // order.brokerInterceptor
-                mstore(add(order,  960), 0)         // order.filledAmountS
-                mstore(add(order,  992), 0)         // order.initialFilledAmountS
-                mstore(add(order, 1024), 1)         // order.valid
+                mstore(add(order, 832), 0)         // order.P2P
+                mstore(add(order, 864), 0)         // order.hash
+                mstore(add(order, 896), 0)         // order.brokerInterceptor
+                mstore(add(order, 928), 0)         // order.filledAmountS
+                mstore(add(order, 960), 0)         // order.initialFilledAmountS
+                mstore(add(order, 992), 1)         // order.valid
 
                 // Advance to the next order
-                tablesPtr := add(tablesPtr, 50)
+                tablesPtr := add(tablesPtr, 48)
             }
         }
     }

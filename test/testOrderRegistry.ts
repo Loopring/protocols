@@ -26,7 +26,6 @@ contract("OrderRegistry", (accounts: string[]) => {
       amountS: 1e+22,
       amountB: 3000000000000000000,
       feeAmount: 1000000000000000000,
-      feePercentage: 20,
       dualAuthSignAlgorithm: 0,
       allOrNone: false,
       validSince: 1669907153,

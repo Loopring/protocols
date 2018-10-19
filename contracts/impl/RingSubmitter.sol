@@ -443,12 +443,12 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             let arrayLength := 0
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
-                let filledAmount := mload(add(order, 960))                               // order.filledAmountS
-                let initialFilledAmount := mload(add(order, 992))                        // order.initialFilledAmountS
+                let filledAmount := mload(add(order, 928))                               // order.filledAmountS
+                let initialFilledAmount := mload(add(order, 960))                        // order.initialFilledAmountS
                 let filledAmountChanged := sub(1, eq(filledAmount, initialFilledAmount))
                 // if (order.valid && filledAmountChanged)
-                if and(gt(mload(add(order, 1024)), 0), filledAmountChanged) {            // order.valid
-                    mstore(add(ptr,   0), mload(add(order, 896)))                        // order.hash
+                if and(gt(mload(add(order, 992)), 0), filledAmountChanged) {             // order.valid
+                    mstore(add(ptr,   0), mload(add(order, 864)))                        // order.hash
                     mstore(add(ptr,  32), filledAmount)
 
                     ptr := add(ptr, 64)
@@ -505,7 +505,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 let order := mload(add(orders, mul(add(i, 1), 32)))     // orders[i]
                 mstore(add(ptr,   0), mload(add(order, 320)))           // order.broker
                 mstore(add(ptr,  32), mload(add(order,  32)))           // order.owner
-                mstore(add(ptr,  64), mload(add(order, 896)))           // order.hash
+                mstore(add(ptr,  64), mload(add(order, 864)))           // order.hash
                 mstore(add(ptr,  96), mload(add(order, 192)))           // order.validSince
                 // bytes20(order.tokenS) ^ bytes20(order.tokenB)        // tradingPair
                 mstore(add(ptr, 128), mul(
@@ -538,13 +538,13 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
                 let order := mload(add(orders, mul(add(i, 1), 32)))     // orders[i]
                 let fill := mload(add(data,  mul(add(i, 2), 32)))       // fills[i]
-                mstore(add(order, 960), fill)                           // order.filledAmountS
-                mstore(add(order, 992), fill)                           // order.initialFilledAmountS
+                mstore(add(order, 928), fill)                           // order.filledAmountS
+                mstore(add(order, 960), fill)                           // order.initialFilledAmountS
                 // If fills[i] == ~uint(0) the order was cancelled
                 // order.valid = order.valid && (order.filledAmountS != ~uint(0))
-                mstore(add(order, 1024),                                // order.valid
+                mstore(add(order, 992),                                 // order.valid
                     and(
-                        gt(mload(add(order, 1024)), 0),                 // order.valid
+                        gt(mload(add(order, 992)), 0),                  // order.valid
                         sub(1, eq(fill, not(0)))                        // fill != ~uint(0
                     )
                 )

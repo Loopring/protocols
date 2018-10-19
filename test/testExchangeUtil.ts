@@ -139,9 +139,6 @@ export class ExchangeTestUtil {
     if (order.feeAmount === undefined) {
       order.feeAmount = 1e18;
     }
-    if (order.feePercentage === undefined && order.feeAmount > 0) {
-      order.feePercentage = 20;  // == 2.0%
-    }
     if (!order.dualAuthSignAlgorithm) {
       order.dualAuthSignAlgorithm = pjs.SignAlgorithm.Ethereum;
     }
@@ -194,7 +191,6 @@ export class ExchangeTestUtil {
     order.tokenRecipient = order.tokenRecipient ? order.tokenRecipient : order.owner;
     order.feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
     order.feeAmount = order.feeAmount ? order.feeAmount : 0;
-    order.feePercentage = order.feePercentage ? order.feePercentage : 0;
     order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 0;
     order.tokenSFeePercentage = order.tokenSFeePercentage ? order.tokenSFeePercentage : 0;
     order.tokenBFeePercentage = order.tokenBFeePercentage ? order.tokenBFeePercentage : 0;

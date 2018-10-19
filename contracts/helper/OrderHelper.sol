@@ -52,7 +52,6 @@ library OrderHelper {
         /*         order.tokenRecipient */
         /*         order.feeToken, */
         /*         order.walletSplitPercentage, */
-        /*         order.feePercentage, */
         /*         order.tokenSFeePercentage, */
         /*         order.tokenBFeePercentage, */
         /*         order.allOrNone */
@@ -65,13 +64,12 @@ library OrderHelper {
 
             // We store the members back to front so we can overwrite data for members smaller than 32
             // (mstore always writes 32 bytes)
-            mstore(add(ptr, sub(348, 31)), mload(add(order, 576)))   // order.allOrNone
-            mstore(add(ptr, sub(346, 30)), mload(add(order, 768)))   // order.tokenBFeePercentage
-            mstore(add(ptr, sub(344, 30)), mload(add(order, 736)))   // order.tokenSFeePercentage
-            mstore(add(ptr, sub(342, 30)), mload(add(order, 672)))   // order.feePercentage
-            mstore(add(ptr, sub(340, 30)), mload(add(order, 832)))   // order.walletSplitPercentage
+            mstore(add(ptr, sub(346, 31)), mload(add(order, 576)))   // order.allOrNone
+            mstore(add(ptr, sub(344, 30)), mload(add(order, 736)))   // order.tokenBFeePercentage
+            mstore(add(ptr, sub(342, 30)), mload(add(order, 704)))   // order.tokenSFeePercentage
+            mstore(add(ptr, sub(340, 30)), mload(add(order, 800)))   // order.walletSplitPercentage
             mstore(add(ptr, sub(320, 12)), mload(add(order, 608)))   // order.feeToken
-            mstore(add(ptr, sub(300, 12)), mload(add(order, 800)))   // order.tokenRecipient
+            mstore(add(ptr, sub(300, 12)), mload(add(order, 768)))   // order.tokenRecipient
             mstore(add(ptr, sub(280, 12)), mload(add(order, 448)))   // order.wallet
             mstore(add(ptr, sub(260, 12)), mload(add(order, 416)))   // order.orderInterceptor
             mstore(add(ptr, sub(240, 12)), mload(add(order, 320)))   // order.broker
@@ -85,7 +83,7 @@ library OrderHelper {
             mstore(add(ptr, sub( 32,  0)), mload(add(order, 160)))   // order.amountB
             mstore(add(ptr, sub(  0,  0)), mload(add(order, 128)))   // order.amountS
 
-            hash := keccak256(ptr, 349)  // 5*32 + 9*20 + 4*2 + 1*1
+            hash := keccak256(ptr, 347)  // 5*32 + 9*20 + 3*2 + 1*1
         }
         order.hash = hash;
     }
@@ -143,7 +141,6 @@ library OrderHelper {
         valid = valid && (order.amountS != 0); // invalid order amountS
         valid = valid && (order.amountB != 0); // invalid order amountB
         valid = valid && (order.feeToken != 0x0); // invalid fee token
-        valid = valid && (order.feePercentage < ctx.feePercentageBase); // invalid fee percentage
 
         valid = valid && (order.tokenSFeePercentage < ctx.feePercentageBase); // invalid tokenS percentage
         valid = valid && (order.tokenBFeePercentage < ctx.feePercentageBase); // invalid tokenB percentage

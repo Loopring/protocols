@@ -107,7 +107,6 @@ contract DeserializerTest {
             true,
             lrcTokenAddress,
             uintData[0],
-            uint16Data[0],
             int16(uint16Data[0]),
             uint16Data[0],
             uint16Data[0],

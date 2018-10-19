@@ -97,7 +97,6 @@ library Data {
         bool      allOrNone;
         address   feeToken;
         uint      feeAmount;
-        uint16    feePercentage;         // Post-trading
         int16     waiveFeePercentage;
         uint16    tokenSFeePercentage;    // Pre-trading
         uint16    tokenBFeePercentage;   // Post-trading
