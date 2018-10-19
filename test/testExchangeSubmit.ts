@@ -128,17 +128,23 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // Only approve a part of the tokenS amount, feeToken cannot be used
       const tokenS = exchangeTestUtil.testContext.tokenAddrInstanceMap.get(ringsInfo.orders[0].tokenS);
       await tokenS.approve(exchangeTestUtil.context.tradeDelegate.address,
-                           ringsInfo.orders[0].amountS / 4,
+                           ringsInfo.orders[0].amountS / 2,
                            {from: ringsInfo.orders[0].owner});
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      await checkFilled(ringsInfo.orders[0], 0);
 
+      // Only approve a part of the feeToken amount now as well
+      const tokenFee = exchangeTestUtil.testContext.tokenAddrInstanceMap.get(ringsInfo.orders[0].feeToken);
+      await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.address,
+                           ringsInfo.orders[0].feeAmount / 4,
+                           {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS / 4);
 
-      // Approve amountS and feeAmount, feeToken can be used
+      // Approve amountS and feeAmount
       await tokenS.approve(exchangeTestUtil.context.tradeDelegate.address,
                            ringsInfo.orders[0].amountS,
                            {from: ringsInfo.orders[0].owner});
-      const tokenFee = exchangeTestUtil.testContext.tokenAddrInstanceMap.get(ringsInfo.orders[0].feeToken);
       await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.address,
                            ringsInfo.orders[0].feeAmount,
                            {from: ringsInfo.orders[0].owner});
