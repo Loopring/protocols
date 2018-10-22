@@ -235,20 +235,22 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         while (reevaluateRings) {
             reevaluateRings = false;
             for (uint i = 0; i < orders.length; i++) {
-                bool validBefore = orders[i].valid;
-                orders[i].validateAllOrNone();
-                // Check if the order valid status has changed
-                reevaluateRings = reevaluateRings || (validBefore != orders[i].valid);
+                if (orders[i].valid) {
+                    orders[i].validateAllOrNone();
+                    // Check if the order valid status has changed
+                    reevaluateRings = reevaluateRings || !orders[i].valid;
+                }
             }
             if (reevaluateRings) {
                 for (uint i = 0; i < rings.length; i++) {
                     Data.Ring memory ring = rings[i];
-                    bool validBefore = ring.valid;
-                    ring.checkOrdersValid();
-                    if (!ring.valid && validBefore) {
-                        // If the ring was valid before the completely filled check we have to revert the filled amountS
-                        // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
-                        ring.revertOrderStats();
+                    if (ring.valid) {
+                        ring.checkOrdersValid();
+                        if (!ring.valid) {
+                            // If the ring was valid before the completely filled check we have to revert the filled amountS
+                            // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
+                            ring.revertOrderStats();
+                        }
                     }
                 }
             }
