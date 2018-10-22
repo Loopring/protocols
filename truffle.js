@@ -1,3 +1,9 @@
+var fs = require("fs");
+var HDWalletProvider = require("truffle-hdwallet-provider");
+
+var mnemonic = fs.readFileSync(process.env.HOME + "/priv/mnemonic.txt", "utf8");
+// console.log("mnemonic", mnemonic);
+
 module.exports = {
   solc: {
     optimizer: {
@@ -16,6 +22,22 @@ module.exports = {
       host: "localhost",
       port: 8545,
       network_id: '2', // main-net
+      gasPrice: 21000000000
+    },
+    ropsten: {
+      network_id: 3,
+      provider: function() {
+        var provider = new HDWalletProvider(mnemonic, "https://ropsten.infura.io/hM4sFGiBdqbnGTxk5YT2", 1);
+        // console.log("addresses:", provider.getAddresses());
+        return provider;
+      },
+      gasPrice: 21000000000
+    },
+    rinkeby: {
+      network_id: 4,
+      provider: function() {
+        return new HDWalletProvider(mnemonic, "https://rinkeby.infura.io/hM4sFGiBdqbnGTxk5YT2", 1);
+      },
       gasPrice: 21000000000
     },
     priv: {
