@@ -1,7 +1,7 @@
 var fs = require("fs");
 var HDWalletProvider = require("truffle-hdwallet-provider");
 
-var mnemonic = fs.readFileSync(process.env.HOME + "/priv/mnemonic.txt", "utf8");
+// var mnemonic = fs.readFileSync(process.env.HOME + "/priv/mnemonic.txt", "utf8");
 // console.log("mnemonic", mnemonic);
 
 module.exports = {
