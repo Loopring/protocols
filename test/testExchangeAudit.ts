@@ -47,7 +47,7 @@ contract("Exchange_Submit_Audit", (accounts: string[]) => {
   });
 
   describe("submitRing", () => {
-    it("check allOrNone", async () => {
+    it("check allOrNone A", async () => {
       const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 2], [0, 1]],
         orders: [
@@ -76,6 +76,74 @@ contract("Exchange_Submit_Audit", (accounts: string[]) => {
             allOrNone: true,
           },
         ],
+        expected: {
+          rings: [
+            {
+              orders: [
+                {
+                  filledFraction: 0.5,
+                },
+                {
+                  filledFraction: 1.0,
+                },
+              ],
+            },
+            {
+              orders: [
+                {
+                  filledFraction: 0.5,
+                },
+                {
+                  filledFraction: 4 / 5,
+                },
+              ],
+            },
+          ],
+        },
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
+    });
+
+    it("check allOrNone B", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1], [0, 2]],
+        orders: [
+          {
+            index: 0,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 10e18,
+            amountB: 10e18,
+            allOrNone: true,
+          },
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 5e18,
+            amountB: 5e18,
+            allOrNone: false,
+          },
+          {
+            index: 2,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 6e18,
+            amountB: 6e18,
+            allOrNone: true,
+          },
+        ],
+        expected: {
+          rings: [
+            {
+              fail: true,
+            },
+            {
+              fail: true,
+            },
+          ],
+        },
       };
       await exchangeTestUtil.setupRings(ringsInfo);
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);

@@ -188,20 +188,12 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             }
         }
 
-        bool reevaluateRings = false;
-        for (i = 0; i < orders.length; i++) {
-            bool validBefore = orders[i].valid;
-            orders[i].validateAllOrNone();
-            // Check if the order valid status has changed
-            reevaluateRings = reevaluateRings || (validBefore != orders[i].valid);
-        }
+        // Check if the allOrNone orders are completely filled over all rings
+        // This can invalidate rings
+        checkRings(orders, rings);
 
         for (i = 0; i < rings.length; i++) {
             Data.Ring memory ring = rings[i];
-            bool validBefore = ring.valid;
-            if (reevaluateRings) {
-                ring.checkOrdersValid();
-            }
             if (ring.valid) {
                 // Only settle rings we have checked to be valid
                 ring.doPayments(ctx, mining);
@@ -213,11 +205,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                     fills
                 );
             } else {
-                // If the ring was valid before the completely filled check we have to revert the filled amountS
-                // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
-                if (validBefore) {
-                    ring.revertOrderStats();
-                }
                 emit InvalidRing(ring.hash);
             }
         }
@@ -231,6 +218,41 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
         // Update ringIndex while setting the highest bit of ringIndex back to '0'
         ringIndex = ctx.ringIndex;
+    }
+
+    function checkRings(
+        Data.Order[] orders,
+        Data.Ring[] rings
+        )
+        internal
+        pure
+    {
+        // Check if allOrNone orders are completely filled
+        // When a ring is turned invalid because of an allOrNone order we have to
+        // recheck the other rings again because they may contain other allOrNone orders
+        // that may not be completely filled anymore.
+        bool reevaluateRings = true;
+        while (reevaluateRings) {
+            reevaluateRings = false;
+            for (uint i = 0; i < orders.length; i++) {
+                bool validBefore = orders[i].valid;
+                orders[i].validateAllOrNone();
+                // Check if the order valid status has changed
+                reevaluateRings = reevaluateRings || (validBefore != orders[i].valid);
+            }
+            if (reevaluateRings) {
+                for (uint i = 0; i < rings.length; i++) {
+                    Data.Ring memory ring = rings[i];
+                    bool validBefore = ring.valid;
+                    ring.checkOrdersValid();
+                    if (!ring.valid && validBefore) {
+                        // If the ring was valid before the completely filled check we have to revert the filled amountS
+                        // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
+                        ring.revertOrderStats();
+                    }
+                }
+            }
+        }
     }
 
     function updateBrokerSpendables(
