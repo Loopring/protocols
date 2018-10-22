@@ -116,7 +116,8 @@ export class Bitstream {
       while (start !== -1) {
         start = this.data.indexOf(x, start);
         if (start !== -1) {
-          if ((start % 2) === 0) {
+          // The offset should be a multiple of 4 bytes
+          if ((start % (2 * 4)) === 0) {
             // logDebug("++ Reused " + x + " at location " + start / 2);
             return start / 2;
           } else {
