@@ -52,6 +52,10 @@ export class OrderUtil {
     order.valid = order.valid && valid;
   }
 
+  public validateAllOrNone(order: OrderInfo) {
+    order.valid = order.valid && ensure(order.filledAmountS.eq(order.amountS), "allOrNone not completely filled");
+  }
+
   public async checkBrokerSignature(order: OrderInfo) {
     let signatureValid = true;
     // If the order was already partially filled we don't have to check the signature again

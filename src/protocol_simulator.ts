@@ -103,16 +103,11 @@ export class ProtocolSimulator {
       }
     }
 
-    for (const order of orders) {
-      // Check if this order needs to be completely filled
-      if (order.allOrNone) {
-        order.valid = order.valid && (order.filledAmountS.eq(order.amountS));
-      }
-    }
+    // Check if the allOrNone orders are completely filled over all rings
+    // This can invalidate rings
+    this.checkRings(orders, rings);
 
     for (const ring of rings) {
-      const validBefore = ring.valid;
-      ring.checkOrdersValid();
       if (ring.valid) {
         const ringReport = await this.simulateAndReportSingle(ring, mining, feeBalances);
         ringMinedEvents.push(ringReport.ringMinedEvent);
@@ -131,15 +126,6 @@ export class ProtocolSimulator {
             transferItems.push(ringTransferItem);
           }
         }
-      } else {
-        // If the ring was valid before the completely filled check we have to revert the filled amountS
-        // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
-        if (validBefore) {
-          for (const p of ring.participations) {
-                p.order.filledAmountS = p.order.filledAmountS.minus(p.fillAmountS.plus(p.splitS));
-                assert(p.order.filledAmountS.gte(0), "p.order.filledAmountS >= 0");
-            }
-        }
       }
     }
 
@@ -153,6 +139,37 @@ export class ProtocolSimulator {
     await this.validateRings(ringsInfo, report);
 
     return report;
+  }
+
+  private async checkRings(orders: OrderInfo[], rings: Ring[]) {
+    // Check if allOrNone orders are completely filled
+    // When a ring is turned invalid because of an allOrNone order we have to
+    // recheck the other rings again because they may contain other allOrNone orders
+    // that may not be completely filled anymore.
+    let reevaluateRings = true;
+    while (reevaluateRings) {
+      reevaluateRings = false;
+      for (const order of orders) {
+        // Check if this order needs to be completely filled
+        if (order.allOrNone) {
+          const validBefore = order.valid;
+          this.orderUtil.validateAllOrNone(order);
+          // Check if the order valid status has changed
+          reevaluateRings = reevaluateRings || (validBefore !== order.valid);
+        }
+      }
+      if (reevaluateRings) {
+        for (const ring of rings) {
+          const validBefore = ring.valid;
+          ring.checkOrdersValid();
+          // If the ring was valid before the completely filled check we have to revert the filled amountS
+          // of the orders in the ring. This is a bit awkward so maybe there's a better solution.
+          if (!ring.valid && validBefore) {
+            ring.revertOrderStats();
+          }
+        }
+      }
+    }
   }
 
   private async simulateAndReportSingle(ring: Ring, mining: Mining, feeBalances: { [id: string]: any; }) {

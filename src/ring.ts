@@ -166,7 +166,7 @@ export class Ring {
       const prevIndex = (i + ringSize - 1) % ringSize;
 
       const valid = await this.calculateFees(this.participations[i], this.participations[prevIndex]);
-      this.valid = ensure(valid, "ring cannot be settled");
+      this.valid = this.valid && ensure(valid, "ring cannot be settled");
       if (this.participations[i].order.waiveFeePercentage < 0) {
         this.minerFeesToOrdersPercentage += -this.participations[i].order.waiveFeePercentage;
       }
@@ -270,10 +270,18 @@ export class Ring {
     assert(p.order.filledAmountS.lte(p.order.amountS), "filledAmountS <= amountS");
   }
 
-  public async adjustOrderStates() {
+  public adjustOrderStates() {
     // Adjust orders
     for (const p of this.participations) {
       this.adjustOrderState(p);
+    }
+  }
+
+  public revertOrderStats() {
+    // Adjust orders
+    for (const p of this.participations) {
+      p.order.filledAmountS = p.order.filledAmountS.minus(p.fillAmountS.plus(p.splitS));
+      assert(p.order.filledAmountS.gte(0), "p.order.filledAmountS >= 0");
     }
   }
 
