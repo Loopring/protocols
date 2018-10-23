@@ -49,7 +49,7 @@ export default class Order
 
     getOrderByHash (filter)
     {
-        return getOrderHash(this.host, filter);
+        return getOrderByHash(this.host, filter);
     }
 
     getUnmergedOrderBook (filter)
