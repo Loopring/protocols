@@ -40,6 +40,7 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
     let simpleRingGas = 0;
     let typicalRingGas = 0;
     let p2pRingGas = 0;
+    let multiRingGas = 0;
 
     it("the first one, always cost more gas than expected, ignore this one", async () => {
       const ringsInfo: pjs.RingsInfo = {
@@ -162,6 +163,47 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
       p2pRingGas = res.tx.receipt.gasUsed;
     });
 
+    it("typical multi-ring case where an order is filled by multiple orders", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1], [0, 2]],
+        orders: [
+          {
+            index: 0,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 100e18,
+            amountB: 10e18,
+            balanceS: 1e26,
+            balanceFee: 1e26,
+            balanceB: 1e26,
+          },
+          {
+            index: 1,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 5e18,
+            amountB: 50e18,
+            balanceS: 1e26,
+            balanceFee: 1e26,
+            balanceB: 1e26,
+          },
+          {
+            index: 2,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 5e18,
+            amountB: 45e18,
+            balanceS: 1e26,
+            balanceFee: 1e26,
+            balanceB: 1e26,
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      const res = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
+      multiRingGas = res.tx.receipt.gasUsed;
+    });
+
     it("", async () => {
       pjs.logInfo("");
       pjs.logInfo("-".repeat(32));
@@ -169,8 +211,9 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
       pjs.logInfo("simpleRingGas:  " + simpleRingGas);
       pjs.logInfo("typicalRingGas: " + typicalRingGas);
       pjs.logInfo("p2pRingGas:     " + p2pRingGas);
+      pjs.logInfo("multiRingGas:   " + multiRingGas);
 
-      const average = Math.floor((simpleRingGas + typicalRingGas + p2pRingGas) / 3);
+      const average = Math.floor((simpleRingGas + typicalRingGas + p2pRingGas + multiRingGas) / 4);
       pjs.logInfo("average:        " + average);
       pjs.logInfo("-".repeat(32));
     });
