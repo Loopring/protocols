@@ -1,6 +1,7 @@
 var fs = require("fs");
 var HDWalletProvider = require("truffle-hdwallet-provider");
-
+var mnemonic = "your mnemonic phases here.";
+// or you may read your mnemonic phases from a file:
 // var mnemonic = fs.readFileSync(process.env.HOME + "/priv/mnemonic.txt", "utf8");
 // console.log("mnemonic", mnemonic);
 
@@ -29,6 +30,7 @@ module.exports = {
       provider: function() {
         var provider = new HDWalletProvider(mnemonic, "https://ropsten.infura.io/hM4sFGiBdqbnGTxk5YT2", 1);
         // console.log("addresses:", provider.getAddresses());
+        // my address: 0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa
         return provider;
       },
       gasPrice: 21000000000
@@ -38,7 +40,8 @@ module.exports = {
       provider: function() {
         return new HDWalletProvider(mnemonic, "https://rinkeby.infura.io/hM4sFGiBdqbnGTxk5YT2", 1);
       },
-      gasPrice: 21000000000
+      gasPrice: 1000000000,
+      gas: 6700000
     },
     priv: {
       host: "localhost",

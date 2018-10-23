@@ -40,5 +40,11 @@ docker-compose logs -f test
 
 The logs command is optional but will give you an easy to read output of the tests without the output from testrpc mixed in (though the combination of both is good for debugging and is why they're not being silenced.)
 
+## Deployment
+* deploy on testnet(rinkeby or ropsten)
+    - fill the mnemonic phases of your account in truffle.js 
+    - get some ethers from rinkeby/ropsten faucet.
+    - run `npm run migrate -- --network rinkeby` or `npm run migrate -- --network ropsten`
+
 ## More
 For more information, please check out https://loopring.github.io/protocol.

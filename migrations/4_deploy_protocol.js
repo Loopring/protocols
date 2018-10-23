@@ -26,29 +26,25 @@ module.exports = function(deployer, network, accounts) {
         WETHToken.deployed(),
       ]);
     }).then(() => {
-      return Promise.all([
-        LRCToken.address,
-        WETHToken.address,
-        BrokerRegistry.new(),
-        deployer.deploy(BurnRateTable, LRCToken.address, WETHToken.address),
-      ]);
-    }).then(addresses => {
-      var [lrcAddr, wethAddr, orderBrokerRegistry, burnRateTableAddr] = addresses;
+      return deployer.deploy(BurnRateTable, LRCToken.address, WETHToken.address);
+    }).then(() => {
       return Promise.all([
         deployer.deploy(
           RingSubmitter,
-          lrcAddr,
-          wethAddr,
+          LRCToken.address,
+          WETHToken.address,
           TradeDelegate.address,
-          orderBrokerRegistry.address,
+          BrokerRegistry.address,
           OrderRegistry.address,
           FeeHolder.address,
           OrderBook.address,
           BurnRateTable.address,
         ),
         deployer.deploy(OrderCanceller, TradeDelegate.address),
-        deployer.deploy(BurnManager, FeeHolder.address, lrcAddr),
+        deployer.deploy(BurnManager, FeeHolder.address, LRCToken.address),
       ]);
+    }).then(() => {
+      // do nothing
     });
   }
 };

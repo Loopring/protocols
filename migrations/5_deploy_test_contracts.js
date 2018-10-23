@@ -8,8 +8,7 @@ var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var DeserializerTest = artifacts.require("./test/DeserializerTest.sol");
 
 module.exports = function(deployer, network, accounts) {
-
-  if (network === "live") {
+  if (network === "live" || network === "ropsten" || network === "rinkeby") {
     // ignore.
   } else {
     deployer.then(() => {
