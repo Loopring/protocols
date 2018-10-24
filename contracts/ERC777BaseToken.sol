@@ -1,6 +1,5 @@
 pragma solidity 0.4.24;
 
-import { ERC820Implementer } from "eip820/contracts/ERC820Implementer.sol";
 import { ERC777Token } from "./ERC777Token.sol";
 import { ERC777TokensSender } from "./ERC777TokensSender.sol";
 import { ERC777TokensRecipient } from "./ERC777TokensRecipient.sol";
@@ -47,14 +46,21 @@ library SafeMath {
     }
 }
 
-contract ERC777BaseToken is ERC777Token, ERC820Implementer {
+contract ERC820RegistryInterface {
+    function getManager(address addr) public view returns(address);
+    function setManager(address addr, address newManager) public;
+    function getInterfaceImplementer(address addr, bytes32 iHash) public view returns (address);
+    function setInterfaceImplementer(address addr, bytes32 iHash, address implementer) public;
+}
+
+contract ERC777BaseToken is ERC777Token {
     using SafeMath for uint256;
 
     string internal mName;
     string internal mSymbol;
     uint256 internal mGranularity;
     uint256 internal mTotalSupply;
-
+    ERC820RegistryInterface internal erc820Registry;
 
     mapping(address => uint) internal mBalances;
     mapping(address => mapping(address => bool)) internal mAuthorized;
@@ -69,7 +75,16 @@ contract ERC777BaseToken is ERC777Token, ERC820Implementer {
     /// @param _name Name of the new token
     /// @param _symbol Symbol of the new token.
     /// @param _granularity Minimum transferable chunk.
-    constructor(string _name, string _symbol, uint256 _granularity, uint256 _totalSupply, address[] _defaultOperators) public {
+    constructor(
+        string _name,
+        string _symbol,
+        uint256 _granularity,
+        uint256 _totalSupply,
+        address[] _defaultOperators,
+        address _erc820RegistryAddress
+    )
+        public
+    {
         mName = _name;
         mSymbol = _symbol;
         mTotalSupply = _totalSupply;
@@ -77,9 +92,14 @@ contract ERC777BaseToken is ERC777Token, ERC820Implementer {
         mGranularity = _granularity;
 
         mDefaultOperators = _defaultOperators;
-        for (uint i = 0; i < mDefaultOperators.length; i++) { mIsDefaultOperator[mDefaultOperators[i]] = true; }
+        for (uint i = 0; i < mDefaultOperators.length; i++) {
+            mIsDefaultOperator[mDefaultOperators[i]] = true;
+        }
 
-        // setInterfaceImplementation("ERC777Token", address(this));
+        require(_erc820RegistryAddress != 0x0);
+        erc820Registry = ERC820RegistryInterface(_erc820RegistryAddress);
+
+        setInterfaceImplementation("ERC777Token", address(this));
     }
 
     /* -- ERC777 Interface Implementation -- */
@@ -300,4 +320,21 @@ contract ERC777BaseToken is ERC777Token, ERC820Implementer {
         if (senderImplementation == 0) { return; }
         ERC777TokensSender(senderImplementation).tokensToSend(_operator, _from, _to, _amount, _userData, _operatorData);
     }
+
+    /// ERC820Implementer functions:
+
+    function setInterfaceImplementation(string ifaceLabel, address impl) internal {
+        bytes32 ifaceHash = keccak256(ifaceLabel);
+        erc820Registry.setInterfaceImplementer(this, ifaceHash, impl);
+    }
+
+    function interfaceAddr(address addr, string ifaceLabel) internal constant returns(address) {
+        bytes32 ifaceHash = keccak256(ifaceLabel);
+        return erc820Registry.getInterfaceImplementer(addr, ifaceHash);
+    }
+
+    function delegateManagement(address newManager) internal {
+        erc820Registry.setManager(this, newManager);
+    }
+
 }

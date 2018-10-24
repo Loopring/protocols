@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 interface ERC777Token {
     function name() public view returns (string);

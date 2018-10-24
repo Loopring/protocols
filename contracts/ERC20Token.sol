@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 
 interface ERC20Token {
     function name() public constant returns (string);
