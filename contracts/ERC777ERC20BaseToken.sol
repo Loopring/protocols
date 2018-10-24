@@ -21,7 +21,7 @@ contract ERC777ERC20BaseToken is ERC20Token, ERC777BaseToken {
         internal ERC777BaseToken(_name, _symbol, _granularity, _totalSupply, _defaultOperators)
     {
         mErc20compatible = true;
-        setInterfaceImplementation("ERC20Token", this);
+        // setInterfaceImplementation("ERC20Token", this);
     }
 
     /// @notice This modifier is applied to erc20 obsolete methods that are

@@ -9,7 +9,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "truffle": "truffle",
-    "compile": "truffle compile"
+    "compile": "truffle compile",
+    "ganache": "ganache-cli"
   },
   "keywords": [
     "loopring",
@@ -21,6 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "erc777": "^0.1.1",
+    "ganache-cli": "^6.1.8",
     "truffle": "4.1.14",
     "zeppelin-solidity": "^1.8.0"
   }
