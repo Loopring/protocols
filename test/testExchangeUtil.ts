@@ -109,9 +109,9 @@ export class ExchangeTestUtil {
         const accountIndex = parseInt(ringsInfo.transactionOrigin, 10);
         assert(accountIndex >= 0 && accountIndex < this.testContext.orderOwners.length, "Invalid owner index");
         ringsInfo.transactionOrigin = this.testContext.orderOwners[accountIndex];
+        ringsInfo.feeRecipient = undefined;
+        ringsInfo.miner = undefined;
       }
-      ringsInfo.feeRecipient = undefined;
-      ringsInfo.miner = undefined;
     }
     for (const [i, order] of ringsInfo.orders.entries()) {
       await this.setupOrder(order, i);

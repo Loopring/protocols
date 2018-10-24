@@ -152,7 +152,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS);
     });
 
-    it("transaction origin is the miner", async () => {
+    it("should be able to submit rings without a mining signature when miner == msg.sender", async () => {
       const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 1]],
         orders: [
@@ -169,11 +169,36 @@ contract("Exchange_Submit", (accounts: string[]) => {
             amountB: 100e18,
           },
         ],
-        transactionOrigin: exchangeTestUtil.testContext.miner,
-        feeRecipient: exchangeTestUtil.testContext.miner,
+        transactionOrigin: exchangeTestUtil.testContext.transactionOrigin,
+        feeRecipient: exchangeTestUtil.testContext.feeRecipient,
         miner: exchangeTestUtil.testContext.miner,
       };
+      // miner != msg.sender
       await exchangeTestUtil.setupRings(ringsInfo);
+      ringsInfo.sig = null;
+      ringsInfo.expected = {
+        revert: true,
+      };
+      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+      // miner == msg.sender
+      ringsInfo.transactionOrigin = ringsInfo.miner;
+      ringsInfo.sig = undefined;
+      await exchangeTestUtil.setupRings(ringsInfo);
+      ringsInfo.sig = null;
+      ringsInfo.expected = {
+        rings: [
+          {
+            orders: [
+              {
+                filledFraction: 1.0,
+              },
+              {
+                filledFraction: 1.0,
+              },
+            ],
+          },
+        ],
+      };
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
     });
 
@@ -377,6 +402,67 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // Check fills
       await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS);
       await checkFilled(ringsInfo.orders[1], ringsInfo.orders[1].amountS);
+    });
+
+    it("default values should be set to expected values", async () => {
+      const lrcAddress = exchangeTestUtil.context.lrcAddress;
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 10e18,
+            amountB: 10e18,
+            walletSplitPercentage: 0,
+          },
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 10e18,
+            amountB: 10e18,
+            walletSplitPercentage: 0,
+          },
+        ],
+        transactionOrigin: exchangeTestUtil.testContext.transactionOrigin,
+        feeRecipient: null,
+        miner: null,
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+
+      // tx.origin is the default feeRecipient
+      {
+        const feeRecipient = ringsInfo.transactionOrigin;
+        const feeBalanceBefore = report.feeBalancesBefore[lrcAddress][feeRecipient];
+        const feeBalanceAfter = report.feeBalancesAfter[lrcAddress][feeRecipient];
+        assert(feeBalanceAfter.gt(feeBalanceBefore), "tx.origin should be the default feeRecipient");
+      }
+
+      // LRC is the default feeToken
+      {
+        const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
+        const lrcAddressIndex = callData.indexOf(lrcAddress);
+        assert.equal(lrcAddressIndex, -1, "LRC address should not be stored in the calldata");
+        let numLRCTransfers = 0;
+        for (const transfer of report.transferItems) {
+          if (transfer.to === exchangeTestUtil.context.feeHolder.address) {
+            assert.equal(transfer.token, lrcAddress, "LRC should be the default feeToken");
+            numLRCTransfers++;
+          }
+        }
+        assert.equal(numLRCTransfers, 2, "2 transfers to the fee contract expected");
+      }
+
+      // The order owner is the default tokenRecipient
+      {
+        for (const order of ringsInfo.orders) {
+          const balanceBefore = report.balancesBefore[order.tokenB][order.owner];
+          const balanceAfter = report.balancesAfter[order.tokenB][order.owner];
+          assert.equal(balanceAfter.minus(balanceBefore).toNumber(), order.amountB,
+                       "The order owner should receive the tokens bought");
+        }
+      }
     });
 
   });
