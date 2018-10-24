@@ -19,9 +19,10 @@ contract NewLRCToken is ERC777ERC20BaseToken, Ownable {
         string _name,
         string _symbol,
         uint256 _granularity,
+        uint256 _totalSupply,
         address[] _defaultOperators,
         address _burnOperator
-    ) public ERC777ERC20BaseToken(_name, _symbol, _granularity, _defaultOperators) {
+    ) public ERC777ERC20BaseToken(_name, _symbol, _granularity, _totalSupply, _defaultOperators) {
         mBurnOperator = _burnOperator;
     }
 

@@ -69,10 +69,10 @@ contract ERC777BaseToken is ERC777Token, ERC820Implementer {
     /// @param _name Name of the new token
     /// @param _symbol Symbol of the new token.
     /// @param _granularity Minimum transferable chunk.
-    constructor(string _name, string _symbol, uint256 _granularity, address[] _defaultOperators) public {
+    constructor(string _name, string _symbol, uint256 _granularity, uint256 _totalSupply, address[] _defaultOperators) public {
         mName = _name;
         mSymbol = _symbol;
-        mTotalSupply = 0;
+        mTotalSupply = _totalSupply;
         require(_granularity >= 1);
         mGranularity = _granularity;
 
