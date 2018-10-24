@@ -34,6 +34,7 @@ contract NewLRCToken is ERC777ERC20BaseToken, Ownable {
         )
     {
         mBurnOperator = _burnOperator;
+        mBalances[msg.sender] = _totalSupply;
     }
 
     /// @notice Disables the ERC20 interface. This function can only be called
