@@ -23,37 +23,26 @@ pragma experimental "ABIEncoderV2";
 /// @author Daniel Wang - <daniel@loopring.org>.
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
 contract IOrderBook {
+    // The map of registered order hashes
     mapping(bytes32 => bool) public orderSubmitted;
 
-    mapping(bytes32 => bytes32[]) public orders;
-
-    struct OrderData {
-        /// contains all fields that used for order hash calculation.
-        /// @see OrderHelper.updateHash() for detailed information.
-        bytes32[] dataArray;
-    }
-
-    event OrderSubmitted(address owner, bytes32 orderHash);
+    /// @dev  Event emitted when an order was successfully submitted
+    ///        orderHash      The hash of the order
+    ///        orderData      The data of the order as passed to submitOrder()
+    event OrderSubmitted(
+        bytes32 orderHash,
+        bytes   orderData
+    );
 
     /// @dev   Submits an order to the on-chain order book.
     ///        No signature is needed. The order can only be sumbitted by its
-    ///        owner of its broker (the owner can be the address of a contract).
-    /// @param dataArray The data of the order.
-    ///        see OrderData
+    ///        owner or its broker (the owner can be the address of a contract).
+    /// @param orderData The data of the order. Contains all fields that are used
+    ///        for the order hash calculation.
+    ///        See OrderHelper.updateHash() for detailed information.
     function submitOrder(
-        bytes32[] dataArray
+        bytes orderData
         )
         external
         returns (bytes32);
-
-    /// @dev   Returns the order data of an order submitted in the order book.
-    /// @param orderHash The hash of the order to return the data for.
-    /// @return The order data
-    ///         see OrderData
-    function getOrderData(
-        bytes32 orderHash
-        )
-        external
-        view
-        returns (bytes32[]);
 }

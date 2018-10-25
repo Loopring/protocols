@@ -235,9 +235,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
 
       const orderUtil = new pjs.OrderUtil(undefined);
-      const bytes32Array = orderUtil.toOrderBookSubmitParams(onChainOrder);
+      const orderData = orderUtil.toOrderBookSubmitParams(onChainOrder);
       const fromBlock = web3.eth.blockNumber;
-      await orderBook.submitOrder(bytes32Array, {from: onChainOrder.owner});
+      await orderBook.submitOrder(orderData, {from: onChainOrder.owner});
       const events: any = await exchangeTestUtil.getEventsFromContract(orderBook, "OrderSubmitted", fromBlock);
       const orderHashOnChain = events[0].args.orderHash;
       const orderHashBuffer = orderUtil.getOrderHash(onChainOrder);

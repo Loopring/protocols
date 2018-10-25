@@ -21,6 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "../helper/OrderHelper.sol";
 import "../iface/IOrderBook.sol";
 import "../impl/Data.sol";
+import "../lib/MemoryUtil.sol";
 import "../lib/NoDefaultFunc.sol";
 
 
@@ -31,52 +32,40 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
     using OrderHelper     for Data.Order;
 
     function submitOrder(
-        bytes32[] dataArray
+        bytes data
         )
         external
         returns (bytes32)
     {
-        require(dataArray.length >= 17, INVALID_SIZE);
-        bool allOrNone = false;
-        if (uint(dataArray[16]) > 0) {
-            allOrNone = true;
-        }
-
-        /// msg.sender must be order's owner or broker.
-        /// no need to check order's broker is registered here. it will be checked during
-        /// ring settlement.
-        require(
-            msg.sender == address(dataArray[0]) || msg.sender == address(dataArray[6]),
-            UNAUTHORIZED_ONCHAIN_ORDER
-        );
+        require(data.length == 17 * 32, INVALID_SIZE);
 
         Data.Order memory order = Data.Order(
-            0,                     // version
-            address(dataArray[0]), // owner
-            address(dataArray[1]), // tokenS
-            address(dataArray[2]), // tokenB
-            uint(dataArray[3]), // amountS
-            uint(dataArray[4]), // amountB
-            uint(dataArray[5]), // validSince
+            0,                                                      // version
+            address(MemoryUtil.bytesToUint(data, 0 * 32)),          // owner
+            address(MemoryUtil.bytesToUint(data, 1 * 32)),          // tokenS
+            address(MemoryUtil.bytesToUint(data, 2 * 32)),          // tokenB
+            MemoryUtil.bytesToUint(data, 3 * 32),                   // amountS
+            MemoryUtil.bytesToUint(data, 4 * 32),                   // amountB
+            MemoryUtil.bytesToUint(data, 5 * 32),                   // validSince
             Data.Spendable(true, 0, 0),
             Data.Spendable(true, 0, 0),
             0x0,
-            address(dataArray[6]), // broker
+            address(MemoryUtil.bytesToUint(data, 6 * 32)),          // broker
             Data.Spendable(true, 0, 0),
             Data.Spendable(true, 0, 0),
-            address(dataArray[7]), // orderInterceptor
-            address(dataArray[8]), // wallet
-            uint(dataArray[9]), // validUtil
+            address(MemoryUtil.bytesToUint(data, 7 * 32)),          // orderInterceptor
+            address(MemoryUtil.bytesToUint(data, 8 * 32)),          // wallet
+            uint(MemoryUtil.bytesToUint(data, 9 * 32)),             // validUtil
             new bytes(0),
             new bytes(0),
-            allOrNone,
-            address(dataArray[10]), // feeToken
-            uint(dataArray[11]), // feeAmount
+            bool(MemoryUtil.bytesToUint(data, 10 * 32) > 0),        // allOrNone
+            address(MemoryUtil.bytesToUint(data, 11 * 32)),         // feeToken
+            MemoryUtil.bytesToUint(data, 12 * 32),                  // feeAmount
             0,
-            uint16(dataArray[12]), // tokenSFeePercentage
-            uint16(dataArray[13]), // tokenBFeePercentage
-            address(dataArray[14]), // tokenRecipient
-            uint16(dataArray[15]), // walletSplitPercentage
+            uint16(MemoryUtil.bytesToUint(data, 13 * 32)),          // tokenSFeePercentage
+            uint16(MemoryUtil.bytesToUint(data, 14 * 32)),          // tokenBFeePercentage
+            address(MemoryUtil.bytesToUint(data, 15 * 32)),         // tokenRecipient
+            uint16(MemoryUtil.bytesToUint(data, 16 * 32)),          // walletSplitPercentage
             false,
             bytes32(0x0),
             0x0,
@@ -85,23 +74,25 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
             true
         );
 
+        /// msg.sender must be order's owner or broker.
+        /// no need to check order's broker is registered here. it will be checked during
+        /// ring settlement.
+        require(
+            msg.sender == order.owner || msg.sender == order.broker,
+            UNAUTHORIZED_ONCHAIN_ORDER
+        );
+
+        // Calculate the order hash
         order.updateHash();
+
+        // Register the hash
         require(!orderSubmitted[order.hash], ALREADY_EXIST);
-
         orderSubmitted[order.hash] = true;
-        orders[order.hash] = dataArray;
-        emit OrderSubmitted(msg.sender, order.hash);
-        return order.hash;
-    }
 
-    function getOrderData(
-        bytes32 orderHash
-        )
-        external
-        view
-        returns (bytes32[])
-    {
-        return orders[orderHash];
+        // Broadcast the order data
+        emit OrderSubmitted(order.hash, data);
+
+        return order.hash;
     }
 
 }
