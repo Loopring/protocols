@@ -57,6 +57,49 @@ export class ExchangeTestUtil {
     return transferItems;
   }
 
+  public async getRingMinedEvents(fromBlock: number) {
+    const parseFillsData = (data: string) => {
+      const b = new pjs.Bitstream(data);
+      const fillSize = 6 * 32;
+      const numFills = b.length() / fillSize;
+      const fills: pjs.Fill[] = [];
+      for (let offset = 0; offset < b.length(); offset += fillSize) {
+        const fill: pjs.Fill = {
+          orderHash: "0x" + b.extractBytes32(offset).toString("hex"),
+          owner: "0x" + b.extractBytes32(offset + 32).toString("hex").slice(24),
+          tokenS: "0x" + b.extractBytes32(offset + 64).toString("hex").slice(24),
+          amountS: b.extractUint(offset + 96),
+          split: b.extractUint(offset + 128),
+          feeAmount: b.extractUint(offset + 160),
+        };
+        fills.push(fill);
+      }
+      return fills;
+    };
+    const eventArr: any = await this.getEventsFromContract(this.ringSubmitter, "RingMined", fromBlock);
+    const ringMinedEvents = eventArr.map((eventObj: any) => {
+      const ringMinedEvent: pjs.RingMinedEvent = {
+        ringIndex: eventObj.args._ringIndex,
+        ringHash: eventObj.args._ringHash,
+        feeRecipient: eventObj.args._feeRecipient,
+        fills: parseFillsData(eventObj.args._fills),
+      };
+      return ringMinedEvent;
+    });
+    return ringMinedEvents;
+  }
+
+  public async getInvalidRingEvents(fromBlock: number) {
+    const eventArr: any = await this.getEventsFromContract(this.ringSubmitter, "InvalidRing", fromBlock);
+    const invalidRingEvents = eventArr.map((eventObj: any) => {
+      const invalidRingEvent: pjs.InvalidRingEvent = {
+        ringHash: eventObj.args._ringHash,
+      };
+      return invalidRingEvent;
+    });
+    return invalidRingEvents;
+  }
+
   public async watchAndPrintEvent(contract: any, eventName: string) {
     const events: any = await this.getEventsFromContract(contract, eventName, 0);
 
@@ -348,6 +391,41 @@ export class ExchangeTestUtil {
     }
   }
 
+  public assertRingMinedEvents(ringMinedEventsContract: pjs.RingMinedEvent[],
+                               ringMinedEventsSimulator: pjs.RingMinedEvent[]) {
+    assert.equal(ringMinedEventsContract.length, ringMinedEventsSimulator.length,
+                 "Number of RingMined events does not match");
+    for (let i = 0; i < ringMinedEventsContract.length; i++) {
+      const contractEvent = ringMinedEventsContract[i];
+      const simulatorEvent = ringMinedEventsSimulator[i];
+      assert(contractEvent.ringIndex.eq(simulatorEvent.ringIndex), "ringIndex does not match");
+      assert.equal(contractEvent.ringHash, simulatorEvent.ringHash, "ringHash does not match");
+      assert.equal(contractEvent.feeRecipient, simulatorEvent.feeRecipient, "feeRecipient does not match");
+      assert.equal(contractEvent.fills.length, simulatorEvent.fills.length, "fills length does not match");
+      for (let f = 0; f < contractEvent.fills.length; f++) {
+        const contractFill = contractEvent.fills[f];
+        const simulatorFill = simulatorEvent.fills[f];
+        assert.equal(contractFill.orderHash, simulatorFill.orderHash, "orderHash does not match");
+        assert.equal(contractFill.owner, simulatorFill.owner, "owner does not match");
+        assert.equal(contractFill.tokenS, simulatorFill.tokenS, "tokenS does not match");
+        assert(contractFill.amountS.eq(simulatorFill.amountS), "amountS does not match");
+        assert(contractFill.split.eq(simulatorFill.split), "split does not match");
+        assert(contractFill.feeAmount.eq(simulatorFill.feeAmount), "feeAmount does not match");
+      }
+    }
+  }
+
+  public assertInvalidRingEvents(invalidRingEventsContract: pjs.InvalidRingEvent[],
+                                 invalidRingEventsSimulator: pjs.InvalidRingEvent[]) {
+    assert.equal(invalidRingEventsContract.length, invalidRingEventsSimulator.length,
+                 "Number of InvalidRing events does not match");
+    for (let i = 0; i < invalidRingEventsContract.length; i++) {
+      const contractEvent = invalidRingEventsContract[i];
+      const simulatorEvent = invalidRingEventsSimulator[i];
+      assert.equal(contractEvent.ringHash, simulatorEvent.ringHash, "ringHash does not match");
+    }
+  }
+
   public async assertFeeBalances(ringsInfo: pjs.RingsInfo,
                                  feeBalancesBefore: { [id: string]: any; },
                                  feeBalancesAfter: { [id: string]: any; }) {
@@ -511,6 +589,7 @@ export class ExchangeTestUtil {
     let report: any = {
       reverted: true,
       ringMinedEvents: [],
+      invalidRingEvents: [],
       transferItems: [],
       feeBalancesBefore: [],
       feeBalancesAfter: [],
@@ -536,7 +615,11 @@ export class ExchangeTestUtil {
       pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
     }
     const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
+    const ringMinedEvents = await this.getRingMinedEvents(web3.eth.blockNumber);
+    const invalidRingEvents = await this.getInvalidRingEvents(web3.eth.blockNumber);
     this.assertTransfers(deserializedRingsInfo, transferEvents, report.transferItems);
+    this.assertRingMinedEvents(ringMinedEvents, report.ringMinedEvents);
+    this.assertInvalidRingEvents(invalidRingEvents, report.invalidRingEvents);
     await this.assertFeeBalances(deserializedRingsInfo, report.feeBalancesBefore, report.feeBalancesAfter);
     await this.assertFilledAmounts(deserializedRingsInfo, report.filledAmounts);
 
@@ -611,6 +694,7 @@ export class ExchangeTestUtil {
     const orderBrokerRegistryAddress = await this.ringSubmitter.orderBrokerRegistryAddress();
     // const minerBrokerRegistryAddress = await this.ringSubmitter.minerBrokerRegistryAddress();
     const feePercentageBase = (await this.ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
+    const ringIndex = (await this.ringSubmitter.ringIndex()).toNumber();
 
     const currBlockNumber = web3.eth.blockNumber;
     const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
@@ -623,7 +707,8 @@ export class ExchangeTestUtil {
                                    this.context.orderBook.address,
                                    this.context.burnRateTable.address,
                                    this.context.lrcAddress,
-                                   feePercentageBase);
+                                   feePercentageBase,
+                                   ringIndex);
 
     await this.initializeTradeDelegate();
   }
@@ -655,6 +740,7 @@ export class ExchangeTestUtil {
 
     const orderBrokerRegistryAddress = await ringSubmitter.orderBrokerRegistryAddress();
     const feePercentageBase = (await ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
+    const ringIndex = (await ringSubmitter.ringIndex()).toNumber();
 
     const currBlockNumber = web3.eth.blockNumber;
     const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
@@ -667,7 +753,8 @@ export class ExchangeTestUtil {
                            OrderBook.address,
                            BurnRateTable.address,
                            LRCToken.address,
-                           feePercentageBase);
+                           feePercentageBase,
+                           ringIndex);
   }
 
   private async createExchangeTestContext(accounts: string[]) {
