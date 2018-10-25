@@ -154,6 +154,7 @@ export interface TransactionPayments {
 export interface SimulatorReport {
   reverted: boolean;
   ringMinedEvents: RingMinedEvent[];
+  invalidRingEvents: InvalidRingEvent[];
   transferItems: TransferItem[];
   feeBalancesBefore: { [id: string]: any; };
   feeBalancesAfter: { [id: string]: any; };
@@ -170,6 +171,22 @@ export interface TransferItem {
   amount: BigNumber;
 }
 
+export interface Fill {
+  orderHash: string;
+  owner: string;
+  tokenS: string;
+  amountS: BigNumber;
+  split: BigNumber;
+  feeAmount: BigNumber;
+}
+
 export interface RingMinedEvent {
   ringIndex: BigNumber;
+  ringHash: string;
+  feeRecipient: string;
+  fills: Fill[];
+}
+
+export interface InvalidRingEvent {
+  ringHash: string;
 }

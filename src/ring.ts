@@ -6,7 +6,8 @@ import { ensure } from "./ensure";
 import { logDebug } from "./logs";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
-import { DetailedTokenTransfer, OrderInfo, OrderPayments, Participation, RingPayments, TransferItem } from "./types";
+import { DetailedTokenTransfer, Fill, OrderInfo, OrderPayments, Participation,
+         RingPayments, TransferItem } from "./types";
 
 export class Ring {
 
@@ -247,6 +248,22 @@ export class Ring {
     } else {
       return false;
     }
+  }
+
+  public generateFills() {
+    const fills: Fill[] = [];
+    for (const p of this.participations) {
+      const fill: Fill = {
+        orderHash: "0x" + p.order.hash.toString("hex"),
+        owner: p.order.owner,
+        tokenS: p.order.tokenS,
+        amountS: p.fillAmountS,
+        split: p.splitS,
+        feeAmount: p.feeAmount,
+      };
+      fills.push(fill);
+    }
+    return fills;
   }
 
   public adjustOrderState(p: Participation) {

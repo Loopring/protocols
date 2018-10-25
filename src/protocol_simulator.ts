@@ -7,7 +7,7 @@ import { ExchangeDeserializer } from "./exchange_deserializer";
 import { Mining } from "./mining";
 import { OrderUtil } from "./order";
 import { Ring } from "./ring";
-import { OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, Spendable,
+import { InvalidRingEvent, OrderInfo, RingMinedEvent, RingsInfo, SimulatorReport, Spendable,
          TransactionPayments, TransferItem } from "./types";
 import { xor } from "./xor";
 
@@ -16,7 +16,6 @@ export class ProtocolSimulator {
   public context: Context;
   public offLineMode: boolean = false;
 
-  private ringIndex: number = 0;
   private orderUtil: OrderUtil;
 
   constructor(context: Context) {
@@ -92,6 +91,7 @@ export class ProtocolSimulator {
     }
 
     const ringMinedEvents: RingMinedEvent[] = [];
+    const invalidRingEvents: InvalidRingEvent[] = [];
     const transferItems: TransferItem[] = [];
     const feeBalances: { [id: string]: any; } = {};
     for (const ring of rings) {
@@ -126,6 +126,11 @@ export class ProtocolSimulator {
             transferItems.push(ringTransferItem);
           }
         }
+      } else {
+        const invalidRingEvent: InvalidRingEvent = {
+          ringHash: "0x" + ring.hash.toString("hex"),
+        };
+        invalidRingEvents.push(invalidRingEvent);
       }
     }
 
@@ -134,7 +139,8 @@ export class ProtocolSimulator {
                                            rings,
                                            transferItems,
                                            feeBalances,
-                                           ringMinedEvents);
+                                           ringMinedEvents,
+                                           invalidRingEvents);
 
     await this.validateRings(ringsInfo, report);
 
@@ -174,8 +180,12 @@ export class ProtocolSimulator {
 
   private async simulateAndReportSingle(ring: Ring, mining: Mining, feeBalances: { [id: string]: any; }) {
     const transferItems = await ring.doPayments(mining, feeBalances);
+    const fills = ring.generateFills();
     const ringMinedEvent: RingMinedEvent = {
-      ringIndex: new BigNumber(this.ringIndex++),
+      ringIndex: new BigNumber(this.context.ringIndex++),
+      ringHash: "0x" + ring.hash.toString("hex"),
+      feeRecipient: mining.feeRecipient,
+      fills,
     };
     return {ringMinedEvent, transferItems};
   }
@@ -248,7 +258,8 @@ export class ProtocolSimulator {
                               rings: Ring[],
                               transferItems: TransferItem[],
                               feeBalances: { [id: string]: any; },
-                              ringMinedEvents: RingMinedEvent[]) {
+                              ringMinedEvents: RingMinedEvent[],
+                              invalidRingEvents: InvalidRingEvent[]) {
     const orders = ringsInfo.orders;
 
     // Collect balances before the transaction
@@ -391,6 +402,7 @@ export class ProtocolSimulator {
     const simulatorReport: SimulatorReport = {
       reverted: false,
       ringMinedEvents,
+      invalidRingEvents,
       transferItems,
       feeBalancesBefore,
       feeBalancesAfter,

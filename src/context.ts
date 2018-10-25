@@ -7,6 +7,7 @@ export class Context {
   public blockTimestamp: number;
   public lrcAddress: string;
   public feePercentageBase: number;
+  public ringIndex: number;
 
   public ERC20Contract: any;
   public TradeDelegateContract: any;
@@ -35,11 +36,13 @@ export class Context {
               orderBookAddress: string,
               burnRateTableAddress: string,
               lrcAddress: string,
-              feePercentageBase: number) {
+              feePercentageBase: number,
+              ringIndex: number) {
     this.blockNumber = blockNumber;
     this.blockTimestamp = blockTimestamp;
     this.lrcAddress = lrcAddress;
     this.feePercentageBase = feePercentageBase;
+    this.ringIndex = ringIndex;
 
     const ABIPath = "ABI/latest/";
     const erc20Abi = fs.readFileSync(ABIPath + "ERC20.abi", "ascii");
