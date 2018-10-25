@@ -25,24 +25,23 @@ pragma experimental "ABIEncoderV2";
 contract IRingSubmitter {
     uint16  public constant FEE_PERCENTAGE_BASE = 1000;
 
-    struct Fill {
-        bytes32     orderHash;
-        address     owner;
-        address     tokenS;
-        uint        amountS;
-        uint        split;  // splitS
-        uint        feeAmount;
-    }
-
+    /// @dev  Event emitted when a ring was successfully mined
+    ///        _ringIndex     The index of the ring
+    ///        _ringHash      The hash of the ring
+    ///        _feeRecipient  The recipient of the matching fee
+    ///        _fills         The info of the orders in the ring stored like:
+    ///                       [orderHash, owner, tokenS, amountS, split, feeAmount]
     event RingMined(
         uint            _ringIndex,
         bytes32 indexed _ringHash,
         address indexed _feeRecipient,
-        Fill[]          _fills
+        bytes           _fills
     );
 
+    /// @dev   Event emitted when a ring was not successfully mined
+    ///         _ringHash  The hash of the ring
     event InvalidRing(
-        bytes32 ringHash
+        bytes32 _ringHash
     );
 
     /// @dev   Submit order-rings for validation and settlement.

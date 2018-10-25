@@ -197,7 +197,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             if (ring.valid) {
                 // Only settle rings we have checked to be valid
                 ring.doPayments(ctx, mining);
-                IRingSubmitter.Fill[] memory fills = ring.generateFills();
+                bytes memory fills = ring.generateFills();
                 emit RingMined(
                     ctx.ringIndex++,
                     ring.hash,

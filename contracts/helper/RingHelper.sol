@@ -233,20 +233,17 @@ library RingHelper {
         )
         internal
         pure
-        returns (IRingSubmitter.Fill[] memory fills)
+        returns (bytes memory fills)
     {
         uint ringSize = ring.size;
-        uint arrayDataSize = (ringSize + 1) * 32;
+        uint fillSize = 6 * 32;
         assembly {
             fills := mload(0x40)
-            mstore(add(fills, 0), ringSize)
-            let fill := add(fills, arrayDataSize)
+            mstore(add(fills, 0), mul(ringSize, fillSize))                             // fills.length
+            let fill := add(fills, 32)
             let participations := mload(add(ring, 32))                                 // ring.participations
 
             for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
-                // Store the memory location of this fill in the fills array
-                mstore(add(fills, mul(add(i, 1), 32)), fill)
-
                 let participation := mload(add(participations, add(32, mul(i, 32))))   // participations[i]
                 let order := mload(participation)                                      // participation.order
 
@@ -257,7 +254,7 @@ library RingHelper {
                 mstore(add(fill, 128), mload(add(participation,  32)))                 // participation.splitS
                 mstore(add(fill, 160), mload(add(participation,  64)))                 // participation.feeAmount
 
-                fill := add(fill, 192)                                                 // 6 * 32
+                fill := add(fill, fillSize)
             }
             mstore(0x40, fill)
         }
