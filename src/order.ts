@@ -1,6 +1,7 @@
 import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import ABI = require("ethereumjs-abi");
+import { Bitstream } from "./bitstream";
 import { Context } from "./context";
 import { ensure } from "./ensure";
 import { MultiHashUtil } from "./multihash";
@@ -128,51 +129,29 @@ export class OrderUtil {
   }
 
   public toOrderBookSubmitParams(orderInfo: OrderInfo) {
-    const emptyAddrBytes32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    const emptyAddr = "0x" + "0".repeat(40);
 
-    const numberToBytes32Str = (n: number) => {
-      if (n === undefined) {
-        n = 0;
-      }
-      const encoded = ABI.rawEncode(["uint256"], [this.toBN(n)]);
-      return "0x" + encoded.toString("hex");
-    };
+    const data = new Bitstream();
+    data.addAddress(orderInfo.owner, 32);
+    data.addAddress(orderInfo.tokenS, 32);
+    data.addAddress(orderInfo.tokenB, 32);
+    data.addNumber(orderInfo.amountS, 32);
+    data.addNumber(orderInfo.amountB, 32);
+    data.addNumber(orderInfo.validSince, 32);
+    data.addAddress(orderInfo.broker ? orderInfo.broker : emptyAddr, 32);
+    data.addAddress(orderInfo.orderInterceptor ? orderInfo.orderInterceptor : emptyAddr, 32);
 
-    const addressToBytes32Str = (addr: string) => {
-      if (addr) {
-        const encoded = ABI.rawEncode(["address"], [addr]);
-        return "0x" + encoded.toString("hex");
-      } else {
-        return emptyAddrBytes32;
-      }
-    };
+    data.addAddress(orderInfo.walletAddr ? orderInfo.walletAddr : emptyAddr, 32);
+    data.addNumber(orderInfo.validUntil ? orderInfo.validUntil : 0, 32);
+    data.addNumber(orderInfo.allOrNone ? 1 : 0, 32);
+    data.addAddress(orderInfo.feeToken ? orderInfo.feeToken : emptyAddr, 32);
+    data.addNumber(orderInfo.feeAmount ? orderInfo.feeAmount : 0, 32);
+    data.addNumber(orderInfo.tokenSFeePercentage ? orderInfo.tokenSFeePercentage : 0, 32);
+    data.addNumber(orderInfo.tokenBFeePercentage ? orderInfo.tokenBFeePercentage : 0, 32);
+    data.addAddress(orderInfo.tokenRecipient ? orderInfo.tokenRecipient : orderInfo.owner, 32);
+    data.addNumber(orderInfo.walletSplitPercentage ? orderInfo.walletSplitPercentage : 0, 32);
 
-    const bytes32Array: string[] = [];
-    bytes32Array.push(addressToBytes32Str(orderInfo.owner));
-    bytes32Array.push(addressToBytes32Str(orderInfo.tokenS));
-    bytes32Array.push(addressToBytes32Str(orderInfo.tokenB));
-    bytes32Array.push(numberToBytes32Str(orderInfo.amountS));
-    bytes32Array.push(numberToBytes32Str(orderInfo.amountB));
-    bytes32Array.push(numberToBytes32Str(orderInfo.validSince));
-    bytes32Array.push(addressToBytes32Str(orderInfo.broker));
-    bytes32Array.push(addressToBytes32Str(orderInfo.orderInterceptor));
-
-    bytes32Array.push(addressToBytes32Str(orderInfo.walletAddr));
-    bytes32Array.push(numberToBytes32Str(orderInfo.validUntil));
-    bytes32Array.push(addressToBytes32Str(orderInfo.feeToken));
-    bytes32Array.push(numberToBytes32Str(orderInfo.feeAmount));
-    bytes32Array.push(numberToBytes32Str(orderInfo.tokenSFeePercentage));
-    bytes32Array.push(numberToBytes32Str(orderInfo.tokenBFeePercentage));
-    bytes32Array.push(addressToBytes32Str(orderInfo.tokenRecipient));
-    bytes32Array.push(numberToBytes32Str(orderInfo.walletSplitPercentage));
-
-    if (orderInfo.allOrNone) {
-      bytes32Array.push(numberToBytes32Str(1));
-    } else {
-      bytes32Array.push(numberToBytes32Str(0));
-    }
-
-    return bytes32Array;
+    return data.getData();
   }
 
   public checkP2P(orderInfo: OrderInfo) {
