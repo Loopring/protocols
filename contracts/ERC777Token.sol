@@ -1,22 +1,22 @@
 pragma solidity 0.4.24;
 
 interface ERC777Token {
-    function name() public view returns (string);
-    function symbol() public view returns (string);
-    function totalSupply() public view returns (uint256);
+    function name() external view returns (string);
+    function symbol() external view returns (string);
+    function totalSupply() external view returns (uint256);
     function balanceOf(address owner) public view returns (uint256);
-    function granularity() public view returns (uint256);
+    function granularity() external view returns (uint256);
 
-    function defaultOperators() public view returns (address[]);
+    function defaultOperators() external view returns (address[]);
     function isOperatorFor(address operator, address tokenHolder) public view returns (bool);
-    function authorizeOperator(address operator) public;
-    function revokeOperator(address operator) public;
+    function authorizeOperator(address operator) external;
+    function revokeOperator(address operator) external;
 
-    function send(address to, uint256 amount, bytes holderData) public;
-    function operatorSend(address from, address to, uint256 amount, bytes holderData, bytes operatorData) public;
+    function send(address to, uint256 amount, bytes holderData) external;
+    function operatorSend(address from, address to, uint256 amount, bytes holderData, bytes operatorData) external;
 
-    function burn(uint256 amount, bytes holderData) public;
-    function operatorBurn(address from, uint256 amount, bytes holderData, bytes operatorData) public;
+    function burn(uint256 amount, bytes holderData) external;
+    function operatorBurn(address from, uint256 amount, bytes holderData, bytes operatorData) external;
 
     event Sent(
         address indexed operator,
