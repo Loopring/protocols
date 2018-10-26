@@ -491,7 +491,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                     data,                               // input start
                     sub(ptr, data),                     // input length
                     data,                               // output start
-                    32                                  // output length
+                    0                                   // output length
                 )
                 if eq(success, 0) {
                     revert(0, 0)
@@ -506,7 +506,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         )
         internal
     {
-        // Store the data directly in the call data format as expected by batchGetFilledAndCheckCancelled:
+        // Store the data in the call data format as expected by batchGetFilledAndCheckCancelled:
         // - 0x00: batchGetFilledAndCheckCancelled selector (4 bytes)
         // - 0x04: parameter offset (batchGetFilledAndCheckCancelled has a single function parameter) (32 bytes)
         // - 0x24: length of the array passed into the function (32 bytes)
@@ -585,9 +585,9 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         if (ctx.transferData == ctx.transferPtr) {
             return;
         }
-        // We stored the transfers in the call data as expected by batchAddFeeBalances.
+        // We stored the token transfers in the call data as expected by batchTransfer.
         // The only thing we still need to do is update the final length of the array and call
-        // the function on the FeeHolder contract with the generated data.
+        // the function on the TradeDelegate contract with the generated data.
         address _tradeDelegateAddress = address(ctx.delegate);
         uint arrayLength = (ctx.transferPtr - ctx.transferData) / 32;
         uint data = ctx.transferData - 68;
@@ -602,7 +602,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 data,                               // input start
                 sub(ptr, data),                     // input length
                 data,                               // output start
-                32                                  // output length
+                0                                   // output length
             )
             if eq(success, 0) {
                 revert(0, 0)
@@ -619,9 +619,9 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         if (ctx.feeData == ctx.feePtr) {
             return;
         }
-        // We stored the fee payments in the call data as expected by batchTransfer.
+        // We stored the fee payments in the call data as expected by batchAddFeeBalances.
         // The only thing we still need to do is update the final length of the array and call
-        // the function on the TradeDelegate contract with the generated data.
+        // the function on the FeeHolder contract with the generated data.
         address _feeHolderAddress = address(ctx.feeHolder);
         uint arrayLength = (ctx.feePtr - ctx.feeData) / 32;
         uint data = ctx.feeData - 68;
@@ -636,7 +636,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 data,                               // input start
                 sub(ptr, data),                     // input length
                 data,                               // output start
-                32                                  // output length
+                0                                   // output length
             )
             if eq(success, 0) {
                 revert(0, 0)
