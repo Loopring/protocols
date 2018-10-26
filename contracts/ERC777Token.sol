@@ -12,7 +12,7 @@ interface ERC777Token {
     function authorizeOperator(address operator) external;
     function revokeOperator(address operator) external;
 
-    function send(address to, uint256 amount, bytes holderData) external;
+    function sendx(address to, uint256 amount, bytes holderData) external;
     function operatorSend(address from, address to, uint256 amount, bytes holderData, bytes operatorData) external;
 
     function burn(uint256 amount, bytes holderData) external;

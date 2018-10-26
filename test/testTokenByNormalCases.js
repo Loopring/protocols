@@ -80,9 +80,9 @@ contract("NewLRCToken", (accounts) => {
     });
 
     it("TestCase4: should be able to send tokens between addresses", async () => {
-      const receiver = accounts[2];
+      const receiver = accounts[5];
       const amount = 100e18;
-      await newLrcToken.send(receiver, amount, [], {from: owner});
+      await newLrcToken.sendx(receiver, amount, [], {from: owner});
       const balanceOfOwner = await newLrcToken.balanceOf(owner);
       const balanceOfReceiver = await newLrcToken.balanceOf(receiver);
       assert.equal(balanceOfReceiver.toNumber(), amount, "the balance of receiver doesn't equal to the amount of sending");

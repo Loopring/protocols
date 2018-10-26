@@ -128,7 +128,7 @@ contract ERC777BaseToken is ERC777Token {
     /// @notice Send `_amount` of tokens to address `_to` passing `_userData` to the recipient
     /// @param _to The address of the recipient
     /// @param _amount The number of tokens to be sent
-    function send(address _to, uint256 _amount, bytes _userData) external {
+    function sendx(address _to, uint256 _amount, bytes _userData) external {
         doSend(msg.sender, msg.sender, _to, _amount, _userData, "", true);
     }
 
