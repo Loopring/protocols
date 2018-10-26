@@ -2,7 +2,7 @@ import request, { id } from '../../common/request';
 import validator from '../validator';
 import Response from '../../common/response';
 import code from '../../common/code';
-import { toBig, toHex } from '../../common/formatter';
+import { toBig, toHex, clearHexPrefix} from '../../common/formatter';
 import { getOrderHash } from './order';
 import { soliditySHA3 } from 'ethereumjs-abi';
 
@@ -162,7 +162,7 @@ export function getFills (host, filter)
 
 export function getRingHash (orders, feeRecipient, feeSelections)
 {
-    const orderHashList = orders.map(order => getOrderHash(order));
+    const orderHashList = orders.map(order => toHex(getOrderHash(order)));
     return soliditySHA3(['string', 'address', 'uint16'], [
         xorReduceStr(orderHashList),
         feeRecipient,

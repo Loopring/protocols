@@ -50,7 +50,7 @@ export default class AbiFunction
     {
         return this.inputs.map(({name, type}) =>
         {
-            if (!inputs[name])
+            if (inputs[name] === undefined)
             {
                 throw new Error(`Parameter ${name} of type ${type} is required!`);
             }
