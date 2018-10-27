@@ -81,7 +81,7 @@ contract("Exchange_Submit_Audit", (accounts: string[]) => {
             {
               orders: [
                 {
-                  filledFraction: 0.5,
+                  filledFraction: 0.6,
                 },
                 {
                   filledFraction: 1.0,
@@ -91,7 +91,7 @@ contract("Exchange_Submit_Audit", (accounts: string[]) => {
             {
               orders: [
                 {
-                  filledFraction: 0.5,
+                  filledFraction: 0.4,
                 },
                 {
                   filledFraction: 4 / 5,
