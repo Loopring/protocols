@@ -1,8 +1,12 @@
 import { BigNumber } from "bignumber.js";
+import ABI = require("ethereumjs-abi");
+import { Bitstream } from "./bitstream";
 import { Context } from "./context";
 import { logDebug } from "./logs";
 import { OrderUtil } from "./order";
-import { OrderExpectation, OrderInfo, RingsInfo, SimulatorReport } from "./types";
+import { Ring } from "./ring";
+import { Fill, InvalidRingEvent, OrderExpectation, OrderInfo, RingMinedEvent,
+         RingsInfo, SimulatorReport } from "./types";
 
 interface OrderSettlement {
   amountS: BigNumber;
@@ -75,11 +79,31 @@ export class ProtocolValidator {
 
     const feeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient : ringsInfo.transactionOrigin;
     const feePayments: FeePayment[] = [];
+    const ringMinedEvents: RingMinedEvent[] = [];
+    const invalidRingEvents: InvalidRingEvent[] = [];
     // Simulate order settlement in rings using the given expectations
     for (const [r, ring] of ringsInfo.rings.entries()) {
+
+      // Calculate ring hash
+      const orderHashes = new Bitstream();
+      for (const order of ring) {
+        orderHashes.addHex(ringsInfo.orders[order].hash.toString("hex"));
+        orderHashes.addNumber(ringsInfo.orders[order].waiveFeePercentage ?
+                              ringsInfo.orders[order].waiveFeePercentage : 0, 2);
+      }
+      const ringHash = "0x" + ABI.soliditySHA3(
+        ["bytes"],
+        [Buffer.from(orderHashes.getData().slice(2), "hex")],
+      ).toString("hex");
+
       if (ringsInfo.expected.rings[r].fail) {
+        const invalidRingEvent: InvalidRingEvent = {
+          ringHash,
+        };
+        invalidRingEvents.push(invalidRingEvent);
         continue;
       }
+      const fills: Fill[] = [];
       for (let o = 0; o < ring.length; o++) {
         const order = ringsInfo.orders[ring[o]];
         const orderExpectation = ringsInfo.expected.rings[r].orders[o];
@@ -100,6 +124,18 @@ export class ProtocolValidator {
           this.assertAlmostEqual(orderSettlement.splitS.toNumber(), orderExpectation.margin,
                                  "Margin does not match the expected value");
         }
+
+        // RingMined fill for this order
+
+        const fill: Fill = {
+          orderHash: "0x" + order.hash.toString("hex"),
+          owner: order.owner,
+          tokenS: order.tokenS,
+          amountS: orderSettlement.amountS.minus(orderSettlement.splitS),
+          split: orderSettlement.splitS,
+          feeAmount: orderSettlement.amountFee,
+        };
+        fills.push(fill);
 
         // Balances
 
@@ -128,6 +164,14 @@ export class ProtocolValidator {
         expectedfilledAmounts[order.hash.toString("hex")] =
           expectedfilledAmounts[order.hash.toString("hex")].plus(expectedFilledAmount);
       }
+
+      const ringMinedEvent: RingMinedEvent = {
+        ringIndex: new BigNumber(0),
+        ringHash,
+        feeRecipient,
+        fills,
+      };
+      ringMinedEvents.push(ringMinedEvent);
     }
 
     // const addressBook = this.getAddressBook(ringsInfo);
@@ -169,6 +213,38 @@ export class ProtocolValidator {
       this.assertAlmostEqual(report.filledAmounts[orderHash].toNumber(),
                              expectedfilledAmounts[orderHash].toNumber(),
                              "Filled amount different than expected");
+    }
+    // Check RingMined events
+    assert.equal(report.ringMinedEvents.length, ringMinedEvents.length,
+                 "Number of RingMined events does not match");
+    for (let i = 0; i < ringMinedEvents.length; i++) {
+      const expectedEvent = ringMinedEvents[i];
+      const simulatorEvent = report.ringMinedEvents[i];
+      // assert(contractEvent.ringIndex.eq(simulatorEvent.ringIndex), "ringIndex does not match");
+      assert.equal(expectedEvent.ringHash, simulatorEvent.ringHash, "ringHash does not match");
+      assert.equal(expectedEvent.feeRecipient, simulatorEvent.feeRecipient, "feeRecipient does not match");
+      assert.equal(expectedEvent.fills.length, simulatorEvent.fills.length, "fills length does not match");
+      for (let f = 0; f < expectedEvent.fills.length; f++) {
+        const expectedFill = expectedEvent.fills[f];
+        const simulatorFill = simulatorEvent.fills[f];
+        assert.equal(expectedFill.orderHash, simulatorFill.orderHash, "orderHash does not match");
+        assert.equal(expectedFill.owner, simulatorFill.owner, "owner does not match");
+        assert.equal(expectedFill.tokenS, simulatorFill.tokenS, "tokenS does not match");
+        this.assertAlmostEqual(expectedFill.amountS.toNumber(), simulatorFill.amountS.toNumber(),
+                               "amountS does not match");
+        this.assertAlmostEqual(expectedFill.split.toNumber(), simulatorFill.split.toNumber(),
+                               "split does not match");
+        this.assertAlmostEqual(expectedFill.feeAmount.toNumber(), simulatorFill.feeAmount.toNumber(),
+                               "feeAmount does not match");
+      }
+    }
+    // Check InvalidRing events
+    assert.equal(report.invalidRingEvents.length, invalidRingEvents.length,
+                 "Number of InvalidRing events does not match");
+    for (let i = 0; i < invalidRingEvents.length; i++) {
+      const expectedEvent = invalidRingEvents[i];
+      const simulatorEvent = report.invalidRingEvents[i];
+      assert.equal(expectedEvent.ringHash, simulatorEvent.ringHash, "ringHash does not match");
     }
   }
 
