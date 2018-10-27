@@ -699,17 +699,7 @@ export const ringsInfoList: RingsInfo[] = [
     expected: {
       rings: [
         {
-          orders: [
-            {
-              filledFraction: 0.0,
-            },
-            {
-              filledFraction: 0.0,
-            },
-            {
-              filledFraction: 0.0,
-            },
-          ],
+          fail: true,
         },
       ],
     },
@@ -1963,7 +1953,7 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "one to many match: one big order filled by may small orders",
+    description: "one to many match: one big order filled by many small orders",
     rings: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8], [0, 9], [0, 10], [0, 11, 12]],
     orders: [
       {
@@ -2157,7 +2147,14 @@ export const ringsInfoList: RingsInfo[] = [
           ],
         },
         {
-          fail: true,
+          orders: [
+            {
+              filledFraction: 0.0,
+            },
+            {
+              filledFraction: 0.0,
+            },
+          ],
         },
         {
           orders: [

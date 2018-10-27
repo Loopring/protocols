@@ -247,12 +247,20 @@ library RingHelper {
                 let participation := mload(add(participations, add(32, mul(i, 32))))   // participations[i]
                 let order := mload(participation)                                      // participation.order
 
+                // When !order.P2P and tokenB == feeToken
+                // the matching fee can be paid in feeAmountB (and feeAmount == 0)
+                let feeAmount := mload(add(participation,  64))                        // participation.feeAmount
+                if eq(mload(add(order, 832)), 0) {                                     // order.P2P
+                    let feeAmountB := mload(add(participation, 128))                   // participation.feeAmountB
+                    feeAmount := add(feeAmount, feeAmountB)
+                }
+
                 mstore(add(fill,   0), mload(add(order, 864)))                         // order.hash
                 mstore(add(fill,  32), mload(add(order,  32)))                         // order.owner
                 mstore(add(fill,  64), mload(add(order,  64)))                         // order.tokenS
                 mstore(add(fill,  96), mload(add(participation, 256)))                 // participation.fillAmountS
                 mstore(add(fill, 128), mload(add(participation,  32)))                 // participation.splitS
-                mstore(add(fill, 160), mload(add(participation,  64)))                 // participation.feeAmount
+                mstore(add(fill, 160), feeAmount)                                      // feeAmount
 
                 fill := add(fill, fillSize)
             }
