@@ -187,20 +187,24 @@ export class Ring {
     p.fillAmountS = BigNumber.min(p.ringSpendableS, remainingS);
 
     if (!p.order.P2P) {
-      // Check how much fee needs to be paid. We limit fillAmountS to how much
-      // fee the order owner can pay.
-      let feeAmount = new BigNumber(p.order.feeAmount).times(p.fillAmountS).dividedToIntegerBy(p.order.amountS);
-      if (feeAmount.gt(0)) {
-        const spendableFee = await this.orderUtil.getSpendableFee(p.order);
-        if (p.order.feeToken === p.order.tokenS && p.fillAmountS.add(feeAmount).gt(p.ringSpendableS)) {
-          assert(spendableFee.eq(p.ringSpendableS), "spendableFee == spendableS when feeToken == tokenS");
-          // Equally divide the available tokens between fillAmountS and feeAmount
-          const totalAmount = new BigNumber(p.order.amountS).add(p.order.feeAmount);
-          p.fillAmountS = p.ringSpendableS.times(p.order.amountS).dividedToIntegerBy(totalAmount);
-          feeAmount = p.ringSpendableS.mul(p.order.feeAmount).dividedToIntegerBy(totalAmount);
-        } else if (feeAmount.gt(spendableFee)) {
-          feeAmount = spendableFee;
-          p.fillAmountS = feeAmount.times(p.order.amountS).dividedToIntegerBy(p.order.feeAmount);
+      // No need to check the fee balance of the owner if feeToken == tokenB,
+      // fillAmountB will be used to pay the fee.
+      if (!(p.order.feeToken === p.order.tokenB && p.order.feeAmount <= p.order.amountB)) {
+        // Check how much fee needs to be paid. We limit fillAmountS to how much
+        // fee the order owner can pay.
+        let feeAmount = new BigNumber(p.order.feeAmount).times(p.fillAmountS).dividedToIntegerBy(p.order.amountS);
+        if (feeAmount.gt(0)) {
+          const spendableFee = await this.orderUtil.getSpendableFee(p.order);
+          if (p.order.feeToken === p.order.tokenS && p.fillAmountS.add(feeAmount).gt(p.ringSpendableS)) {
+            assert(spendableFee.eq(p.ringSpendableS), "spendableFee == spendableS when feeToken == tokenS");
+            // Equally divide the available tokens between fillAmountS and feeAmount
+            const totalAmount = new BigNumber(p.order.amountS).add(p.order.feeAmount);
+            p.fillAmountS = p.ringSpendableS.times(p.order.amountS).dividedToIntegerBy(totalAmount);
+            feeAmount = p.ringSpendableS.mul(p.order.feeAmount).dividedToIntegerBy(totalAmount);
+          } else if (feeAmount.gt(spendableFee)) {
+            feeAmount = spendableFee;
+            p.fillAmountS = feeAmount.times(p.order.amountS).dividedToIntegerBy(p.order.feeAmount);
+          }
         }
       }
     }

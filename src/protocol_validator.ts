@@ -330,6 +330,8 @@ export class ProtocolValidator {
                           .times(prevOrderExpectation.filledFraction.toString())
                           .floor();
       const splitS = amountS.minus(prevAmountB);
+      const epsilon = 10000;
+      assert(splitS.gte(-epsilon), "splitS >= 0");
 
       const orderSettlement: OrderSettlement = {
         amountS,
