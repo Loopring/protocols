@@ -270,7 +270,7 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "single 2-size ring, token sold also used for paying fees (sufficient funds)",
+    description: "single 2-size ring, feeToken == tokenS (sufficient funds)",
     rings: [[0, 1]],
     orders: [
       {
@@ -309,7 +309,7 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "single 2-size ring, token sold also used for paying fees (insufficient funds)",
+    description: "single 2-size ring, feeToken == tokenS (insufficient funds)",
     rings: [[0, 1]],
     orders: [
       {
@@ -348,7 +348,7 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "single 2-size ring, token bought also used for paying fees",
+    description: "single 2-size ring, feeToken == tokenB (feeAmount <= amountB)",
     rings: [[0, 1]],
     orders: [
       {
@@ -359,6 +359,7 @@ export const ringsInfoList: RingsInfo[] = [
         amountB: 10e18,
         feeToken: "LRC",
         feeAmount: 1e18,
+        balanceFee: 0,
       },
       {
         index: 1,
@@ -379,6 +380,46 @@ export const ringsInfoList: RingsInfo[] = [
             },
             {
               filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "single 2-size ring, feeToken == tokenB (feeAmount > amountB)",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "WETH",
+        tokenB: "LRC",
+        amountS: 100e18,
+        amountB: 10e18,
+        feeToken: "LRC",
+        feeAmount: 20e18,
+        balanceFee: 0,
+      },
+      {
+        index: 1,
+        tokenS: "LRC",
+        tokenB: "WETH",
+        amountS: 10e18,
+        amountB: 100e18,
+        feeToken: "GTO",
+        feeAmount: 1e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.0,
+            },
+            {
+              filledFraction: 0.0,
             },
           ],
         },

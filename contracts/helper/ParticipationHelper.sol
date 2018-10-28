@@ -40,20 +40,24 @@ library ParticipationHelper {
         p.fillAmountS = (spendableS < remainingS) ? spendableS : remainingS;
 
         if (!p.order.P2P) {
-            // Check how much fee needs to be paid. We limit fillAmountS to how much
-            // fee the order owner can pay.
-            uint feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
-            if (feeAmount > 0) {
-                uint spendableFee = p.order.getSpendableFee(ctx);
-                if (p.order.feeToken == p.order.tokenS && p.fillAmountS + feeAmount > spendableS) {
-                    assert(spendableFee == spendableS);
-                    // Equally divide the available tokens between fillAmountS and feeAmount
-                    uint totalAmount = p.order.amountS.add(p.order.feeAmount);
-                    p.fillAmountS = spendableS.mul(p.order.amountS) / totalAmount;
-                    feeAmount = spendableS.mul(p.order.feeAmount) / totalAmount;
-                } else if (feeAmount > spendableFee) {
-                    feeAmount = spendableFee;
-                    p.fillAmountS = feeAmount.mul(p.order.amountS) / p.order.feeAmount;
+            // No need to check the fee balance of the owner if feeToken == tokenB,
+            // fillAmountB will be used to pay the fee.
+            if (!(p.order.feeToken == p.order.tokenB && p.order.feeAmount <= p.order.amountB)) {
+                // Check how much fee needs to be paid. We limit fillAmountS to how much
+                // fee the order owner can pay.
+                uint feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
+                if (feeAmount > 0) {
+                    uint spendableFee = p.order.getSpendableFee(ctx);
+                    if (p.order.feeToken == p.order.tokenS && p.fillAmountS + feeAmount > spendableS) {
+                        assert(spendableFee == spendableS);
+                        // Equally divide the available tokens between fillAmountS and feeAmount
+                        uint totalAmount = p.order.amountS.add(p.order.feeAmount);
+                        p.fillAmountS = spendableS.mul(p.order.amountS) / totalAmount;
+                        feeAmount = spendableS.mul(p.order.feeAmount) / totalAmount;
+                    } else if (feeAmount > spendableFee) {
+                        feeAmount = spendableFee;
+                        p.fillAmountS = feeAmount.mul(p.order.amountS) / p.order.feeAmount;
+                    }
                 }
             }
         }
