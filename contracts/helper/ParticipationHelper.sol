@@ -42,7 +42,9 @@ library ParticipationHelper {
         if (!p.order.P2P) {
             // No need to check the fee balance of the owner if feeToken == tokenB,
             // fillAmountB will be used to pay the fee.
-            if (!(p.order.feeToken == p.order.tokenB && p.order.feeAmount <= p.order.amountB)) {
+            if (!(p.order.feeToken == p.order.tokenB &&
+                  p.order.owner == p.order.tokenRecipient &&
+                  p.order.feeAmount <= p.order.amountB)) {
                 // Check how much fee needs to be paid. We limit fillAmountS to how much
                 // fee the order owner can pay.
                 uint feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
