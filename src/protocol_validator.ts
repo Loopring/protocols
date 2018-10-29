@@ -212,7 +212,8 @@ export class ProtocolValidator {
       const orderHash = order.hash.toString("hex");
       this.assertAlmostEqual(report.filledAmounts[orderHash].toNumber(),
                              expectedfilledAmounts[orderHash].toNumber(),
-                             "Filled amount different than expected");
+                             "Filled amount different than expected",
+                             6);
     }
     // Check RingMined events
     assert.equal(report.ringMinedEvents.length, ringMinedEvents.length,

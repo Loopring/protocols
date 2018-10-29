@@ -189,7 +189,9 @@ export class Ring {
     if (!p.order.P2P) {
       // No need to check the fee balance of the owner if feeToken == tokenB,
       // fillAmountB will be used to pay the fee.
-      if (!(p.order.feeToken === p.order.tokenB && p.order.feeAmount <= p.order.amountB)) {
+      if (!(p.order.feeToken === p.order.tokenB &&
+            p.order.owner === p.order.tokenRecipient &&
+            p.order.feeAmount <= p.order.amountB)) {
         // Check how much fee needs to be paid. We limit fillAmountS to how much
         // fee the order owner can pay.
         let feeAmount = new BigNumber(p.order.feeAmount).times(p.fillAmountS).dividedToIntegerBy(p.order.amountS);
@@ -566,9 +568,9 @@ export class Ring {
 
     let postFeeFillAmountS = p.fillAmountS;
     if (p.order.tokenSFeePercentage > 0) {
-      postFeeFillAmountS = p.fillAmountS
-                           .times(this.context.feePercentageBase - p.order.tokenSFeePercentage)
-                           .dividedToIntegerBy(this.context.feePercentageBase);
+      const feeAmountS = p.fillAmountS.times(p.order.tokenSFeePercentage)
+                                      .dividedToIntegerBy(this.context.feePercentageBase);
+      postFeeFillAmountS = p.fillAmountS.minus(feeAmountS);
     }
     if (prevP.fillAmountB.gt(postFeeFillAmountS)) {
       newSmallest = i;
