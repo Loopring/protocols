@@ -154,8 +154,8 @@ library RingHelper {
         uint postFeeFillAmountS = p.fillAmountS;
         uint tokenSFeePercentage = p.order.tokenSFeePercentage;
         if (tokenSFeePercentage > 0) {
-            postFeeFillAmountS = p.fillAmountS
-                .mul(ctx.feePercentageBase - tokenSFeePercentage) / ctx.feePercentageBase;
+            uint feeAmountS = p.fillAmountS.mul(tokenSFeePercentage) / ctx.feePercentageBase;
+            postFeeFillAmountS = p.fillAmountS - feeAmountS;
         }
 
         if (prevP.fillAmountB > postFeeFillAmountS) {
