@@ -428,6 +428,47 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "single 2-size ring, feeToken == tokenB and tokenRecipient != owner (feeAmount <= amountB)",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "WETH",
+        tokenB: "LRC",
+        amountS: 100e18,
+        amountB: 10e18,
+        feeToken: "LRC",
+        feeAmount: 1e18,
+        balanceFee: 0,
+        tokenRecipient: "2",
+      },
+      {
+        index: 1,
+        tokenS: "LRC",
+        tokenB: "WETH",
+        amountS: 10e18,
+        amountB: 100e18,
+        feeToken: "GTO",
+        feeAmount: 1e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.0,
+            },
+            {
+              filledFraction: 0.0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     description: "single 2-size ring, owner specifies token receiver address",
     rings: [[0, 1]],
     orders: [
@@ -1469,6 +1510,63 @@ export const ringsInfoList: RingsInfo[] = [
             {
               filledFraction: 1.0,
               P2P: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "P2P: multiple 2-size rings, order is allOrNone, filled in multiple rings (successful)",
+    rings: [[0, 1], [0, 2]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 100e18,
+        amountB: 9e18,
+        tokenSFeePercentage: 100,   // == 10.0%
+        tokenBFeePercentage: 50,    // == 5.0%
+        allOrNone: true,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 6e18,
+        amountB: 60e18,
+      },
+      {
+        index: 2,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 5e18,
+        amountB: 50e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 2 / 3,
+              P2P: true,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 1 / 3,
+              P2P: true,
+            },
+            {
+              filledFraction: 3 / 5,
             },
           ],
         },
