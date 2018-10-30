@@ -229,18 +229,17 @@ library RingHelper {
     }
 
     function generateFills(
-        Data.Ring ring
+        Data.Ring ring,
+        uint destPtr
         )
         internal
         pure
-        returns (bytes memory fills)
+        returns (uint fill)
     {
         uint ringSize = ring.size;
         uint fillSize = 6 * 32;
         assembly {
-            fills := mload(0x40)
-            mstore(add(fills, 0), mul(ringSize, fillSize))                             // fills.length
-            let fill := add(fills, 32)
+            fill := destPtr
             let participations := mload(add(ring, 32))                                 // ring.participations
 
             for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
@@ -264,7 +263,6 @@ library RingHelper {
 
                 fill := add(fill, fillSize)
             }
-            mstore(0x40, fill)
         }
     }
 

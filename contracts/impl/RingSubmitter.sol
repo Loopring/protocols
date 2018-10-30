@@ -197,12 +197,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             if (ring.valid) {
                 // Only settle rings we have checked to be valid
                 ring.doPayments(ctx, mining);
-                bytes memory fills = ring.generateFills();
-                emit RingMined(
+                emitRingMinedEvent(
+                    ring,
                     ctx.ringIndex++,
-                    ring.hash,
-                    mining.feeRecipient,
-                    fills
+                    mining.feeRecipient
                 );
             } else {
                 emit InvalidRing(ring.hash);
@@ -254,6 +252,41 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                     }
                 }
             }
+        }
+    }
+
+    function emitRingMinedEvent(
+        Data.Ring memory ring,
+        uint _ringIndex,
+        address feeRecipient
+        )
+        internal
+    {
+        bytes32 ringHash = ring.hash;
+        // keccak256("RingMined(uint256,bytes32,address,bytes)")
+        bytes32 ringMinedSignature = 0xb2ef4bc5209dff0c46d5dfddb2b68a23bd4820e8f33107fde76ed15ba90695c9;
+        uint fillsSize = ring.size * 6 * 32;
+
+        uint data;
+        uint ptr;
+        assembly {
+            data := mload(0x40)
+            ptr := data
+            mstore(ptr, _ringIndex)                     // ring index data
+            mstore(add(ptr, 32), 0x40)                  // offset to fills data
+            mstore(add(ptr, 64), fillsSize)             // fills length
+            ptr := add(ptr, 96)
+        }
+        ptr = ring.generateFills(ptr);
+
+        assembly {
+            log3(
+                data,                                   // data start
+                sub(ptr, data),                         // data length
+                ringMinedSignature,                     // Topic 0: RingMined signature
+                ringHash,                               // Topic 1: ring hash
+                feeRecipient                            // Topic 2: feeRecipient
+            )
         }
     }
 
