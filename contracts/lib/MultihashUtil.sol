@@ -47,25 +47,24 @@ library MultihashUtil {
     bytes32 constant ORDER_TYPEHASH = keccak256(
         abi.encodePacked(
             "Order(",
+            "uint amountS,",
+            "uint amountB,",
+            "uint feeAmount",
+            "uint validSince,",
+            "uint validUntil,",
             "address owner,",
             "address tokenS,",
             "address tokenB,",
-            "uint amountS,",
-            "uint amountB,",
             "address dualAuthAddr,",
             "address broker,",
             "address orderInterceptor,",
             "address wallet,",
-            "uint validSince,",
-            "uint validUntil,",
-            "bool allOrNone,",
             "address tokenRecipient,",
-            "uint16 walletSplitPercentage,",
             "address feeToken",
-            "uint feeAmount",
-            "uint16 feePercentage",
+            "uint16 walletSplitPercentage,",
             "uint16 tokenSFeePercentage",
             "uint16 tokenBFeePercentage",
+            "bool allOrNone,",
             ")"
         )
     );
