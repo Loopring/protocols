@@ -49,7 +49,7 @@ library MultihashUtil {
             "Order(",
             "uint amountS,",
             "uint amountB,",
-            "uint feeAmount",
+            "uint feeAmount,",
             "uint validSince,",
             "uint validUntil,",
             "address owner,",
@@ -60,11 +60,11 @@ library MultihashUtil {
             "address orderInterceptor,",
             "address wallet,",
             "address tokenRecipient,",
-            "address feeToken",
+            "address feeToken,",
             "uint16 walletSplitPercentage,",
-            "uint16 tokenSFeePercentage",
-            "uint16 tokenBFeePercentage",
-            "bool allOrNone,",
+            "uint16 tokenSFeePercentage,",
+            "uint16 tokenBFeePercentage,",
+            "bool allOrNone",
             ")"
         )
     );
