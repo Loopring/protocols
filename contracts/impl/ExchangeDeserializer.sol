@@ -18,13 +18,14 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../lib/MemoryUtil.sol";
+import "../lib/BytesUtil.sol";
 import "./Data.sol";
 
 
 /// @title Deserializes the data passed to submitRings
 /// @author Daniel Wang - <daniel@loopring.org>,
 library ExchangeDeserializer {
+    using BytesUtil     for bytes;
 
     function deserialize(
         address lrcTokenAddress,
@@ -40,10 +41,10 @@ library ExchangeDeserializer {
     {
         // Read the header
         Data.Header memory header;
-        header.version = uint16(MemoryUtil.bytesToUintX(data, 0, 2) & 0xFFFF);
-        header.numOrders = uint16(MemoryUtil.bytesToUintX(data, 2, 2) & 0xFFFF);
-        header.numRings = uint16(MemoryUtil.bytesToUintX(data, 4, 2) & 0xFFFF);
-        header.numSpendables = uint16(MemoryUtil.bytesToUintX(data, 6, 2) & 0xFFFF);
+        header.version = uint16(data.bytesToUintX(0, 2) & 0xFFFF);
+        header.numOrders = uint16(data.bytesToUintX(2, 2) & 0xFFFF);
+        header.numRings = uint16(data.bytesToUintX(4, 2) & 0xFFFF);
+        header.numSpendables = uint16(data.bytesToUintX(6, 2) & 0xFFFF);
 
         // Validation
         require(header.version == 0, "Unsupported serialization format");

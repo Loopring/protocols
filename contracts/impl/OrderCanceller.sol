@@ -31,7 +31,6 @@ import "../iface/ITradeDelegate.sol";
 import "../lib/BytesUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
-import "../lib/MemoryUtil.sol";
 import "../lib/MultihashUtil.sol";
 import "../lib/NoDefaultFunc.sol";
 
@@ -49,6 +48,7 @@ import "./ExchangeDeserializer.sol";
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
 contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
+    using BytesUtil       for bytes;
 
     address public delegateAddress = 0x0;
 
@@ -76,7 +76,7 @@ contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
         ITradeDelegate delegate = ITradeDelegate(delegateAddress);
 
         for (uint i = 0; i < size; i++) {
-            hashes[i] = BytesUtil.bytesToBytes32(orderHashes, i * 32);
+            hashes[i] = orderHashes.bytesToBytes32(i * 32);
             delegate.setCancelled(msg.sender, hashes[i]);
         }
 

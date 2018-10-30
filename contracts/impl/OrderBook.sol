@@ -21,7 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "../helper/OrderHelper.sol";
 import "../iface/IOrderBook.sol";
 import "../impl/Data.sol";
-import "../lib/MemoryUtil.sol";
+import "../lib/BytesUtil.sol";
 import "../lib/NoDefaultFunc.sol";
 
 
@@ -30,6 +30,7 @@ import "../lib/NoDefaultFunc.sol";
 /// @author Kongliang Zhong - <kongliang@loopring.org>.
 contract OrderBook is IOrderBook, NoDefaultFunc {
     using OrderHelper     for Data.Order;
+    using BytesUtil       for bytes;
 
     function submitOrder(
         bytes data
@@ -41,31 +42,31 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
 
         Data.Order memory order = Data.Order(
             0,                                                      // version
-            address(MemoryUtil.bytesToUint(data, 0 * 32)),          // owner
-            address(MemoryUtil.bytesToUint(data, 1 * 32)),          // tokenS
-            address(MemoryUtil.bytesToUint(data, 2 * 32)),          // tokenB
-            MemoryUtil.bytesToUint(data, 3 * 32),                   // amountS
-            MemoryUtil.bytesToUint(data, 4 * 32),                   // amountB
-            MemoryUtil.bytesToUint(data, 5 * 32),                   // validSince
+            address(data.bytesToUint(0 * 32)),                      // owner
+            address(data.bytesToUint(1 * 32)),                      // tokenS
+            address(data.bytesToUint(2 * 32)),                      // tokenB
+            data.bytesToUint(3 * 32),                               // amountS
+            data.bytesToUint(4 * 32),                               // amountB
+            data.bytesToUint(5 * 32),                               // validSince
             Data.Spendable(true, 0, 0),
             Data.Spendable(true, 0, 0),
             0x0,
-            address(MemoryUtil.bytesToUint(data, 6 * 32)),          // broker
+            address(data.bytesToUint(6 * 32)),                      // broker
             Data.Spendable(true, 0, 0),
             Data.Spendable(true, 0, 0),
-            address(MemoryUtil.bytesToUint(data, 7 * 32)),          // orderInterceptor
-            address(MemoryUtil.bytesToUint(data, 8 * 32)),          // wallet
-            uint(MemoryUtil.bytesToUint(data, 9 * 32)),             // validUtil
+            address(data.bytesToUint(7 * 32)),                      // orderInterceptor
+            address(data.bytesToUint(8 * 32)),                      // wallet
+            uint(data.bytesToUint(9 * 32)),                         // validUtil
             new bytes(0),
             new bytes(0),
-            bool(MemoryUtil.bytesToUint(data, 10 * 32) > 0),        // allOrNone
-            address(MemoryUtil.bytesToUint(data, 11 * 32)),         // feeToken
-            MemoryUtil.bytesToUint(data, 12 * 32),                  // feeAmount
+            bool(data.bytesToUint(10 * 32) > 0),                    // allOrNone
+            address(data.bytesToUint(11 * 32)),                     // feeToken
+            data.bytesToUint(12 * 32),                              // feeAmount
             0,
-            uint16(MemoryUtil.bytesToUint(data, 13 * 32)),          // tokenSFeePercentage
-            uint16(MemoryUtil.bytesToUint(data, 14 * 32)),          // tokenBFeePercentage
-            address(MemoryUtil.bytesToUint(data, 15 * 32)),         // tokenRecipient
-            uint16(MemoryUtil.bytesToUint(data, 16 * 32)),          // walletSplitPercentage
+            uint16(data.bytesToUint(13 * 32)),                      // tokenSFeePercentage
+            uint16(data.bytesToUint(14 * 32)),                      // tokenBFeePercentage
+            address(data.bytesToUint(15 * 32)),                     // tokenRecipient
+            uint16(data.bytesToUint(16 * 32)),                      // walletSplitPercentage
             false,
             bytes32(0x0),
             0x0,
