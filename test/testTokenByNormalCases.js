@@ -1,6 +1,12 @@
 const ERC820Registry = artifacts.require("./ERC820Registry.sol")
 const NewLRCToken = artifacts.require("./NewLRCToken.sol")
 
+assertNumberEqualsWithPrecision = (n1, n2, desc, precision = 8) => {
+  const numStr1 = (n1 / 1e18).toFixed(precision);
+  const numStr2 = (n2 / 1e18).toFixed(precision);
+  return assert.equal(Number(numStr1), Number(numStr2), desc);
+}
+
 contract("NewLRCToken", (accounts) => {
 
   const owner = accounts[0];
@@ -46,6 +52,34 @@ contract("NewLRCToken", (accounts) => {
       const allowanceAfter = await newLrcToken.allowance(owner, spender);
       assert.equal(allowanceAfter.toNumber(), allowanceBefore.toNumber()-transferFromAmount, "the allowance is wrong after transferFrom");
 
+    });
+
+    it("TestCase5: burn ", async () => {
+      const burner = accounts[1];
+      const balanceBefore = await newLrcToken.balanceOf(burner);
+      const burnAmount = balanceBefore.toNumber() / 2;
+
+      const totalSupplyBefore = await newLrcToken.totalSupply();
+      await newLrcToken.burn(burnAmount, "", {from: burner});
+      const balanceAfter = await newLrcToken.balanceOf(burner);
+      const totalSupplyAfter = await newLrcToken.totalSupply();
+      assertNumberEqualsWithPrecision(balanceBefore.toNumber(),
+                   balanceAfter.toNumber() + burnAmount,
+                   "wrong balance after burn");
+      assertNumberEqualsWithPrecision(totalSupplyAfter.toNumber(), totalSupplyBefore.toNumber() - burnAmount, "wrong totalSupply amount after burn.");
+    });
+
+    it("TestCase6: burn: burn amount should <= balance ", async () => {
+      const burner = accounts[1];
+      const balanceBefore = await newLrcToken.balanceOf(burner);
+      const burnAmount = balanceBefore.toNumber() + 1e18;
+
+      const totalSupplyBefore = await newLrcToken.totalSupply();
+      try {
+        await newLrcToken.burn(burnAmount, "", {from: burner});
+      } catch (err) {
+        assert(true, "burn amount > balance");
+      }
     });
 
   });
