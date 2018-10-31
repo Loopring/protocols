@@ -129,7 +129,7 @@ library ExchangeDeserializer {
         returns (Data.Order[] orders)
     {
         bytes memory emptyBytes = new bytes(0);
-        uint orderStructSize = 33 * 32;
+        uint orderStructSize = 32 * 32;
         // Memory for orders length + numOrders order pointers
         uint arrayDataSize = (1 + numOrders) * 32;
         Data.Spendable[] memory spendableList = new Data.Spendable[](numSpendables);
@@ -381,6 +381,11 @@ library ExchangeDeserializer {
                 // Get the ring size
                 let ringSize := and(mload(data), 0xFF)
                 data := add(data, 1)
+
+                // require(ringsSize <= 8)
+                if gt(ringSize, 8) {
+                    revert(0, 0)
+                }
 
                 // Allocate memory for all participations
                 let participations := mload(0x40)

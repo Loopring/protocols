@@ -46,8 +46,8 @@ library RingHelper {
         assembly {
             let data := mload(0x40)
             let ptr := data
+            let participations := mload(add(ring, 32))                                  // ring.participations
             for { let i := 0 } lt(i, ringSize) { i := add(i, 1) } {
-                let participations := mload(add(ring, 32))                              // ring.participations
                 let participation := mload(add(participations, add(32, mul(i, 32))))    // participations[i]
                 let order := mload(participation)                                       // participation.order
 
@@ -392,8 +392,8 @@ library RingHelper {
                         let dataAmount := mload(add(p, 96))
                         // dataAmount = amount.add(dataAmount);
                         dataAmount := add(amount, dataAmount)
-                        // require(dataAmount > amount) (safe math)
-                        if sub(1, gt(dataAmount, amount)) {
+                        // require(dataAmount >= amount) (safe math)
+                        if lt(dataAmount, amount) {
                             revert(0, 0)
                         }
                         mstore(add(p, 96), dataAmount)
@@ -661,8 +661,8 @@ library RingHelper {
                         let dataAmount := mload(add(p, 64))
                         // dataAmount = amount.add(dataAmount);
                         dataAmount := add(amount, dataAmount)
-                        // require(dataAmount > amount) (safe math)
-                        if sub(1, gt(dataAmount, amount)) {
+                        // require(dataAmount >= amount) (safe math)
+                        if lt(dataAmount, amount) {
                             revert(0, 0)
                         }
                         mstore(add(p, 64), dataAmount)

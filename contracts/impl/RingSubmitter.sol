@@ -364,6 +364,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 mstore(add(ptr,  0), broker)
                 mstore(add(ptr, 32), owner)
                 mstore(add(ptr, 64), token)
+
                 // Initialize spendable
                 mstore(add(ptr, 96), 0)
                 mstore(add(ptr, 128), 0)
@@ -402,7 +403,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         bytes32[] memory tokenBurnRates;
         assembly {
             tokenBurnRates := mload(0x40)
-            mstore(tokenBurnRates, 0)                               // Length
+            mstore(tokenBurnRates, 0)                               // tokenBurnRates.length
             mstore(0x40, add(
                 tokenBurnRates,
                 add(32, mul(maxNumTokenBurnRates, 64))
@@ -516,7 +517,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
             // Only do the external call if the list is not empty
             if gt(arrayLength, 0) {
-                mstore(add(data, 36), arrayLength)      // length
+                mstore(add(data, 36), arrayLength)      // filledInfo.length
 
                 success := call(
                     gas,                                // forward all gas
@@ -626,7 +627,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         uint ptr = ctx.transferPtr;
         bool success;
         assembly {
-            mstore(add(data, 36), arrayLength)      // length
+            mstore(add(data, 36), arrayLength)      // batch.length
 
             success := call(
                 gas,                                // forward all gas
@@ -659,7 +660,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         uint ptr = ctx.feePtr;
         bool success;
         assembly {
-            mstore(add(data, 36), arrayLength)      // length
+            mstore(add(data, 36), arrayLength)      // batch.length
 
             success := call(
                 gas,                                // forward all gas
