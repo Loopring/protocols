@@ -42,7 +42,7 @@ const encodeSubmitRing = (orders, feeRecipient, feeSelections) =>
     {
         return total * amount;
     });
-    const rate = Math.pow(tem, orders.length);
+    const rate = Math.pow(tem, 1 / orders.length);
     const addressList = orders.map(order => [order.owner, order.tokenS, order.walletAddress, order.authAddr]);
     const uintArgsList = orders.map(order => [order.amountS, order.amountB, order.validSince, order.validUntil, order.lrcFee, toHex(toBig(toFixed(toBig(order.amountS).times(toBig(rate)))))]);
     const uint8ArgsList = orders.map(order => [order.marginSplitPercentage]);
