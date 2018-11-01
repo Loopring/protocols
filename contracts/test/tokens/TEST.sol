@@ -17,6 +17,7 @@
 pragma solidity 0.4.24;
 
 import "../DummyToken.sol";
+import "../../iface/IRingSubmitter.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract TEST is DummyToken {
@@ -62,6 +63,26 @@ contract TEST is DummyToken {
         if (testCase == TEST_NOTHING) {
             return true;
         } else if (testCase == TEST_REENTRANCY) {
+            // Call submitRings without ever throwing
+            bytes memory calldata = abi.encodeWithSelector(
+                IRingSubmitter(exchangeAddress).submitRings.selector,
+                submitRingsData
+            );
+            exchangeAddress.call(calldata);
+
+            // Copy the 100 bytes containing the revert message
+            bytes memory returnData = new bytes(100);
+            assembly {
+                returndatacopy(add(returnData, 32), 0, 100)
+            }
+
+            // Revert reason should match REENTRY
+            bytes memory reentryMessageData = abi.encodeWithSelector(
+                bytes4(keccak256("Error(string)")),
+                REENTRY
+            );
+            // Throw here when the results are as expected. This way we know the test was correctly executed.
+            require(keccak256(reentryMessageData) != keccak256(returnData), "REVERT_MESSAGE_OK");
             return true;
         } else if (testCase == TEST_REQUIRE_FAIL) {
             require(false, "REQUIRE_FAILED");
@@ -86,5 +107,18 @@ contract TEST is DummyToken {
         external
     {
         testCase = _testCase;
+    }
+
+    function setReentrancyAttackData(
+        address _exchangeAddress,
+        bytes _submitRingsData
+        )
+        public
+    {
+        exchangeAddress = _exchangeAddress;
+        submitRingsData = new bytes(_submitRingsData.length);
+        for (uint i = 0; i < _submitRingsData.length; i++) {
+            submitRingsData[i] = _submitRingsData[i];
+        }
     }
 }

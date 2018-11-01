@@ -638,7 +638,7 @@ contract("TradeDelegate", (accounts: string[]) => {
 
     describe("Bad ERC20 tokens", () => {
       it("batchTransfer should succeed when a token transfer does not throw and returns nothing", async () => {
-        TestToken.setTestCase(await TestToken.TEST_NO_RETURN_VALUE());
+        await TestToken.setTestCase(await TestToken.TEST_NO_RETURN_VALUE());
         await setUserBalance(testToken, user1, 10e18);
         const transfers: TokenTransfer[] = [];
         addTokenTransfer(transfers, testToken, user1, user2, 1e18);
@@ -646,30 +646,30 @@ contract("TradeDelegate", (accounts: string[]) => {
       });
 
       it("batchTransfer should fail when a token transfer 'require' fails", async () => {
-        TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
+        await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
         await setUserBalance(testToken, user1, 10e18);
         const transfers: TokenTransfer[] = [];
         addTokenTransfer(transfers, testToken, user1, user2, 1e18);
         const batch = toTransferBatch(transfers);
-        await expectThrow(dummyExchange1.batchTransfer(batch));
+        await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
       });
 
       it("batchTransfer should fail when a token transfer returns false", async () => {
-        TestToken.setTestCase(await TestToken.TEST_RETURN_FALSE());
+        await TestToken.setTestCase(await TestToken.TEST_RETURN_FALSE());
         await setUserBalance(testToken, user1, 10e18);
         const transfers: TokenTransfer[] = [];
         addTokenTransfer(transfers, testToken, user1, user2, 1e18);
         const batch = toTransferBatch(transfers);
-        await expectThrow(dummyExchange1.batchTransfer(batch));
+        await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
       });
 
       it("batchTransfer should fail when a token transfer returns more than 32 bytes", async () => {
-        TestToken.setTestCase(await TestToken.TEST_INVALID_RETURN_SIZE());
+        await TestToken.setTestCase(await TestToken.TEST_INVALID_RETURN_SIZE());
         await setUserBalance(testToken, user1, 10e18);
         const transfers: TokenTransfer[] = [];
         addTokenTransfer(transfers, testToken, user1, user2, 1e18);
         const batch = toTransferBatch(transfers);
-        await expectThrow(dummyExchange1.batchTransfer(batch));
+        await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
       });
     });
 
