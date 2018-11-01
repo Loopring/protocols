@@ -32,6 +32,7 @@
     "@types/node": "9.3.0",
     "@types/request-promise-native": "^1.0.14",
     "node": "8.11.3",
+    "npm": "5.6.0",
     "ajv": "^6.0.0",
     "chai": "^4.0.1",
     "copyfiles": "^1.2.0",
