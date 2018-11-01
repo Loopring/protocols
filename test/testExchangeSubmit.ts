@@ -466,7 +466,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       }
     });
 
-    it.only("should revert when a token transfer fails", async () => {
+    it("should revert when a token transfer fails", async () => {
       const ringsInfo: pjs.RingsInfo = {
         rings: [[0, 1]],
         orders: [
