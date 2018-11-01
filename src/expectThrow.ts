@@ -1,11 +1,16 @@
-export async function expectThrow(promise: Promise<any>) {
+export async function expectThrow(promise: Promise<any>, expectedRevertMessage?: string) {
   try {
     await promise;
   } catch (error) {
-    const invalidOpcode = error.message.search("invalid opcode") >= 0;
-    const revert = error.message.search("revert") >= 0;
-    assert(invalidOpcode || revert,
-           "Expected throw, got '" + error + "' instead");
+
+    if (expectedRevertMessage) {
+      const message = error.message.search("revert " + expectedRevertMessage) >= 0;
+      assert(message, "Expected throw with message " + expectedRevertMessage + ", got '" + error + "' instead");
+    } else {
+      const revert = error.message.search("revert") >= 0;
+      const invalidOpcode = error.message.search("invalid opcode") >= 0;
+      assert(revert || invalidOpcode, "Expected throw, got '" + error + "' instead");
+    }
     return;
   }
   assert.fail("Expected throw not received");
