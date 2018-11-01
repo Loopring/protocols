@@ -256,7 +256,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function emitRingMinedEvent(
-        Data.Ring memory ring,
+        Data.Ring ring,
         uint _ringIndex,
         address feeRecipient
         )
@@ -504,7 +504,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 let order := mload(add(orders, mul(add(i, 1), 32)))
                 let filledAmount := mload(add(order, 928))                               // order.filledAmountS
                 let initialFilledAmount := mload(add(order, 960))                        // order.initialFilledAmountS
-                let filledAmountChanged := sub(1, eq(filledAmount, initialFilledAmount))
+                let filledAmountChanged := iszero(eq(filledAmount, initialFilledAmount))
                 // if (order.valid && filledAmountChanged)
                 if and(gt(mload(add(order, 992)), 0), filledAmountChanged) {             // order.valid
                     mstore(add(ptr,   0), mload(add(order, 864)))                        // order.hash
@@ -589,7 +589,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 returnDataSize                      // output length
             )
             // Check if the call was successful and the return data is the expected size
-            if or(eq(success, 0), sub(1, eq(returndatasize(), returnDataSize))) {
+            if or(eq(success, 0), iszero(eq(returndatasize(), returnDataSize))) {
                 revert(0, 0)
             }
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
@@ -602,7 +602,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 mstore(add(order, 992),                                 // order.valid
                     and(
                         gt(mload(add(order, 992)), 0),                  // order.valid
-                        sub(1, eq(fill, not(0)))                        // fill != ~uint(0
+                        iszero(eq(fill, not(0)))                        // fill != ~uint(0
                     )
                 )
             }

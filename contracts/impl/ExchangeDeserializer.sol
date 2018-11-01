@@ -34,9 +34,9 @@ library ExchangeDeserializer {
         internal
         view
         returns (
-            Data.Mining memory mining,
-            Data.Order[] memory orders,
-            Data.Ring[] memory rings
+            Data.Mining mining,
+            Data.Order[] orders,
+            Data.Ring[] rings
         )
     {
         // Read the header

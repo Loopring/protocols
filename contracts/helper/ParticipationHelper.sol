@@ -57,6 +57,7 @@ library ParticipationHelper {
                         p.fillAmountS = spendableS.mul(p.order.amountS) / totalAmount;
                         feeAmount = spendableS.mul(p.order.feeAmount) / totalAmount;
                     } else if (feeAmount > spendableFee) {
+                        // Scale down fillAmountS so the available feeAmount is sufficient
                         feeAmount = spendableFee;
                         p.fillAmountS = feeAmount.mul(p.order.amountS) / p.order.feeAmount;
                     }

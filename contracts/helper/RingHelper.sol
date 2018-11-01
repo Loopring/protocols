@@ -459,8 +459,8 @@ library RingHelper {
     }
 
     function payFeesForParticipation(
-        Data.FeeContext memory feeCtx,
-        Data.Participation memory p
+        Data.FeeContext feeCtx,
+        Data.Participation p
         )
         internal
         view
@@ -490,7 +490,7 @@ library RingHelper {
     }
 
     function payFeesAndBurn(
-        Data.FeeContext memory feeCtx,
+        Data.FeeContext feeCtx,
         address token,
         uint totalAmount
         )
@@ -528,6 +528,7 @@ library RingHelper {
             }
 
             uint32 burnRate = getBurnRate(feeCtx, token);
+            assert(burnRate <= feeCtx.ctx.feePercentageBase);
 
             // Miner fee
             minerFeeBurn = minerFee.mul(burnRate) / feeCtx.ctx.feePercentageBase;
@@ -587,7 +588,7 @@ library RingHelper {
     }
 
     function getBurnRate(
-        Data.FeeContext memory feeCtx,
+        Data.FeeContext feeCtx,
         address token
         )
         internal
@@ -614,7 +615,7 @@ library RingHelper {
     }
 
     function distributeMinerFeeToOwners(
-        Data.FeeContext memory feeCtx,
+        Data.FeeContext feeCtx,
         address token,
         uint minerFee
         )
