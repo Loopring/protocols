@@ -8,6 +8,7 @@ const {
   DummyExchange,
   OrderBook,
   OrderRegistry,
+  TESTToken,
 } = new Artifacts(artifacts);
 
 contract("Exchange_Submit", (accounts: string[]) => {
@@ -463,6 +464,42 @@ contract("Exchange_Submit", (accounts: string[]) => {
                        "The order owner should receive the tokens bought");
         }
       }
+    });
+
+    it.only("should revert when a token transfer fails", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1]],
+        orders: [
+          {
+            tokenS: "WETH",
+            tokenB: "TEST",
+            amountS: 10e18,
+            amountB: 10e18,
+          },
+          {
+            tokenS: "TEST",
+            tokenB: "WETH",
+            amountS: 10e18,
+            amountB: 10e18,
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+
+      // Setup the ring
+      const ringsGenerator = new pjs.RingsGenerator(exchangeTestUtil.context);
+      await ringsGenerator.setupRingsAsync(ringsInfo);
+      const bs = ringsGenerator.toSubmitableParam(ringsInfo);
+
+      // Fail the token transfer by throwing in transferFrom
+      const TestToken = TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
+      await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
+
+      // submitRings should revert
+      await pjs.expectThrow(
+        exchangeTestUtil.ringSubmitter.submitRings(bs, {from: exchangeTestUtil.testContext.transactionOrigin}),
+        "TRANSFER_FAILURE",
+      );
     });
 
   });
