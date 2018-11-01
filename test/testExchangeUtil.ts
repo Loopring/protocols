@@ -764,39 +764,44 @@ export class ExchangeTestUtil {
       RDNToken,
       REPToken,
       WETHToken,
+      TESTToken,
     } = new Artifacts(artifacts);
 
     const tokenSymbolAddrMap = new Map<string, string>();
     const tokenAddrSymbolMap = new Map<string, string>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [lrc, gto, rdn, rep, weth] = await Promise.all([
+    const [lrc, gto, rdn, rep, weth, test] = await Promise.all([
       LRCToken.deployed(),
       GTOToken.deployed(),
       RDNToken.deployed(),
       REPToken.deployed(),
       WETHToken.deployed(),
+      TESTToken.deployed(),
     ]);
 
-    const allTokens = [lrc, gto, rdn, rep, weth];
+    const allTokens = [lrc, gto, rdn, rep, weth, test];
 
     tokenSymbolAddrMap.set("LRC", LRCToken.address);
     tokenSymbolAddrMap.set("GTO", GTOToken.address);
     tokenSymbolAddrMap.set("RDN", RDNToken.address);
     tokenSymbolAddrMap.set("REP", REPToken.address);
     tokenSymbolAddrMap.set("WETH", WETHToken.address);
+    tokenSymbolAddrMap.set("TEST", TESTToken.address);
 
     tokenAddrSymbolMap.set(LRCToken.address, "LRC");
     tokenAddrSymbolMap.set(GTOToken.address, "GTO");
     tokenAddrSymbolMap.set(RDNToken.address, "RDN");
     tokenAddrSymbolMap.set(REPToken.address, "REP");
     tokenAddrSymbolMap.set(WETHToken.address, "WETH");
+    tokenAddrSymbolMap.set(TESTToken.address, "TEST");
 
     tokenAddrInstanceMap.set(LRCToken.address, lrc);
     tokenAddrInstanceMap.set(GTOToken.address, gto);
     tokenAddrInstanceMap.set(RDNToken.address, rdn);
     tokenAddrInstanceMap.set(REPToken.address, rep);
     tokenAddrInstanceMap.set(WETHToken.address, weth);
+    tokenAddrInstanceMap.set(TESTToken.address, test);
 
     const deployer = accounts[0];
     const transactionOrigin = accounts[1];
