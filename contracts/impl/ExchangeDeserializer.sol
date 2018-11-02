@@ -48,6 +48,8 @@ library ExchangeDeserializer {
 
         // Validation
         require(header.version == 0, "Unsupported serialization format");
+        require(header.numOrders > 0, "Invalid number of orders");
+        require(header.numRings > 0, "Invalid number of rings");
         require(header.numSpendables > 0, "Invalid number of spendables");
 
         // Calculate data pointers
@@ -410,6 +412,10 @@ library ExchangeDeserializer {
 
                     // Get the order index
                     let orderIndex := and(mload(data), 0xFF)
+                    // require(orderIndex < orders.length)
+                    if iszero(lt(orderIndex, mload(orders))) {
+                        revert(0, 0)
+                    }
                     data := add(data, 1)
 
                     // participation.order
