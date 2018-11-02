@@ -20,15 +20,15 @@ contract("Claimable", (accounts: string[]) => {
     it("should be able to transfer ownership", async () => {
       await claimable.transferOwnership(owner2, {from: owner1});
       const contractOwner = await claimable.pendingOwner();
-      assert.equal(contractOwner, owner2, "Owner should new owner");
+      assert.equal(contractOwner, owner2, "Ownership should be pending for the new owner");
     });
 
     it("should not be able to transfer ownership to an invalid address", async () => {
-      await expectThrow(claimable.transferOwnership(emptyAddr));
+      await expectThrow(claimable.transferOwnership(emptyAddr), "INVALID_ADDRESS");
     });
 
     it("should not be able to transfer ownership to the current owner", async () => {
-      await expectThrow(claimable.transferOwnership(owner1));
+      await expectThrow(claimable.transferOwnership(owner1), "INVALID_ADDRESS");
     });
 
   });
@@ -50,12 +50,12 @@ contract("Claimable", (accounts: string[]) => {
   describe("anyone", () => {
 
     it("should not be able to transfer ownership", async () => {
-      await expectThrow(claimable.transferOwnership(owner2, {from: owner2}));
+      await expectThrow(claimable.transferOwnership(owner2, {from: owner2}), "NOT_OWNER");
     });
 
     it("should not be able to claim ownership", async () => {
       await claimable.transferOwnership(owner2, {from: owner1});
-      await expectThrow(claimable.claimOwnership({from: owner3}));
+      await expectThrow(claimable.claimOwnership({from: owner3}), "UNAUTHORIZED");
     });
 
   });

@@ -79,12 +79,21 @@ contract("OrderBook", (accounts: string[]) => {
   };
 
   const submitOrderChecked = async (order: OrderInfo, transactionOrigin: string) => {
-    // Store order data in bytes array
+    // Store order data in a bytes array
     const orderUtil = new OrderUtil(undefined);
     const orderData = orderUtil.toOrderBookSubmitParams(order);
 
+    // Calculate the order hash
+    const orderHash = "0x" + orderUtil.getOrderHash(order).toString("hex");
+
+    // Check if the order was successfully submitted
+    const submittedBefore = await orderBook.orderSubmitted(orderHash);
+
     // Submit the order
     await orderBook.submitOrder(orderData, {from: transactionOrigin});
+
+    // If the order was successfully submitted that means the order wasn't submitted before
+    assert.equal(submittedBefore, false, "order should have not been registered as submitten before");
 
     // Catch the OrderSubmitted event
     const events: any = await getEventsFromContract(orderBook, "OrderSubmitted", web3.eth.blockNumber);
@@ -92,13 +101,12 @@ contract("OrderBook", (accounts: string[]) => {
     const eventOrderData = events[0].args.orderData;
 
     // Check event data
-    const orderHash = "0x" + orderUtil.getOrderHash(order).toString("hex");
     assert.equal(eventOrderHash, orderHash, "onchain order hash needs to match offchain order hash");
     assert.equal(eventOrderData, orderData, "event order data needs to match submitted order data");
 
     // Check if the order was successfully submitted
-    const submitted = await orderBook.orderSubmitted(orderHash);
-    assert.equal(submitted, true, "order should be submitted");
+    const submittedAfter = await orderBook.orderSubmitted(orderHash);
+    assert.equal(submittedAfter, true, "order should be submitted");
   };
 
   before(async () => {
@@ -112,6 +120,26 @@ contract("OrderBook", (accounts: string[]) => {
     orderBook = await OrderBook.new();
   });
 
+  describe("general", () => {
+    it("should not be able to submit an order in an incorrect format", async () => {
+      const order = getTestOrder(owner1, broker1);
+      // Store order data in a bytes array
+      const orderUtil = new OrderUtil(undefined);
+      let orderData = orderUtil.toOrderBookSubmitParams(order);
+      // Add a byte to the data
+      orderData = orderData + "00";
+      // Try to submit the order
+      await expectThrow(orderBook.submitOrder(orderData, {from: order.owner}), "INVALID_SIZE");
+    });
+
+    it("orders should default to not submitted", async () => {
+      // Check if the order was successfully submitted
+      const orderHash = "0x" + "12".repeat(32);
+      const submitted = await orderBook.orderSubmitted(orderHash);
+      assert.equal(submitted, false, "order should default to not submitted");
+    });
+  });
+
   describe("order owner", () => {
     it("should be able to submit his order to order book", async () => {
       const order = getTestOrder(owner1, broker1);
@@ -121,7 +149,7 @@ contract("OrderBook", (accounts: string[]) => {
     it("should not be able to submit the same order twice", async () => {
       const order = getTestOrder(owner2, broker1);
       await submitOrderChecked(order, order.owner);
-      await expectThrow(submitOrderChecked(order, order.owner));
+      await expectThrow(submitOrderChecked(order, order.owner), "ALREADY_EXIST");
     });
   });
 
@@ -134,15 +162,15 @@ contract("OrderBook", (accounts: string[]) => {
     it("should not be able to submit the same order twice", async () => {
       const order = getTestOrder(owner2, broker2);
       await submitOrderChecked(order, order.broker);
-      await expectThrow(submitOrderChecked(order, order.broker));
+      await expectThrow(submitOrderChecked(order, order.broker), "ALREADY_EXIST");
     });
   });
 
   describe("anyone", () => {
     it("should not be able to submit an order he's not the owner/broker of", async () => {
       const order = getTestOrder(owner1, broker1);
-      await expectThrow(submitOrderChecked(order, owner2));
-      await expectThrow(submitOrderChecked(order, broker2));
+      await expectThrow(submitOrderChecked(order, owner2), "UNAUTHORIZED_ONCHAIN_ORDER");
+      await expectThrow(submitOrderChecked(order, broker2), "UNAUTHORIZED_ONCHAIN_ORDER");
     });
   });
 

@@ -254,19 +254,19 @@ contract("TradeDelegate", (accounts: string[]) => {
     });
 
     it("should not be able to authorize a non-contract address", async () => {
-      await expectThrow(authorizeAddressChecked(emptyAddr, owner));
-      await expectThrow(authorizeAddressChecked(user2, owner));
+      await expectThrow(authorizeAddressChecked(emptyAddr, owner), "ZERO_ADDRESS");
+      await expectThrow(authorizeAddressChecked(user2, owner), "INVALID_ADDRESS");
     });
 
     it("should not be able to authorize an address twice", async () => {
       await authorizeAddressChecked(dummyExchange1.address, owner);
-      await expectThrow(authorizeAddressChecked(dummyExchange1.address, owner));
+      await expectThrow(authorizeAddressChecked(dummyExchange1.address, owner), "ALREADY_EXIST");
     });
 
     it("should not be able to deauthorize an unathorized address", async () => {
       await authorizeAddressChecked(dummyExchange1.address, owner);
-      await expectThrow(deauthorizeAddressChecked(emptyAddr, owner));
-      await expectThrow(deauthorizeAddressChecked(dummyExchange2.address, owner));
+      await expectThrow(deauthorizeAddressChecked(emptyAddr, owner), "ZERO_ADDRESS");
+      await expectThrow(deauthorizeAddressChecked(dummyExchange2.address, owner), "NOT_FOUND");
     });
 
     it("should be able to suspend and resume the contract", async () => {
@@ -276,7 +276,7 @@ contract("TradeDelegate", (accounts: string[]) => {
       await setUserBalance(token1, user1, 10e18);
       const transfers: TokenTransfer[] = [];
       addTokenTransfer(transfers, token1, user1, user2, 1e18);
-      await expectThrow(batchTransferChecked(transfers));
+      await expectThrow(batchTransferChecked(transfers), "INVALID_STATE");
       // Resume again
       await tradeDelegate.resume({from: owner});
       // Try the trade again
@@ -286,16 +286,16 @@ contract("TradeDelegate", (accounts: string[]) => {
     it("should be able to kill the contract", async () => {
       await authorizeAddressChecked(dummyExchange1.address, owner);
       // Suspend is needed before kill
-      await expectThrow(tradeDelegate.kill({from: owner}));
+      await expectThrow(tradeDelegate.kill({from: owner}), "INVALID_STATE");
       await tradeDelegate.suspend({from: owner});
       await tradeDelegate.kill({from: owner});
       // Try to resume again
-      await expectThrow(tradeDelegate.resume({from: owner}));
+      await expectThrow(tradeDelegate.resume({from: owner}), "NOT_OWNER");
       // Try to do a transfer
       await setUserBalance(token1, user1, 10e18);
       const transfers: TokenTransfer[] = [];
       addTokenTransfer(transfers, token1, user1, user2, 1e18);
-      await expectThrow(batchTransferChecked(transfers));
+      await expectThrow(batchTransferChecked(transfers), "INVALID_STATE");
     });
   });
 
@@ -343,14 +343,14 @@ contract("TradeDelegate", (accounts: string[]) => {
       addTokenTransfer(transfers, token1, user1, user3, 2e18);
       const batch = toTransferBatch(transfers);
       batch.pop();
-      await expectThrow(dummyExchange1.batchTransfer(batch));
+      await expectThrow(dummyExchange1.batchTransfer(batch), "INVALID_SIZE");
     });
 
     it("should not be able to batch transfer tokens with non-ERC20 token address", async () => {
       const transfers: TokenTransfer[] = [];
       addTokenTransfer(transfers, token1, user1, user2, 1e18);
       const batch = toTransferBatch(transfers);
-      await expectThrow(dummyExchange1.batchTransfer(batch));
+      await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
     });
 
     it("should be able to batch update filled", async () => {
@@ -385,22 +385,22 @@ contract("TradeDelegate", (accounts: string[]) => {
       addFilledUpdate(updates, hash2, 2e18);
       const batch = toFilledBatch(updates);
       batch.pop();
-      await expectThrow(dummyExchange1.batchUpdateFilled(batch));
+      await expectThrow(dummyExchange1.batchUpdateFilled(batch), "INVALID_SIZE");
     });
 
     it("should not be able to authorize an address", async () => {
-      await expectThrow(dummyExchange1.authorizeAddress(dummyExchange2.address));
+      await expectThrow(dummyExchange1.authorizeAddress(dummyExchange2.address), "NOT_OWNER");
     });
 
     it("should not be able to deauthorize an address", async () => {
-      await expectThrow(dummyExchange1.authorizeAddress(dummyExchange1.address));
+      await expectThrow(dummyExchange1.authorizeAddress(dummyExchange1.address), "NOT_OWNER");
     });
 
     it("should not be able to suspend and resume the contract", async () => {
-      await expectThrow(dummyExchange1.suspend());
+      await expectThrow(dummyExchange1.suspend(), "NOT_OWNER");
       await tradeDelegate.suspend({from: owner});
       // Try to resume again
-      await expectThrow(dummyExchange1.resume());
+      await expectThrow(dummyExchange1.resume(), "NOT_OWNER");
       await tradeDelegate.resume({from: owner});
     });
 
@@ -471,14 +471,14 @@ contract("TradeDelegate", (accounts: string[]) => {
         it("should not be able to uncancel orders by setting the cutoff earlier", async () => {
           await dummyExchange1.setCutoffs(user1, 10000);
           await dummyExchange1.setCutoffs(user1, 20000);
-          await expectThrow(dummyExchange1.setCutoffs(user1, 19000));
+          await expectThrow(dummyExchange1.setCutoffs(user1, 19000), "INVALID_VALUE");
         });
 
         it("should not be able to uncancel orders by setting the trading pair cutoff earlier", async () => {
           const tradingPair = numberToBytesX(123, 20);
           dummyExchange1.setTradingPairCutoffs(user1, tradingPair, 2000);
           dummyExchange1.setTradingPairCutoffs(user1, tradingPair, 4000);
-          await expectThrow(dummyExchange1.setTradingPairCutoffs(user1, tradingPair, 3000));
+          await expectThrow(dummyExchange1.setTradingPairCutoffs(user1, tradingPair, 3000), "INVALID_VALUE");
         });
       });
       describe("broker (broker != owner)", () => {
@@ -567,7 +567,7 @@ contract("TradeDelegate", (accounts: string[]) => {
         it("should not be able to uncancel orders by setting the cutoff earlier", async () => {
           await dummyExchange1.setCutoffsOfOwner(broker1, user1, 10000);
           await dummyExchange1.setCutoffsOfOwner(broker1, user1, 20000);
-          await expectThrow(dummyExchange1.setCutoffsOfOwner(broker1, user1, 19000));
+          await expectThrow(dummyExchange1.setCutoffsOfOwner(broker1, user1, 19000), "INVALID_VALUE");
           await dummyExchange1.setCutoffsOfOwner(broker2, user1, 19000);
           await dummyExchange1.setCutoffsOfOwner(broker1, user2, 19000);
         });
@@ -576,7 +576,8 @@ contract("TradeDelegate", (accounts: string[]) => {
           const tradingPair = numberToBytesX(123, 20);
           dummyExchange1.setTradingPairCutoffsOfOwner(broker1, user1, tradingPair, 2000);
           dummyExchange1.setTradingPairCutoffsOfOwner(broker1, user1, tradingPair, 4000);
-          await expectThrow(dummyExchange1.setTradingPairCutoffsOfOwner(broker1, user1, tradingPair, 3000));
+          await expectThrow(dummyExchange1.setTradingPairCutoffsOfOwner(broker1, user1, tradingPair, 3000),
+                            "INVALID_VALUE");
           await dummyExchange1.setTradingPairCutoffsOfOwner(broker1, user2, tradingPair, 3000);
           await dummyExchange1.setTradingPairCutoffsOfOwner(broker2, user1, tradingPair, 3000);
         });
@@ -689,7 +690,7 @@ contract("TradeDelegate", (accounts: string[]) => {
       addOrder(orders, broker1, user1, 123, 1000, 123);
       const data = toCutoffBatch(orders);
       data.pop();
-      await expectThrow(tradeDelegate.batchGetFilledAndCheckCancelled(data));
+      await expectThrow(tradeDelegate.batchGetFilledAndCheckCancelled(data), "INVALID_SIZE");
     });
 
     it("should not be able to transfer tokens", async () => {
@@ -697,14 +698,14 @@ contract("TradeDelegate", (accounts: string[]) => {
       await setUserBalance(token1, user1, 10e18);
       const transfers: TokenTransfer[] = [];
       addTokenTransfer(transfers, token1, user1, user2, 1e18);
-      await expectThrow(batchTransferChecked(transfers));
+      await expectThrow(batchTransferChecked(transfers), "UNAUTHORIZED");
     });
 
     it("should not be able to batch update filled", async () => {
       const hash1 = 123;
       const updates: FilledUpdate[] = [];
       addFilledUpdate(updates, hash1, 1.5e18);
-      await expectThrow(batchUpdateFilledChecked(updates));
+      await expectThrow(batchUpdateFilledChecked(updates), "UNAUTHORIZED");
     });
   });
 });

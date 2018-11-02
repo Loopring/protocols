@@ -36,7 +36,7 @@ contract("Multihash", (accounts: string[]) => {
     it("should not be able to verify invalid multihash data", async () => {
       const sig = new Bitstream();
       sig.addNumber(1, 1);
-      await expectThrow(multihash.verifySignature(signer1, hash1, sig.getData()));
+      await expectThrow(multihash.verifySignature(signer1, hash1, sig.getData()), "invalid multihash format");
     });
 
     it("should not be able to verify multihash data with incorrect length", async () => {
@@ -44,7 +44,7 @@ contract("Multihash", (accounts: string[]) => {
       sig.addNumber(111, 1);
       sig.addNumber(24 + 2, 1);
       sig.addNumber(123, 24);
-      await expectThrow(multihash.verifySignature(signer1, hash1, sig.getData()));
+      await expectThrow(multihash.verifySignature(signer1, hash1, sig.getData()), "bad multihash size");
     });
 
   });
@@ -74,7 +74,7 @@ contract("Multihash", (accounts: string[]) => {
 
     it("should not be able to verify signed data for invalid addresses", async () => {
       const multiHashData = await util.signAsync(SignAlgorithm.Ethereum, new Buffer(hash1.slice(2), "hex"), signer1);
-      await expectThrow(multihash.verifySignature(emptyAddr, hash1, multiHashData));
+      await expectThrow(multihash.verifySignature(emptyAddr, hash1, multiHashData), "invalid signer address");
     });
 
     it("should not be able to verify signed data with incorrect signature data length", async () => {
@@ -82,8 +82,8 @@ contract("Multihash", (accounts: string[]) => {
       const prefix = new Bitstream();
       prefix.addNumber(SignAlgorithm.Ethereum, 1);
       prefix.addNumber(65 + 1, 1);
-      multiHashData = prefix.getData() + multiHashData.slice(2 + 4);
-      await expectThrow(multihash.verifySignature(signer1, hash1, multiHashData));
+      multiHashData = prefix.getData() + multiHashData.slice(2 + 4) + "00";
+      await expectThrow(multihash.verifySignature(signer1, hash1, multiHashData), "bad Ethereum multihash size");
     });
 
   });

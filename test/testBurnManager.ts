@@ -98,7 +98,7 @@ contract("BurnManager", (accounts: string[]) => {
       await dummyExchange.batchAddFeeBalances(feePayments.getData());
 
       // Try to burn WETH
-      await expectThrow(burnManager.burn(tokenWETH, {from: user1}));
+      await expectThrow(burnManager.burn(tokenWETH, {from: user1}), "UNIMPLEMENTED");
     });
   });
 });

@@ -23,7 +23,7 @@ contract("Ownable", (accounts: string[]) => {
     });
 
     it("should not be able to transfer ownership to an invalid address", async () => {
-      await expectThrow(ownable.transferOwnership(emptyAddr));
+      await expectThrow(ownable.transferOwnership(emptyAddr), "ZERO_ADDRESS");
     });
 
   });
@@ -36,7 +36,7 @@ contract("Ownable", (accounts: string[]) => {
     });
 
     it("should not be able to transfer ownership", async () => {
-      await expectThrow(ownable.transferOwnership(owner2, {from: owner2}));
+      await expectThrow(ownable.transferOwnership(owner2, {from: owner2}), "NOT_OWNER");
     });
 
   });

@@ -163,7 +163,7 @@ contract("FeeHolder", (accounts: string[]) => {
       feePayments.add(user2, token2, 3.21 * 1e19);
       const batch = feePayments.getData();
       batch.pop();
-      await expectThrow(dummyExchange.batchAddFeeBalances(batch));
+      await expectThrow(dummyExchange.batchAddFeeBalances(batch), "INVALID_SIZE");
     });
   });
 
@@ -219,11 +219,11 @@ contract("FeeHolder", (accounts: string[]) => {
       // Withdraw half the available balance
       await withdrawTokenChecked(user1, token1, amount / 2);
       // Amount is greater than what's available
-      await expectThrow(withdrawTokenChecked(user1, token1, amount));
+      await expectThrow(withdrawTokenChecked(user1, token1, amount), "INVALID_VALUE");
       // Other user shouldn't be able to withdraw those funds
-      await expectThrow(withdrawTokenChecked(user2, token1, amount / 2));
+      await expectThrow(withdrawTokenChecked(user2, token1, amount / 2), "INVALID_VALUE");
       // User shouldn't be able to withdraw tokens it didn't get paid
-      await expectThrow(withdrawTokenChecked(user1, token2, amount));
+      await expectThrow(withdrawTokenChecked(user1, token2, amount), "INVALID_VALUE");
     });
 
     it("should not be able to withdraw tokens to burn", async () => {
@@ -237,14 +237,14 @@ contract("FeeHolder", (accounts: string[]) => {
       await batchAddFeeBalancesChecked(feePayments);
 
       // Try to withdraw the tokens to burn
-      await expectThrow(feeHolder.withdrawBurned(token1, amount, {from: user1}));
+      await expectThrow(feeHolder.withdrawBurned(token1, amount, {from: user1}), "UNAUTHORIZED");
     });
 
     it("should not be able to add fee balances", async () => {
       const feePayments = new FeePayments();
       feePayments.add(user1, token1, 1.23 * 1e18);
       feePayments.add(user2, token2, 3.21 * 1e19);
-      await expectThrow(feeHolder.batchAddFeeBalances(feePayments.getData(), {from: user1}));
+      await expectThrow(feeHolder.batchAddFeeBalances(feePayments.getData(), {from: user1}), "UNAUTHORIZED");
     });
   });
 

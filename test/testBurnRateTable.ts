@@ -193,7 +193,7 @@ contract("BurnRateTable", (accounts: string[]) => {
       const initialBalance = upgradeAmount / 2;
       await addLRCBalance(user1, initialBalance);
       // Try to upgrade
-      await expectThrow(burnRateTable.upgradeTokenTier(token1, {from: user1}));
+      await expectThrow(burnRateTable.upgradeTokenTier(token1, {from: user1}), "INVALID_VALUE");
     });
 
     it("should not be able to upgrade the tier of LRC or WETH by burning enough tokens", async () => {
@@ -204,9 +204,9 @@ contract("BurnRateTable", (accounts: string[]) => {
       // Make sure the user has enough LRC
       await addLRCBalance(user1, initialBalance);
       // Try to upgrade LRC
-      await expectThrow(burnRateTable.upgradeTokenTier(tokenLRC, {from: user1}));
+      await expectThrow(burnRateTable.upgradeTokenTier(tokenLRC, {from: user1}), "BURN_RATE_FROZEN");
       // Try to upgrade WETH
-      await expectThrow(burnRateTable.upgradeTokenTier(tokenWETH, {from: user1}));
+      await expectThrow(burnRateTable.upgradeTokenTier(tokenWETH, {from: user1}), "BURN_RATE_FROZEN");
     });
 
     it("should not be able to upgrade the tier of a token above tier 1", async () => {
@@ -223,7 +223,7 @@ contract("BurnRateTable", (accounts: string[]) => {
       // Tier 2 -> Tier 1
       burnRateTable.upgradeTokenTier(token1, {from: user1});
       // Tier 1 should be the limit
-      await expectThrow(burnRateTable.upgradeTokenTier(token1, {from: user1}));
+      await expectThrow(burnRateTable.upgradeTokenTier(token1, {from: user1}), "BURN_RATE_MINIMIZED");
     });
   });
 

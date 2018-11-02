@@ -99,24 +99,24 @@ contract("BrokerRegistry", (accounts: string[]) => {
 
     it("should not be able to unregister a broker that is not registered", async () => {
       await registerBrokerChecked(user1, broker1, dummyBrokerInterceptor.address);
-      await expectThrow(brokerRegistry.unregisterBroker(broker2, {from: user1}));
+      await expectThrow(brokerRegistry.unregisterBroker(broker2, {from: user1}), "NOT_FOUND");
     });
 
     it("should not be able to register an invalid broker address", async () => {
-      await expectThrow(registerBrokerChecked(user1, emptyAddr, emptyAddr));
+      await expectThrow(registerBrokerChecked(user1, emptyAddr, emptyAddr), "ZERO_ADDRESS");
     });
 
     it("should not be able to unregister an invalid broker address", async () => {
-      await expectThrow(unregisterBrokerChecked(user1, emptyAddr));
+      await expectThrow(unregisterBrokerChecked(user1, emptyAddr), "ZERO_ADDRESS");
     });
 
     it("should not be able to register a broker with interceptor that is not a contract", async () => {
-      await expectThrow(brokerRegistry.registerBroker(broker1, invalidInterceptor, {from: user1}));
+      await expectThrow(brokerRegistry.registerBroker(broker1, invalidInterceptor, {from: user1}), "INVALID_ADDRESS");
     });
 
     it("should not be able to register the same broker twice", async () => {
       await registerBrokerChecked(user1, broker1, emptyAddr);
-      await expectThrow(brokerRegistry.registerBroker(broker1, emptyAddr, {from: user1}));
+      await expectThrow(brokerRegistry.registerBroker(broker1, emptyAddr, {from: user1}), "ALREADY_EXIST");
     });
 
     it("should be able to unregister all brokers", async () => {
