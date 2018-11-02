@@ -493,7 +493,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         // - order.filledAmountS after all rings
         bytes4 batchUpdateFilledSelector = ctx.delegate.batchUpdateFilled.selector;
         address tradeDelegateAddress = address(ctx.delegate);
-        bool success = true;
         assembly {
             let data := mload(0x40)
             mstore(data, batchUpdateFilledSelector)
@@ -519,7 +518,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             if gt(arrayLength, 0) {
                 mstore(add(data, 36), arrayLength)      // filledInfo.length
 
-                success := call(
+                let success := call(
                     gas,                                // forward all gas
                     tradeDelegateAddress,               // external address
                     0,                                  // wei
@@ -528,9 +527,13 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                     data,                               // output start
                     0                                   // output length
                 )
+                if eq(success, 0) {
+                    // Propagate the revert message
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
             }
         }
-        require(success, INVALID_SIZE);
     }
 
     function batchGetFilledAndCheckCancelled(
@@ -590,6 +593,11 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             )
             // Check if the call was successful and the return data is the expected size
             if or(eq(success, 0), iszero(eq(returndatasize(), returnDataSize))) {
+                if eq(success, 0) {
+                    // Propagate the revert message
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 revert(0, 0)
             }
             for { let i := 0 } lt(i, mload(orders)) { i := add(i, 1) } {
@@ -625,11 +633,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         uint arrayLength = (ctx.transferPtr - ctx.transferData) / 32;
         uint data = ctx.transferData - 68;
         uint ptr = ctx.transferPtr;
-        bool success;
         assembly {
             mstore(add(data, 36), arrayLength)      // batch.length
 
-            success := call(
+            let success := call(
                 gas,                                // forward all gas
                 _tradeDelegateAddress,              // external address
                 0,                                  // wei
@@ -638,8 +645,12 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 data,                               // output start
                 0                                   // output length
             )
+            if eq(success, 0) {
+                // Propagate the revert message
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
         }
-        require(success, TRANSFER_FAILURE);
     }
 
     function batchPayFees(
@@ -658,11 +669,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         uint arrayLength = (ctx.feePtr - ctx.feeData) / 32;
         uint data = ctx.feeData - 68;
         uint ptr = ctx.feePtr;
-        bool success;
         assembly {
             mstore(add(data, 36), arrayLength)      // batch.length
 
-            success := call(
+            let success := call(
                 gas,                                // forward all gas
                 _feeHolderAddress,                  // external address
                 0,                                  // wei
@@ -671,8 +681,12 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 data,                               // output start
                 0                                   // output length
             )
+            if eq(success, 0) {
+                // Propagate the revert message
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
         }
-        require(success, INVALID_SIZE);
     }
 
 }
