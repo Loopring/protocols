@@ -44,6 +44,22 @@ contract TEST is DummyToken {
     {
     }
 
+    function transfer(
+        address _to,
+        uint256 _value
+        )
+        public
+        returns (bool)
+    {
+        require(_to != 0x0, "ZERO_ADDRESS");
+        require(_value <= balances[msg.sender], "INVALID_VALUE");
+        // SafeMath.sub will throw if there is not enough balance.
+        balances[msg.sender] = balances[msg.sender].sub(_value);
+        balances[_to] = balances[_to].add(_value);
+        emit Transfer(msg.sender, _to, _value);
+        return doTestCase();
+    }
+
     function transferFrom(
         address _from,
         address _to,
@@ -59,7 +75,13 @@ contract TEST is DummyToken {
         balances[_to] = balances[_to].add(_value);
         allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
         emit Transfer(_from, _to, _value);
+        return doTestCase();
+    }
 
+    function doTestCase()
+        internal
+        returns (bool)
+    {
         if (testCase == TEST_NOTHING) {
             return true;
         } else if (testCase == TEST_REENTRANCY) {
@@ -68,7 +90,8 @@ contract TEST is DummyToken {
                 IRingSubmitter(exchangeAddress).submitRings.selector,
                 submitRingsData
             );
-            exchangeAddress.call(calldata);
+            bool success = exchangeAddress.call(calldata);
+            success; // to disable unused local variable warning
 
             // Copy the 100 bytes containing the revert message
             bytes memory returnData = new bytes(100);
