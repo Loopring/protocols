@@ -41,10 +41,10 @@ library ExchangeDeserializer {
     {
         // Read the header
         Data.Header memory header;
-        header.version = uint16(data.bytesToUintX(0, 2) & 0xFFFF);
-        header.numOrders = uint16(data.bytesToUintX(2, 2) & 0xFFFF);
-        header.numRings = uint16(data.bytesToUintX(4, 2) & 0xFFFF);
-        header.numSpendables = uint16(data.bytesToUintX(6, 2) & 0xFFFF);
+        header.version = data.bytesToUint16(0);
+        header.numOrders = data.bytesToUint16(2);
+        header.numRings = data.bytesToUint16(4);
+        header.numSpendables = data.bytesToUint16(6);
 
         // Validation
         require(header.version == 0, "Unsupported serialization format");

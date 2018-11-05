@@ -18,66 +18,54 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
+import "../lib/BytesUtil.sol";
 
-/// @title Utility Functions for bytes
-/// @author Daniel Wang - <daniel@loopring.org>
-library BytesUtil {
+
+/// @author Brecht Devos - <brecht@loopring.org>
+contract BytesUtilWrapper {
+    using BytesUtil for bytes;
+
     function bytesToBytes32(
         bytes b,
         uint offset
         )
-        internal
+        external
         pure
         returns (bytes32)
     {
-        return bytes32(bytesToUintX(b, offset, 32));
+        return b.bytesToBytes32(offset);
     }
 
     function bytesToUint(
         bytes b,
         uint offset
         )
-        internal
+        external
         pure
         returns (uint)
     {
-        return bytesToUintX(b, offset, 32);
+        return b.bytesToUint(offset);
     }
 
     function bytesToAddress(
         bytes b,
         uint offset
         )
-        internal
+        external
         pure
         returns (address)
     {
-        return address(bytesToUintX(b, offset, 20) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+        return b.bytesToAddress(offset);
     }
 
     function bytesToUint16(
         bytes b,
         uint offset
         )
-        internal
+        external
         pure
         returns (uint16)
     {
-        return uint16(bytesToUintX(b, offset, 2) & 0xFFFF);
-    }
-
-    function bytesToUintX(
-        bytes b,
-        uint offset,
-        uint numBytes
-        )
-        private
-        pure
-        returns (uint data)
-    {
-        require(b.length >= offset + numBytes, "INVALID_SIZE");
-        assembly {
-            data := mload(add(add(b, numBytes), offset))
-        }
+        return b.bytesToUint16(offset);
     }
 }
