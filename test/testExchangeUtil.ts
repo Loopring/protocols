@@ -539,7 +539,8 @@ export class ExchangeTestUtil {
   }
 
   public async submitRingsAndSimulate(ringsInfo: pjs.RingsInfo,
-                                      dummyExchange?: any) {
+                                      dummyExchange?: any,
+                                      submitter?: any) {
     if (dummyExchange !== undefined) {
       const {
         DummyToken,
@@ -604,14 +605,16 @@ export class ExchangeTestUtil {
       this.logDetailedTokenTransfers(ringsInfo, report);
     } catch (err) {
       pjs.logDebug("Simulator reverted -> " + err);
+      report.revertMessage = err.message;
     }
 
     pjs.logDebug("shouldThrow:", report.reverted);
 
+    const ringSubmitter = submitter ? submitter : this.ringSubmitter;
     if (report.reverted) {
-      tx = await pjs.expectThrow(this.ringSubmitter.submitRings(bs, {from: txOrigin}));
+      tx = await pjs.expectThrow(ringSubmitter.submitRings(bs, {from: txOrigin}), report.revertMessage);
     } else {
-      tx = await this.ringSubmitter.submitRings(bs, {from: txOrigin});
+      tx = await ringSubmitter.submitRings(bs, {from: txOrigin});
       pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
     }
     const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);

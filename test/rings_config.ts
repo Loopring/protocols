@@ -2032,6 +2032,7 @@ export const ringsInfoList: RingsInfo[] = [
     ],
     expected: {
       revert: true,
+      revertMessage: "INVALID_SIG",
     },
   },
 

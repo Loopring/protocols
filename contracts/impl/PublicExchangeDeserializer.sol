@@ -21,7 +21,7 @@ pragma experimental "ABIEncoderV2";
 import "./ExchangeDeserializer.sol";
 
 
-/// @title An public library for deserializing loopring submitRings params.
+/// @title A public library for deserializing loopring submitRings params.
 /// @author Daniel Wang - <daniel@loopring.org>,
 library PublicExchangeDeserializer {
 
@@ -30,7 +30,7 @@ library PublicExchangeDeserializer {
     function deserialize(
         bytes data
         )
-        public
+        internal
         view
         returns (
             Data.Mining mining,

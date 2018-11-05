@@ -179,6 +179,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       ringsInfo.sig = null;
       ringsInfo.expected = {
         revert: true,
+        revertMessage: "INVALID_SIG",
       };
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       // miner == msg.sender
