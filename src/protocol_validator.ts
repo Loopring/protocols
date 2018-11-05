@@ -45,6 +45,9 @@ export class ProtocolValidator {
     assert.equal(report.reverted, ringsInfo.expected.revert ? ringsInfo.expected.revert : false,
                  "Transaction should revert when expected");
     if (report.reverted) {
+      if (ringsInfo.expected.revertMessage) {
+        assert.equal(report.revertMessage, ringsInfo.expected.revertMessage, "Revert message should match");
+      }
       return;
     }
 
