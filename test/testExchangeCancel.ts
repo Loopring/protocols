@@ -6,13 +6,19 @@ import { ExchangeTestUtil } from "./testExchangeUtil";
 
 const {
   OrderCanceller,
+  OrderBook,
 } = new Artifacts(artifacts);
+
+const ContractOrderOwner = artifacts.require("ContractOrderOwner");
 
 contract("Exchange_Cancel", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
 
   let orderCanceller: any;
+  let orderBook: any;
+  let contractOrderOwner: any;
+
   const allTokenSymbols = tokenInfos.development.map((t) => t.symbol);
 
   const emptyAddr = "0x0000000000000000000000000000000000000000";
@@ -20,6 +26,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+    orderBook = await OrderBook.deployed();
   });
 
   describe("Cancelling orders", () => {
@@ -34,6 +41,8 @@ contract("Exchange_Cancel", (accounts: string[]) => {
         orderCanceller.address,
         {from: exchangeTestUtil.testContext.deployer},
       );
+      contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address,
+                                                        orderCanceller.address);
     });
 
     describe("owner (broker == owner)", () => {
@@ -158,6 +167,84 @@ contract("Exchange_Cancel", (accounts: string[]) => {
 
         // Make sure no tokens got transferred
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+      });
+
+      it("should be able to cancel an order with a contract as order owner", async () => {
+        const onChainOrder: psc.OrderInfo = {
+          index: 0,
+          owner: contractOrderOwner.address,
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: 10e18,
+          amountB: 10e18,
+          onChain: true,
+        };
+        const offChainOrder: psc.OrderInfo = {
+          index: 1,
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: 10e18,
+          amountB: 10e18,
+          feeAmount: 1e18,
+          balanceS: 5e18,
+        };
+        const ringsInfo: psc.RingsInfo = {
+          rings: [[0, 1]],
+          orders: [
+            onChainOrder,
+            offChainOrder,
+          ],
+        };
+        await exchangeTestUtil.setupRings(ringsInfo);
+
+        // Submit the order to the onchain OrderBook
+        const orderUtil = new psc.OrderUtil(undefined);
+        const orderData = orderUtil.toOrderBookSubmitParams(onChainOrder);
+        const orderHash = "0x" + orderUtil.getOrderHash(onChainOrder).toString("hex");
+        const fromBlock = web3.eth.blockNumber;
+        await contractOrderOwner.sumbitOrderToOrderBook(orderData, orderHash);
+        const events: any = await exchangeTestUtil.getEventsFromContract(orderBook, "OrderSubmitted", fromBlock);
+        const orderHashOnChain = events[0].args.orderHash;
+        assert.equal(orderHashOnChain, orderHash, "order hash not equal");
+        // Allow the contract to spend tokenS and feeToken
+        await contractOrderOwner.approve(onChainOrder.tokenS, exchangeTestUtil.context.tradeDelegate.address, 1e32);
+        await contractOrderOwner.approve(onChainOrder.feeToken, exchangeTestUtil.context.tradeDelegate.address, 1e32);
+
+        // Order is registered and the contract can pay in tokenS and feeToken
+        ringsInfo.expected = {
+          rings: [
+            {
+              orders: [
+                {
+                  filledFraction: 0.5,
+                },
+                {
+                  filledFraction: 0.5,
+                },
+              ],
+            },
+          ],
+        };
+        await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+
+        // Cancel the order
+        await contractOrderOwner.cancelOrder(orderHash);
+        // Check the TradeDelegate contract to see if the order is indeed cancelled
+        const expectedValidValues = [false, true];
+        await exchangeTestUtil.assertOrdersValid(ringsInfo.orders, expectedValidValues);
+
+        // Increase balance of the order owner so the rest of the order can be filled
+        offChainOrder.balanceS = offChainOrder.amountS / 2;
+        await exchangeTestUtil.setOrderBalances(offChainOrder);
+        // Order is cancelled
+        ringsInfo.expected = {
+          rings: [
+            {
+              fail: true,
+            },
+          ],
+        };
+        await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       });
     });
 
@@ -306,6 +393,83 @@ contract("Exchange_Cancel", (accounts: string[]) => {
 
         // Make sure no tokens got transferred
         assert.equal(report.transferItems.length, 0, "No tokens should be transfered");
+      });
+
+      it("should be able to cancel an order with a contract as broker", async () => {
+        const onChainOrder: psc.OrderInfo = {
+          index: 0,
+          broker: contractOrderOwner.address,
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: 10e18,
+          amountB: 10e18,
+          onChain: true,
+        };
+        const offChainOrder: psc.OrderInfo = {
+          index: 1,
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: 10e18,
+          amountB: 10e18,
+          feeAmount: 1e18,
+          balanceS: 5e18,
+        };
+        const ringsInfo: psc.RingsInfo = {
+          rings: [[0, 1]],
+          orders: [
+            onChainOrder,
+            offChainOrder,
+          ],
+        };
+        await exchangeTestUtil.setupRings(ringsInfo);
+
+        // Submit the order to the onchain OrderBook
+        const orderUtil = new psc.OrderUtil(undefined);
+        const orderData = orderUtil.toOrderBookSubmitParams(onChainOrder);
+        const orderHash = "0x" + orderUtil.getOrderHash(onChainOrder).toString("hex");
+        const fromBlock = web3.eth.blockNumber;
+        await contractOrderOwner.sumbitOrderToOrderBook(orderData, orderHash);
+        const events: any = await exchangeTestUtil.getEventsFromContract(orderBook, "OrderSubmitted", fromBlock);
+        const orderHashOnChain = events[0].args.orderHash;
+        assert.equal(orderHashOnChain, orderHash, "order hash not equal");
+        // Register the broker without interceptor
+        await exchangeTestUtil.registerOrderBrokerChecked(onChainOrder.owner, onChainOrder.broker, emptyAddr);
+
+        // Order is registered and the broker is registered
+        ringsInfo.expected = {
+          rings: [
+            {
+              orders: [
+                {
+                  filledFraction: 0.5,
+                },
+                {
+                  filledFraction: 0.5,
+                },
+              ],
+            },
+          ],
+        };
+        await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
+
+        // Cancel the order
+        await contractOrderOwner.cancelOrder(orderHash);
+        // Check the TradeDelegate contract to see if the order is indeed cancelled
+        const expectedValidValues = [false, true];
+        await exchangeTestUtil.assertOrdersValid(ringsInfo.orders, expectedValidValues);
+
+        // Increase balance of the order owner so the rest of the order can be filled
+        offChainOrder.balanceS = offChainOrder.amountS / 2;
+        await exchangeTestUtil.setOrderBalances(offChainOrder);
+        // Order is cancelled
+        ringsInfo.expected = {
+          rings: [
+            {
+              fail: true,
+            },
+          ],
+        };
+        await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       });
     });
   });

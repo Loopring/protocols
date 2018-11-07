@@ -594,7 +594,8 @@ export class ExchangeTestUtil {
       transferItems: [],
       feeBalancesBefore: [],
       feeBalancesAfter: [],
-      filledAmounts: [],
+      filledAmountsBefore: [],
+      filledAmountsAfter: [],
       balancesBefore: [],
       balancesAfter: [],
       payments: {rings: []},
@@ -624,7 +625,7 @@ export class ExchangeTestUtil {
     this.assertRingMinedEvents(ringMinedEvents, report.ringMinedEvents);
     this.assertInvalidRingEvents(invalidRingEvents, report.invalidRingEvents);
     await this.assertFeeBalances(deserializedRingsInfo, report.feeBalancesBefore, report.feeBalancesAfter);
-    await this.assertFilledAmounts(deserializedRingsInfo, report.filledAmounts);
+    await this.assertFilledAmounts(deserializedRingsInfo, report.filledAmountsAfter);
 
     const addressBook = this.getAddressBook(ringsInfo);
     const protocolValidator = new pjs.ProtocolValidator(this.context);
