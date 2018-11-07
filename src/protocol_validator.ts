@@ -76,7 +76,7 @@ export class ProtocolValidator {
     for (const order of ringsInfo.orders) {
       const orderHash = order.hash.toString("hex");
       if (!expectedfilledAmounts[orderHash]) {
-        expectedfilledAmounts[orderHash] = new BigNumber(0);
+        expectedfilledAmounts[orderHash] = report.filledAmountsBefore[orderHash];
       }
     }
 
@@ -213,7 +213,7 @@ export class ProtocolValidator {
     // Check filled
     for (const order of ringsInfo.orders) {
       const orderHash = order.hash.toString("hex");
-      this.assertAlmostEqual(report.filledAmounts[orderHash].toNumber(),
+      this.assertAlmostEqual(report.filledAmountsAfter[orderHash].toNumber(),
                              expectedfilledAmounts[orderHash].toNumber(),
                              "Filled amount different than expected",
                              6);

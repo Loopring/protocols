@@ -380,14 +380,22 @@ export class ProtocolSimulator {
       }
     }
 
-    // Get the filled amounts
-    const filledAmounts: { [hash: string]: BigNumber; } = {};
+    // Get the filled amounts before
+    const filledAmountsBefore: { [hash: string]: BigNumber; } = {};
     for (const order of orders) {
+      const orderHash = order.hash.toString("hex");
+      filledAmountsBefore[orderHash] = await this.context.tradeDelegate.filled("0x" + orderHash);
+    }
+
+    // Filled amounts after
+    const filledAmountsAfter: { [hash: string]: BigNumber; } = {};
+    for (const order of orders) {
+      const orderHash = order.hash.toString("hex");
       let filledAmountS = order.filledAmountS ? order.filledAmountS : new BigNumber(0);
       if (!order.valid) {
-        filledAmountS = await this.context.tradeDelegate.filled("0x" + order.hash.toString("hex"));
+        filledAmountS = filledAmountsBefore[orderHash];
       }
-      filledAmounts[order.hash.toString("hex")] = filledAmountS;
+      filledAmountsAfter[orderHash] = filledAmountS;
     }
 
     // Collect the payments
@@ -406,7 +414,8 @@ export class ProtocolSimulator {
       transferItems,
       feeBalancesBefore,
       feeBalancesAfter,
-      filledAmounts,
+      filledAmountsBefore,
+      filledAmountsAfter,
       balancesBefore,
       balancesAfter,
       payments,

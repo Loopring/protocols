@@ -160,7 +160,8 @@ export interface SimulatorReport {
   transferItems: TransferItem[];
   feeBalancesBefore: { [id: string]: any; };
   feeBalancesAfter: { [id: string]: any; };
-  filledAmounts: { [hash: string]: BigNumber; };
+  filledAmountsBefore: { [hash: string]: BigNumber; };
+  filledAmountsAfter: { [hash: string]: BigNumber; };
   balancesBefore: { [id: string]: any; };
   balancesAfter: { [id: string]: any; };
   payments: TransactionPayments;
