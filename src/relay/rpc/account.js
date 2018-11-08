@@ -66,6 +66,16 @@ export default class Account
     {
         return getAllEstimatedAllocatedAmount(this.host, params);
     }
+
+    notifyScanLogin (content)
+    {
+        return notifyCircular(this.host, content);
+    }
+
+    notifyCircular (content)
+    {
+        return notifyCircular(this.host, content);
+    }
 }
 
 /**
@@ -407,4 +417,49 @@ export async function getAllEstimatedAllocatedAmount (host, {owner, delegateAddr
         method: 'post',
         body
     });
+}
+
+export async function notifyScanLogin (host, content)
+{
+    try
+    {
+        const {owner, r, s, v} = content.sign;
+        validator.validate({value: owner, type: 'ETH_ADDRESS'});
+        validator.validate({value: v, type: 'NUM'});
+        validator.validate({value: s, type: 'ETH_DATA'});
+        validator.validate({value: r, type: 'ETH_DATA'});
+        const body = {};
+        body.method = 'loopring_notifyScanLogin';
+        body.params = [{...content}];
+        body.id = id();
+        body.jsonrpc = '2.0';
+        return request(host, {
+            method: 'post',
+            body
+        });
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+}
+
+export async function notifyCircular (host, content)
+{
+    try
+    {
+        const body = {};
+        body.method = 'loopring_notifyCirculr';
+        body.params = [{...content}];
+        body.id = id();
+        body.jsonrpc = '2.0';
+        return request(host, {
+            method: 'post',
+            body
+        });
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
 }
