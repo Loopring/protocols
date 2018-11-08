@@ -69,7 +69,7 @@ export default class Account
 
     notifyScanLogin (content)
     {
-        return notifyCircular(this.host, content);
+        return notifyScanLogin(this.host, content);
     }
 
     notifyCircular (content)
