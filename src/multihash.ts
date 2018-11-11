@@ -72,6 +72,23 @@ export class MultiHashUtil {
       } catch {
         return false;
       }
+    } else if (algorithm === SignAlgorithm.EIP712) {
+      assert.notEqual(signer, "0x0", "invalid signer address");
+      assert.equal(size, 65, "bad EIP712 multihash size");
+
+      const v = bitstream.extractUint8(2);
+      const r = bitstream.extractBytes32(3);
+      const s = bitstream.extractBytes32(3 + 32);
+
+      try {
+        // TODO: don't add the prefix
+        const msgHash = ethUtil.hashPersonalMessage(hash);
+        const pub = ethUtil.ecrecover(msgHash, v, r, s);
+        const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
+        return signer === recoveredAddress;
+      } catch {
+        return false;
+      }
     } else {
       return false;
     }
@@ -87,29 +104,15 @@ export class MultiHashUtil {
     sig.addHex(ethUtil.bufferToHex(s));
   }
 
-  // TODO: Actually implement this correctly, the standard is not widely supported yet
   private async signEIP712Async(sig: Bitstream, hash: Buffer, address: string) {
-    throw Error("EIP712 signing currently not implemented.");
-
-    /*const orderHash = this.getOrderHash(order);
-
-    const msgParams = [
-      {type: "string", name: "Owner", value: order.owner},
-    ];
-
-    const signature = await web3.eth.signTypedData(msgParams, order.owner);
+    // TODO: sign using ethUtil.ecsign using the private key of 'address'
+    const signature = await promisify(this.web3Instance.eth.sign)(address, ethUtil.bufferToHex(hash));
     const { v, r, s } = ethUtil.fromRpcSig(signature);
-
-    // await web3.currentProvider.sendAsync({
-    //   method: "eth_signTypedData",
-    //   params: [msgParams, order.owner],
-    //   from: order.owner,
-    // }, (err?: Error, result?: Web3.JSONRPCResponsePayload) => { logDebug("Hashing: " + result.result); });
 
     sig.addNumber(1 + 32 + 32, 1);
     sig.addNumber(v, 1);
     sig.addHex(ethUtil.bufferToHex(r));
-    sig.addHex(ethUtil.bufferToHex(s));*/
+    sig.addHex(ethUtil.bufferToHex(s));
   }
 
 }
