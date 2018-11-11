@@ -33,42 +33,6 @@ library MultihashUtil {
 
     string public constant SIG_PREFIX = "\x19Ethereum Signed Message:\n32";
 
-    string public constant SIG_712_PREFIX = "\x19\x01Ethereum Signed Message:\n32";
-
-    struct EIP712Domain {
-        string  name;
-        string  version;
-    }
-
-    bytes32 constant EIP712DOMAIN_TYPEHASH = keccak256(
-        "EIP712Domain(string name,string version)"
-    );
-
-    bytes32 constant ORDER_TYPEHASH = keccak256(
-        abi.encodePacked(
-            "Order(",
-            "uint amountS,",
-            "uint amountB,",
-            "uint feeAmount,",
-            "uint validSince,",
-            "uint validUntil,",
-            "address owner,",
-            "address tokenS,",
-            "address tokenB,",
-            "address dualAuthAddr,",
-            "address broker,",
-            "address orderInterceptor,",
-            "address wallet,",
-            "address tokenRecipient,",
-            "address feeToken,",
-            "uint16 walletSplitPercentage,",
-            "uint16 tokenSFeePercentage,",
-            "uint16 tokenBFeePercentage,",
-            "bool allOrNone",
-            ")"
-        )
-    );
-
     function verifySignature(
         address signer,
         bytes32 plaintext,
@@ -114,48 +78,30 @@ library MultihashUtil {
         } else if (algorithm == uint8(HashAlgorithm.EIP712)) {
             require(signer != 0x0, "invalid signer address");
             require(size == 65, "bad Ethereum multihash size");
-            bytes32 digest = keccak256(
-                abi.encodePacked(
-                    SIG_712_PREFIX,
-                    getEIP712DomainHash(
-                        EIP712Domain(
-                            {
-                            name: "Loopring Protocal",
-                            version: "2"
-                            }
-                        )
-                    ),
-                    get712OrderHash(plaintext)
-                )
-            );
+            bytes32 hash;
+            uint8 v;
+            bytes32 r;
+            bytes32 s;
+            // TODO: Don't sign with eth_sign so we don't have SIG_PREFIX
+            assembly {
+                let data := mload(0x40)
+                mstore(data, 0x19457468657265756d205369676e6564204d6573736167653a0a333200000000) // SIG_PREFIX
+                mstore(add(data, 28), plaintext)                                                 // plaintext
+                hash := keccak256(data, 60)                                                      // 28 + 32
+                // Extract v, r and s from the multihash data
+                v := mload(add(multihash, 3))
+                r := mload(add(multihash, 35))
+                s := mload(add(multihash, 67))
+            }
             return signer == ecrecover(
-                digest,
-                uint8(multihash[2]),
-                BytesUtil.bytesToBytes32(multihash, 3),
-                BytesUtil.bytesToBytes32(multihash, 3 + 32)
+                hash,
+                v,
+                r,
+                s
             );
         } else {
             return false;
         }
-    }
-
-    function getEIP712DomainHash(EIP712Domain eip712Domain) internal pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                EIP712DOMAIN_TYPEHASH,
-                keccak256(bytes(eip712Domain.name)),
-                keccak256(bytes(eip712Domain.version))
-            )
-        );
-    }
-
-    function get712OrderHash(bytes32 plaintext) internal pure returns (bytes32) {
-        return keccak256(
-            abi.encodePacked(
-                ORDER_TYPEHASH,
-                plaintext
-            )
-        );
     }
 }
 
