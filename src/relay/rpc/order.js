@@ -26,6 +26,10 @@ export default class Order
     {
         return placeOrder(this.host, order);
     }
+    placeOrderForP2P (order, makerOrderHash)
+    {
+        return placeOrderForP2P(this.host, order, makerOrderHash);
+    }
 
     getOrderHash (order)
     {
@@ -151,6 +155,28 @@ export function placeOrder (host, order)
     }
     const body = {};
     body.method = 'loopring_submitOrder';
+    body.params = [order];
+    body.id = id();
+    body.jsonrpc = '2.0';
+    return request(host, {
+        method: 'post',
+        body
+    });
+}
+
+export function placeOrderForP2P (host, order, makerOrderHash)
+{
+    try
+    {
+        validator.validate({value: order, type: 'ORDER'});
+        validator.validate({value: makerOrderHash, type: 'HASH'});
+    }
+    catch (e)
+    {
+        return Promise.resolve(new Response(code.PARAM_INVALID.code, code.PARAM_INVALID.msg));
+    }
+    const body = {};
+    body.method = 'loopring_submitOrderForP2P';
     body.params = [order];
     body.id = id();
     body.jsonrpc = '2.0';
