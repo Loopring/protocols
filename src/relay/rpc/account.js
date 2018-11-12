@@ -35,9 +35,9 @@ export default class Account
         return getEstimatedAllocatedAllowance(this.host, filter);
     }
 
-    getFrozenLrcFee (owner)
+    getFrozenLrcFee (filter)
     {
-        return getFrozenLrcFee(this.host, owner);
+        return getFrozenLrcFee(this.host, filter);
     }
 
     getOldWethBalance (owner)
@@ -222,10 +222,11 @@ export function getTransactions (host, filter)
  */
 export function getEstimatedAllocatedAllowance (host, filter)
 {
-    const {owner} = filter;
+    const {owner, delegateAddress} = filter;
     try
     {
         validator.validate({value: owner, type: 'ETH_ADDRESS'});
+        validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
     }
     catch (e)
     {
@@ -245,14 +246,16 @@ export function getEstimatedAllocatedAllowance (host, filter)
 /**
  * @description Get the total frozen LRC fee amount of all unfinished orders
  * @param host
- * @param owner
+ * @param filter
  * @returns {Promise}
  */
-export function getFrozenLrcFee (host, owner)
+export function getFrozenLrcFee (host, filter)
 {
+    const {owner, delegateAddress} = filter;
     try
     {
         validator.validate({value: owner, type: 'ETH_ADDRESS'});
+        validator.validate({value: delegateAddress, type: 'ETH_ADDRESS'});
     }
     catch (e)
     {
@@ -260,7 +263,7 @@ export function getFrozenLrcFee (host, owner)
     }
     const body = {};
     body.method = 'loopring_getFrozenLRCFee';
-    body.params = [{owner}];
+    body.params = [{...filter}];
     body.id = id();
     return request(host, {
         method: 'post',
