@@ -133,11 +133,24 @@ export class OrderUtil {
         tokenRecipient: order.tokenRecipient,
         feeToken: order.feeToken,
         walletSplitPercentage: order.walletSplitPercentage,
-        tokenSFeePercentage: this.toBN(order.tokenSFeePercentage),
-        tokenBFeePercentage: this.toBN(order.tokenBFeePercentage),
+        tokenSFeePercentage: order.tokenSFeePercentage,
+        tokenBFeePercentage: order.tokenBFeePercentage,
         allOrNone: order.allOrNone,
       },
     };
+
+    // Use the code below to export the order data to a JSON format compatible with signTypedData
+    // BN outputs hex numbers in toJSON, but signTypedData expects decimal numbers
+    // const replacer = (key: any, value: any) => {
+    //   if (key === "amountS" || key === "amountB" || key === "feeAmount" ||
+    //       key === "validSince" || key === "validUntil") {
+    //     return "" + parseInt(value, 16);
+    //   }
+    //   return value;
+    // };
+    // const json = JSON.stringify(typedData, replacer);
+    // console.log("JSON: " + json);
+
     const orderHash = getEIP712Message(typedData);
     return orderHash;
   }

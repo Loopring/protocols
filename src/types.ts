@@ -68,6 +68,7 @@ export interface OrderInfo {
   balanceFee?: number;
   balanceB?: number;
   onChain?: boolean;
+  signerPrivateKey?: string;
 
   [key: string]: any;
 }

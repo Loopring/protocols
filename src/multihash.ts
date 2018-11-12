@@ -26,10 +26,10 @@ export class MultiHashUtil {
 
   public async signOrderAsync(order: OrderInfo) {
     const signer = order.broker ? order.broker : order.owner;
-    return await this.signAsync(order.signAlgorithm, order.hash, signer);
+    return await this.signAsync(order.signAlgorithm, order.hash, signer, order.signerPrivateKey);
   }
 
-  public async signAsync(algorithm: SignAlgorithm, hash: Buffer, address: string) {
+  public async signAsync(algorithm: SignAlgorithm, hash: Buffer, address: string, privateKey?: string) {
     // Default to standard Ethereum signing
     algorithm = Object.is(algorithm, undefined) ? SignAlgorithm.Ethereum : algorithm;
 
@@ -40,7 +40,7 @@ export class MultiHashUtil {
         await this.signEthereumAsync(sig, hash, address);
         return sig.getData();
       case SignAlgorithm.EIP712:
-        await this.signEIP712Async(sig, hash, address);
+        await this.signEIP712Async(sig, hash, privateKey);
         return sig.getData();
       case SignAlgorithm.None:
         return null;
@@ -81,9 +81,7 @@ export class MultiHashUtil {
       const s = bitstream.extractBytes32(3 + 32);
 
       try {
-        // TODO: don't add the prefix
-        const msgHash = ethUtil.hashPersonalMessage(hash);
-        const pub = ethUtil.ecrecover(msgHash, v, r, s);
+        const pub = ethUtil.ecrecover(hash, v, r, s);
         const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
         return signer === recoveredAddress;
       } catch {
@@ -104,15 +102,13 @@ export class MultiHashUtil {
     sig.addHex(ethUtil.bufferToHex(s));
   }
 
-  private async signEIP712Async(sig: Bitstream, hash: Buffer, address: string) {
-    // TODO: sign using ethUtil.ecsign using the private key of 'address'
-    const signature = await promisify(this.web3Instance.eth.sign)(address, ethUtil.bufferToHex(hash));
-    const { v, r, s } = ethUtil.fromRpcSig(signature);
-
+  private async signEIP712Async(sig: Bitstream, hash: Buffer, privateKey: string) {
+    const signature = ethUtil.ecsign(hash, new Buffer(privateKey, "hex"));
+    // console.log(privateKey);
     sig.addNumber(1 + 32 + 32, 1);
-    sig.addNumber(v, 1);
-    sig.addHex(ethUtil.bufferToHex(r));
-    sig.addHex(ethUtil.bufferToHex(s));
+    sig.addNumber(signature.v, 1);
+    sig.addHex(ethUtil.bufferToHex(signature.r));
+    sig.addHex(ethUtil.bufferToHex(signature.s));
   }
 
 }
