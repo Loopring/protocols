@@ -177,7 +177,7 @@ export function placeOrderForP2P (host, order, makerOrderHash)
     }
     const body = {};
     body.method = 'loopring_submitOrderForP2P';
-    body.params = [order];
+    body.params = [{...order, makerOrderHash}];
     body.id = id();
     body.jsonrpc = '2.0';
     return request(host, {
