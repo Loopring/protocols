@@ -77,24 +77,18 @@ library MultihashUtil {
             );
         } else if (algorithm == uint8(HashAlgorithm.EIP712)) {
             require(signer != 0x0, "invalid signer address");
-            require(size == 65, "bad Ethereum multihash size");
-            bytes32 hash;
+            require(size == 65, "bad EIP712 multihash size");
             uint8 v;
             bytes32 r;
             bytes32 s;
-            // TODO: Don't sign with eth_sign so we don't have SIG_PREFIX
             assembly {
-                let data := mload(0x40)
-                mstore(data, 0x19457468657265756d205369676e6564204d6573736167653a0a333200000000) // SIG_PREFIX
-                mstore(add(data, 28), plaintext)                                                 // plaintext
-                hash := keccak256(data, 60)                                                      // 28 + 32
                 // Extract v, r and s from the multihash data
                 v := mload(add(multihash, 3))
                 r := mload(add(multihash, 35))
                 s := mload(add(multihash, 67))
             }
             return signer == ecrecover(
-                hash,
+                plaintext,
                 v,
                 r,
                 s
