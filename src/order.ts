@@ -3,6 +3,7 @@ import BN = require("bn.js");
 import ABI = require("ethereumjs-abi");
 import { Bitstream } from "./bitstream";
 import { Context } from "./context";
+import { getEIP712Message } from "./eip712";
 import { ensure } from "./ensure";
 import { MultiHashUtil } from "./multihash";
 import { OrderInfo, Spendable } from "./types";
@@ -83,48 +84,80 @@ export class OrderUtil {
     }
   }
 
+  public toTypedData(order: OrderInfo) {
+    const typedData = {
+      types: {
+          EIP712Domain: [
+              { name: "name", type: "string" },
+              { name: "version", type: "string" },
+          ],
+          Order: [
+              { name: "amountS", type: "uint" },
+              { name: "amountB", type: "uint" },
+              { name: "feeAmount", type: "uint" },
+              { name: "validSince", type: "uint" },
+              { name: "validUntil", type: "uint" },
+              { name: "owner", type: "address" },
+              { name: "tokenS", type: "address" },
+              { name: "tokenB", type: "address" },
+              { name: "dualAuthAddr", type: "address" },
+              { name: "broker", type: "address" },
+              { name: "orderInterceptor", type: "address" },
+              { name: "wallet", type: "address" },
+              { name: "tokenRecipient", type: "address" },
+              { name: "feeToken", type: "address" },
+              { name: "walletSplitPercentage", type: "uint16" },
+              { name: "tokenSFeePercentage", type: "uint16" },
+              { name: "tokenBFeePercentage", type: "uint16" },
+              { name: "allOrNone", type: "bool" },
+          ],
+      },
+      primaryType: "Order",
+      domain: {
+          name: "Loopring Protocol",
+          version: "2",
+      },
+      message: {
+        amountS: this.toBN(order.amountS),
+        amountB: this.toBN(order.amountB),
+        feeAmount: this.toBN(order.feeAmount),
+        validSince: order.validSince ? this.toBN(order.validSince) : this.toBN(0),
+        validUntil: order.validUntil ? this.toBN(order.validUntil) : this.toBN(0),
+        owner: order.owner,
+        tokenS: order.tokenS,
+        tokenB: order.tokenB,
+        dualAuthAddr: order.dualAuthAddr ? order.dualAuthAddr : "0x0",
+        broker: order.broker ? order.broker : "0x0",
+        orderInterceptor: order.orderInterceptor ? order.orderInterceptor : "0x0",
+        wallet: order.walletAddr ? order.walletAddr : "0x0",
+        tokenRecipient: order.tokenRecipient,
+        feeToken: order.feeToken,
+        walletSplitPercentage: order.walletSplitPercentage,
+        tokenSFeePercentage: order.tokenSFeePercentage,
+        tokenBFeePercentage: order.tokenBFeePercentage,
+        allOrNone: order.allOrNone,
+      },
+    };
+    return typedData;
+  }
+
+  public toTypedDataJSON(order: OrderInfo) {
+    // BN outputs hex numbers in toJSON, but signTypedData expects decimal numbers
+    const replacer = (key: any, value: any) => {
+      if (key === "amountS" || key === "amountB" || key === "feeAmount" ||
+          key === "validSince" || key === "validUntil") {
+        return "" + parseInt(value, 16);
+      }
+      return value;
+    };
+    const typedData = this.toTypedData(order);
+    const json = JSON.stringify(typedData, replacer);
+    return json;
+  }
+
   public getOrderHash(order: OrderInfo) {
-    const args = [
-      this.toBN(order.amountS),
-      this.toBN(order.amountB),
-      this.toBN(order.feeAmount),
-      order.validSince ? this.toBN(order.validSince) : this.toBN(0),
-      order.validUntil ? this.toBN(order.validUntil) : this.toBN(0),
-      order.owner,
-      order.tokenS,
-      order.tokenB,
-      order.dualAuthAddr ? order.dualAuthAddr : "0x0",
-      order.broker ? order.broker : "0x0",
-      order.orderInterceptor ? order.orderInterceptor : "0x0",
-      order.walletAddr ? order.walletAddr : "0x0",
-      order.tokenRecipient,
-      order.feeToken,
-      order.walletSplitPercentage,
-      this.toBN(order.tokenSFeePercentage),
-      this.toBN(order.tokenBFeePercentage),
-      order.allOrNone,
-    ];
-    const argTypes = [
-      "uint256",
-      "uint256",
-      "uint256",
-      "uint256",
-      "uint256",
-      "address",
-      "address",
-      "address",
-      "address",
-      "address",
-      "address",
-      "address",
-      "address",
-      "address",
-      "uint16",
-      "uint16",
-      "uint16",
-      "bool",
-    ];
-    const orderHash = ABI.soliditySHA3(argTypes, args);
+    const typedData = this.toTypedData(order);
+    const orderHash = getEIP712Message(typedData);
     return orderHash;
   }
 

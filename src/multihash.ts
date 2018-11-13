@@ -26,10 +26,10 @@ export class MultiHashUtil {
 
   public async signOrderAsync(order: OrderInfo) {
     const signer = order.broker ? order.broker : order.owner;
-    return await this.signAsync(order.signAlgorithm, order.hash, signer);
+    return await this.signAsync(order.signAlgorithm, order.hash, signer, order.signerPrivateKey);
   }
 
-  public async signAsync(algorithm: SignAlgorithm, hash: Buffer, address: string) {
+  public async signAsync(algorithm: SignAlgorithm, hash: Buffer, address: string, privateKey?: string) {
     // Default to standard Ethereum signing
     algorithm = Object.is(algorithm, undefined) ? SignAlgorithm.Ethereum : algorithm;
 
@@ -40,7 +40,7 @@ export class MultiHashUtil {
         await this.signEthereumAsync(sig, hash, address);
         return sig.getData();
       case SignAlgorithm.EIP712:
-        await this.signEIP712Async(sig, hash, address);
+        await this.signEIP712Async(sig, hash, privateKey);
         return sig.getData();
       case SignAlgorithm.None:
         return null;
@@ -72,6 +72,21 @@ export class MultiHashUtil {
       } catch {
         return false;
       }
+    } else if (algorithm === SignAlgorithm.EIP712) {
+      assert.notEqual(signer, "0x0", "invalid signer address");
+      assert.equal(size, 65, "bad EIP712 multihash size");
+
+      const v = bitstream.extractUint8(2);
+      const r = bitstream.extractBytes32(3);
+      const s = bitstream.extractBytes32(3 + 32);
+
+      try {
+        const pub = ethUtil.ecrecover(hash, v, r, s);
+        const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
+        return signer === recoveredAddress;
+      } catch {
+        return false;
+      }
     } else {
       return false;
     }
@@ -87,29 +102,13 @@ export class MultiHashUtil {
     sig.addHex(ethUtil.bufferToHex(s));
   }
 
-  // TODO: Actually implement this correctly, the standard is not widely supported yet
-  private async signEIP712Async(sig: Bitstream, hash: Buffer, address: string) {
-    throw Error("EIP712 signing currently not implemented.");
-
-    /*const orderHash = this.getOrderHash(order);
-
-    const msgParams = [
-      {type: "string", name: "Owner", value: order.owner},
-    ];
-
-    const signature = await web3.eth.signTypedData(msgParams, order.owner);
-    const { v, r, s } = ethUtil.fromRpcSig(signature);
-
-    // await web3.currentProvider.sendAsync({
-    //   method: "eth_signTypedData",
-    //   params: [msgParams, order.owner],
-    //   from: order.owner,
-    // }, (err?: Error, result?: Web3.JSONRPCResponsePayload) => { logDebug("Hashing: " + result.result); });
-
+  private async signEIP712Async(sig: Bitstream, hash: Buffer, privateKey: string) {
+    const signature = ethUtil.ecsign(hash, new Buffer(privateKey, "hex"));
+    // console.log(privateKey);
     sig.addNumber(1 + 32 + 32, 1);
-    sig.addNumber(v, 1);
-    sig.addHex(ethUtil.bufferToHex(r));
-    sig.addHex(ethUtil.bufferToHex(s));*/
+    sig.addNumber(signature.v, 1);
+    sig.addHex(ethUtil.bufferToHex(signature.r));
+    sig.addHex(ethUtil.bufferToHex(signature.s));
   }
 
 }
