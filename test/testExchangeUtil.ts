@@ -229,6 +229,10 @@ export class ExchangeTestUtil {
              "Invalid token recipient index");
       order.tokenRecipient = this.testContext.allOrderTokenRecipients[accountIndex];
     }
+    if (order.signAlgorithm === undefined) {
+      const signAlgorithmIndex = index % 2;
+      order.signAlgorithm = (signAlgorithmIndex === 0) ? pjs.SignAlgorithm.Ethereum : pjs.SignAlgorithm.EIP712;
+    }
     if (order.signAlgorithm === pjs.SignAlgorithm.EIP712) {
       order.signerPrivateKey = this.getPrivateKey(order.broker ? order.broker : order.owner);
     }
