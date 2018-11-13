@@ -1,5 +1,6 @@
 import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
+import fs = require("fs");
 import * as pjs from "protocol2-js";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
@@ -228,6 +229,13 @@ export class ExchangeTestUtil {
              "Invalid token recipient index");
       order.tokenRecipient = this.testContext.allOrderTokenRecipients[accountIndex];
     }
+    if (order.signAlgorithm === undefined) {
+      const signAlgorithmIndex = index % 2;
+      order.signAlgorithm = (signAlgorithmIndex === 0) ? pjs.SignAlgorithm.Ethereum : pjs.SignAlgorithm.EIP712;
+    }
+    if (order.signAlgorithm === pjs.SignAlgorithm.EIP712) {
+      order.signerPrivateKey = this.getPrivateKey(order.broker ? order.broker : order.owner);
+    }
     // Fill in defaults (default, so these will not get serialized)
     order.version = 0;
     order.validUntil = order.validUntil ? order.validUntil : 0;
@@ -284,7 +292,7 @@ export class ExchangeTestUtil {
       "maxAmountS", "fillAmountS", "fillAmountB", "fillAmountFee", "splitS", "brokerInterceptor",
       "valid", "hash", "delegateContract", "signAlgorithm", "dualAuthSignAlgorithm", "index", "lrcAddress",
       "balanceS", "balanceFee", "tokenSpendableS", "tokenSpendableFee",
-      "brokerSpendableS", "brokerSpendableFee", "onChain", "balanceB",
+      "brokerSpendableS", "brokerSpendableFee", "onChain", "balanceB", "signerPrivateKey",
     ];
     // Make sure to get the keys from both objects to make sure we get all keys defined in both
     for (const key of [...Object.keys(ringsInfoA), ...Object.keys(ringsInfoB)]) {
@@ -715,6 +723,12 @@ export class ExchangeTestUtil {
                                    ringIndex);
 
     await this.initializeTradeDelegate();
+  }
+
+  private getPrivateKey(address: string) {
+    const textData = fs.readFileSync("./ganache_account_keys.txt", "ascii");
+    const data = JSON.parse(textData);
+    return data.private_keys[address];
   }
 
   // private functions:

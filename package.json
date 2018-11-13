@@ -19,7 +19,7 @@
     "compile": "rm -rf build/contracts && truffle compile",
     "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
-    "ganache": "ganache-cli -a 50",
+    "ganache": "ganache-cli -a 50 --acctKeys './ganache_account_keys.txt'",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "truffle": "truffle",
     "v": "node -v"
@@ -65,7 +65,7 @@
     "events": "^1.1.1",
     "js-sha3": "^0.8.0",
     "lodash": "^4.17.5",
-    "protocol2-js": "0.2.16",
+    "protocol2-js": "0.2.18",
     "sha3": "^1.2.2",
     "truffle-hdwallet-provider": "0.0.6",
     "web3": "0.20.6"

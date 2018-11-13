@@ -31,12 +31,56 @@ library OrderHelper {
     using MathUint      for uint;
     using BrokerInterceptorProxy for address;
 
+    string constant internal EIP191_HEADER = "\x19\x01";
+    string constant internal EIP712_DOMAIN_NAME = "Loopring Protocol";
+    string constant internal EIP712_DOMAIN_VERSION = "2";
+    bytes32 constant internal EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH = keccak256(
+        abi.encodePacked(
+            "EIP712Domain(",
+            "string name,",
+            "string version",
+            ")"
+        )
+    );
+    bytes32 constant internal EIP712_ORDER_SCHEMA_HASH = keccak256(
+        abi.encodePacked(
+            "Order(",
+            "uint amountS,",
+            "uint amountB,",
+            "uint feeAmount,",
+            "uint validSince,",
+            "uint validUntil,",
+            "address owner,",
+            "address tokenS,",
+            "address tokenB,",
+            "address dualAuthAddr,",
+            "address broker,",
+            "address orderInterceptor,",
+            "address wallet,",
+            "address tokenRecipient,",
+            "address feeToken,",
+            "uint16 walletSplitPercentage,",
+            "uint16 tokenSFeePercentage,",
+            "uint16 tokenBFeePercentage,",
+            "bool allOrNone",
+            ")"
+        )
+    );
+    bytes32 constant internal EIP712_DOMAIN_HASH = keccak256(
+        abi.encodePacked(
+            EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH,
+            keccak256(bytes(EIP712_DOMAIN_NAME)),
+            keccak256(bytes(EIP712_DOMAIN_VERSION))
+        )
+    );
+
     function updateHash(Data.Order order)
         internal
         pure
     {
-        /* order.hash = keccak256( */
-        /*     abi.encodePacked( */
+        /* bytes32 message = keccak256( */
+        /*     abi.encode( */
+        /*         EIP712_ORDER_SCHEMA_HASH, */
         /*         order.amountS, */
         /*         order.amountB, */
         /*         order.feeAmount, */
@@ -57,33 +101,47 @@ library OrderHelper {
         /*         order.allOrNone */
         /*     ) */
         /* ); */
+        /* order.hash = keccak256( */
+        /*    abi.encodePacked( */
+        /*        EIP191_HEADER, */
+        /*        EIP712_DOMAIN_HASH, */
+        /*        message */
+        /*    ) */
+        /*); */
+
+        // Precalculated EIP712_ORDER_SCHEMA_HASH amd EIP712_DOMAIN_HASH because
+        // the solidity compiler doesn't correctly precalculate them for us.
+        bytes32 _EIP712_ORDER_SCHEMA_HASH = 0x5632ff1bdfbe9ca7ecbcb1bd8c61f364e0debfed45fd8be4e459081586292fff;
+        bytes32 _EIP712_DOMAIN_HASH = 0xaea25658c273c666156bd427f83a666135fcde6887a6c25fc1cd1562bc4f3f34;
+
         bytes32 hash;
         assembly {
-            // Load the free memory pointer
             let ptr := mload(64)
+            mstore(add(ptr,   0), _EIP712_ORDER_SCHEMA_HASH)     // EIP712_ORDER_SCHEMA_HASH
+            mstore(add(ptr,  32), mload(add(order, 128)))        // order.amountS
+            mstore(add(ptr,  64), mload(add(order, 160)))        // order.amountB
+            mstore(add(ptr,  96), mload(add(order, 640)))        // order.feeAmount
+            mstore(add(ptr, 128), mload(add(order, 192)))        // order.validSince
+            mstore(add(ptr, 160), mload(add(order, 480)))        // order.validUntil
+            mstore(add(ptr, 192), mload(add(order,  32)))        // order.owner
+            mstore(add(ptr, 224), mload(add(order,  64)))        // order.tokenS
+            mstore(add(ptr, 256), mload(add(order,  96)))        // order.tokenB
+            mstore(add(ptr, 288), mload(add(order, 288)))        // order.dualAuthAddr
+            mstore(add(ptr, 320), mload(add(order, 320)))        // order.broker
+            mstore(add(ptr, 352), mload(add(order, 416)))        // order.orderInterceptor
+            mstore(add(ptr, 384), mload(add(order, 448)))        // order.wallet
+            mstore(add(ptr, 416), mload(add(order, 768)))        // order.tokenRecipient
+            mstore(add(ptr, 448), mload(add(order, 608)))        // order.feeToken
+            mstore(add(ptr, 480), mload(add(order, 800)))        // order.walletSplitPercentage
+            mstore(add(ptr, 512), mload(add(order, 704)))        // order.tokenSFeePercentage
+            mstore(add(ptr, 544), mload(add(order, 736)))        // order.tokenBFeePercentage
+            mstore(add(ptr, 576), mload(add(order, 576)))        // order.allOrNone
+            let message := keccak256(ptr, 608)                   // 19 * 32
 
-            // We store the members back to front so we can overwrite data for members smaller than 32
-            // (mstore always writes 32 bytes)
-            mstore(add(ptr, sub(346, 31)), mload(add(order, 576)))   // order.allOrNone
-            mstore(add(ptr, sub(344, 30)), mload(add(order, 736)))   // order.tokenBFeePercentage
-            mstore(add(ptr, sub(342, 30)), mload(add(order, 704)))   // order.tokenSFeePercentage
-            mstore(add(ptr, sub(340, 30)), mload(add(order, 800)))   // order.walletSplitPercentage
-            mstore(add(ptr, sub(320, 12)), mload(add(order, 608)))   // order.feeToken
-            mstore(add(ptr, sub(300, 12)), mload(add(order, 768)))   // order.tokenRecipient
-            mstore(add(ptr, sub(280, 12)), mload(add(order, 448)))   // order.wallet
-            mstore(add(ptr, sub(260, 12)), mload(add(order, 416)))   // order.orderInterceptor
-            mstore(add(ptr, sub(240, 12)), mload(add(order, 320)))   // order.broker
-            mstore(add(ptr, sub(220, 12)), mload(add(order, 288)))   // order.dualAuthAddr
-            mstore(add(ptr, sub(200, 12)), mload(add(order,  96)))   // order.tokenB
-            mstore(add(ptr, sub(180, 12)), mload(add(order,  64)))   // order.tokenS
-            mstore(add(ptr, sub(160, 12)), mload(add(order,  32)))   // order.owner
-            mstore(add(ptr, sub(128,  0)), mload(add(order, 480)))   // order.validUntil
-            mstore(add(ptr, sub( 96,  0)), mload(add(order, 192)))   // order.validSince
-            mstore(add(ptr, sub( 64,  0)), mload(add(order, 640)))   // order.feeAmount
-            mstore(add(ptr, sub( 32,  0)), mload(add(order, 160)))   // order.amountB
-            mstore(add(ptr, sub(  0,  0)), mload(add(order, 128)))   // order.amountS
-
-            hash := keccak256(ptr, 347)  // 5*32 + 9*20 + 3*2 + 1*1
+            mstore(add(ptr,  0), 0x1901)                         // EIP191_HEADER
+            mstore(add(ptr, 32), _EIP712_DOMAIN_HASH)            // EIP712_DOMAIN_HASH
+            mstore(add(ptr, 64), message)                        // message
+            hash := keccak256(add(ptr, 30), 66)                  // 2 + 32 + 32
         }
         order.hash = hash;
     }

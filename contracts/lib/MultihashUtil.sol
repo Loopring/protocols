@@ -33,42 +33,6 @@ library MultihashUtil {
 
     string public constant SIG_PREFIX = "\x19Ethereum Signed Message:\n32";
 
-    string public constant SIG_712_PREFIX = "\x19\x01Ethereum Signed Message:\n32";
-
-    struct EIP712Domain {
-        string  name;
-        string  version;
-    }
-
-    bytes32 constant EIP712DOMAIN_TYPEHASH = keccak256(
-        "EIP712Domain(string name,string version)"
-    );
-
-    bytes32 constant ORDER_TYPEHASH = keccak256(
-        abi.encodePacked(
-            "Order(",
-            "uint amountS,",
-            "uint amountB,",
-            "uint feeAmount,",
-            "uint validSince,",
-            "uint validUntil,",
-            "address owner,",
-            "address tokenS,",
-            "address tokenB,",
-            "address dualAuthAddr,",
-            "address broker,",
-            "address orderInterceptor,",
-            "address wallet,",
-            "address tokenRecipient,",
-            "address feeToken,",
-            "uint16 walletSplitPercentage,",
-            "uint16 tokenSFeePercentage,",
-            "uint16 tokenBFeePercentage,",
-            "bool allOrNone",
-            ")"
-        )
-    );
-
     function verifySignature(
         address signer,
         bytes32 plaintext,
@@ -113,49 +77,25 @@ library MultihashUtil {
             );
         } else if (algorithm == uint8(HashAlgorithm.EIP712)) {
             require(signer != 0x0, "invalid signer address");
-            require(size == 65, "bad Ethereum multihash size");
-            bytes32 digest = keccak256(
-                abi.encodePacked(
-                    SIG_712_PREFIX,
-                    getEIP712DomainHash(
-                        EIP712Domain(
-                            {
-                            name: "Loopring Protocal",
-                            version: "2"
-                            }
-                        )
-                    ),
-                    get712OrderHash(plaintext)
-                )
-            );
+            require(size == 65, "bad EIP712 multihash size");
+            uint8 v;
+            bytes32 r;
+            bytes32 s;
+            assembly {
+                // Extract v, r and s from the multihash data
+                v := mload(add(multihash, 3))
+                r := mload(add(multihash, 35))
+                s := mload(add(multihash, 67))
+            }
             return signer == ecrecover(
-                digest,
-                uint8(multihash[2]),
-                BytesUtil.bytesToBytes32(multihash, 3),
-                BytesUtil.bytesToBytes32(multihash, 3 + 32)
+                plaintext,
+                v,
+                r,
+                s
             );
         } else {
             return false;
         }
-    }
-
-    function getEIP712DomainHash(EIP712Domain eip712Domain) internal pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                EIP712DOMAIN_TYPEHASH,
-                keccak256(bytes(eip712Domain.name)),
-                keccak256(bytes(eip712Domain.version))
-            )
-        );
-    }
-
-    function get712OrderHash(bytes32 plaintext) internal pure returns (bytes32) {
-        return keccak256(
-            abi.encodePacked(
-                ORDER_TYPEHASH,
-                plaintext
-            )
-        );
     }
 }
 

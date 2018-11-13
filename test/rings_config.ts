@@ -2389,4 +2389,40 @@ export const ringsInfoList: RingsInfo[] = [
       ],
     },
   },
+
+  {
+    description: "single 2-size ring, order signed with EIP712",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 10e18,
+        amountB: 1e18,
+        signAlgorithm: SignAlgorithm.EIP712,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 1e18,
+        amountB: 10e18,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];

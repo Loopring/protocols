@@ -297,6 +297,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
             broker: broker1,
             balanceS: 10e18,
             balanceFee: 10e18,
+            signAlgorithm: pjs.SignAlgorithm.EIP712,
           },
         ],
       };

@@ -10,11 +10,11 @@ install:
   - npm install -g ganache-cli
 
 before_script:
-  - ganache-cli -a 50 > ganache_cli.log &
+  - ganache-cli -a 50 --acctKeys './ganache_account_keys.txt' > ganache_cli.log &
 
 script:
   - npm run test
-  
+
 cache:
   directories:
     - node_modules
