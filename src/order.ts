@@ -84,7 +84,7 @@ export class OrderUtil {
     }
   }
 
-  public getOrderHash(order: OrderInfo) {
+  public toTypedData(order: OrderInfo) {
     const typedData = {
       types: {
           EIP712Domain: [
@@ -138,19 +138,25 @@ export class OrderUtil {
         allOrNone: order.allOrNone,
       },
     };
+    return typedData;
+  }
 
-    // Use the code below to export the order data to a JSON format compatible with signTypedData
+  public toTypedDataJSON(order: OrderInfo) {
     // BN outputs hex numbers in toJSON, but signTypedData expects decimal numbers
-    // const replacer = (key: any, value: any) => {
-    //   if (key === "amountS" || key === "amountB" || key === "feeAmount" ||
-    //       key === "validSince" || key === "validUntil") {
-    //     return "" + parseInt(value, 16);
-    //   }
-    //   return value;
-    // };
-    // const json = JSON.stringify(typedData, replacer);
-    // console.log("JSON: " + json);
+    const replacer = (key: any, value: any) => {
+      if (key === "amountS" || key === "amountB" || key === "feeAmount" ||
+          key === "validSince" || key === "validUntil") {
+        return "" + parseInt(value, 16);
+      }
+      return value;
+    };
+    const typedData = this.toTypedData(order);
+    const json = JSON.stringify(typedData, replacer);
+    return json;
+  }
 
+  public getOrderHash(order: OrderInfo) {
+    const typedData = this.toTypedData(order);
     const orderHash = getEIP712Message(typedData);
     return orderHash;
   }
