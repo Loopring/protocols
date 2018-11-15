@@ -1,3 +1,4 @@
+import assert = require("assert");
 import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
@@ -112,7 +113,10 @@ export class ExchangeDeserializer {
       tokenRecipient: this.nextAddress(),
       walletSplitPercentage: this.nextUint16(),
     };
-    order.feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
+
+    if (this.context) {
+      order.feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
+    }
     order.tokenRecipient = order.tokenRecipient ? order.tokenRecipient : order.owner;
     return order;
   }
