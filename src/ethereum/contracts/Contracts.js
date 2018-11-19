@@ -37,14 +37,18 @@ const encodeSubmitRing = (orders, feeRecipient, feeSelections) =>
         feeSelections = orders.map(item => 0);
     }
     const ringHash = getRingHash(orders, feeRecipient, feeSelections);
-    const amounts = orders.map(order => toNumber(toBig(order.amountS).div(toBig(order.amountB))));
+    const amounts = orders.map(order => toBig(order.amountS).div(toBig(order.amountB)));
     const tem = amounts.reduce((total, amount) =>
     {
-        return total * amount;
+        return total.times(amount);
     });
-    const rate = Math.pow(tem, 1 / orders.length);
+    const rate = Math.pow(toNumber(tem), 1 / orders.length);
+    if (rate < 1)
+    {
+        throw new Error('invalid rate');
+    }
     const addressList = orders.map(order => [order.owner, order.tokenS, order.walletAddress, order.authAddr]);
-    const uintArgsList = orders.map(order => [order.amountS, order.amountB, order.validSince, order.validUntil, order.lrcFee, toHex(toBig(toFixed(toBig(order.amountS).times(toBig(rate)))))]);
+    const uintArgsList = orders.map(order => [order.amountS, order.amountB, order.validSince, order.validUntil, order.lrcFee, toHex(toBig(toFixed(toBig(order.amountS).div(toBig(rate)))))]);
     const uint8ArgsList = orders.map(order => [order.marginSplitPercentage]);
     const buyNoMoreThanAmountBList = orders.map(order => order.buyNoMoreThanAmountB);
     const sigs = orders.map(order =>
