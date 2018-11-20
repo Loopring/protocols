@@ -56,7 +56,7 @@ contract AccountantImpl is IAccountant {
         address[] oldAccountants,
         address[] accountants,
         uint256 hight,
-        uint256[] signatures
+        bytes signatures
         )
         external
     {
@@ -92,7 +92,8 @@ contract AccountantImpl is IAccountant {
     function withdraw(
         address to,
         address token,
-        uint256 amount
+        uint256 amount,
+        uint256[] path_proof
         )
         external
     {

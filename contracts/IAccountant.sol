@@ -48,7 +48,7 @@ contract IAccountant {
         address[] oldAccountants,
         address[] accountants,
         uint256 hight,
-        uint256[] signatures
+        bytes signatures
         )
         external;
 
@@ -61,10 +61,12 @@ contract IAccountant {
     /// @param to the target address
     /// @param token the token address
     /// @param amount the amount to withdraw
+    /// @param path_proof the path of the brother hashes
     function withdraw(
         address to,
         address token,
-        uint256 amount
+        uint256 amount,
+        uint256[] path_proof
         )
         external;
 
