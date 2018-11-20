@@ -27,7 +27,7 @@ contract IAccountant {
         uint256 indexed seqNo,
         address indexed oldAccountant,
         address indexed newAccountant,
-        uint256         hight
+        uint256         height
     );
 
     event Withdraw(
@@ -47,7 +47,7 @@ contract IAccountant {
         uint256[] seqNos,
         address[] oldAccountants,
         address[] accountants,
-        uint256 hight,
+        uint256 height,
         bytes signatures
         )
         external;
@@ -58,15 +58,11 @@ contract IAccountant {
 
 
     /// @dev withdraw tokens
-    /// @param to the target address
-    /// @param token the token address
-    /// @param amount the amount to withdraw
-    /// @param path_proof the path of the brother hashes
+    /// @param rawData the raw data of exit_tx in sidechain; to, amount, height will be parsed out from rawData.
+    /// @param pathProof the path of the brother hashes.
     function withdraw(
-        address to,
-        address token,
-        uint256 amount,
-        uint256[] path_proof
+        bytes rawData,
+        uint256[] pathProof
         )
         external;
 
