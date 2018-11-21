@@ -40,13 +40,13 @@ contract IAccountant {
     /// @param root merkle tree root hash.
     /// @param seqNos the sequence number of the accountants.
     /// @param oldAccountants the old accountants which will be replaced.
-    /// @param accountants the new accountants.
+    /// @param newAccountants the new accountants.
     /// @param signatures the signature of the accountant.
     function submitBlock(
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
-        address[] accountants,
+        address[] newAccountants,
         uint256 height,
         bytes signatures
         )
@@ -54,13 +54,15 @@ contract IAccountant {
 
     /// @dev query the accountant of the seqNo
     /// @param seqNo the sequence number of the accountant.
-    function queryAccountant(uint256 seqNo) external returns (address);
+    function queryAccountant(uint256 seqNo) external view returns (address);
 
 
     /// @dev withdraw tokens
+    /// @param height the height of the sidechain.
     /// @param rawData the raw data of exit_tx in sidechain; to, amount, height will be parsed out from rawData.
     /// @param pathProof the path of the brother hashes.
     function withdraw(
+        uint256 height,
         bytes rawData,
         uint256[] pathProof
         )

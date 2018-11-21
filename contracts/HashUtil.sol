@@ -28,10 +28,26 @@ library HashUtil {
         uint256 height)
         internal
         pure returns (bytes32)
+    {       
+        return keccak256(toPackage(root, seqNos, oldAccountants, accountants, height));
+    }
+
+    function toPackage(
+        uint256 root,
+        uint256[] seqNos,
+        address[] oldAccountants,
+        address[] accountants,
+        uint256 height)
+        internal
+        pure returns (bytes)
     {
-        bytes32 hash;
-        //TODO
-        return hash;
+        return abi.encodePacked(
+            root,
+            seqNos,
+            oldAccountants,
+            accountants,
+            height
+        );
     }
 
 

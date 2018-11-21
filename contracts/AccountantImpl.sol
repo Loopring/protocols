@@ -19,6 +19,7 @@ pragma solidity 0.4.24;
 import "./IAccountant.sol";
 import "./ERC20SafeTransfer.sol";
 import "./HashUtil.sol";
+import "./BytesLib.sol";
 
 /// @title An Implementation to do settlement and clearing for 
 ///        small transaction amounts with a sidechain on Ethereum 
@@ -26,11 +27,11 @@ import "./HashUtil.sol";
 contract AccountantImpl is IAccountant {
 
     using ERC20SafeTransfer for address;
+    using BytesLib for bytes;
 
-    uint256  public constant TOTAL_ACCOUNTANT_NUM     = 22;
-    uint256  public constant MIN_ACCOUNTANT_NUM       = 15;
+    uint256  public constant TOTAL_ACCOUNTANT_NUM     = 2;
+    uint256  public constant MIN_ACCOUNTANT_NUM       = 1;
 
-    uint256 public accountantsNum = 0;
     mapping (uint256 => address) public accountantsMap;
     mapping (uint256 => uint256) public merkleRootMap;
 
@@ -46,47 +47,74 @@ contract AccountantImpl is IAccountant {
         }
     }
 
-    function queryAccountant(uint256 seqNo) external returns (address) {
+    function queryAccountant(uint256 seqNo) external view returns (address) {
         require(seqNo < TOTAL_ACCOUNTANT_NUM, "ILLEGAL SEQUENCE NUMBER");
         return accountantsMap[seqNo];
+    }
+
+    function queryMerkleRoot(uint256 height) external view returns (uint256) {
+        return merkleRootMap[height];
     }
 
     function submitBlock(
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
-        address[] accountants,
+        address[] newAccountants,
         uint256 height,
         bytes signatures
         )
         external
     {
         require(checkProcessor(msg.sender));
-        require(checkSignatures(root, seqNos, oldAccountants, accountants, height, signatures));
+        //require(checkSignatures(root, seqNos, oldAccountants, newAccountants, height, signatures));
                
         for(uint256 i = 0; i < seqNos.length; i++) {
-            midifyAccountant(seqNos[i], oldAccountants[i], accountants[i], height);
+            midifyAccountant(seqNos[i], oldAccountants[i], newAccountants[i], height);
         }
         addMerkleRoot(height, root);
+    }
+
+    function getPackage(
+        uint256 root,
+        uint256[] seqNos,
+        address[] oldAccountants,
+        address[] newAccountants,
+        uint256 height,
+        bytes signatures
+        )
+        external pure returns (bytes)
+    {
+        return HashUtil.toPackage(root, seqNos, oldAccountants, newAccountants, height);
+    }
+
+    function getHash(
+        uint256 root,
+        uint256[] seqNos,
+        address[] oldAccountants,
+        address[] newAccountants,
+        uint256 height,
+        bytes signatures
+        )
+        external pure returns (bytes32)
+    {
+        return HashUtil.calcSubmitBlockHash(root, seqNos, oldAccountants, newAccountants, height);
     }
 
     function checkSignatures(
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
-        address[] accountants,
+        address[] newAccountants,
         uint256 height,
         bytes signatures) 
         internal view returns (bool) 
     {
-        bytes32 plaintext = HashUtil.calcSubmitBlockHash(root, seqNos, oldAccountants, accountants, height);
+        bytes32 plaintext = HashUtil.calcSubmitBlockHash(root, seqNos, oldAccountants, newAccountants, height);
         uint8 num = 0;
-        for(uint256 i = 0; i < signatures.length; i++) {
+        for(uint256 i = 0; i < seqNos.length; i++) {
             bytes memory signature;
-            uint256 offset = 65*(1+i);
-            assembly {
-                signature := mload(add(signatures, offset))
-            }
+            signatures.slice(65*i, 65);
             if(signature[0] != 0) {
                 require(HashUtil.verifySignature(accountantsMap[i], plaintext, signature));
                 num++;
@@ -95,7 +123,18 @@ contract AccountantImpl is IAccountant {
         require(num > MIN_ACCOUNTANT_NUM);
     }
 
+    function parseSignatures(
+        bytes signatures, uint8 flagNum) 
+        external pure returns (bytes) 
+    {
+        for(uint256 i = 0; i < flagNum; i++) {
+            bytes memory sig = signatures.slice(65*i, 65);
+            return sig;
+        }
+    }
+
     function withdraw(
+        uint256 height,
         bytes rawData,
         uint256[] path_proof
         )
@@ -107,8 +146,8 @@ contract AccountantImpl is IAccountant {
         uint256 amount = getAmount(rawData);
         require(getTo(rawData) > 0);
 
-        uint256 height = getHeight(rawData);
-        require(checkMerkleRoot(rawData, height, path_proof));
+        //uint256 height = getHeight(rawData);
+        //require(checkMerkleRoot(rawData, height, path_proof));
 
         address token = getToken(rawData);
 
@@ -186,7 +225,7 @@ contract AccountantImpl is IAccountant {
         emit UpdateAccountant(seqNo, oldAccountant, newAccountant, height);
     }
 
-    function addMerkleRoot(uint256 root, uint256 height) internal {
+    function addMerkleRoot(uint256 height, uint256 root) internal {
         require(height > 0 && root > 0);
         require(merkleRootMap[height] == 0);
         merkleRootMap[height] = root;
