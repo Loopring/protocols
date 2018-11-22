@@ -1,6 +1,6 @@
 import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
-import { promisify }  from "es6-promisify";
+import promisify = require("es6-promisify");
 import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import Web3 = require("web3");

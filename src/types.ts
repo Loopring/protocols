@@ -100,6 +100,7 @@ export interface RingsSubmitParam {
 
 export interface OrderExpectation {
   filledFraction: number;
+  payMatchingFeeUsingAmountB?: boolean;
   P2P?: boolean;
   margin?: number;
 }
@@ -182,6 +183,8 @@ export interface Fill {
   amountS: BigNumber;
   split: BigNumber;
   feeAmount: BigNumber;
+  feeAmountS: BigNumber;
+  feeAmountB: BigNumber;
 }
 
 export interface RingMinedEvent {

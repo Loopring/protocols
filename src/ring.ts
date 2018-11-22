@@ -259,17 +259,15 @@ export class Ring {
   public generateFills() {
     const fills: Fill[] = [];
     for (const p of this.participations) {
-      let feeAmount = p.feeAmount;
-      if (!p.order.P2P) {
-        feeAmount = feeAmount.plus(p.feeAmountB);
-      }
       const fill: Fill = {
         orderHash: "0x" + p.order.hash.toString("hex"),
         owner: p.order.owner,
         tokenS: p.order.tokenS,
         amountS: p.fillAmountS,
         split: p.splitS,
-        feeAmount,
+        feeAmount: p.feeAmount.minus(p.rebateFee),
+        feeAmountS: p.feeAmountS.minus(p.rebateS),
+        feeAmountB: p.feeAmountB.minus(p.rebateB),
       };
       fills.push(fill);
     }

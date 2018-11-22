@@ -136,7 +136,9 @@ export class ProtocolValidator {
           tokenS: order.tokenS,
           amountS: orderSettlement.amountS.minus(orderSettlement.splitS),
           split: orderSettlement.splitS,
-          feeAmount: orderSettlement.amountFee,
+          feeAmount: orderSettlement.amountFee.minus(orderSettlement.rebateFee),
+          feeAmountS: orderSettlement.amountFeeS.minus(orderSettlement.rebateS),
+          feeAmountB: orderSettlement.amountFeeB.minus(orderSettlement.rebateB),
         };
         fills.push(fill);
 
@@ -240,6 +242,10 @@ export class ProtocolValidator {
                                "split does not match");
         this.assertAlmostEqual(expectedFill.feeAmount.toNumber(), simulatorFill.feeAmount.toNumber(),
                                "feeAmount does not match");
+        this.assertAlmostEqual(expectedFill.feeAmountS.toNumber(), simulatorFill.feeAmountS.toNumber(),
+                               "feeAmountS does not match");
+        this.assertAlmostEqual(expectedFill.feeAmountB.toNumber(), simulatorFill.feeAmountB.toNumber(),
+                               "feeAmountB does not match");
       }
     }
     // Check InvalidRing events
@@ -299,6 +305,8 @@ export class ProtocolValidator {
                          .times(prevOrderExpectation.filledFraction.toString())
                          .floor();
       const splitS = amountS.minus(amountFeeS).minus(prevAmountB);
+      const epsilon = 10000;
+      assert(splitS.gte(-epsilon), "splitS >= 0");
 
       const orderSettlement: OrderSettlement = {
         amountS,
@@ -318,9 +326,9 @@ export class ProtocolValidator {
       const amountB = new BigNumber(order.amountB).times(orderExpectation.filledFraction.toString()).floor();
 
       // Fee
-      const amountFee = new BigNumber(order.feeAmount).times(orderExpectation.filledFraction.toString()).floor();
+      let amountFee = new BigNumber(order.feeAmount).times(orderExpectation.filledFraction.toString()).floor();
 
-      const rebateFee = await this.collectFeePayments(feePayments,
+      let rebateFee = await this.collectFeePayments(feePayments,
                                                       orders,
                                                       ring,
                                                       order,
@@ -337,15 +345,29 @@ export class ProtocolValidator {
       const epsilon = 10000;
       assert(splitS.gte(-epsilon), "splitS >= 0");
 
+      // Pay using amountB in tokenB when expected
+      let amountFeeB = new BigNumber(0);
+      let rebateB = new BigNumber(0);
+      const payMatchingFeeUsingAmountB = (orderExpectation.payMatchingFeeUsingAmountB === undefined) ?
+                                         (order.tokenB === order.feeToken) :
+                                         orderExpectation.payMatchingFeeUsingAmountB;
+      if (payMatchingFeeUsingAmountB) {
+        assert(order.tokenB === order.feeToken, "Cannot pay matching fee in tokenB when tokenB != feeToken");
+        amountFeeB = amountFee;
+        rebateB = rebateFee;
+        amountFee = new BigNumber(0);
+        rebateFee = new BigNumber(0);
+      }
+
       const orderSettlement: OrderSettlement = {
         amountS,
         amountB,
         amountFee,
         amountFeeS: new BigNumber(0),
-        amountFeeB: new BigNumber(0),
+        amountFeeB,
         rebateFee,
         rebateS: new BigNumber(0),
-        rebateB: new BigNumber(0),
+        rebateB,
         splitS,
       };
       return orderSettlement;
