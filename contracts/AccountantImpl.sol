@@ -179,7 +179,7 @@ contract AccountantImpl is IAccountant {
 
         heightStore = height;
 
-        require(checkMerkleRoot(height, rawData, pathProof));
+        require(checkMerkleRoot(rawData, height, pathProof));
 
         require(
             token.safeTransfer(
