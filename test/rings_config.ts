@@ -417,6 +417,7 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: 0.0,
+              payMatchingFeeUsingAmountB: false,
             },
             {
               filledFraction: 0.0,
@@ -458,6 +459,7 @@ export const ringsInfoList: RingsInfo[] = [
           orders: [
             {
               filledFraction: 0.0,
+              payMatchingFeeUsingAmountB: false,
             },
             {
               filledFraction: 0.0,
@@ -499,6 +501,7 @@ export const ringsInfoList: RingsInfo[] = [
             },
             {
               filledFraction: 1.0,
+              payMatchingFeeUsingAmountB: false,
             },
           ],
         },

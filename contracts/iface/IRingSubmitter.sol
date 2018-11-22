@@ -30,7 +30,7 @@ contract IRingSubmitter {
     ///        _ringHash      The hash of the ring
     ///        _feeRecipient  The recipient of the matching fee
     ///        _fills         The info of the orders in the ring stored like:
-    ///                       [orderHash, owner, tokenS, amountS, split, feeAmount]
+    ///                       [orderHash, owner, tokenS, amountS, split, feeAmount, feeAmountS, feeAmountB]
     event RingMined(
         uint            _ringIndex,
         bytes32 indexed _ringHash,

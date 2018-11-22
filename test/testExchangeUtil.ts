@@ -61,7 +61,7 @@ export class ExchangeTestUtil {
   public async getRingMinedEvents(fromBlock: number) {
     const parseFillsData = (data: string) => {
       const b = new pjs.Bitstream(data);
-      const fillSize = 6 * 32;
+      const fillSize = 8 * 32;
       const numFills = b.length() / fillSize;
       const fills: pjs.Fill[] = [];
       for (let offset = 0; offset < b.length(); offset += fillSize) {
@@ -72,6 +72,8 @@ export class ExchangeTestUtil {
           amountS: b.extractUint(offset + 96),
           split: b.extractUint(offset + 128),
           feeAmount: b.extractUint(offset + 160),
+          feeAmountS: b.extractUint(offset + 192),
+          feeAmountB: b.extractUint(offset + 224),
         };
         fills.push(fill);
       }
@@ -419,6 +421,8 @@ export class ExchangeTestUtil {
         assert(contractFill.amountS.eq(simulatorFill.amountS), "amountS does not match");
         assert(contractFill.split.eq(simulatorFill.split), "split does not match");
         assert(contractFill.feeAmount.eq(simulatorFill.feeAmount), "feeAmount does not match");
+        assert(contractFill.feeAmountS.eq(simulatorFill.feeAmountS), "feeAmountS does not match");
+        assert(contractFill.feeAmountB.eq(simulatorFill.feeAmountB), "feeAmountB does not match");
       }
     }
   }

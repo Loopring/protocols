@@ -237,7 +237,7 @@ library RingHelper {
         returns (uint fill)
     {
         uint ringSize = ring.size;
-        uint fillSize = 6 * 32;
+        uint fillSize = 8 * 32;
         assembly {
             fill := destPtr
             let participations := mload(add(ring, 32))                                 // ring.participations
@@ -246,13 +246,19 @@ library RingHelper {
                 let participation := mload(add(participations, add(32, mul(i, 32))))   // participations[i]
                 let order := mload(participation)                                      // participation.order
 
-                // When !order.P2P and tokenB == feeToken
-                // the matching fee can be paid in feeAmountB (and feeAmount == 0)
-                let feeAmount := mload(add(participation,  64))                        // participation.feeAmount
-                if eq(mload(add(order, 832)), 0) {                                     // order.P2P
-                    let feeAmountB := mload(add(participation, 128))                   // participation.feeAmountB
-                    feeAmount := add(feeAmount, feeAmountB)
-                }
+                // Calculate the actual fees paid after rebate
+                let feeAmount := sub(
+                    mload(add(participation, 64)),                                      // participation.feeAmount
+                    mload(add(participation, 160))                                      // participation.rebateFee
+                )
+                let feeAmountS := sub(
+                    mload(add(participation, 96)),                                      // participation.feeAmountS
+                    mload(add(participation, 192))                                      // participation.rebateFeeS
+                )
+                let feeAmountB := sub(
+                    mload(add(participation, 128)),                                     // participation.feeAmountB
+                    mload(add(participation, 224))                                      // participation.rebateFeeB
+                )
 
                 mstore(add(fill,   0), mload(add(order, 864)))                         // order.hash
                 mstore(add(fill,  32), mload(add(order,  32)))                         // order.owner
@@ -260,6 +266,8 @@ library RingHelper {
                 mstore(add(fill,  96), mload(add(participation, 256)))                 // participation.fillAmountS
                 mstore(add(fill, 128), mload(add(participation,  32)))                 // participation.splitS
                 mstore(add(fill, 160), feeAmount)                                      // feeAmount
+                mstore(add(fill, 192), feeAmountS)                                     // feeAmountS
+                mstore(add(fill, 224), feeAmountB)                                     // feeAmountB
 
                 fill := add(fill, fillSize)
             }

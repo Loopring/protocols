@@ -265,7 +265,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         bytes32 ringHash = ring.hash;
         // keccak256("RingMined(uint256,bytes32,address,bytes)")
         bytes32 ringMinedSignature = 0xb2ef4bc5209dff0c46d5dfddb2b68a23bd4820e8f33107fde76ed15ba90695c9;
-        uint fillsSize = ring.size * 6 * 32;
+        uint fillsSize = ring.size * 8 * 32;
 
         uint data;
         uint ptr;

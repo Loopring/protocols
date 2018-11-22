@@ -53,8 +53,8 @@ contract("ExchangeWrapper", (accounts: string[]) => {
       );
 
       // Whitelist owners
-      exchangeWrapper.setWhitelisted(ringsInfo.orders[0].owner, true);
-      exchangeWrapper.setWhitelisted(ringsInfo.orders[1].owner, true);
+      await exchangeWrapper.setWhitelisted(ringsInfo.orders[0].owner, true);
+      await exchangeWrapper.setWhitelisted(ringsInfo.orders[1].owner, true);
 
       // Submit the rings again, this time successfully
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, undefined, exchangeWrapper);
