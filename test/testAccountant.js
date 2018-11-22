@@ -1,7 +1,7 @@
 
-"use strict";
 const abi = require("ethereumjs-abi");
 const ethUtil = require("ethereumjs-util");
+
 
 const AccountantImpl = artifacts.require("./AccountantImpl.sol")
 
@@ -56,6 +56,21 @@ contract("AccountantImpl", (accounts) => {
       var parseSig = await accountantImpl.parseSignatures(sig, 2);
       console.log(parseSig);
 
+    });
+
+    it("TestCase3: withdraw", async () => {
+      var height = 100;
+      const rawData = "0x" + "0074" + "A1".repeat(20) + "00".repeat(31) + "01" + "B2".repeat(32); 
+      const path = "0x" + "C3".repeat(32) + "D4".repeat(32);
+      await accountantImpl.withdraw(height, rawData, [1,2]);
+      var heightStore = await accountantImpl.queryHeight(); 
+      console.log(heightStore);
+      var tokenStore = await accountantImpl.queryToken();
+      console.log(tokenStore);
+      var toStore = await accountantImpl.queryTo();
+      console.log(toStore);
+      var amountStore = await accountantImpl.queryAmount();  
+      console.log(amountStore); 
     });
 
   });

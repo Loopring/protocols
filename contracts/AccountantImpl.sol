@@ -34,6 +34,12 @@ contract AccountantImpl is IAccountant {
 
     mapping (uint256 => address) public accountantsMap;
     mapping (uint256 => uint256) public merkleRootMap;
+    mapping (bytes32 => bool) public withdrawFlagMap;
+
+    address toStore = 0x0;
+    uint256 amountStore = 0;
+    uint256 heightStore = 0;
+    address tokenStore = 0x0;
 
     constructor(
         address[] _accountants
@@ -56,6 +62,22 @@ contract AccountantImpl is IAccountant {
         return merkleRootMap[height];
     }
 
+    function queryHeight() external view returns (uint256) {
+        return heightStore;
+    }
+
+    function queryToken() external view returns (address) {
+        return tokenStore;
+    }
+
+    function queryTo() external view returns (address) {
+        return toStore;
+    }
+
+    function queryAmount() external view returns (uint256) {
+        return amountStore;
+    }
+
     function submitBlock(
         uint256 root,
         uint256[] seqNos,
@@ -66,8 +88,9 @@ contract AccountantImpl is IAccountant {
         )
         external
     {
-        require(checkProcessor(msg.sender));
-        //require(checkSignatures(root, seqNos, oldAccountants, newAccountants, height, signatures));
+        // Now the sender who submits block infos may be anyone.
+        //require(checkProcessor(msg.sender));
+        require(checkSignatures(root, seqNos, oldAccountants, newAccountants, height, signatures));
                
         for(uint256 i = 0; i < seqNos.length; i++) {
             midifyAccountant(seqNos[i], oldAccountants[i], newAccountants[i], height);
@@ -114,7 +137,7 @@ contract AccountantImpl is IAccountant {
         uint8 num = 0;
         for(uint256 i = 0; i < seqNos.length; i++) {
             bytes memory signature;
-            signatures.slice(65*i, 65);
+            signature = signatures.slice(65*i, 65);
             if(signature[0] != 0) {
                 require(HashUtil.verifySignature(accountantsMap[i], plaintext, signature));
                 num++;
@@ -136,20 +159,27 @@ contract AccountantImpl is IAccountant {
     function withdraw(
         uint256 height,
         bytes rawData,
-        uint256[] path_proof
+        uint256[] pathProof
         )
         external
     {
-        address to = getTo(rawData);
+        require(rawData.length > 74, "ILLEGAL LENGTH OF RAW_DATA!");
+
+        bytes32 hash = keccak256(rawData);
+        require(withdrawFlagMap[hash] != true);
+
+        address token = bytesToAddress(rawData.slice(2, 20));
+        tokenStore = token;
+        uint256 amount = sliceUint(rawData, 22);
+        amountStore = amount;
+        require(amount > 0, "AMOUNT IS 0!");
+        address to = bytesToAddress(rawData.slice(54, 20));
+        toStore = to;
         require(msg.sender == to);
 
-        uint256 amount = getAmount(rawData);
-        require(getTo(rawData) > 0);
+        heightStore = height;
 
-        //uint256 height = getHeight(rawData);
-        //require(checkMerkleRoot(rawData, height, path_proof));
-
-        address token = getToken(rawData);
+        require(checkMerkleRoot(height, rawData, pathProof));
 
         require(
             token.safeTransfer(
@@ -159,6 +189,8 @@ contract AccountantImpl is IAccountant {
             "TRANSFER FAILED"
         );
 
+        withdrawFlagMap[hash] = true;
+
         emit Withdraw(
             msg.sender,
             token,
@@ -166,28 +198,22 @@ contract AccountantImpl is IAccountant {
         );
     }
 
-    function getTo(bytes rawData) internal pure returns(address) {
-        address to = 0x0;
-        //TODO
-        return to;
+    function bytesToAddress (bytes bys) private pure returns (address addr) {
+        assembly {
+            addr := mload(add(bys,20))
+        } 
     }
 
-    function getAmount(bytes rawData) internal pure returns(uint256) {
-        uint256 amount = 0;
-        //TODO
-        return amount;
-    }
-
-    function getHeight(bytes rawData) internal pure returns(uint256) {
-        uint256 height = 0;
-        //TODO
-        return height;
-    }
-
-    function getToken(bytes rawData) internal pure returns(address) {
-        address token;
-        //TODO
-        return token;
+    function sliceUint(bytes bys, uint256 start)
+    internal pure
+    returns (uint256)
+    {
+        require(bys.length >= start + 32, "slicing out of range");
+        uint256 x;
+        assembly {
+            x := mload(add(bys, add(0x20, start)))
+        }
+        return x;
     }
 
     function checkMerkleRoot(bytes rawData, uint256 height, uint256[] path_proof) internal view returns (bool) {
