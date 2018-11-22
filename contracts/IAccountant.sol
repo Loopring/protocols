@@ -37,12 +37,14 @@ contract IAccountant {
     );
 
     /// @dev submit infos of the sidechain.
+    /// @param submitter only used for calculating hash.
     /// @param root merkle tree root hash.
     /// @param seqNos the sequence number of the accountants.
     /// @param oldAccountants the old accountants which will be replaced.
     /// @param newAccountants the new accountants.
     /// @param signatures the signature of the accountant.
     function submitBlock(
+        address submitter,
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,

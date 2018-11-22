@@ -79,6 +79,7 @@ contract AccountantImpl is IAccountant {
     }
 
     function submitBlock(
+        address submitter,
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
@@ -90,7 +91,7 @@ contract AccountantImpl is IAccountant {
     {
         // Now the sender who submits block infos may be anyone.
         //require(checkProcessor(msg.sender));
-        require(checkSignatures(root, seqNos, oldAccountants, newAccountants, height, signatures));
+        require(checkSignatures(submitter, root, seqNos, oldAccountants, newAccountants, height, signatures));
                
         for(uint256 i = 0; i < seqNos.length; i++) {
             midifyAccountant(seqNos[i], oldAccountants[i], newAccountants[i], height);
@@ -99,6 +100,7 @@ contract AccountantImpl is IAccountant {
     }
 
     function getPackage(
+        address submitter,
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
@@ -108,10 +110,11 @@ contract AccountantImpl is IAccountant {
         )
         external pure returns (bytes)
     {
-        return HashUtil.toPackage(root, seqNos, oldAccountants, newAccountants, height);
+        return HashUtil.toPackage(submitter, root, seqNos, oldAccountants, newAccountants, height);
     }
 
     function getHash(
+        address submitter,
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
@@ -121,10 +124,11 @@ contract AccountantImpl is IAccountant {
         )
         external pure returns (bytes32)
     {
-        return HashUtil.calcSubmitBlockHash(root, seqNos, oldAccountants, newAccountants, height);
+        return HashUtil.calcSubmitBlockHash(submitter, root, seqNos, oldAccountants, newAccountants, height);
     }
 
     function checkSignatures(
+        address submitter,
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
@@ -133,9 +137,9 @@ contract AccountantImpl is IAccountant {
         bytes signatures) 
         internal view returns (bool) 
     {
-        bytes32 plaintext = HashUtil.calcSubmitBlockHash(root, seqNos, oldAccountants, newAccountants, height);
+        bytes32 plaintext = HashUtil.calcSubmitBlockHash(submitter, root, seqNos, oldAccountants, newAccountants, height);
         uint8 num = 0;
-        for(uint256 i = 0; i < seqNos.length; i++) {
+        for(uint256 i = 0; i < TOTAL_ACCOUNTANT_NUM; i++) {
             bytes memory signature;
             signature = signatures.slice(65*i, 65);
             if(signature[0] != 0) {

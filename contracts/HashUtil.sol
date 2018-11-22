@@ -21,6 +21,7 @@ pragma solidity 0.4.24;
 library HashUtil {
 
     function calcSubmitBlockHash(
+        address submitter,
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
@@ -29,10 +30,11 @@ library HashUtil {
         internal
         pure returns (bytes32)
     {       
-        return keccak256(toPackage(root, seqNos, oldAccountants, accountants, height));
+        return keccak256(toPackage(submitter, root, seqNos, oldAccountants, accountants, height));
     }
 
     function toPackage(
+        address submitter,
         uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
@@ -42,6 +44,7 @@ library HashUtil {
         pure returns (bytes)
     {
         return abi.encodePacked(
+            submitter,
             root,
             seqNos,
             oldAccountants,
