@@ -18,7 +18,7 @@ pragma solidity 0.4.24;
 
 /// @title HashUtil
 /// @author autumn84 - <yangli@loopring.org>.
-library HashUtil {
+library HashUtilLib {
 
     function calcSubmitBlockHash(
         address submitter,

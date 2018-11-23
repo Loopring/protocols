@@ -18,7 +18,7 @@ pragma solidity 0.4.24;
 
 import "./IAccountant.sol";
 import "./ERC20SafeTransfer.sol";
-import "./HashUtil.sol";
+import "./HashUtilLib.sol";
 import "./BytesLib.sol";
 
 /// @title An Implementation to do settlement and clearing for 
@@ -29,8 +29,10 @@ contract AccountantImpl is IAccountant {
     using ERC20SafeTransfer for address;
     using BytesLib for bytes;
 
-    uint256  public constant TOTAL_ACCOUNTANT_NUM     = 2;
-    uint256  public constant MIN_ACCOUNTANT_NUM       = 1;
+    // In test environment, only using 4 nodes;
+    // In product environment, 22 nodes should be used at least.
+    uint256  public constant TOTAL_ACCOUNTANT_NUM     = 4;
+    uint256  public constant MIN_ACCOUNTANT_NUM       = 3;
 
     mapping (uint256 => address) public accountantsMap;
     mapping (uint256 => uint256) public merkleRootMap;
@@ -41,41 +43,22 @@ contract AccountantImpl is IAccountant {
     uint256 heightStore = 0;
     address tokenStore = 0x0;
 
+    uint256 sigLength = 0;
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+    bytes sig0;
+
     constructor(
-        address[] _accountants
+        address[] accountants
         )
         public
     {
-        uint256 size = _accountants.length;
+        uint256 size = accountants.length;
         require(size == TOTAL_ACCOUNTANT_NUM);
         for (uint256 i = 0; i < size; i++) {
-            accountantsMap[i] = _accountants[i];
+            accountantsMap[i] = accountants[i];
         }
-    }
-
-    function queryAccountant(uint256 seqNo) external view returns (address) {
-        require(seqNo < TOTAL_ACCOUNTANT_NUM, "ILLEGAL SEQUENCE NUMBER");
-        return accountantsMap[seqNo];
-    }
-
-    function queryMerkleRoot(uint256 height) external view returns (uint256) {
-        return merkleRootMap[height];
-    }
-
-    function queryHeight() external view returns (uint256) {
-        return heightStore;
-    }
-
-    function queryToken() external view returns (address) {
-        return tokenStore;
-    }
-
-    function queryTo() external view returns (address) {
-        return toStore;
-    }
-
-    function queryAmount() external view returns (uint256) {
-        return amountStore;
     }
 
     function submitBlock(
@@ -89,76 +72,46 @@ contract AccountantImpl is IAccountant {
         )
         external
     {
-        // Now the sender who submits block infos may be anyone.
-        //require(checkProcessor(msg.sender));
-        require(checkSignatures(submitter, root, seqNos, oldAccountants, newAccountants, height, signatures));
+        require((seqNos.length == oldAccountants.length && seqNos.length == newAccountants.length), "PARAMETERS NOT MATCH");
+        require(checkSignatures(submitter, root, seqNos, oldAccountants, newAccountants, height, signatures), "VIRIFY NOT PASS");
                
         for(uint256 i = 0; i < seqNos.length; i++) {
             midifyAccountant(seqNos[i], oldAccountants[i], newAccountants[i], height);
         }
+
         addMerkleRoot(height, root);
     }
 
-    function getPackage(
-        address submitter,
-        uint256 root,
-        uint256[] seqNos,
-        address[] oldAccountants,
-        address[] newAccountants,
-        uint256 height,
+
+    function setSigLength(
         bytes signatures
         )
-        external pure returns (bytes)
+        external
     {
-        return HashUtil.toPackage(submitter, root, seqNos, oldAccountants, newAccountants, height);
+        sigLength = signatures.length;
+        sig0 = signatures;
     }
 
-    function getHash(
-        address submitter,
-        uint256 root,
-        uint256[] seqNos,
-        address[] oldAccountants,
-        address[] newAccountants,
-        uint256 height,
-        bytes signatures
-        )
-        external pure returns (bytes32)
+    function getSigLength() external view returns (uint256)
     {
-        return HashUtil.calcSubmitBlockHash(submitter, root, seqNos, oldAccountants, newAccountants, height);
+        return sigLength;
     }
 
-    function checkSignatures(
-        address submitter,
-        uint256 root,
-        uint256[] seqNos,
-        address[] oldAccountants,
-        address[] newAccountants,
-        uint256 height,
-        bytes signatures) 
-        internal view returns (bool) 
+    function getSig() external view returns (bytes)
     {
-        bytes32 plaintext = HashUtil.calcSubmitBlockHash(submitter, root, seqNos, oldAccountants, newAccountants, height);
-        uint8 num = 0;
-        for(uint256 i = 0; i < TOTAL_ACCOUNTANT_NUM; i++) {
-            bytes memory signature;
-            signature = signatures.slice(65*i, 65);
-            if(signature[0] != 0) {
-                require(HashUtil.verifySignature(accountantsMap[i], plaintext, signature));
-                num++;
-            }
-        }
-        require(num > MIN_ACCOUNTANT_NUM);
+        return sig0;
     }
 
-    function parseSignatures(
-        bytes signatures, uint8 flagNum) 
-        external pure returns (bytes) 
+    function getR() external view returns (bytes32)
     {
-        for(uint256 i = 0; i < flagNum; i++) {
-            bytes memory sig = signatures.slice(65*i, 65);
-            return sig;
-        }
+        return r;
     }
+
+    function getS() external view returns (bytes32)
+    {
+        return s;
+    }
+
 
     function withdraw(
         uint256 height,
@@ -202,16 +155,102 @@ contract AccountantImpl is IAccountant {
         );
     }
 
-    function bytesToAddress (bytes bys) private pure returns (address addr) {
+    function queryAccountant(uint256 seqNo) external view returns (address) {
+        require(seqNo < TOTAL_ACCOUNTANT_NUM, "ILLEGAL ACCOUNTANT NUMBER");
+        return accountantsMap[seqNo];
+    }
+
+    function queryMerkleRoot(uint256 height) external view returns (uint256) {
+        return merkleRootMap[height];
+    }
+
+    function queryHeight() external view returns (uint256) {
+        return heightStore;
+    }
+
+    function queryToken() external view returns (address) {
+        return tokenStore;
+    }
+
+    function queryTo() external view returns (address) {
+        return toStore;
+    }
+
+    function queryAmount() external view returns (uint256) {
+        return amountStore;
+    }
+
+    function getPackage(
+        address submitter,
+        uint256 root,
+        uint256[] seqNos,
+        address[] oldAccountants,
+        address[] newAccountants,
+        uint256 height
+        )
+        external pure returns (bytes)
+    {
+        return HashUtilLib.toPackage(submitter, root, seqNos, oldAccountants, newAccountants, height);
+    }
+
+    function getHash(
+        address submitter,
+        uint256 root,
+        uint256[] seqNos,
+        address[] oldAccountants,
+        address[] newAccountants,
+        uint256 height
+        )
+        external pure returns (bytes32)
+    {
+        return HashUtilLib.calcSubmitBlockHash(submitter, root, seqNos, oldAccountants, newAccountants, height);
+    }
+
+    function checkSignatures(
+        address submitter,
+        uint256 root,
+        uint256[] seqNos,
+        address[] oldAccountants,
+        address[] newAccountants,
+        uint256 height,
+        bytes signatures) 
+        internal view returns (bool) 
+    {
+        require(signatures.length == 65*TOTAL_ACCOUNTANT_NUM, "ILLEGAL SIGNATURE NUM");
+        bytes32 plaintext = HashUtilLib.calcSubmitBlockHash(submitter, root, seqNos, oldAccountants, newAccountants, height);
+        uint8 num = 0;
+        for(uint256 i = 0; i < TOTAL_ACCOUNTANT_NUM; i++) {
+            bytes memory signature;
+            signature = signatures.slice(65*i, 65);
+            if(signature[0] != 0) {
+                if (HashUtilLib.verifySignature(accountantsMap[i], plaintext, signature)) {
+                //if (true) {
+                    num++;
+                }
+            }
+        }
+        require(num >= MIN_ACCOUNTANT_NUM, "SIGN NOT ENOUGH");
+        return true;
+    }
+
+    function parseSignatures(
+        bytes signatures, uint8 flagNum) 
+        external pure returns (bytes) 
+    {
+        for(uint256 i = 0; i < flagNum; i++) {
+            bytes memory sig = signatures.slice(65*i, 65);
+            return sig;
+        }
+    }
+
+
+    function bytesToAddress (bytes bys) internal pure returns (address addr) {
         assembly {
             addr := mload(add(bys,20))
         } 
     }
 
-    function sliceUint(bytes bys, uint256 start)
-    internal pure
-    returns (uint256)
-    {
+    function sliceUint(bytes bys, uint256 start) internal pure returns (uint256) {
         require(bys.length >= start + 32, "slicing out of range");
         uint256 x;
         assembly {
@@ -249,6 +288,7 @@ contract AccountantImpl is IAccountant {
         require(seqNo < TOTAL_ACCOUNTANT_NUM, "ILLEGAL SEQUENCE NO.");
         require(accountantsMap[seqNo] == oldAccountant, "ILLEGAL OLD ACCOUNTANT");
         require(newAccountant != 0x0, "ILLEGAL NEW ACCOUNTANT");
+        require(checkNewAccountant(newAccountant), "ACCOUNTANT HAS ALREADY EXISTED");
         if(accountantsMap[seqNo] != newAccountant) {
             accountantsMap[seqNo] = newAccountant;
         }
@@ -257,27 +297,21 @@ contract AccountantImpl is IAccountant {
 
     function addMerkleRoot(uint256 height, uint256 root) internal {
         require(height > 0 && root > 0);
-        require(merkleRootMap[height] == 0);
+        require(merkleRootMap[height] == 0, "ROOT HASH HAS ALREADY EXISTED");
         merkleRootMap[height] = root;
     }
 
-    function checkProcessor(address processor) internal view returns (bool) {
-        for(uint8 i = 0; i < TOTAL_ACCOUNTANT_NUM; i++) {
-            if(accountantsMap[i] == processor) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function checkNewAccountant(address newAccountant) internal view {
+    function checkNewAccountant(address newAccountant) internal view returns (bool) {
         uint8 num = 0;
         for(uint8 i = 0; i < TOTAL_ACCOUNTANT_NUM; i++) {
             if(accountantsMap[i] == newAccountant) {
                 num++;
             }
         }
-        assert(num == 1);
+        if (num != 0) {
+            return false;
+        }
+        return true;
     }
 
 }
