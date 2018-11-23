@@ -4,6 +4,15 @@
 - Source code: https://github.com/Loopring/protocol2
 - creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
 - BrokerRegistry: [0xb0cf9229B2C9D8781D13b9A17466cB398bA948F2](https://etherscan.io/address/0xb0cf9229B2C9D8781D13b9A17466cB398bA948F2)
+- BurnRateTable: [0x0a2b9a00b758B2C54254f7fCBEA43DA9341978D7](https://etherscan.io/address/0x0a2b9a00b758B2C54254f7fCBEA43DA9341978D7)
+- OrderBook: [0x1CE49b6D1De0CC1431dDBB01fffAbAe434576c7F](https://etherscan.io/address/0x1CE49b6D1De0CC1431dDBB01fffAbAe434576c7F)
+- OrderRegistry: [0x458FBD41546b877B367cbEEBb947f7AA17b2fcB4](https://etherscan.io/address/0x458FBD41546b877B367cbEEBb947f7AA17b2fcB4)
+- PublicExchangeDeserializer: [0xc1441564c940b1b87bf0798e897D5c232eb4d5D3](https://etherscan.io/address/0xc1441564c940b1b87bf0798e897D5c232eb4d5D3)
+- TradeDelegate: [0x16aF305ece469CEA464722B65604a8a113aD9822](https://etherscan.io/address/0x16aF305ece469CEA464722B65604a8a113aD9822)
+- FeeHolder: [0x1C31c01a6a8D215941f96012a9D346a7A8B4bbeF](https://etherscan.io/address/0x1C31c01a6a8D215941f96012a9D346a7A8B4bbeF)
+- BurnManager: [0x0572163c95e2E5af344d895e94C210443235F485](https://etherscan.io/address/0x0572163c95e2E5af344d895e94C210443235F485)
+- OrderCanceller: [0x6BB179e9b7275619006059a7ED8DA318bd09C95E](https://etherscan.io/address/0x6BB179e9b7275619006059a7ED8DA318bd09C95E)
+- RingSubmitter: [0x161F882e7dA32A518f089eA8803E3d60aEb09e37](https://etherscan.io/address/0x161F882e7dA32A518f089eA8803E3d60aEb09e37)
 
 ## v2.0.1-snapshot [rinkeby]:
 - Source code: https://github.com/Loopring/protocol2
