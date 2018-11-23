@@ -47,5 +47,5 @@ The logs command is optional but will give you an easy to read output of the tes
     - run `npm run migrate -- --network rinkeby` or `npm run migrate -- --network ropsten`
 
 ## More
-For deployment information, please see [deployment.md](deployment.md).
-For more information, please check out https://loopring.github.io/protocol.
+* For deployment information, please see [deployment.md](deployment.md).
+* For more information, please check out https://loopring.github.io/protocol.
