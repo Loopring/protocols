@@ -29,6 +29,7 @@ import "../iface/IOrderRegistry.sol";
 import "../iface/IOrderBook.sol";
 import "../iface/IRingSubmitter.sol";
 import "../iface/ITradeDelegate.sol";
+import "../iface/ITradeHistory.sol";
 
 import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
@@ -57,6 +58,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     address public  lrcTokenAddress             = 0x0;
     address public  wethTokenAddress            = 0x0;
     address public  delegateAddress             = 0x0;
+    address public  tradeHistoryAddress         = 0x0;
     address public  orderBrokerRegistryAddress  = 0x0;
     address public  orderRegistryAddress        = 0x0;
     address public  feeHolderAddress            = 0x0;
@@ -81,6 +83,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         address _lrcTokenAddress,
         address _wethTokenAddress,
         address _delegateAddress,
+        address _tradeHistoryAddress,
         address _orderBrokerRegistryAddress,
         address _orderRegistryAddress,
         address _feeHolderAddress,
@@ -92,6 +95,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         require(_lrcTokenAddress != 0x0, ZERO_ADDRESS);
         require(_wethTokenAddress != 0x0, ZERO_ADDRESS);
         require(_delegateAddress != 0x0, ZERO_ADDRESS);
+        require(_tradeHistoryAddress != 0x0, ZERO_ADDRESS);
         require(_orderBrokerRegistryAddress != 0x0, ZERO_ADDRESS);
         require(_orderRegistryAddress != 0x0, ZERO_ADDRESS);
         require(_feeHolderAddress != 0x0, ZERO_ADDRESS);
@@ -101,6 +105,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         lrcTokenAddress = _lrcTokenAddress;
         wethTokenAddress = _wethTokenAddress;
         delegateAddress = _delegateAddress;
+        tradeHistoryAddress = _tradeHistoryAddress;
         orderBrokerRegistryAddress = _orderBrokerRegistryAddress;
         orderRegistryAddress = _orderRegistryAddress;
         feeHolderAddress = _feeHolderAddress;
@@ -118,6 +123,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
             ITradeDelegate(delegateAddress),
+            ITradeHistory(tradeHistoryAddress),
             IBrokerRegistry(orderBrokerRegistryAddress),
             IOrderRegistry(orderRegistryAddress),
             IFeeHolder(feeHolderAddress),
@@ -491,8 +497,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         // For every (valid) order we store 2 words:
         // - order.hash
         // - order.filledAmountS after all rings
-        bytes4 batchUpdateFilledSelector = ctx.delegate.batchUpdateFilled.selector;
-        address tradeDelegateAddress = address(ctx.delegate);
+        bytes4 batchUpdateFilledSelector = ctx.tradeHistory.batchUpdateFilled.selector;
+        address _tradeHistoryAddress = address(ctx.tradeHistory);
         assembly {
             let data := mload(0x40)
             mstore(data, batchUpdateFilledSelector)
@@ -520,7 +526,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
                 let success := call(
                     gas,                                // forward all gas
-                    tradeDelegateAddress,               // external address
+                    _tradeHistoryAddress,               // external address
                     0,                                  // wei
                     data,                               // input start
                     sub(ptr, data),                     // input length
@@ -553,8 +559,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         // - order.hash
         // - order.validSince
         // - The trading pair of the order: order.tokenS ^ order.tokenB
-        bytes4 batchGetFilledAndCheckCancelledSelector = ctx.delegate.batchGetFilledAndCheckCancelled.selector;
-        address tradeDelegateAddress = address(ctx.delegate);
+        bytes4 batchGetFilledAndCheckCancelledSelector = ctx.tradeHistory.batchGetFilledAndCheckCancelled.selector;
+        address _tradeHistoryAddress = address(ctx.tradeHistory);
         assembly {
             let data := mload(0x40)
             mstore(data, batchGetFilledAndCheckCancelledSelector)
@@ -584,7 +590,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             let returnDataSize := mul(add(2, mload(orders)), 32)
             let success := call(
                 gas,                                // forward all gas
-                tradeDelegateAddress,               // external address
+                _tradeHistoryAddress,               // external address
                 0,                                  // wei
                 data,                               // input start
                 sub(ptr, data),                     // input length

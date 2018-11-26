@@ -23,8 +23,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
   let contractOrderOwner: any;
 
   const checkFilled = async (order: pjs.OrderInfo, expected: number) => {
-    const filled = await exchangeTestUtil.context.tradeDelegate.filled("0x" + order.hash.toString("hex")).toNumber();
-    assert.equal(filled, expected, "Order fill different than expected");
+    await exchangeTestUtil.checkFilled(order.hash, expected);
   };
 
   before( async () => {
@@ -35,6 +34,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
     // Create dummy exchange and authorize it
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
+                                            exchangeTestUtil.context.tradeHistory.address,
                                             exchangeTestUtil.context.feeHolder.address,
                                             exchangeTestUtil.ringSubmitter.address);
     await exchangeTestUtil.context.tradeDelegate.authorizeAddress(dummyExchange.address,

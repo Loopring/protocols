@@ -16,7 +16,9 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-    await this.initializeTradeDelegate();
+    await this.authorizeTradeDelegate();
+    await this.authorizeTradeHistory();
+    await this.approveTradeDelegate();
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -274,7 +276,7 @@ export class ExchangeTestUtil {
   }
 
   public async getFilled(hash: Buffer) {
-    return await this.context.tradeDelegate.filled("0x" + hash.toString("hex")).toNumber();
+    return await this.context.tradeHistory.filled("0x" + hash.toString("hex")).toNumber();
   }
 
   public async checkFilled(hash: Buffer, expected: number) {
@@ -454,7 +456,7 @@ export class ExchangeTestUtil {
                       balanceFromContract  / 1e18 + " " + tokenSymbol + " " +
                       "(Simulator: " + balanceFromSimulator  / 1e18 + ")");
         }
-        assert(balanceFromContract.eq(balanceFromSimulator));
+        assert(balanceFromContract.eq(balanceFromSimulator), "Fee balance doesn't match");
       }
     }
   }
@@ -471,7 +473,7 @@ export class ExchangeTestUtil {
         }
       }
       const filledFromSimulator = filledAmounts[hash];
-      const filledFromContract = await this.context.tradeDelegate.filled("0x" + hash);
+      const filledFromContract = await this.context.tradeHistory.filled("0x" + hash);
       let percentageFilled = 0;
       if (hashOrder) {
         percentageFilled = filledFromContract.toNumber() * 100 / hashOrder.amountS;
@@ -480,7 +482,7 @@ export class ExchangeTestUtil {
       pjs.logDebug(hashName + ": " + filledFromContract.toNumber() / 1e18 +
                   " (Simulator: " + filledFromSimulator.toNumber() / 1e18 + ")" +
                   " (" + percentageFilled + "%)");
-      assert(filledFromContract.eq(filledFromSimulator));
+      assert(filledFromContract.eq(filledFromSimulator), "Filled amount doesn't match");
     }
   }
 
@@ -498,7 +500,7 @@ export class ExchangeTestUtil {
       bitstream.addNumber(0, 12);
     }
 
-    const fills = await this.context.tradeDelegate.batchGetFilledAndCheckCancelled(bitstream.getBytes32Array());
+    const fills = await this.context.tradeHistory.batchGetFilledAndCheckCancelled(bitstream.getBytes32Array());
 
     const cancelledValue = new BigNumber("F".repeat(64), 16);
     for (const [i, order] of orders.entries()) {
@@ -648,9 +650,15 @@ export class ExchangeTestUtil {
     return {tx, report};
   }
 
-  public async initializeTradeDelegate() {
+  public async authorizeTradeDelegate() {
     await this.context.tradeDelegate.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+  }
 
+  public async authorizeTradeHistory() {
+    await this.context.tradeHistory.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+  }
+
+  public async approveTradeDelegate() {
     for (const token of this.testContext.allTokens) {
       // approve once for all orders:
       for (const orderOwner of this.testContext.orderOwners) {
@@ -688,21 +696,22 @@ export class ExchangeTestUtil {
       RingSubmitter,
       OrderRegistry,
       TradeDelegate,
+      TradeHistory,
       FeeHolder,
       WETHToken,
       BrokerRegistry,
     } = new Artifacts(artifacts);
 
-    const tradeDelegate = await TradeDelegate.new();
-    const feeHolder = await FeeHolder.new(tradeDelegate.address);
+    const tradeHistory = await TradeHistory.new();
     const brokerRegistry = await BrokerRegistry.new();
     this.ringSubmitter = await RingSubmitter.new(
       this.context.lrcAddress,
       WETHToken.address,
-      tradeDelegate.address,
+      this.context.tradeDelegate.address,
+      tradeHistory.address,
       brokerRegistry.address,
       OrderRegistry.address,
-      feeHolder.address,
+      this.context.feeHolder.address,
       this.context.orderBook.address,
       this.context.burnRateTable.address,
     );
@@ -716,17 +725,19 @@ export class ExchangeTestUtil {
     const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
     this.context = new pjs.Context(currBlockNumber,
                                    currBlockTimestamp,
-                                   tradeDelegate.address,
+                                   this.context.tradeDelegate.address,
+                                   tradeHistory.address,
                                    orderBrokerRegistryAddress,
                                    OrderRegistry.address,
-                                   feeHolder.address,
+                                   this.context.feeHolder.address,
                                    this.context.orderBook.address,
                                    this.context.burnRateTable.address,
                                    this.context.lrcAddress,
                                    feePercentageBase,
                                    ringIndex);
 
-    await this.initializeTradeDelegate();
+    await this.authorizeTradeDelegate();
+    await this.authorizeTradeHistory();
   }
 
   private getPrivateKey(address: string) {
@@ -741,16 +752,18 @@ export class ExchangeTestUtil {
       RingSubmitter,
       OrderRegistry,
       TradeDelegate,
+      TradeHistory,
       FeeHolder,
       OrderBook,
       BurnRateTable,
       LRCToken,
     } = new Artifacts(artifacts);
 
-    const [ringSubmitter, tradeDelegate, orderRegistry,
+    const [ringSubmitter, tradeDelegate, tradeHistory, orderRegistry,
            feeHolder, orderBook, burnRateTable, lrcToken] = await Promise.all([
         RingSubmitter.deployed(),
         TradeDelegate.deployed(),
+        TradeHistory.deployed(),
         OrderRegistry.deployed(),
         FeeHolder.deployed(),
         OrderBook.deployed(),
@@ -769,6 +782,7 @@ export class ExchangeTestUtil {
     return new pjs.Context(currBlockNumber,
                            currBlockTimestamp,
                            TradeDelegate.address,
+                           TradeHistory.address,
                            orderBrokerRegistryAddress,
                            OrderRegistry.address,
                            FeeHolder.address,

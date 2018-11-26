@@ -119,7 +119,7 @@ contract("FeeHolder", (accounts: string[]) => {
   beforeEach(async () => {
     // Fresh FeeHolder for each test
     feeHolder = await FeeHolder.new(tradeDelegate.address);
-    dummyExchange = await DummyExchange.new(tradeDelegate.address, feeHolder.address, "0x0");
+    dummyExchange = await DummyExchange.new(tradeDelegate.address, "0x0", feeHolder.address, "0x0");
     dummyBurnManager = await DummyBurnManager.new(feeHolder.address);
     await authorizeAddressChecked(dummyExchange.address, deployer);
     await authorizeAddressChecked(dummyBurnManager.address, deployer);

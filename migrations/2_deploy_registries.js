@@ -1,4 +1,5 @@
 var TradeDelegate = artifacts.require("./impl/TradeDelegate");
+var TradeHistory = artifacts.require("./impl/TradeHistory");
 var BrokerRegistry = artifacts.require("./impl/BrokerRegistry");
 var OrderRegistry = artifacts.require("./impl/OrderRegistry");
 var FeeHolder = artifacts.require("./impl/FeeHolder");
@@ -12,5 +13,6 @@ module.exports = function(deployer, network, accounts) {
   deployer.deploy(TradeDelegate).then(() => {
     return deployer.deploy(FeeHolder, TradeDelegate.address);
   });
+  deployer.deploy(TradeHistory);
 
 };

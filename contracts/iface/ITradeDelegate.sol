@@ -24,35 +24,11 @@ pragma experimental "ABIEncoderV2";
 /// versions of Loopring protocol to avoid ERC20 re-authorization.
 /// @author Daniel Wang - <daniel@loopring.org>.
 contract ITradeDelegate {
-    event AddressAuthorized(
-        address indexed addr
-    );
 
-    event AddressDeauthorized(
-        address indexed addr
-    );
-
-    // The list of all authorized addresses
-    address[] authorizedAddresses;
-
-    // The following map is used to keep trace of order fill and cancellation
-    // history.
-    mapping (bytes32 => uint) public filled;
-
-    // This map is used to keep trace of order's cancellation history.
-    mapping (address => mapping (bytes32 => bool)) public cancelled;
-
-    // A map from a broker to its cutoff timestamp.
-    mapping (address => uint) public cutoffs;
-
-    // A map from a broker to its trading-pair cutoff timestamp.
-    mapping (address => mapping (bytes20 => uint)) public tradingPairCutoffs;
-
-    // A map from a broker to an order owner to its cutoff timestamp.
-    mapping (address => mapping (address => uint)) public cutoffsOwner;
-
-    // A map from a broker to an order owner to its trading-pair cutoff timestamp.
-    mapping (address => mapping (address => mapping (bytes20 => uint))) public tradingPairCutoffsOwner;
+    function batchTransfer(
+        bytes32[] batch
+        )
+        external;
 
 
     /// @dev Add a Loopring protocol address.
@@ -69,16 +45,6 @@ contract ITradeDelegate {
         )
         external;
 
-    function batchTransfer(
-        bytes32[] batch
-        )
-        external;
-
-    function batchUpdateFilled(
-        bytes32[] filledInfo
-        )
-        external;
-
     function isAddressAuthorized(
         address addr
         )
@@ -86,46 +52,6 @@ contract ITradeDelegate {
         view
         returns (bool);
 
-    function setCancelled(
-        address broker,
-        bytes32 orderHash
-        )
-        external;
-
-    function setCutoffs(
-        address broker,
-        uint cutoff
-        )
-        external;
-
-    function setTradingPairCutoffs(
-        address broker,
-        bytes20 tokenPair,
-        uint cutoff
-        )
-        external;
-
-    function setCutoffsOfOwner(
-        address broker,
-        address owner,
-        uint cutoff
-        )
-        external;
-
-    function setTradingPairCutoffsOfOwner(
-        address broker,
-        address owner,
-        bytes20 tokenPair,
-        uint cutoff
-        )
-        external;
-
-    function batchGetFilledAndCheckCancelled(
-        bytes32[] orderInfo
-        )
-        external
-        view
-        returns (uint[]);
 
     function suspend()
         external;

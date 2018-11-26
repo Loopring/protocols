@@ -67,7 +67,7 @@ contract("BurnManager", (accounts: string[]) => {
     // Fresh FeeHolder for each test
     feeHolder = await FeeHolder.new(tradeDelegate.address);
     burnManager = await BurnManager.new(feeHolder.address, tokenLRC);
-    dummyExchange = await DummyExchange.new(tradeDelegate.address, feeHolder.address, "0x0");
+    dummyExchange = await DummyExchange.new(tradeDelegate.address, "0x0", feeHolder.address, "0x0");
     await authorizeAddressChecked(dummyExchange.address, deployer);
     await authorizeAddressChecked(burnManager.address, deployer);
   });

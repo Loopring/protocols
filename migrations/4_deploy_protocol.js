@@ -1,4 +1,5 @@
 var TradeDelegate = artifacts.require("./impl/TradeDelegate");
+var TradeHistory = artifacts.require("./impl/TradeHistory");
 var BrokerRegistry = artifacts.require("./impl/BrokerRegistry");
 var OrderRegistry = artifacts.require("./impl/OrderRegistry");
 var RingSubmitter = artifacts.require("./impl/RingSubmitter");
@@ -18,6 +19,7 @@ module.exports = function(deployer, network, accounts) {
     deployer.then(() => {
       return Promise.all([
         TradeDelegate.deployed(),
+        TradeHistory.deployed(),
         BrokerRegistry.deployed(),
         OrderRegistry.deployed(),
         FeeHolder.deployed(),
@@ -34,13 +36,14 @@ module.exports = function(deployer, network, accounts) {
           LRCToken.address,
           WETHToken.address,
           TradeDelegate.address,
+          TradeHistory.address,
           BrokerRegistry.address,
           OrderRegistry.address,
           FeeHolder.address,
           OrderBook.address,
           BurnRateTable.address,
         ),
-        deployer.deploy(OrderCanceller, TradeDelegate.address),
+        deployer.deploy(OrderCanceller, TradeHistory.address),
         deployer.deploy(BurnManager, FeeHolder.address, LRCToken.address),
       ]);
     }).then(() => {

@@ -3,6 +3,7 @@ export class Artifacts {
   public RingSubmitter: any;
   public OrderCanceller: any;
   public TradeDelegate: any;
+  public TradeHistory: any;
   public BrokerRegistry: any;
   public OrderRegistry: any;
   public DummyBrokerInterceptor: any;
@@ -24,6 +25,7 @@ export class Artifacts {
     this.RingSubmitter = artifacts.require("impl/RingSubmitter");
     this.OrderCanceller = artifacts.require("impl/OrderCanceller");
     this.TradeDelegate = artifacts.require("impl/TradeDelegate");
+    this.TradeHistory = artifacts.require("impl/TradeHistory");
     this.BrokerRegistry = artifacts.require("impl/BrokerRegistry");
     this.OrderRegistry = artifacts.require("impl/OrderRegistry");
     this.DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");

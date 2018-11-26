@@ -40,6 +40,7 @@ contract("Exchange_Submit_Audit", (accounts: string[]) => {
 
     // Create dummy exchange and authorize it
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
+                                            exchangeTestUtil.context.tradeHistory.address,
                                             exchangeTestUtil.context.feeHolder.address,
                                             exchangeTestUtil.ringSubmitter.address);
     await exchangeTestUtil.context.tradeDelegate.authorizeAddress(dummyExchange.address,

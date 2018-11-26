@@ -18,24 +18,11 @@ pragma solidity 0.4.24;
 pragma experimental "v0.5.0";
 pragma experimental "ABIEncoderV2";
 
-import "../helper/MiningHelper.sol";
-import "../helper/OrderHelper.sol";
-import "../helper/RingHelper.sol";
-
-import "../iface/IBrokerRegistry.sol";
-import "../iface/IFeeHolder.sol";
-import "../iface/IOrderRegistry.sol";
 import "../iface/IOrderCanceller.sol";
-import "../iface/ITradeDelegate.sol";
+import "../iface/ITradeHistory.sol";
 
 import "../lib/BytesUtil.sol";
-import "../lib/ERC20.sol";
-import "../lib/MathUint.sol";
-import "../lib/MultihashUtil.sol";
 import "../lib/NoDefaultFunc.sol";
-
-import "./Data.sol";
-import "./ExchangeDeserializer.sol";
 
 
 /// @title An Implementation of IExchange.
@@ -50,16 +37,16 @@ import "./ExchangeDeserializer.sol";
 contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
     using BytesUtil       for bytes;
 
-    address public delegateAddress = 0x0;
+    address public tradeHistoryAddress = 0x0;
 
     constructor(
-        address _delegateAddress
+        address _tradeHistoryAddress
         )
         public
     {
-        require(_delegateAddress != 0x0, ZERO_ADDRESS);
+        require(_tradeHistoryAddress != 0x0, ZERO_ADDRESS);
 
-        delegateAddress = _delegateAddress;
+        tradeHistoryAddress = _tradeHistoryAddress;
     }
 
     function cancelOrders(
@@ -73,11 +60,11 @@ contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
         size /= 32;
         bytes32[] memory hashes = new bytes32[](size);
 
-        ITradeDelegate delegate = ITradeDelegate(delegateAddress);
+        ITradeHistory tradeHistory = ITradeHistory(tradeHistoryAddress);
 
         for (uint i = 0; i < size; i++) {
             hashes[i] = orderHashes.bytesToBytes32(i * 32);
-            delegate.setCancelled(msg.sender, hashes[i]);
+            tradeHistory.setCancelled(msg.sender, hashes[i]);
         }
 
         emit OrdersCancelled(
@@ -97,7 +84,7 @@ contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
 
-        ITradeDelegate(delegateAddress).setTradingPairCutoffs(
+        ITradeHistory(tradeHistoryAddress).setTradingPairCutoffs(
             msg.sender,
             tokenPair,
             t
@@ -118,7 +105,7 @@ contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
     {
         uint t = (cutoff == 0) ? block.timestamp : cutoff;
 
-        ITradeDelegate(delegateAddress).setCutoffs(msg.sender, t);
+        ITradeHistory(tradeHistoryAddress).setCutoffs(msg.sender, t);
 
         emit AllOrdersCancelled(
             msg.sender,
@@ -138,7 +125,7 @@ contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
 
         bytes20 tokenPair = bytes20(token1) ^ bytes20(token2);
 
-        ITradeDelegate(delegateAddress).setTradingPairCutoffsOfOwner(
+        ITradeHistory(tradeHistoryAddress).setTradingPairCutoffsOfOwner(
             msg.sender,
             owner,
             tokenPair,
@@ -162,7 +149,7 @@ contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
     {
         uint t = (cutoff == 0) ? block.timestamp : cutoff;
 
-        ITradeDelegate(delegateAddress).setCutoffsOfOwner(
+        ITradeHistory(tradeHistoryAddress).setCutoffsOfOwner(
             msg.sender,
             owner,
             t

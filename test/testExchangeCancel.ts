@@ -36,8 +36,8 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     // could potentially hide bugs
     beforeEach(async () => {
       await exchangeTestUtil.cleanTradeHistory();
-      orderCanceller = await OrderCanceller.new(exchangeTestUtil.context.tradeDelegate.address);
-      await exchangeTestUtil.context.tradeDelegate.authorizeAddress(
+      orderCanceller = await OrderCanceller.new(exchangeTestUtil.context.tradeHistory.address);
+      await exchangeTestUtil.context.tradeHistory.authorizeAddress(
         orderCanceller.address,
         {from: exchangeTestUtil.testContext.deployer},
       );

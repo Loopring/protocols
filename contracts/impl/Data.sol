@@ -24,6 +24,7 @@ import "../iface/IFeeHolder.sol";
 import "../iface/IOrderBook.sol";
 import "../iface/IOrderRegistry.sol";
 import "../iface/ITradeDelegate.sol";
+import "../iface/ITradeHistory.sol";
 
 
 library Data {
@@ -38,6 +39,7 @@ library Data {
     struct Context {
         address lrcTokenAddress;
         ITradeDelegate  delegate;
+        ITradeHistory   tradeHistory;
         IBrokerRegistry orderBrokerRegistry;
         IOrderRegistry  orderRegistry;
         IFeeHolder feeHolder;

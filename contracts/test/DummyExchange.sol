@@ -21,23 +21,27 @@ pragma experimental "ABIEncoderV2";
 import "../iface/IFeeHolder.sol";
 import "../iface/IRingSubmitter.sol";
 import "../iface/ITradeDelegate.sol";
+import "../iface/ITradeHistory.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract DummyExchange {
 
     address public tradeDelegateAddress = 0x0;
+    address public tradeHistoryAddress = 0x0;
     address public feeHolderAddress = 0x0;
     address public ringSubmitterAddress = 0x0;
 
     constructor(
         address _tradeDelegateAddress,
+        address _tradeHistoryAddress,
         address _feeHolderAddress,
         address _ringSubmitterAddress
         )
         public
     {
         tradeDelegateAddress = _tradeDelegateAddress;
+        tradeHistoryAddress = _tradeHistoryAddress;
         feeHolderAddress = _feeHolderAddress;
         ringSubmitterAddress = _ringSubmitterAddress;
     }
@@ -71,7 +75,7 @@ contract DummyExchange {
         )
         public
     {
-        ITradeDelegate(tradeDelegateAddress).batchUpdateFilled(data);
+        ITradeHistory(tradeHistoryAddress).batchUpdateFilled(data);
     }
 
     function setCancelled(
@@ -80,7 +84,7 @@ contract DummyExchange {
         )
         external
     {
-        ITradeDelegate(tradeDelegateAddress).setCancelled(broker, orderHash);
+        ITradeHistory(tradeHistoryAddress).setCancelled(broker, orderHash);
     }
 
     function setCutoffs(
@@ -89,7 +93,7 @@ contract DummyExchange {
         )
         external
     {
-        ITradeDelegate(tradeDelegateAddress).setCutoffs(broker, cutoff);
+        ITradeHistory(tradeHistoryAddress).setCutoffs(broker, cutoff);
     }
 
     function setTradingPairCutoffs(
@@ -99,7 +103,7 @@ contract DummyExchange {
         )
         external
     {
-        ITradeDelegate(tradeDelegateAddress).setTradingPairCutoffs(broker, tokenPair, cutoff);
+        ITradeHistory(tradeHistoryAddress).setTradingPairCutoffs(broker, tokenPair, cutoff);
     }
 
     function setCutoffsOfOwner(
@@ -109,7 +113,7 @@ contract DummyExchange {
         )
         external
     {
-        ITradeDelegate(tradeDelegateAddress).setCutoffsOfOwner(broker, owner, cutoff);
+        ITradeHistory(tradeHistoryAddress).setCutoffsOfOwner(broker, owner, cutoff);
     }
 
     function setTradingPairCutoffsOfOwner(
@@ -120,7 +124,7 @@ contract DummyExchange {
         )
         external
     {
-        ITradeDelegate(tradeDelegateAddress).setTradingPairCutoffsOfOwner(broker, owner, tokenPair, cutoff);
+        ITradeHistory(tradeHistoryAddress).setTradingPairCutoffsOfOwner(broker, owner, tokenPair, cutoff);
     }
 
     function authorizeAddress(
@@ -129,6 +133,7 @@ contract DummyExchange {
         external
     {
         ITradeDelegate(tradeDelegateAddress).authorizeAddress(addr);
+        ITradeHistory(tradeHistoryAddress).authorizeAddress(addr);
     }
 
     function deauthorizeAddress(
@@ -137,23 +142,27 @@ contract DummyExchange {
         external
     {
         ITradeDelegate(tradeDelegateAddress).deauthorizeAddress(addr);
+        ITradeHistory(tradeHistoryAddress).deauthorizeAddress(addr);
     }
 
     function suspend()
         external
     {
         ITradeDelegate(tradeDelegateAddress).suspend();
+        ITradeHistory(tradeHistoryAddress).suspend();
     }
 
     function resume()
         external
     {
         ITradeDelegate(tradeDelegateAddress).resume();
+        ITradeHistory(tradeHistoryAddress).resume();
     }
 
     function kill()
         external
     {
         ITradeDelegate(tradeDelegateAddress).kill();
+        ITradeHistory(tradeHistoryAddress).kill();
     }
 }
