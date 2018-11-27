@@ -1,7 +1,7 @@
 # Deployment on Ethereum
 
 ## v2.0.1-snapshot [main-net]:
-- Source code: https://github.com/Loopring/protocol2
+- Source code: https://github.com/Loopring/protocol2/releases/tag/2.0.1-snapshot
 - creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
 - BrokerRegistry: [0xb0cf9229B2C9D8781D13b9A17466cB398bA948F2](https://etherscan.io/address/0xb0cf9229B2C9D8781D13b9A17466cB398bA948F2)
 - BurnRateTable: [0x0a2b9a00b758B2C54254f7fCBEA43DA9341978D7](https://etherscan.io/address/0x0a2b9a00b758B2C54254f7fCBEA43DA9341978D7)
@@ -15,7 +15,7 @@
 - RingSubmitter: [0x161F882e7dA32A518f089eA8803E3d60aEb09e37](https://etherscan.io/address/0x161F882e7dA32A518f089eA8803E3d60aEb09e37)
 
 ## v2.0.1-snapshot [rinkeby]:
-- Source code: https://github.com/Loopring/protocol2
+- Source code: https://github.com/Loopring/protocol2/releases/tag/2.0.1-snapshot
 - creater: [0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa](https://rinkeby.etherscan.io/address/0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa)
 - BrokerRegistry: [0x9a43b7bd50b3bc130b92d2e8d65e278efe776d0b](https://rinkeby.etherscan.io/address/0x9a43b7bd50b3bc130b92d2e8d65e278efe776d0b)
 - OrderRegistry: [0x5c65817c4126256320c8c4db60c914502d5af5ff](https://rinkeby.etherscan.io/address/0x5c65817c4126256320c8c4db60c914502d5af5ff)
