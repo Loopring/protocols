@@ -11,6 +11,11 @@ export enum SignAlgorithm {
   None = 255,     // Do not sign
 }
 
+export enum TokenType {
+  ERC20 = 0,
+  COUNT = 1,
+}
+
 export interface Spendable {
   initialized?: boolean;
   amount?: BigNumber;
@@ -52,6 +57,13 @@ export interface OrderInfo {
   tokenBFeePercentage?: number;
   tokenRecipient?: string;
   walletSplitPercentage?: number;
+
+  tokenTypeS?: TokenType;
+  tokenTypeB?: TokenType;
+  tokenTypeFee?: TokenType;
+  trancheS?: string;
+  trancheB?: string;
+  transferDataS?: string;
 
   // helper field
   P2P?: boolean;

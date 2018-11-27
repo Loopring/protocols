@@ -20,6 +20,8 @@ export class RingsGenerator {
   private SERIALIZATION_VERSION = 0;
   private ORDER_VERSION = 0;
 
+  private zeroAddress = "0x" + "0".repeat(64);
+
   constructor(context: Context) {
     this.context = context;
     this.orderUtil = new OrderUtil(context);
@@ -299,6 +301,29 @@ export class RingsGenerator {
     }
 
     param.tables.addNumber(order.walletSplitPercentage ? order.walletSplitPercentage : 0, 2);
+
+    param.tables.addNumber(order.tokenTypeS, 2);
+    param.tables.addNumber(order.tokenTypeB, 2);
+    param.tables.addNumber(order.tokenTypeFee, 2);
+
+    if (order.trancheS && order.trancheS !== "0x0" && order.trancheS !== this.zeroAddress) {
+      this.insertOffset(param, param.data.addHex(order.trancheS, false));
+    } else {
+      this.insertDefault(param);
+    }
+
+    if (order.trancheB && order.trancheB !== "0x0" && order.trancheB !== this.zeroAddress) {
+      this.insertOffset(param, param.data.addHex(order.trancheB, false));
+    } else {
+      this.insertDefault(param);
+    }
+
+    if (order.transferDataS && order.transferDataS !== "0x" && order.transferDataS !== "") {
+      this.insertOffset(param, param.data.addHex(this.createBytes(order.transferDataS), false));
+      this.addPadding(param);
+    } else {
+      this.insertDefault(param);
+    }
   }
 
   private xor(s1: string, s2: string, numBytes: number) {

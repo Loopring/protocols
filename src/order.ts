@@ -6,11 +6,13 @@ import { Context } from "./context";
 import { getEIP712Message } from "./eip712";
 import { ensure } from "./ensure";
 import { MultiHashUtil } from "./multihash";
-import { OrderInfo, Spendable } from "./types";
+import { OrderInfo, Spendable, TokenType  } from "./types";
 
 export class OrderUtil {
 
   private context: Context;
+
+  private zeroBytes32 = "0x" + "0".repeat(64);
 
   constructor(context: Context) {
     this.context = context;
@@ -50,6 +52,28 @@ export class OrderUtil {
     const blockTimestamp = this.context.blockTimestamp;
     valid = valid && ensure(order.validSince <= blockTimestamp, "order is too early to match");
     valid = valid && ensure(order.validUntil ? order.validUntil > blockTimestamp : true, "order is expired");
+
+    // We only support ERC20 for now
+    valid = valid && ensure(
+      (order.tokenTypeS === TokenType.ERC20 && order.trancheS === this.zeroBytes32),
+      "invalid trancheS",
+    );
+    valid = valid && ensure(
+      (order.tokenTypeB === TokenType.ERC20 && order.trancheB === this.zeroBytes32),
+      "invalid trancheB",
+    );
+    valid = valid && ensure(
+      (order.tokenTypeFee === TokenType.ERC20),
+      "invalid tokenTypeFee",
+    );
+    valid = valid && ensure(
+      (order.tokenTypeS === TokenType.ERC20 && order.transferDataS === "0x"),
+      "invalid transferDataS",
+    );
+    // This emulates the revert in solidity with invalid enum values
+    assert(order.tokenTypeS < TokenType.COUNT, "invalid opcode");
+    assert(order.tokenTypeB < TokenType.COUNT, "invalid opcode");
+    assert(order.tokenTypeFee < TokenType.COUNT, "invalid opcode");
 
     order.valid = order.valid && valid;
   }
@@ -110,6 +134,12 @@ export class OrderUtil {
               { name: "tokenSFeePercentage", type: "uint16" },
               { name: "tokenBFeePercentage", type: "uint16" },
               { name: "allOrNone", type: "bool" },
+              { name: "tokenTypeS", type: "uint8" },
+              { name: "tokenTypeB", type: "uint8" },
+              { name: "tokenTypeFee", type: "uint8" },
+              { name: "trancheS", type: "bytes32" },
+              { name: "trancheB", type: "bytes32" },
+              { name: "transferDataS", type: "bytes" },
           ],
       },
       primaryType: "Order",
@@ -126,16 +156,22 @@ export class OrderUtil {
         owner: order.owner,
         tokenS: order.tokenS,
         tokenB: order.tokenB,
-        dualAuthAddr: order.dualAuthAddr ? order.dualAuthAddr : "0x0",
-        broker: order.broker ? order.broker : "0x0",
-        orderInterceptor: order.orderInterceptor ? order.orderInterceptor : "0x0",
-        wallet: order.walletAddr ? order.walletAddr : "0x0",
+        dualAuthAddr: order.dualAuthAddr ? order.dualAuthAddr : "",
+        broker: order.broker ? order.broker : "",
+        orderInterceptor: order.orderInterceptor ? order.orderInterceptor : "",
+        wallet: order.walletAddr ? order.walletAddr : "",
         tokenRecipient: order.tokenRecipient,
         feeToken: order.feeToken,
         walletSplitPercentage: order.walletSplitPercentage,
         tokenSFeePercentage: order.tokenSFeePercentage,
         tokenBFeePercentage: order.tokenBFeePercentage,
         allOrNone: order.allOrNone,
+        tokenTypeS: order.tokenTypeS ? order.tokenTypeS : TokenType.ERC20,
+        tokenTypeB: order.tokenTypeB ? order.tokenTypeB : TokenType.ERC20,
+        tokenTypeFee: order.tokenTypeFee ? order.tokenTypeFee : TokenType.ERC20,
+        trancheS: order.trancheS ? order.trancheS : "",
+        trancheB: order.trancheB ? order.trancheB : "",
+        transferDataS: order.transferDataS ? order.transferDataS : "",
       },
     };
     return typedData;
@@ -163,6 +199,7 @@ export class OrderUtil {
 
   public toOrderBookSubmitParams(orderInfo: OrderInfo) {
     const emptyAddr = "0x" + "0".repeat(40);
+    const zeroBytes32 = "0x" + "0".repeat(64);
 
     const data = new Bitstream();
     data.addAddress(orderInfo.owner, 32);
@@ -183,6 +220,17 @@ export class OrderUtil {
     data.addNumber(orderInfo.tokenBFeePercentage ? orderInfo.tokenBFeePercentage : 0, 32);
     data.addAddress(orderInfo.tokenRecipient ? orderInfo.tokenRecipient : orderInfo.owner, 32);
     data.addNumber(orderInfo.walletSplitPercentage ? orderInfo.walletSplitPercentage : 0, 32);
+    data.addNumber(orderInfo.tokenTypeS ? orderInfo.tokenTypeS : TokenType.ERC20, 32);
+    data.addNumber(orderInfo.tokenTypeB ? orderInfo.tokenTypeB : TokenType.ERC20, 32);
+    data.addNumber(orderInfo.tokenTypeFee ? orderInfo.tokenTypeFee : TokenType.ERC20, 32);
+    data.addHex(orderInfo.trancheS ? orderInfo.trancheS : zeroBytes32);
+    data.addHex(orderInfo.trancheB ? orderInfo.trancheB : zeroBytes32);
+    if (orderInfo.transferDataS) {
+      data.addNumber((orderInfo.transferDataS.length - 2) / 2, 32);
+      data.addHex(orderInfo.transferDataS);
+    } else {
+      data.addNumber(0, 32);
+    }
 
     return data.getData();
   }
