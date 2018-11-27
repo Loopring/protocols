@@ -275,7 +275,7 @@ library BytesLib {
         return tempBytes;
     }
 
-    function toAddress(bytes _bytes, uint _start) internal  pure returns (address) {
+    function toAddress(bytes _bytes, uint _start) internal pure returns (address) {
         require(_bytes.length >= (_start + 20));
         address tempAddress;
 

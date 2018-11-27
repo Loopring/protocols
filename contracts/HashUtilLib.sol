@@ -66,6 +66,9 @@ library HashUtilLib {
         uint length = signature.length;
         require(length == 65, "invalid signature length");
 
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, hash));
+        
         uint8 v;
         bytes32 r;
         bytes32 s;
@@ -76,7 +79,39 @@ library HashUtilLib {
             s := mload(add(signature, 65))
         }
         return signer == ecrecover(
-            hash,
+            prefixedHash,
+            v,
+            r,
+            s
+        );
+    }
+
+
+    function getSigner(
+        bytes32 hash,
+        bytes   signature
+        )
+        internal
+        pure
+        returns (address)
+    {
+        uint length = signature.length;
+        require(length == 65, "invalid signature length");
+
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        bytes32 prefixedHash =  keccak256(abi.encodePacked(prefix, hash));
+
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        assembly {                                              
+            // Extract v, r and s from the multihash data
+            v := mload(add(signature, 1))
+            r := mload(add(signature, 33))
+            s := mload(add(signature, 65))
+        }
+        return ecrecover(
+            prefixedHash,
             v,
             r,
             s

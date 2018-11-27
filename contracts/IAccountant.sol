@@ -30,6 +30,11 @@ contract IAccountant {
         uint256         height
     );
 
+    event AddRootHash(
+        uint256 height, 
+        uint256 rootHash
+    );
+
     event Withdraw(
         address indexed to,
         address         token,
