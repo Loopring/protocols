@@ -62,7 +62,13 @@ library OrderHelper {
             "uint16 walletSplitPercentage,",
             "uint16 tokenSFeePercentage,",
             "uint16 tokenBFeePercentage,",
-            "bool allOrNone",
+            "bool allOrNone,",
+            "uint8 tokenTypeS,",
+            "uint8 tokenTypeB,",
+            "uint8 tokenTypeFee,",
+            "bytes32 trancheS,",
+            "bytes32 trancheB,",
+            "bytes transferDataS",
             ")"
         )
     );
@@ -98,7 +104,13 @@ library OrderHelper {
         /*         order.walletSplitPercentage, */
         /*         order.tokenSFeePercentage, */
         /*         order.tokenBFeePercentage, */
-        /*         order.allOrNone */
+        /*         order.allOrNone, */
+        /*         order.tokenTypeS, */
+        /*         order.tokenTypeB, */
+        /*         order.tokenTypeFee, */
+        /*         order.trancheS, */
+        /*         order.trancheB, */
+        /*         order.transferDataS */
         /*     ) */
         /* ); */
         /* order.hash = keccak256( */
@@ -111,11 +123,15 @@ library OrderHelper {
 
         // Precalculated EIP712_ORDER_SCHEMA_HASH amd EIP712_DOMAIN_HASH because
         // the solidity compiler doesn't correctly precalculate them for us.
-        bytes32 _EIP712_ORDER_SCHEMA_HASH = 0x5632ff1bdfbe9ca7ecbcb1bd8c61f364e0debfed45fd8be4e459081586292fff;
+        bytes32 _EIP712_ORDER_SCHEMA_HASH = 0x40b942178d2a51f1f61934268590778feb8114db632db7d88537c98d2b05c5f2;
         bytes32 _EIP712_DOMAIN_HASH = 0xaea25658c273c666156bd427f83a666135fcde6887a6c25fc1cd1562bc4f3f34;
 
         bytes32 hash;
         assembly {
+            // Calculate the hash for transferDataS separately
+            let transferDataS := mload(add(order, 1184))              // order.transferDataS
+            let transferDataSHash := keccak256(add(transferDataS, 32), mload(transferDataS))
+
             let ptr := mload(64)
             mstore(add(ptr,   0), _EIP712_ORDER_SCHEMA_HASH)     // EIP712_ORDER_SCHEMA_HASH
             mstore(add(ptr,  32), mload(add(order, 128)))        // order.amountS
@@ -136,7 +152,13 @@ library OrderHelper {
             mstore(add(ptr, 512), mload(add(order, 704)))        // order.tokenSFeePercentage
             mstore(add(ptr, 544), mload(add(order, 736)))        // order.tokenBFeePercentage
             mstore(add(ptr, 576), mload(add(order, 576)))        // order.allOrNone
-            let message := keccak256(ptr, 608)                   // 19 * 32
+            mstore(add(ptr, 608), mload(add(order, 1024)))       // order.tokenTypeS
+            mstore(add(ptr, 640), mload(add(order, 1056)))       // order.tokenTypeB
+            mstore(add(ptr, 672), mload(add(order, 1088)))       // order.tokenTypeFee
+            mstore(add(ptr, 704), mload(add(order, 1120)))       // order.trancheS
+            mstore(add(ptr, 736), mload(add(order, 1152)))       // order.trancheB
+            mstore(add(ptr, 768), transferDataSHash)             // keccak256(order.transferDataS)
+            let message := keccak256(ptr, 800)                   // 25 * 32
 
             mstore(add(ptr,  0), 0x1901)                         // EIP191_HEADER
             mstore(add(ptr, 32), _EIP712_DOMAIN_HASH)            // EIP712_DOMAIN_HASH
@@ -203,6 +225,12 @@ library OrderHelper {
         valid = valid && (order.tokenSFeePercentage < ctx.feePercentageBase); // invalid tokenS percentage
         valid = valid && (order.tokenBFeePercentage < ctx.feePercentageBase); // invalid tokenB percentage
         valid = valid && (order.walletSplitPercentage <= 100); // invalid wallet split percentage
+
+        // We only support ERC20 for now
+        valid = valid && (order.tokenTypeS == Data.TokenType.ERC20 && order.trancheS == 0x0);
+        valid = valid && (order.tokenTypeB == Data.TokenType.ERC20 && order.trancheB == 0x0);
+        valid = valid && (order.tokenTypeFee == Data.TokenType.ERC20);
+        valid = valid && (order.transferDataS.length == 0);
 
         valid = valid && (order.validSince <= now); // order is too early to match
 

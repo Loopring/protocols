@@ -38,7 +38,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
         external
         returns (bytes32)
     {
-        require(data.length == 17 * 32, INVALID_SIZE);
+        require(data.length >= 23 * 32, INVALID_SIZE);
 
         Data.Order memory order = Data.Order(
             0,                                                      // version
@@ -72,8 +72,15 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
             0x0,
             0,
             0,
-            true
+            true,
+            Data.TokenType(data.bytesToUint(17 * 32)),              // tokenTypeS
+            Data.TokenType(data.bytesToUint(18 * 32)),              // tokenTypeB
+            Data.TokenType(data.bytesToUint(19 * 32)),              // tokenTypeFee
+            data.bytesToBytes32(20 * 32),                           // trancheS
+            data.bytesToBytes32(21 * 32),                           // trancheB
+            data.subBytes(22 * 32)                                  // transferDataS
         );
+        require(data.length == 23 * 32 + order.transferDataS.length, INVALID_SIZE);
 
         /// msg.sender must be order's owner or broker.
         /// no need to check order's broker is registered here. it will be checked during

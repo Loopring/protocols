@@ -250,6 +250,12 @@ export class ExchangeTestUtil {
     order.tokenSFeePercentage = order.tokenSFeePercentage ? order.tokenSFeePercentage : 0;
     order.tokenBFeePercentage = order.tokenBFeePercentage ? order.tokenBFeePercentage : 0;
     order.walletSplitPercentage = order.walletSplitPercentage ? order.walletSplitPercentage : 0;
+    order.tokenTypeS = order.tokenTypeS ? order.tokenTypeS : pjs.TokenType.ERC20;
+    order.tokenTypeB = order.tokenTypeB ? order.tokenTypeB : pjs.TokenType.ERC20;
+    order.tokenTypeFee = order.tokenTypeFee ? order.tokenTypeFee : pjs.TokenType.ERC20;
+    order.trancheS = order.trancheS ? order.trancheS : "0x" + "0".repeat(64);
+    order.trancheB = order.trancheB ? order.trancheB : "0x" + "0".repeat(64);
+    order.transferDataS = order.transferDataS ? order.transferDataS : "0x";
 
     // setup initial balances:
     await this.setOrderBalances(order);

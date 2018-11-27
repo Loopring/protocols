@@ -80,4 +80,18 @@ library BytesUtil {
             data := mload(add(add(b, numBytes), offset))
         }
     }
+
+    function subBytes(
+        bytes b,
+        uint offset
+        )
+        internal
+        pure
+        returns (bytes data)
+    {
+        require(b.length >= offset + 32, "INVALID_SIZE");
+        assembly {
+            data := add(add(b, 32), offset)
+        }
+    }
 }

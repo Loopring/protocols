@@ -59,7 +59,7 @@ library ExchangeDeserializer {
         }
         uint miningDataPtr = dataPtr + 8;
         uint orderDataPtr = miningDataPtr + 3 * 2;
-        uint ringDataPtr = orderDataPtr + (24 * header.numOrders) * 2;
+        uint ringDataPtr = orderDataPtr + (30 * header.numOrders) * 2;
         uint dataBlobPtr = ringDataPtr + (header.numRings * 9) + 32;
 
         // The data stream needs to be at least large enough for the
@@ -131,7 +131,7 @@ library ExchangeDeserializer {
         returns (Data.Order[] orders)
     {
         bytes memory emptyBytes = new bytes(0);
-        uint orderStructSize = 32 * 32;
+        uint orderStructSize = 38 * 32;
         // Memory for orders length + numOrders order pointers
         uint arrayDataSize = (1 + numOrders) * 32;
         Data.Spendable[] memory spendableList = new Data.Spendable[](numSpendables);
@@ -340,6 +340,54 @@ library ExchangeDeserializer {
                     offset
                 )
 
+                // order.tokenTypeS
+                offset := and(mload(add(tablesPtr, 48)), 0xFFFF)
+                mstore(
+                    add(order, 1024),
+                    offset
+                )
+
+                // order.tokenTypeB
+                offset := and(mload(add(tablesPtr, 50)), 0xFFFF)
+                mstore(
+                    add(order, 1056),
+                    offset
+                )
+
+                // order.tokenTypeFee
+                offset := and(mload(add(tablesPtr, 52)), 0xFFFF)
+                mstore(
+                    add(order, 1088),
+                    offset
+                )
+
+                // order.trancheS
+                offset := mul(and(mload(add(tablesPtr, 54)), 0xFFFF), 4)
+                mstore(
+                    add(order, 1120),
+                    mload(add(add(data, 32), offset))
+                )
+
+                // order.trancheB
+                offset := mul(and(mload(add(tablesPtr, 56)), 0xFFFF), 4)
+                mstore(
+                    add(order, 1152),
+                    mload(add(add(data, 32), offset))
+                )
+
+                // Default to empty bytes array for transferDataS
+                mstore(add(data, 32), emptyBytes)
+
+                // order.transferDataS
+                offset := mul(and(mload(add(tablesPtr, 58)), 0xFFFF), 4)
+                mstore(
+                    add(order, 1184),
+                    add(data, add(offset, 32))
+                )
+
+                // Restore default to 0
+                mstore(add(data, 32), 0)
+
                 // Set default  values
                 mstore(add(order, 832), 0)         // order.P2P
                 mstore(add(order, 864), 0)         // order.hash
@@ -349,7 +397,7 @@ library ExchangeDeserializer {
                 mstore(add(order, 992), 1)         // order.valid
 
                 // Advance to the next order
-                tablesPtr := add(tablesPtr, 48)
+                tablesPtr := add(tablesPtr, 60)
             }
         }
     }

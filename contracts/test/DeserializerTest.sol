@@ -117,7 +117,13 @@ contract DeserializerTest {
             0x0,          // orderBrokerInterceptor
             0,            // filledAmountS
             0,            // initialFilledAmountS
-            true          // valid
+            true,         // valid
+            Data.TokenType.ERC20,
+            Data.TokenType.ERC20,
+            Data.TokenType.ERC20,
+            0x0,
+            0x0,
+            new bytes(0)
         );
 
     }
