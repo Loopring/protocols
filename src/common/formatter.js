@@ -4,7 +4,7 @@ import BN from 'bn.js';
 
 BigNumber.config({
     EXPONENTIAL_AT: 20,
-    RANGE: [-20, 10000000],
+    RANGE: [-100000, 10000000],
     ROUNDING_MODE: 1
 });
 /**

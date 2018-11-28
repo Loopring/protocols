@@ -37,11 +37,16 @@ const encodeSubmitRing = (orders, feeRecipient, feeSelections) =>
         feeSelections = orders.map(item => 0);
     }
     const ringHash = getRingHash(orders, feeRecipient, feeSelections);
-    const amounts = orders.map(order => toBig(order.amountS).div(toBig(order.amountB)));
-    const tem = amounts.reduce((total, amount) =>
+
+    let amounts = toBig(1);
+    let amountb = toBig(1);
+
+    orders.forEach(order =>
     {
-        return total.times(amount);
+        amounts = amounts.times(toBig(order.amountS));
+        amountb = amountb.times(toBig(order.amountB));
     });
+    const tem = amounts.div(amountb);
     const rate = Math.pow(toNumber(tem), 1 / orders.length);
     if (rate < 1)
     {
