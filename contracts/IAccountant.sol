@@ -23,38 +23,38 @@ pragma solidity 0.4.24;
 contract IAccountant {
 
 
-    event UpdateAccountant(
+    event LogUpdateAccountant(
         uint256 indexed seqNo,
         address indexed oldAccountant,
         address indexed newAccountant,
         uint256         height
     );
 
-    event AddRootHash(
+    event LogAddRootHash(
         uint256 height, 
-        uint256 rootHash
+        bytes32 rootHash
     );
 
-    event Withdraw(
+    event LogWithdraw(
         address indexed to,
         address         token,
         uint256         amount
     );
 
     /// @dev submit infos of the sidechain.
-    /// @param submitter only used for calculating hash.
-    /// @param root merkle tree root hash.
     /// @param seqNos the sequence number of the accountants.
     /// @param oldAccountants the old accountants which will be replaced.
     /// @param newAccountants the new accountants.
     /// @param signatures the signature of the accountant.
+    /// @param submitter only used for calculating hash.
+    /// @param root merkle tree root hash.
     function submitBlock(
-        address submitter,
-        uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
         address[] newAccountants,
         uint256 height,
+        address submitter,
+        uint256 root,
         bytes signatures
         )
         external;
@@ -71,7 +71,7 @@ contract IAccountant {
     function withdraw(
         uint256 height,
         bytes rawData,
-        uint256[] pathProof
+        bytes pathProof
         )
         external;
 

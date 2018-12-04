@@ -35,7 +35,7 @@ contract AccountantImpl is IAccountant {
     uint256  public constant MIN_ACCOUNTANT_NUM       = 1;
 
     mapping (uint256 => address) public accountantsMap;
-    mapping (uint256 => uint256) public merkleRootMap;
+    mapping (uint256 => bytes32) public merkleRootMap;
     mapping (bytes32 => bool) public withdrawFlagMap;
 
     address toStore = 0x0;
@@ -55,19 +55,20 @@ contract AccountantImpl is IAccountant {
         }
     }
 
+
     function submitBlock(
-        address submitter,
-        uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
         address[] newAccountants,
         uint256 height,
+        bytes32 root,
+        address submitter,
         bytes signatures
         )
         external
     {
         require((seqNos.length == oldAccountants.length && seqNos.length == newAccountants.length), "PARAMETERS NOT MATCH");
-        require(checkSignatures(submitter, root, seqNos, oldAccountants, newAccountants, height, signatures), "VIRIFY NOT PASS");
+        require(checkSignatures(seqNos, oldAccountants, newAccountants, height, submitter, root, signatures), "SIGNATURE VIRIFY NOT PASS");
                
         for(uint256 i = 0; i < seqNos.length; i++) {
             midifyAccountant(seqNos[i], oldAccountants[i], newAccountants[i], height);
@@ -80,28 +81,30 @@ contract AccountantImpl is IAccountant {
     function withdraw(
         uint256 height,
         bytes rawData,
-        uint256[] pathProof
+        bytes pathProof
         )
         external
     {
         require(rawData.length >= 74, "ILLEGAL LENGTH OF RAW_DATA!");
+        require((pathProof.length % 32) == 0, "ILLEGAL LENGTH OF PATHPROOF!");
 
         bytes32 hash = keccak256(rawData);
         require(withdrawFlagMap[hash] != true);
 
-        address token = BytesLib.toAddress(rawData, 2);
+        address token = BytesLib.toAddress(rawData, 12);
         tokenStore = token;
-        uint256 amount = BytesLib.toUint(rawData, 22);
-        amountStore = amount;
-        require(amount > 0, "AMOUNT IS 0!");
-        address to = BytesLib.toAddress(rawData, 54);
-        toStore = to;
 
+        uint256 amount = BytesLib.toUint(rawData, 32);
+        require(amount > 0, "AMOUNT IS 0!");
+        amountStore = amount;
+
+        address to = BytesLib.toAddress(rawData, 76);
         require(msg.sender == to, "ILLEGAL WITHDRAW USER!");
+        toStore = to;
 
         heightStore = height;
 
-        require(checkMerkleRoot(rawData, height, pathProof), "CHECK MERKLE ROOT FAILED!");
+        require(checkMerkleRoot(hash, height, pathProof), "CHECK MERKLE ROOT FAILED!");
 
         require(
             token.safeTransfer(
@@ -113,19 +116,20 @@ contract AccountantImpl is IAccountant {
 
         withdrawFlagMap[hash] = true;
 
-        emit Withdraw(
+        emit LogWithdraw(
             msg.sender,
             token,
             amount
         );
     }
 
+
     function queryAccountant(uint256 seqNo) external view returns (address) {
         require(seqNo < TOTAL_ACCOUNTANT_NUM, "ILLEGAL ACCOUNTANT NUMBER!");
         return accountantsMap[seqNo];
     }
 
-    function queryMerkleRoot(uint256 height) external view returns (uint256) {
+    function queryMerkleRoot(uint256 height) external view returns (bytes32) {
         return merkleRootMap[height];
     }
 
@@ -146,30 +150,30 @@ contract AccountantImpl is IAccountant {
     }
 
     function getHash(
-        address submitter,
-        uint256 root,
-        uint256[] seqNos,
-        address[] oldAccountants,
-        address[] newAccountants,
-        uint256 height
-        )
-        external pure returns (bytes32)
-    {
-        return HashUtilLib.calcSubmitBlockHash(submitter, root, seqNos, oldAccountants, newAccountants, height);
-    }
-
-    function checkSignatures(
-        address submitter,
-        uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
         address[] newAccountants,
         uint256 height,
+        address submitter,
+        bytes32 root
+        )
+        external pure returns (bytes32)
+    {
+        return HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, height, submitter, root);
+    }
+
+    function checkSignatures(
+        uint256[] seqNos,
+        address[] oldAccountants,
+        address[] newAccountants,
+        uint256 height,
+        address submitter,
+        bytes32 root,
         bytes signatures) 
         internal view returns (bool) 
     {
         require(signatures.length == 65*TOTAL_ACCOUNTANT_NUM, "ILLEGAL SIGNATURE NUM!");
-        bytes32 plaintext = HashUtilLib.calcSubmitBlockHash(submitter, root, seqNos, oldAccountants, newAccountants, height);
+        bytes32 plaintext = HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, height, submitter, root);
         uint8 num = 0;
         for(uint256 i = 0; i < TOTAL_ACCOUNTANT_NUM; i++) {
             bytes memory signature;
@@ -184,17 +188,17 @@ contract AccountantImpl is IAccountant {
         return true;
     }
 
-    function checkMerkleRoot(bytes rawData, uint256 height, uint256[] path_proof) internal view returns (bool) {
-        uint256 rootHash = merkleRootMap[height];
+    function checkMerkleRoot(bytes32 hash, uint256 height, bytes path_proof) internal view returns (bool) {
+        bytes32 rootHash = merkleRootMap[height];
         require(rootHash != 0);
-        //TODO
-        bytes32 currentHash = keccak256(rawData);
+
+        bytes32 currentHash = hash;
         bytes32 calcRootHash = currentHash;
-        for (uint256 i = 0; i < path_proof.length; i++) {
+        for (uint256 i = 0; i < path_proof.length; i+=32) {
             calcRootHash = keccak256(
                 abi.encodePacked(
                     calcRootHash,
-                    path_proof[i]));
+                    path_proof.slice(i*32, 32)));
         }
         if(bytes32(rootHash) == calcRootHash) {
             return true;
@@ -202,15 +206,15 @@ contract AccountantImpl is IAccountant {
         return false;
     }
 
-    function getMerkleRoot(bytes rawData, uint256[] path_proof) internal view returns (uint256) {
+    function getMerkleRoot(bytes rawData, bytes path_proof) internal pure returns (bytes32) {
         bytes32 calcRootHash = keccak256(rawData);
-        for (uint256 i = 0; i < path_proof.length; i++) {
+        for (uint256 i = 0; i < path_proof.length;  i+=32) {
             calcRootHash = keccak256(
                 abi.encodePacked(
                     calcRootHash,
-                    path_proof[i]));
+                    path_proof.slice(i*32, 32)));
         }
-        return uint256(calcRootHash);
+        return calcRootHash;
     }
 
     function midifyAccountant(
@@ -228,14 +232,14 @@ contract AccountantImpl is IAccountant {
         if(accountantsMap[seqNo] != newAccountant) {
             accountantsMap[seqNo] = newAccountant;
         }
-        emit UpdateAccountant(seqNo, oldAccountant, newAccountant, height);
+        emit LogUpdateAccountant(seqNo, oldAccountant, newAccountant, height);
     }
 
-    function addMerkleRoot(uint256 height, uint256 rootHash) internal {
+    function addMerkleRoot(uint256 height, bytes32 rootHash) internal {
         require(height > 0 && rootHash > 0);
         require(merkleRootMap[height] == 0, "ROOT HASH HAS ALREADY EXISTED");
         merkleRootMap[height] = rootHash;
-        emit AddRootHash(height, rootHash);
+        emit LogAddRootHash(height, rootHash);
     }
 
     function checkNewAccountant(address newAccountant) internal view returns (bool) {

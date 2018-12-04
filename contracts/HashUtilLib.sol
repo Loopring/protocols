@@ -21,35 +21,38 @@ pragma solidity 0.4.24;
 library HashUtilLib {
 
     function calcSubmitBlockHash(
-        address submitter,
-        uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
         address[] accountants,
-        uint256 height)
+        uint256 height,
+        address submitter,
+        bytes32 root)
         internal
         pure returns (bytes32)
     {       
-        return keccak256(toPackage(submitter, root, seqNos, oldAccountants, accountants, height));
+        return keccak256(toPackage(seqNos, oldAccountants, accountants, height, submitter, root));
     }
 
     function toPackage(
-        address submitter,
-        uint256 root,
         uint256[] seqNos,
         address[] oldAccountants,
         address[] accountants,
-        uint256 height)
+        uint256 height,
+        address submitter,
+        bytes32 root)
         internal
         pure returns (bytes)
     {
         return abi.encodePacked(
-            submitter,
-            root,
+            seqNos.length,
             seqNos,
+            oldAccountants.length,
             oldAccountants,
+            accountants.length,
             accountants,
-            height
+            height,
+            submitter,
+            root
         );
     }
 
@@ -74,9 +77,9 @@ library HashUtilLib {
         bytes32 s;
         assembly {                                              
             // Extract v, r and s from the multihash data
-            v := mload(add(signature, 1))
-            r := mload(add(signature, 33))
-            s := mload(add(signature, 65))
+            r := mload(add(signature, 32))
+            s := mload(add(signature, 64))
+            v := mload(add(signature, 65))
         }
         return signer == ecrecover(
             prefixedHash,
@@ -106,9 +109,9 @@ library HashUtilLib {
         bytes32 s;
         assembly {                                              
             // Extract v, r and s from the multihash data
-            v := mload(add(signature, 1))
-            r := mload(add(signature, 33))
-            s := mload(add(signature, 65))
+            r := mload(add(signature, 32))
+            s := mload(add(signature, 64))
+            v := mload(add(signature, 65))
         }
         return ecrecover(
             prefixedHash,
