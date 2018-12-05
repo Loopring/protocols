@@ -38,11 +38,6 @@ contract AccountantImpl is IAccountant {
     mapping (uint256 => bytes32) public merkleRootMap;
     mapping (bytes32 => bool) public withdrawFlagMap;
 
-    address toStore = 0x0;
-    uint256 amountStore = 0;
-    uint256 heightStore = 0;
-    address tokenStore = 0x0;
-
     constructor(
         address[] accountants
         )
@@ -68,7 +63,7 @@ contract AccountantImpl is IAccountant {
         external
     {
         require((seqNos.length == oldAccountants.length && seqNos.length == newAccountants.length), "PARAMETERS NOT MATCH");
-        require(checkSignatures(seqNos, oldAccountants, newAccountants, height, submitter, root, signatures), "SIGNATURE VIRIFY NOT PASS");
+        require(checkSignatures(seqNos, oldAccountants, newAccountants, height, root, submitter, signatures), "SIGNATURE VIRIFY NOT PASS");
                
         for(uint256 i = 0; i < seqNos.length; i++) {
             midifyAccountant(seqNos[i], oldAccountants[i], newAccountants[i], height);
@@ -85,24 +80,19 @@ contract AccountantImpl is IAccountant {
         )
         external
     {
-        require(rawData.length >= 74, "ILLEGAL LENGTH OF RAW_DATA!");
-        require((pathProof.length % 32) == 0, "ILLEGAL LENGTH OF PATHPROOF!");
+        require(rawData.length >= 32*3, "ILLEGAL LENGTH OF RAW_DATA!");
+        require((rawData.length % 32) == 0, "ILLEGAL LENGTH OF RAW_DATA!");
 
         bytes32 hash = keccak256(rawData);
-        require(withdrawFlagMap[hash] != true);
+        require(withdrawFlagMap[hash] != true, "ALREADY WITHDRAW!");
 
         address token = BytesLib.toAddress(rawData, 12);
-        tokenStore = token;
 
         uint256 amount = BytesLib.toUint(rawData, 32);
         require(amount > 0, "AMOUNT IS 0!");
-        amountStore = amount;
 
         address to = BytesLib.toAddress(rawData, 76);
         require(msg.sender == to, "ILLEGAL WITHDRAW USER!");
-        toStore = to;
-
-        heightStore = height;
 
         require(checkMerkleRoot(hash, height, pathProof), "CHECK MERKLE ROOT FAILED!");
 
@@ -123,30 +113,20 @@ contract AccountantImpl is IAccountant {
         );
     }
 
+    function calcRoot(bytes rawData, bytes32 pathProof) external pure returns (bytes32) {
+        bytes32 hash = keccak256(rawData);
+        return keccak256(abi.encodePacked(hash, pathProof));
+    }
 
     function queryAccountant(uint256 seqNo) external view returns (address) {
         require(seqNo < TOTAL_ACCOUNTANT_NUM, "ILLEGAL ACCOUNTANT NUMBER!");
         return accountantsMap[seqNo];
     }
 
+
+
     function queryMerkleRoot(uint256 height) external view returns (bytes32) {
         return merkleRootMap[height];
-    }
-
-    function queryHeight() external view returns (uint256) {
-        return heightStore;
-    }
-
-    function queryToken() external view returns (address) {
-        return tokenStore;
-    }
-
-    function queryTo() external view returns (address) {
-        return toStore;
-    }
-
-    function queryAmount() external view returns (uint256) {
-        return amountStore;
     }
 
     function getHash(
@@ -154,12 +134,12 @@ contract AccountantImpl is IAccountant {
         address[] oldAccountants,
         address[] newAccountants,
         uint256 height,
-        address submitter,
-        bytes32 root
+        bytes32 root,
+        address submitter
         )
         external pure returns (bytes32)
     {
-        return HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, height, submitter, root);
+        return HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, height, root, submitter);
     }
 
     function checkSignatures(
@@ -167,13 +147,13 @@ contract AccountantImpl is IAccountant {
         address[] oldAccountants,
         address[] newAccountants,
         uint256 height,
-        address submitter,
         bytes32 root,
+        address submitter,
         bytes signatures) 
         internal view returns (bool) 
     {
         require(signatures.length == 65*TOTAL_ACCOUNTANT_NUM, "ILLEGAL SIGNATURE NUM!");
-        bytes32 plaintext = HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, height, submitter, root);
+        bytes32 plaintext = HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, height, root, submitter);
         uint8 num = 0;
         for(uint256 i = 0; i < TOTAL_ACCOUNTANT_NUM; i++) {
             bytes memory signature;
@@ -190,7 +170,7 @@ contract AccountantImpl is IAccountant {
 
     function checkMerkleRoot(bytes32 hash, uint256 height, bytes path_proof) internal view returns (bool) {
         bytes32 rootHash = merkleRootMap[height];
-        require(rootHash != 0);
+        require(rootHash != 0, "NO ROOTHASH!");
 
         bytes32 currentHash = hash;
         bytes32 calcRootHash = currentHash;
@@ -200,7 +180,7 @@ contract AccountantImpl is IAccountant {
                     calcRootHash,
                     path_proof.slice(i*32, 32)));
         }
-        if(bytes32(rootHash) == calcRootHash) {
+        if(rootHash == calcRootHash) {
             return true;
         }
         return false;
@@ -225,10 +205,10 @@ contract AccountantImpl is IAccountant {
         )
         internal
     {
-        require(seqNo < TOTAL_ACCOUNTANT_NUM, "ILLEGAL SEQUENCE NO.");
-        require(accountantsMap[seqNo] == oldAccountant, "ILLEGAL OLD ACCOUNTANT");
+        require(seqNo < TOTAL_ACCOUNTANT_NUM, "ILLEGAL SEQUENCE NO!");
+        require(accountantsMap[seqNo] == oldAccountant, "ILLEGAL OLD ACCOUNTANT!");
         require(newAccountant != 0x0, "ILLEGAL NEW ACCOUNTANT");
-        require(checkNewAccountant(newAccountant), "ACCOUNTANT HAS ALREADY EXISTED");
+        require(checkNewAccountant(newAccountant), "ACCOUNTANT HAS ALREADY EXISTED!");
         if(accountantsMap[seqNo] != newAccountant) {
             accountantsMap[seqNo] = newAccountant;
         }
@@ -237,7 +217,7 @@ contract AccountantImpl is IAccountant {
 
     function addMerkleRoot(uint256 height, bytes32 rootHash) internal {
         require(height > 0 && rootHash > 0);
-        require(merkleRootMap[height] == 0, "ROOT HASH HAS ALREADY EXISTED");
+        require(merkleRootMap[height] == 0, "ROOT HASH HAS ALREADY EXISTED!");
         merkleRootMap[height] = rootHash;
         emit LogAddRootHash(height, rootHash);
     }

@@ -45,23 +45,19 @@ contract IAccountant {
     /// @param seqNos the sequence number of the accountants.
     /// @param oldAccountants the old accountants which will be replaced.
     /// @param newAccountants the new accountants.
-    /// @param signatures the signature of the accountant.
-    /// @param submitter only used for calculating hash.
     /// @param root merkle tree root hash.
+    /// @param submitter only used for calculating hash.
+    /// @param signatures the signature of the accountant.
     function submitBlock(
         uint256[] seqNos,
         address[] oldAccountants,
         address[] newAccountants,
         uint256 height,
+        bytes32 root,
         address submitter,
-        uint256 root,
         bytes signatures
         )
         external;
-
-    /// @dev query the accountant of the seqNo
-    /// @param seqNo the sequence number of the accountant.
-    function queryAccountant(uint256 seqNo) external view returns (address);
 
 
     /// @dev withdraw tokens
@@ -74,5 +70,9 @@ contract IAccountant {
         bytes pathProof
         )
         external;
+
+    /// @dev query the accountant of the seqNo
+    /// @param seqNo the sequence number of the accountant.
+    function queryAccountant(uint256 seqNo) external view returns (address);
 
 }

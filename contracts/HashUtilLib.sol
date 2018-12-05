@@ -25,12 +25,13 @@ library HashUtilLib {
         address[] oldAccountants,
         address[] accountants,
         uint256 height,
-        address submitter,
-        bytes32 root)
+        bytes32 root,
+        address submitter
+)
         internal
         pure returns (bytes32)
     {       
-        return keccak256(toPackage(seqNos, oldAccountants, accountants, height, submitter, root));
+        return keccak256(toPackage(seqNos, oldAccountants, accountants, height, root, submitter));
     }
 
     function toPackage(
@@ -38,8 +39,9 @@ library HashUtilLib {
         address[] oldAccountants,
         address[] accountants,
         uint256 height,
-        address submitter,
-        bytes32 root)
+        bytes32 root,
+        address submitter
+)
         internal
         pure returns (bytes)
     {
@@ -51,8 +53,8 @@ library HashUtilLib {
             accountants.length,
             accountants,
             height,
-            submitter,
-            root
+            root,
+            submitter
         );
     }
 
