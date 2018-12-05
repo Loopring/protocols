@@ -25,6 +25,7 @@
     "gts": "^0.6.0",
     "mocha": "^5.2.0",
     "ts-node": "^6.0.5",
+    "types-bn": "0.0.1",
     "typescript": "^2.8.3",
     "web3-typescript-typings": "^0.10.2"
   },
