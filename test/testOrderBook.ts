@@ -1,4 +1,4 @@
-import { BN } from "bn.js";
+import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
 import { expectThrow, logDebug, OrderInfo, OrderUtil, TokenType } from "protocol2-js";
 import util = require("util");
@@ -10,6 +10,7 @@ const {
   GTOToken,
   RDNToken,
 } = new Artifacts(artifacts);
+
 contract("OrderBook", (accounts: string[]) => {
   const owner1 = accounts[1];
   const owner2 = accounts[2];
@@ -25,35 +26,18 @@ contract("OrderBook", (accounts: string[]) => {
   let gtoAddress: string;
 
   const getEventsFromContract = async (contract: any, eventName: string, fromBlock: number) => {
-    return new Promise((resolve, reject) => {
-      if (!contract[eventName]) {
-        throw Error("TypeError: contract[eventName] is not a function: " + eventName);
-      }
-
-      const events = contract[eventName]({}, { fromBlock, toBlock: "latest" });
-      events.watch();
-      events.get((error: any, event: any) => {
-        if (!error) {
-          resolve(event);
-        } else {
-          throw Error("Failed to find filtered event: " + error);
-        }
-      });
-      events.stopWatching();
+    return await contract.getPastEvents(eventName, {
+        fromBlock,
+        toBlock: "latest",
+    }).then((events: any) => {
+        return events;
     });
   };
 
-  const watchAndPrintEvent = async (contract: any, eventName: string) => {
-    const events: any = await getEventsFromContract(contract, eventName, 0);
-
-    events.forEach((e: any) => {
-      logDebug("event:", util.inspect(e.args, false, null));
-    });
-  };
-
-  const getTestOrder = (owner: string, broker: string) => {
-    const validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
-    const validUntil = web3.eth.getBlock(web3.eth.blockNumber).timestamp + 360000;
+  const getTestOrder = async (owner: string, broker: string) => {
+    const blockNumber = await web3.eth.getBlockNumber();
+    const validSince = (await web3.eth.getBlock(blockNumber)).timestamp - 1000;
+    const validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 360000;
     const order: OrderInfo = {
       owner,
       tokenS: rdnAddress,
@@ -102,13 +86,15 @@ contract("OrderBook", (accounts: string[]) => {
     assert.equal(submittedBefore, false, "order should have not been registered as submitten before");
 
     // Catch the OrderSubmitted event
-    const events: any = await getEventsFromContract(orderBook, "OrderSubmitted", web3.eth.blockNumber);
+    const blockNumber = await web3.eth.getBlockNumber();
+    const events: any = await getEventsFromContract(orderBook, "OrderSubmitted", blockNumber);
+    assert.equal(events.length, 1, "A single OrderSubmitted event needs to be emitted");
     const eventOrderHash = events[0].args.orderHash;
     const eventOrderData = events[0].args.orderData;
 
     // Check event data
     assert.equal(eventOrderHash, orderHash, "onchain order hash needs to match offchain order hash");
-    assert.equal(eventOrderData, orderData, "event order data needs to match submitted order data");
+    assert.equal(eventOrderData, orderData.toLowerCase(), "event order data needs to match submitted order data");
 
     // Check if the order was successfully submitted
     const submittedAfter = await orderBook.orderSubmitted(orderHash);
@@ -128,7 +114,7 @@ contract("OrderBook", (accounts: string[]) => {
 
   describe("general", () => {
     it("should not be able to submit an order in an incorrect format", async () => {
-      const order = getTestOrder(owner1, broker1);
+      const order = await getTestOrder(owner1, broker1);
       // Store order data in a bytes array
       const orderUtil = new OrderUtil(undefined);
       let orderData = orderUtil.toOrderBookSubmitParams(order);
@@ -148,12 +134,12 @@ contract("OrderBook", (accounts: string[]) => {
 
   describe("order owner", () => {
     it("should be able to submit his order to order book", async () => {
-      const order = getTestOrder(owner1, broker1);
+      const order = await getTestOrder(owner1, broker1);
       await submitOrderChecked(order, order.owner);
     });
 
     it("should not be able to submit the same order twice", async () => {
-      const order = getTestOrder(owner2, broker1);
+      const order = await getTestOrder(owner2, broker1);
       await submitOrderChecked(order, order.owner);
       await expectThrow(submitOrderChecked(order, order.owner), "ALREADY_EXIST");
     });
@@ -161,12 +147,12 @@ contract("OrderBook", (accounts: string[]) => {
 
   describe("order broker", () => {
     it("should be able to submit an order he's the broker of to order book", async () => {
-      const order = getTestOrder(owner1, broker1);
+      const order = await getTestOrder(owner1, broker1);
       await submitOrderChecked(order, order.broker);
     });
 
     it("should not be able to submit the same order twice", async () => {
-      const order = getTestOrder(owner2, broker2);
+      const order = await getTestOrder(owner2, broker2);
       await submitOrderChecked(order, order.broker);
       await expectThrow(submitOrderChecked(order, order.broker), "ALREADY_EXIST");
     });
@@ -174,7 +160,7 @@ contract("OrderBook", (accounts: string[]) => {
 
   describe("anyone", () => {
     it("should not be able to submit an order he's not the owner/broker of", async () => {
-      const order = getTestOrder(owner1, broker1);
+      const order = await getTestOrder(owner1, broker1);
       await expectThrow(submitOrderChecked(order, owner2), "UNAUTHORIZED_ONCHAIN_ORDER");
       await expectThrow(submitOrderChecked(order, broker2), "UNAUTHORIZED_ONCHAIN_ORDER");
     });

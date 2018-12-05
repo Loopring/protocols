@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 
@@ -47,7 +46,7 @@ contract IRingSubmitter {
     /// @dev   Submit order-rings for validation and settlement.
     /// @param data Packed data of all rings.
     function submitRings(
-        bytes data
+        bytes calldata data
         )
         external;
 }

@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
@@ -58,7 +57,7 @@ contract Authorizable is Claimable, Errors  {
         external
         onlyOwner
     {
-        require(0x0 != addr, ZERO_ADDRESS);
+        require(address(0x0) != addr, ZERO_ADDRESS);
         require(0 == positionMap[addr], ALREADY_EXIST);
         require(isContract(addr), INVALID_ADDRESS);
 
@@ -73,7 +72,7 @@ contract Authorizable is Claimable, Errors  {
         external
         onlyOwner
     {
-        require(0x0 != addr, ZERO_ADDRESS);
+        require(address(0x0) != addr, ZERO_ADDRESS);
 
         uint pos = positionMap[addr];
         require(pos != 0, NOT_FOUND);

@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "./BytesUtil.sol";
@@ -36,7 +35,7 @@ library MultihashUtil {
     function verifySignature(
         address signer,
         bytes32 plaintext,
-        bytes   multihash
+        bytes memory multihash
         )
         internal
         pure
@@ -53,7 +52,7 @@ library MultihashUtil {
         require(length == (2 + size), "bad multihash size");
 
         if (algorithm == uint8(HashAlgorithm.Ethereum)) {
-            require(signer != 0x0, "invalid signer address");
+            require(signer != address(0x0), "invalid signer address");
             require(size == 65, "bad Ethereum multihash size");
             bytes32 hash;
             uint8 v;
@@ -76,7 +75,7 @@ library MultihashUtil {
                 s
             );
         } else if (algorithm == uint8(HashAlgorithm.EIP712)) {
-            require(signer != 0x0, "invalid signer address");
+            require(signer != address(0x0), "invalid signer address");
             require(size == 65, "bad EIP712 multihash size");
             uint8 v;
             bytes32 r;

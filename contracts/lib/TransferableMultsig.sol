@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
@@ -32,8 +31,8 @@ contract TransferableMultsig is ITransferableMultsig, Errors {
     address[] public owners;            // immutable state
 
     constructor(
-        uint      _threshold,
-        address[] _owners
+        uint             _threshold,
+        address[] memory _owners
         )
         public
     {
@@ -48,12 +47,12 @@ contract TransferableMultsig is ITransferableMultsig, Errors {
     }
 
     function execute(
-        uint8[]   sigV,
-        bytes32[] sigR,
-        bytes32[] sigS,
-        address   destination,
-        uint      value,
-        bytes     data
+        uint8[] calldata   sigV,
+        bytes32[] calldata sigR,
+        bytes32[] calldata sigS,
+        address            destination,
+        uint               value,
+        bytes calldata     data
         )
         external
     {
@@ -78,18 +77,16 @@ contract TransferableMultsig is ITransferableMultsig, Errors {
             txHash
         );
 
-        require(
-            destination.call.value(value)(data),
-            "execution error"
-        );
+        (bool success, ) = destination.call.value(value)(data);
+        require(success, "execution error");
     }
 
     function transferOwnership(
-        uint8[]   sigV,
-        bytes32[] sigR,
-        bytes32[] sigS,
-        uint      _threshold,
-        address[] _owners
+        uint8[] calldata   sigV,
+        bytes32[] calldata sigR,
+        bytes32[] calldata sigS,
+        uint               _threshold,
+        address[] calldata _owners
         )
         external
     {
@@ -116,10 +113,10 @@ contract TransferableMultsig is ITransferableMultsig, Errors {
     }
 
     function verifySignatures(
-        uint8[]   sigV,
-        bytes32[] sigR,
-        bytes32[] sigS,
-        bytes32   txHash
+        uint8[] memory   sigV,
+        bytes32[] memory sigR,
+        bytes32[] memory sigS,
+        bytes32          txHash
         )
         internal
         view
@@ -129,7 +126,7 @@ contract TransferableMultsig is ITransferableMultsig, Errors {
         require(_threshold == sigS.length, INVALID_SIZE);
         require(_threshold == sigV.length, INVALID_SIZE);
 
-        address lastAddr = 0x0; // cannot have 0x0 as an owner
+        address lastAddr = address(0x0); // cannot have 0x0 as an owner
         for (uint i = 0; i < threshold; i++) {
             address recovered = ecrecover(
                 txHash,
@@ -144,8 +141,8 @@ contract TransferableMultsig is ITransferableMultsig, Errors {
     }
 
     function updateOwners(
-        uint      _threshold,
-        address[] _owners
+        uint             _threshold,
+        address[] memory _owners
         )
         internal
     {
@@ -159,7 +156,7 @@ contract TransferableMultsig is ITransferableMultsig, Errors {
             ownerMap[currentOwners[i]] = false;
         }
 
-        address lastAddr = 0x0;
+        address lastAddr = address(0x0);
         for (uint i = 0; i < _owners.length; i++) {
             address owner = _owners[i];
             require(owner > lastAddr, INVALID_ADDRESS);

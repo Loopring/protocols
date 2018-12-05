@@ -3,11 +3,6 @@ import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/Artifacts";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
-const {
-  BrokerRegistry,
-  DummyBrokerInterceptor,
-} = new Artifacts(artifacts);
-
 contract("Exchange_Broker", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
@@ -27,6 +22,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
     // could potentially hide bugs
     beforeEach(async () => {
       await exchangeTestUtil.cleanTradeHistory();
+      const DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");
       dummyBrokerInterceptor = await DummyBrokerInterceptor.new(exchangeTestUtil.ringSubmitter.address);
     });
 
@@ -314,11 +310,11 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       // Set allowance of tokenS and feeToken for the orders
       // Order0
-      await dummyBrokerInterceptor.setAllowance(broker0, owner0, order0.tokenS, order0.amountS);
-      await dummyBrokerInterceptor.setAllowance(broker0, owner0, order0.feeToken, order0.feeAmount);
+      // await dummyBrokerInterceptor.setAllowance(broker0, owner0, order0.tokenS, order0.amountS);
+      // await dummyBrokerInterceptor.setAllowance(broker0, owner0, order0.feeToken, order0.feeAmount);
       // Order1
-      await dummyBrokerInterceptor.setAllowance(broker1, owner1, order1.tokenS, order1.amountS);
-      await dummyBrokerInterceptor.setAllowance(broker1, owner1, order1.feeToken, order1.feeAmount);
+      // await dummyBrokerInterceptor.setAllowance(broker1, owner1, order1.tokenS, order1.amountS);
+      // await dummyBrokerInterceptor.setAllowance(broker1, owner1, order1.feeToken, order1.feeAmount);
 
       const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
 
@@ -384,11 +380,11 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       // Set allowance of tokenS and feeToken for the orders
       // Order0
-      await dummyBrokerInterceptor.setAllowance(broker0, owner, order0.tokenS, order0.amountS);
-      await dummyBrokerInterceptor.setAllowance(broker0, owner, order0.feeToken, order0.feeAmount);
+      // await dummyBrokerInterceptor.setAllowance(broker0, owner, order0.tokenS, order0.amountS);
+      // await dummyBrokerInterceptor.setAllowance(broker0, owner, order0.feeToken, order0.feeAmount);
       // Order1
-      await dummyBrokerInterceptor.setAllowance(broker1, owner, order1.tokenS, order1.amountS);
-      await dummyBrokerInterceptor.setAllowance(broker1, owner, order1.feeToken, order1.feeAmount);
+      // await dummyBrokerInterceptor.setAllowance(broker1, owner, order1.tokenS, order1.amountS);
+      // await dummyBrokerInterceptor.setAllowance(broker1, owner, order1.feeToken, order1.feeAmount);
 
       const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
 
@@ -452,11 +448,11 @@ contract("Exchange_Broker", (accounts: string[]) => {
 
       // Set allowance of tokenS and feeToken for the orders
       // Order0
-      await dummyBrokerInterceptor.setAllowance(broker, owner0, order0.tokenS, order0.amountS);
-      await dummyBrokerInterceptor.setAllowance(broker, owner0, order0.feeToken, order0.feeAmount);
+      // await dummyBrokerInterceptor.setAllowance(broker, owner0, order0.tokenS, order0.amountS);
+      // await dummyBrokerInterceptor.setAllowance(broker, owner0, order0.feeToken, order0.feeAmount);
       // Order1
-      await dummyBrokerInterceptor.setAllowance(broker, owner1, order1.tokenS, order1.amountS);
-      await dummyBrokerInterceptor.setAllowance(broker, owner1, order1.feeToken, order1.feeAmount);
+      // await dummyBrokerInterceptor.setAllowance(broker, owner1, order1.tokenS, order1.amountS);
+      // await dummyBrokerInterceptor.setAllowance(broker, owner1, order1.feeToken, order1.feeAmount);
 
       const {tx, report} = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
 

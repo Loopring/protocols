@@ -29,21 +29,11 @@ export class ExchangeTestUtil {
   }
 
   public async getEventsFromContract(contract: any, eventName: string, fromBlock: number) {
-    return new Promise((resolve, reject) => {
-      if (!contract[eventName]) {
-        throw Error("TypeError: contract[eventName] is not a function: " + eventName);
-      }
-
-      const events = contract[eventName]({}, { fromBlock, toBlock: "latest" });
-      events.watch();
-      events.get((error: any, event: any) => {
-        if (!error) {
-          resolve(event);
-        } else {
-          throw Error("Failed to find filtered event: " + error);
-        }
-      });
-      events.stopWatching();
+    return await contract.getPastEvents(eventName, {
+      fromBlock,
+      toBlock: "latest",
+    }).then((events: any) => {
+        return events;
     });
   }
 
@@ -84,7 +74,7 @@ export class ExchangeTestUtil {
     const eventArr: any = await this.getEventsFromContract(this.ringSubmitter, "RingMined", fromBlock);
     const ringMinedEvents = eventArr.map((eventObj: any) => {
       const ringMinedEvent: pjs.RingMinedEvent = {
-        ringIndex: eventObj.args._ringIndex,
+        ringIndex: new BigNumber(eventObj.args._ringIndex.toString()),
         ringHash: eventObj.args._ringHash,
         feeRecipient: eventObj.args._feeRecipient,
         fills: parseFillsData(eventObj.args._fills),
@@ -208,11 +198,13 @@ export class ExchangeTestUtil {
     }
     if (!order.validSince) {
       // Set the order validSince time to a bit before the current timestamp;
-      order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
+      const blockNumber = await web3.eth.getBlockNumber();
+      order.validSince = (await web3.eth.getBlock(blockNumber)).timestamp - 1000;
     }
     if (!order.validUntil && (order.index % 2) === 1) {
       // Set the order validUntil time to a bit after the current timestamp;
-      order.validUntil = web3.eth.getBlock(web3.eth.blockNumber).timestamp + 2500;
+      const blockNumber = await web3.eth.getBlockNumber();
+      order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 2500;
     }
 
     if (order.walletAddr && !order.walletAddr.startsWith("0x")) {
@@ -264,25 +256,25 @@ export class ExchangeTestUtil {
   public async setOrderBalances(order: pjs.OrderInfo) {
     const tokenS = this.testContext.tokenAddrInstanceMap.get(order.tokenS);
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
-    await tokenS.setBalance(order.owner, balanceS);
+    await tokenS.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceS)));
 
     const feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
     const balanceFee = (order.balanceFee !== undefined) ? order.balanceFee : order.feeAmount;
     if (feeToken === order.tokenS) {
-      tokenS.addBalance(order.owner, balanceFee);
+      tokenS.addBalance(order.owner, web3.utils.toBN(new BigNumber(balanceFee)));
     } else {
       const tokenFee = this.testContext.tokenAddrInstanceMap.get(feeToken);
-      await tokenFee.setBalance(order.owner, balanceFee);
+      await tokenFee.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceFee)));
     }
 
     if (order.balanceB) {
       const tokenB = this.testContext.tokenAddrInstanceMap.get(order.tokenB);
-      await tokenB.setBalance(order.owner, order.balanceB);
+      await tokenB.setBalance(order.owner, web3.utils.toBN(new BigNumber(order.balanceB)));
     }
   }
 
   public async getFilled(hash: Buffer) {
-    return await this.context.tradeHistory.filled("0x" + hash.toString("hex")).toNumber();
+    return new BigNumber((await this.context.tradeHistory.filled("0x" + hash.toString("hex"))).toString()).toNumber();
   }
 
   public async checkFilled(hash: Buffer, expected: number) {
@@ -396,7 +388,8 @@ export class ExchangeTestUtil {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
       const fromName = addressBook[t[1]];
       const toName = addressBook[t[2]];
-      pjs.logDebug(fromName + " -> " + toName + " : " + t[3].toNumber() / 1e18 + " " + tokenSymbol);
+      pjs.logDebug(fromName + " -> " + toName + " : " +
+        (new BigNumber(t[3].toString()).toNumber() / 1e18) + " " + tokenSymbol);
     });
     assert.equal(tranferEvents.length, transfersFromSimulator.length, "Number of transfers do not match");
     for (let i = 0; i < tranferEvents.length; i++) {
@@ -405,7 +398,8 @@ export class ExchangeTestUtil {
       assert.equal(transferFromEvent[0], transferFromSimulator[0]);
       assert.equal(transferFromEvent[1], transferFromSimulator[1]);
       assert.equal(transferFromEvent[2], transferFromSimulator[2]);
-      assert(transferFromEvent[3].eq(transferFromSimulator[3]), "Transfer amount does not match");
+      assert(new BigNumber(transferFromEvent[3].toString()).eq(transferFromSimulator[3]),
+             "Transfer amount does not match");
     }
   }
 
@@ -418,14 +412,17 @@ export class ExchangeTestUtil {
       const simulatorEvent = ringMinedEventsSimulator[i];
       assert(contractEvent.ringIndex.eq(simulatorEvent.ringIndex), "ringIndex does not match");
       assert.equal(contractEvent.ringHash, simulatorEvent.ringHash, "ringHash does not match");
-      assert.equal(contractEvent.feeRecipient, simulatorEvent.feeRecipient, "feeRecipient does not match");
+      assert.equal(contractEvent.feeRecipient.toLowerCase(), simulatorEvent.feeRecipient.toLowerCase(),
+                   "feeRecipient does not match");
       assert.equal(contractEvent.fills.length, simulatorEvent.fills.length, "fills length does not match");
       for (let f = 0; f < contractEvent.fills.length; f++) {
         const contractFill = contractEvent.fills[f];
         const simulatorFill = simulatorEvent.fills[f];
         assert.equal(contractFill.orderHash, simulatorFill.orderHash, "orderHash does not match");
-        assert.equal(contractFill.owner, simulatorFill.owner, "owner does not match");
-        assert.equal(contractFill.tokenS, simulatorFill.tokenS, "tokenS does not match");
+        assert.equal(contractFill.owner.toLowerCase(), simulatorFill.owner.toLowerCase(),
+                     "owner does not match");
+        assert.equal(contractFill.tokenS.toLowerCase(), simulatorFill.tokenS.toLowerCase(),
+                     "tokenS does not match");
         assert(contractFill.amountS.eq(simulatorFill.amountS), "amountS does not match");
         assert(contractFill.split.eq(simulatorFill.split), "split does not match");
         assert(contractFill.feeAmount.eq(simulatorFill.feeAmount), "feeAmount does not match");
@@ -454,12 +451,13 @@ export class ExchangeTestUtil {
     for (const token of Object.keys(feeBalancesAfter)) {
       for (const owner of Object.keys(feeBalancesAfter[token])) {
         const balanceFromSimulator = feeBalancesAfter[token][owner];
-        const balanceFromContract = await this.context.feeHolder.feeBalances(token, owner);
+        const balanceFromContract =
+          new BigNumber((await this.context.feeHolder.feeBalances(token, owner)).toString());
         if (!feeBalancesBefore[token][owner].eq(feeBalancesAfter[token][owner])) {
           const ownerName = addressBook[owner] ? addressBook[owner] : owner;
           const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
           pjs.logDebug(ownerName + ": " +
-                      balanceFromContract  / 1e18 + " " + tokenSymbol + " " +
+                      balanceFromContract.toNumber()  / 1e18 + " " + tokenSymbol + " " +
                       "(Simulator: " + balanceFromSimulator  / 1e18 + ")");
         }
         assert(balanceFromContract.eq(balanceFromSimulator), "Fee balance doesn't match");
@@ -479,7 +477,7 @@ export class ExchangeTestUtil {
         }
       }
       const filledFromSimulator = filledAmounts[hash];
-      const filledFromContract = await this.context.tradeHistory.filled("0x" + hash);
+      const filledFromContract = new BigNumber((await this.context.tradeHistory.filled("0x" + hash)).toString());
       let percentageFilled = 0;
       if (hashOrder) {
         percentageFilled = filledFromContract.toNumber() * 100 / hashOrder.amountS;
@@ -508,47 +506,39 @@ export class ExchangeTestUtil {
 
     const fills = await this.context.tradeHistory.batchGetFilledAndCheckCancelled(bitstream.getBytes32Array());
 
-    const cancelledValue = new BigNumber("F".repeat(64), 16);
+    const cancelledValue = new BN("F".repeat(64), 16);
     for (const [i, order] of orders.entries()) {
-        assert.equal(!fills[i].equals(cancelledValue), expectedValidValues[i], "Order cancelled status incorrect");
+        assert.equal(!fills[i].eq(cancelledValue), expectedValidValues[i], "Order cancelled status incorrect");
     }
   }
 
   public async registerOrderBrokerChecked(user: string, broker: string, interceptor: string) {
-    const {
-      BrokerRegistry,
-    } = new Artifacts(artifacts);
-    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
+    const brokerRegistry = await BrokerRegistry.at(this.context.orderBrokerRegistry.address);
     await brokerRegistry.registerBroker(broker, interceptor, {from: user});
     await this.assertOrderBrokerRegistered(user, broker, interceptor);
   }
 
   public async unregisterOrderBrokerChecked(user: string, broker: string) {
-    const {
-      BrokerRegistry,
-    } = new Artifacts(artifacts);
-    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
+    const brokerRegistry = await BrokerRegistry.at(this.context.orderBrokerRegistry.address);
     await brokerRegistry.unregisterBroker(broker, {from: user});
     await this.assertOrderBrokerNotRegistered(user, broker);
   }
 
   public async assertOrderBrokerRegistered(user: string, broker: string, interceptor: string) {
-    const {
-      BrokerRegistry,
-    } = new Artifacts(artifacts);
-    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(isRegistered, "interceptor should be registered.");
-    assert.equal(interceptor, interceptorFromContract, "get wrong interceptor");
+    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
+    const brokerRegistry = await BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const returnValue = await brokerRegistry.getBroker(user, broker);
+    assert(returnValue.registered, "interceptor should be registered.");
+    assert.equal(interceptor, returnValue.interceptor, "get wrong interceptor");
   }
 
   public async assertOrderBrokerNotRegistered(user: string, broker: string) {
-    const {
-      BrokerRegistry,
-    } = new Artifacts(artifacts);
-    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(!isRegistered, "interceptor should not be registered.");
+    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
+    const brokerRegistry = await BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const returnValue = await brokerRegistry.getBroker(user, broker);
+    assert(!returnValue.registered, "interceptor should not be registered.");
   }
 
   public async deserializeRing(ringsInfo: pjs.RingsInfo) {
@@ -562,9 +552,6 @@ export class ExchangeTestUtil {
                                       dummyExchange?: any,
                                       submitter?: any) {
     if (dummyExchange !== undefined) {
-      const {
-        DummyToken,
-      } = new Artifacts(artifacts);
       // Add an initial fee payment to all addresses to make gas use more realistic
       // (gas cost to change variable in storage: zero -> non-zero: 20,000 gas, non-zero -> non-zero: 5,000 gas)
       // Addresses getting fees will be getting a lot of fees so a balance of 0 is not realistic
@@ -576,7 +563,7 @@ export class ExchangeTestUtil {
         for (const token of tokens) {
           for (const feeRecipient of feeRecipients) {
             if (feeRecipient) {
-              feePayments.add(feeRecipient, token, 1);
+              feePayments.add(feeRecipient, token, web3.utils.toBN(1));
             }
           }
         }
@@ -597,10 +584,6 @@ export class ExchangeTestUtil {
     const ringsGenerator = new pjs.RingsGenerator(this.context);
     await ringsGenerator.setupRingsAsync(ringsInfo);
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
-
-    // Update block number and block timestamp
-    this.context.blockNumber = web3.eth.blockNumber;
-    this.context.blockTimestamp = web3.eth.getBlock(this.context.blockNumber).timestamp;
 
     const simulator = new pjs.ProtocolSimulator(this.context);
     const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin :
@@ -633,9 +616,12 @@ export class ExchangeTestUtil {
 
     const ringSubmitter = submitter ? submitter : this.ringSubmitter;
     if (report.reverted) {
-      tx = await pjs.expectThrow(ringSubmitter.submitRings(bs, {from: txOrigin}), report.revertMessage);
+      tx = await pjs.expectThrow(
+        ringSubmitter.submitRings(web3.utils.hexToBytes(bs), {from: txOrigin}),
+        report.revertMessage,
+      );
     } else {
-      tx = await ringSubmitter.submitRings(bs, {from: txOrigin});
+      tx = await ringSubmitter.submitRings(web3.utils.hexToBytes(bs), {from: txOrigin});
       pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
     }
     const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
@@ -657,6 +643,8 @@ export class ExchangeTestUtil {
   }
 
   public async authorizeTradeDelegate() {
+    // console.log("tradeDelegateAddress 2: " + this.context.tradeDelegate.options.address);
+    // console.log(this.context.tradeDelegate);
     await this.context.tradeDelegate.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
   }
 
@@ -668,7 +656,9 @@ export class ExchangeTestUtil {
     for (const token of this.testContext.allTokens) {
       // approve once for all orders:
       for (const orderOwner of this.testContext.orderOwners) {
-        await token.approve(this.context.tradeDelegate.address, 1e32, {from: orderOwner});
+        await token.approve(this.context.tradeDelegate.address,
+                            web3.utils.toBN(new BigNumber(1e31)),
+                            {from: orderOwner});
       }
     }
   }
@@ -698,7 +688,7 @@ export class ExchangeTestUtil {
   }
 
   public async cleanTradeHistory() {
-    const {
+    /*const {
       RingSubmitter,
       OrderRegistry,
       TradeDelegate,
@@ -706,7 +696,23 @@ export class ExchangeTestUtil {
       FeeHolder,
       WETHToken,
       BrokerRegistry,
-    } = new Artifacts(artifacts);
+    } = new Artifacts(artifacts);*/
+    /*const {
+      RingSubmitter,
+      OrderRegistry,
+      TradeDelegate,
+      TradeHistory,
+      FeeHolder,
+      OrderBook,
+      BurnRateTable,
+      LRCToken,
+    } = new Artifacts(artifacts);*/
+
+    const TradeHistory = artifacts.require("impl/TradeHistory");
+    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
+    const RingSubmitter = artifacts.require("impl/RingSubmitter");
+    const WETHToken = artifacts.require("test/tokens/WETH");
+    // const OrderRegistry = artifacts.require("impl/OrderRegistry");
 
     const tradeHistory = await TradeHistory.new();
     const brokerRegistry = await BrokerRegistry.new();
@@ -716,7 +722,7 @@ export class ExchangeTestUtil {
       this.context.tradeDelegate.address,
       tradeHistory.address,
       brokerRegistry.address,
-      OrderRegistry.address,
+      this.context.orderRegistry.address,
       this.context.feeHolder.address,
       this.context.orderBook.address,
       this.context.burnRateTable.address,
@@ -727,21 +733,29 @@ export class ExchangeTestUtil {
     const feePercentageBase = (await this.ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
     const ringIndex = (await this.ringSubmitter.ringIndex()).toNumber();
 
-    const currBlockNumber = web3.eth.blockNumber;
-    const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
-    this.context = new pjs.Context(currBlockNumber,
+    const currBlockNumber = await web3.eth.getBlockNumber();
+    const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;
+    const newContext = new pjs.Context(currBlockNumber,
                                    currBlockTimestamp,
                                    this.context.tradeDelegate.address,
                                    tradeHistory.address,
                                    orderBrokerRegistryAddress,
-                                   OrderRegistry.address,
+                                   this.context.orderRegistry.address,
                                    this.context.feeHolder.address,
                                    this.context.orderBook.address,
                                    this.context.burnRateTable.address,
                                    this.context.lrcAddress,
                                    feePercentageBase,
                                    ringIndex);
-
+    newContext.ERC20Contract = this.context.ERC20Contract;
+    newContext.tradeDelegate = this.context.tradeDelegate;
+    newContext.tradeHistory = tradeHistory;
+    newContext.orderRegistry = this.context.orderRegistry;
+    newContext.feeHolder = this.context.feeHolder;
+    newContext.orderBook = this.context.orderBook;
+    newContext.burnRateTable = this.context.burnRateTable;
+    newContext.orderBrokerRegistry = brokerRegistry;
+    this.context = newContext;
     await this.authorizeTradeDelegate();
     await this.authorizeTradeHistory();
   }
@@ -749,7 +763,7 @@ export class ExchangeTestUtil {
   private getPrivateKey(address: string) {
     const textData = fs.readFileSync("./ganache_account_keys.txt", "ascii");
     const data = JSON.parse(textData);
-    return data.private_keys[address];
+    return data.private_keys[address.toLowerCase()];
   }
 
   // private functions:
@@ -763,6 +777,8 @@ export class ExchangeTestUtil {
       OrderBook,
       BurnRateTable,
       LRCToken,
+      DummyToken,
+      BrokerRegistry,
     } = new Artifacts(artifacts);
 
     const [ringSubmitter, tradeDelegate, tradeHistory, orderRegistry,
@@ -783,9 +799,9 @@ export class ExchangeTestUtil {
     const feePercentageBase = (await ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
     const ringIndex = (await ringSubmitter.ringIndex()).toNumber();
 
-    const currBlockNumber = web3.eth.blockNumber;
-    const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
-    return new pjs.Context(currBlockNumber,
+    const currBlockNumber = await web3.eth.getBlockNumber();
+    const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;
+    const context = new pjs.Context(currBlockNumber,
                            currBlockTimestamp,
                            TradeDelegate.address,
                            TradeHistory.address,
@@ -797,6 +813,15 @@ export class ExchangeTestUtil {
                            LRCToken.address,
                            feePercentageBase,
                            ringIndex);
+    context.ERC20Contract = DummyToken;
+    context.tradeDelegate = tradeDelegate;
+    context.tradeHistory = tradeHistory;
+    context.orderRegistry = orderRegistry;
+    context.feeHolder = feeHolder;
+    context.orderBook = orderBook;
+    context.burnRateTable = burnRateTable;
+    context.orderBrokerRegistry = await BrokerRegistry.deployed();
+    return context;
   }
 
   private async createExchangeTestContext(accounts: string[]) {

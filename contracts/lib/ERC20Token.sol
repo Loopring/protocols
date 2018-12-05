@@ -14,8 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
@@ -50,16 +49,16 @@ contract ERC20Token is ERC20, Errors{
     );
 
     constructor(
-        string  _name,
-        string  _symbol,
-        uint8   _decimals,
-        uint    _totalSupply,
-        address _firstHolder
+        string memory _name,
+        string memory _symbol,
+        uint8         _decimals,
+        uint          _totalSupply,
+        address       _firstHolder
         )
         public
     {
         require(_totalSupply > 0, "INVALID_VALUE");
-        require(_firstHolder != 0x0, "ZERO_ADDRESS");
+        require(_firstHolder != address(0x0), "ZERO_ADDRESS");
         checkSymbolAndName(_symbol,_name);
 
         name = _name;

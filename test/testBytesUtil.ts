@@ -30,7 +30,8 @@ contract("BytesUtil", (accounts: string[]) => {
   const bytesToAddressChecked = async (offset: number) => {
     const numBytes = 20;
     const extracted = await bytesUtil.bytesToAddress("0x" + data, offset);
-    assert.equal(extracted, "0x" + data.slice(offset * 2, (offset + numBytes) * 2));
+    assert.equal(extracted.toLowerCase(),
+                "0x" + data.slice(offset * 2, (offset + numBytes) * 2).toLowerCase());
   };
 
   const bytesToUint16Checked = async (offset: number) => {

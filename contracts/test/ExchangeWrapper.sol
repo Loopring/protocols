@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IRingSubmitter.sol";
@@ -25,7 +24,7 @@ import "../impl/PublicExchangeDeserializer.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract ExchangeWrapper {
 
-    address public ringSubmitterAddress = 0x0;
+    address public ringSubmitterAddress = address(0x0);
 
     // Map of owner allowed to trade
     mapping (address => bool) public whitelist;
@@ -39,7 +38,7 @@ contract ExchangeWrapper {
     }
 
     function submitRings(
-        bytes data
+        bytes calldata data
         )
         external
     {

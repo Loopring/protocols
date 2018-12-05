@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../helper/OrderHelper.sol";
@@ -33,7 +32,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
     using BytesUtil       for bytes;
 
     function submitOrder(
-        bytes data
+        bytes calldata data
         )
         external
         returns (bytes32)
@@ -50,7 +49,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
             data.bytesToUint(5 * 32),                               // validSince
             Data.Spendable(true, 0, 0),
             Data.Spendable(true, 0, 0),
-            0x0,
+            address(0x0),
             address(data.bytesToUint(6 * 32)),                      // broker
             Data.Spendable(true, 0, 0),
             Data.Spendable(true, 0, 0),
@@ -69,7 +68,7 @@ contract OrderBook is IOrderBook, NoDefaultFunc {
             uint16(data.bytesToUint(16 * 32)),                      // walletSplitPercentage
             false,
             bytes32(0x0),
-            0x0,
+            address(0x0),
             0,
             0,
             true,

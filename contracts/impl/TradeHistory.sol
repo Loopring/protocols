@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/ITradeHistory.sol";
@@ -32,7 +31,7 @@ contract TradeHistory is ITradeHistory, Authorizable, Killable, NoDefaultFunc {
     using MathUint for uint;
 
     function batchUpdateFilled(
-        bytes32[] filledInfo
+        bytes32[] calldata filledInfo
         )
         external
         onlyAuthorized
@@ -118,11 +117,11 @@ contract TradeHistory is ITradeHistory, Authorizable, Killable, NoDefaultFunc {
     }
 
     function batchGetFilledAndCheckCancelled(
-        bytes32[] batch
+        bytes32[] calldata batch
         )
         external
         view
-        returns (uint[] fills)
+        returns (uint[] memory fills)
     {
         uint length = batch.length;
         require(length % 5 == 0, INVALID_SIZE);

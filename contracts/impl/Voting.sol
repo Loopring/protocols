@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.5.0;
 
 import "../lib/ERC20.sol";
 import "../iface/Errors.sol";
@@ -18,7 +18,7 @@ contract Voting is Errors {
     bytes32[] public candidateList;
 
     constructor(
-        bytes32[] candidateNames
+        bytes32[] memory candidateNames
         )
         public
     {
@@ -70,7 +70,7 @@ contract Voting is Errors {
     function getCandidateList()
         public
         view
-        returns (bytes32[])
+        returns (bytes32[] memory)
     {
         return candidateList;
     }

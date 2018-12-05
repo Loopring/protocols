@@ -3,19 +3,11 @@ import { Artifacts } from "../util/Artifacts";
 import { ringsInfoList } from "./rings_config";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
-const {
-  DummyExchange,
-  OrderBook,
-  OrderRegistry,
-} = new Artifacts(artifacts);
-
 contract("SubmitRings_Benchmark", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
 
   let dummyExchange: any;
-  let orderBook: any;
-  let orderRegistry: any;
 
   const checkFilled = async (order: pjs.OrderInfo, expected: number) => {
     const filled = await exchangeTestUtil.context.tradeDelegate.filled("0x" + order.hash.toString("hex")).toNumber();
@@ -25,10 +17,9 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
-    orderBook = await OrderBook.deployed();
-    orderRegistry = await OrderRegistry.deployed();
 
     // Create dummy exchange and authorize it
+    const DummyExchange = artifacts.require("test/DummyExchange");
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
                                             exchangeTestUtil.context.tradeHistory.address,
                                             exchangeTestUtil.context.feeHolder.address,

@@ -1,4 +1,4 @@
-import { BN } from "bn.js";
+import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
 import { expectThrow, OrderInfo, OrderUtil } from "protocol2-js";
 import util = require("util");

@@ -4,18 +4,11 @@ import { Artifacts } from "../util/Artifacts";
 import { ringsInfoList } from "./rings_config";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
-const {
-  DummyExchange,
-  OrderBook,
-  OrderRegistry,
-  TESTToken,
-} = new Artifacts(artifacts);
-
-const ContractOrderOwner = artifacts.require("ContractOrderOwner");
-
 contract("Exchange_Submit", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
+
+  const zeroAddress = "0x" + "00".repeat(20);
 
   let dummyExchange: any;
   let orderBook: any;
@@ -29,10 +22,15 @@ contract("Exchange_Submit", (accounts: string[]) => {
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+
+    const OrderBook = artifacts.require("impl/OrderBook");
     orderBook = await OrderBook.deployed();
+
+    const OrderRegistry = artifacts.require("impl/OrderRegistry");
     orderRegistry = await OrderRegistry.deployed();
 
     // Create dummy exchange and authorize it
+    const DummyExchange = artifacts.require("test/DummyExchange");
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
                                             exchangeTestUtil.context.tradeHistory.address,
                                             exchangeTestUtil.context.feeHolder.address,
@@ -40,7 +38,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
     await exchangeTestUtil.context.tradeDelegate.authorizeAddress(dummyExchange.address,
                                                                   {from: exchangeTestUtil.testContext.deployer});
 
-    contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address, "0x0");
+    const ContractOrderOwner = artifacts.require("test/ContractOrderOwner");
+    contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address, zeroAddress);
   });
 
   describe("submitRing", () => {
@@ -134,7 +133,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // Only approve a part of the tokenS amount, feeToken cannot be used
       const tokenS = exchangeTestUtil.testContext.tokenAddrInstanceMap.get(ringsInfo.orders[0].tokenS);
       await tokenS.approve(exchangeTestUtil.context.tradeDelegate.address,
-                           ringsInfo.orders[0].amountS / 2,
+                           web3.utils.toBN(ringsInfo.orders[0].amountS / 2),
                            {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       await checkFilled(ringsInfo.orders[0], 0);
@@ -142,18 +141,18 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // Only approve a part of the feeToken amount now as well
       const tokenFee = exchangeTestUtil.testContext.tokenAddrInstanceMap.get(ringsInfo.orders[0].feeToken);
       await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.address,
-                           ringsInfo.orders[0].feeAmount / 4,
-                           {from: ringsInfo.orders[0].owner});
+                             web3.utils.toBN(ringsInfo.orders[0].feeAmount / 4),
+                             {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS / 4);
 
       // Approve amountS and feeAmount
       await tokenS.approve(exchangeTestUtil.context.tradeDelegate.address,
-                           ringsInfo.orders[0].amountS,
+                           web3.utils.toBN(ringsInfo.orders[0].amountS),
                            {from: ringsInfo.orders[0].owner});
       await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.address,
-                           ringsInfo.orders[0].feeAmount,
-                           {from: ringsInfo.orders[0].owner});
+                             web3.utils.toBN(ringsInfo.orders[0].feeAmount),
+                             {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS);
     });
@@ -318,11 +317,17 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
 
       // Allow the contract to spend tokenS
-      await contractOrderOwner.approve(onChainOrder.tokenS, exchangeTestUtil.context.tradeDelegate.address, 1e32);
+      await contractOrderOwner.approve(
+        onChainOrder.tokenS, exchangeTestUtil.context.tradeDelegate.address,
+        web3.utils.toBN(new BigNumber(1e32)),
+      );
       // Still cannot pay any fees, so no tokens will be transferred
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       // Allow the contract to spend feeToken
-      await contractOrderOwner.approve(onChainOrder.feeToken, exchangeTestUtil.context.tradeDelegate.address, 1e32);
+      await contractOrderOwner.approve(
+        onChainOrder.feeToken, exchangeTestUtil.context.tradeDelegate.address,
+        web3.utils.toBN(new BigNumber(1e32)),
+      );
 
       // Order is registered and the contract can pay in tokenS and feeToken
       ringsInfo.expected = {
@@ -385,7 +390,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const orderData = orderUtil.toOrderBookSubmitParams(onChainOrder);
       const orderHash = "0x" + orderUtil.getOrderHash(onChainOrder).toString("hex");
       const fromBlock = web3.eth.blockNumber;
-      await contractOrderOwner.sumbitOrderToOrderBook(orderData, orderHash);
+      await contractOrderOwner.sumbitOrderToOrderBook(web3.utils.hexToBytes(orderData), orderHash);
       const events: any = await exchangeTestUtil.getEventsFromContract(orderBook, "OrderSubmitted", fromBlock);
       const orderHashOnChain = events[0].args.orderHash;
       assert.equal(orderHashOnChain, orderHash, "order hash not equal");
@@ -394,8 +399,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
 
       // Register the broker without interceptor
-      const emptyAddr = "0x0000000000000000000000000000000000000000";
-      await exchangeTestUtil.registerOrderBrokerChecked(onChainOrder.owner, onChainOrder.broker, emptyAddr);
+      await exchangeTestUtil.registerOrderBrokerChecked(onChainOrder.owner, onChainOrder.broker, zeroAddress);
 
       // Order and broker is registered
       ringsInfo.expected = {
@@ -658,7 +662,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
       // Fail the token transfer by throwing in transferFrom
-      const TestToken = TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
+      const TESTToken = artifacts.require("test/tokens/TEST");
+      const TestToken = await TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
       await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
 
       // submitRings should revert

@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import BN = require("bn.js");
 import { Bitstream, expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 
@@ -16,7 +17,7 @@ const {
 
 interface FilledUpdate {
   hash: string;
-  amount: number;
+  amount: BN;
 }
 
 interface Order {
@@ -37,7 +38,7 @@ contract("TradeHistory", (accounts: string[]) => {
   const user2 = accounts[6];
   const user3 = accounts[7];
   const user4 = accounts[8];
-  const emptyAddr = "0x0000000000000000000000000000000000000000";
+  const zeroAddress = "0x" + "00".repeat(20);
 
   let tradeHistory: any;
   let dummyExchange1: any;
@@ -57,7 +58,7 @@ contract("TradeHistory", (accounts: string[]) => {
     return bitstream.getData();
   };
 
-  const addFilledUpdate = (updates: FilledUpdate[], hash: number,  amount: number) => {
+  const addFilledUpdate = (updates: FilledUpdate[], hash: number,  amount: BN) => {
     const update: FilledUpdate = {
       hash: numberToBytesX(hash, 32),
       amount,
@@ -85,7 +86,7 @@ contract("TradeHistory", (accounts: string[]) => {
     const bitstream = new Bitstream();
     for (const update of updates) {
       bitstream.addHex(update.hash);
-      bitstream.addNumber(update.amount, 32);
+      bitstream.addBN(update.amount, 32);
     }
     return bitstream.getBytes32Array();
   };
@@ -125,8 +126,8 @@ contract("TradeHistory", (accounts: string[]) => {
     assert.equal(isAuthorizedInDelegate, false, "should be able to deauthorize an address");
   };
 
-  const assertOrdersValid = (result: BigNumber[], expectedValues: boolean[]) => {
-    const cancelledValue = new BigNumber("F".repeat(64), 16);
+  const assertOrdersValid = (result: BN[], expectedValues: boolean[]) => {
+    const cancelledValue = new BN("F".repeat(64), 16);
     for (const [i, order] of expectedValues.entries()) {
         assert.equal(!result[i].eq(cancelledValue), expectedValues[i],
                      "Order cancelled status incorrect for order " + i);
@@ -135,7 +136,7 @@ contract("TradeHistory", (accounts: string[]) => {
 
   const batchUpdateFilledChecked = async (updates: FilledUpdate[]) => {
     // Calculate expected filled
-    const fills: { [id: string]: number; } = {};
+    const fills: { [id: string]: BN; } = {};
     for (const update of updates) {
       fills[update.hash] = update.amount;
     }
@@ -144,9 +145,9 @@ contract("TradeHistory", (accounts: string[]) => {
     await dummyExchange1.batchUpdateFilled(batch);
     // Check if we get the expected results
     for (const update of updates) {
-      const filled = (await tradeHistory.filled(update.hash)).toNumber();
+      const filled = await tradeHistory.filled(update.hash);
       const expectedFilled = fills[update.hash];
-      assert.equal(filled, expectedFilled, "Filled amount does not match expected value");
+      assert(filled.eq(expectedFilled), "Filled amount does not match expected value");
     }
   };
 
@@ -160,9 +161,9 @@ contract("TradeHistory", (accounts: string[]) => {
   beforeEach(async () => {
     const tradeDelegate = await TradeDelegate.deployed();
     tradeHistory = await TradeHistory.new();
-    dummyExchange1 = await DummyExchange.new(tradeDelegate.address, tradeHistory.address, "0x0", "0x0");
-    dummyExchange2 = await DummyExchange.new(tradeDelegate.address, tradeHistory.address, "0x0", "0x0");
-    dummyExchange3 = await DummyExchange.new(tradeDelegate.address, tradeHistory.address, "0x0", "0x0");
+    dummyExchange1 = await DummyExchange.new(tradeDelegate.address, tradeHistory.address, zeroAddress, zeroAddress);
+    dummyExchange2 = await DummyExchange.new(tradeDelegate.address, tradeHistory.address, zeroAddress, zeroAddress);
+    dummyExchange3 = await DummyExchange.new(tradeDelegate.address, tradeHistory.address, zeroAddress, zeroAddress);
     TestToken = await TESTToken.new();
     testToken = TestToken.address;
   });
@@ -187,7 +188,7 @@ contract("TradeHistory", (accounts: string[]) => {
     });
 
     it("should not be able to authorize a non-contract address", async () => {
-      await expectThrow(authorizeAddressChecked(emptyAddr, owner), "ZERO_ADDRESS");
+      await expectThrow(authorizeAddressChecked(zeroAddress, owner), "ZERO_ADDRESS");
       await expectThrow(authorizeAddressChecked(user2, owner), "INVALID_ADDRESS");
     });
 
@@ -198,7 +199,7 @@ contract("TradeHistory", (accounts: string[]) => {
 
     it("should not be able to deauthorize an unathorized address", async () => {
       await authorizeAddressChecked(dummyExchange1.address, owner);
-      await expectThrow(deauthorizeAddressChecked(emptyAddr, owner), "ZERO_ADDRESS");
+      await expectThrow(deauthorizeAddressChecked(zeroAddress, owner), "ZERO_ADDRESS");
       await expectThrow(deauthorizeAddressChecked(dummyExchange2.address, owner), "NOT_FOUND");
     });
 
@@ -207,7 +208,7 @@ contract("TradeHistory", (accounts: string[]) => {
       // Try to do a filled update
       await authorizeAddressChecked(dummyExchange1.address, owner);
       const updates: FilledUpdate[] = [];
-      addFilledUpdate(updates, 123, 1.5e18);
+      addFilledUpdate(updates, 123, web3.utils.toBN(1.5e18));
       await expectThrow(batchUpdateFilledChecked(updates), "INVALID_STATE");
       // Resume again
       await tradeHistory.resume({from: owner});
@@ -225,7 +226,7 @@ contract("TradeHistory", (accounts: string[]) => {
       await expectThrow(tradeHistory.resume({from: owner}), "NOT_OWNER");
       // Try to do a filled update
       const updates: FilledUpdate[] = [];
-      addFilledUpdate(updates, 123, 1.5e18);
+      addFilledUpdate(updates, 123, web3.utils.toBN(1.5e18));
       await expectThrow(batchUpdateFilledChecked(updates), "INVALID_STATE");
     });
   });
@@ -242,19 +243,19 @@ contract("TradeHistory", (accounts: string[]) => {
       const hash4 = 147;
       {
         const updates: FilledUpdate[] = [];
-        addFilledUpdate(updates, hash1, 1.5e18);
-        addFilledUpdate(updates, hash2, 1.1e18);
-        addFilledUpdate(updates, hash2, 1.3e18);
-        addFilledUpdate(updates, hash1, 2.3e18);
+        addFilledUpdate(updates, hash1, web3.utils.toBN(1.5e18));
+        addFilledUpdate(updates, hash2, web3.utils.toBN(1.1e18));
+        addFilledUpdate(updates, hash2, web3.utils.toBN(1.3e18));
+        addFilledUpdate(updates, hash1, web3.utils.toBN(2.3e18));
         await batchUpdateFilledChecked(updates);
       }
       {
         const updates: FilledUpdate[] = [];
-        addFilledUpdate(updates, hash3, 1.5e18);
-        addFilledUpdate(updates, hash3, 1.9e18);
-        addFilledUpdate(updates, hash1, 3.3e18);
-        addFilledUpdate(updates, hash4, 7.3e18);
-        addFilledUpdate(updates, hash2, 2.3e18);
+        addFilledUpdate(updates, hash3, web3.utils.toBN(1.5e18));
+        addFilledUpdate(updates, hash3, web3.utils.toBN(1.9e18));
+        addFilledUpdate(updates, hash1, web3.utils.toBN(3.3e18));
+        addFilledUpdate(updates, hash4, web3.utils.toBN(7.3e18));
+        addFilledUpdate(updates, hash2, web3.utils.toBN(2.3e18));
         await batchUpdateFilledChecked(updates);
       }
     });
@@ -263,8 +264,8 @@ contract("TradeHistory", (accounts: string[]) => {
       const hash1 = 123;
       const hash2 = 456;
       const updates: FilledUpdate[] = [];
-      addFilledUpdate(updates, hash1, 1e18);
-      addFilledUpdate(updates, hash2, 2e18);
+      addFilledUpdate(updates, hash1, web3.utils.toBN(1e18));
+      addFilledUpdate(updates, hash2, web3.utils.toBN(2e18));
       const batch = toFilledBatch(updates);
       batch.pop();
       await expectThrow(dummyExchange1.batchUpdateFilled(batch), "INVALID_SIZE");
@@ -541,7 +542,7 @@ contract("TradeHistory", (accounts: string[]) => {
     it("should not be able to batch update filled", async () => {
       const hash1 = 123;
       const updates: FilledUpdate[] = [];
-      addFilledUpdate(updates, hash1, 1.5e18);
+      addFilledUpdate(updates, hash1, web3.utils.toBN(1.5e18));
       await expectThrow(batchUpdateFilledChecked(updates), "UNAUTHORIZED");
     });
   });

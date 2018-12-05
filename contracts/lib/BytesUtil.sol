@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 
@@ -23,7 +22,7 @@ pragma experimental "ABIEncoderV2";
 /// @author Daniel Wang - <daniel@loopring.org>
 library BytesUtil {
     function bytesToBytes32(
-        bytes b,
+        bytes memory b,
         uint offset
         )
         internal
@@ -34,7 +33,7 @@ library BytesUtil {
     }
 
     function bytesToUint(
-        bytes b,
+        bytes memory b,
         uint offset
         )
         internal
@@ -45,7 +44,7 @@ library BytesUtil {
     }
 
     function bytesToAddress(
-        bytes b,
+        bytes memory b,
         uint offset
         )
         internal
@@ -56,7 +55,7 @@ library BytesUtil {
     }
 
     function bytesToUint16(
-        bytes b,
+        bytes memory b,
         uint offset
         )
         internal
@@ -67,7 +66,7 @@ library BytesUtil {
     }
 
     function bytesToUintX(
-        bytes b,
+        bytes memory b,
         uint offset,
         uint numBytes
         )
@@ -82,12 +81,12 @@ library BytesUtil {
     }
 
     function subBytes(
-        bytes b,
+        bytes memory b,
         uint offset
         )
         internal
         pure
-        returns (bytes data)
+        returns (bytes memory data)
     {
         require(b.length >= offset + 32, "INVALID_SIZE");
         assembly {

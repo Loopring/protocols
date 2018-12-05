@@ -1,12 +1,8 @@
+import { BigNumber } from "bignumber.js";
 import * as pjs from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 import { ringsInfoList } from "./rings_config";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-
-const {
-  DummyExchange,
-  DeserializerTest,
-} = new Artifacts(artifacts);
 
 contract("Exchange_Submit_Audit", (accounts: string[]) => {
 
@@ -16,7 +12,9 @@ contract("Exchange_Submit_Audit", (accounts: string[]) => {
   let deserializerTest: any;
 
   const checkFilled = async (order: pjs.OrderInfo, expected: number) => {
-    const filled = await exchangeTestUtil.context.tradeDelegate.filled("0x" + order.hash.toString("hex")).toNumber();
+    const filled = new BigNumber(
+      (await exchangeTestUtil.context.tradeDelegate.filled("0x" + order.hash.toString("hex"))),
+    ).toNumber();
     assert.equal(filled, expected, "Order fill different than expected");
   };
 
@@ -36,9 +34,11 @@ contract("Exchange_Submit_Audit", (accounts: string[]) => {
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+    const DeserializerTest = artifacts.require("test/DeserializerTest");
     deserializerTest = await DeserializerTest.deployed();
 
     // Create dummy exchange and authorize it
+    const DummyExchange = artifacts.require("test/DummyExchange");
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
                                             exchangeTestUtil.context.tradeHistory.address,
                                             exchangeTestUtil.context.feeHolder.address,

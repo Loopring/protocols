@@ -3,10 +3,6 @@ import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/Artifacts";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
-const {
-  TESTToken,
-} = new Artifacts(artifacts);
-
 contract("Exchange_Security", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
@@ -67,7 +63,8 @@ contract("Exchange_Security", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupRings(ringsInfoAttack);
 
-      const TestToken = TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
+      const TESTToken = artifacts.require("test/tokens/TEST");
+      const TestToken = await TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
 
       // Enable the Reentrancy attack
       // Create a valid ring that can be submitted by the token

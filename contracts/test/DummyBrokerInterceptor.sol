@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IBrokerInterceptor.sol";
@@ -27,7 +26,7 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
     mapping(address => mapping(address => mapping(address => uint))) public spent;
     mapping(address => mapping(address => mapping(address => uint))) public allowance;
 
-    address public exchangeAddress = 0x0;
+    address public exchangeAddress = address(0x0);
 
     bool public doReentrancyAttack = false;
     bytes public submitRingsData;
@@ -39,7 +38,7 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         )
         public
     {
-        require(_exchangeAddress != 0x0, "Exchange address needs to be valid");
+        require(_exchangeAddress != address(0x0), "Exchange address needs to be valid");
         exchangeAddress = _exchangeAddress;
     }
 
@@ -53,7 +52,7 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         returns (uint)
     {
         if (doFailAllFunctions) {
-            assert(owner == 0x0);
+            assert(owner == address(0x0));
         }
         return allowance[broker][owner][token];
     }
@@ -68,7 +67,7 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
         returns (bool ok)
     {
         if (doFailAllFunctions) {
-            require(owner == 0x0, "Fake check");
+            require(owner == address(0x0), "Fake check");
         }
         if (doReentrancyAttack) {
             IRingSubmitter(exchangeAddress).submitRings(submitRingsData);
@@ -90,7 +89,7 @@ contract DummyBrokerInterceptor is IBrokerInterceptor {
 
     function setReentrancyAttackEnabled(
         bool _enable,
-        bytes _submitRingsData
+        bytes memory _submitRingsData
         )
         public
     {

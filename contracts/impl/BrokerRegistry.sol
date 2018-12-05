@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
@@ -64,15 +63,15 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
         external
         view
         returns (
-            address[] brokers,
-            address[] interceptors
+            address[] memory brokers,
+            address[] memory interceptors
         )
     {
         Broker[] storage _brokers = brokersMap[owner];
         uint size = _brokers.length;
 
         if (start >= size) {
-            return;
+            return (brokers, interceptors);
         }
 
         uint end = start + count;
@@ -95,13 +94,13 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
         )
         external
     {
-        require(0x0 != broker, ZERO_ADDRESS);
+        require(address(0x0) != broker, ZERO_ADDRESS);
         require(
             0 == positionMap[msg.sender][broker],
             ALREADY_EXIST
         );
 
-        if (interceptor != 0x0) {
+        if (interceptor != address(0x0)) {
             require(isContract(interceptor), INVALID_ADDRESS);
         }
 
@@ -127,7 +126,7 @@ contract BrokerRegistry is IBrokerRegistry, NoDefaultFunc {
         )
         external
     {
-        require(0x0 != addr, ZERO_ADDRESS);
+        require(address(0x0) != addr, ZERO_ADDRESS);
 
         uint pos = positionMap[msg.sender][addr];
         require(pos != 0, NOT_FOUND);

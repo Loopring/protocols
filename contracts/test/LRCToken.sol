@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
@@ -93,7 +92,7 @@ contract BasicToken is ERC20Basic {
      * @param _value The amount to be transferred.
      */
     function transfer(address _to, uint256 _value) public returns (bool) {
-        require(_to != 0x0, "ZERO_ADDRESS");
+        require(_to != address(0x0), "ZERO_ADDRESS");
         require(_value <= balances[msg.sender], "INVALID_VALUE");
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -136,7 +135,7 @@ contract StandardToken is ERC20, BasicToken {
      * @param _value uint256 the amount of tokens to be transferred
      */
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
-        require(_to != 0x0, "ZERO_ADDRESS");
+        require(_to != address(0x0), "ZERO_ADDRESS");
         require(_value <= balances[_from], "INVALID_VALUE");
         require(_value <= allowed[_from][msg.sender], "INVALID_VALUE");
         balances[_from] = balances[_from].sub(_value);
@@ -222,12 +221,12 @@ contract LRCToken is StandardToken, Errors {
         balances[burner] = balances[burner].sub(_value);
         totalSupply_ = totalSupply_.sub(_value);
         emit Burn(burner, _value);
-        emit Transfer(burner, 0x0, _value);
+        emit Transfer(burner, address(0x0), _value);
         return true;
     }
 
     function burnFrom(address _owner, uint256 _value) public returns (bool) {
-        require(_owner != 0x0, "ZERO_ADDRESS");
+        require(_owner != address(0x0), "ZERO_ADDRESS");
         require(_value <= balances[_owner], "INVALID_VALUE");
         require(_value <= allowed[_owner][msg.sender], "INVALID_VALUE");
 
@@ -236,21 +235,21 @@ contract LRCToken is StandardToken, Errors {
         totalSupply_ = totalSupply_.sub(_value);
 
         emit Burn(_owner, _value);
-        emit Transfer(_owner, 0x0, _value);
+        emit Transfer(_owner, address(0x0), _value);
         return true;
     }
 
     constructor(
-        string  _name,
-        string  _symbol,
-        uint8   _decimals,
-        uint    _totalSupply,
-        address _firstHolder
+        string memory _name,
+        string memory _symbol,
+        uint8         _decimals,
+        uint          _totalSupply,
+        address       _firstHolder
         )
         public
     {
         require(_totalSupply > 0, "INVALID_VALUE");
-        require(_firstHolder != 0x0, "ZERO_ADDRESS");
+        require(_firstHolder != address(0x0), "ZERO_ADDRESS");
         checkSymbolAndName(_symbol,_name);
 
         name = _name;

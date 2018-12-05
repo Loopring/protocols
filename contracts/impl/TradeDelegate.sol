@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/ITradeDelegate.sol";
@@ -32,7 +31,7 @@ contract TradeDelegate is ITradeDelegate, Authorizable, Killable, NoDefaultFunc 
     using ERC20SafeTransfer for address;
 
     function batchTransfer(
-        bytes32[] batch
+        bytes32[] calldata batch
         )
         external
         onlyAuthorized

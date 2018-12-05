@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IRingSubmitter.sol";
@@ -36,7 +35,7 @@ library RingHelper {
 
     using BrokerInterceptorProxy for address;
     function updateHash(
-        Data.Ring ring
+        Data.Ring memory ring
         )
         internal
         pure
@@ -65,8 +64,8 @@ library RingHelper {
     }
 
     function calculateFillAmountAndFee(
-        Data.Ring ring,
-        Data.Context ctx
+        Data.Ring memory ring,
+        Data.Context memory ctx
         )
         internal
     {
@@ -138,9 +137,9 @@ library RingHelper {
     }
 
     function calculateOrderFillAmounts(
-        Data.Context ctx,
-        Data.Participation p,
-        Data.Participation prevP,
+        Data.Context memory ctx,
+        Data.Participation memory p,
+        Data.Participation memory prevP,
         uint i,
         uint smallest
         )
@@ -166,7 +165,7 @@ library RingHelper {
     }
 
     function checkOrdersValid(
-        Data.Ring ring
+        Data.Ring memory ring
         )
         internal
         pure
@@ -180,7 +179,7 @@ library RingHelper {
     }
 
     function checkForSubRings(
-        Data.Ring ring
+        Data.Ring memory ring
         )
         internal
         pure
@@ -194,7 +193,7 @@ library RingHelper {
     }
 
     function adjustOrderStates(
-        Data.Ring ring
+        Data.Ring memory ring
         )
         internal
         pure
@@ -207,7 +206,7 @@ library RingHelper {
 
 
     function revertOrderStats(
-        Data.Ring ring
+        Data.Ring memory ring
         )
         internal
         pure
@@ -218,9 +217,9 @@ library RingHelper {
     }
 
     function doPayments(
-        Data.Ring ring,
-        Data.Context ctx,
-        Data.Mining mining
+        Data.Ring memory ring,
+        Data.Context memory ctx,
+        Data.Mining memory mining
         )
         internal
     {
@@ -229,7 +228,7 @@ library RingHelper {
     }
 
     function generateFills(
-        Data.Ring ring,
+        Data.Ring memory ring,
         uint destPtr
         )
         internal
@@ -275,8 +274,8 @@ library RingHelper {
     }
 
     function transferTokens(
-        Data.Ring ring,
-        Data.Context ctx,
+        Data.Ring memory ring,
+        Data.Context memory ctx,
         address feeRecipient
         )
         internal
@@ -292,10 +291,10 @@ library RingHelper {
     }
 
     function transferTokensForParticipation(
-        Data.Context ctx,
+        Data.Context memory ctx,
         address feeRecipient,
-        Data.Participation p,
-        Data.Participation prevP
+        Data.Participation memory p,
+        Data.Participation memory prevP
         )
         internal
         returns (uint)
@@ -357,7 +356,7 @@ library RingHelper {
         );
 
         // onTokenSpent broker callbacks
-        if (p.order.brokerInterceptor != 0x0) {
+        if (p.order.brokerInterceptor != address(0x0)) {
             onTokenSpent(
                 p.order.brokerInterceptor,
                 p.order.owner,
@@ -434,7 +433,7 @@ library RingHelper {
         )
         internal
     {
-        if (brokerInterceptor == 0x0 || amount == 0) {
+        if (brokerInterceptor == address(0x0) || amount == 0) {
             return;
         } else {
             brokerInterceptor.onTokenSpentSafe(
@@ -447,9 +446,9 @@ library RingHelper {
     }
 
     function payFees(
-        Data.Ring ring,
-        Data.Context ctx,
-        Data.Mining mining
+        Data.Ring memory ring,
+        Data.Context memory ctx,
+        Data.Mining memory mining
         )
         internal
         view
@@ -467,14 +466,16 @@ library RingHelper {
     }
 
     function payFeesForParticipation(
-        Data.FeeContext feeCtx,
-        Data.Participation p
+        Data.FeeContext memory feeCtx,
+        Data.Participation memory p
         )
         internal
         view
         returns (uint)
     {
-        feeCtx.walletPercentage = p.order.P2P ? 100 : (p.order.wallet == 0x0 ? 0 : p.order.walletSplitPercentage);
+        feeCtx.walletPercentage = p.order.P2P ? 100 : (
+            (p.order.wallet == address(0x0) ? 0 : p.order.walletSplitPercentage)
+        );
         feeCtx.waiveFeePercentage = p.order.waiveFeePercentage;
         feeCtx.owner = p.order.owner;
         feeCtx.wallet = p.order.wallet;
@@ -498,7 +499,7 @@ library RingHelper {
     }
 
     function payFeesAndBurn(
-        Data.FeeContext feeCtx,
+        Data.FeeContext memory feeCtx,
         address token,
         uint totalAmount
         )
@@ -513,7 +514,7 @@ library RingHelper {
         uint amount = totalAmount;
         // No need to pay any fees in a P2P order without a wallet
         // (but the fee amount is a part of amountS of the order, so the fee amount is rebated).
-        if (feeCtx.P2P && feeCtx.wallet == 0x0) {
+        if (feeCtx.P2P && feeCtx.wallet == address(0x0)) {
             amount = 0;
         }
 
@@ -596,7 +597,7 @@ library RingHelper {
     }
 
     function getBurnRate(
-        Data.FeeContext feeCtx,
+        Data.FeeContext memory feeCtx,
         address token
         )
         internal
@@ -606,8 +607,8 @@ library RingHelper {
         bytes32[] memory tokenBurnRates = feeCtx.ctx.tokenBurnRates;
         uint length = tokenBurnRates.length;
         for (uint i = 0; i < length; i += 2) {
-            if (token == address(tokenBurnRates[i])) {
-                uint32 burnRate = uint32(tokenBurnRates[i + 1]);
+            if (token == address(bytes20(tokenBurnRates[i]))) {
+                uint32 burnRate = uint32(bytes4(tokenBurnRates[i + 1]));
                 return feeCtx.P2P ? (burnRate / 0x10000) : (burnRate & 0xFFFF);
             }
         }
@@ -623,7 +624,7 @@ library RingHelper {
     }
 
     function distributeMinerFeeToOwners(
-        Data.FeeContext feeCtx,
+        Data.FeeContext memory feeCtx,
         address token,
         uint minerFee
         )

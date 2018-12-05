@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
+pragma solidity 0.5.0;
 
 import "../DummyToken.sol";
 import "../../iface/IRingSubmitter.sol";
@@ -32,7 +32,7 @@ contract TEST is DummyToken {
 
     uint public testCase = TEST_NOTHING;
 
-    address public exchangeAddress = 0x0;
+    address public exchangeAddress = address(0x0);
     bytes public submitRingsData;
 
     constructor() DummyToken(
@@ -51,7 +51,7 @@ contract TEST is DummyToken {
         public
         returns (bool)
     {
-        require(_to != 0x0, "ZERO_ADDRESS");
+        require(_to != address(0x0), "ZERO_ADDRESS");
         require(_value <= balances[msg.sender], "INVALID_VALUE");
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -68,7 +68,7 @@ contract TEST is DummyToken {
         public
         returns (bool)
     {
-        require(_to != 0x0, "ZERO_ADDRESS");
+        require(_to != address(0x0), "ZERO_ADDRESS");
         require(_value <= balances[_from], "INVALID_VALUE");
         require(_value <= allowed[_from][msg.sender], "INVALID_VALUE");
         balances[_from] = balances[_from].sub(_value);
@@ -86,11 +86,11 @@ contract TEST is DummyToken {
             return true;
         } else if (testCase == TEST_REENTRANCY) {
             // Call submitRings without ever throwing
-            bytes memory calldata = abi.encodeWithSelector(
+            bytes memory callData = abi.encodeWithSelector(
                 IRingSubmitter(exchangeAddress).submitRings.selector,
                 submitRingsData
             );
-            bool success = exchangeAddress.call(calldata);
+            (bool success, ) = exchangeAddress.call(callData);
             success; // to disable unused local variable warning
 
             // Copy the 100 bytes containing the revert message
@@ -134,7 +134,7 @@ contract TEST is DummyToken {
 
     function setReentrancyAttackData(
         address _exchangeAddress,
-        bytes _submitRingsData
+        bytes memory _submitRingsData
         )
         public
     {

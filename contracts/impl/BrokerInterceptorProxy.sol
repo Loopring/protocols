@@ -14,9 +14,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
+
+import "../iface/IBrokerInterceptor.sol";
 
 
 /// @title A safe wrapper around the IBrokerInterceptor functions
@@ -32,12 +33,13 @@ library BrokerInterceptorProxy {
         internal
         returns (uint allowance)
     {
-        bool success = brokerInterceptor.call.gas(5000)(
-            0xe7092b41, // bytes4(keccak256("getAllowance(address,address,address)"))
+        bytes memory callData = abi.encodeWithSelector(
+            IBrokerInterceptor(brokerInterceptor).getAllowance.selector,
             owner,
             broker,
             token
         );
+        (bool success, ) = brokerInterceptor.call.gas(5000)(callData);
         // Just return an allowance of 0 when something goes wrong
         if (success) {
             assembly {
@@ -67,13 +69,14 @@ library BrokerInterceptorProxy {
         internal
         returns (bool ok)
     {
-        ok = brokerInterceptor.call.gas(25000)(
-            0x9e80e44d, // bytes4(keccak256("onTokenSpent(address,address,address,uint256)"))
+        bytes memory callData = abi.encodeWithSelector(
+            IBrokerInterceptor(brokerInterceptor).onTokenSpent.selector,
             owner,
             broker,
             token,
             amount
         );
+        (ok, ) = brokerInterceptor.call.gas(25000)(callData);
         if (ok) {
             assembly {
                 switch returndatasize()

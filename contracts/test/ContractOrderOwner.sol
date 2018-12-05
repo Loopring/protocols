@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
+pragma solidity 0.5.0;
 pragma experimental "ABIEncoderV2";
 
 import "../iface/IOrderCanceller.sol";
@@ -27,8 +26,8 @@ import "../lib/ERC20.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract ContractOrderOwner {
 
-    address public orderBookAddress = 0x0;
-    address public orderCancellerAddress = 0x0;
+    address public orderBookAddress = address(0x0);
+    address public orderCancellerAddress = address(0x0);
 
     constructor(
         address _orderBookAddress,
@@ -41,7 +40,7 @@ contract ContractOrderOwner {
     }
 
     function sumbitOrderToOrderBook(
-        bytes data,
+        bytes calldata data,
         bytes32 expectedOrderHash
         )
         external
