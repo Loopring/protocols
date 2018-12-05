@@ -203,10 +203,10 @@ export class ProtocolSimulator {
 
     const fills = await this.context.tradeHistory.batchGetFilledAndCheckCancelled(bitstream.getBytes32Array());
 
-    const cancelledValue = new BigNumber("F".repeat(64), 16);
+    const cancelledValue = new BN("F".repeat(64), 16);
     for (const [i, order] of orders.entries()) {
-      order.filledAmountS = fills[i];
-      order.valid = order.valid && ensure(!fills[i].equals(cancelledValue), "order is cancelled");
+      order.filledAmountS = new BigNumber(fills[i].toString());
+      order.valid = order.valid && ensure(!fills[i].eq(cancelledValue), "order is cancelled");
     }
   }
 
@@ -296,10 +296,11 @@ export class ProtocolSimulator {
     for (const order of orders) {
       const tokens = [order.tokenS, order.tokenB, order.feeToken];
       for (const token of tokens) {
-        const Token = this.context.ERC20Contract.at(order.tokenS);
+        const Token = await this.context.ERC20Contract.at(order.tokenS);
         // feeRecipient
         if (!balancesBefore[token][mining.feeRecipient]) {
-          balancesBefore[token][mining.feeRecipient] = await Token.balanceOf(mining.feeRecipient);
+          balancesBefore[token][mining.feeRecipient] =
+            new BigNumber((await Token.balanceOf(mining.feeRecipient)).toString());
         }
       }
     }
@@ -346,23 +347,23 @@ export class ProtocolSimulator {
         // Owner
         if (!feeBalancesBefore[token][order.owner]) {
           feeBalancesBefore[token][order.owner] =
-            await this.context.feeHolder.feeBalances(token, order.owner);
+            new BigNumber((await this.context.feeHolder.feeBalances(token, order.owner)).toString());
         }
         // Wallet
         if (order.walletAddr && !feeBalancesBefore[token][order.walletAddr]) {
           feeBalancesBefore[token][order.walletAddr] =
-            await this.context.feeHolder.feeBalances(token, order.walletAddr);
+            new BigNumber((await this.context.feeHolder.feeBalances(token, order.walletAddr)).toString());
         }
         // FeeRecipient
         if (!feeBalancesBefore[token][mining.feeRecipient]) {
           feeBalancesBefore[token][mining.feeRecipient] =
-            await this.context.feeHolder.feeBalances(token, mining.feeRecipient);
+            new BigNumber((await this.context.feeHolder.feeBalances(token, mining.feeRecipient)).toString());
         }
         // Burned
         const feeHolder = this.context.feeHolder.address;
         if (!feeBalancesBefore[token][feeHolder]) {
           feeBalancesBefore[token][feeHolder] =
-            await this.context.feeHolder.feeBalances(token, feeHolder);
+            new BigNumber((await this.context.feeHolder.feeBalances(token, feeHolder)).toString());
         }
       }
     }
@@ -384,7 +385,8 @@ export class ProtocolSimulator {
     const filledAmountsBefore: { [hash: string]: BigNumber; } = {};
     for (const order of orders) {
       const orderHash = order.hash.toString("hex");
-      filledAmountsBefore[orderHash] = await this.context.tradeHistory.filled("0x" + orderHash);
+      filledAmountsBefore[orderHash] =
+        new BigNumber((await this.context.tradeHistory.filled("0x" + orderHash)).toString());
     }
 
     // Filled amounts after

@@ -68,7 +68,7 @@ export class MultiHashUtil {
         const msgHash = ethUtil.hashPersonalMessage(hash);
         const pub = ethUtil.ecrecover(msgHash, v, r, s);
         const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
-        return signer === recoveredAddress;
+        return signer.toLowerCase() === recoveredAddress.toLowerCase();
       } catch {
         return false;
       }
@@ -83,7 +83,7 @@ export class MultiHashUtil {
       try {
         const pub = ethUtil.ecrecover(hash, v, r, s);
         const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
-        return signer === recoveredAddress;
+        return signer.toLowerCase() === recoveredAddress.toLowerCase();
       } catch {
         return false;
       }
@@ -93,7 +93,7 @@ export class MultiHashUtil {
   }
 
   private async signEthereumAsync(sig: Bitstream, hash: Buffer, address: string) {
-    const signature = await promisify(this.web3Instance.eth.sign)(address, ethUtil.bufferToHex(hash));
+    const signature = await promisify(this.web3Instance.eth.sign)(ethUtil.bufferToHex(hash), address);
     const { v, r, s } = ethUtil.fromRpcSig(signature);
 
     sig.addNumber(1 + 32 + 32, 1);

@@ -58,27 +58,63 @@ export class Context {
     const orderBookAbi = fs.readFileSync(ABIPath + "IOrderBook.abi", "ascii");
     const burnRateTableAbi = fs.readFileSync(ABIPath + "IBurnRateTable.abi", "ascii");
 
-    if (!web3) {
+    /*if (!web3) {
       web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
-    }
+    }*/
 
-    this.ERC20Contract = web3.eth.contract(JSON.parse(erc20Abi));
-    this.TradeDelegateContract = web3.eth.contract(JSON.parse(tradeDelegateAbi));
-    this.TradeHistoryContract = web3.eth.contract(JSON.parse(tradeHistoryAbi));
-    this.BrokerRegistryContract = web3.eth.contract(JSON.parse(brokerRegistryAbi));
-    this.OrderRegistryContract = web3.eth.contract(JSON.parse(orderRegistryAbi));
-    this.FeeHolderContract = web3.eth.contract(JSON.parse(feeHolderAbi));
-    this.OrderBookContract = web3.eth.contract(JSON.parse(orderBookAbi));
-    this.BrokerInterceptorContract = web3.eth.contract(JSON.parse(brokerInterceptorAbi));
-    this.BurnRateTableContract = web3.eth.contract(JSON.parse(burnRateTableAbi));
+    console.log("tradeDelegateAddress: " + tradeDelegateAddress);
 
-    this.tradeDelegate = this.TradeHistoryContract.at(tradeDelegateAddress);
+    this.ERC20Contract = new web3.eth.Contract(JSON.parse(erc20Abi));
+    this.TradeDelegateContract = new web3.eth.Contract(JSON.parse(tradeDelegateAbi), tradeDelegateAddress);
+    this.TradeHistoryContract = new web3.eth.Contract(JSON.parse(tradeHistoryAbi), tradeHistoryAddress);
+    this.BrokerRegistryContract = new web3.eth.Contract(JSON.parse(brokerRegistryAbi), orderBrokerRegistryAddress);
+    this.OrderRegistryContract = new web3.eth.Contract(JSON.parse(orderRegistryAbi), orderRegistryAddress);
+    this.FeeHolderContract = new web3.eth.Contract(JSON.parse(feeHolderAbi), feeHolderAddress);
+    this.OrderBookContract = new web3.eth.Contract(JSON.parse(orderBookAbi), orderBookAddress);
+    this.BrokerInterceptorContract = new web3.eth.Contract(JSON.parse(brokerInterceptorAbi));
+    this.BurnRateTableContract = new web3.eth.Contract(JSON.parse(burnRateTableAbi), burnRateTableAddress);
+
+    /*this.tradeDelegate = new web3.eth.Contract(JSON.parse(tradeDelegateAbi), tradeDelegateAddress);
+    this.tradeHistory = this.TradeHistoryContract;
+    this.orderBrokerRegistry = this.BrokerRegistryContract;
+    this.orderRegistry = this.OrderRegistryContract;
+    this.feeHolder = this.FeeHolderContract;
+    this.orderBook = this.OrderBookContract;
+    this.burnRateTable = this.BurnRateTableContract;*/
+
+    /*this.ERC20Contract = new web3.eth.Contract(JSON.parse(erc20Abi));
+    this.TradeDelegateContract = new web3.eth.Contract(JSON.parse(tradeDelegateAbi));
+    this.TradeHistoryContract = new web3.eth.Contract(JSON.parse(tradeHistoryAbi));
+    this.BrokerRegistryContract = new web3.eth.Contract(JSON.parse(brokerRegistryAbi));
+    this.OrderRegistryContract = new web3.eth.Contract(JSON.parse(orderRegistryAbi));
+    this.FeeHolderContract = new web3.eth.Contract(JSON.parse(feeHolderAbi));
+    this.OrderBookContract = new web3.eth.Contract(JSON.parse(orderBookAbi));
+    this.BrokerInterceptorContract = new web3.eth.Contract(JSON.parse(brokerInterceptorAbi));
+    this.BurnRateTableContract = new web3.eth.Contract(JSON.parse(burnRateTableAbi));*/
+
+    /*this.tradeDelegate = this.TradeHistoryContract.at(tradeDelegateAddress);
     this.tradeHistory = this.TradeHistoryContract.at(tradeHistoryAddress);
     this.orderBrokerRegistry = this.BrokerRegistryContract.at(orderBrokerRegistryAddress);
     this.orderRegistry = this.OrderRegistryContract.at(orderRegistryAddress);
     this.feeHolder = this.FeeHolderContract.at(feeHolderAddress);
     this.orderBook = this.OrderBookContract.at(orderBookAddress);
-    this.burnRateTable = this.BurnRateTableContract.at(burnRateTableAddress);
+    this.burnRateTable = this.BurnRateTableContract.at(burnRateTableAddress);*/
+
+    /*this.tradeDelegate = this.TradeHistoryContract.clone();
+    this.tradeHistory = this.TradeHistoryContract.clone();
+    this.orderBrokerRegistry = this.BrokerRegistryContract.clone();
+    this.orderRegistry = this.OrderRegistryContract.clone();
+    this.feeHolder = this.FeeHolderContract.clone();
+    this.orderBook = this.OrderBookContract.clone();
+    this.burnRateTable = this.BurnRateTableContract.clone();
+
+    this.tradeDelegate.options.address = tradeDelegateAddress;
+    this.tradeHistory.options.address = tradeHistoryAddress;
+    this.orderBrokerRegistry.options.address = orderBrokerRegistryAddress;
+    this.orderRegistry.options.address = orderRegistryAddress;
+    this.feeHolder.options.address = feeHolderAddress;
+    this.orderBook.options.address = orderBookAddress;
+    this.burnRateTable.options.address = burnRateTableAddress;*/
   }
 
 }

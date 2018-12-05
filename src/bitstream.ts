@@ -1,4 +1,5 @@
 import { BigNumber } from "bignumber.js";
+import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
 
 export class Bitstream {
@@ -29,7 +30,12 @@ export class Bitstream {
   }
 
   public addBigNumber(x: BigNumber, numBytes = 32, forceAppend = true) {
-    const formattedData = this.padString(web3.toHex(x).slice(2), numBytes * 2);
+    const formattedData = this.padString(x.toString(16), numBytes * 2);
+    return this.insert(formattedData, forceAppend);
+  }
+
+  public addBN(x: BN, numBytes = 32, forceAppend = true) {
+    const formattedData = this.padString(x.toString(16), numBytes * 2);
     return this.insert(formattedData, forceAppend);
   }
 
@@ -58,9 +64,7 @@ export class Bitstream {
   }
 
   public addRawBytes(bs: string, forceAppend = true) {
-    const bsHex = web3.toHex(bs);
-    // logDebug("bsHex:", bsHex);
-    return this.insert(bsHex.slice(2), forceAppend);
+    return this.insert(bs.slice(2), forceAppend);
   }
 
   public extractUint8(offset: number) {

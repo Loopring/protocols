@@ -22,13 +22,14 @@ export class OrderUtil {
     if (!order.broker) {
        order.broker = order.owner;
     } else {
-      const [registered, brokerInterceptor] = await this.context.orderBrokerRegistry.getBroker(
+      const returnValue = await this.context.orderBrokerRegistry.getBroker(
         order.owner,
         order.broker,
       );
-      order.valid = order.valid && ensure(registered, "order broker is not registered");
+      order.valid = order.valid && ensure(returnValue.registered, "order broker is not registered");
       // order.brokerInterceptor =
-      //   (brokerInterceptor === "0x0000000000000000000000000000000000000000") ? undefined : brokerInterceptor;
+      //   (brokerInterceptor === "0x0000000000000000000000000000000000000000") ?
+      //   undefined : returnValue.brokerInterceptor;
     }
   }
 
@@ -290,11 +291,11 @@ export class OrderUtil {
   public async getERC20Spendable(spender: string,
                                  tokenAddress: string,
                                  owner: string) {
-    const token = this.context.ERC20Contract.at(tokenAddress);
+    const token = await this.context.ERC20Contract.at(tokenAddress);
     const balance = await token.balanceOf(owner);
     const allowance = await token.allowance(owner, spender);
     const spendable = BigNumber.min(balance, allowance);
-    return spendable;
+    return new BigNumber(spendable.toString());
   }
 
   public async getBrokerAllowance(tokenAddr: string,

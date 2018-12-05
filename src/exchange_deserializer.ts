@@ -163,7 +163,7 @@ export class ExchangeDeserializer {
   private nextAddress() {
     const offset = this.getNextOffset() * 4;
     if (offset !== 0) {
-      return this.data.extractAddress(this.dataOffset + offset);
+      return web3.utils.toChecksumAddress(this.data.extractAddress(this.dataOffset + offset));
     } else {
       return undefined;
     }
