@@ -3,16 +3,6 @@ import { expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 import { FeePayments } from "./feePayments";
 
-const {
-  BurnManager,
-  FeeHolder,
-  TradeDelegate,
-  DummyExchange,
-  DummyToken,
-  LRCToken,
-  WETHToken,
-} = new Artifacts(artifacts);
-
 contract("BurnManager", (accounts: string[]) => {
   const deployer = accounts[0];
   const user1 = accounts[1];
@@ -37,6 +27,7 @@ contract("BurnManager", (accounts: string[]) => {
   };
 
   const burnChecked = async (token: string, expectedAmount: BN) => {
+    const DummyToken = artifacts.require("test/DummyToken");
     const dummyToken = await DummyToken.at(token);
     const LRC = await DummyToken.at(tokenLRC);
 
@@ -62,14 +53,20 @@ contract("BurnManager", (accounts: string[]) => {
   };
 
   before(async () => {
+    const LRCToken = artifacts.require("test/tokens/LRC");
     tokenLRC = LRCToken.address;
+    const WETHToken = artifacts.require("test/tokens/WETH");
     tokenWETH = WETHToken.address;
 
+    const TradeDelegate = artifacts.require("impl/TradeDelegate");
     tradeDelegate = await TradeDelegate.deployed();
   });
 
   beforeEach(async () => {
     // Fresh FeeHolder for each test
+    const FeeHolder = artifacts.require("impl/FeeHolder");
+    const BurnManager = artifacts.require("impl/BurnManager");
+    const DummyExchange = artifacts.require("test/DummyExchange");
     feeHolder = await FeeHolder.new(tradeDelegate.address);
     burnManager = await BurnManager.new(feeHolder.address, tokenLRC);
     dummyExchange = await DummyExchange.new(tradeDelegate.address, zeroAddress, feeHolder.address, zeroAddress);
@@ -82,6 +79,7 @@ contract("BurnManager", (accounts: string[]) => {
       const amount = web3.utils.toBN(1e18);
 
       // Deposit some LRC in the fee holder contract
+      const DummyToken = artifacts.require("test/DummyToken");
       const LRC = await DummyToken.at(tokenLRC);
       await LRC.transfer(feeHolder.address, amount, {from: deployer});
       const feePayments = new FeePayments();
@@ -96,6 +94,7 @@ contract("BurnManager", (accounts: string[]) => {
       const amount = web3.utils.toBN(1e18);
 
       // Deposit some LRC in the fee holder contract
+      const DummyToken = artifacts.require("test/DummyToken");
       const WETH = await DummyToken.at(tokenWETH);
       await WETH.transfer(feeHolder.address, amount, {from: deployer});
       const feePayments = new FeePayments();

@@ -1,11 +1,6 @@
 import { expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 
-const {
-  BrokerRegistry,
-  DummyBrokerInterceptor,
-} = new Artifacts(artifacts);
-
 contract("BrokerRegistry", (accounts: string[]) => {
   const user1 = accounts[1];
   const user2 = accounts[2];
@@ -48,12 +43,15 @@ contract("BrokerRegistry", (accounts: string[]) => {
   };
 
   before(async () => {
+    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
     brokerRegistry = await BrokerRegistry.deployed();
+    const DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");
     dummyBrokerInterceptor = await DummyBrokerInterceptor.deployed();
   });
 
   beforeEach(async () => {
     // Fresh BrokerRegistry for each test
+    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
     brokerRegistry = await BrokerRegistry.new();
   });
 

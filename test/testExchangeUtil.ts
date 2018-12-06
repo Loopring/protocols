@@ -14,8 +14,10 @@ export class ExchangeTestUtil {
   public ringSubmitter: any;
 
   public async initialize(accounts: string[]) {
+    await this.sleep(1000);
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
+    await this.cleanTradeHistory();
     await this.authorizeTradeDelegate();
     await this.authorizeTradeHistory();
     await this.approveTradeDelegate();
@@ -645,11 +647,19 @@ export class ExchangeTestUtil {
   public async authorizeTradeDelegate() {
     // console.log("tradeDelegateAddress 2: " + this.context.tradeDelegate.options.address);
     // console.log(this.context.tradeDelegate);
-    await this.context.tradeDelegate.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    const alreadyAuthorized = await this.context.tradeDelegate.isAddressAuthorized(this.ringSubmitter.address);
+    // console.log("alreadyAuthorized: " + alreadyAuthorized);
+    if (!alreadyAuthorized) {
+      await this.context.tradeDelegate.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    }
   }
 
   public async authorizeTradeHistory() {
-    await this.context.tradeHistory.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    const alreadyAuthorized = await this.context.tradeHistory.isAddressAuthorized(this.ringSubmitter.address);
+    // console.log("alreadyAuthorized: " + alreadyAuthorized);
+    if (!alreadyAuthorized) {
+      await this.context.tradeHistory.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    }
   }
 
   public async approveTradeDelegate() {
@@ -709,9 +719,13 @@ export class ExchangeTestUtil {
     } = new Artifacts(artifacts);*/
 
     const TradeHistory = artifacts.require("impl/TradeHistory");
+    await this.sleep(100);
     const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
+    await this.sleep(100);
     const RingSubmitter = artifacts.require("impl/RingSubmitter");
+    await this.sleep(100);
     const WETHToken = artifacts.require("test/tokens/WETH");
+    await this.sleep(100);
     // const OrderRegistry = artifacts.require("impl/OrderRegistry");
 
     const tradeHistory = await TradeHistory.new();
@@ -768,7 +782,7 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const {
+    /*const {
       RingSubmitter,
       OrderRegistry,
       TradeDelegate,
@@ -779,7 +793,23 @@ export class ExchangeTestUtil {
       LRCToken,
       DummyToken,
       BrokerRegistry,
-    } = new Artifacts(artifacts);
+    } = new Artifacts(artifacts);*/
+
+    const RingSubmitter = artifacts.require("impl/RingSubmitter");
+    await this.sleep(100);
+    const TradeDelegate = artifacts.require("impl/TradeDelegate");
+    await this.sleep(100);
+    const TradeHistory = artifacts.require("impl/TradeHistory");
+    await this.sleep(100);
+    const OrderRegistry = artifacts.require("impl/OrderRegistry");
+    await this.sleep(100);
+    const FeeHolder = artifacts.require("impl/FeeHolder");
+    await this.sleep(100);
+    const OrderBook = artifacts.require("impl/OrderBook");
+    await this.sleep(100);
+    const BurnRateTable = artifacts.require("impl/BurnRateTable");
+    await this.sleep(100);
+    const LRCToken = artifacts.require("test/tokens/LRC");
 
     const [ringSubmitter, tradeDelegate, tradeHistory, orderRegistry,
            feeHolder, orderBook, burnRateTable, lrcToken] = await Promise.all([
@@ -813,11 +843,15 @@ export class ExchangeTestUtil {
                            LRCToken.address,
                            feePercentageBase,
                            ringIndex);
+    const DummyToken = artifacts.require("test/DummyToken");
+    await this.sleep(100);
+    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
+    await this.sleep(100);
     context.ERC20Contract = DummyToken;
-    context.tradeDelegate = tradeDelegate;
-    context.tradeHistory = tradeHistory;
+    context.tradeDelegate = await TradeDelegate.new();
+    context.tradeHistory = await TradeHistory.new();
     context.orderRegistry = orderRegistry;
-    context.feeHolder = feeHolder;
+    context.feeHolder = await FeeHolder.new(context.tradeDelegate.address);
     context.orderBook = orderBook;
     context.burnRateTable = burnRateTable;
     context.orderBrokerRegistry = await BrokerRegistry.deployed();
@@ -825,14 +859,27 @@ export class ExchangeTestUtil {
   }
 
   private async createExchangeTestContext(accounts: string[]) {
-    const {
+    /*const {
       LRCToken,
       GTOToken,
       RDNToken,
       REPToken,
       WETHToken,
       TESTToken,
-    } = new Artifacts(artifacts);
+    } = new Artifacts(artifacts);*/
+
+    const LRCToken = artifacts.require("test/tokens/LRC");
+    await this.sleep(100);
+    const RDNToken = artifacts.require("test/tokens/RDN");
+    await this.sleep(100);
+    const GTOToken = artifacts.require("test/tokens/GTO");
+    await this.sleep(100);
+    const REPToken = artifacts.require("test/tokens/REP");
+    await this.sleep(100);
+    const WETHToken = artifacts.require("test/tokens/WETH");
+    await this.sleep(100);
+    const TESTToken = artifacts.require("test/tokens/TEST");
+    await this.sleep(100);
 
     const tokenSymbolAddrMap = new Map<string, string>();
     const tokenAddrSymbolMap = new Map<string, string>();
@@ -893,6 +940,10 @@ export class ExchangeTestUtil {
                                    tokenAddrSymbolMap,
                                    tokenAddrInstanceMap,
                                    allTokens);
+  }
+
+  private sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
 }

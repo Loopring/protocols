@@ -560,18 +560,18 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
     const addresses: string[] = []; // max: 11 * 2 + 3
 
     for (let i = 0; i < 12; i ++) {
-      uint16Data.push(1);
+      uint16Data.push(web3.utils.toBN(1));
     }
 
     for (let i = 0; i < 20; i ++) {
-      uintData.push(1e18);
+      uintData.push(web3.utils.toBN(1e18));
     }
 
     for (let i = 0; i < 25; i ++) {
       addresses.push(accounts[0]);
     }
 
-    const tx = await deserializerTest.submitByArrays(uint16Data, uintData, addresses, 2);
+    const tx = await deserializerTest.submitByArrays(uint16Data, uintData, addresses, web3.utils.toBN(2));
     pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
   });
 

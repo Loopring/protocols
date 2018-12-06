@@ -1,7 +1,5 @@
 import { expectThrow } from "protocol2-js";
 
-const Claimable = artifacts.require("Claimable");
-
 contract("Claimable", (accounts: string[]) => {
 
   const owner1 = accounts[0];
@@ -12,6 +10,7 @@ contract("Claimable", (accounts: string[]) => {
   let claimable: any;
 
   beforeEach(async () => {
+    const Claimable = artifacts.require("Claimable");
     claimable = await Claimable.new({from: owner1});
   });
 

@@ -1,8 +1,6 @@
 import ABI = require("ethereumjs-abi");
 import { expectThrow } from "protocol2-js";
 
-const BytesUtilWrapper = artifacts.require("BytesUtilWrapper");
-
 contract("BytesUtil", (accounts: string[]) => {
 
   let bytesUtil: any;
@@ -41,6 +39,7 @@ contract("BytesUtil", (accounts: string[]) => {
   };
 
   before(async () => {
+    const BytesUtilWrapper = artifacts.require("BytesUtilWrapper");
     bytesUtil = await BytesUtilWrapper.new();
   });
 

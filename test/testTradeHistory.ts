@@ -3,18 +3,6 @@ import BN = require("bn.js");
 import { Bitstream, expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 
-const {
-  TradeHistory,
-  TradeDelegate,
-  DummyToken,
-  DummyExchange,
-  LRCToken,
-  GTOToken,
-  RDNToken,
-  WETHToken,
-  TESTToken,
-} = new Artifacts(artifacts);
-
 interface FilledUpdate {
   hash: string;
   amount: BN;
@@ -152,6 +140,10 @@ contract("TradeHistory", (accounts: string[]) => {
   };
 
   before(async () => {
+    const LRCToken = artifacts.require("test/tokens/LRC");
+    const WETHToken = artifacts.require("test/tokens/WETH");
+    const RDNToken = artifacts.require("test/tokens/RDN");
+    const GTOToken = artifacts.require("test/tokens/GTO");
     token1 = LRCToken.address;
     token2 = WETHToken.address;
     token3 = RDNToken.address;
@@ -159,6 +151,10 @@ contract("TradeHistory", (accounts: string[]) => {
   });
 
   beforeEach(async () => {
+    const TradeHistory = artifacts.require("impl/TradeHistory");
+    const TradeDelegate = artifacts.require("impl/TradeDelegate");
+    const DummyExchange = artifacts.require("test/DummyExchange");
+    const TESTToken = artifacts.require("test/tokens/TEST");
     const tradeDelegate = await TradeDelegate.deployed();
     tradeHistory = await TradeHistory.new();
     dummyExchange1 = await DummyExchange.new(tradeDelegate.address, tradeHistory.address, zeroAddress, zeroAddress);

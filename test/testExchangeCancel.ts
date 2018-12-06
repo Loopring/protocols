@@ -5,8 +5,6 @@ import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/Artifacts";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
-const ContractOrderOwner = artifacts.require("ContractOrderOwner");
-
 contract("Exchange_Cancel", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
@@ -44,6 +42,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
         orderCanceller.address,
         {from: exchangeTestUtil.testContext.deployer},
       );
+      const ContractOrderOwner = artifacts.require("ContractOrderOwner");
       contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address,
                                                         orderCanceller.address);
     });

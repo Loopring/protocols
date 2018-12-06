@@ -4,13 +4,6 @@ import { expectThrow, logDebug, OrderInfo, OrderUtil, TokenType } from "protocol
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 
-const {
-  OrderBook,
-  LRCToken,
-  GTOToken,
-  RDNToken,
-} = new Artifacts(artifacts);
-
 contract("OrderBook", (accounts: string[]) => {
   const owner1 = accounts[1];
   const owner2 = accounts[2];
@@ -102,6 +95,9 @@ contract("OrderBook", (accounts: string[]) => {
   };
 
   before(async () => {
+    const LRCToken = artifacts.require("test/tokens/LRC");
+    const RDNToken = artifacts.require("test/tokens/RDN");
+    const GTOToken = artifacts.require("test/tokens/GTO");
     lrcAddress = LRCToken.address;
     rdnAddress = RDNToken.address;
     gtoAddress = GTOToken.address;
@@ -109,6 +105,7 @@ contract("OrderBook", (accounts: string[]) => {
 
   beforeEach(async () => {
     // New OrderBook for each test
+    const OrderBook = artifacts.require("impl/OrderBook");
     orderBook = await OrderBook.new();
   });
 

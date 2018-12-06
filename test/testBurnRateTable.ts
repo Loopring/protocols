@@ -3,14 +3,6 @@ import BN = require("bn.js");
 import { expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 
-const {
-  BurnRateTable,
-  TradeDelegate,
-  DummyToken,
-  LRCToken,
-  WETHToken,
-} = new Artifacts(artifacts);
-
 contract("BurnRateTable", (accounts: string[]) => {
   const deployer = accounts[0];
   const mockedExchangeAddress = accounts[1];
@@ -101,6 +93,7 @@ contract("BurnRateTable", (accounts: string[]) => {
   };
 
   const getTokenTierUpgradeAmount = async () => {
+    const DummyToken = artifacts.require("test/DummyToken");
     const LRC = await DummyToken.at(tokenLRC);
     const totalLRCSupply = toNumber(await LRC.totalSupply());
     const upgradeCostPercentage = toNumber(await burnRateTable.TIER_UPGRADE_COST_PERCENTAGE());
@@ -109,12 +102,14 @@ contract("BurnRateTable", (accounts: string[]) => {
   };
 
   const getLRCBalance = async (user: string) => {
+    const DummyToken = artifacts.require("test/DummyToken");
     const LRC = await DummyToken.at(tokenLRC);
     const balance = toNumber(await LRC.balanceOf(user));
     return balance;
   };
 
   const addLRCBalance = async (user: string, amount: number) => {
+    const DummyToken = artifacts.require("test/DummyToken");
     const amountBN = toBN(amount);
     const LRC = await DummyToken.at(tokenLRC);
     await LRC.transfer(user, amountBN, {from: deployer});
@@ -138,14 +133,18 @@ contract("BurnRateTable", (accounts: string[]) => {
   };
 
   before(async () => {
+    const LRCToken = artifacts.require("test/tokens/LRC");
+    const WETHToken = artifacts.require("test/tokens/WETH");
     tokenLRC = LRCToken.address;
     tokenWETH = WETHToken.address;
   });
 
   beforeEach(async () => {
     // Fresh BurnRateTable and LRC token for each test
+    const DummyToken = artifacts.require("test/DummyToken");
     const LRC = await DummyToken.new("Loopring", "LRC", toBN(18), toBN(1e+26));
     tokenLRC = LRC.address;
+    const BurnRateTable = artifacts.require("impl/BurnRateTable");
     burnRateTable = await BurnRateTable.new(tokenLRC, tokenWETH);
 
     BURN_BASE_PERCENTAGE = toNumber(await burnRateTable.BURN_BASE_PERCENTAGE());
@@ -165,6 +164,7 @@ contract("BurnRateTable", (accounts: string[]) => {
     });
 
     it.skip("should be able to upgrade the tier of a token for 2 years by burning enough tokens", async () => {
+      const DummyToken = artifacts.require("test/DummyToken");
       const LRC = await DummyToken.at(tokenLRC);
       // current total supply
       const totalLRCSupply = toNumber(await LRC.totalSupply());
