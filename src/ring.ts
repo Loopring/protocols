@@ -156,10 +156,13 @@ export class Ring {
       this.resize(i, smallest);
     }
 
-    // Reserve the total amount tokenS used for all the orders
-    // (e.g. the owner of order 0 could use LRC as feeToken in order 0, while
-    // the same owner can also sell LRC in order 2).
     for (const p of this.participations) {
+      // Check if the fill amounts of the participation are valid
+      this.valid = this.valid && this.checkFills(p);
+
+      // Reserve the total amount tokenS used for all the orders
+      // (e.g. the owner of order 0 could use LRC as feeToken in order 0, while
+      // the same owner can also sell LRC in order 2).
       await this.orderUtil.reserveAmountS(p.order, p.fillAmountS);
     }
 
@@ -179,6 +182,30 @@ export class Ring {
     for (const p of this.participations) {
       this.orderUtil.resetReservations(p.order);
     }
+  }
+
+  public checkFills(p: Participation) {
+    // Check if the rounding error of the calculated fillAmountB is larger than 1%.
+    // If so, this ring is invalid.
+    // p.fillAmountB := p.fillAmountS.mul(p.order.amountB) / p.order.amountS
+    let valid = ensure(!this.hasRoundingError(
+      p.fillAmountS,
+      new BigNumber(p.order.amountB),
+      new BigNumber(p.order.amountS)),
+      "rounding error larger than 1% when calculating fillAmountB");
+
+    // We at least need to buy and sell something
+    valid = valid && p.fillAmountS.gt(0);
+    valid = valid && p.fillAmountS.gt(0);
+
+    return valid;
+  }
+
+  public hasRoundingError(value: BigNumber, numerator: BigNumber, denominator: BigNumber) {
+    const multiplied = value.mul(numerator);
+    const remainder = multiplied.mod(denominator);
+    // Return true if the rounding error is larger than 1%
+    return remainder.mul(100).gt(multiplied);
   }
 
   public async setMaxFillAmounts(p: Participation) {
