@@ -657,11 +657,15 @@ export class ExchangeTestUtil {
   }
 
   public async authorizeTradeDelegate() {
-    await this.context.tradeDelegate.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    if (!(await this.context.tradeDelegate.isAddressAuthorized(this.ringSubmitter.address))) {
+      await this.context.tradeDelegate.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    }
   }
 
   public async authorizeTradeHistory() {
-    await this.context.tradeHistory.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    if (!(await this.context.tradeHistory.isAddressAuthorized(this.ringSubmitter.address))) {
+      await this.context.tradeHistory.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    }
   }
 
   public async approveTradeDelegate() {

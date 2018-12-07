@@ -304,14 +304,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       ringsInfo.expected = {
         rings: [
           {
-            orders: [
-              {
-                filledFraction: 0.0,
-              },
-              {
-                filledFraction: 0.0,
-              },
-            ],
+            fail: true,
           },
         ],
       };
