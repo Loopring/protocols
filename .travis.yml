@@ -8,6 +8,8 @@ node_js:
 install:
   - npm install
   - npm install -g ganache-cli
+  - npm uninstall -g truffle
+  - npm install -g truffle@beta
 
 before_script:
   - ganache-cli -a 50 --acctKeys './ganache_account_keys.txt' > ganache_cli.log &
