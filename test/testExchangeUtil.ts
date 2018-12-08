@@ -5,7 +5,7 @@ import * as pjs from "protocol2-js";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { FeePayments } from "./feePayments";
-import { ringsInfoList } from "./rings_config";
+import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestContext } from "./testExchangeContext";
 
 export class ExchangeTestUtil {
@@ -13,8 +13,39 @@ export class ExchangeTestUtil {
   public testContext: ExchangeTestContext;
   public ringSubmitter: any;
 
+  private RingSubmitter: any;
+  private TradeDelegate: any;
+  private TradeHistory: any;
+  private OrderRegistry: any;
+  private FeeHolder: any;
+  private OrderBook: any;
+  private BurnRateTable: any;
+  private LRCToken: any;
+  private WETHToken: any;
+  private BrokerRegistry: any;
+  private RDNToken: any;
+  private GTOToken: any;
+  private REPToken: any;
+  private TESTToken: any;
+  private DummyToken: any;
+
   public async initialize(accounts: string[]) {
-    await this.sleep(1000);
+    this.RingSubmitter = await requireArtifact("impl/RingSubmitter");
+    this.TradeDelegate = await requireArtifact("impl/TradeDelegate");
+    this.TradeHistory = await requireArtifact("impl/TradeHistory");
+    this.OrderRegistry = await requireArtifact("impl/OrderRegistry");
+    this.FeeHolder = await requireArtifact("impl/FeeHolder");
+    this.OrderBook = await requireArtifact("impl/OrderBook");
+    this.BurnRateTable = await requireArtifact("impl/BurnRateTable");
+    this.LRCToken = await requireArtifact("test/tokens/LRC");
+    this.BrokerRegistry = await requireArtifact("impl/BrokerRegistry");
+    this.WETHToken = await requireArtifact("test/tokens/WETH");
+    this.RDNToken = await requireArtifact("test/tokens/RDN");
+    this.GTOToken = await requireArtifact("test/tokens/GTO");
+    this.REPToken = await requireArtifact("test/tokens/REP");
+    this.TESTToken = await requireArtifact("test/tokens/TEST");
+    this.DummyToken = await requireArtifact("test/DummyToken");
+
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
     await this.cleanTradeHistory();
@@ -515,30 +546,26 @@ export class ExchangeTestUtil {
   }
 
   public async registerOrderBrokerChecked(user: string, broker: string, interceptor: string) {
-    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
-    const brokerRegistry = await BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const brokerRegistry = await this.BrokerRegistry.at(this.context.orderBrokerRegistry.address);
     await brokerRegistry.registerBroker(broker, interceptor, {from: user});
     await this.assertOrderBrokerRegistered(user, broker, interceptor);
   }
 
   public async unregisterOrderBrokerChecked(user: string, broker: string) {
-    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
-    const brokerRegistry = await BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const brokerRegistry = await this.BrokerRegistry.at(this.context.orderBrokerRegistry.address);
     await brokerRegistry.unregisterBroker(broker, {from: user});
     await this.assertOrderBrokerNotRegistered(user, broker);
   }
 
   public async assertOrderBrokerRegistered(user: string, broker: string, interceptor: string) {
-    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
-    const brokerRegistry = await BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const brokerRegistry = await this.BrokerRegistry.at(this.context.orderBrokerRegistry.address);
     const returnValue = await brokerRegistry.getBroker(user, broker);
     assert(returnValue.registered, "interceptor should be registered.");
     assert.equal(interceptor, returnValue.interceptor, "get wrong interceptor");
   }
 
   public async assertOrderBrokerNotRegistered(user: string, broker: string) {
-    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
-    const brokerRegistry = await BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const brokerRegistry = await this.BrokerRegistry.at(this.context.orderBrokerRegistry.address);
     const returnValue = await brokerRegistry.getBroker(user, broker);
     assert(!returnValue.registered, "interceptor should not be registered.");
   }
@@ -718,21 +745,11 @@ export class ExchangeTestUtil {
       LRCToken,
     } = new Artifacts(artifacts);*/
 
-    const TradeHistory = artifacts.require("impl/TradeHistory");
-    await this.sleep(100);
-    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
-    await this.sleep(100);
-    const RingSubmitter = artifacts.require("impl/RingSubmitter");
-    await this.sleep(100);
-    const WETHToken = artifacts.require("test/tokens/WETH");
-    await this.sleep(100);
-    // const OrderRegistry = artifacts.require("impl/OrderRegistry");
-
-    const tradeHistory = await TradeHistory.new();
-    const brokerRegistry = await BrokerRegistry.new();
-    this.ringSubmitter = await RingSubmitter.new(
+    const tradeHistory = await this.TradeHistory.new();
+    const brokerRegistry = await this.BrokerRegistry.new();
+    this.ringSubmitter = await this.RingSubmitter.new(
       this.context.lrcAddress,
-      WETHToken.address,
+      this.WETHToken.address,
       this.context.tradeDelegate.address,
       tradeHistory.address,
       brokerRegistry.address,
@@ -795,32 +812,16 @@ export class ExchangeTestUtil {
       BrokerRegistry,
     } = new Artifacts(artifacts);*/
 
-    const RingSubmitter = artifacts.require("impl/RingSubmitter");
-    await this.sleep(100);
-    const TradeDelegate = artifacts.require("impl/TradeDelegate");
-    await this.sleep(100);
-    const TradeHistory = artifacts.require("impl/TradeHistory");
-    await this.sleep(100);
-    const OrderRegistry = artifacts.require("impl/OrderRegistry");
-    await this.sleep(100);
-    const FeeHolder = artifacts.require("impl/FeeHolder");
-    await this.sleep(100);
-    const OrderBook = artifacts.require("impl/OrderBook");
-    await this.sleep(100);
-    const BurnRateTable = artifacts.require("impl/BurnRateTable");
-    await this.sleep(100);
-    const LRCToken = artifacts.require("test/tokens/LRC");
-
     const [ringSubmitter, tradeDelegate, tradeHistory, orderRegistry,
            feeHolder, orderBook, burnRateTable, lrcToken] = await Promise.all([
-        RingSubmitter.deployed(),
-        TradeDelegate.deployed(),
-        TradeHistory.deployed(),
-        OrderRegistry.deployed(),
-        FeeHolder.deployed(),
-        OrderBook.deployed(),
-        BurnRateTable.deployed(),
-        LRCToken.deployed(),
+        this.RingSubmitter.deployed(),
+        this.TradeDelegate.deployed(),
+        this.TradeHistory.deployed(),
+        this.OrderRegistry.deployed(),
+        this.FeeHolder.deployed(),
+        this.OrderBook.deployed(),
+        this.BurnRateTable.deployed(),
+        this.LRCToken.deployed(),
       ]);
 
     this.ringSubmitter = ringSubmitter;
@@ -833,28 +834,24 @@ export class ExchangeTestUtil {
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;
     const context = new pjs.Context(currBlockNumber,
                            currBlockTimestamp,
-                           TradeDelegate.address,
-                           TradeHistory.address,
+                           this.TradeDelegate.address,
+                           this.TradeHistory.address,
                            orderBrokerRegistryAddress,
-                           OrderRegistry.address,
-                           FeeHolder.address,
-                           OrderBook.address,
-                           BurnRateTable.address,
-                           LRCToken.address,
+                           this.OrderRegistry.address,
+                           this.FeeHolder.address,
+                           this.OrderBook.address,
+                           this.BurnRateTable.address,
+                           this.LRCToken.address,
                            feePercentageBase,
                            ringIndex);
-    const DummyToken = artifacts.require("test/DummyToken");
-    await this.sleep(100);
-    const BrokerRegistry = artifacts.require("impl/BrokerRegistry");
-    await this.sleep(100);
-    context.ERC20Contract = DummyToken;
-    context.tradeDelegate = await TradeDelegate.new();
-    context.tradeHistory = await TradeHistory.new();
+    context.ERC20Contract = this.DummyToken;
+    context.tradeDelegate = await this.TradeDelegate.new();
+    context.tradeHistory = await this.TradeHistory.new();
     context.orderRegistry = orderRegistry;
-    context.feeHolder = await FeeHolder.new(context.tradeDelegate.address);
+    context.feeHolder = await this.FeeHolder.new(context.tradeDelegate.address);
     context.orderBook = orderBook;
     context.burnRateTable = burnRateTable;
-    context.orderBrokerRegistry = await BrokerRegistry.deployed();
+    context.orderBrokerRegistry = await this.BrokerRegistry.deployed();
     return context;
   }
 
@@ -868,54 +865,41 @@ export class ExchangeTestUtil {
       TESTToken,
     } = new Artifacts(artifacts);*/
 
-    const LRCToken = artifacts.require("test/tokens/LRC");
-    await this.sleep(100);
-    const RDNToken = artifacts.require("test/tokens/RDN");
-    await this.sleep(100);
-    const GTOToken = artifacts.require("test/tokens/GTO");
-    await this.sleep(100);
-    const REPToken = artifacts.require("test/tokens/REP");
-    await this.sleep(100);
-    const WETHToken = artifacts.require("test/tokens/WETH");
-    await this.sleep(100);
-    const TESTToken = artifacts.require("test/tokens/TEST");
-    await this.sleep(100);
-
     const tokenSymbolAddrMap = new Map<string, string>();
     const tokenAddrSymbolMap = new Map<string, string>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
     const [lrc, gto, rdn, rep, weth, test] = await Promise.all([
-      LRCToken.deployed(),
-      GTOToken.deployed(),
-      RDNToken.deployed(),
-      REPToken.deployed(),
-      WETHToken.deployed(),
-      TESTToken.deployed(),
+      this.LRCToken.deployed(),
+      this.GTOToken.deployed(),
+      this.RDNToken.deployed(),
+      this.REPToken.deployed(),
+      this.WETHToken.deployed(),
+      this.TESTToken.deployed(),
     ]);
 
     const allTokens = [lrc, gto, rdn, rep, weth, test];
 
-    tokenSymbolAddrMap.set("LRC", LRCToken.address);
-    tokenSymbolAddrMap.set("GTO", GTOToken.address);
-    tokenSymbolAddrMap.set("RDN", RDNToken.address);
-    tokenSymbolAddrMap.set("REP", REPToken.address);
-    tokenSymbolAddrMap.set("WETH", WETHToken.address);
-    tokenSymbolAddrMap.set("TEST", TESTToken.address);
+    tokenSymbolAddrMap.set("LRC", this.LRCToken.address);
+    tokenSymbolAddrMap.set("GTO", this.GTOToken.address);
+    tokenSymbolAddrMap.set("RDN", this.RDNToken.address);
+    tokenSymbolAddrMap.set("REP", this.REPToken.address);
+    tokenSymbolAddrMap.set("WETH", this.WETHToken.address);
+    tokenSymbolAddrMap.set("TEST", this.TESTToken.address);
 
-    tokenAddrSymbolMap.set(LRCToken.address, "LRC");
-    tokenAddrSymbolMap.set(GTOToken.address, "GTO");
-    tokenAddrSymbolMap.set(RDNToken.address, "RDN");
-    tokenAddrSymbolMap.set(REPToken.address, "REP");
-    tokenAddrSymbolMap.set(WETHToken.address, "WETH");
-    tokenAddrSymbolMap.set(TESTToken.address, "TEST");
+    tokenAddrSymbolMap.set(this.LRCToken.address, "LRC");
+    tokenAddrSymbolMap.set(this.GTOToken.address, "GTO");
+    tokenAddrSymbolMap.set(this.RDNToken.address, "RDN");
+    tokenAddrSymbolMap.set(this.REPToken.address, "REP");
+    tokenAddrSymbolMap.set(this.WETHToken.address, "WETH");
+    tokenAddrSymbolMap.set(this.TESTToken.address, "TEST");
 
-    tokenAddrInstanceMap.set(LRCToken.address, lrc);
-    tokenAddrInstanceMap.set(GTOToken.address, gto);
-    tokenAddrInstanceMap.set(RDNToken.address, rdn);
-    tokenAddrInstanceMap.set(REPToken.address, rep);
-    tokenAddrInstanceMap.set(WETHToken.address, weth);
-    tokenAddrInstanceMap.set(TESTToken.address, test);
+    tokenAddrInstanceMap.set(this.LRCToken.address, lrc);
+    tokenAddrInstanceMap.set(this.GTOToken.address, gto);
+    tokenAddrInstanceMap.set(this.RDNToken.address, rdn);
+    tokenAddrInstanceMap.set(this.REPToken.address, rep);
+    tokenAddrInstanceMap.set(this.WETHToken.address, weth);
+    tokenAddrInstanceMap.set(this.TESTToken.address, test);
 
     const deployer = accounts[0];
     const transactionOrigin = accounts[1];
@@ -940,10 +924,6 @@ export class ExchangeTestUtil {
                                    tokenAddrSymbolMap,
                                    tokenAddrInstanceMap,
                                    allTokens);
-  }
-
-  private sleep(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
 }

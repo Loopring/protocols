@@ -1,11 +1,14 @@
 import * as pjs from "protocol2-js";
 import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/Artifacts";
+import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
 contract("Exchange_Broker", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
+
+  let DummyBrokerInterceptor: any;
 
   let dummyBrokerInterceptor: any;
   const allTokenSymbols = tokenInfos.development.map((t) => t.symbol);
@@ -13,6 +16,7 @@ contract("Exchange_Broker", (accounts: string[]) => {
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+    DummyBrokerInterceptor = await requireArtifact("test/DummyBrokerInterceptor");
   });
 
   describe("Broker", () => {
@@ -22,7 +26,6 @@ contract("Exchange_Broker", (accounts: string[]) => {
     // could potentially hide bugs
     beforeEach(async () => {
       await exchangeTestUtil.cleanTradeHistory();
-      const DummyBrokerInterceptor = artifacts.require("test/DummyBrokerInterceptor");
       dummyBrokerInterceptor = await DummyBrokerInterceptor.new(exchangeTestUtil.ringSubmitter.address);
     });
 

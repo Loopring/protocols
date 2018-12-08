@@ -2,6 +2,7 @@ import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import { Bitstream, expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
+import { requireArtifact } from "./requireArtifact";
 
 interface FilledUpdate {
   hash: string;
@@ -27,6 +28,11 @@ contract("TradeHistory", (accounts: string[]) => {
   const user3 = accounts[7];
   const user4 = accounts[8];
   const zeroAddress = "0x" + "00".repeat(20);
+
+  let TradeHistory: any;
+  let TradeDelegate: any;
+  let DummyExchange: any;
+  let TESTToken: any;
 
   let tradeHistory: any;
   let dummyExchange1: any;
@@ -140,21 +146,21 @@ contract("TradeHistory", (accounts: string[]) => {
   };
 
   before(async () => {
-    const LRCToken = artifacts.require("test/tokens/LRC");
-    const WETHToken = artifacts.require("test/tokens/WETH");
-    const RDNToken = artifacts.require("test/tokens/RDN");
-    const GTOToken = artifacts.require("test/tokens/GTO");
+    const LRCToken = await requireArtifact("test/tokens/LRC");
+    const WETHToken = await requireArtifact("test/tokens/WETH");
+    const RDNToken = await requireArtifact("test/tokens/RDN");
+    const GTOToken = await requireArtifact("test/tokens/GTO");
     token1 = LRCToken.address;
     token2 = WETHToken.address;
     token3 = RDNToken.address;
     token4 = GTOToken.address;
+    TradeHistory = await requireArtifact("impl/TradeHistory");
+    TradeDelegate = await requireArtifact("impl/TradeDelegate");
+    DummyExchange = await requireArtifact("test/DummyExchange");
+    TESTToken = await requireArtifact("test/tokens/TEST");
   });
 
   beforeEach(async () => {
-    const TradeHistory = artifacts.require("impl/TradeHistory");
-    const TradeDelegate = artifacts.require("impl/TradeDelegate");
-    const DummyExchange = artifacts.require("test/DummyExchange");
-    const TESTToken = artifacts.require("test/tokens/TEST");
     const tradeDelegate = await TradeDelegate.deployed();
     tradeHistory = await TradeHistory.new();
     dummyExchange1 = await DummyExchange.new(tradeDelegate.address, tradeHistory.address, zeroAddress, zeroAddress);

@@ -1,4 +1,5 @@
 import * as psc from "protocol2-js";
+import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
 contract("ExchangeWrapper", (accounts: string[]) => {
@@ -16,7 +17,7 @@ contract("ExchangeWrapper", (accounts: string[]) => {
 
     beforeEach(async () => {
       await exchangeTestUtil.cleanTradeHistory();
-      const ExchangeWrapper = artifacts.require("ExchangeWrapper");
+      const ExchangeWrapper = await requireArtifact("ExchangeWrapper");
       exchangeWrapper = await ExchangeWrapper.new(exchangeTestUtil.ringSubmitter.address);
     });
 

@@ -1,7 +1,7 @@
 import { BigNumber } from "bignumber.js";
 import * as pjs from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
-import { ringsInfoList } from "./rings_config";
+import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
 contract("Exchange_Submit_Audit", (accounts: string[]) => {
@@ -34,11 +34,11 @@ contract("Exchange_Submit_Audit", (accounts: string[]) => {
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
-    const DeserializerTest = artifacts.require("test/DeserializerTest");
+    const DeserializerTest = await requireArtifact("test/DeserializerTest");
     deserializerTest = await DeserializerTest.deployed();
 
     // Create dummy exchange and authorize it
-    const DummyExchange = artifacts.require("test/DummyExchange");
+    const DummyExchange = await requireArtifact("test/DummyExchange");
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
                                             exchangeTestUtil.context.tradeHistory.address,
                                             exchangeTestUtil.context.feeHolder.address,

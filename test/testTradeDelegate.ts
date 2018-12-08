@@ -1,6 +1,7 @@
 import BN = require("bn.js");
 import { Bitstream, expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
+import { requireArtifact } from "./requireArtifact";
 
 interface TokenTransfer {
   token: string;
@@ -16,6 +17,11 @@ contract("TradeDelegate", (accounts: string[]) => {
   const user3 = accounts[7];
   const user4 = accounts[8];
   const zeroAddress = "0x" + "00".repeat(20);
+
+  let DummyToken: any;
+  let TradeDelegate: any;
+  let DummyExchange: any;
+  let TESTToken: any;
 
   let tradeDelegate: any;
   let dummyExchange1: any;
@@ -51,7 +57,6 @@ contract("TradeDelegate", (accounts: string[]) => {
   };
 
   const setUserBalance = async (token: string, user: string, balance: BN, approved?: BN) => {
-    const DummyToken = artifacts.require("test/DummyToken");
     const dummyToken = await DummyToken.at(token);
     await dummyToken.setBalance(user, balance);
     const approvedAmount = approved ? approved : balance;
@@ -81,7 +86,6 @@ contract("TradeDelegate", (accounts: string[]) => {
   const batchTransferChecked = async (transfers: TokenTransfer[]) => {
     // Calculate expected balances
     const balances: { [id: string]: any; } = {};
-    const DummyToken = artifacts.require("test/DummyToken");
     for (const transfer of transfers) {
       const dummyToken = await DummyToken.at(transfer.token);
       if (!balances[transfer.token]) {
@@ -112,20 +116,21 @@ contract("TradeDelegate", (accounts: string[]) => {
   };
 
   before(async () => {
-    const LRCToken = artifacts.require("test/tokens/LRC");
-    const WETHToken = artifacts.require("test/tokens/WETH");
-    const RDNToken = artifacts.require("test/tokens/RDN");
-    const GTOToken = artifacts.require("test/tokens/GTO");
+    DummyToken = await requireArtifact("test/DummyToken");
+    const LRCToken = await requireArtifact("test/tokens/LRC");
+    const WETHToken = await requireArtifact("test/tokens/WETH");
+    const RDNToken = await requireArtifact("test/tokens/RDN");
+    const GTOToken = await requireArtifact("test/tokens/GTO");
     token1 = LRCToken.address;
     token2 = WETHToken.address;
     token3 = RDNToken.address;
     token4 = GTOToken.address;
+    TradeDelegate = await requireArtifact("impl/TradeDelegate");
+    DummyExchange = await requireArtifact("test/DummyExchange");
+    TESTToken = await requireArtifact("test/tokens/TEST");
   });
 
   beforeEach(async () => {
-    const TradeDelegate = artifacts.require("impl/TradeDelegate");
-    const DummyExchange = artifacts.require("test/DummyExchange");
-    const TESTToken = artifacts.require("test/tokens/TEST");
     tradeDelegate = await TradeDelegate.new();
     dummyExchange1 = await DummyExchange.new(tradeDelegate.address, zeroAddress, zeroAddress, zeroAddress);
     dummyExchange2 = await DummyExchange.new(tradeDelegate.address, zeroAddress, zeroAddress, zeroAddress);

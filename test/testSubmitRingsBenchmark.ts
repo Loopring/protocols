@@ -1,6 +1,6 @@
 import * as pjs from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
-import { ringsInfoList } from "./rings_config";
+import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
 contract("SubmitRings_Benchmark", (accounts: string[]) => {
@@ -19,7 +19,7 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
 
     // Create dummy exchange and authorize it
-    const DummyExchange = artifacts.require("test/DummyExchange");
+    const DummyExchange = await requireArtifact("test/DummyExchange");
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
                                             exchangeTestUtil.context.tradeHistory.address,
                                             exchangeTestUtil.context.feeHolder.address,

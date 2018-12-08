@@ -3,11 +3,15 @@ import BN = require("bn.js");
 import * as psc from "protocol2-js";
 import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/Artifacts";
+import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
 contract("Exchange_Cancel", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
+
+  let OrderCanceller: any;
+  let ContractOrderOwner: any;
 
   let orderCanceller: any;
   let orderBook: any;
@@ -25,8 +29,11 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
 
-    const OrderBook = artifacts.require("impl/OrderBook");
+    const OrderBook = await requireArtifact("impl/OrderBook");
     orderBook = await OrderBook.deployed();
+
+    OrderCanceller = await requireArtifact("impl/OrderCanceller");
+    ContractOrderOwner = await requireArtifact("ContractOrderOwner");
   });
 
   describe("Cancelling orders", () => {
@@ -36,13 +43,11 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     // could potentially hide bugs
     beforeEach(async () => {
       await exchangeTestUtil.cleanTradeHistory();
-      const OrderCanceller = artifacts.require("impl/OrderCanceller");
       orderCanceller = await OrderCanceller.new(exchangeTestUtil.context.tradeHistory.address);
       await exchangeTestUtil.context.tradeHistory.authorizeAddress(
         orderCanceller.address,
         {from: exchangeTestUtil.testContext.deployer},
       );
-      const ContractOrderOwner = artifacts.require("ContractOrderOwner");
       contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address,
                                                         orderCanceller.address);
     });

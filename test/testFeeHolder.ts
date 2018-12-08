@@ -2,6 +2,7 @@ import BN = require("bn.js");
 import { expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 import { FeePayments } from "./feePayments";
+import { requireArtifact } from "./requireArtifact";
 
 contract("FeeHolder", (accounts: string[]) => {
   const deployer = accounts[0];
@@ -10,6 +11,13 @@ contract("FeeHolder", (accounts: string[]) => {
   const user2 = accounts[3];
   const user3 = accounts[4];
   const user4 = accounts[5];
+
+  let FeeHolder: any;
+  let TradeDelegate: any;
+  let DummyExchange: any;
+  let DummyBurnManager: any;
+  let TESTToken: any;
+  let DummyToken: any;
 
   const zeroAddress = "0x" + "0".repeat(40);
 
@@ -61,7 +69,6 @@ contract("FeeHolder", (accounts: string[]) => {
   };
 
   const withdrawTokenChecked = async (owner: string, token: string, amount: BN) => {
-    const DummyToken = artifacts.require("test/DummyToken");
     const dummyToken = await DummyToken.at(token);
 
     const balanceFeeHolderBefore = await dummyToken.balanceOf(feeHolder.address);
@@ -80,7 +87,6 @@ contract("FeeHolder", (accounts: string[]) => {
   };
 
   const withdrawBurnedChecked = async (from: any, token: string, amount: number) => {
-    const DummyToken = artifacts.require("test/DummyToken");
     const dummyToken = await DummyToken.at(token);
 
     const balanceFeeHolderBefore = await dummyToken.balanceOf(feeHolder.address);
@@ -99,25 +105,26 @@ contract("FeeHolder", (accounts: string[]) => {
   };
 
   before(async () => {
-    const TradeDelegate = artifacts.require("impl/TradeDelegate");
+    TradeDelegate = await requireArtifact("impl/TradeDelegate");
     tradeDelegate = await TradeDelegate.deployed();
 
-    const LRCToken = artifacts.require("test/tokens/LRC");
-    const REPToken = artifacts.require("test/tokens/REP");
-    const RDNToken = artifacts.require("test/tokens/RDN");
-    const GTOToken = artifacts.require("test/tokens/GTO");
+    const LRCToken = await requireArtifact("test/tokens/LRC");
+    const REPToken = await requireArtifact("test/tokens/REP");
+    const RDNToken = await requireArtifact("test/tokens/RDN");
+    const GTOToken = await requireArtifact("test/tokens/GTO");
     token1 = LRCToken.address;
     token2 = REPToken.address;
     token3 = RDNToken.address;
     token4 = GTOToken.address;
+
+    DummyToken = await requireArtifact("test/DummyToken");
+    FeeHolder = await requireArtifact("impl/FeeHolder");
+    DummyExchange = await requireArtifact("test/DummyExchange");
+    DummyBurnManager = await requireArtifact("test/DummyBurnManager");
+    TESTToken = await requireArtifact("test/tokens/TEST");
   });
 
   beforeEach(async () => {
-    const FeeHolder = artifacts.require("impl/FeeHolder");
-    const TradeDelegate = artifacts.require("impl/TradeDelegate");
-    const DummyExchange = artifacts.require("test/DummyExchange");
-    const DummyBurnManager = artifacts.require("test/DummyBurnManager");
-    const TESTToken = artifacts.require("test/tokens/TEST");
     // Fresh FeeHolder for each test
     feeHolder = await FeeHolder.new(tradeDelegate.address);
     dummyExchange = await DummyExchange.new(tradeDelegate.address, zeroAddress, feeHolder.address, zeroAddress);
@@ -152,7 +159,6 @@ contract("FeeHolder", (accounts: string[]) => {
     });
 
     it("should be able to withdraw tokens to burn", async () => {
-      const DummyToken = artifacts.require("test/DummyToken");
       const dummyToken1 = await DummyToken.at(token1);
       const amount = web3.utils.toBN(2.4e18);
       // Make sure the contract has enough funds
@@ -178,7 +184,6 @@ contract("FeeHolder", (accounts: string[]) => {
 
   describe("anyone", () => {
     it("should be able to withdraw tokens of its own", async () => {
-      const DummyToken = artifacts.require("test/DummyToken");
       const dummyToken1 = await DummyToken.at(token1);
       const dummyToken2 = await DummyToken.at(token2);
       const amount11 = web3.utils.toBN(1.78e18);
@@ -199,7 +204,6 @@ contract("FeeHolder", (accounts: string[]) => {
     });
 
     it("should be able to withdraw tokens of its own in parts", async () => {
-      const DummyToken = artifacts.require("test/DummyToken");
       const dummyToken1 = await DummyToken.at(token1);
       const amount = web3.utils.toBN(1.78e18);
       // Make sure the contract has enough funds
@@ -215,7 +219,6 @@ contract("FeeHolder", (accounts: string[]) => {
     });
 
     it("should not be able to withdraw more tokens than allowed", async () => {
-      const DummyToken = artifacts.require("test/DummyToken");
       const dummyToken1 = await DummyToken.at(token1);
       const dummyToken2 = await DummyToken.at(token2);
       const amount = web3.utils.toBN(2.4e18);
@@ -239,7 +242,6 @@ contract("FeeHolder", (accounts: string[]) => {
     });
 
     it("should not be able to withdraw tokens to burn", async () => {
-      const DummyToken = artifacts.require("test/DummyToken");
       const dummyToken1 = await DummyToken.at(token1);
       const amount = web3.utils.toBN(2.4e18);
       // Make sure the contract has enough funds

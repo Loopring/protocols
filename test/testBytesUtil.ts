@@ -1,5 +1,6 @@
 import ABI = require("ethereumjs-abi");
 import { expectThrow } from "protocol2-js";
+import { requireArtifact } from "./requireArtifact";
 
 contract("BytesUtil", (accounts: string[]) => {
 
@@ -39,7 +40,7 @@ contract("BytesUtil", (accounts: string[]) => {
   };
 
   before(async () => {
-    const BytesUtilWrapper = artifacts.require("BytesUtilWrapper");
+    const BytesUtilWrapper = await requireArtifact("BytesUtilWrapper");
     bytesUtil = await BytesUtilWrapper.new();
   });
 

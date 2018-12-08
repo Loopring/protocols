@@ -3,11 +3,13 @@ import abi = require("ethereumjs-abi");
 import { expectThrow, OrderInfo, OrderUtil } from "protocol2-js";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
+import { requireArtifact } from "./requireArtifact";
 
 contract("OrderRegistry", (accounts: string[]) => {
   const orderOwner1 = accounts[1];
   const orderOwner2 = accounts[2];
 
+  let OrderRegistry: any;
   let orderRegistry: any;
 
   let lrcAddress: string;
@@ -39,15 +41,15 @@ contract("OrderRegistry", (accounts: string[]) => {
   };
 
   before(async () => {
-    const LRCToken = artifacts.require("test/tokens/LRC");
-    const GTOToken = artifacts.require("test/tokens/GTO");
+    const LRCToken = await requireArtifact("test/tokens/LRC");
+    const GTOToken = await requireArtifact("test/tokens/GTO");
     lrcAddress = LRCToken.address;
     gtoAddress = GTOToken.address;
+    OrderRegistry = await requireArtifact("impl/OrderRegistry");
   });
 
   beforeEach(async () => {
     // New OrderRegistry for each test
-    const OrderRegistry = artifacts.require("impl/OrderRegistry");
     orderRegistry = await OrderRegistry.new();
   });
 

@@ -1,6 +1,7 @@
 import { BigNumber } from "bignumber.js";
 import * as pjs from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
+import { requireArtifact } from "./requireArtifact";
 import { ringsInfoList } from "./rings_config";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
@@ -23,14 +24,14 @@ contract("Exchange_Submit", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
 
-    const OrderBook = artifacts.require("impl/OrderBook");
+    const OrderBook = await requireArtifact("impl/OrderBook");
     orderBook = await OrderBook.deployed();
 
-    const OrderRegistry = artifacts.require("impl/OrderRegistry");
+    const OrderRegistry = await requireArtifact("impl/OrderRegistry");
     orderRegistry = await OrderRegistry.deployed();
 
     // Create dummy exchange and authorize it
-    const DummyExchange = artifacts.require("test/DummyExchange");
+    const DummyExchange = await requireArtifact("test/DummyExchange");
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
                                             exchangeTestUtil.context.tradeHistory.address,
                                             exchangeTestUtil.context.feeHolder.address,
@@ -38,7 +39,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
     await exchangeTestUtil.context.tradeDelegate.authorizeAddress(dummyExchange.address,
                                                                   {from: exchangeTestUtil.testContext.deployer});
 
-    const ContractOrderOwner = artifacts.require("test/ContractOrderOwner");
+    const ContractOrderOwner = await requireArtifact("test/ContractOrderOwner");
     contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address, zeroAddress);
   });
 
@@ -662,7 +663,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
       // Fail the token transfer by throwing in transferFrom
-      const TESTToken = artifacts.require("test/tokens/TEST");
+      const TESTToken = await requireArtifact("test/tokens/TEST");
       const TestToken = await TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
       await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
 
