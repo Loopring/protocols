@@ -393,7 +393,7 @@ export class ProtocolValidator {
     }
 
     // Pay the burn rate with the feeHolder as owner
-    const burnAddress = this.context.feeHolder.address;
+    const burnAddress = this.context.feeHolder.options.address;
 
     const walletFee = amount.times(walletSplitPercentage).dividedToIntegerBy(100);
     let minerFee = amount.minus(walletFee);
@@ -409,7 +409,7 @@ export class ProtocolValidator {
     }
 
     // Calculate burn rates and rebates
-    const burnRateToken = (await this.context.burnRateTable.getBurnRate(token)).toNumber();
+    const burnRateToken = await this.context.burnRateTable.methods.getBurnRate(token).call();
     const burnRate = orderExpectation.P2P ? (burnRateToken >> 16) : (burnRateToken & 0xFFFF);
     const rebateRate = 0;
     // Miner fee

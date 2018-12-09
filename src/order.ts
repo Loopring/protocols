@@ -22,10 +22,10 @@ export class OrderUtil {
     if (!order.broker) {
        order.broker = order.owner;
     } else {
-      const returnValue = await this.context.orderBrokerRegistry.getBroker(
+      const returnValue = await this.context.orderBrokerRegistry.methods.getBroker(
         order.owner,
         order.broker,
-      );
+      ).call();
       order.valid = order.valid && ensure(returnValue.registered, "order broker is not registered");
       // order.brokerInterceptor =
       //   (brokerInterceptor === "0x0000000000000000000000000000000000000000") ?
@@ -90,9 +90,9 @@ export class OrderUtil {
       signatureValid = true;
     } else if (!order.sig) {
       const orderHashHex = "0x" + order.hash.toString("hex");
-      const isRegistered = await this.context.orderRegistry.isOrderHashRegistered(order.broker,
-                                                                                  orderHashHex);
-      const isOnchainOrder = await this.context.orderBook.orderSubmitted(orderHashHex);
+      const isRegistered = await this.context.orderRegistry.methods.isOrderHashRegistered(order.broker,
+                                                                                          orderHashHex).call();
+      const isOnchainOrder = await this.context.orderBook.methods.orderSubmitted(orderHashHex).call();
       signatureValid = isRegistered || isOnchainOrder;
     } else {
       const multiHashUtil = new MultiHashUtil();
@@ -291,9 +291,10 @@ export class OrderUtil {
   public async getERC20Spendable(spender: string,
                                  tokenAddress: string,
                                  owner: string) {
-    const token = await this.context.ERC20Contract.at(tokenAddress);
-    const balance = await token.balanceOf(owner);
-    const allowance = await token.allowance(owner, spender);
+    const token = this.context.ERC20Contract;
+    token.options.address = tokenAddress;
+    const balance = await token.methods.balanceOf(owner).call();
+    const allowance = await token.methods.allowance(owner, spender).call();
     const spendable = BigNumber.min(balance, allowance);
     return new BigNumber(spendable.toString());
   }
@@ -320,7 +321,7 @@ export class OrderUtil {
                              tokenSpendable: Spendable,
                              brokerSpendable: Spendable) {
     if (!tokenSpendable.initialized) {
-      tokenSpendable.amount = await this.getERC20Spendable(this.context.tradeDelegate.address,
+      tokenSpendable.amount = await this.getERC20Spendable(this.context.tradeDelegate.options.address,
                                                            token,
                                                            owner);
       tokenSpendable.initialized = true;
