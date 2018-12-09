@@ -32,15 +32,21 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
     // Create dummy exchange and authorize it
     const DummyExchange = await requireArtifact("test/DummyExchange");
-    dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
-                                            exchangeTestUtil.context.tradeHistory.address,
-                                            exchangeTestUtil.context.feeHolder.address,
+    dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.options.address,
+                                            exchangeTestUtil.context.tradeHistory.options.address,
+                                            exchangeTestUtil.context.feeHolder.options.address,
                                             exchangeTestUtil.ringSubmitter.address);
-    await exchangeTestUtil.context.tradeDelegate.authorizeAddress(dummyExchange.address,
-                                                                  {from: exchangeTestUtil.testContext.deployer});
+    await web3.eth.sendTransaction({
+      from: exchangeTestUtil.testContext.deployer,
+      to: exchangeTestUtil.context.tradeDelegate.options.address,
+      gas: 2500000,
+      data: exchangeTestUtil.context.tradeDelegate.methods.authorizeAddress(
+        dummyExchange.address,
+      ).encodeABI(),
+    });
 
     const ContractOrderOwner = await requireArtifact("test/ContractOrderOwner");
-    contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address, zeroAddress);
+    contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.options.address, zeroAddress);
   });
 
   describe("submitRing", () => {
@@ -133,7 +139,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
       // Only approve a part of the tokenS amount, feeToken cannot be used
       const tokenS = exchangeTestUtil.testContext.tokenAddrInstanceMap.get(ringsInfo.orders[0].tokenS);
-      await tokenS.approve(exchangeTestUtil.context.tradeDelegate.address,
+      await tokenS.approve(exchangeTestUtil.context.tradeDelegate.options.address,
                            web3.utils.toBN(ringsInfo.orders[0].amountS / 2),
                            {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
@@ -141,17 +147,17 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
       // Only approve a part of the feeToken amount now as well
       const tokenFee = exchangeTestUtil.testContext.tokenAddrInstanceMap.get(ringsInfo.orders[0].feeToken);
-      await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.address,
+      await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.options.address,
                              web3.utils.toBN(ringsInfo.orders[0].feeAmount / 4),
                              {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS / 4);
 
       // Approve amountS and feeAmount
-      await tokenS.approve(exchangeTestUtil.context.tradeDelegate.address,
+      await tokenS.approve(exchangeTestUtil.context.tradeDelegate.options.address,
                            web3.utils.toBN(ringsInfo.orders[0].amountS),
                            {from: ringsInfo.orders[0].owner});
-      await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.address,
+      await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.options.address,
                              web3.utils.toBN(ringsInfo.orders[0].feeAmount),
                              {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
@@ -319,14 +325,14 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
       // Allow the contract to spend tokenS
       await contractOrderOwner.approve(
-        onChainOrder.tokenS, exchangeTestUtil.context.tradeDelegate.address,
+        onChainOrder.tokenS, exchangeTestUtil.context.tradeDelegate.options.address,
         web3.utils.toBN(new BigNumber(1e32)),
       );
       // Still cannot pay any fees, so no tokens will be transferred
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       // Allow the contract to spend feeToken
       await contractOrderOwner.approve(
-        onChainOrder.feeToken, exchangeTestUtil.context.tradeDelegate.address,
+        onChainOrder.feeToken, exchangeTestUtil.context.tradeDelegate.options.address,
         web3.utils.toBN(new BigNumber(1e32)),
       );
 
@@ -489,9 +495,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const burnRateTable = exchangeTestUtil.context.burnRateTable;
 
       // Get the burn rates of the tokens
-      const BURN_BASE_PERCENTAGE = (await burnRateTable.BURN_BASE_PERCENTAGE()).toNumber();
-      const burnRate0 = (await burnRateTable.getBurnRate(order0.feeToken)).toNumber() & 0xFFFF;
-      const burnRate1 = (await burnRateTable.getBurnRate(order1.feeToken)).toNumber() & 0xFFFF;
+      const BURN_BASE_PERCENTAGE = await burnRateTable.methods.BURN_BASE_PERCENTAGE().call();
+      const burnRate0 = (await burnRateTable.methods.getBurnRate(order0.feeToken).call()) & 0xFFFF;
+      const burnRate1 = (await burnRateTable.methods.getBurnRate(order1.feeToken).call()) & 0xFFFF;
       assert(burnRate0 !== burnRate1, "Tokens should have different burn rates");
 
       // Orders will be filled 50%
@@ -618,7 +624,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         assert.equal(lrcAddressIndex, -1, "LRC address should not be stored in the calldata");
         let numLRCTransfers = 0;
         for (const transfer of report.transferItems) {
-          if (transfer.to === exchangeTestUtil.context.feeHolder.address) {
+          if (transfer.to === exchangeTestUtil.context.feeHolder.options.address) {
             assert.equal(transfer.token, lrcAddress, "LRC should be the default feeToken");
             numLRCTransfers++;
           }

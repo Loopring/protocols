@@ -20,12 +20,18 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
 
     // Create dummy exchange and authorize it
     const DummyExchange = await requireArtifact("test/DummyExchange");
-    dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
-                                            exchangeTestUtil.context.tradeHistory.address,
-                                            exchangeTestUtil.context.feeHolder.address,
+    dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.options.address,
+                                            exchangeTestUtil.context.tradeHistory.options.address,
+                                            exchangeTestUtil.context.feeHolder.options.address,
                                             exchangeTestUtil.ringSubmitter.address);
-    await exchangeTestUtil.context.tradeDelegate.authorizeAddress(dummyExchange.address,
-                                                                  {from: exchangeTestUtil.testContext.deployer});
+    await web3.eth.sendTransaction({
+      from: exchangeTestUtil.testContext.deployer,
+      to: exchangeTestUtil.context.tradeDelegate.options.address,
+      gas: 2500000,
+      data: exchangeTestUtil.context.tradeDelegate.methods.authorizeAddress(
+        dummyExchange.address,
+      ).encodeABI(),
+    });
   });
 
   describe("submitRings", () => {

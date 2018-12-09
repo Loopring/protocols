@@ -43,12 +43,16 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     // could potentially hide bugs
     beforeEach(async () => {
       await exchangeTestUtil.cleanTradeHistory();
-      orderCanceller = await OrderCanceller.new(exchangeTestUtil.context.tradeHistory.address);
-      await exchangeTestUtil.context.tradeHistory.authorizeAddress(
-        orderCanceller.address,
-        {from: exchangeTestUtil.testContext.deployer},
-      );
-      contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address,
+      orderCanceller = await OrderCanceller.new(exchangeTestUtil.context.tradeHistory.options.address);
+      await web3.eth.sendTransaction({
+        from: exchangeTestUtil.testContext.deployer,
+        to: exchangeTestUtil.context.tradeHistory.options.address,
+        gas: 2500000,
+        data: exchangeTestUtil.context.tradeHistory.methods.authorizeAddress(
+          orderCanceller.address,
+        ).encodeABI(),
+      });
+      contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.options.address,
                                                         orderCanceller.address);
     });
 
@@ -216,12 +220,12 @@ contract("Exchange_Cancel", (accounts: string[]) => {
         // Allow the contract to spend tokenS and feeToken
         await contractOrderOwner.approve(
           onChainOrder.tokenS,
-          exchangeTestUtil.context.tradeDelegate.address,
+          exchangeTestUtil.context.tradeDelegate.options.address,
           toBN(1e32),
         );
         await contractOrderOwner.approve(
           onChainOrder.feeToken,
-          exchangeTestUtil.context.tradeDelegate.address,
+          exchangeTestUtil.context.tradeDelegate.options.address,
           toBN(1e32),
         );
 
