@@ -15,7 +15,6 @@
   limitations under the License.
 */
 pragma solidity 0.5.1;
-pragma experimental "ABIEncoderV2";
 
 import "../iface/Errors.sol";
 import "../iface/IBrokerRegistry.sol";
