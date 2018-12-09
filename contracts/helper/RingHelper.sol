@@ -106,10 +106,13 @@ library RingHelper {
             );
         }
 
-        // Reserve the total amount tokenS used for all the orders
-        // (e.g. the owner of order 0 could use LRC as feeToken in order 0, while
-        // the same owner can also sell LRC in order 2).
         for (i = 0; i < ring.size; i++) {
+            // Check if the fill amounts of the participation are valid
+            ring.valid = ring.valid && ring.participations[i].checkFills();
+
+            // Reserve the total amount tokenS used for all the orders
+            // (e.g. the owner of order 0 could use LRC as feeToken in order 0, while
+            // the same owner can also sell LRC in order 2).
             ring.participations[i].order.reserveAmountS(ring.participations[i].fillAmountS);
         }
 

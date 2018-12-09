@@ -180,14 +180,7 @@ export const ringsInfoList: RingsInfo[] = [
     expected: {
       rings: [
         {
-          orders: [
-            {
-              filledFraction: 0.0,
-            },
-            {
-              filledFraction: 0.0,
-            },
-          ],
+          fail: true,
         },
       ],
     },
@@ -218,14 +211,7 @@ export const ringsInfoList: RingsInfo[] = [
     expected: {
       rings: [
         {
-          orders: [
-            {
-              filledFraction: 0.0,
-            },
-            {
-              filledFraction: 0.0,
-            },
-          ],
+          fail: true,
         },
       ],
     },
@@ -414,15 +400,7 @@ export const ringsInfoList: RingsInfo[] = [
     expected: {
       rings: [
         {
-          orders: [
-            {
-              filledFraction: 0.0,
-              payMatchingFeeUsingAmountB: false,
-            },
-            {
-              filledFraction: 0.0,
-            },
-          ],
+          fail: true,
         },
       ],
     },
@@ -456,15 +434,7 @@ export const ringsInfoList: RingsInfo[] = [
     expected: {
       rings: [
         {
-          orders: [
-            {
-              filledFraction: 0.0,
-              payMatchingFeeUsingAmountB: false,
-            },
-            {
-              filledFraction: 0.0,
-            },
-          ],
+          fail: true,
         },
       ],
     },
@@ -1323,14 +1293,7 @@ export const ringsInfoList: RingsInfo[] = [
           ],
         },
         {
-          orders: [
-            {
-              filledFraction: 0.0,
-            },
-            {
-              filledFraction: 0.0,
-            },
-          ],
+          fail: true,
         },
       ],
     },
@@ -2304,14 +2267,7 @@ export const ringsInfoList: RingsInfo[] = [
           ],
         },
         {
-          orders: [
-            {
-              filledFraction: 0.0,
-            },
-            {
-              filledFraction: 0.0,
-            },
-          ],
+          fail: true,
         },
         {
           orders: [
@@ -2337,14 +2293,7 @@ export const ringsInfoList: RingsInfo[] = [
           ],
         },
         {
-          orders: [
-            {
-              filledFraction: 0.0,
-            },
-            {
-              filledFraction: 0.0,
-            },
-          ],
+          fail: true,
         },
         {
           orders: [
@@ -2424,6 +2373,38 @@ export const ringsInfoList: RingsInfo[] = [
               filledFraction: 1.0,
             },
           ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "single 2-size ring, fillAmountB rounding error > 1%",
+    signAlgorithm: SignAlgorithm.Ethereum,
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: tokenSymbols[0],
+        tokenB: tokenSymbols[1],
+        amountS: 1,
+        amountB: 10,
+        signAlgorithm: SignAlgorithm.Ethereum,
+      },
+      {
+        index: 1,
+        tokenS: tokenSymbols[1],
+        tokenB: tokenSymbols[0],
+        amountS: 10,
+        amountB: 1,
+        balanceS: 5,
+        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          fail: true,
         },
       ],
     },

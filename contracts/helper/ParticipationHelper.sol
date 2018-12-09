@@ -117,6 +117,27 @@ library ParticipationHelper {
         }
     }
 
+    function checkFills(
+        Data.Participation memory p
+        )
+        internal
+        pure
+        returns (bool valid)
+    {
+        // Check if the rounding error of the calculated fillAmountB is larger than 1%.
+        // If that's the case, this partipation in invalid
+        // p.fillAmountB := p.fillAmountS.mul(p.order.amountB) / p.order.amountS
+        valid = !MathUint.hasRoundingError(
+            p.fillAmountS,
+            p.order.amountB,
+            p.order.amountS
+        );
+
+        // We at least need to buy and sell something
+        valid = valid && p.fillAmountS > 0;
+        valid = valid && p.fillAmountB > 0;
+    }
+
     function adjustOrderState(
         Data.Participation memory p
         )
