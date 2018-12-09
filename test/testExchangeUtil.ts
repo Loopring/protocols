@@ -376,7 +376,7 @@ export class ExchangeTestUtil {
     addAddress(addressBook, ringsInfo.transactionOrigin, "Tx.origin");
     addAddress(addressBook, miner, "Miner");
     addAddress(addressBook, feeRecipient, "FeeRecipient");
-    addAddress(addressBook, this.context.feeHolder.address, "FeeHolder");
+    addAddress(addressBook, this.context.feeHolder.options.address, "FeeHolder");
     for (const [i, order] of ringsInfo.orders.entries()) {
       addAddress(addressBook, order.owner, "Owner[" + i + "]");
       if (order.owner !== order.tokenRecipient) {
