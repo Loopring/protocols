@@ -4,3 +4,4 @@ transpiled/
 .DS_Store
 .node-*
 *.log
+ganache_account_keys.txt

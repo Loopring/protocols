@@ -41,12 +41,6 @@ contract IOrderCanceller {
         uint            _cutoff
     );
 
-    event OrdersCancelledByBroker(
-        address indexed _broker,
-        address indexed _owner,
-        bytes32[]       _orderHashes
-    );
-
     event AllOrdersCancelledForTradingPairByBroker(
         address indexed _broker,
         address indexed _owner,
