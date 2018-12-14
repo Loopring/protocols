@@ -18,7 +18,8 @@
 pragma solidity 0.5.1;
 
 import "../iface/IBurnRateTable.sol";
-import "../lib/BurnableERC20.sol";
+import "../lib/ERC20.sol";
+import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
@@ -26,6 +27,7 @@ import "../lib/NoDefaultFunc.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
     using MathUint for uint;
+    using ERC20SafeTransfer for address;
 
     address public lrcAddress = address(0x0);
     address public wethAddress = address(0x0);
@@ -92,11 +94,17 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
         require(currentTier != TIER_1, BURN_RATE_MINIMIZED);
 
         // Burn TIER_UPGRADE_COST_PERCENTAGE of total LRC supply
-        BurnableERC20 LRC = BurnableERC20(lrcAddress);
-        uint totalSupply = LRC.totalSupply();
+        ERC20 LRC = ERC20(lrcAddress);
+        uint totalSupply = LRC.totalSupply() - LRC.balanceOf(address(0x0));
         uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / BURN_BASE_PERCENTAGE;
-        bool success = LRC.burnFrom(msg.sender, amount);
-        require(success, BURN_FAILURE);
+        require(
+            lrcAddress.safeTransferFrom(
+                msg.sender,
+                address(0x0),
+                amount
+            ),
+            BURN_FAILURE
+        );
 
         // Upgrade tier
         TokenData storage tokenData = tokens[token];

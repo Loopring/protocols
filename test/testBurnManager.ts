@@ -2,18 +2,22 @@ import BN = require("bn.js");
 import { expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 import { FeePayments } from "./feePayments";
-import { requireArtifact } from "./requireArtifact";
+
+const {
+  BurnManager,
+  FeeHolder,
+  TradeDelegate,
+  DummyExchange,
+  DummyToken,
+  LRCToken,
+  WETHToken,
+} = new Artifacts(artifacts);
 
 contract("BurnManager", (accounts: string[]) => {
   const deployer = accounts[0];
   const user1 = accounts[1];
 
-  const zeroAddress = "0x" + "0".repeat(40);
-
-  let FeeHolder: any;
-  let BurnManager: any;
-  let DummyExchange: any;
-  let DummyToken: any;
+  const zeroAddress = "0x" + "00".repeat(20);
 
   let tradeDelegate: any;
   let feeHolder: any;
@@ -38,7 +42,7 @@ contract("BurnManager", (accounts: string[]) => {
 
     const balanceFeeHolderBefore = await dummyToken.balanceOf(feeHolder.address);
     const burnBalanceBefore = await feeHolder.feeBalances(token, feeHolder.address);
-    const totalLRCSupplyBefore = await LRC.totalSupply();
+    const burnedBalanceBefore = await dummyToken.balanceOf(zeroAddress);
 
     // Burn
     const success = await burnManager.burn(token, {from: user1});
@@ -46,30 +50,22 @@ contract("BurnManager", (accounts: string[]) => {
 
     const balanceFeeHolderAfter = await dummyToken.balanceOf(feeHolder.address);
     const burnBalanceAfter = await feeHolder.feeBalances(token, feeHolder.address);
-    const totalLRCSupplyAfter = await LRC.totalSupply();
+    const burnedBalanceAfter = await dummyToken.balanceOf(zeroAddress);
     assert(balanceFeeHolderAfter.eq(balanceFeeHolderBefore.sub(expectedAmount)),
            "Contract balance should be reduced.");
     assert(burnBalanceAfter.eq(burnBalanceBefore.sub(expectedAmount)),
            "Withdrawal amount not correctly updated.");
     if (token === tokenLRC) {
-      assert(totalLRCSupplyAfter.eq(totalLRCSupplyBefore.sub(expectedAmount)),
+      assert(burnedBalanceAfter.eq(burnedBalanceBefore.add(expectedAmount)),
              "Total LRC supply should have been decreased by all LRC burned");
     }
   };
 
   before(async () => {
-    const LRCToken = await requireArtifact("test/tokens/LRC");
     tokenLRC = LRCToken.address;
-    const WETHToken = await requireArtifact("test/tokens/WETH");
     tokenWETH = WETHToken.address;
 
-    const TradeDelegate = await requireArtifact("impl/TradeDelegate");
     tradeDelegate = await TradeDelegate.deployed();
-
-    FeeHolder = await requireArtifact("impl/FeeHolder");
-    BurnManager = await requireArtifact("impl/BurnManager");
-    DummyExchange = await requireArtifact("test/DummyExchange");
-    DummyToken = await requireArtifact("test/DummyToken");
   });
 
   beforeEach(async () => {

@@ -18,7 +18,7 @@
 pragma solidity 0.5.1;
 
 import "../iface/IFeeHolder.sol";
-import "../lib/BurnableERC20.sol";
+import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
@@ -26,6 +26,7 @@ import "../lib/NoDefaultFunc.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract BurnManager is NoDefaultFunc {
     using MathUint for uint;
+    using ERC20SafeTransfer for address;
 
     address public feeHolderAddress = address(0x0);
     address public lrcAddress = address(0x0);
@@ -61,9 +62,13 @@ contract BurnManager is NoDefaultFunc {
         }
 
         // Burn the LRC
-        BurnableERC20 LRC = BurnableERC20(lrcAddress);
-        success = LRC.burn(balance);
-        require(success, BURN_FAILURE);
+        require(
+            lrcAddress.safeTransfer(
+                address(0x0),
+                balance
+            ),
+            BURN_FAILURE
+        );
 
         return true;
     }
