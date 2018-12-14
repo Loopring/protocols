@@ -157,7 +157,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         }
 
         batchGetFilledAndCheckCancelled(ctx, orders);
-        updateBrokerSpendables(orders);
 
         for (i = 0; i < orders.length; i++) {
             orders[i].check(ctx);
@@ -291,93 +290,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 ringHash,                               // Topic 1: ring hash
                 feeRecipient                            // Topic 2: feeRecipient
             )
-        }
-    }
-
-    function updateBrokerSpendables(
-        Data.Order[] memory orders
-        )
-        internal
-        pure
-    {
-        // Spendables for brokers need to be setup just right for the allowances to work, we cannot trust
-        // the miner to do this for us. Spendables for tokens don't need to be correct, if they are incorrect
-        // the transaction will fail, so the miner will want to send those correctly.
-        uint data;
-        uint ptr;
-        assembly {
-            data := mload(0x40)
-            ptr := data
-        }
-        for (uint i = 0; i < orders.length; i++) {
-            if (orders[i].brokerInterceptor != address(0x0)) {
-                uint brokerSpendableS;
-                (ptr, brokerSpendableS) = addBrokerSpendable(
-                    data,
-                    ptr,
-                    orders[i].broker,
-                    orders[i].owner,
-                    orders[i].tokenS
-                );
-                uint brokerSpendableFee;
-                (ptr, brokerSpendableFee) = addBrokerSpendable(
-                    data,
-                    ptr,
-                    orders[i].broker,
-                    orders[i].owner,
-                    orders[i].feeToken
-                );
-                // Store the spendables in the order
-                assembly {
-                    let order := mload(add(orders, mul(add(1, i), 32)))             // orders[i]
-                    mstore(add(order, 352), brokerSpendableS)                       // order.brokerSpendableS
-                    mstore(add(order, 384), brokerSpendableFee)                     // order.brokerSpendableFee
-                }
-            }
-        }
-        assembly {
-            mstore(0x40, ptr)
-        }
-    }
-
-    function addBrokerSpendable(
-        uint data,
-        uint ptr,
-        address broker,
-        address owner,
-        address token
-        )
-        internal
-        pure
-        returns (uint newPtr, uint spendable)
-    {
-        assembly {
-            // Try to find the spendable for the same (broker, owner, token) set
-            let addNew := 1
-            for { let p := data } and(lt(p, ptr), eq(addNew, 1)) { p := add(p, 192) } {
-                let dataBroker := mload(add(p,  0))
-                let dataOwner := mload(add(p, 32))
-                let dataToken := mload(add(p, 64))
-                // if(broker == dataBroker && owner == dataOwner && token == dataToken)
-                if and(and(eq(broker, dataBroker), eq(owner, dataOwner)), eq(token, dataToken)) {
-                    spendable := add(p, 96)
-                    addNew := 0
-                }
-            }
-            if eq(addNew, 1) {
-                mstore(add(ptr,  0), broker)
-                mstore(add(ptr, 32), owner)
-                mstore(add(ptr, 64), token)
-
-                // Initialize spendable
-                mstore(add(ptr, 96), 0)
-                mstore(add(ptr, 128), 0)
-                mstore(add(ptr, 160), 0)
-
-                spendable := add(ptr, 96)
-                ptr := add(ptr, 192)
-            }
-            newPtr := ptr
         }
     }
 

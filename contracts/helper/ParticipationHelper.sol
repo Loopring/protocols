@@ -32,6 +32,7 @@ library ParticipationHelper {
         Data.Context memory ctx
         )
         internal
+        view
     {
         uint spendableS = p.order.getSpendableS(ctx);
         uint remainingS = p.order.amountS.sub(p.order.filledAmountS);
@@ -72,6 +73,7 @@ library ParticipationHelper {
         Data.Context memory ctx
         )
         internal
+        view
         returns (bool)
     {
         if (p.order.P2P) {

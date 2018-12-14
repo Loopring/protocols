@@ -16,7 +16,6 @@
 */
 pragma solidity 0.5.1;
 
-import "../impl/BrokerInterceptorProxy.sol";
 import "../impl/Data.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
@@ -27,7 +26,6 @@ import "../lib/MultihashUtil.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 library OrderHelper {
     using MathUint      for uint;
-    using BrokerInterceptorProxy for address;
 
     string constant internal EIP191_HEADER = "\x19\x01";
     string constant internal EIP712_DOMAIN_NAME = "Loopring Protocol";
@@ -324,16 +322,14 @@ library OrderHelper {
         Data.Context memory ctx
         )
         internal
+        view
         returns (uint)
     {
         return getSpendable(
             ctx.delegate,
             order.tokenS,
             order.owner,
-            order.broker,
-            order.brokerInterceptor,
-            order.tokenSpendableS,
-            order.brokerSpendableS
+            order.tokenSpendableS
         );
     }
 
@@ -342,16 +338,14 @@ library OrderHelper {
         Data.Context memory ctx
         )
         internal
+        view
         returns (uint)
     {
         return getSpendable(
             ctx.delegate,
             order.feeToken,
             order.owner,
-            order.broker,
-            order.brokerInterceptor,
-            order.tokenSpendableFee,
-            order.brokerSpendableFee
+            order.tokenSpendableFee
         );
     }
 
@@ -363,9 +357,6 @@ library OrderHelper {
         pure
     {
         order.tokenSpendableS.reserved += amount;
-        if (order.brokerInterceptor != address(0x0)) {
-            order.brokerSpendableS.reserved += amount;
-        }
     }
 
     function reserveAmountFee(
@@ -376,9 +367,6 @@ library OrderHelper {
         pure
     {
         order.tokenSpendableFee.reserved += amount;
-        if (order.brokerInterceptor != address(0x0)) {
-            order.brokerSpendableFee.reserved += amount;
-        }
     }
 
     function resetReservations(
@@ -389,10 +377,6 @@ library OrderHelper {
     {
         order.tokenSpendableS.reserved = 0;
         order.tokenSpendableFee.reserved = 0;
-        if (order.brokerInterceptor != address(0x0)) {
-            order.brokerSpendableS.reserved = 0;
-            order.brokerSpendableFee.reserved = 0;
-        }
     }
 
     /// @return Amount of ERC20 token that can be spent by this contract.
@@ -416,33 +400,14 @@ library OrderHelper {
         }
     }
 
-    /// @return Amount of ERC20 token that can be spent by the broker
-    function getBrokerAllowance(
-        address tokenAddress,
-        address owner,
-        address broker,
-        address brokerInterceptor
-        )
-        private
-        returns (uint allowance)
-    {
-        allowance = brokerInterceptor.getAllowanceSafe(
-            owner,
-            broker,
-            tokenAddress
-        );
-    }
-
     function getSpendable(
         ITradeDelegate delegate,
         address tokenAddress,
         address owner,
-        address broker,
-        address brokerInterceptor,
-        Data.Spendable memory tokenSpendable,
-        Data.Spendable memory brokerSpendable
+        Data.Spendable memory tokenSpendable
         )
         private
+        view
         returns (uint spendable)
     {
         if (!tokenSpendable.initialized) {
@@ -454,18 +419,5 @@ library OrderHelper {
             tokenSpendable.initialized = true;
         }
         spendable = tokenSpendable.amount.sub(tokenSpendable.reserved);
-        if (brokerInterceptor != address(0x0)) {
-            if (!brokerSpendable.initialized) {
-                brokerSpendable.amount = getBrokerAllowance(
-                    tokenAddress,
-                    owner,
-                    broker,
-                    brokerInterceptor
-                );
-                brokerSpendable.initialized = true;
-            }
-            uint brokerSpendableAmount = brokerSpendable.amount.sub(brokerSpendable.reserved);
-            spendable = (brokerSpendableAmount < spendable) ? brokerSpendableAmount : spendable;
-        }
     }
 }

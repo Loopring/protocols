@@ -17,7 +17,6 @@
 pragma solidity 0.5.1;
 
 import "../iface/IRingSubmitter.sol";
-import "../impl/BrokerInterceptorProxy.sol";
 import "../impl/Data.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
@@ -32,7 +31,6 @@ library RingHelper {
     using OrderHelper for Data.Order;
     using ParticipationHelper for Data.Participation;
 
-    using BrokerInterceptorProxy for address;
     function updateHash(
         Data.Ring memory ring
         )
@@ -67,6 +65,7 @@ library RingHelper {
         Data.Context memory ctx
         )
         internal
+        view
     {
         // Invalid order data could cause a divide by zero in the calculations
         if (!ring.valid) {
@@ -224,6 +223,7 @@ library RingHelper {
         Data.Mining memory mining
         )
         internal
+        view
     {
         payFees(ring, ctx, mining);
         transferTokens(ring, ctx, mining.feeRecipient);
@@ -281,6 +281,7 @@ library RingHelper {
         address feeRecipient
         )
         internal
+        pure
     {
         for (uint i = 0; i < ring.size; i++) {
             transferTokensForParticipation(
@@ -299,6 +300,7 @@ library RingHelper {
         Data.Participation memory prevP
         )
         internal
+        pure
         returns (uint)
     {
         uint buyerFeeAmountAfterRebateB = prevP.feeAmountB.sub(prevP.rebateB);
@@ -356,24 +358,6 @@ library RingHelper {
             feeRecipient,
             p.splitS
         );
-
-        // onTokenSpent broker callbacks
-        if (p.order.brokerInterceptor != address(0x0)) {
-            onTokenSpent(
-                p.order.brokerInterceptor,
-                p.order.owner,
-                p.order.broker,
-                p.order.tokenS,
-                amountSToBuyer + amountSToFeeHolder + p.splitS
-            );
-            onTokenSpent(
-                p.order.brokerInterceptor,
-                p.order.owner,
-                p.order.broker,
-                p.order.feeToken,
-                amountFeeToFeeHolder
-            );
-        }
     }
 
     function addTokenTransfer(
@@ -423,27 +407,6 @@ library RingHelper {
             return ptr;
         } else {
             return ptr;
-        }
-    }
-
-    function onTokenSpent(
-        address brokerInterceptor,
-        address owner,
-        address broker,
-        address token,
-        uint    amount
-        )
-        internal
-    {
-        if (brokerInterceptor == address(0x0) || amount == 0) {
-            return;
-        } else {
-            brokerInterceptor.onTokenSpentSafe(
-                owner,
-                broker,
-                token,
-                amount
-            );
         }
     }
 
