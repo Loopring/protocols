@@ -48,8 +48,6 @@ export class ExchangeTestUtil {
 
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-    // Workaround for a bug in ganache-cli 6.2.x with incorrect state reverts between tests
-    await this.cleanTradeHistory();
     await this.authorizeTradeDelegate();
     await this.authorizeTradeHistory();
     await this.approveTradeDelegate();
@@ -689,12 +687,9 @@ export class ExchangeTestUtil {
       this.ringSubmitter.address,
     ).call();
     if (!alreadyAuthorized) {
-      await web3.eth.sendTransaction({
-        from: this.testContext.deployer,
-        to: this.context.tradeDelegate.options.address,
-        gas: 2500000,
-        data: this.context.tradeDelegate.methods.authorizeAddress(this.ringSubmitter.address).encodeABI(),
-      });
+      await this.context.tradeDelegate.methods.authorizeAddress(
+        this.ringSubmitter.address,
+      ).send({from: this.testContext.deployer});
     }
   }
 
@@ -703,12 +698,9 @@ export class ExchangeTestUtil {
       this.ringSubmitter.address,
     ).call();
     if (!alreadyAuthorized) {
-      await web3.eth.sendTransaction({
-        from: this.testContext.deployer,
-        to: this.context.tradeHistory.options.address,
-        gas: 2500000,
-        data: this.context.tradeHistory.methods.authorizeAddress(this.ringSubmitter.address).encodeABI(),
-      });
+      await this.context.tradeHistory.methods.authorizeAddress(
+        this.ringSubmitter.address,
+      ).send({from: this.testContext.deployer});
     }
   }
 

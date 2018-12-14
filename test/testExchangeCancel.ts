@@ -44,14 +44,9 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     beforeEach(async () => {
       await exchangeTestUtil.cleanTradeHistory();
       orderCanceller = await OrderCanceller.new(exchangeTestUtil.context.tradeHistory.options.address);
-      await web3.eth.sendTransaction({
-        from: exchangeTestUtil.testContext.deployer,
-        to: exchangeTestUtil.context.tradeHistory.options.address,
-        gas: 2500000,
-        data: exchangeTestUtil.context.tradeHistory.methods.authorizeAddress(
-          orderCanceller.address,
-        ).encodeABI(),
-      });
+      await exchangeTestUtil.context.tradeHistory.methods.authorizeAddress(
+        orderCanceller.address,
+      ).send({from: exchangeTestUtil.testContext.deployer});
       contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.options.address,
                                                         orderCanceller.address);
     });

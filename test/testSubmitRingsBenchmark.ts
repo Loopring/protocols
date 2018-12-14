@@ -24,14 +24,9 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
                                             exchangeTestUtil.context.tradeHistory.options.address,
                                             exchangeTestUtil.context.feeHolder.options.address,
                                             exchangeTestUtil.ringSubmitter.address);
-    await web3.eth.sendTransaction({
-      from: exchangeTestUtil.testContext.deployer,
-      to: exchangeTestUtil.context.tradeDelegate.options.address,
-      gas: 2500000,
-      data: exchangeTestUtil.context.tradeDelegate.methods.authorizeAddress(
-        dummyExchange.address,
-      ).encodeABI(),
-    });
+    await exchangeTestUtil.context.tradeDelegate.methods.authorizeAddress(
+      dummyExchange.address,
+    ).send({from: exchangeTestUtil.testContext.deployer});
   });
 
   describe("submitRings", () => {
