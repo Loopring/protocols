@@ -45,15 +45,15 @@ contract IBurnRateTable {
 
     // Burn rates
     // Matching
-    uint16 public constant BURN_MATCHING_TIER1            =                   5 * 10; //   5%
-    uint16 public constant BURN_MATCHING_TIER2            =                  20 * 10; //  20%
-    uint16 public constant BURN_MATCHING_TIER3            =                  40 * 10; //  40%
-    uint16 public constant BURN_MATCHING_TIER4            =                  60 * 10; //  60%
+    uint16 public constant BURN_MATCHING_TIER1            =                       25; // 2.5%
+    uint16 public constant BURN_MATCHING_TIER2            =                  15 * 10; //  15%
+    uint16 public constant BURN_MATCHING_TIER3            =                  30 * 10; //  30%
+    uint16 public constant BURN_MATCHING_TIER4            =                  50 * 10; //  50%
     // P2P
-    uint16 public constant BURN_P2P_TIER1                 =                        5; // 0.5%
-    uint16 public constant BURN_P2P_TIER2                 =                   2 * 10; //   2%
-    uint16 public constant BURN_P2P_TIER3                 =                   3 * 10; //   3%
-    uint16 public constant BURN_P2P_TIER4                 =                   6 * 10; //   6%
+    uint16 public constant BURN_P2P_TIER1                 =                       25; // 2.5%
+    uint16 public constant BURN_P2P_TIER2                 =                  15 * 10; //  15%
+    uint16 public constant BURN_P2P_TIER3                 =                  30 * 10; //  30%
+    uint16 public constant BURN_P2P_TIER4                 =                  50 * 10; //  50%
 
     event TokenTierUpgraded(
         address indexed addr,
