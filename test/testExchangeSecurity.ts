@@ -1,8 +1,11 @@
 import * as psc from "protocol2-js";
 import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/Artifacts";
-import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestUtil } from "./testExchangeUtil";
+
+const {
+  TESTToken,
+} = new Artifacts(artifacts);
 
 contract("Exchange_Security", (accounts: string[]) => {
 
@@ -64,7 +67,6 @@ contract("Exchange_Security", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupRings(ringsInfoAttack);
 
-      const TESTToken = await requireArtifact("test/tokens/TEST");
       const TestToken = await TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
 
       // Enable the Reentrancy attack

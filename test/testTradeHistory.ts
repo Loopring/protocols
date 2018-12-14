@@ -2,7 +2,18 @@ import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import { Bitstream, expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
-import { requireArtifact } from "./requireArtifact";
+
+const {
+  TradeHistory,
+  TradeDelegate,
+  DummyToken,
+  DummyExchange,
+  LRCToken,
+  GTOToken,
+  RDNToken,
+  WETHToken,
+  TESTToken,
+} = new Artifacts(artifacts);
 
 interface FilledUpdate {
   hash: string;
@@ -28,11 +39,6 @@ contract("TradeHistory", (accounts: string[]) => {
   const user3 = accounts[7];
   const user4 = accounts[8];
   const zeroAddress = "0x" + "00".repeat(20);
-
-  let TradeHistory: any;
-  let TradeDelegate: any;
-  let DummyExchange: any;
-  let TESTToken: any;
 
   let tradeHistory: any;
   let dummyExchange1: any;
@@ -146,18 +152,10 @@ contract("TradeHistory", (accounts: string[]) => {
   };
 
   before(async () => {
-    const LRCToken = await requireArtifact("test/tokens/LRC");
-    const WETHToken = await requireArtifact("test/tokens/WETH");
-    const RDNToken = await requireArtifact("test/tokens/RDN");
-    const GTOToken = await requireArtifact("test/tokens/GTO");
     token1 = LRCToken.address;
     token2 = WETHToken.address;
     token3 = RDNToken.address;
     token4 = GTOToken.address;
-    TradeHistory = await requireArtifact("impl/TradeHistory");
-    TradeDelegate = await requireArtifact("impl/TradeDelegate");
-    DummyExchange = await requireArtifact("test/DummyExchange");
-    TESTToken = await requireArtifact("test/tokens/TEST");
   });
 
   beforeEach(async () => {

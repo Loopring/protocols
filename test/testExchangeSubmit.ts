@@ -1,9 +1,17 @@
 import { BigNumber } from "bignumber.js";
 import * as pjs from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
-import { requireArtifact } from "./requireArtifact";
 import { ringsInfoList } from "./rings_config";
 import { ExchangeTestUtil } from "./testExchangeUtil";
+
+const {
+  DummyExchange,
+  OrderBook,
+  OrderRegistry,
+  TESTToken,
+} = new Artifacts(artifacts);
+
+const ContractOrderOwner = artifacts.require("ContractOrderOwner");
 
 contract("Exchange_Submit", (accounts: string[]) => {
 
@@ -24,14 +32,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
 
-    const OrderBook = await requireArtifact("impl/OrderBook");
     orderBook = await OrderBook.deployed();
-
-    const OrderRegistry = await requireArtifact("impl/OrderRegistry");
     orderRegistry = await OrderRegistry.deployed();
 
     // Create dummy exchange and authorize it
-    const DummyExchange = await requireArtifact("test/DummyExchange");
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.options.address,
                                             exchangeTestUtil.context.tradeHistory.options.address,
                                             exchangeTestUtil.context.feeHolder.options.address,
@@ -40,7 +44,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
       dummyExchange.address,
     ).send({from: exchangeTestUtil.testContext.deployer});
 
-    const ContractOrderOwner = await requireArtifact("test/ContractOrderOwner");
     contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.options.address, zeroAddress);
   });
 
@@ -657,7 +660,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
       // Fail the token transfer by throwing in transferFrom
-      const TESTToken = await requireArtifact("test/tokens/TEST");
       const TestToken = await TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
       await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
 

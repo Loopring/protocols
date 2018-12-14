@@ -1,5 +1,6 @@
 import { expectThrow } from "protocol2-js";
-import { requireArtifact } from "./requireArtifact";
+
+const Ownable = artifacts.require("Ownable");
 
 contract("Ownable", (accounts: string[]) => {
 
@@ -10,7 +11,6 @@ contract("Ownable", (accounts: string[]) => {
   let ownable: any;
 
   beforeEach(async () => {
-    const Ownable = await requireArtifact("Ownable");
     ownable = await Ownable.new({from: owner1});
   });
 

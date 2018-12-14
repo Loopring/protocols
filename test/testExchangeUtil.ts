@@ -5,7 +5,6 @@ import * as pjs from "protocol2-js";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { FeePayments } from "./feePayments";
-import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestContext } from "./testExchangeContext";
 
 export class ExchangeTestUtil {
@@ -13,39 +12,9 @@ export class ExchangeTestUtil {
   public testContext: ExchangeTestContext;
   public ringSubmitter: any;
 
-  private RingSubmitter: any;
-  private TradeDelegate: any;
-  private TradeHistory: any;
-  private OrderRegistry: any;
-  private FeeHolder: any;
-  private OrderBook: any;
-  private BurnRateTable: any;
-  private LRCToken: any;
-  private WETHToken: any;
-  private BrokerRegistry: any;
-  private RDNToken: any;
-  private GTOToken: any;
-  private REPToken: any;
-  private TESTToken: any;
-  private DummyToken: any;
+  private contracts = new Artifacts(artifacts);
 
   public async initialize(accounts: string[]) {
-    this.RingSubmitter = await requireArtifact("impl/RingSubmitter");
-    this.TradeDelegate = await requireArtifact("impl/TradeDelegate");
-    this.TradeHistory = await requireArtifact("impl/TradeHistory");
-    this.OrderRegistry = await requireArtifact("impl/OrderRegistry");
-    this.FeeHolder = await requireArtifact("impl/FeeHolder");
-    this.OrderBook = await requireArtifact("impl/OrderBook");
-    this.BurnRateTable = await requireArtifact("impl/BurnRateTable");
-    this.LRCToken = await requireArtifact("test/tokens/LRC");
-    this.BrokerRegistry = await requireArtifact("impl/BrokerRegistry");
-    this.WETHToken = await requireArtifact("test/tokens/WETH");
-    this.RDNToken = await requireArtifact("test/tokens/RDN");
-    this.GTOToken = await requireArtifact("test/tokens/GTO");
-    this.REPToken = await requireArtifact("test/tokens/REP");
-    this.TESTToken = await requireArtifact("test/tokens/TEST");
-    this.DummyToken = await requireArtifact("test/DummyToken");
-
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
     await this.authorizeTradeDelegate();
@@ -552,26 +521,26 @@ export class ExchangeTestUtil {
   }
 
   public async registerOrderBrokerChecked(user: string, broker: string, interceptor: string) {
-    const brokerRegistry = await this.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
+    const brokerRegistry = await this.contracts.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
     await brokerRegistry.registerBroker(broker, interceptor, {from: user});
     await this.assertOrderBrokerRegistered(user, broker, interceptor);
   }
 
   public async unregisterOrderBrokerChecked(user: string, broker: string) {
-    const brokerRegistry = await this.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
+    const brokerRegistry = await this.contracts.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
     await brokerRegistry.unregisterBroker(broker, {from: user});
     await this.assertOrderBrokerNotRegistered(user, broker);
   }
 
   public async assertOrderBrokerRegistered(user: string, broker: string, interceptor: string) {
-    const brokerRegistry = await this.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
+    const brokerRegistry = await this.contracts.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
     const returnValue = await brokerRegistry.getBroker(user, broker);
     assert(returnValue.registered, "interceptor should be registered.");
     assert.equal(interceptor, returnValue.interceptor, "get wrong interceptor");
   }
 
   public async assertOrderBrokerNotRegistered(user: string, broker: string) {
-    const brokerRegistry = await this.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
+    const brokerRegistry = await this.contracts.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
     const returnValue = await brokerRegistry.getBroker(user, broker);
     assert(!returnValue.registered, "interceptor should not be registered.");
   }
@@ -716,13 +685,8 @@ export class ExchangeTestUtil {
   }
 
   public async lockLRC(user: string, targetRebateRate: number) {
-    const {
-      DummyToken,
-      BurnRateTable,
-    } = new Artifacts(artifacts);
-
-    const LRC = await DummyToken.at(this.context.lrcAddress);
-    const burnRateTable = await BurnRateTable.deployed();
+    const LRC = await this.contracts.DummyToken.at(this.context.lrcAddress);
+    const burnRateTable = await this.contracts.BurnRateTable.deployed();
     const totalLRCSupply = await LRC.totalSupply();
 
     // Calculate the needed funds to upgrade the tier
@@ -740,31 +704,11 @@ export class ExchangeTestUtil {
   }
 
   public async cleanTradeHistory() {
-    /*const {
-      RingSubmitter,
-      OrderRegistry,
-      TradeDelegate,
-      TradeHistory,
-      FeeHolder,
-      WETHToken,
-      BrokerRegistry,
-    } = new Artifacts(artifacts);*/
-    /*const {
-      RingSubmitter,
-      OrderRegistry,
-      TradeDelegate,
-      TradeHistory,
-      FeeHolder,
-      OrderBook,
-      BurnRateTable,
-      LRCToken,
-    } = new Artifacts(artifacts);*/
-
-    const tradeHistory = await this.TradeHistory.new();
-    const brokerRegistry = await this.BrokerRegistry.new();
-    this.ringSubmitter = await this.RingSubmitter.new(
+    const tradeHistory = await this.contracts.TradeHistory.new();
+    const brokerRegistry = await this.contracts.BrokerRegistry.new();
+    this.ringSubmitter = await this.contracts.RingSubmitter.new(
       this.context.lrcAddress,
-      this.WETHToken.address,
+      this.contracts.WETHToken.address,
       this.context.tradeDelegate.options.address,
       tradeHistory.address,
       brokerRegistry.address,
@@ -805,29 +749,16 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    /*const {
-      RingSubmitter,
-      OrderRegistry,
-      TradeDelegate,
-      TradeHistory,
-      FeeHolder,
-      OrderBook,
-      BurnRateTable,
-      LRCToken,
-      DummyToken,
-      BrokerRegistry,
-    } = new Artifacts(artifacts);*/
-
     const [ringSubmitter, tradeDelegate, tradeHistory, orderRegistry,
            feeHolder, orderBook, burnRateTable, lrcToken] = await Promise.all([
-        this.RingSubmitter.deployed(),
-        this.TradeDelegate.deployed(),
-        this.TradeHistory.deployed(),
-        this.OrderRegistry.deployed(),
-        this.FeeHolder.deployed(),
-        this.OrderBook.deployed(),
-        this.BurnRateTable.deployed(),
-        this.LRCToken.deployed(),
+        this.contracts.RingSubmitter.deployed(),
+        this.contracts.TradeDelegate.deployed(),
+        this.contracts.TradeHistory.deployed(),
+        this.contracts.OrderRegistry.deployed(),
+        this.contracts.FeeHolder.deployed(),
+        this.contracts.OrderBook.deployed(),
+        this.contracts.BurnRateTable.deployed(),
+        this.contracts.LRCToken.deployed(),
       ]);
 
     this.ringSubmitter = ringSubmitter;
@@ -840,63 +771,54 @@ export class ExchangeTestUtil {
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;
     return new pjs.Context(currBlockNumber,
                            currBlockTimestamp,
-                           this.TradeDelegate.address,
-                           this.TradeHistory.address,
+                           this.contracts.TradeDelegate.address,
+                           this.contracts.TradeHistory.address,
                            orderBrokerRegistryAddress,
-                           this.OrderRegistry.address,
-                           this.FeeHolder.address,
-                           this.OrderBook.address,
-                           this.BurnRateTable.address,
-                           this.LRCToken.address,
+                           this.contracts.OrderRegistry.address,
+                           this.contracts.FeeHolder.address,
+                           this.contracts.OrderBook.address,
+                           this.contracts.BurnRateTable.address,
+                           this.contracts.LRCToken.address,
                            feePercentageBase,
                            ringIndex);
   }
 
   private async createExchangeTestContext(accounts: string[]) {
-    /*const {
-      LRCToken,
-      GTOToken,
-      RDNToken,
-      REPToken,
-      WETHToken,
-      TESTToken,
-    } = new Artifacts(artifacts);*/
-
     const tokenSymbolAddrMap = new Map<string, string>();
     const tokenAddrSymbolMap = new Map<string, string>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
     const [lrc, gto, rdn, rep, weth, test] = await Promise.all([
-      this.LRCToken.deployed(),
-      this.GTOToken.deployed(),
-      this.RDNToken.deployed(),
-      this.REPToken.deployed(),
-      this.WETHToken.deployed(),
-      this.TESTToken.deployed(),
+      this.contracts.LRCToken.deployed(),
+      this.contracts.GTOToken.deployed(),
+      this.contracts.RDNToken.deployed(),
+      this.contracts.REPToken.deployed(),
+      this.contracts.WETHToken.deployed(),
+      this.contracts.TESTToken.deployed(),
     ]);
 
     const allTokens = [lrc, gto, rdn, rep, weth, test];
 
-    tokenSymbolAddrMap.set("LRC", this.LRCToken.address);
-    tokenSymbolAddrMap.set("GTO", this.GTOToken.address);
-    tokenSymbolAddrMap.set("RDN", this.RDNToken.address);
-    tokenSymbolAddrMap.set("REP", this.REPToken.address);
-    tokenSymbolAddrMap.set("WETH", this.WETHToken.address);
-    tokenSymbolAddrMap.set("TEST", this.TESTToken.address);
+    tokenSymbolAddrMap.set("LRC", this.contracts.LRCToken.address);
+    tokenSymbolAddrMap.set("GTO", this.contracts.GTOToken.address);
+    tokenSymbolAddrMap.set("RDN", this.contracts.RDNToken.address);
+    tokenSymbolAddrMap.set("REP", this.contracts.REPToken.address);
+    tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
+    tokenSymbolAddrMap.set("TEST", this.contracts.TESTToken.address);
 
-    tokenAddrSymbolMap.set(this.LRCToken.address, "LRC");
-    tokenAddrSymbolMap.set(this.GTOToken.address, "GTO");
-    tokenAddrSymbolMap.set(this.RDNToken.address, "RDN");
-    tokenAddrSymbolMap.set(this.REPToken.address, "REP");
-    tokenAddrSymbolMap.set(this.WETHToken.address, "WETH");
-    tokenAddrSymbolMap.set(this.TESTToken.address, "TEST");
+    tokenAddrSymbolMap.set(this.contracts.LRCToken.address, "LRC");
+    tokenAddrSymbolMap.set(this.contracts.GTOToken.address, "GTO");
+    tokenAddrSymbolMap.set(this.contracts.RDNToken.address, "RDN");
+    tokenAddrSymbolMap.set(this.contracts.REPToken.address, "REP");
+    tokenAddrSymbolMap.set(this.contracts.WETHToken.address, "WETH");
+    tokenAddrSymbolMap.set(this.contracts.TESTToken.address, "TEST");
 
-    tokenAddrInstanceMap.set(this.LRCToken.address, lrc);
-    tokenAddrInstanceMap.set(this.GTOToken.address, gto);
-    tokenAddrInstanceMap.set(this.RDNToken.address, rdn);
-    tokenAddrInstanceMap.set(this.REPToken.address, rep);
-    tokenAddrInstanceMap.set(this.WETHToken.address, weth);
-    tokenAddrInstanceMap.set(this.TESTToken.address, test);
+    tokenAddrInstanceMap.set(this.contracts.LRCToken.address, lrc);
+    tokenAddrInstanceMap.set(this.contracts.GTOToken.address, gto);
+    tokenAddrInstanceMap.set(this.contracts.RDNToken.address, rdn);
+    tokenAddrInstanceMap.set(this.contracts.REPToken.address, rep);
+    tokenAddrInstanceMap.set(this.contracts.WETHToken.address, weth);
+    tokenAddrInstanceMap.set(this.contracts.TESTToken.address, test);
 
     const deployer = accounts[0];
     const transactionOrigin = accounts[1];

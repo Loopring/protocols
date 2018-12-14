@@ -2,7 +2,19 @@ import BN = require("bn.js");
 import { expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 import { FeePayments } from "./feePayments";
-import { requireArtifact } from "./requireArtifact";
+
+const {
+  FeeHolder,
+  TradeDelegate,
+  DummyExchange,
+  DummyBurnManager,
+  DummyToken,
+  LRCToken,
+  GTOToken,
+  RDNToken,
+  REPToken,
+  TESTToken,
+} = new Artifacts(artifacts);
 
 contract("FeeHolder", (accounts: string[]) => {
   const deployer = accounts[0];
@@ -11,13 +23,6 @@ contract("FeeHolder", (accounts: string[]) => {
   const user2 = accounts[3];
   const user3 = accounts[4];
   const user4 = accounts[5];
-
-  let FeeHolder: any;
-  let TradeDelegate: any;
-  let DummyExchange: any;
-  let DummyBurnManager: any;
-  let TESTToken: any;
-  let DummyToken: any;
 
   const zeroAddress = "0x" + "0".repeat(40);
 
@@ -105,23 +110,12 @@ contract("FeeHolder", (accounts: string[]) => {
   };
 
   before(async () => {
-    TradeDelegate = await requireArtifact("impl/TradeDelegate");
     tradeDelegate = await TradeDelegate.deployed();
 
-    const LRCToken = await requireArtifact("test/tokens/LRC");
-    const REPToken = await requireArtifact("test/tokens/REP");
-    const RDNToken = await requireArtifact("test/tokens/RDN");
-    const GTOToken = await requireArtifact("test/tokens/GTO");
     token1 = LRCToken.address;
     token2 = REPToken.address;
     token3 = RDNToken.address;
     token4 = GTOToken.address;
-
-    DummyToken = await requireArtifact("test/DummyToken");
-    FeeHolder = await requireArtifact("impl/FeeHolder");
-    DummyExchange = await requireArtifact("test/DummyExchange");
-    DummyBurnManager = await requireArtifact("test/DummyBurnManager");
-    TESTToken = await requireArtifact("test/tokens/TEST");
   });
 
   beforeEach(async () => {

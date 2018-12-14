@@ -3,7 +3,13 @@ import abi = require("ethereumjs-abi");
 import { expectThrow, logDebug, OrderInfo, OrderUtil, TokenType } from "protocol2-js";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
-import { requireArtifact } from "./requireArtifact";
+
+const {
+  OrderBook,
+  LRCToken,
+  GTOToken,
+  RDNToken,
+} = new Artifacts(artifacts);
 
 contract("OrderBook", (accounts: string[]) => {
   const owner1 = accounts[1];
@@ -13,7 +19,6 @@ contract("OrderBook", (accounts: string[]) => {
   const wallet = accounts[5];
   const tokenRecipient = accounts[6];
 
-  let OrderBook: any;
   let orderBook: any;
 
   let lrcAddress: string;
@@ -97,13 +102,9 @@ contract("OrderBook", (accounts: string[]) => {
   };
 
   before(async () => {
-    const LRCToken = await requireArtifact("test/tokens/LRC");
-    const RDNToken = await requireArtifact("test/tokens/RDN");
-    const GTOToken = await requireArtifact("test/tokens/GTO");
     lrcAddress = LRCToken.address;
     rdnAddress = RDNToken.address;
     gtoAddress = GTOToken.address;
-    OrderBook = await requireArtifact("impl/OrderBook");
   });
 
   beforeEach(async () => {

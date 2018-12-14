@@ -3,15 +3,18 @@ import BN = require("bn.js");
 import * as psc from "protocol2-js";
 import tokenInfos = require("../migrations/config/tokens.js");
 import { Artifacts } from "../util/Artifacts";
-import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestUtil } from "./testExchangeUtil";
+
+const {
+  OrderCanceller,
+  OrderBook,
+} = new Artifacts(artifacts);
+
+const ContractOrderOwner = artifacts.require("ContractOrderOwner");
 
 contract("Exchange_Cancel", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
-
-  let OrderCanceller: any;
-  let ContractOrderOwner: any;
 
   let orderCanceller: any;
   let orderBook: any;
@@ -29,11 +32,7 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
 
-    const OrderBook = await requireArtifact("impl/OrderBook");
     orderBook = await OrderBook.deployed();
-
-    OrderCanceller = await requireArtifact("impl/OrderCanceller");
-    ContractOrderOwner = await requireArtifact("ContractOrderOwner");
   });
 
   describe("Cancelling orders", () => {

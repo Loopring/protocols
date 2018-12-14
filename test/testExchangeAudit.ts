@@ -1,8 +1,12 @@
 import { BigNumber } from "bignumber.js";
 import * as pjs from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
-import { requireArtifact } from "./requireArtifact";
 import { ExchangeTestUtil } from "./testExchangeUtil";
+
+const {
+  DummyExchange,
+  DeserializerTest,
+} = new Artifacts(artifacts);
 
 contract("Exchange_Submit_Audit", (accounts: string[]) => {
 
@@ -31,11 +35,9 @@ contract("Exchange_Submit_Audit", (accounts: string[]) => {
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
-    const DeserializerTest = await requireArtifact("test/DeserializerTest");
     deserializerTest = await DeserializerTest.deployed();
 
     // Create dummy exchange and authorize it
-    const DummyExchange = await requireArtifact("test/DummyExchange");
     dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.options.address,
                                             exchangeTestUtil.context.tradeHistory.options.address,
                                             exchangeTestUtil.context.feeHolder.options.address,

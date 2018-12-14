@@ -1,7 +1,8 @@
 import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import { Bitstream, expectThrow, MultiHashUtil, SignAlgorithm } from "protocol2-js";
-import { requireArtifact } from "./requireArtifact";
+
+const MultihashUtilProxy = artifacts.require("MultihashUtilProxy");
 
 contract("Multihash", (accounts: string[]) => {
 
@@ -22,7 +23,6 @@ contract("Multihash", (accounts: string[]) => {
   let multihash: any;
 
   before(async () => {
-    const MultihashUtilProxy = await requireArtifact("MultihashUtilProxy");
     multihash = await MultihashUtilProxy.new();
   });
 
