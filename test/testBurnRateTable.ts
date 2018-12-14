@@ -4,7 +4,6 @@ import { Artifacts } from "../util/Artifacts";
 
 const {
   BurnRateTable,
-  TradeDelegate,
   DummyToken,
   LRCToken,
   WETHToken,
@@ -17,6 +16,8 @@ contract("BurnRateTable", (accounts: string[]) => {
   const user2 = accounts[3];
   const user3 = accounts[4];
   const user4 = accounts[5];
+
+  const zeroAddress = "0x" + "00".repeat(20);
 
   let burnRateTable: any;
   let tokenLRC: string;
@@ -89,7 +90,9 @@ contract("BurnRateTable", (accounts: string[]) => {
 
   const getTokenTierUpgradeAmount = async () => {
     const LRC = await DummyToken.at(tokenLRC);
-    const totalLRCSupply = await LRC.totalSupply();
+    const LRCSupply = await LRC.totalSupply();
+    const burnedSupply = await LRC.balanceOf(zeroAddress);
+    const totalLRCSupply = LRCSupply - burnedSupply;
     const upgradeCostPercentage = (await burnRateTable.TIER_UPGRADE_COST_PERCENTAGE()).toNumber();
     const upgradeAmount = Math.floor(totalLRCSupply * upgradeCostPercentage / BURN_BASE_PERCENTAGE);
     return upgradeAmount;
@@ -150,10 +153,10 @@ contract("BurnRateTable", (accounts: string[]) => {
       await checkTokenTier(user1, token1, 4);
     });
 
-    it("should be able to upgrade the tier of a token for 2 years by burning enough tokens", async () => {
+    it("should be able to upgrade the tier of a token for 1 year by burning enough tokens", async () => {
       const LRC = await DummyToken.at(tokenLRC);
-      // current total supply
-      const totalLRCSupply = await LRC.totalSupply();
+      // current total burned
+      const totalBurned = await LRC.balanceOf(zeroAddress);
       // Total amount needed to upgrate one tier
       const upgradeAmount = await getTokenTierUpgradeAmount();
       // Have the user have a bit more balance
@@ -172,16 +175,16 @@ contract("BurnRateTable", (accounts: string[]) => {
       checkLRCBalance(user1, initialBalance - upgradeAmount,
                       "Balance of the burner should be depleted by burn amount");
       // New LRC total supply should be upgradeAmount less
-      const newTotalLRCSupply = await LRC.totalSupply();
+      const newTotalBurned = await LRC.balanceOf(zeroAddress);
       assertNumberEqualsWithPrecision(
-        newTotalLRCSupply, totalLRCSupply - upgradeAmount,
+        newTotalBurned, totalBurned + upgradeAmount,
         "LRC total supply should have beed reduces by the amount burned",
       );
 
       // The tier of the token should still be the same within 1 year
       await advanceBlockTimestamp(364 * DAY_TO_SECONDS);
       await checkTokenTier(user1, token1, 3);
-      // The tier of the token should have reverted back to tier 4 after 1 years
+      // The tier of the token should have reverted back to tier 4 after 1 year
       await advanceBlockTimestamp(2 * DAY_TO_SECONDS);
       await checkTokenTier(user1, token1, 4);
     });
@@ -193,7 +196,7 @@ contract("BurnRateTable", (accounts: string[]) => {
       const initialBalance = upgradeAmount / 2;
       await addLRCBalance(user1, initialBalance);
       // Try to upgrade
-      await expectThrow(burnRateTable.upgradeTokenTier(token1, {from: user1}), "INVALID_VALUE");
+      await expectThrow(burnRateTable.upgradeTokenTier(token1, {from: user1}), "BURN_FAILURE");
     });
 
     it("should not be able to upgrade the tier of LRC or WETH by burning enough tokens", async () => {

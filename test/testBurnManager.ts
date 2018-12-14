@@ -16,6 +16,8 @@ contract("BurnManager", (accounts: string[]) => {
   const deployer = accounts[0];
   const user1 = accounts[1];
 
+  const zeroAddress = "0x" + "00".repeat(20);
+
   let tradeDelegate: any;
   let feeHolder: any;
   let dummyExchange: any;
@@ -39,7 +41,7 @@ contract("BurnManager", (accounts: string[]) => {
 
     const balanceFeeHolderBefore = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
     const burnBalanceBefore = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
-    const totalLRCSupplyBefore = await LRC.totalSupply();
+    const burnedBalanceBefore = (await dummyToken.balanceOf(zeroAddress)).toNumber();
 
     // Burn
     const success = await burnManager.burn(token, {from: user1});
@@ -47,11 +49,11 @@ contract("BurnManager", (accounts: string[]) => {
 
     const balanceFeeHolderAfter = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
     const burnBalanceAfter = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
-    const totalLRCSupplyAfter = await LRC.totalSupply();
+    const burnedBalanceAfter = (await dummyToken.balanceOf(zeroAddress)).toNumber();
     assert.equal(balanceFeeHolderAfter, balanceFeeHolderBefore - expectedAmount, "Contract balance should be reduced.");
     assert.equal(burnBalanceAfter, burnBalanceBefore - expectedAmount, "Withdrawal amount not correctly updated.");
     if (token === tokenLRC) {
-      assert.equal(totalLRCSupplyAfter, totalLRCSupplyBefore - expectedAmount,
+      assert.equal(burnedBalanceAfter, burnedBalanceBefore + expectedAmount,
                    "Total LRC supply should have been decreased by all LRC burned");
     }
   };
