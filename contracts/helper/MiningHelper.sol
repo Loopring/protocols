@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../impl/Data.sol";
 import "../lib/MultihashUtil.sol";
@@ -27,13 +25,13 @@ import "../lib/MultihashUtil.sol";
 library MiningHelper {
 
     function updateMinerAndInterceptor(
-        Data.Mining mining
+        Data.Mining memory mining
         )
         internal
         pure
     {
 
-        if (mining.miner == 0x0) {
+        if (mining.miner == address(0x0)) {
             mining.miner = mining.feeRecipient;
         }
 
@@ -50,8 +48,8 @@ library MiningHelper {
     }
 
     function updateHash(
-        Data.Mining mining,
-        Data.Ring[] rings
+        Data.Mining memory mining,
+        Data.Ring[] memory rings
         )
         internal
         pure
@@ -76,7 +74,7 @@ library MiningHelper {
     }
 
     function checkMinerSignature(
-        Data.Mining mining
+        Data.Mining memory mining
         )
         internal
         view

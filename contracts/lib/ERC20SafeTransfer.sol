@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 
 /// @title ERC20 safe transfer
@@ -36,7 +34,12 @@ library ERC20SafeTransfer {
         // - A single boolean is returned: this boolean needs to be true (non-zero)
 
         // bytes4(keccak256("transfer(address,uint256)")) = 0xa9059cbb
-        success = token.call(0xa9059cbb, to, value);
+        bytes memory callData = abi.encodeWithSelector(
+            bytes4(0xa9059cbb),
+            to,
+            value
+        );
+        (success, ) = token.call(callData);
         return checkReturnValue(success);
     }
 
@@ -53,7 +56,13 @@ library ERC20SafeTransfer {
         // - A single boolean is returned: this boolean needs to be true (non-zero)
 
         // bytes4(keccak256("transferFrom(address,address,uint256)")) = 0x23b872dd
-        success = token.call(0x23b872dd, from, to, value);
+        bytes memory callData = abi.encodeWithSelector(
+            bytes4(0x23b872dd),
+            from,
+            to,
+            value
+        );
+        (success, ) = token.call(callData);
         return checkReturnValue(success);
     }
 

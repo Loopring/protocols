@@ -67,7 +67,7 @@ contract("Exchange_Security", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupRings(ringsInfoAttack);
 
-      const TestToken = TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
+      const TestToken = await TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
 
       // Enable the Reentrancy attack
       // Create a valid ring that can be submitted by the token

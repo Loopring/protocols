@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "./ExchangeDeserializer.sol";
 
@@ -28,14 +26,14 @@ library PublicExchangeDeserializer {
     address public constant LRC_TOKEN_ADDRESS = 0xEF68e7C694F40c8202821eDF525dE3782458639f;
 
     function deserialize(
-        bytes data
+        bytes memory data
         )
         internal
         view
         returns (
-            Data.Mining mining,
-            Data.Order[] orders,
-            Data.Ring[] rings
+            Data.Mining memory mining,
+            Data.Order[] memory orders,
+            Data.Ring[] memory rings
         )
     {
         (

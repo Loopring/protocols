@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../lib/MultihashUtil.sol";
 
@@ -32,7 +30,7 @@ contract MultihashUtilProxy {
     function verifySignature(
         address signer,
         bytes32 plaintext,
-        bytes   multihash
+        bytes memory multihash
         )
         public
         pure

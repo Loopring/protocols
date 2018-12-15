@@ -14,11 +14,8 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
-import "../impl/BrokerInterceptorProxy.sol";
 import "../impl/Data.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
@@ -29,7 +26,6 @@ import "../lib/MultihashUtil.sol";
 /// @author Daniel Wang - <daniel@loopring.org>.
 library OrderHelper {
     using MathUint      for uint;
-    using BrokerInterceptorProxy for address;
 
     string constant internal EIP191_HEADER = "\x19\x01";
     string constant internal EIP712_DOMAIN_NAME = "Loopring Protocol";
@@ -80,7 +76,7 @@ library OrderHelper {
         )
     );
 
-    function updateHash(Data.Order order)
+    function updateHash(Data.Order memory order)
         internal
         pure
     {
@@ -169,13 +165,13 @@ library OrderHelper {
     }
 
     function updateBrokerAndInterceptor(
-        Data.Order order,
-        Data.Context ctx
+        Data.Order memory order,
+        Data.Context memory ctx
         )
         internal
         view
     {
-        if (order.broker == 0x0) {
+        if (order.broker == address(0x0)) {
             order.broker = order.owner;
         } else {
             bool registered;
@@ -188,8 +184,8 @@ library OrderHelper {
     }
 
     function check(
-        Data.Order order,
-        Data.Context ctx
+        Data.Order memory order,
+        Data.Context memory ctx
         )
         internal
         view
@@ -207,20 +203,20 @@ library OrderHelper {
     }
 
     function validateAllInfo(
-        Data.Order order,
-        Data.Context ctx
+        Data.Order memory order,
+        Data.Context memory ctx
         )
         internal
         view
     {
         bool valid = true;
         valid = valid && (order.version == 0); // unsupported order version
-        valid = valid && (order.owner != 0x0); // invalid order owner
-        valid = valid && (order.tokenS != 0x0); // invalid order tokenS
-        valid = valid && (order.tokenB != 0x0); // invalid order tokenB
+        valid = valid && (order.owner != address(0x0)); // invalid order owner
+        valid = valid && (order.tokenS != address(0x0)); // invalid order tokenS
+        valid = valid && (order.tokenB != address(0x0)); // invalid order tokenB
         valid = valid && (order.amountS != 0); // invalid order amountS
         valid = valid && (order.amountB != 0); // invalid order amountB
-        valid = valid && (order.feeToken != 0x0); // invalid fee token
+        valid = valid && (order.feeToken != address(0x0)); // invalid fee token
 
         valid = valid && (order.tokenSFeePercentage < ctx.feePercentageBase); // invalid tokenS percentage
         valid = valid && (order.tokenBFeePercentage < ctx.feePercentageBase); // invalid tokenB percentage
@@ -241,8 +237,8 @@ library OrderHelper {
 
 
     function validateUnstableInfo(
-        Data.Order order,
-        Data.Context ctx
+        Data.Order memory order,
+        Data.Context memory ctx
         )
         internal
         view
@@ -251,7 +247,7 @@ library OrderHelper {
         valid = valid && (order.validUntil == 0 || order.validUntil > now);  // order is expired
         valid = valid && (order.waiveFeePercentage <= int16(ctx.feePercentageBase)); // invalid waive percentage
         valid = valid && (order.waiveFeePercentage >= -int16(ctx.feePercentageBase)); // invalid waive percentage
-        if (order.dualAuthAddr != 0x0) { // if dualAuthAddr exists, dualAuthSig must be exist.
+        if (order.dualAuthAddr != address(0x0)) { // if dualAuthAddr exists, dualAuthSig must be exist.
             valid = valid && (order.dualAuthSig.length > 0);
         }
         order.valid = order.valid && valid;
@@ -259,7 +255,7 @@ library OrderHelper {
 
 
     function checkP2P(
-        Data.Order order
+        Data.Order memory order
         )
         internal
         pure
@@ -269,8 +265,8 @@ library OrderHelper {
 
 
     function checkBrokerSignature(
-        Data.Order order,
-        Data.Context ctx
+        Data.Order memory order,
+        Data.Context memory ctx
         )
         internal
         view
@@ -294,8 +290,8 @@ library OrderHelper {
     }
 
     function checkDualAuthSignature(
-        Data.Order order,
-        bytes32  miningHash
+        Data.Order memory order,
+        bytes32 miningHash
         )
         internal
         pure
@@ -310,7 +306,7 @@ library OrderHelper {
     }
 
     function validateAllOrNone(
-        Data.Order order
+        Data.Order memory order
         )
         internal
         pure
@@ -322,79 +318,65 @@ library OrderHelper {
     }
 
     function getSpendableS(
-        Data.Order order,
-        Data.Context ctx
+        Data.Order memory order,
+        Data.Context memory ctx
         )
         internal
+        view
         returns (uint)
     {
         return getSpendable(
             ctx.delegate,
             order.tokenS,
             order.owner,
-            order.broker,
-            order.brokerInterceptor,
-            order.tokenSpendableS,
-            order.brokerSpendableS
+            order.tokenSpendableS
         );
     }
 
     function getSpendableFee(
-        Data.Order order,
-        Data.Context ctx
+        Data.Order memory order,
+        Data.Context memory ctx
         )
         internal
+        view
         returns (uint)
     {
         return getSpendable(
             ctx.delegate,
             order.feeToken,
             order.owner,
-            order.broker,
-            order.brokerInterceptor,
-            order.tokenSpendableFee,
-            order.brokerSpendableFee
+            order.tokenSpendableFee
         );
     }
 
     function reserveAmountS(
-        Data.Order order,
+        Data.Order memory order,
         uint amount
         )
         internal
         pure
     {
         order.tokenSpendableS.reserved += amount;
-        if (order.brokerInterceptor != 0x0) {
-            order.brokerSpendableS.reserved += amount;
-        }
     }
 
     function reserveAmountFee(
-        Data.Order order,
+        Data.Order memory order,
         uint amount
         )
         internal
         pure
     {
         order.tokenSpendableFee.reserved += amount;
-        if (order.brokerInterceptor != 0x0) {
-            order.brokerSpendableFee.reserved += amount;
-        }
     }
 
     function resetReservations(
-        Data.Order order
+        Data.Order memory order
         )
         internal
         pure
     {
         order.tokenSpendableS.reserved = 0;
         order.tokenSpendableFee.reserved = 0;
-        if (order.brokerInterceptor != 0x0) {
-            order.brokerSpendableS.reserved = 0;
-            order.brokerSpendableFee.reserved = 0;
-        }
     }
 
     /// @return Amount of ERC20 token that can be spent by this contract.
@@ -412,40 +394,20 @@ library OrderHelper {
             owner,
             address(delegate)
         );
-        if (spendable == 0) {
-            return;
+        if (spendable != 0) {
+            uint balance = token.balanceOf(owner);
+            spendable = (balance < spendable) ? balance : spendable;
         }
-        uint balance = token.balanceOf(owner);
-        spendable = (balance < spendable) ? balance : spendable;
-    }
-
-    /// @return Amount of ERC20 token that can be spent by the broker
-    function getBrokerAllowance(
-        address tokenAddress,
-        address owner,
-        address broker,
-        address brokerInterceptor
-        )
-        private
-        returns (uint allowance)
-    {
-        allowance = brokerInterceptor.getAllowanceSafe(
-            owner,
-            broker,
-            tokenAddress
-        );
     }
 
     function getSpendable(
         ITradeDelegate delegate,
         address tokenAddress,
         address owner,
-        address broker,
-        address brokerInterceptor,
-        Data.Spendable tokenSpendable,
-        Data.Spendable brokerSpendable
+        Data.Spendable memory tokenSpendable
         )
         private
+        view
         returns (uint spendable)
     {
         if (!tokenSpendable.initialized) {
@@ -457,18 +419,5 @@ library OrderHelper {
             tokenSpendable.initialized = true;
         }
         spendable = tokenSpendable.amount.sub(tokenSpendable.reserved);
-        if (brokerInterceptor != 0x0) {
-            if (!brokerSpendable.initialized) {
-                brokerSpendable.amount = getBrokerAllowance(
-                    tokenAddress,
-                    owner,
-                    broker,
-                    brokerInterceptor
-                );
-                brokerSpendable.initialized = true;
-            }
-            uint brokerSpendableAmount = brokerSpendable.amount.sub(brokerSpendable.reserved);
-            spendable = (brokerSpendableAmount < spendable) ? brokerSpendableAmount : spendable;
-        }
     }
 }

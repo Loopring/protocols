@@ -1,3 +1,4 @@
+import BN = require("bn.js");
 import { expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 import { FeePayments } from "./feePayments";
@@ -35,26 +36,28 @@ contract("BurnManager", (accounts: string[]) => {
     assert.equal(isAuthorizedInDelegate, true, "exchange not authorized.");
   };
 
-  const burnChecked = async (token: string, expectedAmount: number) => {
-    const dummyToken = DummyToken.at(token);
-    const LRC = DummyToken.at(tokenLRC);
+  const burnChecked = async (token: string, expectedAmount: BN) => {
+    const dummyToken = await DummyToken.at(token);
+    const LRC = await DummyToken.at(tokenLRC);
 
-    const balanceFeeHolderBefore = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
-    const burnBalanceBefore = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
-    const burnedBalanceBefore = (await dummyToken.balanceOf(zeroAddress)).toNumber();
+    const balanceFeeHolderBefore = await dummyToken.balanceOf(feeHolder.address);
+    const burnBalanceBefore = await feeHolder.feeBalances(token, feeHolder.address);
+    const burnedBalanceBefore = await dummyToken.balanceOf(zeroAddress);
 
     // Burn
     const success = await burnManager.burn(token, {from: user1});
     assert(success, "Burn needs to succeed");
 
-    const balanceFeeHolderAfter = (await dummyToken.balanceOf(feeHolder.address)).toNumber();
-    const burnBalanceAfter = (await feeHolder.feeBalances(token, feeHolder.address)).toNumber();
-    const burnedBalanceAfter = (await dummyToken.balanceOf(zeroAddress)).toNumber();
-    assert.equal(balanceFeeHolderAfter, balanceFeeHolderBefore - expectedAmount, "Contract balance should be reduced.");
-    assert.equal(burnBalanceAfter, burnBalanceBefore - expectedAmount, "Withdrawal amount not correctly updated.");
+    const balanceFeeHolderAfter = await dummyToken.balanceOf(feeHolder.address);
+    const burnBalanceAfter = await feeHolder.feeBalances(token, feeHolder.address);
+    const burnedBalanceAfter = await dummyToken.balanceOf(zeroAddress);
+    assert(balanceFeeHolderAfter.eq(balanceFeeHolderBefore.sub(expectedAmount)),
+           "Contract balance should be reduced.");
+    assert(burnBalanceAfter.eq(burnBalanceBefore.sub(expectedAmount)),
+           "Withdrawal amount not correctly updated.");
     if (token === tokenLRC) {
-      assert.equal(burnedBalanceAfter, burnedBalanceBefore + expectedAmount,
-                   "Total LRC supply should have been decreased by all LRC burned");
+      assert(burnedBalanceAfter.eq(burnedBalanceBefore.add(expectedAmount)),
+             "Total LRC supply should have been decreased by all LRC burned");
     }
   };
 
@@ -69,17 +72,17 @@ contract("BurnManager", (accounts: string[]) => {
     // Fresh FeeHolder for each test
     feeHolder = await FeeHolder.new(tradeDelegate.address);
     burnManager = await BurnManager.new(feeHolder.address, tokenLRC);
-    dummyExchange = await DummyExchange.new(tradeDelegate.address, "0x0", feeHolder.address, "0x0");
+    dummyExchange = await DummyExchange.new(tradeDelegate.address, zeroAddress, feeHolder.address, zeroAddress);
     await authorizeAddressChecked(dummyExchange.address, deployer);
     await authorizeAddressChecked(burnManager.address, deployer);
   });
 
   describe("any user", () => {
     it("should be able to burn LRC deposited as burned in the FeeHolder contract", async () => {
-      const amount = 1e18;
+      const amount = web3.utils.toBN(1e18);
 
       // Deposit some LRC in the fee holder contract
-      const LRC = DummyToken.at(tokenLRC);
+      const LRC = await DummyToken.at(tokenLRC);
       await LRC.transfer(feeHolder.address, amount, {from: deployer});
       const feePayments = new FeePayments();
       feePayments.add(feeHolder.address, tokenLRC, amount);
@@ -90,10 +93,10 @@ contract("BurnManager", (accounts: string[]) => {
     });
 
     it("should not be able to burn non-LRC tokens for now", async () => {
-      const amount = 1e18;
+      const amount = web3.utils.toBN(1e18);
 
       // Deposit some LRC in the fee holder contract
-      const WETH = DummyToken.at(tokenWETH);
+      const WETH = await DummyToken.at(tokenWETH);
       await WETH.transfer(feeHolder.address, amount, {from: deployer});
       const feePayments = new FeePayments();
       feePayments.add(feeHolder.address, tokenWETH, amount);

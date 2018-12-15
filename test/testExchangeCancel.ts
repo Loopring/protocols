@@ -1,3 +1,4 @@
+import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import * as psc from "protocol2-js";
 import tokenInfos = require("../migrations/config/tokens.js");
@@ -23,9 +24,14 @@ contract("Exchange_Cancel", (accounts: string[]) => {
 
   const emptyAddr = "0x0000000000000000000000000000000000000000";
 
+  const toBN = (value: number) => {
+    return web3.utils.toBN(new BigNumber(value.toString()));
+  };
+
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+
     orderBook = await OrderBook.deployed();
   });
 
@@ -36,12 +42,11 @@ contract("Exchange_Cancel", (accounts: string[]) => {
     // could potentially hide bugs
     beforeEach(async () => {
       await exchangeTestUtil.cleanTradeHistory();
-      orderCanceller = await OrderCanceller.new(exchangeTestUtil.context.tradeHistory.address);
-      await exchangeTestUtil.context.tradeHistory.authorizeAddress(
+      orderCanceller = await OrderCanceller.new(exchangeTestUtil.context.tradeHistory.options.address);
+      await exchangeTestUtil.context.tradeHistory.methods.authorizeAddress(
         orderCanceller.address,
-        {from: exchangeTestUtil.testContext.deployer},
-      );
-      contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address,
+      ).send({from: exchangeTestUtil.testContext.deployer});
+      contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.options.address,
                                                         orderCanceller.address);
     });
 
@@ -207,8 +212,16 @@ contract("Exchange_Cancel", (accounts: string[]) => {
         const orderHashOnChain = events[0].args.orderHash;
         assert.equal(orderHashOnChain, orderHash, "order hash not equal");
         // Allow the contract to spend tokenS and feeToken
-        await contractOrderOwner.approve(onChainOrder.tokenS, exchangeTestUtil.context.tradeDelegate.address, 1e32);
-        await contractOrderOwner.approve(onChainOrder.feeToken, exchangeTestUtil.context.tradeDelegate.address, 1e32);
+        await contractOrderOwner.approve(
+          onChainOrder.tokenS,
+          exchangeTestUtil.context.tradeDelegate.options.address,
+          toBN(1e32),
+        );
+        await contractOrderOwner.approve(
+          onChainOrder.feeToken,
+          exchangeTestUtil.context.tradeDelegate.options.address,
+          toBN(1e32),
+        );
 
         // Order is registered and the contract can pay in tokenS and feeToken
         ringsInfo.expected = {

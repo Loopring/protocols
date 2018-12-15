@@ -15,9 +15,7 @@
   limitations under the License.
 */
 
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../iface/IFeeHolder.sol";
 import "../iface/ITradeDelegate.sol";
@@ -32,10 +30,10 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
     using MathUint for uint;
     using ERC20SafeTransfer for address;
 
-    address public delegateAddress = 0x0;
+    address public delegateAddress = address(0x0);
 
     constructor(address _delegateAddress) public {
-        require(_delegateAddress != 0x0, ZERO_ADDRESS);
+        require(_delegateAddress != address(0x0), ZERO_ADDRESS);
         delegateAddress = _delegateAddress;
     }
 
@@ -46,7 +44,7 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
         _;
     }
 
-    function batchAddFeeBalances(bytes32[] batch)
+    function batchAddFeeBalances(bytes32[] calldata batch)
         external
         onlyAuthorized
     {
@@ -73,7 +71,7 @@ contract FeeHolder is IFeeHolder, NoDefaultFunc {
         onlyAuthorized
         returns (bool)
     {
-        return withdraw(token, this, msg.sender, value);
+        return withdraw(token, address(this), msg.sender, value);
     }
 
     function withdrawToken(address token, uint value)

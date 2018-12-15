@@ -5,13 +5,14 @@ import * as pjs from "protocol2-js";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { FeePayments } from "./feePayments";
-import { ringsInfoList } from "./rings_config";
 import { ExchangeTestContext } from "./testExchangeContext";
 
 export class ExchangeTestUtil {
   public context: pjs.Context;
   public testContext: ExchangeTestContext;
   public ringSubmitter: any;
+
+  private contracts = new Artifacts(artifacts);
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -29,21 +30,11 @@ export class ExchangeTestUtil {
   }
 
   public async getEventsFromContract(contract: any, eventName: string, fromBlock: number) {
-    return new Promise((resolve, reject) => {
-      if (!contract[eventName]) {
-        throw Error("TypeError: contract[eventName] is not a function: " + eventName);
-      }
-
-      const events = contract[eventName]({}, { fromBlock, toBlock: "latest" });
-      events.watch();
-      events.get((error: any, event: any) => {
-        if (!error) {
-          resolve(event);
-        } else {
-          throw Error("Failed to find filtered event: " + error);
-        }
-      });
-      events.stopWatching();
+    return await contract.getPastEvents(eventName, {
+      fromBlock,
+      toBlock: "latest",
+    }).then((events: any) => {
+        return events;
     });
   }
 
@@ -84,7 +75,7 @@ export class ExchangeTestUtil {
     const eventArr: any = await this.getEventsFromContract(this.ringSubmitter, "RingMined", fromBlock);
     const ringMinedEvents = eventArr.map((eventObj: any) => {
       const ringMinedEvent: pjs.RingMinedEvent = {
-        ringIndex: eventObj.args._ringIndex,
+        ringIndex: new BigNumber(eventObj.args._ringIndex.toString()),
         ringHash: eventObj.args._ringHash,
         feeRecipient: eventObj.args._feeRecipient,
         fills: parseFillsData(eventObj.args._fills),
@@ -208,11 +199,13 @@ export class ExchangeTestUtil {
     }
     if (!order.validSince) {
       // Set the order validSince time to a bit before the current timestamp;
-      order.validSince = web3.eth.getBlock(web3.eth.blockNumber).timestamp - 1000;
+      const blockNumber = await web3.eth.getBlockNumber();
+      order.validSince = (await web3.eth.getBlock(blockNumber)).timestamp - 1000;
     }
     if (!order.validUntil && (order.index % 2) === 1) {
       // Set the order validUntil time to a bit after the current timestamp;
-      order.validUntil = web3.eth.getBlock(web3.eth.blockNumber).timestamp + 2500;
+      const blockNumber = await web3.eth.getBlockNumber();
+      order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 2500;
     }
 
     if (order.walletAddr && !order.walletAddr.startsWith("0x")) {
@@ -264,25 +257,27 @@ export class ExchangeTestUtil {
   public async setOrderBalances(order: pjs.OrderInfo) {
     const tokenS = this.testContext.tokenAddrInstanceMap.get(order.tokenS);
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
-    await tokenS.setBalance(order.owner, balanceS);
+    await tokenS.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceS)));
 
     const feeToken = order.feeToken ? order.feeToken : this.context.lrcAddress;
     const balanceFee = (order.balanceFee !== undefined) ? order.balanceFee : order.feeAmount;
     if (feeToken === order.tokenS) {
-      tokenS.addBalance(order.owner, balanceFee);
+      tokenS.addBalance(order.owner, web3.utils.toBN(new BigNumber(balanceFee)));
     } else {
       const tokenFee = this.testContext.tokenAddrInstanceMap.get(feeToken);
-      await tokenFee.setBalance(order.owner, balanceFee);
+      await tokenFee.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceFee)));
     }
 
     if (order.balanceB) {
       const tokenB = this.testContext.tokenAddrInstanceMap.get(order.tokenB);
-      await tokenB.setBalance(order.owner, order.balanceB);
+      await tokenB.setBalance(order.owner, web3.utils.toBN(new BigNumber(order.balanceB)));
     }
   }
 
   public async getFilled(hash: Buffer) {
-    return await this.context.tradeHistory.filled("0x" + hash.toString("hex")).toNumber();
+    return new BigNumber(
+      (await this.context.tradeHistory.methods.filled("0x" + hash.toString("hex")).call()).toString(),
+    ).toNumber();
   }
 
   public async checkFilled(hash: Buffer, expected: number) {
@@ -348,7 +343,7 @@ export class ExchangeTestUtil {
     addAddress(addressBook, ringsInfo.transactionOrigin, "Tx.origin");
     addAddress(addressBook, miner, "Miner");
     addAddress(addressBook, feeRecipient, "FeeRecipient");
-    addAddress(addressBook, this.context.feeHolder.address, "FeeHolder");
+    addAddress(addressBook, this.context.feeHolder.options.address, "FeeHolder");
     for (const [i, order] of ringsInfo.orders.entries()) {
       addAddress(addressBook, order.owner, "Owner[" + i + "]");
       if (order.owner !== order.tokenRecipient) {
@@ -396,7 +391,8 @@ export class ExchangeTestUtil {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
       const fromName = addressBook[t[1]];
       const toName = addressBook[t[2]];
-      pjs.logDebug(fromName + " -> " + toName + " : " + t[3].toNumber() / 1e18 + " " + tokenSymbol);
+      pjs.logDebug(fromName + " -> " + toName + " : " +
+        (new BigNumber(t[3].toString()).toNumber() / 1e18) + " " + tokenSymbol);
     });
     assert.equal(tranferEvents.length, transfersFromSimulator.length, "Number of transfers do not match");
     for (let i = 0; i < tranferEvents.length; i++) {
@@ -405,7 +401,8 @@ export class ExchangeTestUtil {
       assert.equal(transferFromEvent[0], transferFromSimulator[0]);
       assert.equal(transferFromEvent[1], transferFromSimulator[1]);
       assert.equal(transferFromEvent[2], transferFromSimulator[2]);
-      assert(transferFromEvent[3].eq(transferFromSimulator[3]), "Transfer amount does not match");
+      assert(new BigNumber(transferFromEvent[3].toString()).eq(transferFromSimulator[3]),
+             "Transfer amount does not match");
     }
   }
 
@@ -418,14 +415,17 @@ export class ExchangeTestUtil {
       const simulatorEvent = ringMinedEventsSimulator[i];
       assert(contractEvent.ringIndex.eq(simulatorEvent.ringIndex), "ringIndex does not match");
       assert.equal(contractEvent.ringHash, simulatorEvent.ringHash, "ringHash does not match");
-      assert.equal(contractEvent.feeRecipient, simulatorEvent.feeRecipient, "feeRecipient does not match");
+      assert.equal(contractEvent.feeRecipient.toLowerCase(), simulatorEvent.feeRecipient.toLowerCase(),
+                   "feeRecipient does not match");
       assert.equal(contractEvent.fills.length, simulatorEvent.fills.length, "fills length does not match");
       for (let f = 0; f < contractEvent.fills.length; f++) {
         const contractFill = contractEvent.fills[f];
         const simulatorFill = simulatorEvent.fills[f];
         assert.equal(contractFill.orderHash, simulatorFill.orderHash, "orderHash does not match");
-        assert.equal(contractFill.owner, simulatorFill.owner, "owner does not match");
-        assert.equal(contractFill.tokenS, simulatorFill.tokenS, "tokenS does not match");
+        assert.equal(contractFill.owner.toLowerCase(), simulatorFill.owner.toLowerCase(),
+                     "owner does not match");
+        assert.equal(contractFill.tokenS.toLowerCase(), simulatorFill.tokenS.toLowerCase(),
+                     "tokenS does not match");
         assert(contractFill.amountS.eq(simulatorFill.amountS), "amountS does not match");
         assert(contractFill.split.eq(simulatorFill.split), "split does not match");
         assert(contractFill.feeAmount.eq(simulatorFill.feeAmount), "feeAmount does not match");
@@ -454,12 +454,13 @@ export class ExchangeTestUtil {
     for (const token of Object.keys(feeBalancesAfter)) {
       for (const owner of Object.keys(feeBalancesAfter[token])) {
         const balanceFromSimulator = feeBalancesAfter[token][owner];
-        const balanceFromContract = await this.context.feeHolder.feeBalances(token, owner);
+        const balanceFromContract =
+          new BigNumber((await this.context.feeHolder.methods.feeBalances(token, owner).call()).toString());
         if (!feeBalancesBefore[token][owner].eq(feeBalancesAfter[token][owner])) {
           const ownerName = addressBook[owner] ? addressBook[owner] : owner;
           const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
           pjs.logDebug(ownerName + ": " +
-                      balanceFromContract  / 1e18 + " " + tokenSymbol + " " +
+                      balanceFromContract.toNumber()  / 1e18 + " " + tokenSymbol + " " +
                       "(Simulator: " + balanceFromSimulator  / 1e18 + ")");
         }
         assert(balanceFromContract.eq(balanceFromSimulator), "Fee balance doesn't match");
@@ -479,7 +480,9 @@ export class ExchangeTestUtil {
         }
       }
       const filledFromSimulator = filledAmounts[hash];
-      const filledFromContract = await this.context.tradeHistory.filled("0x" + hash);
+      const filledFromContract = new BigNumber(
+        (await this.context.tradeHistory.methods.filled("0x" + hash).call()).toString(),
+      );
       let percentageFilled = 0;
       if (hashOrder) {
         percentageFilled = filledFromContract.toNumber() * 100 / hashOrder.amountS;
@@ -506,49 +509,40 @@ export class ExchangeTestUtil {
       bitstream.addNumber(0, 12);
     }
 
-    const fills = await this.context.tradeHistory.batchGetFilledAndCheckCancelled(bitstream.getBytes32Array());
+    const fills = await this.context.tradeHistory.methods.batchGetFilledAndCheckCancelled(
+      bitstream.getBytes32Array(),
+    ).call();
 
-    const cancelledValue = new BigNumber("F".repeat(64), 16);
+    const cancelledValue = new BN("F".repeat(64), 16);
     for (const [i, order] of orders.entries()) {
-        assert.equal(!fills[i].equals(cancelledValue), expectedValidValues[i], "Order cancelled status incorrect");
+      const fillBN = new BN(new BigNumber(fills[i].toString(16)).toString(16), 16);
+      assert.equal(!fillBN.eq(cancelledValue), expectedValidValues[i], "Order cancelled status incorrect");
     }
   }
 
   public async registerOrderBrokerChecked(user: string, broker: string, interceptor: string) {
-    const {
-      BrokerRegistry,
-    } = new Artifacts(artifacts);
-    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const brokerRegistry = await this.contracts.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
     await brokerRegistry.registerBroker(broker, interceptor, {from: user});
     await this.assertOrderBrokerRegistered(user, broker, interceptor);
   }
 
   public async unregisterOrderBrokerChecked(user: string, broker: string) {
-    const {
-      BrokerRegistry,
-    } = new Artifacts(artifacts);
-    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
+    const brokerRegistry = await this.contracts.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
     await brokerRegistry.unregisterBroker(broker, {from: user});
     await this.assertOrderBrokerNotRegistered(user, broker);
   }
 
   public async assertOrderBrokerRegistered(user: string, broker: string, interceptor: string) {
-    const {
-      BrokerRegistry,
-    } = new Artifacts(artifacts);
-    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(isRegistered, "interceptor should be registered.");
-    assert.equal(interceptor, interceptorFromContract, "get wrong interceptor");
+    const brokerRegistry = await this.contracts.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
+    const returnValue = await brokerRegistry.getBroker(user, broker);
+    assert(returnValue.registered, "interceptor should be registered.");
+    assert.equal(interceptor, returnValue.interceptor, "get wrong interceptor");
   }
 
   public async assertOrderBrokerNotRegistered(user: string, broker: string) {
-    const {
-      BrokerRegistry,
-    } = new Artifacts(artifacts);
-    const brokerRegistry = BrokerRegistry.at(this.context.orderBrokerRegistry.address);
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(!isRegistered, "interceptor should not be registered.");
+    const brokerRegistry = await this.contracts.BrokerRegistry.at(this.context.orderBrokerRegistry.options.address);
+    const returnValue = await brokerRegistry.getBroker(user, broker);
+    assert(!returnValue.registered, "interceptor should not be registered.");
   }
 
   public async deserializeRing(ringsInfo: pjs.RingsInfo) {
@@ -562,9 +556,6 @@ export class ExchangeTestUtil {
                                       dummyExchange?: any,
                                       submitter?: any) {
     if (dummyExchange !== undefined) {
-      const {
-        DummyToken,
-      } = new Artifacts(artifacts);
       // Add an initial fee payment to all addresses to make gas use more realistic
       // (gas cost to change variable in storage: zero -> non-zero: 20,000 gas, non-zero -> non-zero: 5,000 gas)
       // Addresses getting fees will be getting a lot of fees so a balance of 0 is not realistic
@@ -572,11 +563,12 @@ export class ExchangeTestUtil {
       for (const order of ringsInfo.orders) {
         // All tokens that could be paid to all recipients for this order
         const tokens = [order.feeToken, order.tokenS, order.tokenB];
-        const feeRecipients = [order.owner, ringsInfo.feeRecipient, this.context.feeHolder.address, order.walletAddr];
+        const feeRecipients = [order.owner, ringsInfo.feeRecipient,
+                               this.context.feeHolder.options.address, order.walletAddr];
         for (const token of tokens) {
           for (const feeRecipient of feeRecipients) {
             if (feeRecipient) {
-              feePayments.add(feeRecipient, token, 1);
+              feePayments.add(feeRecipient, token, web3.utils.toBN(1));
             }
           }
         }
@@ -584,7 +576,7 @@ export class ExchangeTestUtil {
         // Add balances to the feeHolder contract
         for (const token of tokens) {
           const Token = this.testContext.tokenAddrInstanceMap.get(token);
-          await Token.setBalance(this.context.feeHolder.address, 1);
+          await Token.setBalance(this.context.feeHolder.options.address, 1);
           await Token.addBalance(minerFeeRecipient, 1);
         }
         // Add a balance to the owner balances
@@ -597,10 +589,6 @@ export class ExchangeTestUtil {
     const ringsGenerator = new pjs.RingsGenerator(this.context);
     await ringsGenerator.setupRingsAsync(ringsInfo);
     const bs = ringsGenerator.toSubmitableParam(ringsInfo);
-
-    // Update block number and block timestamp
-    this.context.blockNumber = web3.eth.blockNumber;
-    this.context.blockTimestamp = web3.eth.getBlock(this.context.blockNumber).timestamp;
 
     const simulator = new pjs.ProtocolSimulator(this.context);
     const txOrigin = ringsInfo.transactionOrigin ? ringsInfo.transactionOrigin :
@@ -633,9 +621,12 @@ export class ExchangeTestUtil {
 
     const ringSubmitter = submitter ? submitter : this.ringSubmitter;
     if (report.reverted) {
-      tx = await pjs.expectThrow(ringSubmitter.submitRings(bs, {from: txOrigin}), report.revertMessage);
+      tx = await pjs.expectThrow(
+        ringSubmitter.submitRings(web3.utils.hexToBytes(bs), {from: txOrigin}),
+        report.revertMessage,
+      );
     } else {
-      tx = await ringSubmitter.submitRings(bs, {from: txOrigin});
+      tx = await ringSubmitter.submitRings(web3.utils.hexToBytes(bs), {from: txOrigin});
       pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
     }
     const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
@@ -656,15 +647,29 @@ export class ExchangeTestUtil {
     return {tx, report};
   }
 
+  public sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   public async authorizeTradeDelegate() {
-    if (!(await this.context.tradeDelegate.isAddressAuthorized(this.ringSubmitter.address))) {
-      await this.context.tradeDelegate.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    const alreadyAuthorized = await this.context.tradeDelegate.methods.isAddressAuthorized(
+      this.ringSubmitter.address,
+    ).call();
+    if (!alreadyAuthorized) {
+      await this.context.tradeDelegate.methods.authorizeAddress(
+        this.ringSubmitter.address,
+      ).send({from: this.testContext.deployer});
     }
   }
 
   public async authorizeTradeHistory() {
-    if (!(await this.context.tradeHistory.isAddressAuthorized(this.ringSubmitter.address))) {
-      await this.context.tradeHistory.authorizeAddress(this.ringSubmitter.address, {from: this.testContext.deployer});
+    const alreadyAuthorized = await this.context.tradeHistory.methods.isAddressAuthorized(
+      this.ringSubmitter.address,
+    ).call();
+    if (!alreadyAuthorized) {
+      await this.context.tradeHistory.methods.authorizeAddress(
+        this.ringSubmitter.address,
+      ).send({from: this.testContext.deployer});
     }
   }
 
@@ -672,19 +677,16 @@ export class ExchangeTestUtil {
     for (const token of this.testContext.allTokens) {
       // approve once for all orders:
       for (const orderOwner of this.testContext.orderOwners) {
-        await token.approve(this.context.tradeDelegate.address, 1e32, {from: orderOwner});
+        await token.approve(this.context.tradeDelegate.options.address,
+                            web3.utils.toBN(new BigNumber(1e31)),
+                            {from: orderOwner});
       }
     }
   }
 
   public async lockLRC(user: string, targetRebateRate: number) {
-    const {
-      DummyToken,
-      BurnRateTable,
-    } = new Artifacts(artifacts);
-
-    const LRC = await DummyToken.at(this.context.lrcAddress);
-    const burnRateTable = await BurnRateTable.deployed();
+    const LRC = await this.contracts.DummyToken.at(this.context.lrcAddress);
+    const burnRateTable = await this.contracts.BurnRateTable.deployed();
     const totalLRCSupply = await LRC.totalSupply();
 
     // Calculate the needed funds to upgrade the tier
@@ -702,28 +704,18 @@ export class ExchangeTestUtil {
   }
 
   public async cleanTradeHistory() {
-    const {
-      RingSubmitter,
-      OrderRegistry,
-      TradeDelegate,
-      TradeHistory,
-      FeeHolder,
-      WETHToken,
-      BrokerRegistry,
-    } = new Artifacts(artifacts);
-
-    const tradeHistory = await TradeHistory.new();
-    const brokerRegistry = await BrokerRegistry.new();
-    this.ringSubmitter = await RingSubmitter.new(
+    const tradeHistory = await this.contracts.TradeHistory.new();
+    const brokerRegistry = await this.contracts.BrokerRegistry.new();
+    this.ringSubmitter = await this.contracts.RingSubmitter.new(
       this.context.lrcAddress,
-      WETHToken.address,
-      this.context.tradeDelegate.address,
+      this.contracts.WETHToken.address,
+      this.context.tradeDelegate.options.address,
       tradeHistory.address,
       brokerRegistry.address,
-      OrderRegistry.address,
-      this.context.feeHolder.address,
-      this.context.orderBook.address,
-      this.context.burnRateTable.address,
+      this.context.orderRegistry.options.address,
+      this.context.feeHolder.options.address,
+      this.context.orderBook.options.address,
+      this.context.burnRateTable.options.address,
     );
 
     const orderBrokerRegistryAddress = await this.ringSubmitter.orderBrokerRegistryAddress();
@@ -731,21 +723,20 @@ export class ExchangeTestUtil {
     const feePercentageBase = (await this.ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
     const ringIndex = (await this.ringSubmitter.ringIndex()).toNumber();
 
-    const currBlockNumber = web3.eth.blockNumber;
-    const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
+    const currBlockNumber = await web3.eth.getBlockNumber();
+    const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;
     this.context = new pjs.Context(currBlockNumber,
                                    currBlockTimestamp,
-                                   this.context.tradeDelegate.address,
+                                   this.context.tradeDelegate.options.address,
                                    tradeHistory.address,
                                    orderBrokerRegistryAddress,
-                                   OrderRegistry.address,
-                                   this.context.feeHolder.address,
-                                   this.context.orderBook.address,
-                                   this.context.burnRateTable.address,
+                                   this.context.orderRegistry.options.address,
+                                   this.context.feeHolder.options.address,
+                                   this.context.orderBook.options.address,
+                                   this.context.burnRateTable.options.address,
                                    this.context.lrcAddress,
                                    feePercentageBase,
                                    ringIndex);
-
     await this.authorizeTradeDelegate();
     await this.authorizeTradeHistory();
   }
@@ -753,32 +744,21 @@ export class ExchangeTestUtil {
   private getPrivateKey(address: string) {
     const textData = fs.readFileSync("./ganache_account_keys.txt", "ascii");
     const data = JSON.parse(textData);
-    return data.private_keys[address];
+    return data.private_keys[address.toLowerCase()];
   }
 
   // private functions:
   private async createContractContext() {
-    const {
-      RingSubmitter,
-      OrderRegistry,
-      TradeDelegate,
-      TradeHistory,
-      FeeHolder,
-      OrderBook,
-      BurnRateTable,
-      LRCToken,
-    } = new Artifacts(artifacts);
-
     const [ringSubmitter, tradeDelegate, tradeHistory, orderRegistry,
            feeHolder, orderBook, burnRateTable, lrcToken] = await Promise.all([
-        RingSubmitter.deployed(),
-        TradeDelegate.deployed(),
-        TradeHistory.deployed(),
-        OrderRegistry.deployed(),
-        FeeHolder.deployed(),
-        OrderBook.deployed(),
-        BurnRateTable.deployed(),
-        LRCToken.deployed(),
+        this.contracts.RingSubmitter.deployed(),
+        this.contracts.TradeDelegate.deployed(),
+        this.contracts.TradeHistory.deployed(),
+        this.contracts.OrderRegistry.deployed(),
+        this.contracts.FeeHolder.deployed(),
+        this.contracts.OrderBook.deployed(),
+        this.contracts.BurnRateTable.deployed(),
+        this.contracts.LRCToken.deployed(),
       ]);
 
     this.ringSubmitter = ringSubmitter;
@@ -787,67 +767,58 @@ export class ExchangeTestUtil {
     const feePercentageBase = (await ringSubmitter.FEE_PERCENTAGE_BASE()).toNumber();
     const ringIndex = (await ringSubmitter.ringIndex()).toNumber();
 
-    const currBlockNumber = web3.eth.blockNumber;
-    const currBlockTimestamp = web3.eth.getBlock(currBlockNumber).timestamp;
+    const currBlockNumber = await web3.eth.getBlockNumber();
+    const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;
     return new pjs.Context(currBlockNumber,
                            currBlockTimestamp,
-                           TradeDelegate.address,
-                           TradeHistory.address,
+                           this.contracts.TradeDelegate.address,
+                           this.contracts.TradeHistory.address,
                            orderBrokerRegistryAddress,
-                           OrderRegistry.address,
-                           FeeHolder.address,
-                           OrderBook.address,
-                           BurnRateTable.address,
-                           LRCToken.address,
+                           this.contracts.OrderRegistry.address,
+                           this.contracts.FeeHolder.address,
+                           this.contracts.OrderBook.address,
+                           this.contracts.BurnRateTable.address,
+                           this.contracts.LRCToken.address,
                            feePercentageBase,
                            ringIndex);
   }
 
   private async createExchangeTestContext(accounts: string[]) {
-    const {
-      LRCToken,
-      GTOToken,
-      RDNToken,
-      REPToken,
-      WETHToken,
-      TESTToken,
-    } = new Artifacts(artifacts);
-
     const tokenSymbolAddrMap = new Map<string, string>();
     const tokenAddrSymbolMap = new Map<string, string>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
     const [lrc, gto, rdn, rep, weth, test] = await Promise.all([
-      LRCToken.deployed(),
-      GTOToken.deployed(),
-      RDNToken.deployed(),
-      REPToken.deployed(),
-      WETHToken.deployed(),
-      TESTToken.deployed(),
+      this.contracts.LRCToken.deployed(),
+      this.contracts.GTOToken.deployed(),
+      this.contracts.RDNToken.deployed(),
+      this.contracts.REPToken.deployed(),
+      this.contracts.WETHToken.deployed(),
+      this.contracts.TESTToken.deployed(),
     ]);
 
     const allTokens = [lrc, gto, rdn, rep, weth, test];
 
-    tokenSymbolAddrMap.set("LRC", LRCToken.address);
-    tokenSymbolAddrMap.set("GTO", GTOToken.address);
-    tokenSymbolAddrMap.set("RDN", RDNToken.address);
-    tokenSymbolAddrMap.set("REP", REPToken.address);
-    tokenSymbolAddrMap.set("WETH", WETHToken.address);
-    tokenSymbolAddrMap.set("TEST", TESTToken.address);
+    tokenSymbolAddrMap.set("LRC", this.contracts.LRCToken.address);
+    tokenSymbolAddrMap.set("GTO", this.contracts.GTOToken.address);
+    tokenSymbolAddrMap.set("RDN", this.contracts.RDNToken.address);
+    tokenSymbolAddrMap.set("REP", this.contracts.REPToken.address);
+    tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
+    tokenSymbolAddrMap.set("TEST", this.contracts.TESTToken.address);
 
-    tokenAddrSymbolMap.set(LRCToken.address, "LRC");
-    tokenAddrSymbolMap.set(GTOToken.address, "GTO");
-    tokenAddrSymbolMap.set(RDNToken.address, "RDN");
-    tokenAddrSymbolMap.set(REPToken.address, "REP");
-    tokenAddrSymbolMap.set(WETHToken.address, "WETH");
-    tokenAddrSymbolMap.set(TESTToken.address, "TEST");
+    tokenAddrSymbolMap.set(this.contracts.LRCToken.address, "LRC");
+    tokenAddrSymbolMap.set(this.contracts.GTOToken.address, "GTO");
+    tokenAddrSymbolMap.set(this.contracts.RDNToken.address, "RDN");
+    tokenAddrSymbolMap.set(this.contracts.REPToken.address, "REP");
+    tokenAddrSymbolMap.set(this.contracts.WETHToken.address, "WETH");
+    tokenAddrSymbolMap.set(this.contracts.TESTToken.address, "TEST");
 
-    tokenAddrInstanceMap.set(LRCToken.address, lrc);
-    tokenAddrInstanceMap.set(GTOToken.address, gto);
-    tokenAddrInstanceMap.set(RDNToken.address, rdn);
-    tokenAddrInstanceMap.set(REPToken.address, rep);
-    tokenAddrInstanceMap.set(WETHToken.address, weth);
-    tokenAddrInstanceMap.set(TESTToken.address, test);
+    tokenAddrInstanceMap.set(this.contracts.LRCToken.address, lrc);
+    tokenAddrInstanceMap.set(this.contracts.GTOToken.address, gto);
+    tokenAddrInstanceMap.set(this.contracts.RDNToken.address, rdn);
+    tokenAddrInstanceMap.set(this.contracts.REPToken.address, rep);
+    tokenAddrInstanceMap.set(this.contracts.WETHToken.address, weth);
+    tokenAddrInstanceMap.set(this.contracts.TESTToken.address, test);
 
     const deployer = accounts[0];
     const transactionOrigin = accounts[1];

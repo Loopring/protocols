@@ -6,10 +6,15 @@ var mnemonic = "your mnemonic phases here.";
 // console.log("mnemonic", mnemonic);
 
 module.exports = {
-  solc: {
-    optimizer: {
-      enabled: true,
-      runs: 10000
+  compilers: {
+    solc: {
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 10000
+        }
+      },
+      version: "0.5.1"
     }
   },
   networks: {

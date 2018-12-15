@@ -15,9 +15,7 @@
   limitations under the License.
 */
 
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../iface/IFeeHolder.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -30,8 +28,8 @@ contract BurnManager is NoDefaultFunc {
     using MathUint for uint;
     using ERC20SafeTransfer for address;
 
-    address public feeHolderAddress = 0x0;
-    address public lrcAddress = 0x0;
+    address public feeHolderAddress = address(0x0);
+    address public lrcAddress = address(0x0);
 
     constructor(
         address _feeHolderAddress,
@@ -39,8 +37,8 @@ contract BurnManager is NoDefaultFunc {
         )
         public
     {
-        require(_feeHolderAddress != 0x0, ZERO_ADDRESS);
-        require(_lrcAddress != 0x0, ZERO_ADDRESS);
+        require(_feeHolderAddress != address(0x0), ZERO_ADDRESS);
+        require(_lrcAddress != address(0x0), ZERO_ADDRESS);
         feeHolderAddress = _feeHolderAddress;
         lrcAddress = _lrcAddress;
     }

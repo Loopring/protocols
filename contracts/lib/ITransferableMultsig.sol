@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 
 /// @title ITransferableMultsig
@@ -24,22 +22,22 @@ pragma experimental "ABIEncoderV2";
 contract ITransferableMultsig {
     // Note that address recovered from signatures must be strictly increasing.
     function execute(
-        uint8[]   sigV,
-        bytes32[] sigR,
-        bytes32[] sigS,
-        address   destination,
-        uint      value,
-        bytes     data
+        uint8[] calldata   sigV,
+        bytes32[] calldata sigR,
+        bytes32[] calldata sigS,
+        address            destination,
+        uint               value,
+        bytes calldata     data
         )
         external;
 
     // Note that address recovered from signatures must be strictly increasing.
     function transferOwnership(
-        uint8[]   sigV,
-        bytes32[] sigR,
-        bytes32[] sigS,
-        uint      _threshold,
-        address[] _owners
+        uint8[] calldata   sigV,
+        bytes32[] calldata sigR,
+        bytes32[] calldata sigS,
+        uint               _threshold,
+        address[] calldata _owners
         )
         external;
 }

@@ -13,7 +13,7 @@ contract("BrokerRegistry", (accounts: string[]) => {
   const broker2 = accounts[6];
   const broker3 = accounts[7];
   const invalidInterceptor = accounts[9];
-  const emptyAddr = "0x0000000000000000000000000000000000000000";
+  const zeroAddress = "0x" + "00".repeat(20);
 
   let brokerRegistry: any;
   let dummyBrokerInterceptor: any;
@@ -29,27 +29,25 @@ contract("BrokerRegistry", (accounts: string[]) => {
   };
 
   const assertRegistered = async (user: string, broker: string, interceptor: string) => {
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(isRegistered, "interceptor should be registered.");
-    assert.equal(interceptor, interceptorFromContract, "get wrong interceptor");
+    const returnValue = await brokerRegistry.getBroker(user, broker);
+    assert(returnValue.registered, "interceptor should be registered.");
+    assert.equal(interceptor, returnValue.interceptor, "get wrong interceptor");
   };
 
   const assertNotRegistered = async (user: string, broker: string) => {
-    const [isRegistered, interceptorFromContract] = await brokerRegistry.getBroker(user, broker);
-    assert(!isRegistered, "interceptor should not be registered.");
+    const returnValue = await brokerRegistry.getBroker(user, broker);
+    assert(!returnValue.registered, "interceptor should not be registered.");
   };
 
   const assertGetBrokers = async (user: string, brokersAndInterceptors: string[][], start: number, end: number) => {
-    const [brokersFromContract, interceptorsFromContract] =
-      await brokerRegistry.getBrokers(user, start, end);
+    const returnValue = await brokerRegistry.getBrokers(user, start, end);
     brokersAndInterceptors.map((element, index) => {
-      assert.equal(brokersFromContract[index], element[0], "Addresses should match");
-      assert.equal(interceptorsFromContract[index], element[1], "Interceptors should match");
+      assert.equal(returnValue.brokers[index], element[0], "Addresses should match");
+      assert.equal(returnValue.interceptors[index], element[1], "Interceptors should match");
     });
   };
 
   before(async () => {
-    brokerRegistry = await BrokerRegistry.deployed();
     dummyBrokerInterceptor = await DummyBrokerInterceptor.deployed();
   });
 
@@ -60,7 +58,7 @@ contract("BrokerRegistry", (accounts: string[]) => {
 
   describe("any user", () => {
     it("should be able to register a broker without interceptor", async () => {
-      await registerBrokerChecked(user1, broker1, emptyAddr);
+      await registerBrokerChecked(user1, broker1, zeroAddress);
     });
 
     it("should be able to register a broker with interceptor", async () => {
@@ -68,7 +66,7 @@ contract("BrokerRegistry", (accounts: string[]) => {
     });
 
     it("should be able to get all registered brokers for a user", async () => {
-      const brokersAndInterceptorsUser1 = [[broker1, emptyAddr], [broker3, emptyAddr]];
+      const brokersAndInterceptorsUser1 = [[broker1, zeroAddress], [broker3, zeroAddress]];
       brokersAndInterceptorsUser1.map(async (element) => await registerBrokerChecked(user1, element[0], element[1]));
 
       const brokersAndInterceptorsUser2 = [[broker3, dummyBrokerInterceptor.address]];
@@ -103,11 +101,11 @@ contract("BrokerRegistry", (accounts: string[]) => {
     });
 
     it("should not be able to register an invalid broker address", async () => {
-      await expectThrow(registerBrokerChecked(user1, emptyAddr, emptyAddr), "ZERO_ADDRESS");
+      await expectThrow(registerBrokerChecked(user1, zeroAddress, zeroAddress), "ZERO_ADDRESS");
     });
 
     it("should not be able to unregister an invalid broker address", async () => {
-      await expectThrow(unregisterBrokerChecked(user1, emptyAddr), "ZERO_ADDRESS");
+      await expectThrow(unregisterBrokerChecked(user1, zeroAddress), "ZERO_ADDRESS");
     });
 
     it("should not be able to register a broker with interceptor that is not a contract", async () => {
@@ -115,19 +113,19 @@ contract("BrokerRegistry", (accounts: string[]) => {
     });
 
     it("should not be able to register the same broker twice", async () => {
-      await registerBrokerChecked(user1, broker1, emptyAddr);
-      await expectThrow(brokerRegistry.registerBroker(broker1, emptyAddr, {from: user1}), "ALREADY_EXIST");
+      await registerBrokerChecked(user1, broker1, zeroAddress);
+      await expectThrow(brokerRegistry.registerBroker(broker1, zeroAddress, {from: user1}), "ALREADY_EXIST");
     });
 
     it("should be able to unregister all brokers", async () => {
-      await registerBrokerChecked(user1, broker1, emptyAddr);
-      await registerBrokerChecked(user2, broker2, emptyAddr);
-      await registerBrokerChecked(user1, broker3, emptyAddr);
+      await registerBrokerChecked(user1, broker1, zeroAddress);
+      await registerBrokerChecked(user2, broker2, zeroAddress);
+      await registerBrokerChecked(user1, broker3, zeroAddress);
 
       await brokerRegistry.unregisterAllBrokers({from: user1});
 
       await assertNotRegistered(user1, broker1);
-      await assertRegistered(user2, broker2, emptyAddr);
+      await assertRegistered(user2, broker2, zeroAddress);
       await assertNotRegistered(user1, broker3);
 
       await brokerRegistry.unregisterAllBrokers({from: user2});

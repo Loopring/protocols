@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../iface/IOrderCanceller.sol";
 import "../iface/ITradeHistory.sol";
@@ -37,20 +35,20 @@ import "../lib/NoDefaultFunc.sol";
 contract OrderCanceller is IOrderCanceller, NoDefaultFunc {
     using BytesUtil       for bytes;
 
-    address public tradeHistoryAddress = 0x0;
+    address public tradeHistoryAddress = address(0x0);
 
     constructor(
         address _tradeHistoryAddress
         )
         public
     {
-        require(_tradeHistoryAddress != 0x0, ZERO_ADDRESS);
+        require(_tradeHistoryAddress != address(0x0), ZERO_ADDRESS);
 
         tradeHistoryAddress = _tradeHistoryAddress;
     }
 
     function cancelOrders(
-        bytes   orderHashes
+        bytes calldata orderHashes
         )
         external
     {

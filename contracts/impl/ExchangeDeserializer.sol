@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../lib/BytesUtil.sol";
 import "./Data.sol";
@@ -29,14 +27,14 @@ library ExchangeDeserializer {
 
     function deserialize(
         address lrcTokenAddress,
-        bytes data
+        bytes memory data
         )
         internal
         view
         returns (
-            Data.Mining mining,
-            Data.Order[] orders,
-            Data.Ring[] rings
+            Data.Mining memory mining,
+            Data.Order[] memory orders,
+            Data.Ring[] memory rings
         )
     {
         // Read the header
@@ -78,7 +76,7 @@ library ExchangeDeserializer {
         )
         internal
         view
-        returns (Data.Mining mining)
+        returns (Data.Mining memory mining)
     {
         bytes memory emptyBytes = new bytes(0);
         uint offset;
@@ -128,7 +126,7 @@ library ExchangeDeserializer {
         )
         internal
         pure
-        returns (Data.Order[] orders)
+        returns (Data.Order[] memory orders)
     {
         bytes memory emptyBytes = new bytes(0);
         uint orderStructSize = 38 * 32;
@@ -405,11 +403,11 @@ library ExchangeDeserializer {
     function assembleRings(
         uint data,
         uint numRings,
-        Data.Order[] orders
+        Data.Order[] memory orders
         )
         internal
         pure
-        returns (Data.Ring[] rings)
+        returns (Data.Ring[] memory rings)
     {
         uint ringsArrayDataSize = (1 + numRings) * 32;
         uint ringStructSize = 5 * 32;

@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../iface/IFeeHolder.sol";
 import "../iface/IRingSubmitter.sol";
@@ -27,10 +25,10 @@ import "../iface/ITradeHistory.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract DummyExchange {
 
-    address public tradeDelegateAddress = 0x0;
-    address public tradeHistoryAddress = 0x0;
-    address public feeHolderAddress = 0x0;
-    address public ringSubmitterAddress = 0x0;
+    address public tradeDelegateAddress = address(0x0);
+    address public tradeHistoryAddress = address(0x0);
+    address public feeHolderAddress = address(0x0);
+    address public ringSubmitterAddress = address(0x0);
 
     constructor(
         address _tradeDelegateAddress,
@@ -47,7 +45,7 @@ contract DummyExchange {
     }
 
     function submitRings(
-        bytes data
+        bytes calldata data
         )
         external
     {
@@ -55,7 +53,7 @@ contract DummyExchange {
     }
 
     function batchAddFeeBalances(
-        bytes32[] data
+        bytes32[] memory data
         )
         public
     {
@@ -63,7 +61,7 @@ contract DummyExchange {
     }
 
     function batchTransfer(
-        bytes32[] data
+        bytes32[] memory data
         )
         public
     {
@@ -71,7 +69,7 @@ contract DummyExchange {
     }
 
     function batchUpdateFilled(
-        bytes32[] data
+        bytes32[] memory data
         )
         public
     {

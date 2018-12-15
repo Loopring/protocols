@@ -48,7 +48,8 @@ contract("ExchangeWrapper", (accounts: string[]) => {
 
       // No owner whitelisted so submitRings should throw
       await psc.expectThrow(
-        exchangeWrapper.submitRings(bs, {from: exchangeTestUtil.testContext.transactionOrigin}),
+        exchangeWrapper.submitRings(web3.utils.hexToBytes(bs),
+                                    {from: exchangeTestUtil.testContext.transactionOrigin}),
         "OWNER_NOT_WHITELISTED",
       );
 

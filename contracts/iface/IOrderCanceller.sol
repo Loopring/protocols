@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 
 /// @title IOrderCanceller
@@ -59,7 +57,7 @@ contract IOrderCanceller {
     ///      msg.sender needs to be the broker of the orders you want to cancel.
     /// @param orderHashes Hashes of the orders to be cancelled.
     function cancelOrders(
-        bytes   orderHashes
+        bytes calldata orderHashes
         )
         external;
 

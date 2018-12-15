@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 
 /// @author Kongliang Zhong - <kongliang@loopring.org>
@@ -56,7 +54,7 @@ contract IFeeHolder {
         returns (bool success);
 
     function batchAddFeeBalances(
-        bytes32[] batch
+        bytes32[] calldata batch
         )
         external;
 }

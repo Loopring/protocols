@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 
 /// @title IBrokerRegistry
@@ -71,8 +69,8 @@ contract IBrokerRegistry {
         external
         view
         returns (
-            address[] brokers,
-            address[] interceptors
+            address[] memory brokers,
+            address[] memory interceptors
         );
 
     /// @dev   Registers a broker for msg.sender and an optional

@@ -17,6 +17,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
 
+  const zeroAddress = "0x" + "00".repeat(20);
+
   let dummyExchange: any;
   let orderBook: any;
   let orderRegistry: any;
@@ -29,18 +31,20 @@ contract("Exchange_Submit", (accounts: string[]) => {
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+
     orderBook = await OrderBook.deployed();
     orderRegistry = await OrderRegistry.deployed();
 
     // Create dummy exchange and authorize it
-    dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
-                                            exchangeTestUtil.context.tradeHistory.address,
-                                            exchangeTestUtil.context.feeHolder.address,
+    dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.options.address,
+                                            exchangeTestUtil.context.tradeHistory.options.address,
+                                            exchangeTestUtil.context.feeHolder.options.address,
                                             exchangeTestUtil.ringSubmitter.address);
-    await exchangeTestUtil.context.tradeDelegate.authorizeAddress(dummyExchange.address,
-                                                                  {from: exchangeTestUtil.testContext.deployer});
+    await exchangeTestUtil.context.tradeDelegate.methods.authorizeAddress(
+      dummyExchange.address,
+    ).send({from: exchangeTestUtil.testContext.deployer});
 
-    contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.address, "0x0");
+    contractOrderOwner = await ContractOrderOwner.new(exchangeTestUtil.context.orderBook.options.address, zeroAddress);
   });
 
   describe("submitRing", () => {
@@ -133,27 +137,27 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
       // Only approve a part of the tokenS amount, feeToken cannot be used
       const tokenS = exchangeTestUtil.testContext.tokenAddrInstanceMap.get(ringsInfo.orders[0].tokenS);
-      await tokenS.approve(exchangeTestUtil.context.tradeDelegate.address,
-                           ringsInfo.orders[0].amountS / 2,
+      await tokenS.approve(exchangeTestUtil.context.tradeDelegate.options.address,
+                           web3.utils.toBN(ringsInfo.orders[0].amountS / 2),
                            {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       await checkFilled(ringsInfo.orders[0], 0);
 
       // Only approve a part of the feeToken amount now as well
       const tokenFee = exchangeTestUtil.testContext.tokenAddrInstanceMap.get(ringsInfo.orders[0].feeToken);
-      await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.address,
-                           ringsInfo.orders[0].feeAmount / 4,
-                           {from: ringsInfo.orders[0].owner});
+      await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.options.address,
+                             web3.utils.toBN(ringsInfo.orders[0].feeAmount / 4),
+                             {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS / 4);
 
       // Approve amountS and feeAmount
-      await tokenS.approve(exchangeTestUtil.context.tradeDelegate.address,
-                           ringsInfo.orders[0].amountS,
+      await tokenS.approve(exchangeTestUtil.context.tradeDelegate.options.address,
+                           web3.utils.toBN(ringsInfo.orders[0].amountS),
                            {from: ringsInfo.orders[0].owner});
-      await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.address,
-                           ringsInfo.orders[0].feeAmount,
-                           {from: ringsInfo.orders[0].owner});
+      await tokenFee.approve(exchangeTestUtil.context.tradeDelegate.options.address,
+                             web3.utils.toBN(ringsInfo.orders[0].feeAmount),
+                             {from: ringsInfo.orders[0].owner});
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       await checkFilled(ringsInfo.orders[0], ringsInfo.orders[0].amountS);
     });
@@ -311,11 +315,17 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
 
       // Allow the contract to spend tokenS
-      await contractOrderOwner.approve(onChainOrder.tokenS, exchangeTestUtil.context.tradeDelegate.address, 1e32);
+      await contractOrderOwner.approve(
+        onChainOrder.tokenS, exchangeTestUtil.context.tradeDelegate.options.address,
+        web3.utils.toBN(new BigNumber(1e32)),
+      );
       // Still cannot pay any fees, so no tokens will be transferred
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
       // Allow the contract to spend feeToken
-      await contractOrderOwner.approve(onChainOrder.feeToken, exchangeTestUtil.context.tradeDelegate.address, 1e32);
+      await contractOrderOwner.approve(
+        onChainOrder.feeToken, exchangeTestUtil.context.tradeDelegate.options.address,
+        web3.utils.toBN(new BigNumber(1e32)),
+      );
 
       // Order is registered and the contract can pay in tokenS and feeToken
       ringsInfo.expected = {
@@ -378,7 +388,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const orderData = orderUtil.toOrderBookSubmitParams(onChainOrder);
       const orderHash = "0x" + orderUtil.getOrderHash(onChainOrder).toString("hex");
       const fromBlock = web3.eth.blockNumber;
-      await contractOrderOwner.sumbitOrderToOrderBook(orderData, orderHash);
+      await contractOrderOwner.sumbitOrderToOrderBook(web3.utils.hexToBytes(orderData), orderHash);
       const events: any = await exchangeTestUtil.getEventsFromContract(orderBook, "OrderSubmitted", fromBlock);
       const orderHashOnChain = events[0].args.orderHash;
       assert.equal(orderHashOnChain, orderHash, "order hash not equal");
@@ -387,8 +397,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitRingsAndSimulate(ringsInfo);
 
       // Register the broker without interceptor
-      const emptyAddr = "0x0000000000000000000000000000000000000000";
-      await exchangeTestUtil.registerOrderBrokerChecked(onChainOrder.owner, onChainOrder.broker, emptyAddr);
+      await exchangeTestUtil.registerOrderBrokerChecked(onChainOrder.owner, onChainOrder.broker, zeroAddress);
 
       // Order and broker is registered
       ringsInfo.expected = {
@@ -477,9 +486,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const burnRateTable = exchangeTestUtil.context.burnRateTable;
 
       // Get the burn rates of the tokens
-      const BURN_BASE_PERCENTAGE = (await burnRateTable.BURN_BASE_PERCENTAGE()).toNumber();
-      const burnRate0 = (await burnRateTable.getBurnRate(order0.feeToken)).toNumber() & 0xFFFF;
-      const burnRate1 = (await burnRateTable.getBurnRate(order1.feeToken)).toNumber() & 0xFFFF;
+      const BURN_BASE_PERCENTAGE = await burnRateTable.methods.BURN_BASE_PERCENTAGE().call();
+      const burnRate0 = (await burnRateTable.methods.getBurnRate(order0.feeToken).call()) & 0xFFFF;
+      const burnRate1 = (await burnRateTable.methods.getBurnRate(order1.feeToken).call()) & 0xFFFF;
       assert(burnRate0 !== burnRate1, "Tokens should have different burn rates");
 
       // Orders will be filled 50%
@@ -606,7 +615,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         assert.equal(lrcAddressIndex, -1, "LRC address should not be stored in the calldata");
         let numLRCTransfers = 0;
         for (const transfer of report.transferItems) {
-          if (transfer.to === exchangeTestUtil.context.feeHolder.address) {
+          if (transfer.to === exchangeTestUtil.context.feeHolder.options.address) {
             assert.equal(transfer.token, lrcAddress, "LRC should be the default feeToken");
             numLRCTransfers++;
           }
@@ -651,7 +660,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const bs = ringsGenerator.toSubmitableParam(ringsInfo);
 
       // Fail the token transfer by throwing in transferFrom
-      const TestToken = TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
+      const TestToken = await TESTToken.at(exchangeTestUtil.testContext.tokenSymbolAddrMap.get("TEST"));
       await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
 
       // submitRings should revert

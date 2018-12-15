@@ -14,15 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 
 /// @title Utility Functions for address
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 library StringUtil {
-    function stringToBytes12(string str)
+    function stringToBytes12(string memory str)
         internal
         pure
         returns (bytes12 result)
@@ -32,7 +30,7 @@ library StringUtil {
         }
     }
 
-    function stringToBytes10(string str)
+    function stringToBytes10(string memory str)
         internal
         pure
         returns (bytes10 result)
@@ -43,7 +41,7 @@ library StringUtil {
     }
 
     /// check length >= min && <= max
-    function checkStringLength(string name, uint min, uint max)
+    function checkStringLength(string memory name, uint min, uint max)
         internal
         pure
         returns (bool)

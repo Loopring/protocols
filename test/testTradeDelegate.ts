@@ -1,3 +1,4 @@
+import BN = require("bn.js");
 import { Bitstream, expectThrow } from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
 
@@ -16,7 +17,7 @@ interface TokenTransfer {
   token: string;
   from: string;
   to: string;
-  amount: number;
+  amount: BN;
 }
 
 contract("TradeDelegate", (accounts: string[]) => {
@@ -25,7 +26,7 @@ contract("TradeDelegate", (accounts: string[]) => {
   const user2 = accounts[6];
   const user3 = accounts[7];
   const user4 = accounts[8];
-  const emptyAddr = "0x0000000000000000000000000000000000000000";
+  const zeroAddress = "0x" + "00".repeat(20);
 
   let tradeDelegate: any;
   let dummyExchange1: any;
@@ -39,13 +40,7 @@ contract("TradeDelegate", (accounts: string[]) => {
   let TestToken: any;
   let testToken: string;
 
-  const numberToBytesX = (value: number, numBytes: number) => {
-    const bitstream = new Bitstream();
-    bitstream.addNumber(value, numBytes);
-    return bitstream.getData();
-  };
-
-  const addTokenTransfer = (transfers: TokenTransfer[], token: string, from: string, to: string, amount: number) => {
+  const addTokenTransfer = (transfers: TokenTransfer[], token: string, from: string, to: string, amount: BN) => {
     const transfer: TokenTransfer = {
       token,
       from,
@@ -61,12 +56,12 @@ contract("TradeDelegate", (accounts: string[]) => {
       bitstream.addAddress(transfer.token, 32);
       bitstream.addAddress(transfer.from, 32);
       bitstream.addAddress(transfer.to, 32);
-      bitstream.addNumber(transfer.amount, 32);
+      bitstream.addBN(transfer.amount, 32);
     }
     return bitstream.getBytes32Array();
   };
 
-  const setUserBalance = async (token: string, user: string, balance: number, approved?: number) => {
+  const setUserBalance = async (token: string, user: string, balance: BN, approved?: BN) => {
     const dummyToken = await DummyToken.at(token);
     await dummyToken.setBalance(user, balance);
     const approvedAmount = approved ? approved : balance;
@@ -102,13 +97,13 @@ contract("TradeDelegate", (accounts: string[]) => {
         balances[transfer.token] = {};
       }
       if (!balances[transfer.token][transfer.from]) {
-        balances[transfer.token][transfer.from] = (await dummyToken.balanceOf(transfer.from)).toNumber();
+        balances[transfer.token][transfer.from] = await dummyToken.balanceOf(transfer.from);
       }
       if (!balances[transfer.token][transfer.to]) {
-        balances[transfer.token][transfer.to] = (await dummyToken.balanceOf(transfer.to)).toNumber();
+        balances[transfer.token][transfer.to] = await dummyToken.balanceOf(transfer.to);
       }
-      balances[transfer.token][transfer.from] -= transfer.amount;
-      balances[transfer.token][transfer.to] += transfer.amount;
+      balances[transfer.token][transfer.from] = balances[transfer.token][transfer.from].sub(transfer.amount);
+      balances[transfer.token][transfer.to] = balances[transfer.token][transfer.to].add(transfer.amount);
     }
     // Update fee balances
     const batch = toTransferBatch(transfers);
@@ -116,12 +111,12 @@ contract("TradeDelegate", (accounts: string[]) => {
     // Check if we get the expected results
     for (const transfer of transfers) {
       const dummyToken = await DummyToken.at(transfer.token);
-      const balanceFrom = (await dummyToken.balanceOf(transfer.from)).toNumber();
-      const balanceTo = (await dummyToken.balanceOf(transfer.to)).toNumber();
+      const balanceFrom = await dummyToken.balanceOf(transfer.from);
+      const balanceTo = await dummyToken.balanceOf(transfer.to);
       const expectedBalanceFrom = balances[transfer.token][transfer.from];
       const expectedBalanceTo = balances[transfer.token][transfer.to];
-      assert.equal(balanceFrom, expectedBalanceFrom, "Token balance does not match expected value");
-      assert.equal(balanceTo, expectedBalanceTo, "Token balance does not match expected value");
+      assert(balanceFrom.eq(expectedBalanceFrom), "Token balance does not match expected value");
+      assert(balanceTo.eq(expectedBalanceTo), "Token balance does not match expected value");
     }
   };
 
@@ -134,9 +129,9 @@ contract("TradeDelegate", (accounts: string[]) => {
 
   beforeEach(async () => {
     tradeDelegate = await TradeDelegate.new();
-    dummyExchange1 = await DummyExchange.new(tradeDelegate.address, "0x0", "0x0", "0x0");
-    dummyExchange2 = await DummyExchange.new(tradeDelegate.address, "0x0", "0x0", "0x0");
-    dummyExchange3 = await DummyExchange.new(tradeDelegate.address, "0x0", "0x0", "0x0");
+    dummyExchange1 = await DummyExchange.new(tradeDelegate.address, zeroAddress, zeroAddress, zeroAddress);
+    dummyExchange2 = await DummyExchange.new(tradeDelegate.address, zeroAddress, zeroAddress, zeroAddress);
+    dummyExchange3 = await DummyExchange.new(tradeDelegate.address, zeroAddress, zeroAddress, zeroAddress);
     TestToken = await TESTToken.new();
     testToken = TestToken.address;
   });
@@ -161,7 +156,7 @@ contract("TradeDelegate", (accounts: string[]) => {
     });
 
     it("should not be able to authorize a non-contract address", async () => {
-      await expectThrow(authorizeAddressChecked(emptyAddr, owner), "ZERO_ADDRESS");
+      await expectThrow(authorizeAddressChecked(zeroAddress, owner), "ZERO_ADDRESS");
       await expectThrow(authorizeAddressChecked(user2, owner), "INVALID_ADDRESS");
     });
 
@@ -172,7 +167,7 @@ contract("TradeDelegate", (accounts: string[]) => {
 
     it("should not be able to deauthorize an unathorized address", async () => {
       await authorizeAddressChecked(dummyExchange1.address, owner);
-      await expectThrow(deauthorizeAddressChecked(emptyAddr, owner), "ZERO_ADDRESS");
+      await expectThrow(deauthorizeAddressChecked(zeroAddress, owner), "ZERO_ADDRESS");
       await expectThrow(deauthorizeAddressChecked(dummyExchange2.address, owner), "NOT_FOUND");
     });
 
@@ -180,9 +175,9 @@ contract("TradeDelegate", (accounts: string[]) => {
       await tradeDelegate.suspend({from: owner});
       // Try to do a transfer
       await authorizeAddressChecked(dummyExchange1.address, owner);
-      await setUserBalance(token1, user1, 10e18);
+      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
       const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, 1e18);
+      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
       await expectThrow(batchTransferChecked(transfers), "INVALID_STATE");
       // Resume again
       await tradeDelegate.resume({from: owner});
@@ -199,9 +194,9 @@ contract("TradeDelegate", (accounts: string[]) => {
       // Try to resume again
       await expectThrow(tradeDelegate.resume({from: owner}), "NOT_OWNER");
       // Try to do a transfer
-      await setUserBalance(token1, user1, 10e18);
+      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
       const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, 1e18);
+      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
       await expectThrow(batchTransferChecked(transfers), "INVALID_STATE");
     });
   });
@@ -213,41 +208,41 @@ contract("TradeDelegate", (accounts: string[]) => {
 
     it("should be able to batch transfer tokens", async () => {
       // Make sure everyone has enough funds
-      await setUserBalance(token1, user1, 10e18);
-      await setUserBalance(token2, user1, 10e18);
-      await setUserBalance(token2, user2, 10e18);
-      await setUserBalance(token3, user3, 10e18);
+      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
+      await setUserBalance(token2, user1, web3.utils.toBN(10e18));
+      await setUserBalance(token2, user2, web3.utils.toBN(10e18));
+      await setUserBalance(token3, user3, web3.utils.toBN(10e18));
       {
         const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, token1, user1, user2, 1.5e18);
-        addTokenTransfer(transfers, token1, user1, user3, 2.5e18);
-        addTokenTransfer(transfers, token2, user2, user3, 2.2e18);
-        addTokenTransfer(transfers, token2, user2, user1, 0.3e18);
-        addTokenTransfer(transfers, token2, user1, user3, 2.5e18);
+        addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1.5e18));
+        addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(2.5e18));
+        addTokenTransfer(transfers, token2, user2, user3, web3.utils.toBN(2.2e18));
+        addTokenTransfer(transfers, token2, user2, user1, web3.utils.toBN(0.3e18));
+        addTokenTransfer(transfers, token2, user1, user3, web3.utils.toBN(2.5e18));
         await batchTransferChecked(transfers);
       }
       {
         const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, token1, user1, user3, 1.5e18);
-        addTokenTransfer(transfers, token3, user3, user2, 2.5e18);
-        addTokenTransfer(transfers, token3, user3, user1, 1.5e18);
+        addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(1.5e18));
+        addTokenTransfer(transfers, token3, user3, user2, web3.utils.toBN(2.5e18));
+        addTokenTransfer(transfers, token3, user3, user1, web3.utils.toBN(1.5e18));
         await batchTransferChecked(transfers);
       }
       {
         const transfers: TokenTransfer[] = [];
         // No tokens to be transfered
-        addTokenTransfer(transfers, token1, user1, user3, 0);
+        addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(0));
         // From == To
-        addTokenTransfer(transfers, token3, user3, user3, 2.5e18);
+        addTokenTransfer(transfers, token3, user3, user3, web3.utils.toBN(2.5e18));
         await batchTransferChecked(transfers);
       }
     });
 
     it("should not be able to batch transfer tokens with malformed data", async () => {
-      await setUserBalance(token1, user1, 10e18);
+      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
       const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, 1e18);
-      addTokenTransfer(transfers, token1, user1, user3, 2e18);
+      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
+      addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(2e18));
       const batch = toTransferBatch(transfers);
       batch.pop();
       await expectThrow(dummyExchange1.batchTransfer(batch), "INVALID_SIZE");
@@ -255,7 +250,7 @@ contract("TradeDelegate", (accounts: string[]) => {
 
     it("should not be able to batch transfer tokens with non-ERC20 token address", async () => {
       const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, 1e18);
+      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
       const batch = toTransferBatch(transfers);
       await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
     });
@@ -279,35 +274,35 @@ contract("TradeDelegate", (accounts: string[]) => {
     describe("Bad ERC20 tokens", () => {
       it("batchTransfer should succeed when a token transfer does not throw and returns nothing", async () => {
         await TestToken.setTestCase(await TestToken.TEST_NO_RETURN_VALUE());
-        await setUserBalance(testToken, user1, 10e18);
+        await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
         const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, testToken, user1, user2, 1e18);
+        addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
         await batchTransferChecked(transfers);
       });
 
       it("batchTransfer should fail when a token transfer 'require' fails", async () => {
         await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
-        await setUserBalance(testToken, user1, 10e18);
+        await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
         const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, testToken, user1, user2, 1e18);
+        addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
         const batch = toTransferBatch(transfers);
         await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
       });
 
       it("batchTransfer should fail when a token transfer returns false", async () => {
         await TestToken.setTestCase(await TestToken.TEST_RETURN_FALSE());
-        await setUserBalance(testToken, user1, 10e18);
+        await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
         const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, testToken, user1, user2, 1e18);
+        addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
         const batch = toTransferBatch(transfers);
         await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
       });
 
       it("batchTransfer should fail when a token transfer returns more than 32 bytes", async () => {
         await TestToken.setTestCase(await TestToken.TEST_INVALID_RETURN_SIZE());
-        await setUserBalance(testToken, user1, 10e18);
+        await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
         const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, testToken, user1, user2, 1e18);
+        addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
         const batch = toTransferBatch(transfers);
         await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
       });
@@ -318,9 +313,9 @@ contract("TradeDelegate", (accounts: string[]) => {
   describe("anyone", () => {
     it("should not be able to transfer tokens", async () => {
       // Make sure everyone has enough funds
-      await setUserBalance(token1, user1, 10e18);
+      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
       const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, 1e18);
+      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
       await expectThrow(batchTransferChecked(transfers), "UNAUTHORIZED");
     });
   });

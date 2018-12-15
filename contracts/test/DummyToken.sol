@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
+pragma solidity 0.5.1;
 
 import "./LRCToken.sol";
 
@@ -23,10 +23,10 @@ import "./LRCToken.sol";
 contract DummyToken is LRCToken {
 
     constructor(
-        string _name,
-        string _symbol,
-        uint8  _decimals,
-        uint   _totalSupply
+        string memory _name,
+        string memory _symbol,
+        uint8         _decimals,
+        uint          _totalSupply
     ) LRCToken(
         _name,
         _symbol,

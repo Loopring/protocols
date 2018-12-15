@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 
 /// @title ITradeHistory
@@ -45,7 +43,7 @@ contract ITradeHistory {
 
 
     function batchUpdateFilled(
-        bytes32[] filledInfo
+        bytes32[] calldata filledInfo
         )
         external;
 
@@ -84,11 +82,11 @@ contract ITradeHistory {
         external;
 
     function batchGetFilledAndCheckCancelled(
-        bytes32[] orderInfo
+        bytes32[] calldata orderInfo
         )
         external
         view
-        returns (uint[]);
+        returns (uint[] memory fills);
 
 
     /// @dev Add a Loopring protocol address.

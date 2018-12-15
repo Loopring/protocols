@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../lib/BytesUtil.sol";
 
@@ -26,7 +24,7 @@ contract BytesUtilWrapper {
     using BytesUtil for bytes;
 
     function bytesToBytes32(
-        bytes b,
+        bytes calldata b,
         uint offset
         )
         external
@@ -37,7 +35,7 @@ contract BytesUtilWrapper {
     }
 
     function bytesToUint(
-        bytes b,
+        bytes calldata b,
         uint offset
         )
         external
@@ -48,7 +46,7 @@ contract BytesUtilWrapper {
     }
 
     function bytesToAddress(
-        bytes b,
+        bytes calldata b,
         uint offset
         )
         external
@@ -59,7 +57,7 @@ contract BytesUtilWrapper {
     }
 
     function bytesToUint16(
-        bytes b,
+        bytes calldata b,
         uint offset
         )
         external

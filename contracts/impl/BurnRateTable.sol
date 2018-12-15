@@ -15,9 +15,7 @@
   limitations under the License.
 */
 
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../iface/IBurnRateTable.sol";
 import "../lib/ERC20.sol";
@@ -31,8 +29,8 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
     using MathUint for uint;
     using ERC20SafeTransfer for address;
 
-    address public lrcAddress = 0x0;
-    address public wethAddress = 0x0;
+    address public lrcAddress = address(0x0);
+    address public wethAddress = address(0x0);
 
     constructor(
         address _lrcAddress,
@@ -40,8 +38,8 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
         )
         public
     {
-        require(_lrcAddress != 0x0, ZERO_ADDRESS);
-        require(_wethAddress != 0x0, ZERO_ADDRESS);
+        require(_lrcAddress != address(0x0), ZERO_ADDRESS);
+        require(_wethAddress != address(0x0), ZERO_ADDRESS);
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
@@ -86,7 +84,7 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
         external
         returns (bool)
     {
-        require(token != 0x0, ZERO_ADDRESS);
+        require(token != address(0x0), ZERO_ADDRESS);
         require(token != lrcAddress, BURN_RATE_FROZEN);
         require(token != wethAddress, BURN_RATE_FROZEN);
 

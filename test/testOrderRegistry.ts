@@ -1,4 +1,4 @@
-import { BN } from "bn.js";
+import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
 import { expectThrow, OrderInfo, OrderUtil } from "protocol2-js";
 import util = require("util");
@@ -9,6 +9,7 @@ const {
   LRCToken,
   GTOToken,
 } = new Artifacts(artifacts);
+
 contract("OrderRegistry", (accounts: string[]) => {
   const orderOwner1 = accounts[1];
   const orderOwner2 = accounts[2];

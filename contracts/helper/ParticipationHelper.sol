@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
@@ -30,10 +28,11 @@ library ParticipationHelper {
     using OrderHelper for Data.Order;
 
     function setMaxFillAmounts(
-        Data.Participation p,
-        Data.Context ctx
+        Data.Participation memory p,
+        Data.Context memory ctx
         )
         internal
+        view
     {
         uint spendableS = p.order.getSpendableS(ctx);
         uint remainingS = p.order.amountS.sub(p.order.filledAmountS);
@@ -69,11 +68,12 @@ library ParticipationHelper {
     }
 
     function calculateFees(
-        Data.Participation p,
-        Data.Participation prevP,
-        Data.Context ctx
+        Data.Participation memory p,
+        Data.Participation memory prevP,
+        Data.Context memory ctx
         )
         internal
+        view
         returns (bool)
     {
         if (p.order.P2P) {
@@ -119,7 +119,7 @@ library ParticipationHelper {
     }
 
     function checkFills(
-        Data.Participation p
+        Data.Participation memory p
         )
         internal
         pure
@@ -140,7 +140,7 @@ library ParticipationHelper {
     }
 
     function adjustOrderState(
-        Data.Participation p
+        Data.Participation memory p
         )
         internal
         pure
@@ -153,14 +153,14 @@ library ParticipationHelper {
         uint totalAmountFee = p.feeAmount;
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
-        if (p.order.brokerInterceptor != 0x0) {
+        if (p.order.brokerInterceptor != address(0x0)) {
             p.order.brokerSpendableS.amount = p.order.brokerSpendableS.amount.sub(totalAmountS);
             p.order.brokerSpendableFee.amount = p.order.brokerSpendableFee.amount.sub(totalAmountFee);
         }
     }
 
     function revertOrderState(
-        Data.Participation p
+        Data.Participation memory p
         )
         internal
         pure

@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../impl/Data.sol";
 import "../impl/ExchangeDeserializer.sol";
@@ -25,14 +23,14 @@ import "../impl/ExchangeDeserializer.sol";
 /* solium-disable */
 contract DeserializerTest {
 
-    address public lrcTokenAddress = 0x0;
+    address public lrcTokenAddress = address(0x0);
 
     constructor(address _lrcTokenAddress) public {
-        require(_lrcTokenAddress != 0x0);
+        require(_lrcTokenAddress != address(0x0));
         lrcTokenAddress = _lrcTokenAddress;
     }
 
-    function deserialize(bytes data)
+    function deserialize(bytes calldata data)
         external
     /// we should not decorate this function as a view function because view function will not
     /// return tx recipient info after calling in uint test.
@@ -46,9 +44,9 @@ contract DeserializerTest {
         (mining, orders, rings); // To disable compilation warning
     }
 
-    function submitByArrays(uint16[] uint16Data,
-                            uint[] uintData,
-                            address[] addresses,
+    function submitByArrays(uint16[] calldata uint16Data,
+                            uint[] calldata uintData,
+                            address[] calldata addresses,
                             uint ringSize)
         external
     // view
@@ -78,9 +76,9 @@ contract DeserializerTest {
         );
     }
 
-    function assembleOrder(uint16[] uint16Data,
-                           uint[] uintData,
-                           address[] addresses)
+    function assembleOrder(uint16[] memory uint16Data,
+                           uint[] memory uintData,
+                           address[] memory addresses)
         internal
         view
         returns (Data.Order memory order)
@@ -114,7 +112,7 @@ contract DeserializerTest {
             uint16Data[0],
             false,        // P2P
             bytes32(0x0), // hash
-            0x0,          // orderBrokerInterceptor
+            address(0x0), // orderBrokerInterceptor
             0,            // filledAmountS
             0,            // initialFilledAmountS
             true,         // valid
@@ -128,7 +126,7 @@ contract DeserializerTest {
 
     }
 
-    function assembleParicipation(Data.Order order)
+    function assembleParicipation(Data.Order memory order)
         internal
         pure
         returns (Data.Participation memory p)

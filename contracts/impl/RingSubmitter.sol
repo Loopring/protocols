@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.4.24;
-pragma experimental "v0.5.0";
-pragma experimental "ABIEncoderV2";
+pragma solidity 0.5.1;
 
 import "../helper/MiningHelper.sol";
 import "../helper/OrderHelper.sol";
@@ -55,15 +53,15 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     using RingHelper      for Data.Ring;
     using MiningHelper    for Data.Mining;
 
-    address public  lrcTokenAddress             = 0x0;
-    address public  wethTokenAddress            = 0x0;
-    address public  delegateAddress             = 0x0;
-    address public  tradeHistoryAddress         = 0x0;
-    address public  orderBrokerRegistryAddress  = 0x0;
-    address public  orderRegistryAddress        = 0x0;
-    address public  feeHolderAddress            = 0x0;
-    address public  orderBookAddress            = 0x0;
-    address public  burnRateTableAddress        = 0x0;
+    address public  lrcTokenAddress             = address(0x0);
+    address public  wethTokenAddress            = address(0x0);
+    address public  delegateAddress             = address(0x0);
+    address public  tradeHistoryAddress         = address(0x0);
+    address public  orderBrokerRegistryAddress  = address(0x0);
+    address public  orderRegistryAddress        = address(0x0);
+    address public  feeHolderAddress            = address(0x0);
+    address public  orderBookAddress            = address(0x0);
+    address public  burnRateTableAddress        = address(0x0);
 
     uint64  public  ringIndex                   = 0;
 
@@ -92,15 +90,15 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         )
         public
     {
-        require(_lrcTokenAddress != 0x0, ZERO_ADDRESS);
-        require(_wethTokenAddress != 0x0, ZERO_ADDRESS);
-        require(_delegateAddress != 0x0, ZERO_ADDRESS);
-        require(_tradeHistoryAddress != 0x0, ZERO_ADDRESS);
-        require(_orderBrokerRegistryAddress != 0x0, ZERO_ADDRESS);
-        require(_orderRegistryAddress != 0x0, ZERO_ADDRESS);
-        require(_feeHolderAddress != 0x0, ZERO_ADDRESS);
-        require(_orderBookAddress != 0x0, ZERO_ADDRESS);
-        require(_burnRateTableAddress != 0x0, ZERO_ADDRESS);
+        require(_lrcTokenAddress != address(0x0), ZERO_ADDRESS);
+        require(_wethTokenAddress != address(0x0), ZERO_ADDRESS);
+        require(_delegateAddress != address(0x0), ZERO_ADDRESS);
+        require(_tradeHistoryAddress != address(0x0), ZERO_ADDRESS);
+        require(_orderBrokerRegistryAddress != address(0x0), ZERO_ADDRESS);
+        require(_orderRegistryAddress != address(0x0), ZERO_ADDRESS);
+        require(_feeHolderAddress != address(0x0), ZERO_ADDRESS);
+        require(_orderBookAddress != address(0x0), ZERO_ADDRESS);
+        require(_burnRateTableAddress != address(0x0), ZERO_ADDRESS);
 
         lrcTokenAddress = _lrcTokenAddress;
         wethTokenAddress = _wethTokenAddress;
@@ -114,7 +112,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function submitRings(
-        bytes data
+        bytes calldata data
         )
         external
     {
@@ -159,7 +157,6 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         }
 
         batchGetFilledAndCheckCancelled(ctx, orders);
-        updateBrokerSpendables(orders);
 
         for (i = 0; i < orders.length; i++) {
             orders[i].check(ctx);
@@ -225,8 +222,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function checkRings(
-        Data.Order[] orders,
-        Data.Ring[] rings
+        Data.Order[] memory orders,
+        Data.Ring[] memory rings
         )
         internal
         pure
@@ -262,7 +259,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function emitRingMinedEvent(
-        Data.Ring ring,
+        Data.Ring memory ring,
         uint _ringIndex,
         address feeRecipient
         )
@@ -296,97 +293,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         }
     }
 
-    function updateBrokerSpendables(
-        Data.Order[] orders
-        )
-        internal
-        pure
-    {
-        // Spendables for brokers need to be setup just right for the allowances to work, we cannot trust
-        // the miner to do this for us. Spendables for tokens don't need to be correct, if they are incorrect
-        // the transaction will fail, so the miner will want to send those correctly.
-        uint data;
-        uint ptr;
-        assembly {
-            data := mload(0x40)
-            ptr := data
-        }
-        for (uint i = 0; i < orders.length; i++) {
-            if (orders[i].brokerInterceptor != 0x0) {
-                uint brokerSpendableS;
-                (ptr, brokerSpendableS) = addBrokerSpendable(
-                    data,
-                    ptr,
-                    orders[i].broker,
-                    orders[i].owner,
-                    orders[i].tokenS
-                );
-                uint brokerSpendableFee;
-                (ptr, brokerSpendableFee) = addBrokerSpendable(
-                    data,
-                    ptr,
-                    orders[i].broker,
-                    orders[i].owner,
-                    orders[i].feeToken
-                );
-                // Store the spendables in the order
-                assembly {
-                    let order := mload(add(orders, mul(add(1, i), 32)))             // orders[i]
-                    mstore(add(order, 352), brokerSpendableS)                       // order.brokerSpendableS
-                    mstore(add(order, 384), brokerSpendableFee)                     // order.brokerSpendableFee
-                }
-            }
-        }
-        assembly {
-            mstore(0x40, ptr)
-        }
-    }
-
-    function addBrokerSpendable(
-        uint data,
-        uint ptr,
-        address broker,
-        address owner,
-        address token
-        )
-        internal
-        pure
-        returns (uint newPtr, uint spendable)
-    {
-        assembly {
-            // Try to find the spendable for the same (broker, owner, token) set
-            let addNew := 1
-            for { let p := data } and(lt(p, ptr), eq(addNew, 1)) { p := add(p, 192) } {
-                let dataBroker := mload(add(p,  0))
-                let dataOwner := mload(add(p, 32))
-                let dataToken := mload(add(p, 64))
-                // if(broker == dataBroker && owner == dataOwner && token == dataToken)
-                if and(and(eq(broker, dataBroker), eq(owner, dataOwner)), eq(token, dataToken)) {
-                    spendable := add(p, 96)
-                    addNew := 0
-                }
-            }
-            if eq(addNew, 1) {
-                mstore(add(ptr,  0), broker)
-                mstore(add(ptr, 32), owner)
-                mstore(add(ptr, 64), token)
-
-                // Initialize spendable
-                mstore(add(ptr, 96), 0)
-                mstore(add(ptr, 128), 0)
-                mstore(add(ptr, 160), 0)
-
-                spendable := add(ptr, 96)
-                ptr := add(ptr, 192)
-            }
-            newPtr := ptr
-        }
-    }
-
     function setupLists(
-        Data.Context ctx,
-        Data.Order[] orders,
-        Data.Ring[] rings
+        Data.Context memory ctx,
+        Data.Order[] memory orders,
+        Data.Ring[] memory rings
         )
         internal
         pure
@@ -397,8 +307,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function setupTokenBurnRateList(
-        Data.Context ctx,
-        Data.Order[] orders
+        Data.Context memory ctx,
+        Data.Order[] memory orders
         )
         internal
         pure
@@ -419,8 +329,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function setupFeePaymentList(
-        Data.Context ctx,
-        Data.Ring[] rings
+        Data.Context memory ctx,
+        Data.Ring[] memory rings
         )
         internal
         pure
@@ -452,8 +362,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function setupTokenTransferList(
-        Data.Context ctx,
-        Data.Ring[] rings
+        Data.Context memory ctx,
+        Data.Ring[] memory rings
         )
         internal
         pure
@@ -484,8 +394,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function updateOrdersStats(
-        Data.Context ctx,
-        Data.Order[] orders
+        Data.Context memory ctx,
+        Data.Order[] memory orders
         )
         internal
     {
@@ -543,8 +453,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function batchGetFilledAndCheckCancelled(
-        Data.Context ctx,
-        Data.Order[] orders
+        Data.Context memory ctx,
+        Data.Order[] memory orders
         )
         internal
     {
@@ -624,7 +534,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function batchTransferTokens(
-        Data.Context ctx
+        Data.Context memory ctx
         )
         internal
     {
@@ -660,7 +570,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function batchPayFees(
-        Data.Context ctx
+        Data.Context memory ctx
         )
         internal
     {

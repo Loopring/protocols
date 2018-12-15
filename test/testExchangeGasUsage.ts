@@ -1,6 +1,5 @@
 import * as pjs from "protocol2-js";
 import { Artifacts } from "../util/Artifacts";
-import { ringsInfoList } from "./rings_config";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
 const {
@@ -14,11 +13,6 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
 
   let dummyExchange: any;
   let deserializerTest: any;
-
-  const checkFilled = async (order: pjs.OrderInfo, expected: number) => {
-    const filled = await exchangeTestUtil.context.tradeDelegate.filled("0x" + order.hash.toString("hex")).toNumber();
-    assert.equal(filled, expected, "Order fill different than expected");
-  };
 
   const showCallDataStats = (callData: string)  => {
     // console.log("Call data: " + callData);
@@ -39,12 +33,13 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
     deserializerTest = await DeserializerTest.deployed();
 
     // Create dummy exchange and authorize it
-    dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.address,
-                                            exchangeTestUtil.context.tradeHistory.address,
-                                            exchangeTestUtil.context.feeHolder.address,
+    dummyExchange = await DummyExchange.new(exchangeTestUtil.context.tradeDelegate.options.address,
+                                            exchangeTestUtil.context.tradeHistory.options.address,
+                                            exchangeTestUtil.context.feeHolder.options.address,
                                             exchangeTestUtil.ringSubmitter.address);
-    await exchangeTestUtil.context.tradeDelegate.authorizeAddress(dummyExchange.address,
-                                                                  {from: exchangeTestUtil.testContext.deployer});
+    await exchangeTestUtil.context.tradeDelegate.methods.authorizeAddress(
+      dummyExchange.address,
+    ).send({from: exchangeTestUtil.testContext.deployer});
   });
 
   describe("submitRing", () => {
@@ -568,18 +563,18 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
     const addresses: string[] = []; // max: 11 * 2 + 3
 
     for (let i = 0; i < 12; i ++) {
-      uint16Data.push(1);
+      uint16Data.push(web3.utils.toBN(1));
     }
 
     for (let i = 0; i < 20; i ++) {
-      uintData.push(1e18);
+      uintData.push(web3.utils.toBN(1e18));
     }
 
     for (let i = 0; i < 25; i ++) {
       addresses.push(accounts[0]);
     }
 
-    const tx = await deserializerTest.submitByArrays(uint16Data, uintData, addresses, 2);
+    const tx = await deserializerTest.submitByArrays(uint16Data, uintData, addresses, web3.utils.toBN(2));
     pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
   });
 

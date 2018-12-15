@@ -1,18 +1,19 @@
 
 import BN = require("bn.js");
 import abi = require("ethereumjs-abi");
+import { Bitstream } from "protocol2-js";
 
 interface FeePayment {
   owner: string;
   token: string;
-  amount: number;
+  amount: BN;
 }
 
 export class FeePayments {
 
   public payments: FeePayment[] = [];
 
-  public add(owner: string, token: string, amount: number) {
+  public add(owner: string, token: string, amount: BN) {
     const feePayment: FeePayment = {
       owner,
       token,
@@ -22,13 +23,13 @@ export class FeePayments {
   }
 
   public getData() {
-    const batch: string[] = [];
+    const batch = new Bitstream();
     for (const payment of this.payments) {
-      batch.push(this.addressToBytes32Str(payment.token));
-      batch.push(this.addressToBytes32Str(payment.owner));
-      batch.push(this.numberToBytes32Str(payment.amount));
+      batch.addAddress(payment.token, 32);
+      batch.addAddress(payment.owner, 32);
+      batch.addBN(payment.amount, 32);
     }
-    return batch;
+    return batch.getBytes32Array();
   }
 
   private numberToBytes32Str(n: number) {
