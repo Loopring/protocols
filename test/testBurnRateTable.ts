@@ -47,15 +47,35 @@ contract("BurnRateTable", (accounts: string[]) => {
     return web3.utils.toBN(new BigNumber(value.toString()));
   };
 
+  const evmIncreaseTime = (seconds: number) => {
+    return new Promise((resolve, reject) => {
+      web3.currentProvider.send({
+        jsonrpc: "2.0",
+        method: "evm_increaseTime",
+        params: [seconds],
+      }, (err: any, res: any) => {
+        return err ? reject(err) : resolve(res);
+      });
+    });
+  };
+
+  const evmMine = () => {
+    return new Promise((resolve, reject) => {
+      web3.currentProvider.send({
+        jsonrpc: "2.0",
+        method: "evm_mine",
+        id: Date.now(),
+      }, (err: any, res: any) => {
+        return err ? reject(err) : resolve(res);
+      });
+    });
+  };
+
   const advanceBlockTimestamp = async (seconds: number) => {
-    let blockNumber = await web3.eth.getBlockNumber();
-    const previousTimestamp = (await web3.eth.getBlock(blockNumber)).timestamp;
-    await web3.currentProvider.send({ jsonrpc: "2.0", method: "evm_increaseTime", params: [seconds], id: 0 });
-    await web3.currentProvider.send({ jsonrpc: "2.0", method: "evm_mine", params: [], id: 0 });
-    blockNumber = await web3.eth.getBlockNumber();
-    const currentTimestamp = (await web3.eth.getBlock(blockNumber)).timestamp;
-    console.log(previousTimestamp);
-    console.log(currentTimestamp);
+    const previousTimestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
+    await evmIncreaseTime(seconds);
+    await evmMine();
+    const currentTimestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
     assert(Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
            "Timestamp should have been increased by roughly the expected value");
   };
@@ -167,7 +187,7 @@ contract("BurnRateTable", (accounts: string[]) => {
       await checkTokenTier(user1, token1, 4);
     });
 
-    it.skip("should be able to upgrade the tier of a token for 1 year by burning enough tokens", async () => {
+    it("should be able to upgrade the tier of a token for 1 year by burning enough tokens", async () => {
       const LRC = await DummyToken.at(tokenLRC);
       // current total burned
       const totalBurned = await LRC.balanceOf(zeroAddress);
