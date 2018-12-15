@@ -371,7 +371,7 @@ export class Ring {
       const prevIndex = (i + ringSize - 1) % ringSize;
       const p = this.participations[i];
       const prevP = this.participations[prevIndex];
-      const feeHolder = this.context.feeHolder.address;
+      const feeHolder = this.context.feeHolder.options.address;
 
       const buyerFeeAmountAfterRebateB = prevP.feeAmountB.minus(prevP.rebateB);
       assert(buyerFeeAmountAfterRebateB.gte(0), "buyerFeeAmountAfterRebateB >= 0");
@@ -466,7 +466,7 @@ export class Ring {
     }
 
     // Pay the burn rate with the feeHolder as owner
-    const burnAddress = this.context.feeHolder.address;
+    const burnAddress = this.context.feeHolder.options.address;
 
     // BEGIN diagnostics
     let feeDesc = "Fee";
@@ -509,7 +509,7 @@ export class Ring {
     }
 
     // Calculate burn rates and rebates
-    const burnRateToken = (await this.context.burnRateTable.getBurnRate(token)).toNumber();
+    const burnRateToken = await this.context.burnRateTable.methods.getBurnRate(token).call();
     const burnRate = p.order.P2P ? (burnRateToken >> 16) : (burnRateToken & 0xFFFF);
     const rebateRate = 0;
     // Miner fee
@@ -735,7 +735,7 @@ export class Ring {
           minerFee = new BigNumber(0);
         }
         // Calculate burn rates and rebates
-        const burnRateToken = (await this.context.burnRateTable.getBurnRate(token)).toNumber();
+        const burnRateToken = await this.context.burnRateTable.methods.getBurnRate(token).call();
         const burnRate = p.order.P2P ? (burnRateToken >> 16) : (burnRateToken & 0xFFFF);
         const rebateRate = 0;
         // Miner fee
@@ -877,7 +877,7 @@ export class Ring {
     }
     // Check fee holder balances of all possible tokens used to pay fees
     for (const token of [...Object.keys(expectedFeeHolderBalances), ...Object.keys(balances)]) {
-      const feeAddress = this.context.feeHolder.address;
+      const feeAddress = this.context.feeHolder.options.address;
       const expectedBalance =
         expectedFeeHolderBalances[token] ? expectedFeeHolderBalances[token] : new BigNumber(0);
       const balance =
@@ -889,7 +889,7 @@ export class Ring {
     // Ensure total fee payments match transferred amounts to feeHolder contract
     {
       for (const token of [...Object.keys(this.feeBalances), ...Object.keys(balances)]) {
-        const feeAddress = this.context.feeHolder.address;
+        const feeAddress = this.context.feeHolder.options.address;
         let totalFee = new BigNumber(0);
         if (this.feeBalances[token]) {
           for (const owner of Object.keys(this.feeBalances[token])) {
@@ -907,7 +907,7 @@ export class Ring {
 
     // Ensure total burn payments match expected total burned
     for (const token of [...Object.keys(expectedTotalBurned), ...Object.keys(this.feeBalances)]) {
-      const feeAddress = this.context.feeHolder.address;
+      const feeAddress = this.context.feeHolder.options.address;
       let burned = new BigNumber(0);
       let expected = new BigNumber(0);
       if (this.feeBalances[token] && this.feeBalances[token][feeAddress]) {

@@ -201,12 +201,18 @@ export class ProtocolSimulator {
       bitstream.addNumber(0, 12);
     }
 
-    const fills = await this.context.tradeHistory.batchGetFilledAndCheckCancelled(bitstream.getBytes32Array());
+    const fills = await this.context.tradeHistory.methods.batchGetFilledAndCheckCancelled(
+      bitstream.getBytes32Array(),
+    ).call();
 
-    const cancelledValue = new BigNumber("F".repeat(64), 16);
+    const cancelledValue = new BN("F".repeat(64), 16);
     for (const [i, order] of orders.entries()) {
-      order.filledAmountS = fills[i];
-      order.valid = order.valid && ensure(!fills[i].equals(cancelledValue), "order is cancelled");
+      const fillBN = new BN(new BigNumber(fills[i].toString(16)).toString(16), 16);
+      order.filledAmountS = new BigNumber(fillBN.toString());
+      order.valid = order.valid && ensure(
+        !fillBN.eq(cancelledValue),
+        "order is cancelled",
+      );
     }
   }
 
@@ -276,19 +282,19 @@ export class ProtocolSimulator {
       }
       if (!balancesBefore[order.tokenS][order.owner]) {
         balancesBefore[order.tokenS][order.owner] =
-          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.options.address,
                                                   order.tokenS,
                                                   order.owner);
       }
       if (!balancesBefore[order.tokenB][order.tokenRecipient]) {
         balancesBefore[order.tokenB][order.tokenRecipient] =
-          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.options.address,
                                                  order.tokenB,
                                                  order.tokenRecipient);
       }
       if (!balancesBefore[order.feeToken][order.owner]) {
         balancesBefore[order.feeToken][order.owner] =
-          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.address,
+          await this.orderUtil.getERC20Spendable(this.context.tradeDelegate.options.address,
                                                  order.feeToken,
                                                  order.owner);
       }
@@ -296,10 +302,12 @@ export class ProtocolSimulator {
     for (const order of orders) {
       const tokens = [order.tokenS, order.tokenB, order.feeToken];
       for (const token of tokens) {
-        const Token = this.context.ERC20Contract.at(order.tokenS);
+        const Token = this.context.ERC20Contract;
+        Token.options.address = order.tokenS;
         // feeRecipient
         if (!balancesBefore[token][mining.feeRecipient]) {
-          balancesBefore[token][mining.feeRecipient] = await Token.balanceOf(mining.feeRecipient);
+          balancesBefore[token][mining.feeRecipient] =
+            new BigNumber((await Token.methods.balanceOf(mining.feeRecipient).call()).toString());
         }
       }
     }
@@ -343,26 +351,27 @@ export class ProtocolSimulator {
         if (!feeBalancesBefore[token]) {
           feeBalancesBefore[token] = {};
         }
+        const feeHolderMethods = this.context.feeHolder.methods;
         // Owner
         if (!feeBalancesBefore[token][order.owner]) {
           feeBalancesBefore[token][order.owner] =
-            await this.context.feeHolder.feeBalances(token, order.owner);
+            new BigNumber((await feeHolderMethods.feeBalances(token, order.owner).call()).toString());
         }
         // Wallet
         if (order.walletAddr && !feeBalancesBefore[token][order.walletAddr]) {
           feeBalancesBefore[token][order.walletAddr] =
-            await this.context.feeHolder.feeBalances(token, order.walletAddr);
+            new BigNumber((await feeHolderMethods.feeBalances(token, order.walletAddr).call()).toString());
         }
         // FeeRecipient
         if (!feeBalancesBefore[token][mining.feeRecipient]) {
           feeBalancesBefore[token][mining.feeRecipient] =
-            await this.context.feeHolder.feeBalances(token, mining.feeRecipient);
+            new BigNumber((await feeHolderMethods.feeBalances(token, mining.feeRecipient).call()).toString());
         }
         // Burned
-        const feeHolder = this.context.feeHolder.address;
+        const feeHolder = this.context.feeHolder.options.address;
         if (!feeBalancesBefore[token][feeHolder]) {
           feeBalancesBefore[token][feeHolder] =
-            await this.context.feeHolder.feeBalances(token, feeHolder);
+            new BigNumber((await feeHolderMethods.feeBalances(token, feeHolder).call()).toString());
         }
       }
     }
@@ -384,7 +393,8 @@ export class ProtocolSimulator {
     const filledAmountsBefore: { [hash: string]: BigNumber; } = {};
     for (const order of orders) {
       const orderHash = order.hash.toString("hex");
-      filledAmountsBefore[orderHash] = await this.context.tradeHistory.filled("0x" + orderHash);
+      filledAmountsBefore[orderHash] =
+        new BigNumber((await this.context.tradeHistory.methods.filled("0x" + orderHash).call()).toString());
     }
 
     // Filled amounts after

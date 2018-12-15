@@ -2,7 +2,6 @@ export async function expectThrow(promise: Promise<any>, expectedRevertMessage?:
   try {
     await promise;
   } catch (error) {
-
     if (expectedRevertMessage) {
       const message = error.message.search(expectedRevertMessage) >= 0;
       assert(message, "Expected throw with message " + expectedRevertMessage + ", got '" + error + "' instead");
