@@ -27,13 +27,13 @@
   "license": "ISC",
   "devDependencies": {
     "@types/bignumber.js": "^4.0.3",
-    "@types/bluebird": "3.5.20",
+    "@types/bluebird": "3.5.24",
     "@types/lodash": "^4.14.107",
     "@types/node": "9.3.0",
     "@types/request-promise-native": "^1.0.14",
     "ajv": "^6.0.0",
     "chai": "^4.0.1",
-    "copyfiles": "^1.2.0",
+    "copyfiles": "^2.1.0",
     "dirty-chai": "^2.0.1",
     "ganache-cli": "6.1.8",
     "mocha": "^5.2.0",
@@ -41,9 +41,9 @@
     "npm": "5.6.0",
     "solidity-coverage": "^0.5.8",
     "solium": "^1.1.8",
-    "tslint": "5.8.0",
+    "tslint": "5.11.0",
     "types-bn": "0.0.1",
-    "typescript": "2.7.1",
+    "typescript": "3.1.6",
     "web3-typescript-typings": "0.10.2",
     "webpack": "^4.0.0"
   },
@@ -62,12 +62,13 @@
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^5.1.5",
     "event-emitter": "^0.3.5",
-    "events": "^1.1.1",
+    "events": "^3.0.0",
     "js-sha3": "^0.8.0",
     "lodash": "^4.17.5",
     "protocol2-js": "0.2.24",
-    "sha3": "^1.2.2",
+    "sha3": "^2.0.0",
     "truffle": "5.0.0-next.24",
-    "truffle-hdwallet-provider": "0.0.6"
+    "truffle-hdwallet-provider": "web3-one",
+    "any-promise": "1.3.0"
   }
 }
