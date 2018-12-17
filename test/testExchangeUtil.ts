@@ -111,9 +111,10 @@ export class ExchangeTestUtil {
       return;
     }
     const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(payment.token);
+    const decimals = this.testContext.tokenAddrDecimalsMap.get(payment.token);
     const whiteSpace = " ".repeat(depth);
     const description = payment.description ? payment.description : "";
-    const amount = (payment.amount / 1e18);
+    const amount = (payment.amount / (10 ** decimals));
     if (payment.subPayments.length === 0) {
       const toName =  addressBook[payment.to];
       pjs.logDebug(whiteSpace + "- " + " [" + description + "] " + amount + " " + tokenSymbol + " -> " + toName);
@@ -382,17 +383,19 @@ export class ExchangeTestUtil {
     pjs.logDebug("transfer items from simulator:");
     transfersFromSimulator.forEach((t) => {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
+      const decimals = this.testContext.tokenAddrDecimalsMap.get(t[0]);
       const fromName = addressBook[t[1]];
       const toName = addressBook[t[2]];
-      pjs.logDebug(fromName + " -> " + toName + " : " + t[3].toNumber() / 1e18 + " " + tokenSymbol);
+      pjs.logDebug(fromName + " -> " + toName + " : " + t[3].toNumber() / (10 ** decimals) + " " + tokenSymbol);
     });
     pjs.logDebug("transfer items from contract:");
     tranferEvents.forEach((t) => {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
+      const decimals = this.testContext.tokenAddrDecimalsMap.get(t[0]);
       const fromName = addressBook[t[1]];
       const toName = addressBook[t[2]];
       pjs.logDebug(fromName + " -> " + toName + " : " +
-        (new BigNumber(t[3].toString()).toNumber() / 1e18) + " " + tokenSymbol);
+        (new BigNumber(t[3].toString()).toNumber() / (10 ** decimals)) + " " + tokenSymbol);
     });
     assert.equal(tranferEvents.length, transfersFromSimulator.length, "Number of transfers do not match");
     for (let i = 0; i < tranferEvents.length; i++) {
@@ -459,9 +462,10 @@ export class ExchangeTestUtil {
         if (!feeBalancesBefore[token][owner].eq(feeBalancesAfter[token][owner])) {
           const ownerName = addressBook[owner] ? addressBook[owner] : owner;
           const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(token);
+          const decimals = this.testContext.tokenAddrDecimalsMap.get(token);
           pjs.logDebug(ownerName + ": " +
-                      balanceFromContract.toNumber()  / 1e18 + " " + tokenSymbol + " " +
-                      "(Simulator: " + balanceFromSimulator  / 1e18 + ")");
+                      balanceFromContract.toNumber()  / (10 ** decimals) + " " + tokenSymbol + " " +
+                      "(Simulator: " + balanceFromSimulator  / (10 ** decimals) + ")");
         }
         assert(balanceFromContract.eq(balanceFromSimulator), "Fee balance doesn't match");
       }
@@ -484,12 +488,14 @@ export class ExchangeTestUtil {
         (await this.context.tradeHistory.methods.filled("0x" + hash).call()).toString(),
       );
       let percentageFilled = 0;
+      let decimals = 18;
       if (hashOrder) {
         percentageFilled = filledFromContract.toNumber() * 100 / hashOrder.amountS;
+        decimals = this.testContext.tokenAddrDecimalsMap.get(hashOrder.tokenS);
       }
       const hashName = addressBook[hash];
-      pjs.logDebug(hashName + ": " + filledFromContract.toNumber() / 1e18 +
-                  " (Simulator: " + filledFromSimulator.toNumber() / 1e18 + ")" +
+      pjs.logDebug(hashName + ": " + filledFromContract.toNumber() / (10 ** decimals) +
+                  " (Simulator: " + filledFromSimulator.toNumber() / (10 ** decimals) + ")" +
                   " (" + percentageFilled + "%)");
       assert(filledFromContract.eq(filledFromSimulator), "Filled amount doesn't match");
     }
@@ -786,31 +792,42 @@ export class ExchangeTestUtil {
   private async createExchangeTestContext(accounts: string[]) {
     const tokenSymbolAddrMap = new Map<string, string>();
     const tokenAddrSymbolMap = new Map<string, string>();
+    const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [lrc, gto, rdn, rep, weth, test] = await Promise.all([
+    const [lrc, gto, rdn, rep, weth, inda, indb, test] = await Promise.all([
       this.contracts.LRCToken.deployed(),
       this.contracts.GTOToken.deployed(),
       this.contracts.RDNToken.deployed(),
       this.contracts.REPToken.deployed(),
       this.contracts.WETHToken.deployed(),
+      this.contracts.INDAToken.deployed(),
+      this.contracts.INDBToken.deployed(),
       this.contracts.TESTToken.deployed(),
     ]);
 
-    const allTokens = [lrc, gto, rdn, rep, weth, test];
+    const allTokens = [lrc, gto, rdn, rep, weth, inda, indb, test];
 
     tokenSymbolAddrMap.set("LRC", this.contracts.LRCToken.address);
     tokenSymbolAddrMap.set("GTO", this.contracts.GTOToken.address);
     tokenSymbolAddrMap.set("RDN", this.contracts.RDNToken.address);
     tokenSymbolAddrMap.set("REP", this.contracts.REPToken.address);
     tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
+    tokenSymbolAddrMap.set("INDA", this.contracts.INDAToken.address);
+    tokenSymbolAddrMap.set("INDB", this.contracts.INDBToken.address);
     tokenSymbolAddrMap.set("TEST", this.contracts.TESTToken.address);
+
+    for (const token of allTokens) {
+      tokenAddrDecimalsMap.set(token.address, (await token.decimals()));
+    }
 
     tokenAddrSymbolMap.set(this.contracts.LRCToken.address, "LRC");
     tokenAddrSymbolMap.set(this.contracts.GTOToken.address, "GTO");
     tokenAddrSymbolMap.set(this.contracts.RDNToken.address, "RDN");
     tokenAddrSymbolMap.set(this.contracts.REPToken.address, "REP");
     tokenAddrSymbolMap.set(this.contracts.WETHToken.address, "WETH");
+    tokenAddrSymbolMap.set(this.contracts.INDAToken.address, "INDA");
+    tokenAddrSymbolMap.set(this.contracts.INDBToken.address, "INDB");
     tokenAddrSymbolMap.set(this.contracts.TESTToken.address, "TEST");
 
     tokenAddrInstanceMap.set(this.contracts.LRCToken.address, lrc);
@@ -818,6 +835,8 @@ export class ExchangeTestUtil {
     tokenAddrInstanceMap.set(this.contracts.RDNToken.address, rdn);
     tokenAddrInstanceMap.set(this.contracts.REPToken.address, rep);
     tokenAddrInstanceMap.set(this.contracts.WETHToken.address, weth);
+    tokenAddrInstanceMap.set(this.contracts.INDAToken.address, inda);
+    tokenAddrInstanceMap.set(this.contracts.INDBToken.address, indb);
     tokenAddrInstanceMap.set(this.contracts.TESTToken.address, test);
 
     const deployer = accounts[0];
@@ -841,6 +860,7 @@ export class ExchangeTestUtil {
                                    brokers,
                                    tokenSymbolAddrMap,
                                    tokenAddrSymbolMap,
+                                   tokenAddrDecimalsMap,
                                    tokenAddrInstanceMap,
                                    allTokens);
   }

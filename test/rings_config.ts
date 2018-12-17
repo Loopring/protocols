@@ -2379,26 +2379,241 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "single 2-size ring, fillAmountB rounding error > 1%",
-    signAlgorithm: SignAlgorithm.Ethereum,
+    description: "single 2-size ring, selling token with decimals == 0",
     rings: [[0, 1]],
     orders: [
       {
         index: 0,
-        tokenS: tokenSymbols[0],
-        tokenB: tokenSymbols[1],
-        amountS: 1,
-        amountB: 10,
-        signAlgorithm: SignAlgorithm.Ethereum,
+        tokenS: "INDA",
+        tokenB: "WETH",
+        amountS: 60,
+        amountB: 5e18,
       },
       {
         index: 1,
-        tokenS: tokenSymbols[1],
-        tokenB: tokenSymbols[0],
+        tokenS: "WETH",
+        tokenB: "INDA",
+        amountS: 2.5e18,
+        amountB: 25,
+      },
+    ],
+    expected: {
+      decimalsPrecision: 0,
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.5,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "single 2-size ring, buying/selling tokens with decimals == 0",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "INDA",
+        tokenB: "INDB",
+        amountS: 110,
+        amountB: 40,
+      },
+      {
+        index: 1,
+        tokenS: "INDB",
+        tokenB: "INDA",
+        amountS: 20,
+        amountB: 50,
+      },
+    ],
+    expected: {
+      decimalsPrecision: 0,
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.5,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "single 2-size ring, using token with decimals == 0 as feeToken",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "WETH",
+        tokenB: "LRC",
+        feeToken: "INDA",
+        amountS: 1e18,
+        amountB: 100e18,
+        feeAmount: 10,
+      },
+      {
+        index: 1,
+        tokenS: "LRC",
+        tokenB: "WETH",
+        amountS: 70e18,
+        amountB: 0.6e18,
+      },
+    ],
+    expected: {
+      decimalsPrecision: 0,
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.7,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "P2P: single 2-size ring, buying/selling tokens with decimals == 0",
+    transactionOrigin: "1",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        owner: "0",
+        tokenS: "INDA",
+        tokenB: "INDB",
+        amountS: 100,
+        amountB: 1,
+        tokenSFeePercentage: 15,  // == 1.5%
+      },
+      {
+        index: 1,
+        owner: "1",
+        tokenS: "INDB",
+        tokenB: "INDA",
+        amountS: 1,
+        amountB: 98,
+        tokenBFeePercentage: 25,  // == 2.5%
+      },
+    ],
+    expected: {
+      decimalsPrecision: 0,
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 1.0,
+              P2P: true,
+              margin: 1,
+            },
+            {
+              filledFraction: 1.0,
+              P2P: true,
+              margin: 0,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "P2P: single 2-size ring, fillAmountB rounding error > 1%",
+    transactionOrigin: "1",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        owner: "0",
+        tokenS: "INDA",
+        tokenB: "INDB",
+        amountS: 20,
+        amountB: 200,
+        tokenSFeePercentage: 20,  // == 2.0%
+      },
+      {
+        index: 1,
+        owner: "1",
+        tokenS: "INDB",
+        tokenB: "INDA",
+        amountS: 200,
+        amountB: 20,
+        balanceS: 195,
+        tokenBFeePercentage: 25,  // == 2.5%
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
+  },
+
+  {
+    description: "single 2-size ring, fillAmountB is 0 because of rounding error",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "INDA",
+        tokenB: "INDB",
+        amountS: 1,
+        amountB: 10,
+      },
+      {
+        index: 1,
+        tokenS: "INDB",
+        tokenB: "INDA",
         amountS: 10,
         amountB: 1,
         balanceS: 5,
-        dualAuthSignAlgorithm: SignAlgorithm.Ethereum,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+      ],
+    },
+  },
+
+  {
+    description: "single 2-size ring, fillAmountB rounding error > 1%",
+    rings: [[0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "INDA",
+        tokenB: "INDB",
+        amountS: 20,
+        amountB: 200,
+      },
+      {
+        index: 1,
+        tokenS: "INDB",
+        tokenB: "INDA",
+        amountS: 200,
+        amountB: 20,
+        balanceS: 199,
       },
     ],
     expected: {

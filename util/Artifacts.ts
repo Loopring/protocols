@@ -19,6 +19,8 @@ export class Artifacts {
   public RDNToken: any;
   public REPToken: any;
   public WETHToken: any;
+  public INDAToken: any;
+  public INDBToken: any;
   public TESTToken: any;
   public DeserializerTest: any;
   constructor(artifacts: any) {
@@ -41,6 +43,8 @@ export class Artifacts {
     this.RDNToken = artifacts.require("test/tokens/RDN");
     this.REPToken = artifacts.require("test/tokens/REP");
     this.WETHToken = artifacts.require("test/tokens/WETH");
+    this.INDAToken = artifacts.require("test/tokens/INDA");
+    this.INDBToken = artifacts.require("test/tokens/INDB");
     this.TESTToken = artifacts.require("test/tokens/TEST");
     this.DeserializerTest = artifacts.require("test/DeserializerTest");
   }
