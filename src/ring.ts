@@ -195,8 +195,8 @@ export class Ring {
       "rounding error larger than 1% when calculating fillAmountB");
 
     // We at least need to buy and sell something
-    valid = valid && p.fillAmountS.gt(0);
-    valid = valid && p.fillAmountS.gt(0);
+    valid = valid && ensure(p.fillAmountS.gt(0), "fillAmountS needs te be > 0");
+    valid = valid && ensure(p.fillAmountB.gt(0), "fillAmountB needs to be > 0");
 
     return valid;
   }

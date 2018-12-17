@@ -126,6 +126,7 @@ export interface TransactionExpectation {
   revert?: boolean;
   revertMessage?: string;
   rings?: RingExpectation[];
+  decimalsPrecision?: number;
 }
 
 export interface RingsInfo {

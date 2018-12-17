@@ -51,6 +51,9 @@ export class ProtocolValidator {
       return;
     }
 
+    const decimalsPrecision = (ringsInfo.expected.decimalsPrecision !== undefined)
+                              ? ringsInfo.expected.decimalsPrecision : 18;
+
     // Copy balances before
     const expectedBalances: { [id: string]: any; } = {};
     for (const token of Object.keys(report.balancesBefore)) {
@@ -125,7 +128,7 @@ export class ProtocolValidator {
         if (orderExpectation.margin !== undefined) {
           // Check if the margin is as expected
           this.assertAlmostEqual(orderSettlement.splitS.toNumber(), orderExpectation.margin,
-                                 "Margin does not match the expected value");
+                                 "Margin does not match the expected value", decimalsPrecision);
         }
 
         // RingMined fill for this order
@@ -192,7 +195,7 @@ export class ProtocolValidator {
         //   expectedBalances[token][owner].toNumber() / 1e18 + " " + tokenSymbol);
         this.assertAlmostEqual(report.balancesAfter[token][owner].toNumber(),
                                expectedBalances[token][owner].toNumber(),
-                               "Balance different than expected");
+                               "Balance different than expected", decimalsPrecision);
       }
     }
     // Check fee balances
@@ -209,7 +212,7 @@ export class ProtocolValidator {
         // console.log("[Exp]" + ownerName + ": " + expectedFeeBalances[token][owner] / 1e18 + " " + tokenSymbol);
         this.assertAlmostEqual(report.feeBalancesAfter[token][owner].toNumber(),
                                expectedFeeBalances[token][owner].toNumber(),
-                               "Fee balance different than expected");
+                               "Fee balance different than expected", decimalsPrecision);
       }
     }
     // Check filled
@@ -218,7 +221,7 @@ export class ProtocolValidator {
       this.assertAlmostEqual(report.filledAmountsAfter[orderHash].toNumber(),
                              expectedfilledAmounts[orderHash].toNumber(),
                              "Filled amount different than expected",
-                             6);
+                             decimalsPrecision, 6);
     }
     // Check RingMined events
     assert.equal(report.ringMinedEvents.length, ringMinedEvents.length,
@@ -237,15 +240,15 @@ export class ProtocolValidator {
         assert.equal(expectedFill.owner, simulatorFill.owner, "owner does not match");
         assert.equal(expectedFill.tokenS, simulatorFill.tokenS, "tokenS does not match");
         this.assertAlmostEqual(expectedFill.amountS.toNumber(), simulatorFill.amountS.toNumber(),
-                               "amountS does not match");
+                               "amountS does not match", decimalsPrecision);
         this.assertAlmostEqual(expectedFill.split.toNumber(), simulatorFill.split.toNumber(),
-                               "split does not match");
+                               "split does not match", decimalsPrecision);
         this.assertAlmostEqual(expectedFill.feeAmount.toNumber(), simulatorFill.feeAmount.toNumber(),
-                               "feeAmount does not match");
+                               "feeAmount does not match", decimalsPrecision);
         this.assertAlmostEqual(expectedFill.feeAmountS.toNumber(), simulatorFill.feeAmountS.toNumber(),
-                               "feeAmountS does not match");
+                               "feeAmountS does not match", decimalsPrecision);
         this.assertAlmostEqual(expectedFill.feeAmountB.toNumber(), simulatorFill.feeAmountB.toNumber(),
-                               "feeAmountB does not match");
+                               "feeAmountB does not match", decimalsPrecision);
       }
     }
     // Check InvalidRing events
@@ -470,9 +473,9 @@ export class ProtocolValidator {
     }
   }
 
-  private assertAlmostEqual(n1: number, n2: number, description: string, precision: number = 8) {
-    const numStr1 = (n1 / 1e18).toFixed(precision);
-    const numStr2 = (n2 / 1e18).toFixed(precision);
+  private assertAlmostEqual(n1: number, n2: number, description: string, decimals: number, precision: number = 8) {
+    const numStr1 = (n1 / (10 ** decimals)).toFixed(precision);
+    const numStr2 = (n2 / (10 ** decimals)).toFixed(precision);
     return assert.equal(Number(numStr1), Number(numStr2), description);
   }
 }
