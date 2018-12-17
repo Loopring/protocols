@@ -678,6 +678,102 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
+    description: "multiple 2-size rings, order is allOrNone, filled in multiple rings (Audit case A)",
+    rings: [[0, 2], [0, 1]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "WETH",
+        tokenB: "GTO",
+        amountS: 10e18,
+        amountB: 10e18,
+        allOrNone: true,
+      },
+      {
+        index: 1,
+        tokenS: "GTO",
+        tokenB: "WETH",
+        amountS: 5e18,
+        amountB: 5e18,
+        allOrNone: false,
+      },
+      {
+        index: 2,
+        tokenS: "GTO",
+        tokenB: "WETH",
+        amountS: 6e18,
+        amountB: 6e18,
+        allOrNone: true,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          orders: [
+            {
+              filledFraction: 0.6,
+            },
+            {
+              filledFraction: 1.0,
+            },
+          ],
+        },
+        {
+          orders: [
+            {
+              filledFraction: 0.4,
+            },
+            {
+              filledFraction: 4 / 5,
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    description: "multiple 2-size rings, order is allOrNone, filled in multiple rings (Audit case B)",
+    rings: [[0, 1], [0, 2]],
+    orders: [
+      {
+        index: 0,
+        tokenS: "WETH",
+        tokenB: "GTO",
+        amountS: 10e18,
+        amountB: 10e18,
+        allOrNone: true,
+      },
+      {
+        index: 1,
+        tokenS: "GTO",
+        tokenB: "WETH",
+        amountS: 5e18,
+        amountB: 5e18,
+        allOrNone: false,
+      },
+      {
+        index: 2,
+        tokenS: "GTO",
+        tokenB: "WETH",
+        amountS: 6e18,
+        amountB: 6e18,
+        allOrNone: true,
+      },
+    ],
+    expected: {
+      rings: [
+        {
+          fail: true,
+        },
+        {
+          fail: true,
+        },
+      ],
+    },
+  },
+
+  {
     description: "self-trading in 2-size ring",
     rings: [[0, 1]],
     orders: [
