@@ -76,6 +76,12 @@ export class ProtocolSimulator {
     for (const order of orders) {
       await this.orderUtil.checkBrokerSignature(order);
     }
+    for (let i = 0; i < orders.length; i++) {
+      // An order can only be sent once
+      for (let j = i + 1; j < orders.length; j++) {
+        assert(orders[i].hash !== orders[j].hash, "INVALID_VALUE");
+      }
+    }
 
     for (const ring of rings) {
       ring.updateHash();
