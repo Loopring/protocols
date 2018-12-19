@@ -65,7 +65,7 @@
     "events": "^3.0.0",
     "js-sha3": "^0.8.0",
     "lodash": "^4.17.5",
-    "protocol2-js": "0.2.25",
+    "protocol2-js": "0.2.26",
     "sha3": "^2.0.0",
     "truffle": "5.0.0-next.24",
     "truffle-hdwallet-provider": "web3-one",

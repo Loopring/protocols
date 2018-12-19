@@ -670,6 +670,60 @@ contract("Exchange_Submit", (accounts: string[]) => {
       );
     });
 
+    it("should not be able to send the same order twice", async () => {
+      const ringsInfo: pjs.RingsInfo = {
+        rings: [[0, 1], [2, 3]],
+        orders: [
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 10e18,
+            amountB: 10e18,
+            balanceS: 100e18,
+            balanceFee: 100e18,
+          },
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 10e18,
+            amountB: 10e18,
+            balanceS: 100e18,
+            balanceFee: 100e18,
+          },
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: 10e18,
+            amountB: 10e18,
+            balanceS: 100e18,
+            balanceFee: 100e18,
+          },
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: 1e18,
+            amountB: 1e18,
+            balanceS: 100e18,
+            balanceFee: 100e18,
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      // Copy the order
+      ringsInfo.orders[2] = ringsInfo.orders[0];
+
+      // Setup the ring
+      const ringsGenerator = new pjs.RingsGenerator(exchangeTestUtil.context);
+      await ringsGenerator.setupRingsAsync(ringsInfo);
+      const bs = ringsGenerator.toSubmitableParam(ringsInfo);
+
+      // submitRings should revert
+      await pjs.expectThrow(
+        exchangeTestUtil.ringSubmitter.submitRings(bs, {from: exchangeTestUtil.testContext.transactionOrigin}),
+        "INVALID_VALUE",
+      );
+    });
+
   });
 
 });
