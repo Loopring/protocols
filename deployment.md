@@ -12,7 +12,7 @@
 - FeeHolder: [0x5beaEA36efA78F43a6d61145817FDFf6A9929e60](https://etherscan.io/address/0x5beaEA36efA78F43a6d61145817FDFf6A9929e60)
 - BurnManager: [0x014CD9e24bFC713a3D1941540582B6FdAa6d53bD](https://etherscan.io/address/0x014CD9e24bFC713a3D1941540582B6FdAa6d53bD)
 - OrderCanceller: [0x4170d9Ce07d2cc93E132E70c80bA5fb7c1532AF2](https://etherscan.io/address/0x4170d9Ce07d2cc93E132E70c80bA5fb7c1532AF2)
-- RingSubmitter: [0x22D79BE84F55c45e87D42893674b177Bec85e2b8](https://etherscan.io/address/0x22D79BE84F55c45e87D42893674b177Bec85e2b8)
+- RingSubmitter: [0xC34E7FF8c4A87Ba000bCD46d59d1fdc1deD2f1f6](https://etherscan.io/address/0xC34E7FF8c4A87Ba000bCD46d59d1fdc1deD2f1f6)
 
 ## v2.0.1-snapshot [main-net]:
 - Source code: https://github.com/Loopring/protocol2/releases/tag/2.0.1-snapshot

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.0;
+pragma solidity 0.5.1;
 
 
 /// @title Utility Functions for bytes
@@ -3142,6 +3142,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
         for (i = 0; i < orders.length; i++) {
             orders[i].check(ctx);
+            // An order can only be sent once
+            for (uint j = i + 1; j < orders.length; j++) {
+                require(orders[i].hash != orders[j].hash, INVALID_VALUE);
+            }
         }
 
         for (i = 0; i < rings.length; i++) {
