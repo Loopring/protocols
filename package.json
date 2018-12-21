@@ -19,7 +19,7 @@
     "compile": "rm -rf build/contracts && truffle compile",
     "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
-    "ganache": "ganache-cli -a 50 --acctKeys './ganache_account_keys.txt'",
+    "ganache": "./ganache.sh",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "truffle": "truffle",
     "v": "node -v"
