@@ -15,7 +15,7 @@
   limitations under the License.
 */
 
-pragma solidity 0.5.1;
+pragma solidity 0.5.2;
 
 import "../iface/IFeeHolder.sol";
 import "../lib/ERC20SafeTransfer.sol";

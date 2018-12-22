@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.1;
+pragma solidity 0.5.2;
 
 import "../iface/Errors.sol";
 import "./ITransferableMultsig.sol";
