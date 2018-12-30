@@ -1,0 +1,3 @@
+[submodule "ethsnarks"]
+	path = ethsnarks
+	url = https://github.com/HarryR/ethsnarks
