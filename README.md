@@ -1,12 +1,22 @@
-# DEX using zk-SNARKs
+# Loopring protocol using zk-SNARKs
 
 ## Building
 
-Type `make` - the first time you run it will retrieve submodules, setup cmake and build everything.
+Before building retrieve the source code for the dependencies:
 
-Before building, you may need to retrieve the source code for the dependencies:
+    git submodule update --init --recursive
 
-	git submodule update --init --recursive
+Install all dependencies by running
+
+    ./install_dependencies_linux.sh
+
+on Linux or
+
+    ./install_dependencies_mac.sh
+
+on Mac (untested).
+
+Type `make` to build everything.
 
 The following dependencies (for Linux) are needed:
 
