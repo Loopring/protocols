@@ -50,7 +50,7 @@ class Ring(object):
         self.fillF_B = fillF_B
 
 
-class Proof(object):
+class RingSettlement(object):
     def __init__(self, merkleRoot, ring, filledA, filledB, proofA, proofB):
         self.merkleRoot = str(merkleRoot)
         self.ring = ring
@@ -74,6 +74,7 @@ class Dex(object):
         filledBefore = self._filled[address]
         self._filled[address] += fill
         proof = self._tree.createProof(address)
+        # TODO: don't hash the filled value with itself
         filled_hash = LongsightL12p5_MP([int(self._filled[address]), int(self._filled[address])], 1)
         self._tree.update(address, filled_hash)
 
@@ -92,4 +93,4 @@ class Dex(object):
         (filledA, proofA) = self.updateFilled(addressA, ring.fillS_A)
         (filledB, proofB) = self.updateFilled(addressB, ring.fillS_B)
 
-        return Proof(merkleRoot, ring, filledA, filledB, proofA, proofB)
+        return RingSettlement(merkleRoot, ring, filledA, filledB, proofA, proofB)
