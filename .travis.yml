@@ -1,0 +1,13 @@
+matrix:
+  include:
+    # use the built in venv for linux builds
+    - os: linux
+      language: python
+      python: 3.6
+    - os: osx
+      language: cpp
+install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./install_dependencies_linux.sh ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./install_dependencies_mac.sh ; fi
+script:
+  - make
