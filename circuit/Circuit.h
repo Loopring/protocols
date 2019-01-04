@@ -110,6 +110,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> amountS;
     libsnark::dual_variable_gadget<FieldT> amountB;
     libsnark::dual_variable_gadget<FieldT> amountF;
+    libsnark::dual_variable_gadget<FieldT> padding;
 
     const jubjub::VariablePointT publicKey;
 
@@ -129,16 +130,17 @@ public:
         owner(pb, 160, FMT(annotation_prefix, ".owner")),
         tokenS(pb, 160, FMT(annotation_prefix, ".tokenS")),
         tokenB(pb, 160, FMT(annotation_prefix, ".tokenB")),
-        tokenF(pb, 161, FMT(annotation_prefix, ".tokenF")),
+        tokenF(pb, 160, FMT(annotation_prefix, ".tokenF")),
         amountS(pb, 128, FMT(annotation_prefix, ".amountS")),
         amountB(pb, 128, FMT(annotation_prefix, ".amountB")),
         amountF(pb, 128, FMT(annotation_prefix, ".amountF")),
+        padding(pb, 1, FMT(annotation_prefix, ".padding")),
 
         publicKey(pb, FMT(annotation_prefix, ".publicKey")),
 
         sig_R(pb, FMT(annotation_prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
-        sig_m(flatten({owner.bits, tokenS.bits, tokenB.bits, tokenF.bits, amountS.bits, amountB.bits, amountF.bits})),
+        sig_m(flatten({owner.bits, tokenS.bits, tokenB.bits, tokenF.bits, amountS.bits, amountB.bits, amountF.bits, padding.bits})),
 
         signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(annotation_prefix, ".signatureVerifier"))
     {
@@ -164,6 +166,9 @@ public:
         amountF.bits.fill_with_bits_of_field_element(this->pb, order.amountF);
         amountF.generate_r1cs_witness_from_bits();
 
+        padding.bits.fill_with_bits_of_field_element(this->pb, 0);
+        padding.generate_r1cs_witness_from_bits();
+
         this->pb.val(publicKey.x) = order.publicKey.x;
         this->pb.val(publicKey.y) = order.publicKey.y;
 
@@ -182,6 +187,7 @@ public:
         amountS.generate_r1cs_constraints(true);
         amountB.generate_r1cs_constraints(true);
         amountF.generate_r1cs_constraints(true);
+        padding.generate_r1cs_constraints(true);
 
         // TODO: Check public key in order message
         signatureVerifier.generate_r1cs_constraints();
@@ -437,31 +443,58 @@ public:
     std::vector<RingSettlementGadget> ringSettlements;
 
     VariableT merkleRoot;
+    VariableT publicDataHash;
 
     std::vector<VariableArrayT> transfers;
     VariableArrayT publicData;
 
-    sha256_many* publicDataHash;
+    sha256_many* publicDataHasher;
 
     CircuitGadget(ProtoboardT& pb, const std::string& annotation_prefix) : GadgetT(pb, annotation_prefix)
     {
-        this->publicDataHash = nullptr;
+        this->publicDataHasher = nullptr;
     }
 
     ~CircuitGadget()
     {
-        if (publicDataHash)
+        if (publicDataHasher)
         {
-            delete publicDataHash;
+            delete publicDataHasher;
         }
     }
 
-    void build(int numRings)
+    /**
+    * Convert an array of variable arrays into a flat contiguous array of variables
+    */
+    const VariableArrayT flattenReverse( const std::vector<VariableArrayT> &in_scalars )
+    {
+        size_t total_sz = 0;
+        for( const auto& scalar : in_scalars )
+            total_sz += scalar.size();
+
+        VariableArrayT result;
+        result.resize(total_sz);
+
+        size_t offset = 0;
+        for( const auto& scalar : in_scalars )
+        {
+            for (int i = int(scalar.size()) - 1; i >= 0; i--)
+            {
+                result[offset++].index = scalar[i].index;
+            }
+        }
+
+        return result;
+    }
+
+    void generate_r1cs_constraints(int numRings)
     {
         this->numRings = numRings;
 
         merkleRoot = make_variable(pb, "merkleRoot");
-        for( size_t j = 0; j < numRings; j++ )
+        publicDataHash = make_variable(pb, "publicDataHash");
+        pb.set_input_sizes(2);
+        for (size_t j = 0; j < numRings; j++)
         {
             VariableT ringMerkleRoot = (j == 0) ? merkleRoot : ringSettlements.back().result();
             ringSettlements.emplace_back(pb, params, ringMerkleRoot, FMT("ringSettlement"));
@@ -477,9 +510,10 @@ public:
         }
 
         // Check public data
-        publicData = flatten(transfers);
-        publicDataHash = new sha256_many(pb, publicData, ".publicDataHash");
-        publicDataHash->generate_r1cs_constraints();
+        publicData = flattenReverse(transfers);
+        publicDataHasher = new sha256_many(pb, publicData, ".publicDataHash");
+        publicDataHasher->generate_r1cs_constraints();
+        // TODO: Add constraint that checks that publicDataHash == publicDataHasher->result()
     }
 
     void printInfo()
@@ -487,26 +521,37 @@ public:
         std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numRings) << "/ring)" << std::endl;
     }
 
-    bool generateWitness(const std::vector<Loopring::RingSettlement>& ringSettlementsData)
+    void printBits(const libff::bit_vector& bits)
+    {
+        unsigned int numBytes = (bits.size() + 7) / 8;
+        uint8_t* full_output_bytes = new uint8_t[numBytes];
+        bv_to_bytes(bits, full_output_bytes);
+        char* hexstr = new char[numBytes*2 + 1];
+        hexstr[numBytes*2] = '\0';
+        for(int i = 0; i < bits.size()/8; i++)
+        {
+            sprintf(hexstr + i*2, "%02x", full_output_bytes[i]);
+        }
+        std::cout << "Data: " << hexstr << std::endl;
+        delete [] full_output_bytes;
+        delete [] hexstr;
+    }
+
+    bool generateWitness(const std::vector<Loopring::RingSettlement>& ringSettlementsData, const std::string& strPublicDataHash)
     {
         for(unsigned int i = 0; i < ringSettlementsData.size(); i++)
         {
             ringSettlements[i].generate_r1cs_witness(ringSettlementsData[i]);
         }
 
-        publicDataHash->generate_r1cs_witness();
+        publicDataHasher->generate_r1cs_witness();
 
         // Print out calculated hash of transfer data
-        auto full_output_bits = publicDataHash->result().get_digest();
-        uint8_t full_output_bytes[32];
-        bv_to_bytes(full_output_bits, full_output_bytes);
-        char hexstr[65];
-        hexstr[64] = '\0';
-        for(int i = 0; i < full_output_bits.size()/8; i++)
-        {
-            sprintf(hexstr + i*2, "%02x", full_output_bytes[i]);
-        }
-        std::cout << "Public input hash: " << hexstr << std::endl;
+        auto full_output_bits = publicDataHasher->result().get_digest();
+        // printBits(full_output_bits);
+
+        pb.val(publicDataHash) = libff::bigint<libff::alt_bn128_r_limbs>(strPublicDataHash.c_str());
+        // printBits(publicData.get_bits(pb));
 
         return true;
     }

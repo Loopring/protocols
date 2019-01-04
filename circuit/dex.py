@@ -24,9 +24,12 @@ class Order(object):
         self.amountF = amountF
 
     def message(self):
-        msg_parts = [FQ(int(self.owner), 1<<160),
-                     FQ(int(self.tokenS), 1<<160), FQ(int(self.tokenB), 1<<160), FQ(int(self.tokenF), 1<<161),
-                     FQ(self.amountS, 1<<128), FQ(self.amountB, 1<<128), FQ(self.amountF, 1<<128)]
+        msg_parts = [
+                        FQ(int(self.owner), 1<<160),
+                        FQ(int(self.tokenS), 1<<160), FQ(int(self.tokenB), 1<<160), FQ(int(self.tokenF), 1<<160),
+                        FQ(self.amountS, 1<<128), FQ(self.amountB, 1<<128), FQ(self.amountF, 1<<128),
+                        FQ(0, 1<<1) # padding
+                    ]
         return eddsa_tobits(*msg_parts)
 
     def sign(self, k):

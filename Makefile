@@ -2,8 +2,8 @@ PYTHON=python3
 
 all: test
 
-test: build/dex_circuit rings.json
-	./build/dex_circuit 4 rings.json
+test: build/circuit/dex_circuit
+	./build/circuit/dex_circuit 2
 
 build/dex_circuit: cmake-openmp-release
 	make -C build
@@ -22,9 +22,6 @@ cmake-openmp-release:
 
 cmake-openmp-performance:
 	mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DMULTICORE=1 -DPERFORMANCE=1 ..
-
-rings.json: test_dex.py
-	PYTHONPATH=ethsnarks $(PYTHON) test_dex.py
 
 git-submodules:
 	git submodule update --init --recursive
