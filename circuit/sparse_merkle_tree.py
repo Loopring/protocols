@@ -9,13 +9,13 @@ class EphemDB():
         self.kv = kv or {}
 
     def get(self, k):
-        return self.kv.get(k, None)
+        return self.kv.get(str(k), None)
 
     def put(self, k, v):
-        self.kv[k] = v
+        self.kv[str(k)] = v
 
     def delete(self, k):
-        del self.kv[k]
+        del self.kv[str(k)]
 
 class SparseMerkleTree(object):
     def __init__(self, depth):

@@ -50,14 +50,26 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function submitRings(
-        bytes calldata data,
-        uint256[8] calldata proof
+        bytes memory data,
+        uint256[8] memory proof
         )
-        external
+        public
     {
+        // TODO: don't send merkleRootBefore to save on calldata
+        bytes32 merkleRootBefore;
+        bytes32 merkleRootAfter;
+        assembly {
+            merkleRootBefore := mload(add(data, 32))
+            merkleRootAfter := mload(add(data, 64))
+        }
+        require(merkleRootBefore == merkleRoot, "INVALID_ROOT");
+
         bytes32 publicDataHash = sha256(data);
         bool verified = verifyProof(merkleRoot, publicDataHash, proof);
         require(verified, "INVALID_PROOF");
+
+        // Update the merkle root
+        merkleRoot = merkleRootAfter;
 
         doTokenTransfers(data);
     }
@@ -71,9 +83,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         view
         returns (bool)
     {
-        uint256[] memory publicInputs = new uint256[](2);
-        publicInputs[0] = uint256(_merkleRoot);
-        publicInputs[1] = uint256(_publicDataHash);
+        uint256[] memory publicInputs = new uint256[](1);
+        publicInputs[0] = uint256(_publicDataHash);
 
         uint256[14] memory vk;
         uint256[] memory vk_gammaABC;

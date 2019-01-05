@@ -22,6 +22,7 @@ export class ExchangeTestUtil {
     this.testContext = await this.createExchangeTestContext(accounts);
     await this.authorizeTradeDelegate();
     await this.approveTradeDelegate();
+    await this.cleanTradeHistory();
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -257,23 +258,10 @@ export class ExchangeTestUtil {
   public async submitRings(ringsInfo: RingsInfo) {
     // Generate the token transfers for the ring
     const transfers = await this.settleRings(ringsInfo);
-    const bs = new pjs.Bitstream();
-    for (const transfer of transfers) {
-      bs.addAddress(transfer.token, 20);
-      bs.addAddress(transfer.from, 20);
-      bs.addAddress(transfer.to, 20);
-      bs.addNumber(transfer.amount, 16);
-    }
-
-    // Hash all public inputs to a singe value
-    const publicDataHash = ethUtil.sha256(bs.getData());
-    // console.log(bs.getData());
-    // console.log(publicDataHash.toString("hex"));
-    ringsInfo.publicDataHash = publicDataHash.toString("hex");
 
     // Write out the rings info
-    const json = JSON.stringify(ringsInfo, null, 4);
-    fs.writeFileSync("rings_info.json", json, "utf8");
+    const jRingsInfo = JSON.stringify(ringsInfo, null, 4);
+    fs.writeFileSync("rings_info.json", jRingsInfo, "utf8");
 
     // Generate the proof
     childProcess.spawnSync("python3", ["generate_proof.py"], {stdio: "inherit"});
@@ -284,6 +272,26 @@ export class ExchangeTestUtil {
     const proofFlattened = this.flattenProof(proof);
     // console.log(proof);
     // console.log(this.flattenProof(proof));
+
+    const jRings = fs.readFileSync("rings.json", "ascii");
+    const rings = JSON.parse(jRings);
+
+    const bs = new pjs.Bitstream();
+    // console.log(rings.rootBefore);
+    bs.addBigNumber(new BigNumber(rings.merkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(rings.merkleRootAfter, 10), 32);
+    for (const transfer of transfers) {
+      bs.addAddress(transfer.token, 20);
+      bs.addAddress(transfer.from, 20);
+      bs.addAddress(transfer.to, 20);
+      bs.addNumber(transfer.amount, 16);
+    }
+
+    // Hash all public inputs to a singe value
+    const publicDataHash = ethUtil.sha256(bs.getData());
+    // console.log("DataJS: " + bs.getData());
+    // console.log(publicDataHash.toString("hex"));
+    ringsInfo.publicDataHash = publicDataHash.toString("hex");
 
     // Read the verification key and set it in the smart contract
     const jVK = fs.readFileSync("vk.json", "ascii");
@@ -320,6 +328,12 @@ export class ExchangeTestUtil {
                             web3.utils.toBN(new BigNumber(1e31)),
                             {from: orderOwner});
       }
+    }
+  }
+
+  public async cleanTradeHistory() {
+    if (fs.existsSync("dex.json")) {
+      fs.unlinkSync("dex.json");
     }
   }
 

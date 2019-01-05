@@ -28,6 +28,7 @@ int main (int argc, char **argv)
     circuit.generate_r1cs_constraints(numRings);
     circuit.printInfo();
 
+#if 1
     libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT> keypair;
     if (argc >= 2)
     {
@@ -48,6 +49,7 @@ int main (int argc, char **argv)
         fVK << jVK;
         fVK.close();
     }
+#endif
 
     if (argc > 2)
     {
@@ -63,6 +65,8 @@ int main (int argc, char **argv)
         json input;
         file >> input;
         json jRingSettlements = input["ringSettlements"];
+        std::string merkleRootBefore = input["merkleRootBefore"].get<std::string>();
+        std::string merkleRootAfter= input["merkleRootAfter"].get<std::string>();
         if (jRingSettlements.size() < numRings)
         {
             std::cerr << "Not enought rings in input file: " << jRingSettlements.size() << std::endl;
@@ -76,8 +80,7 @@ int main (int argc, char **argv)
         }
 
         // Generate witness values for the given input values
-        std::string publicDataHash = input["publicDataHash"].get<std::string>();
-        if (!circuit.generateWitness(ringSettlements, publicDataHash))
+        if (!circuit.generateWitness(ringSettlements, merkleRootBefore, merkleRootAfter))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return 1;

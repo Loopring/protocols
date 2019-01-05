@@ -3,9 +3,8 @@ PYTHON=python3
 all: test
 
 test: build/circuit/dex_circuit
-	./build/circuit/dex_circuit 2
 
-build/dex_circuit: cmake-openmp-release
+build/circuit/dex_circuit: cmake-openmp-release
 	make -C build
 
 cmake-debug:

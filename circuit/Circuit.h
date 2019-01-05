@@ -4,6 +4,7 @@
 #include "Constants.h"
 #include "Data.h"
 
+#include "BigInt.hpp"
 #include "ethsnarks.hpp"
 #include "utils.hpp"
 #include "jubjub/point.hpp"
@@ -442,15 +443,22 @@ public:
     jubjub::Params params;
     std::vector<RingSettlementGadget> ringSettlements;
 
-    VariableT merkleRoot;
-    VariableT publicDataHash;
+    libsnark::dual_variable_gadget<FieldT> publicDataHash;
+    libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
+    libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
-    std::vector<VariableArrayT> transfers;
+    std::vector<VariableArrayT> publicDataBits;
     VariableArrayT publicData;
 
     sha256_many* publicDataHasher;
 
-    CircuitGadget(ProtoboardT& pb, const std::string& annotation_prefix) : GadgetT(pb, annotation_prefix)
+    CircuitGadget(ProtoboardT& pb, const std::string& annotation_prefix) :
+        GadgetT(pb, annotation_prefix),
+
+        publicDataHash(pb, 256, FMT(annotation_prefix, ".publicDataHash")),
+
+        merkleRootBefore(pb, 256, FMT(annotation_prefix, ".merkleRootBefore")),
+        merkleRootAfter(pb, 256, FMT(annotation_prefix, ".merkleRootAfter"))
     {
         this->publicDataHasher = nullptr;
     }
@@ -491,29 +499,39 @@ public:
     {
         this->numRings = numRings;
 
-        merkleRoot = make_variable(pb, "merkleRoot");
-        publicDataHash = make_variable(pb, "publicDataHash");
-        pb.set_input_sizes(2);
+        pb.set_input_sizes(1);
+        merkleRootBefore.generate_r1cs_constraints(true);
+        publicDataBits.push_back(merkleRootBefore.bits);
+        publicDataBits.push_back(merkleRootAfter.bits);
         for (size_t j = 0; j < numRings; j++)
         {
-            VariableT ringMerkleRoot = (j == 0) ? merkleRoot : ringSettlements.back().result();
+            VariableT ringMerkleRoot = (j == 0) ? merkleRootBefore.packed : ringSettlements.back().result();
             ringSettlements.emplace_back(pb, params, ringMerkleRoot, FMT("ringSettlement"));
 
             // Store transfers from ring settlement
             std::vector<VariableArrayT> ringTransfers = ringSettlements.back().getTransfers();
-            transfers.insert(transfers.end(), ringTransfers.begin(), ringTransfers.end());
+            publicDataBits.insert(publicDataBits.end(), ringTransfers.begin(), ringTransfers.end());
         }
 
-        for( auto& ringSettlement : ringSettlements )
+        publicDataHash.generate_r1cs_constraints(true);
+        for (auto& ringSettlement : ringSettlements)
         {
             ringSettlement.generate_r1cs_constraints();
         }
 
         // Check public data
-        publicData = flattenReverse(transfers);
+        publicData = flattenReverse(publicDataBits);
         publicDataHasher = new sha256_many(pb, publicData, ".publicDataHash");
         publicDataHasher->generate_r1cs_constraints();
-        // TODO: Add constraint that checks that publicDataHash == publicDataHasher->result()
+
+        // Check that the hash matches the public input
+        for (unsigned int i = 0; i < 256; i++)
+        {
+            pb.add_r1cs_constraint(ConstraintT(publicDataHasher->result().bits[255-i], 1, publicDataHash.bits[i]));
+        }
+
+        // Make sure the merkle root afterwards is correctly passed in
+        pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().result(), 1, merkleRootAfter.packed));
     }
 
     void printInfo()
@@ -521,8 +539,13 @@ public:
         std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numRings) << "/ring)" << std::endl;
     }
 
-    void printBits(const libff::bit_vector& bits)
+    void printBits(const char* name, const libff::bit_vector& _bits, bool reverse = false)
     {
+        libff::bit_vector bits = _bits;
+        if(reverse)
+        {
+            std::reverse(std::begin(bits), std::end(bits));
+        }
         unsigned int numBytes = (bits.size() + 7) / 8;
         uint8_t* full_output_bytes = new uint8_t[numBytes];
         bv_to_bytes(bits, full_output_bytes);
@@ -532,13 +555,22 @@ public:
         {
             sprintf(hexstr + i*2, "%02x", full_output_bytes[i]);
         }
-        std::cout << "Data: " << hexstr << std::endl;
+        std::cout << name << hexstr << std::endl;
         delete [] full_output_bytes;
         delete [] hexstr;
     }
 
-    bool generateWitness(const std::vector<Loopring::RingSettlement>& ringSettlementsData, const std::string& strPublicDataHash)
+    bool generateWitness(const std::vector<Loopring::RingSettlement>& ringSettlementsData, const std::string& strMerkleRootBefore, const std::string& strMerkleRootAfter)
     {
+        ethsnarks::FieldT merkleRootBeforeValue = ethsnarks::FieldT(strMerkleRootBefore.c_str());
+        ethsnarks::FieldT merkleRootAfterValue = ethsnarks::FieldT(strMerkleRootAfter.c_str());
+
+        merkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, merkleRootBeforeValue);
+        merkleRootBefore.generate_r1cs_witness_from_bits();
+
+        merkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, merkleRootAfterValue);
+        merkleRootAfter.generate_r1cs_witness_from_bits();
+
         for(unsigned int i = 0; i < ringSettlementsData.size(); i++)
         {
             ringSettlements[i].generate_r1cs_witness(ringSettlementsData[i]);
@@ -548,10 +580,23 @@ public:
 
         // Print out calculated hash of transfer data
         auto full_output_bits = publicDataHasher->result().get_digest();
-        // printBits(full_output_bits);
+        // printBits("HashC: ", full_output_bits);
+        BigInt publicDataHashDec = 0;
+        for (unsigned int i = 0; i < full_output_bits.size(); i++)
+        {
+            publicDataHashDec = publicDataHashDec * 2 + (full_output_bits[i] ? 1 : 0);
+        }
+        // std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
+        libff::bigint<libff::alt_bn128_r_limbs> bn = libff::bigint<libff::alt_bn128_r_limbs>(publicDataHashDec.to_string().c_str());
+        for (unsigned int i = 0; i < 256; i++)
+        {
+            pb.val(publicDataHash.bits[i]) = bn.test_bit(i);
+        }
+        publicDataHash.generate_r1cs_witness_from_bits();
+        // printBits("publicData: ", publicData.get_bits(pb));
 
-        pb.val(publicDataHash) = libff::bigint<libff::alt_bn128_r_limbs>(strPublicDataHash.c_str());
-        // printBits(publicData.get_bits(pb));
+        // printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
+        // printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
 
         return true;
     }

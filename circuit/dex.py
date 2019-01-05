@@ -69,6 +69,17 @@ class Dex(object):
         self._tree.newTree()
         self._filled = {}
 
+    def loadState(self, filename):
+        with open(filename) as f:
+            data = json.load(f)
+            self._filled = data["values"]
+            self._tree._root = data["root"]
+            self._tree._db.kv = data["tree"]
+
+    def saveState(self, filename):
+        with open(filename, "w") as file:
+            file.write(json.dumps({"values": self._filled, "root": self._tree._root, "tree": self._tree._db.kv}, indent=4))
+
     def updateFilled(self, address, fill):
         # Make sure the leaf exist in our map
         if not(address in self._filled):
