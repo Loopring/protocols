@@ -45,5 +45,5 @@ export interface TokenTransfer {
   token: string;
   from: string;
   to: string;
-  amount: number;
+  amount: BN;
 }

@@ -65,7 +65,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(merkleRootBefore == merkleRoot, "INVALID_ROOT");
 
         bytes32 publicDataHash = sha256(data);
-        bool verified = verifyProof(merkleRoot, publicDataHash, proof);
+        bool verified = verifyProof(publicDataHash, proof);
         require(verified, "INVALID_PROOF");
 
         // Update the merkle root
@@ -75,7 +75,6 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function verifyProof(
-        bytes32 _merkleRoot,
         bytes32 _publicDataHash,
         uint256[8] memory proof
         )
@@ -86,20 +85,45 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint256[] memory publicInputs = new uint256[](1);
         publicInputs[0] = uint256(_publicDataHash);
 
-        uint256[14] memory vk;
-        uint256[] memory vk_gammaABC;
-        (vk, vk_gammaABC) = getVerifyingKey();
+        uint256[14] memory _vk;
+        uint256[] memory _vk_gammaABC;
+        (_vk, _vk_gammaABC) = getVerifyingKey();
 
-        return Verifier.Verify(vk, vk_gammaABC, proof, publicInputs);
+        return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
     }
 
     function doTokenTransfers(
         bytes memory data
         )
         internal
-        view
     {
-        ITradeDelegate tradeDelegate = ITradeDelegate(tradeDelegateAddress);
+        uint numTransfers = (data.length - (32 * 2)) / (20 + 20 + 20 + 16);
+
+        uint ptr;
+        assembly {
+            ptr := add(data, 64)
+        }
+
+        bytes32[] memory transferData = new bytes32[](numTransfers * 4);
+        for (uint i = 0; i < numTransfers; i++) {
+            bytes32 token;
+            bytes32 from;
+            bytes32 to;
+            bytes32 amount;
+            assembly {
+                token := and(mload(add(ptr, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                from := and(mload(add(ptr, 40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                to := and(mload(add(ptr, 60)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                amount := and(mload(add(ptr, 76)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            }
+            transferData[i*4 + 0] = token;
+            transferData[i*4 + 1] = from;
+            transferData[i*4 + 2] = to;
+            transferData[i*4 + 3] = amount;
+
+            ptr += (20 + 20 + 20 + 16);
+        }
+        ITradeDelegate(tradeDelegateAddress).batchTransfer(transferData);
     }
 
     function getVerifyingKey()

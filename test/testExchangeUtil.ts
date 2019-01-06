@@ -42,7 +42,7 @@ export class ExchangeTestUtil {
   }
 
   public async getTransferEvents(tokens: any[], fromBlock: number) {
-    let transferItems: Array<[string, string, string, BigNumber]> = [];
+    let transferItems: Array<[string, string, string, BN]> = [];
     for (const tokenContractInstance of tokens) {
       const eventArr: any = await this.getEventsFromContract(tokenContractInstance, "Transfer", fromBlock);
       const items = eventArr.map((eventObj: any) => {
@@ -55,7 +55,7 @@ export class ExchangeTestUtil {
   }
 
   public async watchAndPrintEvent(contract: any, eventName: string) {
-    const events: any = await this.getEventsFromContract(contract, eventName, 0);
+    const events: any = await this.getEventsFromContract(contract, eventName, web3.eth.blockNumber);
 
     events.forEach((e: any) => {
       pjs.logDebug("event:", util.inspect(e.args, false, null));
@@ -127,38 +127,36 @@ export class ExchangeTestUtil {
     }
   }
 
-  public getAddressBook(ringsInfo: pjs.RingsInfo) {
+  public getAddressBook(ringsInfo: RingsInfo) {
     const addAddress = (addrBook: { [id: string]: any; }, address: string, name: string) => {
       addrBook[address] = (addrBook[address] ? addrBook[address] + "=" : "") + name;
     };
 
     const addressBook: { [id: string]: string; } = {};
-    const feeRecipient = ringsInfo.feeRecipient ? ringsInfo.feeRecipient  : ringsInfo.transactionOrigin;
-    const miner = ringsInfo.miner ? ringsInfo.miner : feeRecipient;
-    addAddress(addressBook, ringsInfo.transactionOrigin, "Tx.origin");
-    addAddress(addressBook, miner, "Miner");
-    addAddress(addressBook, feeRecipient, "FeeRecipient");
-    for (const [i, order] of ringsInfo.orders.entries()) {
-      addAddress(addressBook, order.owner, "Owner[" + i + "]");
-      if (order.owner !== order.tokenRecipient) {
-        addAddress(addressBook, order.tokenRecipient, "TokenRecipient[" + i + "]");
+    for (const ring of ringsInfo.rings) {
+      const orders = [ring.orderA, ring.orderB];
+      for (const [i, order] of orders.entries()) {
+        addAddress(addressBook, order.owner, "Owner[" + i + "]");
+        if (order.owner !== order.tokenRecipient) {
+          addAddress(addressBook, order.tokenRecipient, "TokenRecipient[" + i + "]");
+        }
+        addAddress(addressBook, order.walletAddr, "Wallet[" + i + "]");
+        // addAddress(addressBook, order.hash.toString("hex"), "Hash[" + i + "]");
       }
-      addAddress(addressBook, order.walletAddr, "Wallet[" + i + "]");
-      addAddress(addressBook, order.hash.toString("hex"), "Hash[" + i + "]");
     }
     return addressBook;
   }
 
-  public assertTransfers(ringsInfo: pjs.RingsInfo,
-                         tranferEvents: Array<[string, string, string, BigNumber]>,
-                         transferList: pjs.TransferItem[]) {
-    const transfersFromSimulator: Array<[string, string, string, BigNumber]> = [];
+  public assertTransfers(ringsInfo: RingsInfo,
+                         tranferEvents: Array<[string, string, string, BN]>,
+                         transferList: TokenTransfer[]) {
+    const transfersFromSimulator: Array<[string, string, string, BN]> = [];
     transferList.forEach((item) => transfersFromSimulator.push([item.token, item.from, item.to, item.amount]));
-    const sorter = (a: [string, string, string, BigNumber], b: [string, string, string, BigNumber]) => {
+    const sorter = (a: [string, string, string, BN], b: [string, string, string, BN]) => {
       if (a[0] === b[0]) {
         if (a[1] === b[1]) {
           if (a[2] === b[2]) {
-            return a[3].minus(b[3]).toNumber();
+            return a[3].sub(b[3]).toNumber();
           } else {
             return a[2] > b[2] ? 1 : -1;
           }
@@ -197,7 +195,7 @@ export class ExchangeTestUtil {
       assert.equal(transferFromEvent[0], transferFromSimulator[0]);
       assert.equal(transferFromEvent[1], transferFromSimulator[1]);
       assert.equal(transferFromEvent[2], transferFromSimulator[2]);
-      assert(new BigNumber(transferFromEvent[3].toString()).eq(transferFromSimulator[3]),
+      assert(new BN(transferFromEvent[3].toString()).eq(transferFromSimulator[3]),
              "Transfer amount does not match");
     }
   }
@@ -227,7 +225,7 @@ export class ExchangeTestUtil {
   }
 
   public addTokenTransfer(transfers: TokenTransfer[], token: string, from: string, to: string, amount: number) {
-    transfers.push({token, from, to, amount});
+    transfers.push({token, from, to, amount: new BN(amount)});
   }
 
   public async settleRing(transfers: TokenTransfer[], ring: RingInfo) {
@@ -284,7 +282,7 @@ export class ExchangeTestUtil {
       bs.addAddress(transfer.token, 20);
       bs.addAddress(transfer.from, 20);
       bs.addAddress(transfer.to, 20);
-      bs.addNumber(transfer.amount, 16);
+      bs.addBN(transfer.amount, 16);
     }
 
     // Hash all public inputs to a singe value
@@ -303,8 +301,10 @@ export class ExchangeTestUtil {
     const tx = await this.exchange.submitRings(web3.utils.hexToBytes(bs.getData()), proofFlattened);
     pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
 
-    // const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
-    // this.assertTransfers(ringsInfo, transferEvents, report.transferItems);
+    const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
+    this.assertTransfers(ringsInfo, transferEvents, transfers);
+
+    // await this.watchAndPrintEvent(this.exchange, "TestLog");
 
     return tx;
   }
