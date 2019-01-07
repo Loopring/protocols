@@ -33,6 +33,7 @@ contract AccountantImpl is IAccountant {
     // In product environment, 22 nodes should be used at least.
     uint256  public constant TOTAL_ACCOUNTANT_NUM     = 1;
     uint256  public constant MIN_ACCOUNTANT_NUM       = 1;
+    uint256  public latestHeight = 0;
 
     mapping (uint256 => address) public accountantsMap;
     mapping (uint256 => bytes32) public merkleRootMap;
@@ -55,6 +56,7 @@ contract AccountantImpl is IAccountant {
         uint256[] seqNos,
         address[] oldAccountants,
         address[] newAccountants,
+        uint256 baseHeight,
         uint256 height,
         bytes32 root,
         address submitter,
@@ -62,14 +64,15 @@ contract AccountantImpl is IAccountant {
         )
         external
     {
+        require(baseHeight == latestHeight && height > latestHeight, "INVALID HEIGHT");
         require((seqNos.length == oldAccountants.length && seqNos.length == newAccountants.length), "PARAMETERS NOT MATCH");
-        require(checkSignatures(seqNos, oldAccountants, newAccountants, height, root, submitter, signatures), "SIGNATURE VIRIFY NOT PASS");
+        require(checkSignatures(seqNos, oldAccountants, newAccountants, baseHeight, height, root, submitter, signatures), "SIGNATURE VIRIFY NOT PASS");
                
         for(uint256 i = 0; i < seqNos.length; i++) {
-            midifyAccountant(seqNos[i], oldAccountants[i], newAccountants[i], height);
+            midifyAccountant(seqNos[i], oldAccountants[i], newAccountants[i], baseHeight, height);
         }
 
-        addMerkleRoot(height, root);
+        addMerkleRoot(baseHeight, height, root);
     }
 
 
@@ -80,8 +83,8 @@ contract AccountantImpl is IAccountant {
         )
         external
     {
+        require(height <= latestHeight, "INVALID HEIGHT");
         require(rawData.length >= 32*3, "ILLEGAL LENGTH OF RAW_DATA!");
-        require((rawData.length % 32) == 0, "ILLEGAL LENGTH OF RAW_DATA!");
 
         bytes32 hash = keccak256(rawData);
         require(withdrawFlagMap[hash] != true, "ALREADY WITHDRAW!");
@@ -133,19 +136,21 @@ contract AccountantImpl is IAccountant {
         uint256[] seqNos,
         address[] oldAccountants,
         address[] newAccountants,
+        uint256 baseHeight, 
         uint256 height,
         bytes32 root,
         address submitter
         )
         external pure returns (bytes32)
     {
-        return HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, height, root, submitter);
+        return HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, baseHeight, height, root, submitter);
     }
 
     function checkSignatures(
         uint256[] seqNos,
         address[] oldAccountants,
         address[] newAccountants,
+        uint256 baseHeight, 
         uint256 height,
         bytes32 root,
         address submitter,
@@ -153,7 +158,7 @@ contract AccountantImpl is IAccountant {
         internal view returns (bool) 
     {
         require(signatures.length == 65*TOTAL_ACCOUNTANT_NUM, "ILLEGAL SIGNATURE NUM!");
-        bytes32 plaintext = HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, height, root, submitter);
+        bytes32 plaintext = HashUtilLib.calcSubmitBlockHash(seqNos, oldAccountants, newAccountants, baseHeight, height, root, submitter);
         uint8 num = 0;
         for(uint256 i = 0; i < TOTAL_ACCOUNTANT_NUM; i++) {
             bytes memory signature;
@@ -201,6 +206,7 @@ contract AccountantImpl is IAccountant {
         uint256 seqNo,
         address oldAccountant,
         address newAccountant,
+        uint256 baseHeight,
         uint256 height
         )
         internal
@@ -212,14 +218,15 @@ contract AccountantImpl is IAccountant {
         if(accountantsMap[seqNo] != newAccountant) {
             accountantsMap[seqNo] = newAccountant;
         }
-        emit LogUpdateAccountant(seqNo, oldAccountant, newAccountant, height);
+        emit LogUpdateAccountant(seqNo, oldAccountant, newAccountant, baseHeight, height);
     }
 
-    function addMerkleRoot(uint256 height, bytes32 rootHash) internal {
+    function addMerkleRoot(uint256 baseHeight, uint256 height, bytes32 rootHash) internal {
         require(height > 0 && rootHash > 0);
         require(merkleRootMap[height] == 0, "ROOT HASH HAS ALREADY EXISTED!");
         merkleRootMap[height] = rootHash;
-        emit LogAddRootHash(height, rootHash);
+        latestHeight = height;
+        emit LogAddRootHash(baseHeight, height, rootHash);
     }
 
     function checkNewAccountant(address newAccountant) internal view returns (bool) {

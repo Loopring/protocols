@@ -27,10 +27,12 @@ contract IAccountant {
         uint256 indexed seqNo,
         address indexed oldAccountant,
         address indexed newAccountant,
+        uint256 baseHeight,
         uint256         height
     );
 
     event LogAddRootHash(
+        uint256 baseHeight,
         uint256 height, 
         bytes32 rootHash
     );
@@ -45,6 +47,8 @@ contract IAccountant {
     /// @param seqNos the sequence number of the accountants.
     /// @param oldAccountants the old accountants which will be replaced.
     /// @param newAccountants the new accountants.
+    /// @param baseHeight the starting point of this submit.
+    /// @param height the height of the sidechain.
     /// @param root merkle tree root hash.
     /// @param submitter only used for calculating hash.
     /// @param signatures the signature of the accountant.
@@ -52,6 +56,7 @@ contract IAccountant {
         uint256[] seqNos,
         address[] oldAccountants,
         address[] newAccountants,
+        uint256 baseHeight,
         uint256 height,
         bytes32 root,
         address submitter,

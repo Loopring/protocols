@@ -63,16 +63,17 @@ contract("AccountantImpl", (accounts) => {
       var oldAccountants = [];
       oldAccountants.push(accounts[0]);
       var newAccountants = ["0x0f836425c0f0b0f744d919bbd720c4194ad2c75f"];
+      var baseHeight = 0;
       var height = 100;
       var rootBefore = await accountantImplInstance.queryMerkleRoot(height);
-      var hash = await accountantImplInstance.getHash(seqNos, oldAccountants, newAccountants, height, rootHash, submitter);
+      var hash = await accountantImplInstance.getHash(seqNos, oldAccountants, newAccountants, baseHeight, height, rootHash, submitter);
       var address = accounts[0];
       var sig = web3.eth.sign(address, hash).slice(2);
       var r = `0x${sig.slice(0, 64)}`;
       var s = `${sig.slice(64, 128)}`;
       var v = web3.toDecimal(sig.slice(128, 130)) + 27;
       var signatures =  '0x' + `${sig.slice(0, 64)}` + `${sig.slice(64, 128)}` + v.toString(16);
-      await accountantImplInstance.submitBlock(seqNos, oldAccountants, newAccountants, height, rootHash, submitter, signatures, {from: owner});
+      await accountantImplInstance.submitBlock(seqNos, oldAccountants, newAccountants, baseHeight, height, rootHash, submitter, signatures, {from: owner});
       var rootAfter = await accountantImplInstance.queryMerkleRoot(height);
 
       assert(rootAfter == rootHash);
