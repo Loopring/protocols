@@ -960,3 +960,33 @@ An order can be in the following states:
 - Finalized when the block it was in is finalized (so all blocks before it are also verified)
 
 Only when the block is finalized is the filling of the order irreversible.
+
+# Deposit and Withdrawal process
+
+The first thing a user needs to do is create an account. The user has the option to deposit tokens directly to this account. These will be used as his offchain balance available in the newly created account. The user also has the option to not send any funds, this is useful when the user just needs an account to receive tokens or he wants to use the account with onchain balances.
+
+`deposit` is called on the contract. Here a new account is created onchain (the onchain account information does not contain any balance information because the balance will only be used and updated in the merkle tree) and the necessary data is hashed together that needs to be used for creating the account in the Accounts merkle tree in the circuit. The amount of tokens the user deposits to the contract will be stored in the leaf of the Accounts merkle tree with address `account ID` (together with the rest of the account information).
+
+The Accounts merkle tree has not yet been updated. This needs to be done by the operator in the circuit and can never be done by a user. The smart contract decides when the operator needs to add the account to the merkle tree in the circuit so the account can actually be used. As long as the account is not added to the merkle tree the account cannot be used.
+
+The operator can stop working before this is done however. That's why the amount deposited should be stored somewhere onchain so that the user can withdraw these funds in withdrawal mode.
+
+But the operator wants to earn fees so he creates a block that adds the account to the merkle tree when it is expected by the smart contract. After the account is added in the circuit, it can immediately be used.
+
+The account balance is updated between trades as you'd expect.
+
+The user then wants to withdraw (a part of) the balance. He can let the operator know onchain, or he can just send a request offchain. The only difference is that when the request is made offchain the operator can choose when to do the withdrawal so there is no guarantee when it will be done. In any case, there will be delay between the request for withdrawal and when the operator includes the withdrawal in a block. In this period the operator is free to keep using the account to settle rings.
+
+After some time the operator includes the withdrawal in a block. Two things are done when this happens:
+- The balance in the Accounts merkle tree is subtracted with the amount withdrawn in the circuit (if possible of course, otherwise nothing is withdrawn)
+- The smart contract adds the amount that is withdrawn to a list stored onchain for that block specifically.
+
+The withdrawn amount is stored in a list because the user is still not able to actually withdraw it yet! The user is only able to withdraw it when the block is finalized, which means that state is completely irreversible.
+
+This mechanism is needed to support delayed proof submission. If the proof would always need to be given immediately than we are always certain the new state is valid and the amount withdrawn is correct. But with delayed proof submission we are only certain the block is correct and irreversible when all blocks before it and including the block containing the withdrawal are proven.
+
+Once the operators have submitted all the proofs necessary for the block containing the withdrawal to be finalized, the user is finally able to call `withdraw` onchain with the necessary information when the withdrawal was done to get the tokens out of the smart contract.
+
+Let's now look at the case where the withdrawal request was done by an operator, but the block containing the withdrawal needs to be reverted for some reason (e.g. the operator submits an invalid proof for the block). Two things happen automatically by the revert:
+- The merkle tree root is restored as it was before the withdrawal. The balance is restored.
+- The list of withdrawals we stored onchain for the reverted block are thrown away when reverting. A user was never able to withdraw from these in `withdraw` because the block associated with the witdrawn list was never marked as finalized.
