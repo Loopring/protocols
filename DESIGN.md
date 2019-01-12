@@ -14,6 +14,10 @@ Note that there is never any risk of losing funds when depositing to the smart c
 
 Data availability for all merkle trees is ensured. Anyone can recreate the merkle trees just by using the data available on the Ethereum blockchain.
 
+> Question (Daniel): what if the offhchain operator doesn't handle a user's onchain deposit? Given two operations, a) a user created a account and deposited some tokens onchain, b) another user submitted an order offchain. Does the operator need to choose which operation should be put into the merkle tree first? Will this affct the way the merkle tree is built thus invaliate the garantee that the same merkle trees can be built using all data onchain? Or if order submision will not be part of the merkle tree? What about order cancellation then?
+
+> Question (Daniel): should we also user a nonce per account to make sure the operator never miss an instruction (submitOrdder or cancelOrder)? Although the operator does have the option to not `mine` an instruction.
+
 ## Trading using onchain and offchain balances
 
 Trading is possible between onchain and offchain accounts. Offchain accounts however have many advantages over onchain accounts.
@@ -27,6 +31,11 @@ When a user pays using his onchain balance, sufficient funds need to still be av
 The design contains some mitigations for this problem.
 
 ### The many advantages of offchain balances:
+
+
+> Question (Daniel): with offchain balance, if user can withdral funds onchain, it also means the settlement with a new merkle root and proof will fail, won't it? Unless the withdrawal must be honored offchain (like an withdrawal approval).
+
+
 
 #### Immediate finality
 Offchain balances are guaranteed to be available for a short time in the future (until a withdrawal). This allows a CEX like experience. A DEX can settle a ring offchain and immediately show the final results to the user without having to wait on the onchain settlement. Using onchain balances, users can modify their balances/allowances directly by interfacing with the ethereum block chain. So finality is only achieved when the ring settlement is done on the ethereum blockchain.
@@ -42,6 +51,10 @@ If we don't do onchain transfers we don't need the proof immediately when settli
 There is **NO** risk of losing funds for users. The worst that can happen is that the state is reversed to the latest state that was successfully proven. All rings that were settled afterwards are automatically reverted by restoring the merkle roots. Blocks with deposits that were reverted need to be re-submitted and withdrawals are only allowed on finalized state.
 
 # Design
+
+> Question (Daniel): What's the beneifit of `commitBlock` without the proof (which is to be submitted later)? I don't think users can withdrawa funds after `commitBlock` because the proof is not submitted yet so user's balances aren't real.
+
+> Thought (Daniel): if the operator's deposit is not large enough, what he can do to hack the system is to `commitBlock` so his own accounts can have a lot of balance to withdrawa, and withdraw all those funds ASAP, then get his own deposit lost, but still end up with a profit.
 
 ## Token registration
 
@@ -75,6 +88,12 @@ registerToken(address, tokenType) {
     return address;
 }
 ```
+
+
+> Question(Daniel): why the TokenRegistryTree not offchain?
+
+> Question(Daniel): "This way we can verify the burn rate of the token in the circuit." how?
+
 
 ## Account creation (and Depositing)
 
@@ -126,6 +145,9 @@ deposit(dexID, owner, brokerPublicKey, token, balance, isOffchain, signature) {
 }
 ```
 
+> Question (Daniel): inside the code above, why `depositBlock[blockIdx/10].hash = numAcounts;`, why not the previous depositBlock's hash or `depositBlock[blockIdx/10].hash = depositBlock[blockIdx/10 -1].hash;`?
+
+
 We also need to store the deposit information onchain so users can withdraw these balances in withdrawal mode when they are not yet added in the Accounts merkle tree.
 
 Some blocks afterwards we force the operator to include the new accounts in a proof.
@@ -146,6 +168,9 @@ deposit(depositBlock[X].hash, numAccounts, accounts) {
     // Ensure depositHash == addedAccounts
 }
 ```
+
+> Question (Daniel): I don't understand how new accounts are added to the merkle tree offchain, nor how the deposit works. Need to walk me through.
+
 
 
 ## Withdrawing
