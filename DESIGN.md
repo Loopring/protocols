@@ -2,29 +2,37 @@ WIP of protocol 3.0 design.
 
 # Intro
 
-For protocol 3 we want to greatly improve the throughput of the protocol. We do this by using zk-SNARKs. As much work as possible is done offchain while we only verify the work onchain.
+For protocol 3 we want to greatly improve throughput of the protocol. We do this by using zk-SNARKs. As much work as possible is done offchain while we only verify the work onchain.
 
-For the best performance we support offchain balances. These are balances that are stored in a merkle tree. Users can deposit and withdraw tokens to the smart contract and their balance is updated in the merkle tree. This way we can transfer tokens between users just by updating the merkle tree offchain, no need for expensive token transfers onchain.
+For the best performance we support offchain balances. These are balances that are stored in a merkle tree. Users can deposit and withdraw tokens to the smart contract and their balance is updated in the merkle tree. This way we can support transferring tokens between by just updating the merkle tree offchain, no need for expensive token transfers onchain.
+
 
 We do still want to support onchain transfers:
 - It may not be possible to deposit/withdraw security tokens to the smart contract
 - Users may prefer to keep funds in their normal wallet
 
-Note that there is never any risk of losing funds when depositing to the smart contract. Both options are non-custodial.
+Do note that there is never any risk of losing any funds when depositing to the smart contract. Both options are non-custodial.
 
-Data availability for all merkle trees is ensured. Anyone can recreate the merkle trees just by using the data available on the Ethereum blockchain.
+Data availability for all merkle trees is ensured. Anyone can recreate the same merkle trees just by using the data available on the Ethereum blockchain.
+
+> Question (Daniel): what if the offhchain operator doesn't handle a user's onchain deposit? Given two operations, a) a user created a account and deposited some tokens onchain, b) another user submitted an order offchain. Does the operator need to choose which operation should be put into the merkle tree first? Will this affct the way the merkle tree is built thus invaliate the garantee that the same merkle trees can be built using all data onchain? Or if order submision will not be part of the merkle tree? What about order cancellation then?
+
+> Question (Daniel): should we also user a nonce per account to make sure the operator never miss an instruction (submitOrdder or cancelOrder)? Although the operator does have the option to not `mine` an instruction.
+
 
 ## Trading using onchain and offchain balances
 
-Trading is possible between onchain and offchain accounts. Offchain accounts however have many advantages over onchain accounts.
-
 ### Risks with paying using onchain balances
 
-The proof has all the data baked in on how to settle the rings. There's nothing we can do to do change the state changes that are done inside the SNARK.
+The proof has all the data baked in on how to settle the rings. There's nothing we can do to change the state changes that are done inside the SNARK.
 
-When a user pays using his onchain balance, sufficient funds need to still be available when the token transfer is done onchain. Depending on how long the proof generation takes, this can be tens of seconds between calculating the filled amounts of the rings and actually doing the token transfer onchain. To make things worse, the account ID is sent onchain for everyone to see. The owner of the account can monitor the pending transaction pool and try to lower his balance and/or allowance.
+When a user pays using his onchain balance, sufficient funds need to still be available when the token transfer is done onchain. Depending on how long the proof generation takes, this can be tens of seconds between calculating the filled amounts of the rings and actually doing the token transfer onchain. To make things worse, the account ID is sent onchain for everyone to see. The owner of the account can monitor the pending transaction pool and try to lower his balance and/or allowance to make the onchain transfer fail.
 
 The design contains some mitigations for this problem.
+
+
+> Question (Daniel): with offchain balance, if user can withdral funds onchain, it also means the settlement with a new merkle root and proof will fail, won't it? Unless the withdrawal must be honored offchain (like an withdrawal approval).
+
 
 ### The many advantages of offchain balances:
 
@@ -32,14 +40,20 @@ The design contains some mitigations for this problem.
 Offchain balances are guaranteed to be available for a short time in the future (until a withdrawal). This allows a CEX like experience. A DEX can settle a ring offchain and immediately show the final results to the user without having to wait on the onchain settlement. Using onchain balances, users can modify their balances/allowances directly by interfacing with the ethereum block chain. So finality is only achieved when the ring settlement is done on the ethereum blockchain.
 
 #### Higher throughput/Lower cost
-An offchain token transfer is strictly a small extra cost for generating the proof for updating a merkle tree. The cost of a single onchain token transfer is ~20,000 gas. Checking the balance/allowance of the sender is an extra ~5,000 gas. These costs greatly limit the possible the possible throughput and increases the cost of settling rings. 
+An offchain token transfer is strictly a small extra cost for generating the proof for updating a merkle tree. The cost of a single onchain token transfer is ~20,000 gas. Checking the balance/allowance of the sender is an extra ~5,000 gas. These costs greatly limit the possible thoughput and increases the cost of settling rings. 
 
 #### Concurrent proof generation
-If we don't do onchain transfers we don't need the proof immediately when settling rings because we can easily revert the state back by restoring the merkle tree roots. The operator can just call `commitBlock` without a proof, but the operator includes a deposit instead. The operator then needs to submit the proof within some time limit (e.g. 120 seconds) or he loses his deposit (which needs to be substantial). This allows for
-- faster settlement of rings because operators don't need to wait on the proof generation before they can publish the settlements (and thus also the new merkle tree states) onchain.
-- the proof generation can be parallelized. Multiple operators can generate a proof at the same time. This isn't possible otherwise because the initial state needs to be known at proof generation time.
+If we don't do onchain transfers we don't need the proof immediately when settling rings because we can easily revert the state back by restoring the merkle tree roots. The operator can just call `commitBlock` without a proof, but the operator includes a deposit instead. The operator then needs to submit the proof within some time limit (e.g. 120 seconds) or he loses his deposit (which needs to be substantial). This allows for:
+
+1. Faster settlement of rings because operators don't need to wait on the proof generation before they can publish the settlements (and thus also the new merkle tree states) onchain.
+2. The proof generation can be parallelized. Multiple operators can generate a proof at the same time. This isn't possible otherwise because the initial state needs to be known at proof generation time.
 
 There is **NO** risk of losing funds for users. The worst that can happen is that the state is reversed to the latest state that was successfully proven. All rings that were settled afterwards are automatically reverted by restoring the merkle roots. Blocks with deposits that were reverted need to be re-submitted and withdrawals are only allowed on finalized state.
+
+> Question (Daniel): What's the beneifit of `commitBlock` without the proof (which is to be submitted later)? I don't think users can withdrawa funds after `commitBlock` because the proof is not submitted yet so user's balances aren't real.
+> 
+> Thought (Daniel): if the operator's deposit is not large enough, what he can do to hack the system is to `commitBlock` so his own accounts can have a lot of balance to withdrawa, and withdraw all those funds ASAP, then get his own deposit lost, but still end up with a profit.
+
 
 # Design
 
@@ -76,13 +90,20 @@ registerToken(address, tokenType) {
 }
 ```
 
+> Question(Daniel): why the TokenRegistryTree not offchain?
+
+> Question(Daniel): "This way we can verify the burn rate of the token in the circuit." how?
+
+
 ## Account creation (and Depositing)
 
 When depositing a new account is created in the Accounts merkle tree with the deposited amount. 
 
 This is done by calling the deposit function on the smart contract and adding the account info to an onchain hash. To ensure that it's not too expensive for the circuit to add all these accounts we limit the number of accounts that can be created in a certain timespan. We can also support paying a fee for this. A fee in ETH seems to make sense because the user needs ETH to interact with the smart contract anyway. The fee amount can be set by the DEX.
 
-Note that we can **directly support ETH** for trading, no need to wrap it in WETH when using offchain balances.
+> Question (Daniel): WIll limiting the tota number of accounts lower the cost of computing each proof, or we do this because we want the tree itself to be as small as possible? I think I like applying a fee instead of throttling.
+
+Note that we can **directly support ETH**, no need to wrap it in WETH when using offchain balances.
 
 We don't require the msg.sender to be the owner. This allows a DEX or an operator to create accounts for a user, but the owner does need to provide a signature for safety.
 
@@ -108,7 +129,7 @@ deposit(dexID, owner, brokerPublicKey, token, balance, isOffchain, signature) {
     this.send(msg.value);
     // Save the start index when starting a new block
     if (depositBlock[blockIdx/10].count == 0) {
-        depositBlock[blockIdx/10].hash = numAcounts;
+        depositBlock[blockIdx/10].hash = numAcounts;    
     }
     depositBlock[blockIdx/10].hash = sha256(depositBlock[blockIdx / 10].hash, [publicKey, token, balance, nonce]);
     depositBlock[blockIdx/10].feeAmount += msg.value;
@@ -125,10 +146,12 @@ deposit(dexID, owner, brokerPublicKey, token, balance, isOffchain, signature) {
     return numAccounts++;
 }
 ```
+> Question (Daniel): inside the code above, why `depositBlock[blockIdx/10].hash = numAcounts;`, why not the previous depositBlock's hash or `depositBlock[blockIdx/10].hash = depositBlock[blockIdx/10 -1].hash;`?
+
 
 We also need to store the deposit information onchain so users can withdraw these balances in withdrawal mode when they are not yet added in the Accounts merkle tree.
 
-Some blocks afterwards we force the operator to include the new accounts in a proof.
+Some blocks afterwards we could force the operator to include the new accounts if necessary in a proof.
 
 ```
 // EVM:
@@ -147,10 +170,11 @@ deposit(depositBlock[X].hash, numAccounts, accounts) {
 }
 ```
 
+> Question (Daniel): I don't understand how new accounts are added to the merkle tree offchain, nor how the deposit works. Need to walk me through.
 
 ## Withdrawing
 
-The user lets the operator know somehow (see below) that he wants to withdraw. The withdrawal process:
+The user lets the operator know somehow (see below) that he wants to withdraw. The witdrawal process:
 
 ```
 // EVM:
@@ -166,6 +190,7 @@ withdraw() {
 ```
 
 The balance can be withdrawn by anyone from the contract after the block has been finalized:
+
 ```
 withdraw(dexID, blockIdx, withdrawalIdx) {
     Dex dex = dexs[dexID];
@@ -368,12 +393,12 @@ The operator that needs to generate the next block needs to create a proof conta
 
 If a ring using onchain transaction fails because the order owner doesn't have enough funds available the operator can still be paid a small fee for the work (and the loss in fees) using these funds. This also prevents abuse by users.
 - This would be optional. The operator does not need to be paid a fee if he's OK with the added risk.
-- Because the user could accedentially not have enough funds for an order, we also have to protect the order owner. The funds would only be able to be used once every hour for example. The amount of funds a user would be able to lose should be very small. A DEX/wallet could even monitor this for his users and inform them via a warning in the GUI or via email.
+- Because the user could accidentially not have enough funds for an order, we also have to protect the order owner. The funds would only be able to be used once every hour for example. The amount of funds a user would be able to lose should be very small. A DEX/wallet could even monitor this for his users and inform them via a warning in the GUI or via email.
 
 We have a couple of options on how we could achieve this:
 
-- We can allow the order owner to deposit some funds to a contract. These funds would not be immediately withdrawable just like the offchain balances, so we have a guarantee they are available sometime in the future. The maximum amount the user would be able to deposit would be 10x the small fee that would be paid to the operator for a single failed ring.
-- We could also force all fee payments to be offchain -> offchain. This way we don't even need special bond balances. The small fee could be paid directly from the fee that would be paid for the ring settlement. Again, time limitations/maximum amounts would be needed so this cannot be abused by operators.
+- We can allow the order owner to deposit some funds to a contract. These funds would not be immediately withdrawable just like the offchain balances, so we have a guarantee they are available some time in the future. The maximum amount the user would be able to deposit would be 10x the small fee that would be paid to the operator for a single failed ring.
+- We could also force all fee payments to be offchain -> offchain. This way we don't even need special bond balances. The small fee could be paid directly from the fee that would be paid for the ring settlement. Again, some time limations/maximum amount would be needed so this cannot be abused by operators.
 
 ### Token transfer types
 
@@ -493,10 +518,7 @@ We need to do a lot of fee payments:
 
 So up to 4 token transfers need to be done for every order. Remember that the proof for a circuit needs to solve the constraints for all code in the circuit. So having the possibility of 2 tokens that can pay fees (like in protocol 2 P2P orders) should really be avoided. Using tokenS OR tokenB OR tokenF is fine.
 
-To limit the number of onchain token transfers (or having to have a special FeeHolder contract like in protocol 2 for efficiency) we force all fee payments to be done to offchain balances. This allows all fee payments (to the wallet, operator and burnrate) to be done using at most a single onchain transaction.
-
-We could even force all fee payments to be done from offchain balances so we never need to do onchain transfers for fee payments.
-
+To limit the number of onchain token transfers (or having to have a special FeeHolder contract like in protocol 2 for efficiency) we can force all fee payments to be done to offchain balances. This allows the fee payment (to the wallet, operator and burnrate) to be done using a single onchain transaction if `from` is an onchain balance. We could even force all fee payments to be done from offchain balances so we never need to do an onchain transfers for fee payments.
 
 ## Burn Rate
 
@@ -647,7 +669,7 @@ Let's reserve DEX ID 0 as the open order book DEX:
 
 # Operators
 
-Operators are responsible for creating blocks. Blocks need to be submitted onchain and the correctness of the work in a block needs to be proven. This is done by creating a proof for a SNARK. They can also be responsible for collecting orders/rings.
+Operators are responsible for creating blocks. Blocks need need to be submitted onchain and the correctness of the work in a block needs to be proven. This is done by creating a proof for a SNARK. They can also be responsible for collecting orders/rings.
 
 ## Adding restrictions
 
@@ -683,7 +705,7 @@ The operator gets a part of the fees in the orders for settling rings. We've got
 - Send a single `input.walletSplitPercentage` onchain by the operator. The proof checks that `input.walletSplitPercentage >= order.walletSplitPercentage`
 - Store the `walletSplitPercentage` in the Dex struct onchain if all orders would use the same split value anyway.
 
-# Circuit permutations
+# Ciruit permutations
 
 A circuit always does the same. There's no way to do dynamic loops. Let's take the rings settlement circuit as an example:
 - The circuit always settles a fixed number of rings
@@ -693,28 +715,16 @@ Let's say we want to support rings with 2 and 3 orders. We can either
 - make a circuit that contains X number of rings with 2 orders and Y number of rings with 3 orders. There's a low chance the operator has the exact number of each so we have to make some rings in the circuit do nothing (e.g. set the fill amounts to 0). The prover still has the cost of verifying all rings, even if they do nothing useful.
 - make all rings 3 order rings and make a circuit that can also settle 2 order rings in these 3 order rings. Here we always have the extra cost of processing the 3rd order even when it's only a 2 order ring.
 
-We also need to do a wide range of functionality. We need to have a circuit for
+We also need to do wide range of functionality. We need to have a circuit for
 - depositing
 - withdrawing
 - settling rings
-- reverting rings
 - cancelling orders
 
 Verifying a proof onchain costs ~600,000 gas, so it may make sense to combine some functionality in a single circuit. 
 It may make sense to reuse the ring settlement slots e.g. for cancellation. This is less efficient than having dedicated slots in the circuit to cancel orders (cancelling an order only needs to update the filled amount of a single order, reusing the ring settlement of 2 orders would create a lot more constraints for unused functionality like updating balances and updating the filled amount of 2 orders), but we don't have to have a fixed number of each so it's more flexible.
 
 It also makes sense to create multiple ring settlement circuits for different number of rings settlements e.g. a circuit that can settle 128 rings and a circuit than can settle 512 rings. This way the operator doesn't need to needlessly spend money solving a large circuit when only a small number or rings needs to be settled.
-
-We could make a single circuit containing all necessary functionality like this:
-- 8 Ring Reverts
-- 32 Deposits
-- 32 Withdrawals
-- 512 Ring settlements
-- 64 Order cancellations
-
-A small number of permutations could be made with different numbers of slots for each. Once implemented we can analyze which functionalities could be combined in the circuit.
-
-By having a large number of dedicated slots for order cancellations an operator would include cancels even for a very small fee (or even none) because the cost for proving the circuit remains the same even if the order cancellation slot doesn't do anything useful.
 
 # Delayed proof submission
 
@@ -810,7 +820,7 @@ revertState() {
 
 # Order sharing between DEXs
 
-Order sharing between DEXs is possible when they have the same operator (which could be a short period of time). This is because the operator is able to modify the state of both DEXs. This does create a short dependency between both DEXs because the states that were updated needs to be finalized on both (the state should never be reverted on one DEX and not the other).
+Order sharing between DEXs is possible when they have the same operator (which could be a short period of time). This is because the operator is able to modify the state of both DEXs. 
 
 A possible use case would for example be a DEX that operates its own operator. This operator would also stake some LRC so it would also be an operator of the open order book DEX. If the operator is chosen as the operator of the open order book DEX the DEX has access to increased liquidity for some time to settle some of his orders.
 
@@ -846,28 +856,14 @@ Using the order registry to register orders will be quite rare. We can limit the
 
 ## Onchain data
 
-**Data availability is ensured for ALL merkle trees for ALL DEXs**. 
+**Data availability is ensured for ALL merkle trees for ALL DEXs**. `commitBlock` takes the following data, packed together in single `bytes` parameter:
 
-`commitBlock` takes the following data, packed together in single `bytes` parameter:
 - The DEX ID(s)
 - The new TradingHistory merkle tree root
 - The new Accounts merkle tree root
 - The new nonce for the DEX
 - Timestamp used in the proof
-- Ring settlement data
-- Order cancellation data
-
-For the public input of the SNARK we also use the following data stored in EVM:
-- The current TradingHistory merkle tree root
-- The current Accounts merkle tree root
-- The TokenRegistry merkle tree root of X blocks ago
-- The OrderRegistry merkle tree root of X blocks age
-- The current nonce of the DEX
-
-We hash all this data onchain using `sha256` and pass the hash value as the only public input to the SNARK.
-
-#### Ring settlement data
-- For every order
+- Order data stored as
     - Transfer types (1 byte) (Onchain/offchain permutations (2 bits) x 4)
     - DEX ID (2 bytes)
     - order ID (2 bytes)
@@ -882,26 +878,28 @@ We hash all this data onchain using `sha256` and pass the hash value as the only
     - [fee] Amount (12 bytes)
     - [fee] WalletSplitPercentage (1 byte)
     - => **49 bytes/order**
-    - => Calldata cost: 49 * 68 = **3332 gas**
 
 We can save some more bytes (e.g. on the amount for the fee payment, we don't really need 12 bytes) so we can probably get this down to ~40 bytes/order.
 
-Always paying a fee using tokenS would reduce this even further (and would also make the circuit less expensive) but would of course limit the usability of LRC and may not be possible with security tokens.
+Always paying a fee using tokenS would reduce this even further (and would also make the circuit less expensive) but would of course limit the usability of LRC and may not not be possible with security tokens.
 
-#### Order cancellation data
-- Order ID (2 bytes)
-- Account ID (3 bytes)
-- => **5 bytes/order**
-- => Calldata cost: 5 * 68 = **340 gas**
+For the public input of the SNARK we also use the following onchain data:
+- The current TradingHistory merkle tree root
+- The current Accounts merkle tree root
+- The TokenRegistry merkle tree root of X blocks ago
+- The OrderRegistry merkle tree root of X blocks age
+- The current nonce of the DEX
 
-This is pretty cheap.
-
+We hash all this data onchain using `sha256` and pass the hash value as the only public input to the SNARK.
 
 ## Performance
 
 ### Onchain data
 
 Maximum gas consumption in an Ethereum block: 8,000,000 gas
+
+- ~48 bytes for a single order
+- => Maximum calldata cost/order = 48*68 = **3,264 gas** (will be a bit lower because there will be zero bytes which are much cheaper in calldata (68 gas vs 4 gas))
 
 **No onchain transfers:**
 - Verifying a proof + some state updates/querying: 600,000 gas
@@ -957,6 +955,6 @@ An order can be in the following states:
 - Matched by the DEX
 - Included in a block sent in `commitBlock`
 - Verified in a block by a proof in `proofBlock`
-- Finalized when the block it was in is finalized (so all blocks before it are also verified)
+- Finalized when the block it was in is finalized (so all blocks before it were also verified)
 
 Only when the block is finalized is the filling of the order irreversible.
