@@ -1,3 +1,4 @@
+
 WIP of protocol 3.0 design.
 
 # Intro
@@ -411,6 +412,10 @@ Still, we've got some interesting possibilities here:
 
 The importance of cancelling orders is reduced by supporting validSince/validUntil for orders. Orders can be short-lived and the order owner can keep recreating orders as long as they need to be kept alive. 
 
+### Cancelling orders by removing the order in the order book of the  DEX
+
+If the user trusts the DEX the order could simply be removed from the order book, no need to disable the order by cancelling the order by updating the merkle tree state.
+
 ### Cancelling orders by sending a request to the operator
 
 ```
@@ -496,6 +501,14 @@ So up to 4 token transfers need to be done for every order. Remember that the pr
 To limit the number of onchain token transfers (or having to have a special FeeHolder contract like in protocol 2 for efficiency) we force all fee payments to be done to offchain balances. This allows all fee payments (to the wallet, operator and burnrate) to be done using at most a single onchain transaction.
 
 We could even force all fee payments to be done from offchain balances so we never need to do onchain transfers for fee payments.
+
+### Maker vs Taker
+
+A DEX could decide which order is the maker and which is the taker. Different fees could be used depending on the type.
+
+### Market Orders
+
+A DEX could probably simulate a market order by creating a limit order with some safe limit price. To allow a single 'market order' to fill multiple other limit orders at different prices, no margin should be paid by the market order owner. The price paid by the 'market order' should be precisely the price of the limit orders.
 
 
 ## Burn Rate
@@ -677,7 +690,19 @@ They can also be used as safety. If anyone is able to become an operator, it's a
 
 ## Fee
 
-The operator gets a part of the fees in the orders for settling rings. We've got a couple of options how to do this, we just have to make sure that all information needed to calculate how many fees each party got is available onchain to ensure data availability.
+###  Operator gets dedicated fee for every operation
+
+The fee paid to the operator can be made completely independent of the fee paid by the orders. A DEX would simply pay some fee for the settlement of the ring. The settlement of a ring for an operator is just a fixed cost after all.
+
+This would create a more flexible fee system:
+- The fee price could be decided by the operator depending on the current load of the system.
+- If there are multiple operators there would be competition driving the fee price lower.
+- DEXs could still fill orders that are almost completely filled, which can only pay a very small fee. This would be a service a DEX provides to its users for the best user experience. Orders that can completely fill would actually fill 100%.
+- We could ever force the fee to be paid in LRC (or another fixed token) which would make the circuit cheaper
+
+###  Operator gets a part of the fees paid by the orders
+
+We've got a couple of options how to do this, we just have to make sure that all information needed to calculate how many fees each party got is available onchain to ensure data availability.
 
 - If there are multiple operators available the DEX can auction off the work to an operator. The operator that commits to generate the proof for the highest `walletSplitPercentage` wins the bid. This auction should end as fast as possible however so there is only a small extra delay.
 - Send a single `input.walletSplitPercentage` onchain by the operator. The proof checks that `input.walletSplitPercentage >= order.walletSplitPercentage`
@@ -814,9 +839,46 @@ Order sharing between DEXs is possible when they have the same operator (which c
 
 A possible use case would for example be a DEX that operates its own operator. This operator would also stake some LRC so it would also be an operator of the open order book DEX. If the operator is chosen as the operator of the open order book DEX the DEX has access to increased liquidity for some time to settle some of his orders.
 
-DEXs would be able to choose if they'd allow this or not. 
+DEXs would be able to choose if they'd allow this or not.
+
+However, it's much more flexible if all DEXs would always use the same operator. In that case, orders can always be shared between DEXs.
+
+A possible mechanism how this sharing of orders between DEXs can be done is described below.
+
+## Sharing orders with Dual Authoring
+
+Automatically sharing orders between DEXs can be problematic. For example, DEX B could decide it wants to use an order of DEX A and creates a ring and sends it to the operator. But at the same time, DEX C could have also decided to use the same order in a different ring. In the best case, both rings can be settled. But it's also possible only one of the rings can be settled because the shared order cannot be filled for the fill amount specified in the second ring. This uncertainty makes it so that a DEX needs to wait longer to show the result of a trade to the user. It's also hard for a DEX to track the state of a shared order.
+
+A solution for this could be dual authoring. When DEX A wants to create a ring with an order of DEX B then the ring needs to be signed by DEX A **and** DEX B. This negotiation would be completely offchain.
+
+The protocol would be something like this. DEX A signs the ring and sends it to DEX B. DEX B can now decide if it wants to share the order with DEX A or not. If not, DEX B simply sends a message back that there is no deal. If DEX B does want to share the order, he can sign the ring as well. The ring is now signed by DEX A and DEX B (the DEXs of the orders in the ring) and the ring can be sent to the operator for settlement. DEX B now sends the doubly signed ring back to DEX A so the DEX can be sure the ring will be settled (or DEX A could just monitor the rings submitted to the operators).
+
+This process should be very fast. The delay between the initial request and knowing wether the ring can be settled should take at most seconds. DEXs also know exactly the state each order is in or is going to be in because every shared order still needs to pass through the DEX it is from.
+
+This protocol also allows a negotation for a fee a DEX could pay to another DEX for sharing its order. If DEX A has an order, and DEX B AND DEX C wants to use it, than DEX A can choose the DEX that offers the most fees for the order. 
+
+A scenario where this would be very helpful is for a service that offers liquidity from some place (e.g. a bot for a CEX). This service would offer orders to multiple DEXs and can decide on any criteria how it wants to share its orders.
+
 
 # Implementation details
+
+## Setup of operators and DEX states
+
+At least for the near future, the proof generation for settling a large number of rings will probably take at least of few minutes. Because of this, to get the highest throughput out of the system we need to support delayed proof submission with multiple operators. Unfortunately, this is not possible with onchain transfers.
+
+I would currently propose to use 2 different sets of merkle trees (currently called DEX states, which would be bad name because all DEXs would use 1 of these 2 states). 1 set of merkle trees can be used only with offchain balances so that we can use delayed proof submission for the highest throughput. The other set of merkle trees would support offchain and onchain balances. Here every block needs to be proven immediately. Blocks will have to be smaller so that they can be proven in a reasonable time.
+
+The operator would be chosen out of a pool of operators based on how much LRC the operator has staked. This way anybody can become an operator which gives additional safety properties to the system without having to resort to forcing operators to do certain operations onchain.
+
+By letting all DEXs share the same merkle trees it is always possible to share orders between DEXs. However, sharing orders between the two different states is currently a problem. This would only be possible if the state for both is completely finalized, which is probably never the case with the state using offchain balances exclusively, unless it is forced someway.
+
+There are some options to mitigate this problem, but they have some drawbacks.
+- If only a single operator is responsible for submitting blocks, that operator can internally work on different blocks at the same time, without having to commit work early and proof it later.
+- Operators could share the new state offchain, but they would need to trust each other to send the correct new state.
+
+In all cases this would greatly increase the delay until any work is committed onchain, so there is a long period of uncertainty which rings will be settled for DEXs.
+
+Of course, if proof generation is fast even when settling a lot of rings in a single block we can just not use delayed proof submission and we don't need different merkle trees. This would be the ideal scenario.
 
 ## Merkle trees
 
