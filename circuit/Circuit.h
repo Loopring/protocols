@@ -19,6 +19,32 @@ using namespace ethsnarks;
 namespace Loopring
 {
 
+/**
+* Convert an array of variable arrays into a flat contiguous array of variables
+*/
+const VariableArrayT flattenReverse( const std::vector<VariableArrayT> &in_scalars )
+{
+    std::cout << "Flatten begin" << std::endl;
+    size_t total_sz = 0;
+    for( const auto& scalar : in_scalars )
+        total_sz += scalar.size();
+
+    VariableArrayT result;
+    result.resize(total_sz);
+
+    size_t offset = 0;
+    for( const auto& scalar : in_scalars )
+    {
+        for (int i = int(scalar.size()) - 1; i >= 0; i--)
+        {
+            result[offset++].index = scalar[i].index;
+        }
+    }
+    std::cout << "Flatten end" << std::endl;
+
+    return result;
+}
+
 class LeqGadget : public GadgetT
 {
 public:
@@ -104,13 +130,15 @@ class OrderGadget : public GadgetT
 {
 public:
 
-    libsnark::dual_variable_gadget<FieldT> owner;
-    libsnark::dual_variable_gadget<FieldT> tokenS;
-    libsnark::dual_variable_gadget<FieldT> tokenB;
-    libsnark::dual_variable_gadget<FieldT> tokenF;
+    libsnark::dual_variable_gadget<FieldT> dexID;
+    libsnark::dual_variable_gadget<FieldT> orderID;
+    libsnark::dual_variable_gadget<FieldT> accountS;
+    libsnark::dual_variable_gadget<FieldT> accountB;
+    libsnark::dual_variable_gadget<FieldT> accountF;
     libsnark::dual_variable_gadget<FieldT> amountS;
     libsnark::dual_variable_gadget<FieldT> amountB;
     libsnark::dual_variable_gadget<FieldT> amountF;
+    libsnark::dual_variable_gadget<FieldT> walletF;
     libsnark::dual_variable_gadget<FieldT> padding;
 
     const jubjub::VariablePointT publicKey;
@@ -128,20 +156,22 @@ public:
     ) :
         GadgetT(pb, annotation_prefix),
 
-        owner(pb, 160, FMT(annotation_prefix, ".owner")),
-        tokenS(pb, 160, FMT(annotation_prefix, ".tokenS")),
-        tokenB(pb, 160, FMT(annotation_prefix, ".tokenB")),
-        tokenF(pb, 160, FMT(annotation_prefix, ".tokenF")),
-        amountS(pb, 128, FMT(annotation_prefix, ".amountS")),
-        amountB(pb, 128, FMT(annotation_prefix, ".amountB")),
-        amountF(pb, 128, FMT(annotation_prefix, ".amountF")),
+        dexID(pb, 16, FMT(annotation_prefix, ".dexID")),
+        orderID(pb, 4, FMT(annotation_prefix, ".orderID")),
+        accountS(pb, 24, FMT(annotation_prefix, ".accountS")),
+        accountB(pb, 24, FMT(annotation_prefix, ".accountB")),
+        accountF(pb, 24, FMT(annotation_prefix, ".accountF")),
+        amountS(pb, 96, FMT(annotation_prefix, ".amountS")),
+        amountB(pb, 96, FMT(annotation_prefix, ".amountB")),
+        amountF(pb, 96, FMT(annotation_prefix, ".amountF")),
+        walletF(pb, 24, FMT(annotation_prefix, ".walletF")),
         padding(pb, 1, FMT(annotation_prefix, ".padding")),
 
         publicKey(pb, FMT(annotation_prefix, ".publicKey")),
 
         sig_R(pb, FMT(annotation_prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
-        sig_m(flatten({owner.bits, tokenS.bits, tokenB.bits, tokenF.bits, amountS.bits, amountB.bits, amountF.bits, padding.bits})),
+        sig_m(flatten({dexID.bits, orderID.bits, accountS.bits, accountB.bits, accountF.bits, amountS.bits, amountB.bits, amountF.bits})),
 
         signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(annotation_prefix, ".signatureVerifier"))
     {
@@ -150,15 +180,17 @@ public:
 
     void generate_r1cs_witness(const Order& order)
     {
-        owner.bits.fill_with_bits_of_field_element(this->pb, order.owner);
-        owner.generate_r1cs_witness_from_bits();
+        dexID.bits.fill_with_bits_of_field_element(this->pb, order.dexID);
+        dexID.generate_r1cs_witness_from_bits();
+        orderID.bits.fill_with_bits_of_field_element(this->pb, order.orderID);
+        orderID.generate_r1cs_witness_from_bits();
 
-        tokenS.bits.fill_with_bits_of_field_element(this->pb, order.tokenS);
-        tokenS.generate_r1cs_witness_from_bits();
-        tokenB.bits.fill_with_bits_of_field_element(this->pb, order.tokenB);
-        tokenB.generate_r1cs_witness_from_bits();
-        tokenF.bits.fill_with_bits_of_field_element(this->pb, order.tokenF);
-        tokenF.generate_r1cs_witness_from_bits();
+        accountS.bits.fill_with_bits_of_field_element(this->pb, order.accountS);
+        accountS.generate_r1cs_witness_from_bits();
+        accountB.bits.fill_with_bits_of_field_element(this->pb, order.accountB);
+        accountB.generate_r1cs_witness_from_bits();
+        accountF.bits.fill_with_bits_of_field_element(this->pb, order.accountF);
+        accountF.generate_r1cs_witness_from_bits();
 
         amountS.bits.fill_with_bits_of_field_element(this->pb, order.amountS);
         amountS.generate_r1cs_witness_from_bits();
@@ -166,6 +198,9 @@ public:
         amountB.generate_r1cs_witness_from_bits();
         amountF.bits.fill_with_bits_of_field_element(this->pb, order.amountF);
         amountF.generate_r1cs_witness_from_bits();
+
+        //walletF.bits.fill_with_bits_of_field_element(this->pb, order.walletF);
+        //walletF.generate_r1cs_witness_from_bits();
 
         padding.bits.fill_with_bits_of_field_element(this->pb, 0);
         padding.generate_r1cs_witness_from_bits();
@@ -181,13 +216,15 @@ public:
 
     void generate_r1cs_constraints()
     {
-        owner.generate_r1cs_constraints(true);
-        tokenS.generate_r1cs_constraints(true);
-        tokenB.generate_r1cs_constraints(true);
-        tokenF.generate_r1cs_constraints(true);
+        dexID.generate_r1cs_constraints(true);
+        orderID.generate_r1cs_constraints(true);
+        accountS.generate_r1cs_constraints(true);
+        accountB.generate_r1cs_constraints(true);
+        accountF.generate_r1cs_constraints(true);
         amountS.generate_r1cs_constraints(true);
         amountB.generate_r1cs_constraints(true);
         amountF.generate_r1cs_constraints(true);
+        //walletF.generate_r1cs_constraints(true);
         padding.generate_r1cs_constraints(true);
 
         // TODO: Check public key in order message
@@ -225,7 +262,7 @@ public:
 
         merkleRootBefore(_merkleRoot),
 
-        fill(pb, NUM_BITS_AMOUNT, FMT(annotation_prefix, ".fill")),
+        fill(pb, 96, FMT(annotation_prefix, ".fill")),
 
         filledBefore(make_variable(pb, FMT(annotation_prefix, ".filledBefore"))),
         filledAfter(make_variable(pb, FMT(annotation_prefix, ".filledAfter"))),
@@ -250,7 +287,7 @@ public:
         return filledAfter;
     }
 
-    void generate_r1cs_witness(const ethsnarks::FieldT& filled, const std::vector<ethsnarks::FieldT>& _proof, const libsnark::dual_variable_gadget<FieldT>& fill)
+    void generate_r1cs_witness(const ethsnarks::FieldT& filled, const Proof& _proof, const libsnark::dual_variable_gadget<FieldT>& fill)
     {
         this->pb.val(filledBefore) = filled;
         this->pb.val(filledAfter) = this->pb.val(filledBefore) + this->pb.val(fill.packed);
@@ -258,7 +295,7 @@ public:
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
 
-        proof.fill_with_field_elements(this->pb, _proof);
+        proof.fill_with_field_elements(this->pb, _proof.data);
         proofVerifierBefore.generate_r1cs_witness();
         rootCalculatorAfter.generate_r1cs_witness();
     }
@@ -275,10 +312,91 @@ public:
     }
 };
 
+class UpdateBalanceGadget : public GadgetT
+{
+public:
+    typedef merkle_path_authenticator<LongsightL12p5_MP_gadget> MerklePathCheckT;
+    typedef markle_path_compute<LongsightL12p5_MP_gadget> MerklePathT;
+
+    const VariableT merkleRootBefore;
+
+    libsnark::dual_variable_gadget<FieldT> amount;
+
+    VariableT balanceBefore;
+    VariableT balanceAfter;
+
+    LongsightL12p5_MP_gadget leafBefore;
+    LongsightL12p5_MP_gadget leafAfter;
+
+    const VariableArrayT proof;
+    MerklePathCheckT proofVerifierBefore;
+    MerklePathT rootCalculatorAfter;
+
+    UpdateBalanceGadget(
+        ProtoboardT& pb,
+        const VariableT& _merkleRoot,
+        const VariableArrayT& address,
+        const std::string& annotation_prefix
+    ) :
+        GadgetT(pb, annotation_prefix),
+
+        merkleRootBefore(_merkleRoot),
+
+        amount(pb, 96, FMT(annotation_prefix, ".fill")),
+
+        balanceBefore(make_variable(pb, FMT(annotation_prefix, ".balanceBefore"))),
+        balanceAfter(make_variable(pb, FMT(annotation_prefix, ".balanceAfter"))),
+
+        leafBefore(pb, libsnark::ONE, {balanceBefore, balanceBefore}, FMT(annotation_prefix, ".leafBefore")),
+        leafAfter(pb, libsnark::ONE, {balanceAfter, balanceAfter}, FMT(annotation_prefix, ".leafAfter")),
+
+        proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".proof"))),
+        proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(annotation_prefix, ".pathBefore")),
+        rootCalculatorAfter(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(annotation_prefix, ".pathAfter"))
+    {
+
+    }
+
+    const VariableT result() const
+    {
+        return rootCalculatorAfter.result();
+    }
+
+    const VariableT getBalanceAfter() const
+    {
+        return balanceAfter;
+    }
+
+    void generate_r1cs_witness(const Account& before, const Account& after, const Proof& _proof, const libsnark::dual_variable_gadget<FieldT>& amount)
+    {
+        this->pb.val(balanceBefore) = before.balance;
+        this->pb.val(balanceAfter) = this->pb.val(balanceBefore) + this->pb.val(amount.packed);
+
+        leafBefore.generate_r1cs_witness();
+        leafAfter.generate_r1cs_witness();
+
+        proof.fill_with_field_elements(this->pb, _proof.data);
+        proofVerifierBefore.generate_r1cs_witness();
+        rootCalculatorAfter.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints(const libsnark::dual_variable_gadget<FieldT>& amount)
+    {
+        this->pb.add_r1cs_constraint(ConstraintT(balanceBefore + amount.packed, 1, balanceAfter), "balanceBefore + amount = balanceAfter");
+
+        leafBefore.generate_r1cs_constraints();
+        leafAfter.generate_r1cs_constraints();
+
+        proofVerifierBefore.generate_r1cs_constraints();
+        rootCalculatorAfter.generate_r1cs_constraints();
+    }
+};
+
 class RingSettlementGadget : public GadgetT
 {
 public:
-    const VariableT merkleRoot;
+    const VariableT tradingHistoryMerkleRoot;
+    const VariableT accountsMerkleRoot;
 
     OrderGadget orderA;
     OrderGadget orderB;
@@ -292,6 +410,8 @@ public:
 
     UpdateFilledGadget updateFilledA;
     UpdateFilledGadget updateFilledB;
+
+    UpdateBalanceGadget updateBalanceSA;
 
     LeqGadget filledLeqA;
     LeqGadget filledLeqB;
@@ -308,7 +428,8 @@ public:
     RingSettlementGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
-        const VariableT& _merkleRoot,
+        const VariableT& _tradingHistoryMerkleRoot,
+        const VariableT& _accountsMerkleRoot,
         const std::string& annotation_prefix
     ) :
         GadgetT(pb, annotation_prefix),
@@ -316,16 +437,19 @@ public:
         orderA(pb, params, FMT(annotation_prefix, ".orderA")),
         orderB(pb, params, FMT(annotation_prefix, ".orderB")),
 
-        fillS_A(pb, NUM_BITS_AMOUNT, FMT(annotation_prefix, ".fillS_A")),
-        fillB_A(pb, NUM_BITS_AMOUNT, FMT(annotation_prefix, ".fillB_A")),
-        fillF_A(pb, NUM_BITS_AMOUNT, FMT(annotation_prefix, ".fillF_A")),
-        fillS_B(pb, NUM_BITS_AMOUNT, FMT(annotation_prefix, ".fillS_B")),
-        fillB_B(pb, NUM_BITS_AMOUNT, FMT(annotation_prefix, ".fillB_B")),
-        fillF_B(pb, NUM_BITS_AMOUNT, FMT(annotation_prefix, ".fillF_B")),
+        fillS_A(pb, 96, FMT(annotation_prefix, ".fillS_A")),
+        fillB_A(pb, 96, FMT(annotation_prefix, ".fillB_A")),
+        fillF_A(pb, 96, FMT(annotation_prefix, ".fillF_A")),
+        fillS_B(pb, 96, FMT(annotation_prefix, ".fillS_B")),
+        fillB_B(pb, 96, FMT(annotation_prefix, ".fillB_B")),
+        fillF_B(pb, 96, FMT(annotation_prefix, ".fillF_B")),
 
-        merkleRoot(_merkleRoot),
-        updateFilledA(pb, merkleRoot, orderA.signatureVerifier.m_hash_RAM.result(), FMT(annotation_prefix, ".updateFilledA")),
-        updateFilledB(pb, updateFilledA.result(), orderB.signatureVerifier.m_hash_RAM.result(), FMT(annotation_prefix, ".updateFilledB")),
+        tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
+        updateFilledA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}), FMT(annotation_prefix, ".updateFilledA")),
+        updateFilledB(pb, updateFilledA.result(), flatten({orderB.orderID.bits, orderB.accountS.bits}), FMT(annotation_prefix, ".updateFilledB")),
+
+        accountsMerkleRoot(_accountsMerkleRoot),
+        updateBalanceSA(pb, accountsMerkleRoot, orderA.accountS.bits, FMT(annotation_prefix, ".updateBalanceS_A")),
 
         filledLeqA(pb, updateFilledA.getFilledAfter(), orderA.amountS.packed, FMT(annotation_prefix, ".filled_A < .amountSA")),
         filledLeqB(pb, updateFilledB.getFilledAfter(), orderB.amountS.packed, FMT(annotation_prefix, ".filled_B < .amountSB")),
@@ -342,17 +466,25 @@ public:
 
     }
 
-    const VariableT result() const
+    const VariableT getNewTradingHistoryMerkleRoot() const
     {
         return updateFilledB.result();
     }
 
-    const std::vector<VariableArrayT> getTransfers() const
+    const VariableT getNewAccountsMerkleRoot() const
     {
-        return {orderA.tokenS.bits, orderA.owner.bits, orderB.owner.bits, fillS_A.bits,
-                orderA.tokenF.bits, orderA.owner.bits, orderA.owner.bits, fillF_A.bits,
-                orderB.tokenS.bits, orderB.owner.bits, orderA.owner.bits, fillS_B.bits,
-                orderB.tokenF.bits, orderB.owner.bits, orderB.owner.bits, fillF_B.bits};
+        return updateBalanceSA.result();
+    }
+
+    const std::vector<VariableArrayT> getPublicData() const
+    {
+        return {orderA.dexID.bits, orderA.orderID.bits,
+                orderA.accountS.bits, orderB.accountB.bits, fillS_A.bits,
+                orderA.accountF.bits, fillF_A.bits,
+
+                orderB.dexID.bits, orderB.orderID.bits,
+                orderB.accountS.bits, orderA.accountB.bits, fillS_B.bits,
+                orderB.accountF.bits, fillF_B.bits};
     }
 
     void generate_r1cs_witness (const RingSettlement& ringSettlement)
@@ -373,13 +505,22 @@ public:
         fillF_B.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillF_B);
         fillF_B.generate_r1cs_witness_from_bits();
 
-        // Update merkle tree
-        this->pb.val(merkleRoot) = ringSettlement.merkleRoot;
-        updateFilledA.generate_r1cs_witness(ringSettlement.filledA, ringSettlement.proofA, fillS_A);
-        updateFilledB.generate_r1cs_witness(ringSettlement.filledB, ringSettlement.proofB, fillS_B);
+        //
+        // Update trading history
+        //
+
+        this->pb.val(tradingHistoryMerkleRoot) = ringSettlement.tradingHistoryMerkleRoot;
+        updateFilledA.generate_r1cs_witness(ringSettlement.filledA, ringSettlement.proofFilledA, fillS_A);
+        updateFilledB.generate_r1cs_witness(ringSettlement.filledB, ringSettlement.proofFilledB, fillS_B);
 
         filledLeqA.generate_r1cs_witness();
         filledLeqB.generate_r1cs_witness();
+
+        //
+        // Update accounts
+        //
+
+        updateBalanceSA.generate_r1cs_witness(ringSettlement.accountS_A_before, ringSettlement.accountS_A_after, ringSettlement.accountS_A_proof, fillS_A);
 
         //
         // Matching
@@ -409,6 +550,11 @@ public:
         fillB_B.generate_r1cs_constraints(true);
         fillF_B.generate_r1cs_constraints(true);
 
+
+        //
+        // Update trading history
+        //
+
         updateFilledA.generate_r1cs_constraints(fillS_A);
         updateFilledB.generate_r1cs_constraints(fillS_B);
 
@@ -416,12 +562,18 @@ public:
         filledLeqB.generate_r1cs_constraints();
 
         //
+        // Update accounts
+        //
+
+        updateBalanceSA.generate_r1cs_constraints(fillS_A);
+
+        //
         // Matching
         //
 
         // Check if tokenS/tokenB match
-        pb.add_r1cs_constraint(ConstraintT(orderA.tokenS.packed, 1, orderB.tokenB.packed));
-        pb.add_r1cs_constraint(ConstraintT(orderA.tokenB.packed, 1, orderB.tokenS.packed));
+        //pb.add_r1cs_constraint(ConstraintT(orderA.tokenS.packed, 1, orderB.tokenB.packed));
+        //pb.add_r1cs_constraint(ConstraintT(orderA.tokenB.packed, 1, orderB.tokenS.packed));
 
         // Check rates
         rateCheckerA.generate_r1cs_constraints();
@@ -444,8 +596,10 @@ public:
     std::vector<RingSettlementGadget> ringSettlements;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
-    libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
-    libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
+    libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootBefore;
+    libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootAfter;
+    libsnark::dual_variable_gadget<FieldT> accountsMerkleRootBefore;
+    libsnark::dual_variable_gadget<FieldT> accountsMerkleRootAfter;
 
     std::vector<VariableArrayT> publicDataBits;
     VariableArrayT publicData;
@@ -457,8 +611,10 @@ public:
 
         publicDataHash(pb, 256, FMT(annotation_prefix, ".publicDataHash")),
 
-        merkleRootBefore(pb, 256, FMT(annotation_prefix, ".merkleRootBefore")),
-        merkleRootAfter(pb, 256, FMT(annotation_prefix, ".merkleRootAfter"))
+        tradingHistoryMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootBefore")),
+        tradingHistoryMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootAfter")),
+        accountsMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootBefore")),
+        accountsMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootAfter"))
     {
         this->publicDataHasher = nullptr;
     }
@@ -471,46 +627,23 @@ public:
         }
     }
 
-    /**
-    * Convert an array of variable arrays into a flat contiguous array of variables
-    */
-    const VariableArrayT flattenReverse( const std::vector<VariableArrayT> &in_scalars )
-    {
-        size_t total_sz = 0;
-        for( const auto& scalar : in_scalars )
-            total_sz += scalar.size();
-
-        VariableArrayT result;
-        result.resize(total_sz);
-
-        size_t offset = 0;
-        for( const auto& scalar : in_scalars )
-        {
-            for (int i = int(scalar.size()) - 1; i >= 0; i--)
-            {
-                result[offset++].index = scalar[i].index;
-            }
-        }
-
-        return result;
-    }
-
     void generate_r1cs_constraints(int numRings)
     {
         this->numRings = numRings;
 
         pb.set_input_sizes(1);
-        merkleRootBefore.generate_r1cs_constraints(true);
-        publicDataBits.push_back(merkleRootBefore.bits);
-        publicDataBits.push_back(merkleRootAfter.bits);
+        tradingHistoryMerkleRootBefore.generate_r1cs_constraints(true);
+        publicDataBits.push_back(tradingHistoryMerkleRootBefore.bits);
+        publicDataBits.push_back(tradingHistoryMerkleRootAfter.bits);
         for (size_t j = 0; j < numRings; j++)
         {
-            VariableT ringMerkleRoot = (j == 0) ? merkleRootBefore.packed : ringSettlements.back().result();
-            ringSettlements.emplace_back(pb, params, ringMerkleRoot, FMT("ringSettlement"));
+            VariableT ringTradingHistoryMerkleRoot = (j == 0) ? tradingHistoryMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
+            VariableT ringAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
+            ringSettlements.emplace_back(pb, params, ringTradingHistoryMerkleRoot, ringAccountsMerkleRoot, FMT("ringSettlement"));
 
             // Store transfers from ring settlement
-            std::vector<VariableArrayT> ringTransfers = ringSettlements.back().getTransfers();
-            publicDataBits.insert(publicDataBits.end(), ringTransfers.begin(), ringTransfers.end());
+            std::vector<VariableArrayT> ringPublicData = ringSettlements.back().getPublicData();
+            publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
         }
 
         publicDataHash.generate_r1cs_constraints(true);
@@ -531,7 +664,7 @@ public:
         }
 
         // Make sure the merkle root afterwards is correctly passed in
-        pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().result(), 1, merkleRootAfter.packed));
+        pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewTradingHistoryMerkleRoot(), 1, tradingHistoryMerkleRootAfter.packed));
     }
 
     void printInfo()
@@ -560,16 +693,23 @@ public:
         delete [] hexstr;
     }
 
-    bool generateWitness(const std::vector<Loopring::RingSettlement>& ringSettlementsData, const std::string& strMerkleRootBefore, const std::string& strMerkleRootAfter)
+    bool generateWitness(const std::vector<Loopring::RingSettlement>& ringSettlementsData,
+                         const std::string& strTradingHistoryMerkleRootBefore, const std::string& strTradingHistoryMerkleRootAfter,
+                         const std::string& strAccountsMerkleRootBefore, const std::string& strAccountsMerkleRootAfter)
     {
-        ethsnarks::FieldT merkleRootBeforeValue = ethsnarks::FieldT(strMerkleRootBefore.c_str());
-        ethsnarks::FieldT merkleRootAfterValue = ethsnarks::FieldT(strMerkleRootAfter.c_str());
+        ethsnarks::FieldT tradingHistoryMerkleRootBeforeValue = ethsnarks::FieldT(strTradingHistoryMerkleRootBefore.c_str());
+        ethsnarks::FieldT tradingHistoryMerkleRootAfterValue = ethsnarks::FieldT(strTradingHistoryMerkleRootAfter.c_str());
+        tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, tradingHistoryMerkleRootBeforeValue);
+        tradingHistoryMerkleRootBefore.generate_r1cs_witness_from_bits();
+        tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, tradingHistoryMerkleRootAfterValue);
+        tradingHistoryMerkleRootAfter.generate_r1cs_witness_from_bits();
 
-        merkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, merkleRootBeforeValue);
-        merkleRootBefore.generate_r1cs_witness_from_bits();
-
-        merkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, merkleRootAfterValue);
-        merkleRootAfter.generate_r1cs_witness_from_bits();
+        ethsnarks::FieldT accountsMerkleRootBeforeValue = ethsnarks::FieldT(strAccountsMerkleRootBefore.c_str());
+        ethsnarks::FieldT accountsMerkleRootAfterValue = ethsnarks::FieldT(strAccountsMerkleRootAfter.c_str());
+        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootBeforeValue);
+        accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
+        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootAfterValue);
+        accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
 
         for(unsigned int i = 0; i < ringSettlementsData.size(); i++)
         {
@@ -580,23 +720,23 @@ public:
 
         // Print out calculated hash of transfer data
         auto full_output_bits = publicDataHasher->result().get_digest();
-        // printBits("HashC: ", full_output_bits);
+        printBits("HashC: ", full_output_bits);
         BigInt publicDataHashDec = 0;
         for (unsigned int i = 0; i < full_output_bits.size(); i++)
         {
             publicDataHashDec = publicDataHashDec * 2 + (full_output_bits[i] ? 1 : 0);
         }
-        // std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
+        std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
         libff::bigint<libff::alt_bn128_r_limbs> bn = libff::bigint<libff::alt_bn128_r_limbs>(publicDataHashDec.to_string().c_str());
         for (unsigned int i = 0; i < 256; i++)
         {
             pb.val(publicDataHash.bits[i]) = bn.test_bit(i);
         }
         publicDataHash.generate_r1cs_witness_from_bits();
-        // printBits("publicData: ", publicData.get_bits(pb));
+        printBits("publicData: ", publicData.get_bits(pb));
 
-        // printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
-        // printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
+        printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
+        printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
 
         return true;
     }

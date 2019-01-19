@@ -26,6 +26,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
           {
             orderA:
               {
+                index: 0,
                 tokenS: "WETH",
                 tokenB: "GTO",
                 amountS: 100,
@@ -34,6 +35,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
               },
             orderB:
               {
+                index: 1,
                 tokenS: "GTO",
                 tokenB: "WETH",
                 amountS: 200,

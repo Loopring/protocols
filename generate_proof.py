@@ -4,39 +4,44 @@ sys.path.insert(0, 'circuit')
 import os.path
 import subprocess
 import json
-from dex import Dex, Order, Ring
+from dex import Account, Dex, Order, Ring
 from ethsnarks.eddsa import eddsa_random_keypair
+from ethsnarks.jubjub import Point
+from ethsnarks.field import FQ
 
 
 class Export(object):
     def __init__(self):
         self.ringSettlements = []
-        self.merkleRootBefore = 0
-        self.merkleRootAfter = 0
+        self.tradingHistoryMerkleRootBefore = 0
+        self.tradingHistoryMerkleRootAfter = 0
+        self.accountsMerkleRootBefore = 0
+        self.accountsMerkleRootAfter = 0
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
-def orderFromJSON(jOrder):
-    owner = str(int(jOrder["owner"], 16))
-    tokenS = str(int(jOrder["tokenS"], 16))
-    tokenB = str(int(jOrder["tokenB"], 16))
-    tokenF = str(int(jOrder["tokenF"], 16))
+def orderFromJSON(jOrder, dex):
+    dexID = int(jOrder["dexID"])
+    orderID = int(jOrder["orderID"])
+    accountS = int(jOrder["accountS"])
+    accountB = int(jOrder["accountB"])
+    accountF = int(jOrder["accountF"])
     amountS = int(jOrder["amountS"])
     amountB = int(jOrder["amountB"])
     amountF = int(jOrder["amountF"])
 
-    (secretKeyA, publicKeyA) = eddsa_random_keypair()
-    order = Order(publicKeyA, owner, tokenS, tokenB, tokenF, amountS, amountB, amountF)
-    order.sign(secretKeyA)
+    account = dex.getAccount(accountS)
+    order = Order(Point(account.publicKeyX, account.publicKeyY), dexID, orderID, accountS, accountB, accountF, amountS, amountB, amountF)
+    order.sign(FQ(int(account.secretKey)))
 
     return order
 
 
-def ringFromJSON(jRing):
-    orderA = orderFromJSON(jRing["orderA"])
-    orderB = orderFromJSON(jRing["orderB"])
+def ringFromJSON(jRing, dex):
+    orderA = orderFromJSON(jRing["orderA"], dex)
+    orderB = orderFromJSON(jRing["orderB"], dex)
 
     fillS_A = int(jRing["fillS_A"])
     fillB_A = int(jRing["fillB_A"])
@@ -59,13 +64,20 @@ def main():
     if os.path.exists(dex_state_filename):
         dex.loadState(dex_state_filename)
 
+    for _ in range(7):
+        (secretKey, publicKey) = eddsa_random_keypair()
+        account = Account(secretKey, publicKey, 0, 0, 0)
+        dex.addAccount(account)
+
     export = Export()
-    export.merkleRootBefore = str(dex._tree._root)
+    export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
+    export.accountsMerkleRootBefore = str(dex._accountsTree._root)
     for ringInfo in data["rings"]:
-        ring = ringFromJSON(ringInfo)
+        ring = ringFromJSON(ringInfo, dex)
         ringSettlement = dex.settleRing(ring)
         export.ringSettlements.append(ringSettlement)
-    export.merkleRootAfter = str(dex._tree._root)
+    export.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)
+    export.accountsMerkleRootAfter = str(dex._accountsTree._root)
 
     f = open("rings.json","w+")
     f.write(export.toJSON())

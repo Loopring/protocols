@@ -4,7 +4,7 @@
 namespace Loopring
 {
     static const unsigned int TREE_DEPTH_FILLED = 28;
-    static const unsigned int NUM_BITS_AMOUNT = 128;
+    static const unsigned int TREE_DEPTH_ACCOUNTS = 24;
 }
 
 #endif

@@ -28,7 +28,7 @@ int main (int argc, char **argv)
     circuit.generate_r1cs_constraints(numRings);
     circuit.printInfo();
 
-#if 1
+#if 0
     libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT> keypair;
     if (argc >= 2)
     {
@@ -65,8 +65,10 @@ int main (int argc, char **argv)
         json input;
         file >> input;
         json jRingSettlements = input["ringSettlements"];
-        std::string merkleRootBefore = input["merkleRootBefore"].get<std::string>();
-        std::string merkleRootAfter= input["merkleRootAfter"].get<std::string>();
+        std::string tradingHistoryMerkleRootBefore = input["tradingHistoryMerkleRootBefore"].get<std::string>();
+        std::string tradingHistoryMerkleRootAfter = input["tradingHistoryMerkleRootAfter"].get<std::string>();
+        std::string accountsMerkleRootBefore = input["accountsMerkleRootBefore"].get<std::string>();
+        std::string accountsMerkleRootAfter = input["accountsMerkleRootAfter"].get<std::string>();
         if (jRingSettlements.size() < numRings)
         {
             std::cerr << "Not enought rings in input file: " << jRingSettlements.size() << std::endl;
@@ -80,7 +82,9 @@ int main (int argc, char **argv)
         }
 
         // Generate witness values for the given input values
-        if (!circuit.generateWitness(ringSettlements, merkleRootBefore, merkleRootAfter))
+        if (!circuit.generateWitness(ringSettlements,
+                                     tradingHistoryMerkleRootBefore, tradingHistoryMerkleRootAfter,
+                                     accountsMerkleRootBefore, accountsMerkleRootAfter))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return 1;
@@ -94,7 +98,7 @@ int main (int argc, char **argv)
         }
         std::cout << "Input is valid." << std::endl;
 
-#if 1
+#if 0
         {
             std::cout << "Generating proof..." << std::endl;
             timespec time1, time2;

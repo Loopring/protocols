@@ -8,7 +8,7 @@ import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { OrderInfo, RingInfo, RingsInfo, TokenTransfer } from "./types";
+import { OrderInfo, OrderSettlementData, RingInfo, RingSettlementData, RingsInfo } from "./types";
 
 export class ExchangeTestUtil {
   public context: Context;
@@ -16,6 +16,8 @@ export class ExchangeTestUtil {
   public exchange: any;
 
   private contracts = new Artifacts(artifacts);
+
+  private tokenIDMap = new Map<string, number>();
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -104,6 +106,13 @@ export class ExchangeTestUtil {
     order.tokenF = order.tokenF ? order.tokenF : this.context.lrcAddress;
     order.amountF = order.amountF ? order.amountF : 0;
 
+    order.dexID = order.dexID ? order.dexID : 0;
+    order.orderID = order.orderID ? order.orderID : order.index;
+
+    order.accountS = order.index * 3 + 1;
+    order.accountB = order.index * 3 + 2;
+    order.accountF = order.index * 3 + 3;
+
     // setup initial balances:
     await this.setOrderBalances(order);
   }
@@ -147,59 +156,6 @@ export class ExchangeTestUtil {
     return addressBook;
   }
 
-  public assertTransfers(ringsInfo: RingsInfo,
-                         tranferEvents: Array<[string, string, string, BN]>,
-                         transferList: TokenTransfer[]) {
-    const transfersFromSimulator: Array<[string, string, string, BN]> = [];
-    transferList.forEach((item) => transfersFromSimulator.push([item.token, item.from, item.to, item.amount]));
-    const sorter = (a: [string, string, string, BN], b: [string, string, string, BN]) => {
-      if (a[0] === b[0]) {
-        if (a[1] === b[1]) {
-          if (a[2] === b[2]) {
-            return a[3].sub(b[3]).toNumber();
-          } else {
-            return a[2] > b[2] ? 1 : -1;
-          }
-        } else {
-          return a[1] > b[1] ? 1 : -1;
-        }
-      } else {
-        return a[0] > b[0] ? 1 : -1;
-      }
-    };
-
-    transfersFromSimulator.sort(sorter);
-    tranferEvents.sort(sorter);
-    const addressBook = this.getAddressBook(ringsInfo);
-    pjs.logDebug("transfer items from simulator:");
-    transfersFromSimulator.forEach((t) => {
-      const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
-      const decimals = this.testContext.tokenAddrDecimalsMap.get(t[0]);
-      const fromName = addressBook[t[1]];
-      const toName = addressBook[t[2]];
-      pjs.logDebug(fromName + " -> " + toName + " : " + t[3].toNumber() / (10 ** decimals) + " " + tokenSymbol);
-    });
-    pjs.logDebug("transfer items from contract:");
-    tranferEvents.forEach((t) => {
-      const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(t[0]);
-      const decimals = this.testContext.tokenAddrDecimalsMap.get(t[0]);
-      const fromName = addressBook[t[1]];
-      const toName = addressBook[t[2]];
-      pjs.logDebug(fromName + " -> " + toName + " : " +
-        (new BigNumber(t[3].toString()).toNumber() / (10 ** decimals)) + " " + tokenSymbol);
-    });
-    assert.equal(tranferEvents.length, transfersFromSimulator.length, "Number of transfers do not match");
-    for (let i = 0; i < tranferEvents.length; i++) {
-      const transferFromEvent = tranferEvents[i];
-      const transferFromSimulator = transfersFromSimulator[i];
-      assert.equal(transferFromEvent[0], transferFromSimulator[0]);
-      assert.equal(transferFromEvent[1], transferFromSimulator[1]);
-      assert.equal(transferFromEvent[2], transferFromSimulator[2]);
-      assert(new BN(transferFromEvent[3].toString()).eq(transferFromSimulator[3]),
-             "Transfer amount does not match");
-    }
-  }
-
   public flattenList = (l: any[]) => {
     return [].concat.apply([], l);
   }
@@ -224,11 +180,7 @@ export class ExchangeTestUtil {
     ]);
   }
 
-  public addTokenTransfer(transfers: TokenTransfer[], token: string, from: string, to: string, amount: number) {
-    transfers.push({token, from, to, amount: new BN(amount)});
-  }
-
-  public async settleRing(transfers: TokenTransfer[], ring: RingInfo) {
+  public async settleRing(ring: RingInfo) {
     const orderA = ring.orderA;
     const orderB = ring.orderB;
 
@@ -239,23 +191,59 @@ export class ExchangeTestUtil {
     ring.fillB_B = orderB.amountB / 100;
     ring.fillF_B = orderB.amountF / 100;
 
-    this.addTokenTransfer(transfers, orderA.tokenS, orderA.owner, orderB.owner, ring.fillS_A);
-    this.addTokenTransfer(transfers, orderA.tokenF, orderA.owner, orderB.owner, ring.fillF_A);
-    this.addTokenTransfer(transfers, orderB.tokenS, orderB.owner, orderA.owner, ring.fillS_B);
-    this.addTokenTransfer(transfers, orderB.tokenF, orderB.owner, orderA.owner, ring.fillF_B);
+    const orderDataA: OrderSettlementData = {
+      dexID: orderA.dexID,
+      orderID: orderA.orderID,
+
+      fromS: orderA.accountS,
+      toB: orderB.accountB,
+      amountS: ring.fillS_A,
+      toMargin: 0,
+      marginPercentage: 0,
+
+      fromF: orderA.accountF,
+      toWallet: 0,
+      toOperator: 0,
+      amountF: ring.fillF_A,
+      WalletSplitPercentage: 0,
+    };
+
+    const orderDataB: OrderSettlementData = {
+      dexID: orderB.dexID,
+      orderID: orderB.orderID,
+
+      fromS: orderB.accountS,
+      toB: orderA.accountB,
+      amountS: ring.fillS_B,
+      toMargin: 0,
+      marginPercentage: 0,
+
+      fromF: orderB.accountF,
+      toWallet: 0,
+      toOperator: 0,
+      amountF: ring.fillF_B,
+      WalletSplitPercentage: 0,
+    };
+
+    const ringSettlement: RingSettlementData = {
+      orderA: orderDataA,
+      orderB: orderDataB,
+    };
+
+    return ringSettlement;
   }
 
   public async settleRings(ringsInfo: RingsInfo) {
-    const transfers: TokenTransfer[] = [];
+    const ringSettlements: RingSettlementData[] = [];
     for (const ring of ringsInfo.rings) {
-      this.settleRing(transfers, ring);
+      ringSettlements.push(await this.settleRing(ring));
     }
-    return transfers;
+    return ringSettlements;
   }
 
   public async submitRings(ringsInfo: RingsInfo) {
     // Generate the token transfers for the ring
-    const transfers = await this.settleRings(ringsInfo);
+    const ringSettlements = await this.settleRings(ringsInfo);
 
     // Write out the rings info
     const jRingsInfo = JSON.stringify(ringsInfo, null, 4);
@@ -278,17 +266,31 @@ export class ExchangeTestUtil {
     // console.log(rings.rootBefore);
     bs.addBigNumber(new BigNumber(rings.merkleRootBefore, 10), 32);
     bs.addBigNumber(new BigNumber(rings.merkleRootAfter, 10), 32);
-    for (const transfer of transfers) {
-      bs.addAddress(transfer.token, 20);
-      bs.addAddress(transfer.from, 20);
-      bs.addAddress(transfer.to, 20);
-      bs.addBN(transfer.amount, 16);
+    console.log(ringSettlements);
+    for (const ringSettlement of ringSettlements) {
+      const orders = [ringSettlement.orderA, ringSettlement.orderB];
+      for (const order of orders) {
+        bs.addNumber(order.dexID, 2);
+        bs.addNumber(order.orderID, 2);
+
+        bs.addNumber(order.fromS, 3);
+        bs.addNumber(order.toB, 3);
+        // bs.addNumber(order.toMargin, 3);
+        bs.addNumber(order.amountS, 12);
+        // bs.addNumber(order.marginPercentage, 1);
+
+        bs.addNumber(order.fromF, 3);
+        // bs.addNumber(order.toWallet, 3);
+        // bs.addNumber(order.toOperator, 3);
+        bs.addNumber(order.amountF, 12);
+        // bs.addNumber(order.WalletSplitPercentage, 1);
+      }
     }
 
     // Hash all public inputs to a singe value
     const publicDataHash = ethUtil.sha256(bs.getData());
-    // console.log("DataJS: " + bs.getData());
-    // console.log(publicDataHash.toString("hex"));
+    console.log("DataJS: " + bs.getData());
+    console.log(publicDataHash.toString("hex"));
     ringsInfo.publicDataHash = publicDataHash.toString("hex");
 
     // Read the verification key and set it in the smart contract
@@ -301,12 +303,24 @@ export class ExchangeTestUtil {
     const tx = await this.exchange.submitRings(web3.utils.hexToBytes(bs.getData()), proofFlattened);
     pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
 
-    const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
-    this.assertTransfers(ringsInfo, transferEvents, transfers);
+    // const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
+    // this.assertTransfers(ringsInfo, transferEvents, transfers);
 
     // await this.watchAndPrintEvent(this.exchange, "TestLog");
 
     return tx;
+  }
+
+  public async registerTokens() {
+    for (const token of this.testContext.allTokens) {
+      await this.exchange.registerToken(token.address);
+      this.tokenIDMap.set(token.address, await this.getTokenID(token.address));
+    }
+  }
+
+  public async getTokenID(tokenAddress: string) {
+    const tokenID = await this.exchange.getTokenID(tokenAddress);
+    return tokenID;
   }
 
   public async authorizeTradeDelegate() {

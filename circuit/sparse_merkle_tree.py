@@ -25,8 +25,8 @@ class SparseMerkleTree(object):
         self._db = EphemDB()
         self._root = 0
 
-    def newTree(self):
-        h = LongsightL12p5_MP([int(0), int(0)], 1)
+    def newTree(self, defaultLeafHash):
+        h = defaultLeafHash
         for i in range(self._depth):
             newh = self._hasher.hash_pair(i, h, h)
             self._db.put(newh, [h, h])

@@ -14,6 +14,38 @@ using json = nlohmann::json;
 namespace Loopring
 {
 
+class Proof
+{
+public:
+    std::vector<ethsnarks::FieldT> data;
+};
+
+void from_json(const json& j, Proof& proof)
+{
+    for(unsigned int i = 0; i < j.size(); i++)
+    {
+        proof.data.push_back(ethsnarks::FieldT(j[i].get<std::string>().c_str()));
+    }
+}
+
+class Account
+{
+public:
+    ethsnarks::jubjub::EdwardsPoint publicKey;
+    ethsnarks::FieldT dexID;
+    ethsnarks::FieldT token;
+    ethsnarks::FieldT balance;
+};
+
+void from_json(const json& j, Account& account)
+{
+    account.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
+    account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
+    account.dexID = ethsnarks::FieldT(j.at("dexID"));
+    account.token = ethsnarks::FieldT(j.at("token"));
+    account.balance = ethsnarks::FieldT(j.at("balance"));
+}
+
 class Signature
 {
 public:
@@ -32,13 +64,15 @@ class Order
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::FieldT owner;
-    ethsnarks::FieldT tokenS;
-    ethsnarks::FieldT tokenB;
-    ethsnarks::FieldT tokenF;
+    ethsnarks::FieldT dexID;
+    ethsnarks::FieldT orderID;
+    ethsnarks::FieldT accountS;
+    ethsnarks::FieldT accountB;
+    ethsnarks::FieldT accountF;
     ethsnarks::FieldT amountS;
     ethsnarks::FieldT amountB;
     ethsnarks::FieldT amountF;
+    ethsnarks::FieldT walletF;
     Signature sig;
 };
 
@@ -46,13 +80,15 @@ void from_json(const json& j, Order& order)
 {
     order.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     order.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    order.owner = ethsnarks::FieldT(j.at("owner").get<std::string>().c_str());
-    order.tokenS = ethsnarks::FieldT(j.at("tokenS").get<std::string>().c_str());
-    order.tokenB = ethsnarks::FieldT(j.at("tokenB").get<std::string>().c_str());
-    order.tokenF = ethsnarks::FieldT(j.at("tokenF").get<std::string>().c_str());
+    order.dexID = ethsnarks::FieldT(j.at("dexID"));
+    order.orderID = ethsnarks::FieldT(j.at("orderID"));
+    order.accountS = ethsnarks::FieldT(j.at("accountS"));
+    order.accountB = ethsnarks::FieldT(j.at("accountB"));
+    order.accountF = ethsnarks::FieldT(j.at("accountF"));
     order.amountS = ethsnarks::FieldT(j.at("amountS"));
     order.amountB = ethsnarks::FieldT(j.at("amountB"));
     order.amountF = ethsnarks::FieldT(j.at("amountF"));
+    order.walletF = ethsnarks::FieldT(j.at("walletF"));
     order.sig = j.get<Signature>();
 }
 
@@ -84,33 +120,37 @@ void from_json(const json& j, Ring& ring)
 class RingSettlement
 {
 public:
-    ethsnarks::FieldT merkleRoot;
+    ethsnarks::FieldT tradingHistoryMerkleRoot;
+    ethsnarks::FieldT accountsMerkleRoot;
     Ring ring;
 
     ethsnarks::FieldT filledA;
     ethsnarks::FieldT filledB;
 
-    std::vector<ethsnarks::FieldT> proofA;
-    std::vector<ethsnarks::FieldT> proofB;
+    Proof proofFilledA;
+    Proof proofFilledB;
+
+    Account accountS_A_before;
+    Account accountS_A_after;
+    Proof accountS_A_proof;
 };
 
 void from_json(const json& j, RingSettlement& ringSettlement)
 {
-    ringSettlement.merkleRoot = ethsnarks::FieldT(j.at("merkleRoot").get<std::string>().c_str());
+    ringSettlement.tradingHistoryMerkleRoot = ethsnarks::FieldT(j.at("tradingHistoryMerkleRoot").get<std::string>().c_str());
+    ringSettlement.accountsMerkleRoot = ethsnarks::FieldT(j.at("accountsMerkleRoot").get<std::string>().c_str());
 
     ringSettlement.ring = j.at("ring").get<Ring>();
 
     ringSettlement.filledA = ethsnarks::FieldT(j.at("filledA"));
     ringSettlement.filledB = ethsnarks::FieldT(j.at("filledB"));
 
-    for(unsigned int i = 0; i < j.at("proofA").size(); i++)
-    {
-        ringSettlement.proofA.push_back(ethsnarks::FieldT(j.at("proofA")[i].get<std::string>().c_str()));
-    }
-    for(unsigned int i = 0; i < j.at("proofB").size(); i++)
-    {
-        ringSettlement.proofB.push_back(ethsnarks::FieldT(j.at("proofB")[i].get<std::string>().c_str()));
-    }
+    ringSettlement.proofFilledA = j.at("proofA").get<Proof>();
+    ringSettlement.proofFilledB = j.at("proofB").get<Proof>();
+
+    ringSettlement.accountS_A_before = j.at("accountS_A_before").get<Account>();
+    ringSettlement.accountS_A_after = j.at("accountS_A_after").get<Account>();
+    ringSettlement.accountS_A_proof = j.at("accountS_A_proof").get<Proof>();
 }
 
 }

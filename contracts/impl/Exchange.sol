@@ -19,6 +19,7 @@ pragma solidity 0.5.2;
 import "../iface/IExchange.sol";
 import "../iface/ITradeDelegate.sol";
 
+import "../lib/ERC20SafeTransfer.sol";
 import "../lib/Verifier.sol";
 
 import "../lib/BytesUtil.sol";
@@ -32,12 +33,46 @@ contract Exchange is IExchange, NoDefaultFunc {
     using MathUint      for uint;
     using BytesUtil     for bytes;
 
+    uint public MAX_NUM_DEPOSITS_IN_BLOCK       = 32;
+
     address public  tradeDelegateAddress        = address(0x0);
 
-    bytes32 public merkleRoot                   = 0x056e110222a84609de5696e61a9f18731afd9c4743f77d85c6f7267cb1617571;
+    bytes32 public tradeHistoryMerkleRoot       = 0x056e110222a84609de5696e61a9f18731afd9c4743f77d85c6f7267cb1617571;
 
     uint256[14] vk;
     uint256[] gammaABC;
+
+    event TokenRegistered(address tokenAddress, uint tokenID);
+
+    struct Token {
+        address tokenAddress;
+    }
+    Token[] public tokens;
+    mapping (address => uint) public tokenToTokenID;
+
+    struct Account {
+        address owner;
+        uint16 dexID;
+        address token;
+    }
+
+    struct DepositBlock {
+        uint numDeposits;
+        bytes32 hash;
+        bool done;
+    }
+
+    struct Withdrawal {
+        uint32 accountID;
+        uint96 amount;
+    }
+
+    struct Block {
+        Withdrawal[] witdrawals;
+    }
+
+    Account[] public accounts;
+    mapping (uint => DepositBlock) public depositBlocks;
 
     constructor(
         address _tradeDelegateAddress
@@ -62,16 +97,90 @@ contract Exchange is IExchange, NoDefaultFunc {
             merkleRootBefore := mload(add(data, 32))
             merkleRootAfter := mload(add(data, 64))
         }
-        require(merkleRootBefore == merkleRoot, "INVALID_ROOT");
+        require(merkleRootBefore == tradeHistoryMerkleRoot, "INVALID_ROOT");
 
         bytes32 publicDataHash = sha256(data);
         bool verified = verifyProof(publicDataHash, proof);
         require(verified, "INVALID_PROOF");
 
         // Update the merkle root
-        merkleRoot = merkleRootAfter;
+        tradeHistoryMerkleRoot = merkleRootAfter;
+    }
 
-        doTokenTransfers(data);
+    function registerToken(
+        address tokenAddress
+        )
+        external
+    {
+        require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
+        Token memory token = Token(
+            tokenAddress
+        );
+        tokens.push(token);
+
+        tokenToTokenID[tokenAddress] = tokens.length;
+
+        emit TokenRegistered(tokenAddress, tokens.length - 1);
+    }
+
+    function getTokenID(
+        address tokenAddress
+        )
+        external
+        view
+        returns (uint)
+    {
+        require(tokenToTokenID[tokenAddress] != 0, "NOT_REGISTERED");
+        return tokenToTokenID[tokenAddress] - 1;
+    }
+
+    function deposit(
+        uint16 dexID,
+        address owner,
+        uint brokerPublicKeyX,
+        uint brokerPublicKeyY,
+        address token,
+        uint amount
+        )
+        public
+    {
+        require(msg.sender == owner, "UNAUTHORIZED");
+        uint currentBlock = block.number / 40;
+        DepositBlock storage depositBlock = depositBlocks[currentBlock];
+        require(depositBlock.numDeposits < MAX_NUM_DEPOSITS_IN_BLOCK, "DEPOSIT_BLOCK_FULL");
+        if (depositBlock.numDeposits == 0) {
+            depositBlock.hash = bytes32(accounts.length);
+        }
+
+        depositBlock.hash = sha256(
+            abi.encodePacked(
+                depositBlock.hash,
+                brokerPublicKeyX,
+                brokerPublicKeyY,
+                owner,
+                dexID,
+                token,
+                amount
+            )
+        );
+        depositBlock.numDeposits++;
+
+        Account memory account = Account(
+            owner,
+            dexID,
+            token
+        );
+        accounts.push(account);
+    }
+
+    function withdraw(
+        uint dexID,
+        uint blockIdx,
+        uint withdrawalIdx
+        )
+        public
+    {
+        // empty
     }
 
     function verifyProof(
@@ -90,40 +199,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         (_vk, _vk_gammaABC) = getVerifyingKey();
 
         return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
-    }
-
-    function doTokenTransfers(
-        bytes memory data
-        )
-        internal
-    {
-        uint numTransfers = (data.length - (32 * 2)) / (20 + 20 + 20 + 16);
-
-        uint ptr;
-        assembly {
-            ptr := add(data, 64)
-        }
-
-        bytes32[] memory transferData = new bytes32[](numTransfers * 4);
-        for (uint i = 0; i < numTransfers; i++) {
-            bytes32 token;
-            bytes32 from;
-            bytes32 to;
-            bytes32 amount;
-            assembly {
-                token := and(mload(add(ptr, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-                from := and(mload(add(ptr, 40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-                to := and(mload(add(ptr, 60)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-                amount := and(mload(add(ptr, 76)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-            }
-            transferData[i*4 + 0] = token;
-            transferData[i*4 + 1] = from;
-            transferData[i*4 + 2] = to;
-            transferData[i*4 + 3] = amount;
-
-            ptr += (20 + 20 + 20 + 16);
-        }
-        ITradeDelegate(tradeDelegateAddress).batchTransfer(transferData);
     }
 
     function getVerifyingKey()

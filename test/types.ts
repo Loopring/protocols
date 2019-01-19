@@ -10,6 +10,13 @@ export interface OrderInfo {
   amountB: number;
   amountF?: number;
 
+  dexID?: number;
+  orderID?: number;
+
+  accountS?: number;
+  accountB?: number;
+  accountF?: number;
+
   validSince?: number;
   validUntil?: number;
 
@@ -41,9 +48,26 @@ export interface RingsInfo {
   timestamp?: number;
 }
 
-export interface TokenTransfer {
-  token: string;
-  from: string;
-  to: string;
-  amount: BN;
+export interface OrderSettlementData {
+  dexID: number;                        // 2 bytes
+  orderID: number;                      // 2 bytes
+
+  // TokenS -> TokenB
+  fromS: number;                        // 3 bytes
+  toB: number;                          // 3 bytes
+  amountS: number;                      // 12 bytes
+  toMargin: number;                     // 3 bytes
+  marginPercentage: number;             // 1 byte
+
+  // TokenF -> FeeRecipients (wallet, operator, burn)
+  fromF: number;                        // 3 bytes
+  toWallet: number;                     // 3 bytes
+  toOperator: number;                   // 3 bytes
+  amountF: number;                      // 12 bytes
+  WalletSplitPercentage: number;        // 1 byte
+}
+
+export interface RingSettlementData {
+  orderA: OrderSettlementData;
+  orderB: OrderSettlementData;
 }
