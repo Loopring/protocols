@@ -72,6 +72,9 @@ public:
     ethsnarks::FieldT amountS;
     ethsnarks::FieldT amountB;
     ethsnarks::FieldT amountF;
+    ethsnarks::FieldT tokenS;
+    ethsnarks::FieldT tokenB;
+    ethsnarks::FieldT tokenF;
     ethsnarks::FieldT walletF;
     Signature sig;
 };
@@ -88,6 +91,9 @@ void from_json(const json& j, Order& order)
     order.amountS = ethsnarks::FieldT(j.at("amountS"));
     order.amountB = ethsnarks::FieldT(j.at("amountB"));
     order.amountF = ethsnarks::FieldT(j.at("amountF"));
+    order.tokenS = ethsnarks::FieldT(j.at("tokenS"));
+    order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
+    order.tokenF = ethsnarks::FieldT(j.at("tokenF"));
     order.walletF = ethsnarks::FieldT(j.at("walletF"));
     order.sig = j.get<Signature>();
 }
@@ -133,6 +139,10 @@ public:
     Account accountS_A_before;
     Account accountS_A_after;
     Proof accountS_A_proof;
+
+    Account accountB_B_before;
+    Account accountB_B_after;
+    Proof accountB_B_proof;
 };
 
 void from_json(const json& j, RingSettlement& ringSettlement)
@@ -151,6 +161,10 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.accountS_A_before = j.at("accountS_A_before").get<Account>();
     ringSettlement.accountS_A_after = j.at("accountS_A_after").get<Account>();
     ringSettlement.accountS_A_proof = j.at("accountS_A_proof").get<Proof>();
+
+    ringSettlement.accountB_B_before = j.at("accountB_B_before").get<Account>();
+    ringSettlement.accountB_B_after = j.at("accountB_B_after").get<Account>();
+    ringSettlement.accountB_B_proof = j.at("accountB_B_proof").get<Proof>();
 }
 
 }

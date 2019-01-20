@@ -113,6 +113,10 @@ export class ExchangeTestUtil {
     order.accountB = order.index * 3 + 2;
     order.accountF = order.index * 3 + 3;
 
+    order.tokenIdS = order.index * 3 + 1;
+    order.tokenIdB = order.index * 3 + 2;
+    order.tokenIdF = order.index * 3 + 3;
+
     // setup initial balances:
     await this.setOrderBalances(order);
   }

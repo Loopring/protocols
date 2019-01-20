@@ -31,9 +31,16 @@ def orderFromJSON(jOrder, dex):
     amountS = int(jOrder["amountS"])
     amountB = int(jOrder["amountB"])
     amountF = int(jOrder["amountF"])
+    tokenS = int(jOrder["tokenIdS"])
+    tokenB = int(jOrder["tokenIdB"])
+    tokenF = int(jOrder["tokenIdF"])
 
     account = dex.getAccount(accountS)
-    order = Order(Point(account.publicKeyX, account.publicKeyY), dexID, orderID, accountS, accountB, accountF, amountS, amountB, amountF)
+    order = Order(Point(account.publicKeyX, account.publicKeyY),
+                  dexID, orderID,
+                  accountS, accountB, accountF,
+                  amountS, amountB, amountF,
+                  tokenS, tokenB, tokenF)
     order.sign(FQ(int(account.secretKey)))
 
     return order
@@ -64,10 +71,11 @@ def main():
     if os.path.exists(dex_state_filename):
         dex.loadState(dex_state_filename)
 
-    for _ in range(7):
+    for _ in range(2):
         (secretKey, publicKey) = eddsa_random_keypair()
-        account = Account(secretKey, publicKey, 0, 0, 0)
-        dex.addAccount(account)
+        for t in range(3):
+            account = Account(secretKey, publicKey, 0, t, 100)
+            dex.addAccount(account)
 
     export = Export()
     export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)

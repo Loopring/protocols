@@ -25,7 +25,7 @@ class Account(object):
     def hash(self):
         #return LongsightL12p5_MP([int(self.publicKeyX), int(self.publicKeyY),
         #                          int(self.dexID), int(self.token), int(self.balance)], 1)
-        return LongsightL12p5_MP([int(self.balance), int(self.balance)], 1)
+        return LongsightL12p5_MP([int(self.publicKeyX), int(self.publicKeyY), int(self.token), int(self.balance)], 1)
 
     def fromJSON(self, jAccount):
         self.secretKey = jAccount["secretKey"]
@@ -37,7 +37,10 @@ class Account(object):
 
 
 class Order(object):
-    def __init__(self, publicKey, dexID, orderID, accountS, accountB, accountF, amountS, amountB, amountF):
+    def __init__(self, publicKey, dexID, orderID,
+                 accountS, accountB, accountF,
+                 amountS, amountB, amountF,
+                 tokenS, tokenB, tokenF):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.dexID = dexID
@@ -48,6 +51,10 @@ class Order(object):
         self.amountS = amountS
         self.amountB = amountB
         self.amountF = amountF
+
+        self.tokenS = tokenS
+        self.tokenB = tokenB
+        self.tokenF = tokenF
 
         self.walletF = 0
 
@@ -81,7 +88,10 @@ class Ring(object):
 
 
 class RingSettlement(object):
-    def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot, ring, filledA, filledB, proofA, proofB, accountS_A_before, accountS_A_after, accountS_A_proof):
+    def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
+                 filledA, filledB, proofA, proofB,
+                 accountS_A_before, accountS_A_after, accountS_A_proof,
+                 accountB_B_before, accountB_B_after, accountB_B_proof):
         self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.ring = ring
@@ -92,6 +102,9 @@ class RingSettlement(object):
         self.accountS_A_before = accountS_A_before
         self.accountS_A_after = accountS_A_after
         self.accountS_A_proof = [str(_) for _ in accountS_A_proof]
+        self.accountB_B_before = accountB_B_before
+        self.accountB_B_after = accountB_B_after
+        self.accountB_B_proof = [str(_) for _ in accountB_B_proof]
 
 
 class Dex(object):
@@ -102,8 +115,7 @@ class Dex(object):
         self._filled = {}
         # Accounts
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
-        #self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
-        self._accountsTree.newTree(LongsightL12p5_MP([int(0), int(0)], 1))
+        self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
         self._accounts = []
 
     def loadState(self, filename):
@@ -161,8 +173,7 @@ class Dex(object):
         print("accountAfter: " + str(accountAfter.balance))
         proof = self._accountsTree.createProof(address)
         # TODO: don't hash the filled value with itself
-        account_hash = LongsightL12p5_MP([int(accountAfter.balance), int(accountAfter.balance)], 1)
-        self._accountsTree.update(address, account_hash)
+        self._accountsTree.update(address, accountAfter.hash())
 
         # The circuit expects the proof in the reverse direction from bottom to top
         proof.reverse()
@@ -181,11 +192,14 @@ class Dex(object):
         (filledB, proofB) = self.updateFilled(addressB, ring.fillS_B)
 
         # Update balance accountS A
-        (accountS_A_Before, accountS_A_After, accountS_A_proof) = self.updateBalance(ring.orderA.accountS, ring.fillS_A)
+        (accountS_A_Before, accountS_A_After, accountS_A_proof) = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
+        # Update balance accountB B
+        (accountB_B_Before, accountB_B_After, accountB_B_proof) = self.updateBalance(ring.orderB.accountB, ring.fillB_B)
 
         return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot,
                               ring, filledA, filledB, proofA, proofB,
-                              accountS_A_Before, accountS_A_After, accountS_A_proof)
+                              accountS_A_Before, accountS_A_After, accountS_A_proof,
+                              accountB_B_Before, accountB_B_After, accountB_B_proof)
 
     def addAccount(self, account):
         self._accountsTree.update(len(self._accounts), account.hash())

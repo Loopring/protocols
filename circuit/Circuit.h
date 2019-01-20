@@ -141,6 +141,10 @@ public:
     libsnark::dual_variable_gadget<FieldT> walletF;
     libsnark::dual_variable_gadget<FieldT> padding;
 
+    VariableT tokenS;
+    VariableT tokenB;
+    VariableT tokenF;
+
     const jubjub::VariablePointT publicKey;
 
     // variables for signature
@@ -166,6 +170,10 @@ public:
         amountF(pb, 96, FMT(annotation_prefix, ".amountF")),
         walletF(pb, 24, FMT(annotation_prefix, ".walletF")),
         padding(pb, 1, FMT(annotation_prefix, ".padding")),
+
+        tokenS(make_variable(pb, FMT(annotation_prefix, ".tokenS"))),
+        tokenB(make_variable(pb, FMT(annotation_prefix, ".tokenB"))),
+        tokenF(make_variable(pb, FMT(annotation_prefix, ".tokenF"))),
 
         publicKey(pb, FMT(annotation_prefix, ".publicKey")),
 
@@ -204,6 +212,10 @@ public:
 
         padding.bits.fill_with_bits_of_field_element(this->pb, 0);
         padding.generate_r1cs_witness_from_bits();
+
+        this->pb.val(tokenS) = order.tokenS;
+        this->pb.val(tokenB) = order.tokenB;
+        this->pb.val(tokenF) = order.tokenF;
 
         this->pb.val(publicKey.x) = order.publicKey.x;
         this->pb.val(publicKey.y) = order.publicKey.y;
@@ -336,6 +348,8 @@ public:
         ProtoboardT& pb,
         const VariableT& _merkleRoot,
         const VariableArrayT& address,
+        const jubjub::VariablePointT& publicKey,
+        const VariableT& token,
         const std::string& annotation_prefix
     ) :
         GadgetT(pb, annotation_prefix),
@@ -347,8 +361,8 @@ public:
         balanceBefore(make_variable(pb, FMT(annotation_prefix, ".balanceBefore"))),
         balanceAfter(make_variable(pb, FMT(annotation_prefix, ".balanceAfter"))),
 
-        leafBefore(pb, libsnark::ONE, {balanceBefore, balanceBefore}, FMT(annotation_prefix, ".leafBefore")),
-        leafAfter(pb, libsnark::ONE, {balanceAfter, balanceAfter}, FMT(annotation_prefix, ".leafAfter")),
+        leafBefore(pb, libsnark::ONE, {publicKey.x, publicKey.y, token, balanceBefore}, FMT(annotation_prefix, ".leafBefore")),
+        leafAfter(pb, libsnark::ONE, {publicKey.x, publicKey.y, token, balanceAfter}, FMT(annotation_prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".proof"))),
         proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(annotation_prefix, ".pathBefore")),
@@ -367,10 +381,10 @@ public:
         return balanceAfter;
     }
 
-    void generate_r1cs_witness(const Account& before, const Account& after, const Proof& _proof, const libsnark::dual_variable_gadget<FieldT>& amount)
+    void generate_r1cs_witness(const Account& before, const Account& after, const Proof& _proof)
     {
         this->pb.val(balanceBefore) = before.balance;
-        this->pb.val(balanceAfter) = this->pb.val(balanceBefore) + this->pb.val(amount.packed);
+        this->pb.val(balanceAfter) = after.balance;
 
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
@@ -382,7 +396,7 @@ public:
 
     void generate_r1cs_constraints(const libsnark::dual_variable_gadget<FieldT>& amount)
     {
-        this->pb.add_r1cs_constraint(ConstraintT(balanceBefore + amount.packed, 1, balanceAfter), "balanceBefore + amount = balanceAfter");
+        //this->pb.add_r1cs_constraint(ConstraintT(balanceBefore + amount.packed, 1, balanceAfter), "balanceBefore + amount = balanceAfter");
 
         leafBefore.generate_r1cs_constraints();
         leafAfter.generate_r1cs_constraints();
@@ -411,7 +425,8 @@ public:
     UpdateFilledGadget updateFilledA;
     UpdateFilledGadget updateFilledB;
 
-    UpdateBalanceGadget updateBalanceSA;
+    UpdateBalanceGadget updateBalanceS_A;
+    UpdateBalanceGadget updateBalanceB_B;
 
     LeqGadget filledLeqA;
     LeqGadget filledLeqB;
@@ -449,7 +464,8 @@ public:
         updateFilledB(pb, updateFilledA.result(), flatten({orderB.orderID.bits, orderB.accountS.bits}), FMT(annotation_prefix, ".updateFilledB")),
 
         accountsMerkleRoot(_accountsMerkleRoot),
-        updateBalanceSA(pb, accountsMerkleRoot, orderA.accountS.bits, FMT(annotation_prefix, ".updateBalanceS_A")),
+        updateBalanceS_A(pb, accountsMerkleRoot, orderA.accountS.bits, orderA.publicKey, orderA.tokenS, FMT(annotation_prefix, ".updateBalanceS_A")),
+        updateBalanceB_B(pb, updateBalanceS_A.result(), orderB.accountB.bits, orderB.publicKey, orderB.tokenB, FMT(annotation_prefix, ".updateBalanceB_B")),
 
         filledLeqA(pb, updateFilledA.getFilledAfter(), orderA.amountS.packed, FMT(annotation_prefix, ".filled_A < .amountSA")),
         filledLeqB(pb, updateFilledB.getFilledAfter(), orderB.amountS.packed, FMT(annotation_prefix, ".filled_B < .amountSB")),
@@ -473,7 +489,7 @@ public:
 
     const VariableT getNewAccountsMerkleRoot() const
     {
-        return updateBalanceSA.result();
+        return updateBalanceB_B.result();
     }
 
     const std::vector<VariableArrayT> getPublicData() const
@@ -520,7 +536,8 @@ public:
         // Update accounts
         //
 
-        updateBalanceSA.generate_r1cs_witness(ringSettlement.accountS_A_before, ringSettlement.accountS_A_after, ringSettlement.accountS_A_proof, fillS_A);
+        updateBalanceS_A.generate_r1cs_witness(ringSettlement.accountS_A_before, ringSettlement.accountS_A_after, ringSettlement.accountS_A_proof);
+        updateBalanceB_B.generate_r1cs_witness(ringSettlement.accountB_B_before, ringSettlement.accountB_B_after, ringSettlement.accountB_B_proof);
 
         //
         // Matching
@@ -565,7 +582,8 @@ public:
         // Update accounts
         //
 
-        updateBalanceSA.generate_r1cs_constraints(fillS_A);
+        updateBalanceS_A.generate_r1cs_constraints(fillS_A);
+        updateBalanceB_B.generate_r1cs_constraints(fillB_B);
 
         //
         // Matching

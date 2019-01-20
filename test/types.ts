@@ -17,6 +17,10 @@ export interface OrderInfo {
   accountB?: number;
   accountF?: number;
 
+  tokenIdS?: number;
+  tokenIdB?: number;
+  tokenIdF?: number;
+
   validSince?: number;
   validUntil?: number;
 
