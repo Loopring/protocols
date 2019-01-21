@@ -56,7 +56,7 @@ class Order(object):
         self.tokenB = tokenB
         self.tokenF = tokenF
 
-        self.walletF = 0
+        self.walletF = 6
 
     def message(self):
         msg_parts = [
@@ -91,7 +91,11 @@ class RingSettlement(object):
     def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                  filledA, filledB, proofA, proofB,
                  accountS_A_before, accountS_A_after, accountS_A_proof,
-                 accountB_B_before, accountB_B_after, accountB_B_proof):
+                 accountB_A_before, accountB_A_after, accountB_A_proof,
+                 accountF_A_before, accountF_A_after, accountF_A_proof,
+                 accountS_B_before, accountS_B_after, accountS_B_proof,
+                 accountB_B_before, accountB_B_after, accountB_B_proof,
+                 accountF_B_before, accountF_B_after, accountF_B_proof):
         self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.ring = ring
@@ -99,12 +103,26 @@ class RingSettlement(object):
         self.filledB = filledB
         self.proofA = [str(_) for _ in proofA]
         self.proofB = [str(_) for _ in proofB]
+
         self.accountS_A_before = accountS_A_before
         self.accountS_A_after = accountS_A_after
         self.accountS_A_proof = [str(_) for _ in accountS_A_proof]
+        self.accountB_A_before = accountB_A_before
+        self.accountB_A_after = accountB_A_after
+        self.accountB_A_proof = [str(_) for _ in accountB_A_proof]
+        self.accountF_A_before = accountF_A_before
+        self.accountF_A_after = accountF_A_after
+        self.accountF_A_proof = [str(_) for _ in accountF_A_proof]
+
+        self.accountS_B_before = accountS_B_before
+        self.accountS_B_after = accountS_B_after
+        self.accountS_B_proof = [str(_) for _ in accountS_B_proof]
         self.accountB_B_before = accountB_B_before
         self.accountB_B_after = accountB_B_after
         self.accountB_B_proof = [str(_) for _ in accountB_B_proof]
+        self.accountF_B_before = accountF_B_before
+        self.accountF_B_after = accountF_B_after
+        self.accountF_B_proof = [str(_) for _ in accountF_B_proof]
 
 
 class Dex(object):
@@ -191,15 +209,25 @@ class Dex(object):
         (filledA, proofA) = self.updateFilled(addressA, ring.fillS_A)
         (filledB, proofB) = self.updateFilled(addressB, ring.fillS_B)
 
-        # Update balance accountS A
+        # Update balances A
         (accountS_A_Before, accountS_A_After, accountS_A_proof) = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
-        # Update balance accountB B
+        (accountB_A_Before, accountB_A_After, accountB_A_proof) = self.updateBalance(ring.orderA.accountB, ring.fillB_A)
+        (accountF_A_Before, accountF_A_After, accountF_A_proof) = self.updateBalance(ring.orderA.accountF, -ring.fillF_A)
+
+        # Update balances B
+        (accountS_B_Before, accountS_B_After, accountS_B_proof) = self.updateBalance(ring.orderB.accountS, -ring.fillS_B)
         (accountB_B_Before, accountB_B_After, accountB_B_proof) = self.updateBalance(ring.orderB.accountB, ring.fillB_B)
+        (accountF_B_Before, accountF_B_After, accountF_B_proof) = self.updateBalance(ring.orderB.accountF, -ring.fillF_B)
+
 
         return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot,
                               ring, filledA, filledB, proofA, proofB,
                               accountS_A_Before, accountS_A_After, accountS_A_proof,
-                              accountB_B_Before, accountB_B_After, accountB_B_proof)
+                              accountB_A_Before, accountB_A_After, accountB_A_proof,
+                              accountF_A_Before, accountF_A_After, accountF_A_proof,
+                              accountS_B_Before, accountS_B_After, accountS_B_proof,
+                              accountB_B_Before, accountB_B_After, accountB_B_proof,
+                              accountF_B_Before, accountF_B_After, accountF_B_proof)
 
     def addAccount(self, account):
         self._accountsTree.update(len(self._accounts), account.hash())

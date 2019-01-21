@@ -139,10 +139,22 @@ public:
     Account accountS_A_before;
     Account accountS_A_after;
     Proof accountS_A_proof;
+    Account accountB_A_before;
+    Account accountB_A_after;
+    Proof accountB_A_proof;
+    Account accountF_A_before;
+    Account accountF_A_after;
+    Proof accountF_A_proof;
 
+    Account accountS_B_before;
+    Account accountS_B_after;
+    Proof accountS_B_proof;
     Account accountB_B_before;
     Account accountB_B_after;
     Proof accountB_B_proof;
+    Account accountF_B_before;
+    Account accountF_B_after;
+    Proof accountF_B_proof;
 };
 
 void from_json(const json& j, RingSettlement& ringSettlement)
@@ -161,10 +173,22 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.accountS_A_before = j.at("accountS_A_before").get<Account>();
     ringSettlement.accountS_A_after = j.at("accountS_A_after").get<Account>();
     ringSettlement.accountS_A_proof = j.at("accountS_A_proof").get<Proof>();
+    ringSettlement.accountB_A_before = j.at("accountB_A_before").get<Account>();
+    ringSettlement.accountB_A_after = j.at("accountB_A_after").get<Account>();
+    ringSettlement.accountB_A_proof = j.at("accountB_A_proof").get<Proof>();
+    ringSettlement.accountF_A_before = j.at("accountF_A_before").get<Account>();
+    ringSettlement.accountF_A_after = j.at("accountF_A_after").get<Account>();
+    ringSettlement.accountF_A_proof = j.at("accountF_A_proof").get<Proof>();
 
+    ringSettlement.accountS_B_before = j.at("accountS_B_before").get<Account>();
+    ringSettlement.accountS_B_after = j.at("accountS_B_after").get<Account>();
+    ringSettlement.accountS_B_proof = j.at("accountS_B_proof").get<Proof>();
     ringSettlement.accountB_B_before = j.at("accountB_B_before").get<Account>();
     ringSettlement.accountB_B_after = j.at("accountB_B_after").get<Account>();
     ringSettlement.accountB_B_proof = j.at("accountB_B_proof").get<Proof>();
+    ringSettlement.accountF_B_before = j.at("accountF_B_before").get<Account>();
+    ringSettlement.accountF_B_after = j.at("accountF_B_after").get<Account>();
+    ringSettlement.accountF_B_proof = j.at("accountF_B_proof").get<Proof>();
 }
 
 }

@@ -71,11 +71,20 @@ def main():
     if os.path.exists(dex_state_filename):
         dex.loadState(dex_state_filename)
 
-    for _ in range(2):
-        (secretKey, publicKey) = eddsa_random_keypair()
-        for t in range(3):
-            account = Account(secretKey, publicKey, 0, t, 100)
-            dex.addAccount(account)
+    (secretKeyW, publicKeyW) = eddsa_random_keypair()
+
+    (secretKeyA, publicKeyA) = eddsa_random_keypair()
+    dex.addAccount(Account(secretKeyA, publicKeyA, 0, 1, 100))
+    dex.addAccount(Account(secretKeyA, publicKeyA, 0, 2, 100))
+    dex.addAccount(Account(secretKeyA, publicKeyA, 0, 3, 100))
+
+    (secretKeyB, publicKeyB) = eddsa_random_keypair()
+    dex.addAccount(Account(secretKeyB, publicKeyB, 0, 1, 100))
+    dex.addAccount(Account(secretKeyB, publicKeyB, 0, 2, 100))
+    dex.addAccount(Account(secretKeyB, publicKeyB, 0, 3, 100))
+
+    dex.addAccount(Account(secretKeyW, publicKeyW, 0, 3, 100))
+
 
     export = Export()
     export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
