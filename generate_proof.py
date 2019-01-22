@@ -10,11 +10,21 @@ from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
 
 
-class Export(object):
+class TradeExport(object):
     def __init__(self):
         self.ringSettlements = []
         self.tradingHistoryMerkleRootBefore = 0
         self.tradingHistoryMerkleRootAfter = 0
+        self.accountsMerkleRootBefore = 0
+        self.accountsMerkleRootAfter = 0
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+
+class DepositExport(object):
+    def __init__(self):
+        self.deposits = []
         self.accountsMerkleRootBefore = 0
         self.accountsMerkleRootAfter = 0
 
@@ -34,11 +44,14 @@ def orderFromJSON(jOrder, dex):
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
     tokenF = int(jOrder["tokenIdF"])
+    walletF = 6
 
     account = dex.getAccount(accountS)
+    wallet = dex.getAccount(walletF)
     order = Order(Point(account.publicKeyX, account.publicKeyY),
+                  Point(wallet.publicKeyX, wallet.publicKeyY),
                   dexID, orderID,
-                  accountS, accountB, accountF,
+                  accountS, accountB, accountF, walletF,
                   amountS, amountB, amountF,
                   tokenS, tokenB, tokenF)
     order.sign(FQ(int(account.secretKey)))
@@ -71,22 +84,31 @@ def main():
     if os.path.exists(dex_state_filename):
         dex.loadState(dex_state_filename)
 
+    depositExport = DepositExport()
+    depositExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
+
     (secretKeyW, publicKeyW) = eddsa_random_keypair()
 
     (secretKeyA, publicKeyA) = eddsa_random_keypair()
-    dex.addAccount(Account(secretKeyA, publicKeyA, 0, 1, 100))
-    dex.addAccount(Account(secretKeyA, publicKeyA, 0, 2, 100))
-    dex.addAccount(Account(secretKeyA, publicKeyA, 0, 3, 100))
+    depositExport.deposits.append(dex.addAccount(Account(secretKeyA, publicKeyA, 0, 1, 100)))
+    depositExport.deposits.append(dex.addAccount(Account(secretKeyA, publicKeyA, 0, 2, 100)))
+    depositExport.deposits.append(dex.addAccount(Account(secretKeyA, publicKeyA, 0, 3, 100)))
 
     (secretKeyB, publicKeyB) = eddsa_random_keypair()
-    dex.addAccount(Account(secretKeyB, publicKeyB, 0, 1, 100))
-    dex.addAccount(Account(secretKeyB, publicKeyB, 0, 2, 100))
-    dex.addAccount(Account(secretKeyB, publicKeyB, 0, 3, 100))
+    depositExport.deposits.append(dex.addAccount(Account(secretKeyB, publicKeyB, 0, 1, 100)))
+    depositExport.deposits.append(dex.addAccount(Account(secretKeyB, publicKeyB, 0, 2, 100)))
+    depositExport.deposits.append(dex.addAccount(Account(secretKeyB, publicKeyB, 0, 3, 100)))
 
-    dex.addAccount(Account(secretKeyW, publicKeyW, 0, 3, 100))
+    depositExport.deposits.append(dex.addAccount(Account(secretKeyW, publicKeyW, 0, 3, 100)))
+
+    depositExport.accountsMerkleRootAfter = str(dex._accountsTree._root)
+
+    f = open("deposits.json","w+")
+    f.write(depositExport.toJSON())
+    f.close()
 
 
-    export = Export()
+    export = TradeExport()
     export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
     export.accountsMerkleRootBefore = str(dex._accountsTree._root)
     for ringInfo in data["rings"]:
@@ -101,7 +123,7 @@ def main():
     f.close()
 
     # Create the proof
-    subprocess.check_call(["build/circuit/dex_circuit", str(len(data["rings"])), "rings.json"])
+    subprocess.check_call(["build/circuit/dex_circuit", str(0), str(len(data["rings"])), "rings.json"])
 
     dex.saveState(dex_state_filename)
 

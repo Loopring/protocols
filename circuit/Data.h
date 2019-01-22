@@ -46,6 +46,21 @@ void from_json(const json& j, Account& account)
     account.balance = ethsnarks::FieldT(j.at("balance"));
 }
 
+class BalanceUpdate
+{
+public:
+    Account before;
+    Account after;
+    Proof proof;
+};
+
+void from_json(const json& j, BalanceUpdate& balanceUpdate)
+{
+    balanceUpdate.before = j.at("before").get<Account>();
+    balanceUpdate.after = j.at("after").get<Account>();
+    balanceUpdate.proof = j.at("proof").get<Proof>();
+}
+
 class Signature
 {
 public:
@@ -64,6 +79,7 @@ class Order
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
+    ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::FieldT dexID;
     ethsnarks::FieldT orderID;
     ethsnarks::FieldT accountS;
@@ -83,6 +99,8 @@ void from_json(const json& j, Order& order)
 {
     order.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     order.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
+    order.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
+    order.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
     order.dexID = ethsnarks::FieldT(j.at("dexID"));
     order.orderID = ethsnarks::FieldT(j.at("orderID"));
     order.accountS = ethsnarks::FieldT(j.at("accountS"));
@@ -136,25 +154,15 @@ public:
     Proof proofFilledA;
     Proof proofFilledB;
 
-    Account accountS_A_before;
-    Account accountS_A_after;
-    Proof accountS_A_proof;
-    Account accountB_A_before;
-    Account accountB_A_after;
-    Proof accountB_A_proof;
-    Account accountF_A_before;
-    Account accountF_A_after;
-    Proof accountF_A_proof;
+    BalanceUpdate balanceUpdateS_A;
+    BalanceUpdate balanceUpdateB_A;
+    BalanceUpdate balanceUpdateF_A;
+    BalanceUpdate balanceUpdateF_WA;
 
-    Account accountS_B_before;
-    Account accountS_B_after;
-    Proof accountS_B_proof;
-    Account accountB_B_before;
-    Account accountB_B_after;
-    Proof accountB_B_proof;
-    Account accountF_B_before;
-    Account accountF_B_after;
-    Proof accountF_B_proof;
+    BalanceUpdate balanceUpdateS_B;
+    BalanceUpdate balanceUpdateB_B;
+    BalanceUpdate balanceUpdateF_B;
+    BalanceUpdate balanceUpdateF_WB;
 };
 
 void from_json(const json& j, RingSettlement& ringSettlement)
@@ -170,25 +178,30 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.proofFilledA = j.at("proofA").get<Proof>();
     ringSettlement.proofFilledB = j.at("proofB").get<Proof>();
 
-    ringSettlement.accountS_A_before = j.at("accountS_A_before").get<Account>();
-    ringSettlement.accountS_A_after = j.at("accountS_A_after").get<Account>();
-    ringSettlement.accountS_A_proof = j.at("accountS_A_proof").get<Proof>();
-    ringSettlement.accountB_A_before = j.at("accountB_A_before").get<Account>();
-    ringSettlement.accountB_A_after = j.at("accountB_A_after").get<Account>();
-    ringSettlement.accountB_A_proof = j.at("accountB_A_proof").get<Proof>();
-    ringSettlement.accountF_A_before = j.at("accountF_A_before").get<Account>();
-    ringSettlement.accountF_A_after = j.at("accountF_A_after").get<Account>();
-    ringSettlement.accountF_A_proof = j.at("accountF_A_proof").get<Proof>();
+    ringSettlement.balanceUpdateS_A = j.at("balanceUpdateS_A").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateB_A = j.at("balanceUpdateB_A").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateF_A = j.at("balanceUpdateF_A").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateF_WA = j.at("balanceUpdateF_WA").get<BalanceUpdate>();
 
-    ringSettlement.accountS_B_before = j.at("accountS_B_before").get<Account>();
-    ringSettlement.accountS_B_after = j.at("accountS_B_after").get<Account>();
-    ringSettlement.accountS_B_proof = j.at("accountS_B_proof").get<Proof>();
-    ringSettlement.accountB_B_before = j.at("accountB_B_before").get<Account>();
-    ringSettlement.accountB_B_after = j.at("accountB_B_after").get<Account>();
-    ringSettlement.accountB_B_proof = j.at("accountB_B_proof").get<Proof>();
-    ringSettlement.accountF_B_before = j.at("accountF_B_before").get<Account>();
-    ringSettlement.accountF_B_after = j.at("accountF_B_after").get<Account>();
-    ringSettlement.accountF_B_proof = j.at("accountF_B_proof").get<Proof>();
+    ringSettlement.balanceUpdateS_B = j.at("balanceUpdateS_B").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateB_B = j.at("balanceUpdateB_B").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateF_B = j.at("balanceUpdateF_B").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateF_WB = j.at("balanceUpdateF_WB").get<BalanceUpdate>();
+}
+
+class Deposit
+{
+public:
+    ethsnarks::FieldT accountsMerkleRoot;
+    ethsnarks::FieldT address;
+    BalanceUpdate balanceUpdate;
+};
+
+void from_json(const json& j, Deposit& deposit)
+{
+    deposit.accountsMerkleRoot = ethsnarks::FieldT(j.at("accountsMerkleRoot").get<std::string>().c_str());
+    deposit.address = ethsnarks::FieldT(j.at("address"));
+    deposit.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
 }
 
 }

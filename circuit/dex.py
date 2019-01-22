@@ -23,8 +23,7 @@ class Account(object):
         self.balance = balance
 
     def hash(self):
-        #return LongsightL12p5_MP([int(self.publicKeyX), int(self.publicKeyY),
-        #                          int(self.dexID), int(self.token), int(self.balance)], 1)
+        #return LongsightL12p5_MP([int(self.publicKeyX), int(self.publicKeyY), int(self.dexID), int(self.token), int(self.balance)], 1)
         return LongsightL12p5_MP([int(self.publicKeyX), int(self.publicKeyY), int(self.token), int(self.balance)], 1)
 
     def fromJSON(self, jAccount):
@@ -36,13 +35,21 @@ class Account(object):
         self.balance = int(jAccount["balance"])
 
 
+class BalanceUpdateData(object):
+    def __init__(self, before, after, proof):
+        self.before = before
+        self.after = after
+        self.proof = [str(_) for _ in proof]
+
 class Order(object):
-    def __init__(self, publicKey, dexID, orderID,
-                 accountS, accountB, accountF,
+    def __init__(self, publicKey, walletPublicKey, dexID, orderID,
+                 accountS, accountB, accountF, walletF,
                  amountS, amountB, amountF,
                  tokenS, tokenB, tokenF):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
+        self.walletPublicKeyX = str(walletPublicKey.x)
+        self.walletPublicKeyY = str(walletPublicKey.y)
         self.dexID = dexID
         self.orderID = orderID
         self.accountS = accountS
@@ -52,11 +59,10 @@ class Order(object):
         self.amountB = amountB
         self.amountF = amountF
 
+        self.walletF = walletF
         self.tokenS = tokenS
         self.tokenB = tokenB
         self.tokenF = tokenF
-
-        self.walletF = 6
 
     def message(self):
         msg_parts = [
@@ -90,12 +96,8 @@ class Ring(object):
 class RingSettlement(object):
     def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                  filledA, filledB, proofA, proofB,
-                 accountS_A_before, accountS_A_after, accountS_A_proof,
-                 accountB_A_before, accountB_A_after, accountB_A_proof,
-                 accountF_A_before, accountF_A_after, accountF_A_proof,
-                 accountS_B_before, accountS_B_after, accountS_B_proof,
-                 accountB_B_before, accountB_B_after, accountB_B_proof,
-                 accountF_B_before, accountF_B_after, accountF_B_proof):
+                 balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, balanceUpdateF_WA,
+                 balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, balanceUpdateF_WB):
         self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.ring = ring
@@ -104,25 +106,22 @@ class RingSettlement(object):
         self.proofA = [str(_) for _ in proofA]
         self.proofB = [str(_) for _ in proofB]
 
-        self.accountS_A_before = accountS_A_before
-        self.accountS_A_after = accountS_A_after
-        self.accountS_A_proof = [str(_) for _ in accountS_A_proof]
-        self.accountB_A_before = accountB_A_before
-        self.accountB_A_after = accountB_A_after
-        self.accountB_A_proof = [str(_) for _ in accountB_A_proof]
-        self.accountF_A_before = accountF_A_before
-        self.accountF_A_after = accountF_A_after
-        self.accountF_A_proof = [str(_) for _ in accountF_A_proof]
+        self.balanceUpdateS_A = balanceUpdateS_A
+        self.balanceUpdateB_A = balanceUpdateB_A
+        self.balanceUpdateF_A = balanceUpdateF_A
+        self.balanceUpdateF_WA = balanceUpdateF_WA
 
-        self.accountS_B_before = accountS_B_before
-        self.accountS_B_after = accountS_B_after
-        self.accountS_B_proof = [str(_) for _ in accountS_B_proof]
-        self.accountB_B_before = accountB_B_before
-        self.accountB_B_after = accountB_B_after
-        self.accountB_B_proof = [str(_) for _ in accountB_B_proof]
-        self.accountF_B_before = accountF_B_before
-        self.accountF_B_after = accountF_B_after
-        self.accountF_B_proof = [str(_) for _ in accountF_B_proof]
+        self.balanceUpdateS_B = balanceUpdateS_B
+        self.balanceUpdateB_B = balanceUpdateB_B
+        self.balanceUpdateF_B = balanceUpdateF_B
+        self.balanceUpdateF_WB = balanceUpdateF_WB
+
+
+class Deposit(object):
+    def __init__(self, accountsMerkleRoot, address, balanceUpdate):
+        self.accountsMerkleRoot = str(accountsMerkleRoot)
+        self.address = address
+        self.balanceUpdate = balanceUpdate
 
 
 class Dex(object):
@@ -187,7 +186,7 @@ class Dex(object):
         accountBefore = copy.deepcopy(self._accounts[address])
         print("accountBefore: " + str(accountBefore.balance))
         self._accounts[address].balance += amount
-        accountAfter = self._accounts[address]
+        accountAfter = copy.deepcopy(self._accounts[address])
         print("accountAfter: " + str(accountAfter.balance))
         proof = self._accountsTree.createProof(address)
         # TODO: don't hash the filled value with itself
@@ -195,7 +194,7 @@ class Dex(object):
 
         # The circuit expects the proof in the reverse direction from bottom to top
         proof.reverse()
-        return (accountBefore, accountAfter, proof)
+        return BalanceUpdateData(accountBefore, accountAfter, proof)
 
     def settleRing(self, ring):
         addressA = (ring.orderA.accountS << 4) + ring.orderA.orderID
@@ -210,28 +209,36 @@ class Dex(object):
         (filledB, proofB) = self.updateFilled(addressB, ring.fillS_B)
 
         # Update balances A
-        (accountS_A_Before, accountS_A_After, accountS_A_proof) = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
-        (accountB_A_Before, accountB_A_After, accountB_A_proof) = self.updateBalance(ring.orderA.accountB, ring.fillB_A)
-        (accountF_A_Before, accountF_A_After, accountF_A_proof) = self.updateBalance(ring.orderA.accountF, -ring.fillF_A)
+        balanceUpdateS_A = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
+        balanceUpdateB_A = self.updateBalance(ring.orderA.accountB, ring.fillB_A)
+        balanceUpdateF_A = self.updateBalance(ring.orderA.accountF, -ring.fillF_A)
+        balanceUpdateF_WA = self.updateBalance(ring.orderA.walletF, ring.fillF_A)
 
         # Update balances B
-        (accountS_B_Before, accountS_B_After, accountS_B_proof) = self.updateBalance(ring.orderB.accountS, -ring.fillS_B)
-        (accountB_B_Before, accountB_B_After, accountB_B_proof) = self.updateBalance(ring.orderB.accountB, ring.fillB_B)
-        (accountF_B_Before, accountF_B_After, accountF_B_proof) = self.updateBalance(ring.orderB.accountF, -ring.fillF_B)
-
+        balanceUpdateS_B = self.updateBalance(ring.orderB.accountS, -ring.fillS_B)
+        balanceUpdateB_B = self.updateBalance(ring.orderB.accountB, ring.fillB_B)
+        balanceUpdateF_B = self.updateBalance(ring.orderB.accountF, -ring.fillF_B)
+        balanceUpdateF_WB = self.updateBalance(ring.orderB.walletF, ring.fillF_B)
 
         return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot,
                               ring, filledA, filledB, proofA, proofB,
-                              accountS_A_Before, accountS_A_After, accountS_A_proof,
-                              accountB_A_Before, accountB_A_After, accountB_A_proof,
-                              accountF_A_Before, accountF_A_After, accountF_A_proof,
-                              accountS_B_Before, accountS_B_After, accountS_B_proof,
-                              accountB_B_Before, accountB_B_After, accountB_B_proof,
-                              accountF_B_Before, accountF_B_After, accountF_B_proof)
+                              balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, balanceUpdateF_WA,
+                              balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, balanceUpdateF_WB)
 
     def addAccount(self, account):
-        self._accountsTree.update(len(self._accounts), account.hash())
+        # Copy the initial merkle root
+        accountsMerkleRoot = self._accountsTree._root
+
+        address = len(self._accounts)
+        proof = self._accountsTree.createProof(address)
+
+        accountBefore = copy.deepcopy(Account(0, Point(0, 0), 0, 0, 0))
+        self._accountsTree.update(address, account.hash())
+        accountAfter = copy.deepcopy(account)
+
         self._accounts.append(account)
+
+        return Deposit(accountsMerkleRoot, address, BalanceUpdateData(accountBefore, accountAfter, proof))
 
     def getAccount(self, accountID):
         return self._accounts[accountID]
