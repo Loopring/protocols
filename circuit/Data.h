@@ -204,6 +204,28 @@ void from_json(const json& j, Deposit& deposit)
     deposit.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
 }
 
+class Withdrawal
+{
+public:
+    ethsnarks::FieldT accountsMerkleRoot;
+    ethsnarks::jubjub::EdwardsPoint publicKey;
+    ethsnarks::FieldT account;
+    ethsnarks::FieldT amount;
+    BalanceUpdate balanceUpdate;
+    Signature sig;
+};
+
+void from_json(const json& j, Withdrawal& withdrawal)
+{
+    withdrawal.accountsMerkleRoot = ethsnarks::FieldT(j.at("accountsMerkleRoot").get<std::string>().c_str());
+    withdrawal.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
+    withdrawal.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
+    withdrawal.account = ethsnarks::FieldT(j.at("account"));
+    withdrawal.amount = ethsnarks::FieldT(j.at("amount"));
+    withdrawal.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
+    withdrawal.sig = j.get<Signature>();
+}
+
 }
 
 #endif

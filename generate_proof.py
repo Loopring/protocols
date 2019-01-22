@@ -107,6 +107,9 @@ def main():
     f.write(depositExport.toJSON())
     f.close()
 
+    # Create the proof
+    subprocess.check_call(["build/circuit/dex_circuit", str(1), str(len(depositExport.deposits)), "deposits.json"])
+
 
     export = TradeExport()
     export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)

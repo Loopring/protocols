@@ -238,7 +238,26 @@ class Dex(object):
 
         self._accounts.append(account)
 
+        proof.reverse()
         return Deposit(accountsMerkleRoot, address, BalanceUpdateData(accountBefore, accountAfter, proof))
 
     def getAccount(self, accountID):
         return self._accounts[accountID]
+
+    def withdraw(self, address, amount):
+        # Copy the initial merkle root
+        accountsMerkleRoot = self._accountsTree._root
+
+        address = len(self._accounts)
+        proof = self._accountsTree.createProof(address)
+
+        balanceUpdate = self.updateBalance(address, -amount)
+
+        accountBefore = copy.deepcopy(Account(0, Point(0, 0), 0, 0, 0))
+        self._accountsTree.update(address, account.hash())
+        accountAfter = copy.deepcopy(account)
+
+        self._accounts.append(account)
+
+        proof.reverse()
+        return Deposit(accountsMerkleRoot, address, BalanceUpdateData(accountBefore, accountAfter, proof))

@@ -182,7 +182,7 @@ int deposit(unsigned int numAccounts, const char* accountsFilename)
             std::cerr << "Not enought deposits in input file: " << jDeposits.size() << std::endl;
             return 1;
         }
-        // Read settlements
+        // Read deposits
         std::vector<Loopring::Deposit> deposits;
         for(unsigned int i = 0; i < numAccounts; i++)
         {
