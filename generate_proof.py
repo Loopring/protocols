@@ -32,6 +32,16 @@ class DepositExport(object):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
+class WithdrawalExport(object):
+    def __init__(self):
+        self.withdrawals = []
+        self.accountsMerkleRootBefore = 0
+        self.accountsMerkleRootAfter = 0
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+
 def orderFromJSON(jOrder, dex):
     dexID = int(jOrder["dexID"])
     orderID = int(jOrder["orderID"])
@@ -84,6 +94,10 @@ def main():
     if os.path.exists(dex_state_filename):
         dex.loadState(dex_state_filename)
 
+    #
+    # Deposits
+    #
+
     depositExport = DepositExport()
     depositExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
 
@@ -111,6 +125,29 @@ def main():
     subprocess.check_call(["build/circuit/dex_circuit", str(1), str(len(depositExport.deposits)), "deposits.json"])
 
 
+    #
+    # Withdrawals
+    #
+
+    withdrawalExport = WithdrawalExport()
+    withdrawalExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
+
+    withdrawalExport.withdrawals.append(dex.withdraw(0, 1))
+
+    withdrawalExport.accountsMerkleRootAfter = str(dex._accountsTree._root)
+
+    f = open("withdrawals.json","w+")
+    f.write(withdrawalExport.toJSON())
+    f.close()
+
+    # Create the proof
+    subprocess.check_call(["build/circuit/dex_circuit", str(2), str(len(withdrawalExport.withdrawals)), "withdrawals.json"])
+
+
+    #
+    # Trade
+    #
+
     export = TradeExport()
     export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
     export.accountsMerkleRootBefore = str(dex._accountsTree._root)
@@ -127,6 +164,7 @@ def main():
 
     # Create the proof
     subprocess.check_call(["build/circuit/dex_circuit", str(0), str(len(data["rings"])), "rings.json"])
+
 
     dex.saveState(dex_state_filename)
 

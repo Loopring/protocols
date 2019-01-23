@@ -234,6 +234,107 @@ int deposit(unsigned int numAccounts, const char* accountsFilename)
     return 0;
 }
 
+int withdraw(unsigned int numWithdrawals, const char* withdrawalsFilename)
+{
+    // Build the circuit
+    ethsnarks::ProtoboardT pb;
+    Loopring::WithdrawalsCircuitGadget circuit(pb, "circuit");
+    circuit.generate_r1cs_constraints(numWithdrawals);
+    circuit.printInfo();
+
+#if 0
+    libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT> keypair;
+    if (argc >= 2)
+    {
+        std::cout << "Generating keys..." << std::endl;
+        auto constraints = pb.get_constraint_system();
+        auto temp = libsnark::r1cs_gg_ppzksnark_zok_generator<ethsnarks::ppT>(constraints);
+        keypair.pk = temp.pk;
+        keypair.vk = temp.vk;
+
+        std::string jVK = vk2json(keypair.vk);
+        const char* vkFilename = "vk.json";
+        std::ofstream fVK(vkFilename);
+        if(!fVK.is_open())
+        {
+            std::cerr << "Cannot create proof file: " << vkFilename << std::endl;
+            return 1;
+        }
+        fVK << jVK;
+        fVK.close();
+    }
+#endif
+
+    if (withdrawalsFilename != NULL)
+    {
+        // Read the JSON accountsFilename
+        std::ifstream file(withdrawalsFilename);
+        if (!file.is_open())
+        {
+            std::cerr << "Cannot open input file: " << withdrawalsFilename << std::endl;
+            return 1;
+        }
+        json input;
+        file >> input;
+        json jWithdrawals = input["withdrawals"];
+        std::string accountsMerkleRootBefore = input["accountsMerkleRootBefore"].get<std::string>();
+        std::string accountsMerkleRootAfter = input["accountsMerkleRootAfter"].get<std::string>();
+        if (jWithdrawals.size() < numWithdrawals)
+        {
+            std::cerr << "Not enought deposits in input file: " << jWithdrawals.size() << std::endl;
+            return 1;
+        }
+        // Read deposits
+        std::vector<Loopring::Withdrawal> withdrawals;
+        for(unsigned int i = 0; i < numWithdrawals; i++)
+        {
+            withdrawals.emplace_back(jWithdrawals[i].get<Loopring::Withdrawal>());
+        }
+
+        // Generate witness values for the given input values
+        if (!circuit.generateWitness(withdrawals, accountsMerkleRootBefore, accountsMerkleRootAfter))
+        {
+            std::cerr << "Could not generate witness!" << std::endl;
+            return 1;
+        }
+
+        // Check if the inputs are valid for the circuit
+        if (!pb.is_satisfied())
+        {
+            std::cerr << "Input is not valid!" << std::endl;
+            return 1;
+        }
+        std::cout << "Input is valid." << std::endl;
+
+#if 0
+        {
+            std::cout << "Generating proof..." << std::endl;
+            timespec time1, time2;
+            clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+
+            auto primaryInput = pb.primary_input();
+            auto auxiliaryInput = pb.auxiliary_input();
+            auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(keypair.pk, primaryInput, auxiliaryInput);
+
+            const char* proofFilename = "proof.json";
+            std::ofstream fproof(proofFilename);
+            if(!fproof.is_open())
+            {
+                std::cerr << "Cannot create proof file: " << proofFilename << std::endl;
+                return 1;
+            }
+            std::string jProof = proof_to_json(proof, primaryInput);
+            fproof << jProof;
+            fproof.close();
+
+            clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+            timespec duration = diff(time1,time2);
+            std::cout << "Generated proof in " << duration.tv_sec << " seconds (" << pb.num_constraints() / duration.tv_sec << " constraints/second)" << std::endl;
+        }
+#endif
+    }
+    return 0;
+}
 
 int main (int argc, char **argv)
 {
@@ -261,13 +362,24 @@ int main (int argc, char **argv)
         }
        case 1:
         {
-            const unsigned int numAccounts = atoi(argv[2]);
-            const char* accountsFilename = NULL;
+            const unsigned int numDeposits = atoi(argv[2]);
+            const char* depositsFilename = NULL;
             if (argc > 2)
             {
-                accountsFilename = argv[3];
+                depositsFilename = argv[3];
             }
-            return deposit(numAccounts, accountsFilename);
+            return deposit(numDeposits, depositsFilename);
+            break;
+        }
+        case 2:
+        {
+            const unsigned int numWithdrawals = atoi(argv[2]);
+            const char* withdrawalsFilename = NULL;
+            if (argc > 2)
+            {
+                withdrawalsFilename = argv[3];
+            }
+            return withdraw(numWithdrawals, withdrawalsFilename);
             break;
         }
     }

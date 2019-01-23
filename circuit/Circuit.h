@@ -1066,6 +1066,7 @@ public:
 
     VariableArrayT account;
     libsnark::dual_variable_gadget<FieldT> amount;
+    libsnark::dual_variable_gadget<FieldT> padding;
 
     VariableT dex;
     VariableT token;
@@ -1094,17 +1095,18 @@ public:
 
         account(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".account"))),
         amount(pb, 96, FMT(annotation_prefix, ".amount")),
+        padding(pb, 2, FMT(annotation_prefix, ".padding")),
 
         dex(make_variable(pb, FMT(annotation_prefix, ".dex"))),
         token(make_variable(pb, FMT(annotation_prefix, ".token"))),
         balance_before(make_variable(pb, FMT(annotation_prefix, ".balance_before"))),
         balance_after(make_variable(pb, FMT(annotation_prefix, ".balance_after"))),
 
-        updateBalance(pb, merkleRootBefore, account, publicKey, dex, token, balance_before, balance_after, FMT(annotation_prefix, ".updateBalanceB_A")),
+        updateBalance(pb, merkleRootBefore, account, publicKey, dex, token, balance_before, balance_after, FMT(annotation_prefix, ".updateBalance")),
 
         sig_R(pb, FMT(annotation_prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
-        sig_m(flatten({account, amount.bits})),
+        sig_m(flatten({account, amount.bits, padding.bits})),
 
         signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(annotation_prefix, ".signatureVerifier"))
     {
@@ -1131,6 +1133,9 @@ public:
         amount.bits.fill_with_bits_of_field_element(this->pb, withdrawal.amount);
         amount.generate_r1cs_witness_from_bits();
 
+        padding.bits.fill_with_bits_of_field_element(this->pb, 0);
+        padding.generate_r1cs_witness_from_bits();
+
         this->pb.val(dex) = withdrawal.balanceUpdate.before.dexID;
         this->pb.val(token) = withdrawal.balanceUpdate.before.token;
         this->pb.val(balance_before) = withdrawal.balanceUpdate.before.balance;
@@ -1147,8 +1152,9 @@ public:
     void generate_r1cs_constraints()
     {
         amount.generate_r1cs_constraints(true);
+        padding.generate_r1cs_constraints(true);
 
-        signatureVerifier.generate_r1cs_constraints();
+        //signatureVerifier.generate_r1cs_constraints();
 
         updateBalance.generate_r1cs_constraints();
     }
@@ -1192,6 +1198,7 @@ public:
     void generate_r1cs_constraints(int numAccounts)
     {
         this->numAccounts = numAccounts;
+        jubjub::Params params;
 
         pb.set_input_sizes(1);
         accountsMerkleRootBefore.generate_r1cs_constraints(true);
@@ -1200,7 +1207,7 @@ public:
         for (size_t j = 0; j < numAccounts; j++)
         {
             VariableT withdrawalAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : withdrawals.back().getNewAccountsMerkleRoot();
-            withdrawals.emplace_back(pb, withdrawalAccountsMerkleRoot, std::string("withdrawals") + std::to_string(j));
+            withdrawals.emplace_back(pb, params, withdrawalAccountsMerkleRoot, std::string("withdrawals") + std::to_string(j));
 
             // Store data from withdrawal
             //std::vector<VariableArrayT> ringPublicData = deposits.back().getPublicData();

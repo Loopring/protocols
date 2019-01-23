@@ -124,6 +124,27 @@ class Deposit(object):
         self.balanceUpdate = balanceUpdate
 
 
+class Withdrawal(object):
+    def __init__(self, accountsMerkleRoot, publicKey, account, amount, balanceUpdate):
+        self.accountsMerkleRoot = str(accountsMerkleRoot)
+        self.publicKeyX = str(publicKey.x)
+        self.publicKeyY = str(publicKey.y)
+        self.account = account
+        self.amount = amount
+        self.balanceUpdate = balanceUpdate
+
+    def message(self):
+        msg_parts = [FQ(int(self.account), 1<<24), FQ(int(self.amount), 1<<96), FQ(int(0), 1<<2)]
+        return eddsa_tobits(*msg_parts)
+
+    def sign(self, k):
+        msg = self.message()
+        signedMessage = pureeddsa_sign(msg, k)
+        self.sigRx = str(signedMessage.sig.R.x)
+        self.sigRy = str(signedMessage.sig.R.y)
+        self.sigS = str(signedMessage.sig.s)
+
+
 class Dex(object):
     def __init__(self):
         # Trading history
@@ -247,17 +268,8 @@ class Dex(object):
     def withdraw(self, address, amount):
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
-
-        address = len(self._accounts)
-        proof = self._accountsTree.createProof(address)
-
+        account = self._accounts[address]
         balanceUpdate = self.updateBalance(address, -amount)
-
-        accountBefore = copy.deepcopy(Account(0, Point(0, 0), 0, 0, 0))
-        self._accountsTree.update(address, account.hash())
-        accountAfter = copy.deepcopy(account)
-
-        self._accounts.append(account)
-
-        proof.reverse()
-        return Deposit(accountsMerkleRoot, address, BalanceUpdateData(accountBefore, accountAfter, proof))
+        withdrawal = Withdrawal(accountsMerkleRoot, Point(int(account.publicKeyX), int(account.publicKeyY)), address, amount, balanceUpdate)
+        withdrawal.sign(FQ(int(account.secretKey)))
+        return withdrawal
