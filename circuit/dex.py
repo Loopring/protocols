@@ -35,6 +35,24 @@ class Account(object):
         self.balance = int(jAccount["balance"])
 
 
+class TradeHistoryLeaf(object):
+    def __init__(self, filled, cancelled):
+        self.filled = str(filled)
+        self.cancelled = cancelled
+
+    def hash(self):
+        return LongsightL12p5_MP([int(self.filled), int(self.cancelled)], 1)
+
+    def fromJSON(self, jAccount):
+        self.filled = jAccount["filled"]
+        self.cancelled = int(jAccount["cancelled"])
+
+class TradeHistoryUpdateData(object):
+    def __init__(self, before, after, proof):
+        self.before = before
+        self.after = after
+        self.proof = [str(_) for _ in proof]
+
 class BalanceUpdateData(object):
     def __init__(self, before, after, proof):
         self.before = before
@@ -95,16 +113,15 @@ class Ring(object):
 
 class RingSettlement(object):
     def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
-                 filledA, filledB, proofA, proofB,
+                 tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                  balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, balanceUpdateF_WA,
                  balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, balanceUpdateF_WB):
         self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.ring = ring
-        self.filledA = filledA
-        self.filledB = filledB
-        self.proofA = [str(_) for _ in proofA]
-        self.proofB = [str(_) for _ in proofB]
+
+        self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
+        self.tradeHistoryUpdate_B = tradeHistoryUpdate_B
 
         self.balanceUpdateS_A = balanceUpdateS_A
         self.balanceUpdateB_A = balanceUpdateB_A
@@ -149,8 +166,8 @@ class Dex(object):
     def __init__(self):
         # Trading history
         self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
-        self._tradingHistoryTree.newTree(LongsightL12p5_MP([int(0), int(0)], 1))
-        self._filled = {}
+        self._tradingHistoryTree.newTree(TradeHistoryLeaf(0, 0).hash())
+        self._tradeHistoryLeafs = {}
         # Accounts
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
         self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
@@ -159,7 +176,9 @@ class Dex(object):
     def loadState(self, filename):
         with open(filename) as f:
             data = json.load(f)
-            self._filled = data["trading_history_values"]
+            tradeHistoryLeafsDict = data["trading_history_values"]
+            for key, val in tradeHistoryLeafsDict.items():
+                self._tradeHistoryLeafs[key] = TradeHistoryLeaf(val["filled"], val["cancelled"])
             self._tradingHistoryTree._root = data["trading_history_root"]
             self._tradingHistoryTree._db.kv = data["trading_history_tree"]
             for jAccount in data["accounts_values"]:
@@ -173,7 +192,7 @@ class Dex(object):
         with open(filename, "w") as file:
             file.write(json.dumps(
                 {
-                    "trading_history_values": self._filled,
+                    "trading_history_values": self._tradeHistoryLeafs,
                     "trading_history_root": self._tradingHistoryTree._root,
                     "trading_history_tree": self._tradingHistoryTree._db.kv,
                     "accounts_values": self._accounts,
@@ -183,21 +202,20 @@ class Dex(object):
 
     def updateFilled(self, address, fill):
         # Make sure the leaf exist in our map
-        if not(str(address) in self._filled):
-            self._filled[str(address)] = 0
+        if not(str(address) in self._tradeHistoryLeafs):
+            self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0)
 
-        filledBefore = self._filled[str(address)]
-        print("FilledBefore: " + str(filledBefore))
-        self._filled[str(address)] += fill
-        print("FilledAfter: " + str(self._filled[str(address)]))
+        leafBefore = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
+        print("leafBefore: " + str(leafBefore))
+        self._tradeHistoryLeafs[str(address)].filled = str(int(self._tradeHistoryLeafs[str(address)].filled) + fill)
+        leafAfter = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
+        print("leafAfter: " + str(leafAfter))
         proof = self._tradingHistoryTree.createProof(address)
-        # TODO: don't hash the filled value with itself
-        filled_hash = LongsightL12p5_MP([int(self._filled[str(address)]), int(self._filled[str(address)])], 1)
-        self._tradingHistoryTree.update(address, filled_hash)
+        self._tradingHistoryTree.update(address, leafAfter.hash())
 
         # The circuit expects the proof in the reverse direction from bottom to top
         proof.reverse()
-        return (filledBefore, proof)
+        return TradeHistoryUpdateData(leafBefore, leafAfter, proof)
 
     def updateBalance(self, address, amount):
         # Make sure the leaf exist in our map
@@ -210,7 +228,6 @@ class Dex(object):
         accountAfter = copy.deepcopy(self._accounts[address])
         print("accountAfter: " + str(accountAfter.balance))
         proof = self._accountsTree.createProof(address)
-        # TODO: don't hash the filled value with itself
         self._accountsTree.update(address, accountAfter.hash())
 
         # The circuit expects the proof in the reverse direction from bottom to top
@@ -226,8 +243,8 @@ class Dex(object):
         accountsMerkleRoot = self._accountsTree._root
 
         # Update filled amounts
-        (filledA, proofA) = self.updateFilled(addressA, ring.fillS_A)
-        (filledB, proofB) = self.updateFilled(addressB, ring.fillS_B)
+        tradeHistoryUpdate_A = self.updateFilled(addressA, ring.fillS_A)
+        tradeHistoryUpdate_B = self.updateFilled(addressB, ring.fillS_B)
 
         # Update balances A
         balanceUpdateS_A = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
@@ -241,8 +258,8 @@ class Dex(object):
         balanceUpdateF_B = self.updateBalance(ring.orderB.accountF, -ring.fillF_B)
         balanceUpdateF_WB = self.updateBalance(ring.orderB.walletF, ring.fillF_B)
 
-        return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot,
-                              ring, filledA, filledB, proofA, proofB,
+        return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
+                              tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                               balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, balanceUpdateF_WA,
                               balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, balanceUpdateF_WB)
 

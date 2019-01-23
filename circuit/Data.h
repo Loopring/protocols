@@ -28,6 +28,19 @@ void from_json(const json& j, Proof& proof)
     }
 }
 
+class TradeHistoryLeaf
+{
+public:
+    ethsnarks::FieldT filled;
+    ethsnarks::FieldT cancelled;
+};
+
+void from_json(const json& j, TradeHistoryLeaf& leaf)
+{
+    leaf.filled = ethsnarks::FieldT(j.at("filled").get<std::string>().c_str());
+    leaf.cancelled = ethsnarks::FieldT(j.at("cancelled"));
+}
+
 class Account
 {
 public:
@@ -44,6 +57,21 @@ void from_json(const json& j, Account& account)
     account.dexID = ethsnarks::FieldT(j.at("dexID"));
     account.token = ethsnarks::FieldT(j.at("token"));
     account.balance = ethsnarks::FieldT(j.at("balance"));
+}
+
+class TradeHistoryUpdate
+{
+public:
+    TradeHistoryLeaf before;
+    TradeHistoryLeaf after;
+    Proof proof;
+};
+
+void from_json(const json& j, TradeHistoryUpdate& tradeHistoryUpdate)
+{
+    tradeHistoryUpdate.before = j.at("before").get<TradeHistoryLeaf>();
+    tradeHistoryUpdate.after = j.at("after").get<TradeHistoryLeaf>();
+    tradeHistoryUpdate.proof = j.at("proof").get<Proof>();
 }
 
 class BalanceUpdate
@@ -148,11 +176,8 @@ public:
     ethsnarks::FieldT accountsMerkleRoot;
     Ring ring;
 
-    ethsnarks::FieldT filledA;
-    ethsnarks::FieldT filledB;
-
-    Proof proofFilledA;
-    Proof proofFilledB;
+    TradeHistoryUpdate tradeHistoryUpdate_A;
+    TradeHistoryUpdate tradeHistoryUpdate_B;
 
     BalanceUpdate balanceUpdateS_A;
     BalanceUpdate balanceUpdateB_A;
@@ -172,11 +197,8 @@ void from_json(const json& j, RingSettlement& ringSettlement)
 
     ringSettlement.ring = j.at("ring").get<Ring>();
 
-    ringSettlement.filledA = ethsnarks::FieldT(j.at("filledA"));
-    ringSettlement.filledB = ethsnarks::FieldT(j.at("filledB"));
-
-    ringSettlement.proofFilledA = j.at("proofA").get<Proof>();
-    ringSettlement.proofFilledB = j.at("proofB").get<Proof>();
+    ringSettlement.tradeHistoryUpdate_A = j.at("tradeHistoryUpdate_A").get<TradeHistoryUpdate>();
+    ringSettlement.tradeHistoryUpdate_B = j.at("tradeHistoryUpdate_B").get<TradeHistoryUpdate>();
 
     ringSettlement.balanceUpdateS_A = j.at("balanceUpdateS_A").get<BalanceUpdate>();
     ringSettlement.balanceUpdateB_A = j.at("balanceUpdateB_A").get<BalanceUpdate>();

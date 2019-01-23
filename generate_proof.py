@@ -41,6 +41,16 @@ class WithdrawalExport(object):
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
+class CancelExport(object):
+    def __init__(self):
+        self.cancels = []
+        self.tradingHistoryMerkleRootBefore = 0
+        self.tradingHistoryMerkleRootAfter = 0
+        self.accountsMerkleRoot = 0
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
 
 def orderFromJSON(jOrder, dex):
     dexID = int(jOrder["dexID"])
@@ -132,7 +142,8 @@ def main():
     withdrawalExport = WithdrawalExport()
     withdrawalExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
 
-    withdrawalExport.withdrawals.append(dex.withdraw(0, 1))
+    for _ in range(1):
+        withdrawalExport.withdrawals.append(dex.withdraw(0, 1))
 
     withdrawalExport.accountsMerkleRootAfter = str(dex._accountsTree._root)
 
@@ -164,6 +175,26 @@ def main():
 
     # Create the proof
     subprocess.check_call(["build/circuit/dex_circuit", str(0), str(len(data["rings"])), "rings.json"])
+
+
+    #
+    # Cancel
+    #
+
+    #withdrawalExport = WithdrawalExport()
+    #withdrawalExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
+#
+    #for _ in range(10):
+    #    withdrawalExport.withdrawals.append(dex.withdraw(0, 1))
+#
+    #withdrawalExport.accountsMerkleRootAfter = str(dex._accountsTree._root)
+#
+    #f = open("withdrawals.json","w+")
+    #f.write(withdrawalExport.toJSON())
+    #f.close()
+#
+    ## Create the proof
+    #subprocess.check_call(["build/circuit/dex_circuit", str(2), str(len(withdrawalExport.withdrawals)), "withdrawals.json"])
 
 
     dex.saveState(dex_state_filename)
