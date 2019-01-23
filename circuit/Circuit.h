@@ -1154,7 +1154,7 @@ public:
         amount.generate_r1cs_constraints(true);
         padding.generate_r1cs_constraints(true);
 
-        //signatureVerifier.generate_r1cs_constraints();
+        signatureVerifier.generate_r1cs_constraints();
 
         updateBalance.generate_r1cs_constraints();
     }
@@ -1163,6 +1163,7 @@ public:
 class WithdrawalsCircuitGadget : public GadgetT
 {
 public:
+    jubjub::Params params;
 
     unsigned int numAccounts;
     std::vector<WithdrawalGadget> withdrawals;
@@ -1198,7 +1199,6 @@ public:
     void generate_r1cs_constraints(int numAccounts)
     {
         this->numAccounts = numAccounts;
-        jubjub::Params params;
 
         pb.set_input_sizes(1);
         accountsMerkleRootBefore.generate_r1cs_constraints(true);
