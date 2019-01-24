@@ -156,7 +156,28 @@ def main():
 
 
     #
-    # Trade
+    # Cancels
+    #
+
+    cancelExport = CancelExport()
+    cancelExport.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
+    cancelExport.accountsMerkleRoot = str(dex._accountsTree._root)
+
+    for i in range(10):
+        cancelExport.cancels.append(dex.cancelOrder(0, 2 + i))
+
+    cancelExport.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)
+
+    f = open("cancels.json","w+")
+    f.write(cancelExport.toJSON())
+    f.close()
+
+    # Create the proof
+    subprocess.check_call(["build/circuit/dex_circuit", str(3), str(len(cancelExport.cancels)), "cancels.json"])
+
+
+    #
+    # Trades
     #
 
     export = TradeExport()
@@ -175,26 +196,6 @@ def main():
 
     # Create the proof
     subprocess.check_call(["build/circuit/dex_circuit", str(0), str(len(data["rings"])), "rings.json"])
-
-
-    #
-    # Cancel
-    #
-
-    #withdrawalExport = WithdrawalExport()
-    #withdrawalExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
-#
-    #for _ in range(10):
-    #    withdrawalExport.withdrawals.append(dex.withdraw(0, 1))
-#
-    #withdrawalExport.accountsMerkleRootAfter = str(dex._accountsTree._root)
-#
-    #f = open("withdrawals.json","w+")
-    #f.write(withdrawalExport.toJSON())
-    #f.close()
-#
-    ## Create the proof
-    #subprocess.check_call(["build/circuit/dex_circuit", str(2), str(len(withdrawalExport.withdrawals)), "withdrawals.json"])
 
 
     dex.saveState(dex_state_filename)

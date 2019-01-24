@@ -203,7 +203,6 @@ public:
         sig_R(pb, FMT(annotation_prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
         sig_m(flatten({dexID.bits, orderID.bits, accountS.bits, accountB.bits, accountF.bits, amountS.bits, amountB.bits, amountF.bits})),
-
         signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(annotation_prefix, ".signatureVerifier"))
     {
 
@@ -269,7 +268,7 @@ public:
     }
 };
 
-class UpdateFilledGadget : public GadgetT
+class UpdateTradeHistoryGadget : public GadgetT
 {
 public:
     typedef merkle_path_authenticator<LongsightL12p5_MP_gadget> MerklePathCheckT;
@@ -292,7 +291,7 @@ public:
     MerklePathCheckT proofVerifierBefore;
     MerklePathT rootCalculatorAfter;
 
-    UpdateFilledGadget(
+    UpdateTradeHistoryGadget(
         ProtoboardT& pb,
         const VariableT& _merkleRoot,
         const VariableArrayT& address,
@@ -320,7 +319,7 @@ public:
 
     }
 
-    const VariableT result() const
+    const VariableT getNewTradingHistoryMerkleRoot() const
     {
         return rootCalculatorAfter.result();
     }
@@ -346,9 +345,9 @@ public:
         rootCalculatorAfter.generate_r1cs_witness();
     }
 
-    void generate_r1cs_constraints(const libsnark::dual_variable_gadget<FieldT>& fill)
+    void generate_r1cs_constraints(const VariableT& fill)
     {
-        this->pb.add_r1cs_constraint(ConstraintT(filledBefore + fill.packed, 1, filledAfter), "filledBefore + fill = filledAfter");
+        this->pb.add_r1cs_constraint(ConstraintT(filledBefore + fill, 1, filledAfter), "filledBefore + fill = filledAfter");
 
         leafBefore.generate_r1cs_constraints();
         leafAfter.generate_r1cs_constraints();
@@ -358,7 +357,7 @@ public:
     }
 };
 
-class UpdateBalanceGadget : public GadgetT
+class UpdateAccountGadget : public GadgetT
 {
 public:
     typedef merkle_path_authenticator<LongsightL12p5_MP_gadget> MerklePathCheckT;
@@ -373,7 +372,7 @@ public:
     MerklePathCheckT proofVerifierBefore;
     MerklePathT rootCalculatorAfter;
 
-    UpdateBalanceGadget(
+    UpdateAccountGadget(
         ProtoboardT& pb,
         const VariableT& _merkleRoot,
         const VariableArrayT& address,
@@ -452,17 +451,17 @@ public:
     subadd_gadget balanceF_A;
     subadd_gadget balanceF_B;
 
-    UpdateFilledGadget updateFilledA;
-    UpdateFilledGadget updateFilledB;
+    UpdateTradeHistoryGadget updateTradeHistoryA;
+    UpdateTradeHistoryGadget updateTradeHistoryB;
 
-    UpdateBalanceGadget updateBalanceS_A;
-    UpdateBalanceGadget updateBalanceB_A;
-    UpdateBalanceGadget updateBalanceF_A;
-    UpdateBalanceGadget updateBalanceF_WA;
-    UpdateBalanceGadget updateBalanceS_B;
-    UpdateBalanceGadget updateBalanceB_B;
-    UpdateBalanceGadget updateBalanceF_B;
-    UpdateBalanceGadget updateBalanceF_WB;
+    UpdateAccountGadget updateAccountS_A;
+    UpdateAccountGadget updateAccountB_A;
+    UpdateAccountGadget updateAccountF_A;
+    UpdateAccountGadget updateAccountF_WA;
+    UpdateAccountGadget updateAccountS_B;
+    UpdateAccountGadget updateAccountB_B;
+    UpdateAccountGadget updateAccountF_B;
+    UpdateAccountGadget updateAccountF_WB;
 
     LeqGadget filledLeqA;
     LeqGadget filledLeqB;
@@ -509,21 +508,21 @@ public:
         balanceF_B(pb, 96, balanceF_B_before, balanceF_WB_before, fillF_B.packed, FMT(annotation_prefix, ".balanceF_B")),
 
         tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
-        updateFilledA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}), FMT(annotation_prefix, ".updateFilledA")),
-        updateFilledB(pb, updateFilledA.result(), flatten({orderB.orderID.bits, orderB.accountS.bits}), FMT(annotation_prefix, ".updateFilledB")),
+        updateTradeHistoryA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}), FMT(annotation_prefix, ".updateTradeHistoryA")),
+        updateTradeHistoryB(pb, updateTradeHistoryA.getNewTradingHistoryMerkleRoot(), flatten({orderB.orderID.bits, orderB.accountS.bits}), FMT(annotation_prefix, ".updateTradeHistoryB")),
 
         accountsMerkleRoot(_accountsMerkleRoot),
-        updateBalanceS_A(pb, accountsMerkleRoot,        orderA.accountS.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenS, balanceS_A_before, balanceSB_A.X, FMT(annotation_prefix, ".updateBalanceS_A")),
-        updateBalanceB_A(pb, updateBalanceS_A.result(), orderA.accountB.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenB, balanceB_A_before, balanceSB_B.Y, FMT(annotation_prefix, ".updateBalanceB_A")),
-        updateBalanceF_A(pb, updateBalanceB_A.result(), orderA.accountF.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenF, balanceF_A_before, balanceF_A.X, FMT(annotation_prefix, ".updateBalanceF_A")),
-        updateBalanceF_WA(pb, updateBalanceF_A.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF, balanceF_WA_before, balanceF_A.Y, FMT(annotation_prefix, ".updateBalanceF_WA")),
-        updateBalanceS_B(pb, updateBalanceF_WA.result(), orderB.accountS.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenS, balanceS_B_before, balanceSB_B.X, FMT(annotation_prefix, ".updateBalanceS_B")),
-        updateBalanceB_B(pb, updateBalanceS_B.result(), orderB.accountB.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenB, balanceB_B_before, balanceSB_A.Y, FMT(annotation_prefix, ".updateBalanceB_B")),
-        updateBalanceF_B(pb, updateBalanceB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenF, balanceF_B_before, balanceF_B.X, FMT(annotation_prefix, ".updateBalanceF_B")),
-        updateBalanceF_WB(pb, updateBalanceF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF, balanceF_WB_before, balanceF_B.Y, FMT(annotation_prefix, ".updateBalanceF_WB")),
+        updateAccountS_A(pb, accountsMerkleRoot,        orderA.accountS.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenS, balanceS_A_before, balanceSB_A.X, FMT(annotation_prefix, ".updateAccountS_A")),
+        updateAccountB_A(pb, updateAccountS_A.result(), orderA.accountB.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenB, balanceB_A_before, balanceSB_B.Y, FMT(annotation_prefix, ".updateAccountB_A")),
+        updateAccountF_A(pb, updateAccountB_A.result(), orderA.accountF.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenF, balanceF_A_before, balanceF_A.X, FMT(annotation_prefix, ".updateAccountF_A")),
+        updateAccountF_WA(pb, updateAccountF_A.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF, balanceF_WA_before, balanceF_A.Y, FMT(annotation_prefix, ".updateAccountF_WA")),
+        updateAccountS_B(pb, updateAccountF_WA.result(), orderB.accountS.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenS, balanceS_B_before, balanceSB_B.X, FMT(annotation_prefix, ".updateAccountS_B")),
+        updateAccountB_B(pb, updateAccountS_B.result(), orderB.accountB.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenB, balanceB_B_before, balanceSB_A.Y, FMT(annotation_prefix, ".updateAccountB_B")),
+        updateAccountF_B(pb, updateAccountB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenF, balanceF_B_before, balanceF_B.X, FMT(annotation_prefix, ".updateAccountF_B")),
+        updateAccountF_WB(pb, updateAccountF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF, balanceF_WB_before, balanceF_B.Y, FMT(annotation_prefix, ".updateAccountF_WB")),
 
-        filledLeqA(pb, updateFilledA.getFilledAfter(), orderA.amountS.packed, FMT(annotation_prefix, ".filled_A < .amountSA")),
-        filledLeqB(pb, updateFilledB.getFilledAfter(), orderB.amountS.packed, FMT(annotation_prefix, ".filled_B < .amountSB")),
+        filledLeqA(pb, updateTradeHistoryA.getFilledAfter(), orderA.amountS.packed, FMT(annotation_prefix, ".filled_A < .amountSA")),
+        filledLeqB(pb, updateTradeHistoryB.getFilledAfter(), orderB.amountS.packed, FMT(annotation_prefix, ".filled_B < .amountSB")),
 
         rateCheckerA(pb, fillS_A.packed, fillB_A.packed, orderA.amountS.packed, orderA.amountB.packed, FMT(annotation_prefix, ".rateA")),
         rateCheckerB(pb, fillS_B.packed, fillB_B.packed, orderA.amountB.packed, orderB.amountB.packed, FMT(annotation_prefix, ".rateB")),
@@ -539,12 +538,12 @@ public:
 
     const VariableT getNewTradingHistoryMerkleRoot() const
     {
-        return updateFilledB.result();
+        return updateTradeHistoryB.getNewTradingHistoryMerkleRoot();
     }
 
     const VariableT getNewAccountsMerkleRoot() const
     {
-        return updateBalanceB_B.result();
+        return updateAccountB_B.result();
     }
 
     const std::vector<VariableArrayT> getPublicData() const
@@ -576,14 +575,14 @@ public:
         fillF_B.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillF_B);
         fillF_B.generate_r1cs_witness_from_bits();
 
-        this->pb.val(balanceS_A_before) = ringSettlement.balanceUpdateS_A.before.balance;
-        this->pb.val(balanceB_A_before) = ringSettlement.balanceUpdateB_A.before.balance;
-        this->pb.val(balanceF_A_before) = ringSettlement.balanceUpdateF_A.before.balance;
-        this->pb.val(balanceF_WA_before) = ringSettlement.balanceUpdateF_WA.before.balance;
-        this->pb.val(balanceS_B_before) = ringSettlement.balanceUpdateS_B.before.balance;
-        this->pb.val(balanceB_B_before) = ringSettlement.balanceUpdateB_B.before.balance;
-        this->pb.val(balanceF_B_before) = ringSettlement.balanceUpdateF_B.before.balance;
-        this->pb.val(balanceF_WB_before) = ringSettlement.balanceUpdateF_WB.before.balance;
+        this->pb.val(balanceS_A_before) = ringSettlement.accountUpdateS_A.before.balance;
+        this->pb.val(balanceB_A_before) = ringSettlement.accountUpdateB_A.before.balance;
+        this->pb.val(balanceF_A_before) = ringSettlement.accountUpdateF_A.before.balance;
+        this->pb.val(balanceF_WA_before) = ringSettlement.accountUpdateF_WA.before.balance;
+        this->pb.val(balanceS_B_before) = ringSettlement.accountUpdateS_B.before.balance;
+        this->pb.val(balanceB_B_before) = ringSettlement.accountUpdateB_B.before.balance;
+        this->pb.val(balanceF_B_before) = ringSettlement.accountUpdateF_B.before.balance;
+        this->pb.val(balanceF_WB_before) = ringSettlement.accountUpdateF_WB.before.balance;
         balanceSB_A.generate_r1cs_witness();
         balanceSB_B.generate_r1cs_witness();
         balanceF_A.generate_r1cs_witness();
@@ -594,8 +593,8 @@ public:
         //
 
         this->pb.val(tradingHistoryMerkleRoot) = ringSettlement.tradingHistoryMerkleRoot;
-        updateFilledA.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_A);
-        updateFilledB.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_B);
+        updateTradeHistoryA.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_A);
+        updateTradeHistoryB.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_B);
 
         filledLeqA.generate_r1cs_witness();
         filledLeqB.generate_r1cs_witness();
@@ -604,14 +603,14 @@ public:
         // Update accounts
         //
 
-        updateBalanceS_A.generate_r1cs_witness(ringSettlement.balanceUpdateS_A.proof);
-        updateBalanceB_A.generate_r1cs_witness(ringSettlement.balanceUpdateB_A.proof);
-        updateBalanceF_A.generate_r1cs_witness(ringSettlement.balanceUpdateF_A.proof);
-        updateBalanceF_WA.generate_r1cs_witness(ringSettlement.balanceUpdateF_WA.proof);
-        updateBalanceS_B.generate_r1cs_witness(ringSettlement.balanceUpdateS_B.proof);
-        updateBalanceB_B.generate_r1cs_witness(ringSettlement.balanceUpdateB_B.proof);
-        updateBalanceF_B.generate_r1cs_witness(ringSettlement.balanceUpdateF_B.proof);
-        updateBalanceF_WB.generate_r1cs_witness(ringSettlement.balanceUpdateF_WB.proof);
+        updateAccountS_A.generate_r1cs_witness(ringSettlement.accountUpdateS_A.proof);
+        updateAccountB_A.generate_r1cs_witness(ringSettlement.accountUpdateB_A.proof);
+        updateAccountF_A.generate_r1cs_witness(ringSettlement.accountUpdateF_A.proof);
+        updateAccountF_WA.generate_r1cs_witness(ringSettlement.accountUpdateF_WA.proof);
+        updateAccountS_B.generate_r1cs_witness(ringSettlement.accountUpdateS_B.proof);
+        updateAccountB_B.generate_r1cs_witness(ringSettlement.accountUpdateB_B.proof);
+        updateAccountF_B.generate_r1cs_witness(ringSettlement.accountUpdateF_B.proof);
+        updateAccountF_WB.generate_r1cs_witness(ringSettlement.accountUpdateF_WB.proof);
 
         //
         // Matching
@@ -651,8 +650,8 @@ public:
         // Update trading history
         //
 
-        updateFilledA.generate_r1cs_constraints(fillS_A);
-        updateFilledB.generate_r1cs_constraints(fillS_B);
+        updateTradeHistoryA.generate_r1cs_constraints(fillS_A.packed);
+        updateTradeHistoryB.generate_r1cs_constraints(fillS_B.packed);
 
         filledLeqA.generate_r1cs_constraints();
         filledLeqB.generate_r1cs_constraints();
@@ -661,14 +660,14 @@ public:
         // Update accounts
         //
 
-        updateBalanceS_A.generate_r1cs_constraints();
-        updateBalanceB_A.generate_r1cs_constraints();
-        updateBalanceF_A.generate_r1cs_constraints();
-        updateBalanceF_WA.generate_r1cs_constraints();
-        updateBalanceS_B.generate_r1cs_constraints();
-        updateBalanceB_B.generate_r1cs_constraints();
-        updateBalanceF_B.generate_r1cs_constraints();
-        updateBalanceF_WB.generate_r1cs_constraints();
+        updateAccountS_A.generate_r1cs_constraints();
+        updateAccountB_A.generate_r1cs_constraints();
+        updateAccountF_A.generate_r1cs_constraints();
+        updateAccountF_WA.generate_r1cs_constraints();
+        updateAccountS_B.generate_r1cs_constraints();
+        updateAccountB_B.generate_r1cs_constraints();
+        updateAccountF_B.generate_r1cs_constraints();
+        updateAccountF_WB.generate_r1cs_constraints();
 
         //
         // Matching
@@ -900,21 +899,21 @@ public:
     {
         address.fill_with_bits_of_field_element(this->pb, deposit.address);
 
-        publicKeyX.bits.fill_with_bits_of_field_element(this->pb, deposit.balanceUpdate.after.publicKey.x);
+        publicKeyX.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.publicKey.x);
         publicKeyX.generate_r1cs_witness_from_bits();
-        publicKeyY.bits.fill_with_bits_of_field_element(this->pb, deposit.balanceUpdate.after.publicKey.y);
+        publicKeyY.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.publicKey.y);
         publicKeyY.generate_r1cs_witness_from_bits();
-        dex.bits.fill_with_bits_of_field_element(this->pb, deposit.balanceUpdate.after.dexID);
+        dex.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.dexID);
         dex.generate_r1cs_witness_from_bits();
-        token.bits.fill_with_bits_of_field_element(this->pb, deposit.balanceUpdate.after.token);
+        token.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.token);
         token.generate_r1cs_witness_from_bits();
-        balance.bits.fill_with_bits_of_field_element(this->pb, deposit.balanceUpdate.after.balance);
+        balance.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.balance);
         balance.generate_r1cs_witness_from_bits();
 
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
 
-        proof.fill_with_field_elements(this->pb, deposit.balanceUpdate.proof.data);
+        proof.fill_with_field_elements(this->pb, deposit.accountUpdate.proof.data);
         proofVerifierBefore.generate_r1cs_witness();
         rootCalculatorAfter.generate_r1cs_witness();
     }
@@ -1081,7 +1080,7 @@ public:
     VariableT balance_before;
     VariableT balance_after;
 
-    UpdateBalanceGadget updateBalance;
+    UpdateAccountGadget updateAccount;
 
     // variables for signature
     const jubjub::VariablePointT sig_R;
@@ -1110,12 +1109,11 @@ public:
         balance_before(make_variable(pb, FMT(annotation_prefix, ".balance_before"))),
         balance_after(make_variable(pb, FMT(annotation_prefix, ".balance_after"))),
 
-        updateBalance(pb, merkleRootBefore, account, publicKey, dex, token, balance_before, balance_after, FMT(annotation_prefix, ".updateBalance")),
+        updateAccount(pb, merkleRootBefore, account, publicKey, dex, token, balance_before, balance_after, FMT(annotation_prefix, ".updateBalance")),
 
         sig_R(pb, FMT(annotation_prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
         sig_m(flatten({account, amount.bits, padding.bits})),
-
         signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(annotation_prefix, ".signatureVerifier"))
     {
 
@@ -1123,7 +1121,7 @@ public:
 
     const VariableT getNewAccountsMerkleRoot() const
     {
-        return updateBalance.result();
+        return updateAccount.result();
     }
 
     const std::vector<VariableArrayT> getPublicData() const
@@ -1144,12 +1142,12 @@ public:
         padding.bits.fill_with_bits_of_field_element(this->pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        this->pb.val(dex) = withdrawal.balanceUpdate.before.dexID;
-        this->pb.val(token) = withdrawal.balanceUpdate.before.token;
-        this->pb.val(balance_before) = withdrawal.balanceUpdate.before.balance;
-        this->pb.val(balance_after) = withdrawal.balanceUpdate.after.balance;
+        this->pb.val(dex) = withdrawal.accountUpdate.before.dexID;
+        this->pb.val(token) = withdrawal.accountUpdate.before.token;
+        this->pb.val(balance_before) = withdrawal.accountUpdate.before.balance;
+        this->pb.val(balance_after) = withdrawal.accountUpdate.after.balance;
 
-        updateBalance.generate_r1cs_witness(withdrawal.balanceUpdate.proof);
+        updateAccount.generate_r1cs_witness(withdrawal.accountUpdate.proof);
 
         this->pb.val(sig_R.x) = withdrawal.sig.R.x;
         this->pb.val(sig_R.y) = withdrawal.sig.R.y;
@@ -1164,7 +1162,7 @@ public:
 
         signatureVerifier.generate_r1cs_constraints();
 
-        updateBalance.generate_r1cs_constraints();
+        updateAccount.generate_r1cs_constraints();
     }
 };
 
@@ -1289,25 +1287,26 @@ public:
     }
 };
 
-#if 0
+#if 1
 class CancelGadget : public GadgetT
 {
 public:
-    const VariableT tradingHistoryMerkleRootBefore;
-    const VariableT accountsMerkleRootBefore;
+    const VariableT tradingHistoryMerkleRoot;
+    const VariableT accountsMerkleRoot;
 
     const jubjub::VariablePointT publicKey;
 
     VariableArrayT account;
-    libsnark::dual_variable_gadget<FieldT> amount;
+    VariableArrayT orderID;
     libsnark::dual_variable_gadget<FieldT> padding;
 
     VariableT dex;
     VariableT token;
-    VariableT filled_before;
-    VariableT balance_after;
+    VariableT balance;
+    UpdateAccountGadget checkAccount;
 
-   UpdateFilledGadget updateFilledA;
+    VariableT fill;
+    UpdateTradeHistoryGadget updateTradeHistory;
 
     // variables for signature
     const jubjub::VariablePointT sig_R;
@@ -1319,112 +1318,111 @@ public:
         ProtoboardT& pb,
         const jubjub::Params& params,
         const VariableT& _tradingHistoryMerkleRoot,
+        const VariableT& _accountsMerkleRoot,
         const std::string& annotation_prefix
     ) :
         GadgetT(pb, annotation_prefix),
 
-        tradingHistoryMerkleRootBefore(_tradingHistoryMerkleRoot),
+        tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
+        accountsMerkleRoot(_accountsMerkleRoot),
 
         publicKey(pb, FMT(annotation_prefix, ".publicKey")),
 
         account(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".account"))),
-        amount(pb, 96, FMT(annotation_prefix, ".amount")),
-        padding(pb, 2, FMT(annotation_prefix, ".padding")),
+        orderID(make_var_array(pb, 4, FMT(annotation_prefix, ".orderID"))),
+        padding(pb, 1, FMT(annotation_prefix, ".padding")),
+
+        fill(make_variable(pb, 0, FMT(annotation_prefix, ".fill"))),
+        updateTradeHistory(pb, tradingHistoryMerkleRoot, flatten({orderID, account}), FMT(annotation_prefix, ".updateTradeHistory")),
 
         dex(make_variable(pb, FMT(annotation_prefix, ".dex"))),
         token(make_variable(pb, FMT(annotation_prefix, ".token"))),
-        balance_before(make_variable(pb, FMT(annotation_prefix, ".balance_before"))),
-        balance_after(make_variable(pb, FMT(annotation_prefix, ".balance_after"))),
-
-        UpdateFilledGadget updateFilledA;
-
-        updateBalance(pb, merkleRootBefore, account, publicKey, dex, token, balance_before, balance_after, FMT(annotation_prefix, ".updateBalance")),
+        balance(make_variable(pb, FMT(annotation_prefix, ".balance"))),
+        checkAccount(pb, accountsMerkleRoot, account, publicKey, dex, token, balance, balance, FMT(annotation_prefix, ".checkAccount")),
 
         sig_R(pb, FMT(annotation_prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
-        sig_m(flatten({account, amount.bits, padding.bits})),
-
+        sig_m(flatten({account, orderID, padding.bits})),
         signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(annotation_prefix, ".signatureVerifier"))
     {
 
     }
 
-    const VariableT getNewAccountsMerkleRoot() const
+    const VariableT getNewTradingHistoryMerkleRoot() const
     {
-        return updateBalance.result();
+        return updateTradeHistory.getNewTradingHistoryMerkleRoot();
     }
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {account, amount.bits};
+        return {account, orderID};
     }
 
-    void generate_r1cs_witness(const Withdrawal& withdrawal)
+    void generate_r1cs_witness(const Cancellation& cancellation)
     {
-        this->pb.val(publicKey.x) = withdrawal.publicKey.x;
-        this->pb.val(publicKey.y) = withdrawal.publicKey.y;
+        this->pb.val(publicKey.x) = cancellation.publicKey.x;
+        this->pb.val(publicKey.y) = cancellation.publicKey.y;
 
-        account.fill_with_bits_of_field_element(this->pb, withdrawal.account);
-
-        amount.bits.fill_with_bits_of_field_element(this->pb, withdrawal.amount);
-        amount.generate_r1cs_witness_from_bits();
+        account.fill_with_bits_of_field_element(this->pb, cancellation.account);
+        orderID.fill_with_bits_of_field_element(this->pb, cancellation.orderID);
 
         padding.bits.fill_with_bits_of_field_element(this->pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        this->pb.val(dex) = withdrawal.balanceUpdate.before.dexID;
-        this->pb.val(token) = withdrawal.balanceUpdate.before.token;
-        this->pb.val(balance_before) = withdrawal.balanceUpdate.before.balance;
-        this->pb.val(balance_after) = withdrawal.balanceUpdate.after.balance;
+        this->pb.val(dex) = cancellation.accountUpdate.before.dexID;
+        this->pb.val(token) = cancellation.accountUpdate.before.token;
+        this->pb.val(balance) = cancellation.accountUpdate.before.balance;
 
-        updateBalance.generate_r1cs_witness(withdrawal.balanceUpdate.proof);
+        updateTradeHistory.generate_r1cs_witness(cancellation.tradeHistoryUpdate);
 
-        this->pb.val(sig_R.x) = withdrawal.sig.R.x;
-        this->pb.val(sig_R.y) = withdrawal.sig.R.y;
-        sig_s.fill_with_bits_of_field_element(this->pb, withdrawal.sig.s);
+        checkAccount.generate_r1cs_witness(cancellation.accountUpdate.proof);
+
+        this->pb.val(sig_R.x) = cancellation.sig.R.x;
+        this->pb.val(sig_R.y) = cancellation.sig.R.y;
+        sig_s.fill_with_bits_of_field_element(this->pb, cancellation.sig.s);
         signatureVerifier.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
-        amount.generate_r1cs_constraints(true);
         padding.generate_r1cs_constraints(true);
-
         signatureVerifier.generate_r1cs_constraints();
-
-        updateBalance.generate_r1cs_constraints();
+        updateTradeHistory.generate_r1cs_constraints(fill);
+        checkAccount.generate_r1cs_constraints();
     }
 };
 
-class WithdrawalsCircuitGadget : public GadgetT
+class CancelsCircuitGadget : public GadgetT
 {
 public:
     jubjub::Params params;
 
-    unsigned int numAccounts;
-    std::vector<WithdrawalGadget> withdrawals;
+    unsigned int numCancels;
+    std::vector<CancelGadget> cancels;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
-    libsnark::dual_variable_gadget<FieldT> accountsMerkleRootBefore;
-    libsnark::dual_variable_gadget<FieldT> accountsMerkleRootAfter;
+    libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootBefore;
+    libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootAfter;
+    libsnark::dual_variable_gadget<FieldT> accountsMerkleRoot;
 
     std::vector<VariableArrayT> publicDataBits;
     VariableArrayT publicData;
 
     sha256_many* publicDataHasher;
 
-    WithdrawalsCircuitGadget(ProtoboardT& pb, const std::string& annotation_prefix) :
+    CancelsCircuitGadget(ProtoboardT& pb, const std::string& annotation_prefix) :
         GadgetT(pb, annotation_prefix),
 
         publicDataHash(pb, 256, FMT(annotation_prefix, ".publicDataHash")),
 
-        accountsMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootBefore")),
-        accountsMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootAfter"))
+        tradingHistoryMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootBefore")),
+        tradingHistoryMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootAfter")),
+        accountsMerkleRoot(pb, 256, FMT(annotation_prefix, ".accountsMerkleRoot"))
     {
         this->publicDataHasher = nullptr;
     }
 
-    ~WithdrawalsCircuitGadget()
+    ~CancelsCircuitGadget()
     {
         if (publicDataHasher)
         {
@@ -1432,28 +1430,28 @@ public:
         }
     }
 
-    void generate_r1cs_constraints(int numAccounts)
+    void generate_r1cs_constraints(int numCancels)
     {
-        this->numAccounts = numAccounts;
+        this->numCancels = numCancels;
 
         pb.set_input_sizes(1);
-        accountsMerkleRootBefore.generate_r1cs_constraints(true);
-        publicDataBits.push_back(accountsMerkleRootBefore.bits);
-        publicDataBits.push_back(accountsMerkleRootAfter.bits);
-        for (size_t j = 0; j < numAccounts; j++)
+        tradingHistoryMerkleRootBefore.generate_r1cs_constraints(true);
+        publicDataBits.push_back(tradingHistoryMerkleRootBefore.bits);
+        publicDataBits.push_back(tradingHistoryMerkleRootAfter.bits);
+        for (size_t j = 0; j < numCancels; j++)
         {
-            VariableT withdrawalAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : withdrawals.back().getNewAccountsMerkleRoot();
-            withdrawals.emplace_back(pb, params, withdrawalAccountsMerkleRoot, std::string("withdrawals") + std::to_string(j));
+            VariableT cancelTradingHistoryMerkleRoot = (j == 0) ? tradingHistoryMerkleRootBefore.packed : cancels.back().getNewTradingHistoryMerkleRoot();
+            cancels.emplace_back(pb, params, cancelTradingHistoryMerkleRoot, accountsMerkleRoot.packed, std::string("cancels") + std::to_string(j));
 
             // Store data from withdrawal
-            std::vector<VariableArrayT> ringPublicData = withdrawals.back().getPublicData();
+            std::vector<VariableArrayT> ringPublicData = cancels.back().getPublicData();
             publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
         }
 
         publicDataHash.generate_r1cs_constraints(true);
-        for (auto& withdrawal : withdrawals)
+        for (auto& cancel : cancels)
         {
-            withdrawal.generate_r1cs_constraints();
+            cancel.generate_r1cs_constraints();
         }
 
         // Check public data
@@ -1473,22 +1471,27 @@ public:
 
     void printInfo()
     {
-        std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numAccounts) << "/withdrawal)" << std::endl;
+        std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numCancels) << "/cancel)" << std::endl;
     }
 
-    bool generateWitness(const std::vector<Loopring::Withdrawal>& withdrawalsData,
-                         const std::string& strAccountsMerkleRootBefore, const std::string& strAccountsMerkleRootAfter)
+    bool generateWitness(const std::vector<Loopring::Cancellation>& cancelsData,
+                         const std::string& strTradingHistoryMerkleRootBefore, const std::string& strTradingHistoryMerkleRootAfter,
+                         const std::string& strAccountsMerkleRoot)
     {
-        ethsnarks::FieldT accountsMerkleRootBeforeValue = ethsnarks::FieldT(strAccountsMerkleRootBefore.c_str());
-        ethsnarks::FieldT accountsMerkleRootAfterValue = ethsnarks::FieldT(strAccountsMerkleRootAfter.c_str());
-        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootBeforeValue);
-        accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
-        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootAfterValue);
-        accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
+        ethsnarks::FieldT tradingHistoryMerkleRootBeforeValue = ethsnarks::FieldT(strTradingHistoryMerkleRootBefore.c_str());
+        ethsnarks::FieldT tradingHistoryMerkleRootAfterValue = ethsnarks::FieldT(strTradingHistoryMerkleRootAfter.c_str());
+        tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, tradingHistoryMerkleRootBeforeValue);
+        tradingHistoryMerkleRootBefore.generate_r1cs_witness_from_bits();
+        tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, tradingHistoryMerkleRootAfterValue);
+        tradingHistoryMerkleRootAfter.generate_r1cs_witness_from_bits();
 
-        for(unsigned int i = 0; i < withdrawalsData.size(); i++)
+        ethsnarks::FieldT accountsMerkleRootValue = ethsnarks::FieldT(strAccountsMerkleRoot.c_str());
+        accountsMerkleRoot.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootValue);
+        accountsMerkleRoot.generate_r1cs_witness_from_bits();
+
+        for(unsigned int i = 0; i < cancelsData.size(); i++)
         {
-            withdrawals[i].generate_r1cs_witness(withdrawalsData[i]);
+            cancels[i].generate_r1cs_witness(cancelsData[i]);
         }
 
         publicDataHasher->generate_r1cs_witness();

@@ -53,7 +53,7 @@ class TradeHistoryUpdateData(object):
         self.after = after
         self.proof = [str(_) for _ in proof]
 
-class BalanceUpdateData(object):
+class AccountUpdateData(object):
     def __init__(self, before, after, proof):
         self.before = before
         self.after = after
@@ -114,8 +114,8 @@ class Ring(object):
 class RingSettlement(object):
     def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
-                 balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, balanceUpdateF_WA,
-                 balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, balanceUpdateF_WB):
+                 accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA,
+                 accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB):
         self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.ring = ring
@@ -123,35 +123,60 @@ class RingSettlement(object):
         self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
         self.tradeHistoryUpdate_B = tradeHistoryUpdate_B
 
-        self.balanceUpdateS_A = balanceUpdateS_A
-        self.balanceUpdateB_A = balanceUpdateB_A
-        self.balanceUpdateF_A = balanceUpdateF_A
-        self.balanceUpdateF_WA = balanceUpdateF_WA
+        self.accountUpdateS_A = accountUpdateS_A
+        self.accountUpdateB_A = accountUpdateB_A
+        self.accountUpdateF_A = accountUpdateF_A
+        self.accountUpdateF_WA = accountUpdateF_WA
 
-        self.balanceUpdateS_B = balanceUpdateS_B
-        self.balanceUpdateB_B = balanceUpdateB_B
-        self.balanceUpdateF_B = balanceUpdateF_B
-        self.balanceUpdateF_WB = balanceUpdateF_WB
+        self.accountUpdateS_B = accountUpdateS_B
+        self.accountUpdateB_B = accountUpdateB_B
+        self.accountUpdateF_B = accountUpdateF_B
+        self.accountUpdateF_WB = accountUpdateF_WB
 
 
 class Deposit(object):
-    def __init__(self, accountsMerkleRoot, address, balanceUpdate):
+    def __init__(self, accountsMerkleRoot, address, accountUpdate):
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.address = address
-        self.balanceUpdate = balanceUpdate
+        self.accountUpdate = accountUpdate
 
 
 class Withdrawal(object):
-    def __init__(self, accountsMerkleRoot, publicKey, account, amount, balanceUpdate):
+    def __init__(self, accountsMerkleRoot, publicKey, account, amount, accountUpdate):
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.account = account
         self.amount = amount
-        self.balanceUpdate = balanceUpdate
+        self.accountUpdate = accountUpdate
 
     def message(self):
         msg_parts = [FQ(int(self.account), 1<<24), FQ(int(self.amount), 1<<96), FQ(int(0), 1<<2)]
+        return eddsa_tobits(*msg_parts)
+
+    def sign(self, k):
+        msg = self.message()
+        signedMessage = pureeddsa_sign(msg, k)
+        self.sigRx = str(signedMessage.sig.R.x)
+        self.sigRy = str(signedMessage.sig.R.y)
+        self.sigS = str(signedMessage.sig.s)
+
+
+class Cancellation(object):
+    def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot,
+                 publicKey, account, orderID,
+                 tradeHistoryUpdate, accountUpdate):
+        self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
+        self.accountsMerkleRoot = str(accountsMerkleRoot)
+        self.publicKeyX = str(publicKey.x)
+        self.publicKeyY = str(publicKey.y)
+        self.account = account
+        self.orderID = orderID
+        self.tradeHistoryUpdate = tradeHistoryUpdate
+        self.accountUpdate = accountUpdate
+
+    def message(self):
+        msg_parts = [FQ(int(self.account), 1<<24), FQ(int(self.orderID), 1<<4), FQ(int(0), 1<<1)]
         return eddsa_tobits(*msg_parts)
 
     def sign(self, k):
@@ -200,7 +225,7 @@ class Dex(object):
                     "accounts_tree": self._accountsTree._db.kv,
                 }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
-    def updateFilled(self, address, fill):
+    def updateTradeHistory(self, address, fill, cancelled = 0):
         # Make sure the leaf exist in our map
         if not(str(address) in self._tradeHistoryLeafs):
             self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0)
@@ -208,6 +233,7 @@ class Dex(object):
         leafBefore = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
         print("leafBefore: " + str(leafBefore))
         self._tradeHistoryLeafs[str(address)].filled = str(int(self._tradeHistoryLeafs[str(address)].filled) + fill)
+        self._tradeHistoryLeafs[str(address)].cancelled = cancelled
         leafAfter = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
         print("leafAfter: " + str(leafAfter))
         proof = self._tradingHistoryTree.createProof(address)
@@ -232,7 +258,7 @@ class Dex(object):
 
         # The circuit expects the proof in the reverse direction from bottom to top
         proof.reverse()
-        return BalanceUpdateData(accountBefore, accountAfter, proof)
+        return AccountUpdateData(accountBefore, accountAfter, proof)
 
     def settleRing(self, ring):
         addressA = (ring.orderA.accountS << 4) + ring.orderA.orderID
@@ -243,25 +269,25 @@ class Dex(object):
         accountsMerkleRoot = self._accountsTree._root
 
         # Update filled amounts
-        tradeHistoryUpdate_A = self.updateFilled(addressA, ring.fillS_A)
-        tradeHistoryUpdate_B = self.updateFilled(addressB, ring.fillS_B)
+        tradeHistoryUpdate_A = self.updateTradeHistory(addressA, ring.fillS_A)
+        tradeHistoryUpdate_B = self.updateTradeHistory(addressB, ring.fillS_B)
 
         # Update balances A
-        balanceUpdateS_A = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
-        balanceUpdateB_A = self.updateBalance(ring.orderA.accountB, ring.fillB_A)
-        balanceUpdateF_A = self.updateBalance(ring.orderA.accountF, -ring.fillF_A)
-        balanceUpdateF_WA = self.updateBalance(ring.orderA.walletF, ring.fillF_A)
+        accountUpdateS_A = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
+        accountUpdateB_A = self.updateBalance(ring.orderA.accountB, ring.fillB_A)
+        accountUpdateF_A = self.updateBalance(ring.orderA.accountF, -ring.fillF_A)
+        accountUpdateF_WA = self.updateBalance(ring.orderA.walletF, ring.fillF_A)
 
         # Update balances B
-        balanceUpdateS_B = self.updateBalance(ring.orderB.accountS, -ring.fillS_B)
-        balanceUpdateB_B = self.updateBalance(ring.orderB.accountB, ring.fillB_B)
-        balanceUpdateF_B = self.updateBalance(ring.orderB.accountF, -ring.fillF_B)
-        balanceUpdateF_WB = self.updateBalance(ring.orderB.walletF, ring.fillF_B)
+        accountUpdateS_B = self.updateBalance(ring.orderB.accountS, -ring.fillS_B)
+        accountUpdateB_B = self.updateBalance(ring.orderB.accountB, ring.fillB_B)
+        accountUpdateF_B = self.updateBalance(ring.orderB.accountF, -ring.fillF_B)
+        accountUpdateF_WB = self.updateBalance(ring.orderB.walletF, ring.fillF_B)
 
         return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
-                              balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, balanceUpdateF_WA,
-                              balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, balanceUpdateF_WB)
+                              accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA,
+                              accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB)
 
     def addAccount(self, account):
         # Copy the initial merkle root
@@ -277,7 +303,7 @@ class Dex(object):
         self._accounts.append(account)
 
         proof.reverse()
-        return Deposit(accountsMerkleRoot, address, BalanceUpdateData(accountBefore, accountAfter, proof))
+        return Deposit(accountsMerkleRoot, address, AccountUpdateData(accountBefore, accountAfter, proof))
 
     def getAccount(self, accountID):
         return self._accounts[accountID]
@@ -286,7 +312,29 @@ class Dex(object):
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
         account = self._accounts[address]
-        balanceUpdate = self.updateBalance(address, -amount)
-        withdrawal = Withdrawal(accountsMerkleRoot, Point(int(account.publicKeyX), int(account.publicKeyY)), address, amount, balanceUpdate)
+        accountUpdate = self.updateBalance(address, -amount)
+        withdrawal = Withdrawal(accountsMerkleRoot, Point(int(account.publicKeyX), int(account.publicKeyY)), address, amount, accountUpdate)
         withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal
+
+    def cancelOrder(self, accountAddress, orderID):
+        account = self._accounts[accountAddress]
+
+        orderAddress = (accountAddress << 4) + orderID
+
+        # Copy the initial merkle roots
+        tradingHistoryMerkleRoot = self._tradingHistoryTree._root
+        accountsMerkleRoot = self._accountsTree._root
+
+        # Update trading history
+        tradeHistoryUpdate = self.updateTradeHistory(orderAddress, 0, 1)
+
+        # Create a proof the signer is the owner of the account
+        accountUpdate = self.updateBalance(accountAddress, 0)
+
+        cancellation = Cancellation(tradingHistoryMerkleRoot, accountsMerkleRoot,
+                                    Point(int(account.publicKeyX), int(account.publicKeyY)), accountAddress, orderID,
+                                    tradeHistoryUpdate, accountUpdate)
+        cancellation.sign(FQ(int(account.secretKey)))
+        return cancellation
+
