@@ -193,10 +193,12 @@ class Dex(object):
         self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf(0, 0).hash())
         self._tradeHistoryLeafs = {}
+        print("Empty trading tree: " + str(self._tradingHistoryTree._root))
         # Accounts
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
         self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
         self._accounts = []
+        print("Empty accounts tree: " + str(self._accountsTree._root))
 
     def loadState(self, filename):
         with open(filename) as f:

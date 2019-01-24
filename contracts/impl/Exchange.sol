@@ -37,7 +37,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     address public  tradeDelegateAddress        = address(0x0);
 
-    bytes32 public tradeHistoryMerkleRoot       = 0x124E67C9C1A646D01A413C1371A433013297744E89A109484F87F943BE498F3D;
+    bytes32 public accountsMerkleRoot           = 0x282B2D2BEB6A5269A0162C8477825D3D9352526705DFA351483C72E68EAFE9A9;
+    bytes32 public tradeHistoryMerkleRoot       = 0x056E110222A84609DE5696E61A9F18731AFD9C4743F77D85C6F7267CB1617571;
 
     uint256[14] vk;
     uint256[] gammaABC;
@@ -90,21 +91,50 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
-        // TODO: don't send merkleRootBefore to save on calldata
-        bytes32 merkleRootBefore;
-        bytes32 merkleRootAfter;
+        // TODO: don't send tradeHistoryMerkleRootBefore to save on calldata
+        bytes32 accountsMerkleRootBefore;
+        bytes32 accountsMerkleRootAfter;
+        bytes32 tradeHistoryMerkleRootBefore;
+        bytes32 tradeHistoryMerkleRootAfter;
         assembly {
-            merkleRootBefore := mload(add(data, 32))
-            merkleRootAfter := mload(add(data, 64))
+            accountsMerkleRootBefore := mload(add(data, 32))
+            accountsMerkleRootAfter := mload(add(data, 64))
+            tradeHistoryMerkleRootBefore := mload(add(data, 96))
+            tradeHistoryMerkleRootAfter := mload(add(data, 128))
         }
-        require(merkleRootBefore == tradeHistoryMerkleRoot, "INVALID_ROOT");
+        require(accountsMerkleRootBefore == accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
+        require(tradeHistoryMerkleRootBefore == tradeHistoryMerkleRoot, "INVALID_TRADEHISTORY_ROOT");
+
+        bytes32 publicDataHash = sha256(data);
+        bool verified = verifyProof(publicDataHash, proof);
+        require(verified, "INVALID_PROOF");
+
+        // Update the merkle roots
+        accountsMerkleRoot = accountsMerkleRootAfter;
+        tradeHistoryMerkleRoot = tradeHistoryMerkleRootAfter;
+    }
+
+    function submitDeposits(
+        bytes memory data,
+        uint256[8] memory proof
+        )
+        public
+    {
+        // TODO: don't send accountsMerkleRootBefore to save on calldata
+        bytes32 accountsMerkleRootBefore;
+        bytes32 accountsMerkleRootAfter;
+        assembly {
+            accountsMerkleRootBefore := mload(add(data, 32))
+            accountsMerkleRootAfter := mload(add(data, 64))
+        }
+        require(accountsMerkleRootBefore == accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
 
         bytes32 publicDataHash = sha256(data);
         bool verified = verifyProof(publicDataHash, proof);
         require(verified, "INVALID_PROOF");
 
         // Update the merkle root
-        tradeHistoryMerkleRoot = merkleRootAfter;
+        accountsMerkleRoot = accountsMerkleRootAfter;
     }
 
     function registerToken(

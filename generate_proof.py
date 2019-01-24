@@ -94,20 +94,7 @@ def ringFromJSON(jRing, dex):
     return Ring(orderA, orderB, fillS_A, fillB_A, fillF_A, fillS_B, fillB_B, fillF_B)
 
 
-def main():
-    dex_state_filename = "dex.json"
-
-    with open('rings_info.json') as f:
-        data = json.load(f)
-
-    dex = Dex()
-    if os.path.exists(dex_state_filename):
-        dex.loadState(dex_state_filename)
-
-    #
-    # Deposits
-    #
-
+def deposit(dex):
     depositExport = DepositExport()
     depositExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
 
@@ -135,10 +122,7 @@ def main():
     subprocess.check_call(["build/circuit/dex_circuit", str(1), str(len(depositExport.deposits)), "deposits.json"])
 
 
-    #
-    # Withdrawals
-    #
-
+def withdraw(dex):
     withdrawalExport = WithdrawalExport()
     withdrawalExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
 
@@ -155,15 +139,12 @@ def main():
     subprocess.check_call(["build/circuit/dex_circuit", str(2), str(len(withdrawalExport.withdrawals)), "withdrawals.json"])
 
 
-    #
-    # Cancels
-    #
-
+def cancel(dex):
     cancelExport = CancelExport()
     cancelExport.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
     cancelExport.accountsMerkleRoot = str(dex._accountsTree._root)
 
-    for i in range(10):
+    for i in range(2):
         cancelExport.cancels.append(dex.cancelOrder(0, 2 + i))
 
     cancelExport.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)
@@ -176,9 +157,9 @@ def main():
     subprocess.check_call(["build/circuit/dex_circuit", str(3), str(len(cancelExport.cancels)), "cancels.json"])
 
 
-    #
-    # Trades
-    #
+def trade(dex):
+    with open('rings_info.json') as f:
+        data = json.load(f)
 
     export = TradeExport()
     export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
@@ -197,6 +178,24 @@ def main():
     # Create the proof
     subprocess.check_call(["build/circuit/dex_circuit", str(0), str(len(data["rings"])), "rings.json"])
 
+
+def main(mode):
+    print("Mode: " + mode)
+
+    dex_state_filename = "dex.json"
+
+    dex = Dex()
+    if os.path.exists(dex_state_filename):
+        dex.loadState(dex_state_filename)
+
+    if mode == "0":
+        trade(dex)
+    if mode == "1":
+        deposit(dex)
+    if mode == "2":
+        withdraw(dex)
+    if mode == "3":
+        cancel(dex)
 
     dex.saveState(dex_state_filename)
 

@@ -525,8 +525,8 @@ public:
         updateAccountF_B(pb, updateAccountB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenF, balanceF_B_before, balanceF_B.X, FMT(annotation_prefix, ".updateAccountF_B")),
         updateAccountF_WB(pb, updateAccountF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF, balanceF_WB_before, balanceF_B.Y, FMT(annotation_prefix, ".updateAccountF_WB")),
 
-        filledLeqA(pb, updateTradeHistoryA.getFilledAfter(), orderA.amountS.packed, FMT(annotation_prefix, ".filled_A < .amountSA")),
-        filledLeqB(pb, updateTradeHistoryB.getFilledAfter(), orderB.amountS.packed, FMT(annotation_prefix, ".filled_B < .amountSB")),
+        filledLeqA(pb, updateTradeHistoryA.getFilledAfter(), orderA.amountS.packed, FMT(annotation_prefix, ".filled_A <= .amountSA")),
+        filledLeqB(pb, updateTradeHistoryB.getFilledAfter(), orderB.amountS.packed, FMT(annotation_prefix, ".filled_B <= .amountSB")),
 
         rateCheckerA(pb, fillS_A.packed, fillB_A.packed, orderA.amountS.packed, orderA.amountB.packed, FMT(annotation_prefix, ".rateA")),
         rateCheckerB(pb, fillS_B.packed, fillB_B.packed, orderA.amountB.packed, orderB.amountB.packed, FMT(annotation_prefix, ".rateB")),
@@ -547,7 +547,7 @@ public:
 
     const VariableT getNewAccountsMerkleRoot() const
     {
-        return updateAccountB_B.result();
+        return updateAccountF_WB.result();
     }
 
     const std::vector<VariableArrayT> getPublicData() const
@@ -741,6 +741,9 @@ public:
 
         pb.set_input_sizes(1);
         tradingHistoryMerkleRootBefore.generate_r1cs_constraints(true);
+        accountsMerkleRootBefore.generate_r1cs_constraints(true);
+        publicDataBits.push_back(accountsMerkleRootBefore.bits);
+        publicDataBits.push_back(accountsMerkleRootAfter.bits);
         publicDataBits.push_back(tradingHistoryMerkleRootBefore.bits);
         publicDataBits.push_back(tradingHistoryMerkleRootAfter.bits);
         for (size_t j = 0; j < numRings; j++)
@@ -771,8 +774,9 @@ public:
             pb.add_r1cs_constraint(ConstraintT(publicDataHasher->result().bits[255-i], 1, publicDataHash.bits[i]), "publicData.check()");
         }
 
-        // Make sure the merkle root afterwards is correctly passed in
-        pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewTradingHistoryMerkleRoot(), 1, tradingHistoryMerkleRootAfter.packed), "newMerkleRoot");
+        // Make sure the merkle roots afterwards is correctly passed in
+        pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewAccountsMerkleRoot(), 1, accountsMerkleRootAfter.packed), "newAccountsMerkleRoot");
+        pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewTradingHistoryMerkleRoot(), 1, tradingHistoryMerkleRootAfter.packed), "newTradingHistoryMerkleRoot");
     }
 
     void printInfo()
@@ -996,8 +1000,8 @@ public:
             deposits.emplace_back(pb, depositAccountsMerkleRoot, std::string("deposits") + std::to_string(j));
 
             // Store data from deposit
-            std::vector<VariableArrayT> ringPublicData = deposits.back().getPublicData();
-            publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
+            //std::vector<VariableArrayT> ringPublicData = deposits.back().getPublicData();
+            //publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
         }
 
         publicDataHash.generate_r1cs_constraints(true);
@@ -1012,13 +1016,13 @@ public:
         publicDataHasher->generate_r1cs_constraints();
 
         // Check that the hash matches the public input
-        /*for (unsigned int i = 0; i < 256; i++)
+        for (unsigned int i = 0; i < 256; i++)
         {
             pb.add_r1cs_constraint(ConstraintT(publicDataHasher->result().bits[255-i], 1, publicDataHash.bits[i]), "publicData.check()");
-        }*/
+        }
 
         // Make sure the merkle root afterwards is correctly passed in
-        //pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewTradingHistoryMerkleRoot(), 1, tradingHistoryMerkleRootAfter.packed), "newMerkleRoot");
+        pb.add_r1cs_constraint(ConstraintT(deposits.back().getNewAccountsMerkleRoot(), 1, accountsMerkleRootAfter.packed), "newMerkleRoot");
     }
 
     void printInfo()

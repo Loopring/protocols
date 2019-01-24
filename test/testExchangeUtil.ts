@@ -8,7 +8,7 @@ import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { OrderInfo, OrderSettlementData, RingInfo, RingSettlementData, RingsInfo } from "./types";
+import { Deposit, OrderInfo, OrderSettlementData, RingInfo, RingSettlementData, RingsInfo } from "./types";
 
 export class ExchangeTestUtil {
   public context: Context;
@@ -23,7 +23,7 @@ export class ExchangeTestUtil {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
     await this.authorizeTradeDelegate();
-    await this.approveTradeDelegate();
+    // await this.approveTradeDelegate();
     await this.cleanTradeHistory();
   }
 
@@ -253,7 +253,55 @@ export class ExchangeTestUtil {
     return ringSettlements;
   }
 
+  public addDeposit(deposits: Deposit[], publicKeyX: string, publicKeyY: string,
+                    dexID: number, tokenID: number, balance: number) {
+    deposits.push({publicKeyX, publicKeyY, dexID, tokenID, balance});
+  }
+
+  public async submitDeposits() {
+    // Create the accounts
+    const deposits: Deposit[] = [];
+    this.addDeposit(deposits, "0", "1", 0, 1, 1);
+    this.addDeposit(deposits, "2", "3", 0, 1, 2);
+    this.addDeposit(deposits, "4", "5", 0, 1, 3);
+
+    const jDepositsInfo = JSON.stringify(deposits, null, 4);
+    fs.writeFileSync("deposits_info.json", jDepositsInfo, "utf8");
+
+    childProcess.spawnSync("python3", ["generate_proof.py", "1"], {stdio: "inherit"});
+
+    const jDeposits = fs.readFileSync("deposits.json", "ascii");
+    const jdeposits = JSON.parse(jDeposits);
+
+    const bs = new pjs.Bitstream();
+    bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootAfter, 10), 32);
+
+    // Hash all public inputs to a singe value
+    const publicDataHash = ethUtil.sha256(bs.getData());
+    console.log("DataJS: " + bs.getData());
+    console.log(publicDataHash.toString("hex"));
+
+    // Read the verification key and set it in the smart contract
+    const jVK = fs.readFileSync("vk.json", "ascii");
+    const vk = JSON.parse(jVK);
+    const vkFlattened = this.flattenVK(vk);
+    await this.exchange.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
+
+    // Read the proof
+    const jProof = fs.readFileSync("proof.json", "ascii");
+    const proof = JSON.parse(jProof);
+    const proofFlattened = this.flattenProof(proof);
+
+    // Submit the deposits
+    const tx = await this.exchange.submitDeposits(web3.utils.hexToBytes(bs.getData()), proofFlattened);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+  }
+
   public async submitRings(ringsInfo: RingsInfo) {
+
+    await this.submitDeposits();
+
     // Generate the token transfers for the ring
     const ringSettlements = await this.settleRings(ringsInfo);
 
@@ -262,7 +310,7 @@ export class ExchangeTestUtil {
     fs.writeFileSync("rings_info.json", jRingsInfo, "utf8");
 
     // Generate the proof
-    childProcess.spawnSync("python3", ["generate_proof.py"], {stdio: "inherit"});
+    childProcess.spawnSync("python3", ["generate_proof.py", "0"], {stdio: "inherit"});
 
     // Read the proof
     const jProof = fs.readFileSync("proof.json", "ascii");
@@ -276,6 +324,8 @@ export class ExchangeTestUtil {
 
     const bs = new pjs.Bitstream();
     // console.log(rings.rootBefore);
+    bs.addBigNumber(new BigNumber(rings.accountsMerkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(rings.accountsMerkleRootAfter, 10), 32);
     bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootBefore, 10), 32);
     bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootAfter, 10), 32);
     console.log(ringSettlements);
@@ -314,9 +364,6 @@ export class ExchangeTestUtil {
     // Submit the rings
     const tx = await this.exchange.submitRings(web3.utils.hexToBytes(bs.getData()), proofFlattened);
     pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
-
-    // const transferEvents = await this.getTransferEvents(this.testContext.allTokens, web3.eth.blockNumber);
-    // this.assertTransfers(ringsInfo, transferEvents, transfers);
 
     // await this.watchAndPrintEvent(this.exchange, "TestLog");
 

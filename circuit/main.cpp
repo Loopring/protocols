@@ -140,9 +140,9 @@ int deposit(unsigned int numAccounts, const char* accountsFilename)
     circuit.generate_r1cs_constraints(numAccounts);
     circuit.printInfo();
 
-#if 0
+#if 1
     libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT> keypair;
-    if (argc >= 2)
+    if (accountsFilename != NULL)
     {
         std::cout << "Generating keys..." << std::endl;
         auto constraints = pb.get_constraint_system();
@@ -204,7 +204,7 @@ int deposit(unsigned int numAccounts, const char* accountsFilename)
         }
         std::cout << "Input is valid." << std::endl;
 
-#if 0
+#if 1
         {
             std::cout << "Generating proof..." << std::endl;
             timespec time1, time2;

@@ -75,3 +75,11 @@ export interface RingSettlementData {
   orderA: OrderSettlementData;
   orderB: OrderSettlementData;
 }
+
+export interface Deposit {
+  publicKeyX: string;
+  publicKeyY: string;
+  dexID: number;
+  tokenID: number;
+  balance: number;
+}
