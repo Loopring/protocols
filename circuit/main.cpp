@@ -34,9 +34,9 @@ int submitRings(unsigned int numRings, const char* ringsFilename)
     circuit.generate_r1cs_constraints(numRings);
     circuit.printInfo();
 
-#if 0
+#if 1
     libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT> keypair;
-    if (argc >= 2)
+    if (ringsFilename != NULL)
     {
         std::cout << "Generating keys..." << std::endl;
         auto constraints = pb.get_constraint_system();
@@ -102,7 +102,7 @@ int submitRings(unsigned int numRings, const char* ringsFilename)
         }
         std::cout << "Input is valid." << std::endl;
 
-#if 0
+#if 1
         {
             std::cout << "Generating proof..." << std::endl;
             timespec time1, time2;

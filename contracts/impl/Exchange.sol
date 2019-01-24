@@ -37,7 +37,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     address public  tradeDelegateAddress        = address(0x0);
 
-    bytes32 public tradeHistoryMerkleRoot       = 0x056e110222a84609de5696e61a9f18731afd9c4743f77d85c6f7267cb1617571;
+    bytes32 public tradeHistoryMerkleRoot       = 0x124E67C9C1A646D01A413C1371A433013297744E89A109484F87F943BE498F3D;
 
     uint256[14] vk;
     uint256[] gammaABC;

@@ -431,6 +431,8 @@ public:
     OrderGadget orderA;
     OrderGadget orderB;
 
+    VariableArrayT orderIDPadding;
+
     libsnark::dual_variable_gadget<FieldT> fillS_A;
     libsnark::dual_variable_gadget<FieldT> fillB_A;
     libsnark::dual_variable_gadget<FieldT> fillF_A;
@@ -486,6 +488,8 @@ public:
 
         orderA(pb, params, FMT(annotation_prefix, ".orderA")),
         orderB(pb, params, FMT(annotation_prefix, ".orderB")),
+
+        orderIDPadding(make_var_array(pb, 12, FMT(annotation_prefix, ".orderIDPadding"))),
 
         fillS_A(pb, 96, FMT(annotation_prefix, ".fillS_A")),
         fillB_A(pb, 96, FMT(annotation_prefix, ".fillB_A")),
@@ -548,11 +552,11 @@ public:
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {orderA.dexID.bits, orderA.orderID.bits,
+        return {orderA.dexID.bits, orderIDPadding, orderA.orderID.bits,
                 orderA.accountS.bits, orderB.accountB.bits, fillS_A.bits,
                 orderA.accountF.bits, fillF_A.bits,
 
-                orderB.dexID.bits, orderB.orderID.bits,
+                orderB.dexID.bits, orderIDPadding, orderB.orderID.bits,
                 orderB.accountS.bits, orderA.accountB.bits, fillS_B.bits,
                 orderB.accountF.bits, fillF_B.bits};
     }
@@ -561,6 +565,8 @@ public:
     {
         orderA.generate_r1cs_witness(ringSettlement.ring.orderA);
         orderB.generate_r1cs_witness(ringSettlement.ring.orderB);
+
+        orderIDPadding.fill_with_bits_of_ulong(this->pb, 0);
 
         fillS_A.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillS_A);
         fillS_A.generate_r1cs_witness_from_bits();

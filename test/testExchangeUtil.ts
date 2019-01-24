@@ -109,13 +109,21 @@ export class ExchangeTestUtil {
     order.dexID = order.dexID ? order.dexID : 0;
     order.orderID = order.orderID ? order.orderID : order.index;
 
-    order.accountS = order.index * 3 + 1;
-    order.accountB = order.index * 3 + 2;
-    order.accountF = order.index * 3 + 3;
-
-    order.tokenIdS = order.index * 3 + 1;
-    order.tokenIdB = order.index * 3 + 2;
-    order.tokenIdF = order.index * 3 + 3;
+    if (order.index === 0) {
+      order.accountS = 0;
+      order.accountB = 1;
+      order.accountF = 2;
+      order.tokenIdS = 1;
+      order.tokenIdB = 2;
+      order.tokenIdF = 3;
+    } else {
+      order.accountS = 4;
+      order.accountB = 3;
+      order.accountF = 5;
+      order.tokenIdS = 2;
+      order.tokenIdB = 1;
+      order.tokenIdF = 3;
+    }
 
     // setup initial balances:
     await this.setOrderBalances(order);
@@ -268,8 +276,8 @@ export class ExchangeTestUtil {
 
     const bs = new pjs.Bitstream();
     // console.log(rings.rootBefore);
-    bs.addBigNumber(new BigNumber(rings.merkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(rings.merkleRootAfter, 10), 32);
+    bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootAfter, 10), 32);
     console.log(ringSettlements);
     for (const ringSettlement of ringSettlements) {
       const orders = [ringSettlement.orderA, ringSettlement.orderB];
