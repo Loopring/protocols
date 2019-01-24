@@ -1287,7 +1287,6 @@ public:
     }
 };
 
-#if 1
 class CancelGadget : public GadgetT
 {
 public:
@@ -1519,7 +1518,6 @@ public:
         return true;
     }
 };
-#endif
 
 }
 

@@ -7,4 +7,4 @@ transpiled/
 ganache_account_keys.txt
 __pycache__
 *.pyc
-*.json
+
