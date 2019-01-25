@@ -65,7 +65,7 @@ def orderFromJSON(jOrder, dex):
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
     tokenF = int(jOrder["tokenIdF"])
-    walletF = 6
+    walletF = int(jOrder["walletF"])
 
     account = dex.getAccount(accountS)
     wallet = dex.getAccount(walletF)

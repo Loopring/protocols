@@ -30,8 +30,9 @@ import "../lib/NoDefaultFunc.sol";
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>,
 contract Exchange is IExchange, NoDefaultFunc {
-    using MathUint      for uint;
-    using BytesUtil     for bytes;
+    using MathUint          for uint;
+    using BytesUtil         for bytes;
+    using ERC20SafeTransfer for address;
 
     uint public MAX_NUM_DEPOSITS_IN_BLOCK       = 32;
 
@@ -43,13 +44,14 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint256[14] vk;
     uint256[] gammaABC;
 
-    event TokenRegistered(address tokenAddress, uint tokenID);
+    event TokenRegistered(address tokenAddress, uint16 tokenID);
+    event Deposit(uint16 dexID, address owner, address tokenAddress, uint amount, uint24 account);
 
     struct Token {
         address tokenAddress;
     }
     Token[] public tokens;
-    mapping (address => uint) public tokenToTokenID;
+    mapping (address => uint16) public tokenToTokenID;
 
     struct Account {
         address owner;
@@ -171,33 +173,36 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
         tokens.push(token);
 
-        tokenToTokenID[tokenAddress] = tokens.length;
+        tokenToTokenID[tokenAddress] = uint16(tokens.length);
 
-        emit TokenRegistered(tokenAddress, tokens.length - 1);
+        emit TokenRegistered(tokenAddress, uint16(tokens.length) - 1);
     }
 
     function getTokenID(
         address tokenAddress
         )
-        external
+        public
         view
-        returns (uint)
+        returns (uint16)
     {
-        require(tokenToTokenID[tokenAddress] != 0, "NOT_REGISTERED");
+        require(tokenToTokenID[tokenAddress] != 0, "TOKEN_NOT_REGISTERED");
         return tokenToTokenID[tokenAddress] - 1;
     }
 
     function deposit(
-        uint16 dexID,
         address owner,
         uint brokerPublicKeyX,
         uint brokerPublicKeyY,
+        uint16 dexID,
         address token,
         uint amount
         )
         public
+        returns (uint24)
     {
         require(msg.sender == owner, "UNAUTHORIZED");
+        uint16 tokenID = getTokenID(token);
+
         uint currentBlock = block.number / 40;
         DepositBlock storage depositBlock = depositBlocks[currentBlock];
         require(depositBlock.numDeposits < MAX_NUM_DEPOSITS_IN_BLOCK, "DEPOSIT_BLOCK_FULL");
@@ -205,14 +210,25 @@ contract Exchange is IExchange, NoDefaultFunc {
             depositBlock.hash = bytes32(accounts.length);
         }
 
+        if (amount > 0) {
+            // Transfer the tokens from the owner into this contract
+            require(
+                token.safeTransferFrom(
+                    owner,
+                    address(this),
+                    amount
+                ),
+                "UNSUFFICIENT_FUNDS"
+            );
+        }
+
         depositBlock.hash = sha256(
             abi.encodePacked(
                 depositBlock.hash,
                 brokerPublicKeyX,
                 brokerPublicKeyY,
-                owner,
                 dexID,
-                token,
+                tokenID,
                 amount
             )
         );
@@ -223,7 +239,12 @@ contract Exchange is IExchange, NoDefaultFunc {
             dexID,
             token
         );
+        uint24 accountID = uint24(accounts.length);
         accounts.push(account);
+
+        emit Deposit(dexID, owner, token, amount, accountID);
+
+        return accountID;
     }
 
     function withdraw(

@@ -10,12 +10,16 @@ export interface OrderInfo {
   amountB: number;
   amountF?: number;
 
+  wallet?: string;
+
   dexID?: number;
   orderID?: number;
 
   accountS?: number;
   accountB?: number;
   accountF?: number;
+
+  walletF?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;

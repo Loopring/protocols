@@ -20,10 +20,13 @@ export class ExchangeTestUtil {
 
   private tokenIDMap = new Map<string, number>();
 
+  private pendingDeposits: Deposit[] = [];
+
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-    await this.authorizeTradeDelegate();
+    await this.registerTokens();
+    // await this.authorizeTradeDelegate();
     // await this.approveTradeDelegate();
     await this.cleanTradeHistory();
   }
@@ -101,6 +104,8 @@ export class ExchangeTestUtil {
       order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 2500;
     }
 
+    order.wallet = order.wallet ? order.wallet : this.testContext.wallets[0];
+
     // Fill in defaults (default, so these will not get serialized)
     order.version = 0;
     order.validUntil = order.validUntil ? order.validUntil : 0;
@@ -110,30 +115,22 @@ export class ExchangeTestUtil {
     order.dexID = order.dexID ? order.dexID : 0;
     order.orderID = order.orderID ? order.orderID : order.index;
 
-    if (order.index === 0) {
-      order.accountS = 0;
-      order.accountB = 1;
-      order.accountF = 2;
-      order.tokenIdS = 1;
-      order.tokenIdB = 2;
-      order.tokenIdF = 3;
-    } else {
-      order.accountS = 4;
-      order.accountB = 3;
-      order.accountF = 5;
-      order.tokenIdS = 2;
-      order.tokenIdB = 1;
-      order.tokenIdF = 3;
-    }
+    order.tokenIdS = this.tokenIDMap.get(order.tokenS);
+    order.tokenIdB = this.tokenIDMap.get(order.tokenB);
+    order.tokenIdF = this.tokenIDMap.get(order.tokenF);
 
     // setup initial balances:
     await this.setOrderBalances(order);
   }
 
-  public async setOrderBalances(order: pjs.OrderInfo) {
+  public async setOrderBalances(order: OrderInfo) {
+    const keyPair = this.getKeyPairEDDSA();
+
     const tokenS = this.testContext.tokenAddrInstanceMap.get(order.tokenS);
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
     await tokenS.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceS)));
+    order.accountS = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                        order.dexID, order.tokenS, balanceS);
 
     const balanceF = (order.balanceF !== undefined) ? order.balanceF : order.amountF;
     if (order.tokenF === order.tokenS) {
@@ -141,12 +138,22 @@ export class ExchangeTestUtil {
     } else {
       const tokenF = this.testContext.tokenAddrInstanceMap.get(order.tokenF);
       await tokenF.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceF)));
+      order.accountF = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                          order.dexID, order.tokenF, balanceF);
     }
 
+    const balanceB = (order.balanceB !== undefined) ? order.balanceB : 0;
     if (order.balanceB) {
       const tokenB = this.testContext.tokenAddrInstanceMap.get(order.tokenB);
       await tokenB.setBalance(order.owner, web3.utils.toBN(new BigNumber(order.balanceB)));
     }
+    order.accountB = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                        order.dexID, order.tokenB, balanceB);
+
+    // Make an account for the wallet
+    const keyPairW = this.getKeyPairEDDSA();
+    order.walletF = await this.deposit(order.wallet, keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY,
+                                       order.dexID, order.tokenF, 0);
   }
 
   public getAddressBook(ringsInfo: RingsInfo) {
@@ -261,6 +268,43 @@ export class ExchangeTestUtil {
     return ringSettlements;
   }
 
+  public async deposit(owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
+                       dexID: number, token: string, amount: number) {
+
+    if (amount > 0) {
+      const Token = this.testContext.tokenAddrInstanceMap.get(token);
+      await Token.approve(
+        this.exchange.address,
+        web3.utils.toBN(new BigNumber(amount)),
+        {from: owner},
+      );
+    }
+
+    // Submit the deposits
+    const tx = await this.exchange.deposit(
+      owner,
+      new BN(publicKeyX),
+      new BN(publicKeyY),
+      web3.utils.toBN(dexID),
+      token,
+      web3.utils.toBN(amount),
+      {from: owner},
+    );
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+
+    const eventArr: any = await this.getEventsFromContract(this.exchange, "Deposit", web3.eth.blockNumber);
+    const items = eventArr.map((eventObj: any) => {
+      // console.log(eventObj);
+      return eventObj.args.account;
+    });
+    const accountID = items[0].toNumber();
+    console.log(accountID);
+
+    this.addDeposit(this.pendingDeposits, secretKey, publicKeyX, publicKeyY,
+                    dexID, this.tokenIDMap.get(token), amount);
+    return accountID;
+  }
+
   public addDeposit(deposits: Deposit[], secretKey: string, publicKeyX: string, publicKeyY: string,
                     dexID: number, tokenID: number, balance: number) {
     deposits.push({secretKey, publicKeyX, publicKeyY, dexID, tokenID, balance});
@@ -271,26 +315,15 @@ export class ExchangeTestUtil {
   }
 
   public async submitDeposits() {
-    // Create the accounts
-    const deposits: Deposit[] = [];
+    if (this.pendingDeposits.length === 0) {
+      return;
+    }
 
-    const keyPairA = this.getKeyPairEDDSA();
-    this.addDeposit(deposits, keyPairA.secretKey, keyPairA.publicKeyX, keyPairA.publicKeyY, 0, 1, 100);
-    this.addDeposit(deposits, keyPairA.secretKey, keyPairA.publicKeyX, keyPairA.publicKeyY, 0, 2, 100);
-    this.addDeposit(deposits, keyPairA.secretKey, keyPairA.publicKeyX, keyPairA.publicKeyY, 0, 3, 100);
-
-    const keyPairB = this.getKeyPairEDDSA();
-    this.addDeposit(deposits, keyPairB.secretKey, keyPairB.publicKeyX, keyPairB.publicKeyY, 0, 1, 100);
-    this.addDeposit(deposits, keyPairB.secretKey, keyPairB.publicKeyX, keyPairB.publicKeyY, 0, 2, 100);
-    this.addDeposit(deposits, keyPairB.secretKey, keyPairB.publicKeyX, keyPairB.publicKeyY, 0, 3, 100);
-
-    const keyPairW = this.getKeyPairEDDSA();
-    this.addDeposit(deposits, keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY, 0, 3, 100);
-
-    const jDepositsInfo = JSON.stringify(deposits, null, 4);
+    const jDepositsInfo = JSON.stringify(this.pendingDeposits, null, 4);
     fs.writeFileSync("deposits_info.json", jDepositsInfo, "utf8");
 
     childProcess.spawnSync("python3", ["generate_proof.py", "1"], {stdio: "inherit"});
+    this.pendingDeposits = [];
 
     const jDeposits = fs.readFileSync("deposits.json", "ascii");
     const jdeposits = JSON.parse(jDeposits);
@@ -438,8 +471,9 @@ export class ExchangeTestUtil {
   public async registerTokens() {
     for (const token of this.testContext.allTokens) {
       await this.exchange.registerToken(token.address);
-      this.tokenIDMap.set(token.address, await this.getTokenID(token.address));
+      this.tokenIDMap.set(token.address, (await this.getTokenID(token.address)).toNumber());
     }
+    console.log(this.tokenIDMap);
   }
 
   public async getTokenID(tokenAddress: string) {
