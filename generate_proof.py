@@ -41,6 +41,7 @@ class WithdrawalExport(object):
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
+
 class CancelExport(object):
     def __init__(self):
         self.cancels = []
@@ -95,22 +96,17 @@ def ringFromJSON(jRing, dex):
 
 
 def deposit(dex):
+    with open('deposits_info.json') as f:
+        data = json.load(f)
+
     depositExport = DepositExport()
     depositExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
 
-    (secretKeyW, publicKeyW) = eddsa_random_keypair()
-
-    (secretKeyA, publicKeyA) = eddsa_random_keypair()
-    depositExport.deposits.append(dex.addAccount(Account(secretKeyA, publicKeyA, 0, 1, 100)))
-    depositExport.deposits.append(dex.addAccount(Account(secretKeyA, publicKeyA, 0, 2, 100)))
-    depositExport.deposits.append(dex.addAccount(Account(secretKeyA, publicKeyA, 0, 3, 100)))
-
-    (secretKeyB, publicKeyB) = eddsa_random_keypair()
-    depositExport.deposits.append(dex.addAccount(Account(secretKeyB, publicKeyB, 0, 1, 100)))
-    depositExport.deposits.append(dex.addAccount(Account(secretKeyB, publicKeyB, 0, 2, 100)))
-    depositExport.deposits.append(dex.addAccount(Account(secretKeyB, publicKeyB, 0, 3, 100)))
-
-    depositExport.deposits.append(dex.addAccount(Account(secretKeyW, publicKeyW, 0, 3, 100)))
+    for depositInfo in data:
+        deposit = dex.deposit(Account(int(depositInfo["secretKey"]),
+                                      Point(int(depositInfo["publicKeyX"]), int(depositInfo["publicKeyY"])),
+                                      int(depositInfo["dexID"]), int(depositInfo["tokenID"]), int(depositInfo["balance"])))
+        depositExport.deposits.append(deposit)
 
     depositExport.accountsMerkleRootAfter = str(dex._accountsTree._root)
 
@@ -123,11 +119,15 @@ def deposit(dex):
 
 
 def withdraw(dex):
+    with open('withdrawals_info.json') as f:
+        data = json.load(f)
+
     withdrawalExport = WithdrawalExport()
     withdrawalExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
 
-    for _ in range(1):
-        withdrawalExport.withdrawals.append(dex.withdraw(0, 1))
+    for withdrawalInfo in data:
+        withdrawal = dex.withdraw(int(withdrawalInfo["account"]), int(withdrawalInfo["amount"]))
+        withdrawalExport.withdrawals.append(withdrawal)
 
     withdrawalExport.accountsMerkleRootAfter = str(dex._accountsTree._root)
 
@@ -196,6 +196,16 @@ def main(mode):
         withdraw(dex)
     if mode == "3":
         cancel(dex)
+    if mode == "10":
+        (secretKey, publicKey) = eddsa_random_keypair()
+        pair = {
+            "publicKeyX": str(publicKey.x),
+            "publicKeyY": str(publicKey.y),
+            "secretKey": str(secretKey),
+        }
+        f = open("EDDSA_KeyPair.json","w+")
+        f.write(json.dumps(pair, indent=4))
+        f.close()
 
     dex.saveState(dex_state_filename)
 

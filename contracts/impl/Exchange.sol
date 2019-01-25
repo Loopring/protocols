@@ -137,6 +137,29 @@ contract Exchange is IExchange, NoDefaultFunc {
         accountsMerkleRoot = accountsMerkleRootAfter;
     }
 
+    function submitWithdrawals(
+        bytes memory data,
+        uint256[8] memory proof
+        )
+        public
+    {
+        // TODO: don't send accountsMerkleRootBefore to save on calldata
+        bytes32 accountsMerkleRootBefore;
+        bytes32 accountsMerkleRootAfter;
+        assembly {
+            accountsMerkleRootBefore := mload(add(data, 32))
+            accountsMerkleRootAfter := mload(add(data, 64))
+        }
+        require(accountsMerkleRootBefore == accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
+
+        bytes32 publicDataHash = sha256(data);
+        bool verified = verifyProof(publicDataHash, proof);
+        require(verified, "INVALID_PROOF");
+
+        // Update the merkle root
+        accountsMerkleRoot = accountsMerkleRootAfter;
+    }
+
     function registerToken(
         address tokenAddress
         )

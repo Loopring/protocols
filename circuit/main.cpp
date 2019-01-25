@@ -242,9 +242,9 @@ int withdraw(unsigned int numWithdrawals, const char* withdrawalsFilename)
     circuit.generate_r1cs_constraints(numWithdrawals);
     circuit.printInfo();
 
-#if 0
+#if 1
     libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT> keypair;
-    if (argc >= 2)
+    if (withdrawalsFilename != NULL)
     {
         std::cout << "Generating keys..." << std::endl;
         auto constraints = pb.get_constraint_system();
@@ -306,7 +306,7 @@ int withdraw(unsigned int numWithdrawals, const char* withdrawalsFilename)
         }
         std::cout << "Input is valid." << std::endl;
 
-#if 0
+#if 1
         {
             std::cout << "Generating proof..." << std::endl;
             timespec time1, time2;

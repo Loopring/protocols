@@ -8,7 +8,8 @@ import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Deposit, OrderInfo, OrderSettlementData, RingInfo, RingSettlementData, RingsInfo } from "./types";
+import { Deposit, OrderInfo, OrderSettlementData,
+         RingInfo, RingSettlementData, RingsInfo, Withdrawal } from "./types";
 
 export class ExchangeTestUtil {
   public context: Context;
@@ -168,6 +169,13 @@ export class ExchangeTestUtil {
     return addressBook;
   }
 
+  public getKeyPairEDDSA() {
+    childProcess.spawnSync("python3", ["generate_proof.py", "10"], {stdio: "inherit"});
+    const jKeyPair = fs.readFileSync("EDDSA_KeyPair.json", "ascii");
+    const keyPair = JSON.parse(jKeyPair);
+    return keyPair;
+  }
+
   public flattenList = (l: any[]) => {
     return [].concat.apply([], l);
   }
@@ -253,17 +261,31 @@ export class ExchangeTestUtil {
     return ringSettlements;
   }
 
-  public addDeposit(deposits: Deposit[], publicKeyX: string, publicKeyY: string,
+  public addDeposit(deposits: Deposit[], secretKey: string, publicKeyX: string, publicKeyY: string,
                     dexID: number, tokenID: number, balance: number) {
-    deposits.push({publicKeyX, publicKeyY, dexID, tokenID, balance});
+    deposits.push({secretKey, publicKeyX, publicKeyY, dexID, tokenID, balance});
+  }
+
+  public addWithdrawal(withdrawals: Withdrawal[], account: number, amount: number) {
+    withdrawals.push({account, amount});
   }
 
   public async submitDeposits() {
     // Create the accounts
     const deposits: Deposit[] = [];
-    this.addDeposit(deposits, "0", "1", 0, 1, 1);
-    this.addDeposit(deposits, "2", "3", 0, 1, 2);
-    this.addDeposit(deposits, "4", "5", 0, 1, 3);
+
+    const keyPairA = this.getKeyPairEDDSA();
+    this.addDeposit(deposits, keyPairA.secretKey, keyPairA.publicKeyX, keyPairA.publicKeyY, 0, 1, 100);
+    this.addDeposit(deposits, keyPairA.secretKey, keyPairA.publicKeyX, keyPairA.publicKeyY, 0, 2, 100);
+    this.addDeposit(deposits, keyPairA.secretKey, keyPairA.publicKeyX, keyPairA.publicKeyY, 0, 3, 100);
+
+    const keyPairB = this.getKeyPairEDDSA();
+    this.addDeposit(deposits, keyPairB.secretKey, keyPairB.publicKeyX, keyPairB.publicKeyY, 0, 1, 100);
+    this.addDeposit(deposits, keyPairB.secretKey, keyPairB.publicKeyX, keyPairB.publicKeyY, 0, 2, 100);
+    this.addDeposit(deposits, keyPairB.secretKey, keyPairB.publicKeyX, keyPairB.publicKeyY, 0, 3, 100);
+
+    const keyPairW = this.getKeyPairEDDSA();
+    this.addDeposit(deposits, keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY, 0, 3, 100);
 
     const jDepositsInfo = JSON.stringify(deposits, null, 4);
     fs.writeFileSync("deposits_info.json", jDepositsInfo, "utf8");
@@ -295,6 +317,47 @@ export class ExchangeTestUtil {
 
     // Submit the deposits
     const tx = await this.exchange.submitDeposits(web3.utils.hexToBytes(bs.getData()), proofFlattened);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+  }
+
+  public async submitWithdrawals() {
+    const withdrawals: Withdrawal[] = [];
+    this.addWithdrawal(withdrawals, 0, 1);
+
+    const jWithdrawalsInfo = JSON.stringify(withdrawals, null, 4);
+    fs.writeFileSync("withdrawals_info.json", jWithdrawalsInfo, "utf8");
+
+    childProcess.spawnSync("python3", ["generate_proof.py", "2"], {stdio: "inherit"});
+
+    const jWithdrawals = fs.readFileSync("withdrawals.json", "ascii");
+    const jwithdrawals = JSON.parse(jWithdrawals);
+
+    const bs = new pjs.Bitstream();
+    bs.addBigNumber(new BigNumber(jwithdrawals.accountsMerkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(jwithdrawals.accountsMerkleRootAfter, 10), 32);
+    for (const withdrawal of withdrawals) {
+      bs.addNumber(withdrawal.account, 3);
+      bs.addNumber(withdrawal.amount, 12);
+    }
+
+    // Hash all public inputs to a singe value
+    const publicDataHash = ethUtil.sha256(bs.getData());
+    console.log("DataJS: " + bs.getData());
+    console.log(publicDataHash.toString("hex"));
+
+    // Read the verification key and set it in the smart contract
+    const jVK = fs.readFileSync("vk.json", "ascii");
+    const vk = JSON.parse(jVK);
+    const vkFlattened = this.flattenVK(vk);
+    await this.exchange.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
+
+    // Read the proof
+    const jProof = fs.readFileSync("proof.json", "ascii");
+    const proof = JSON.parse(jProof);
+    const proofFlattened = this.flattenProof(proof);
+
+    // Submit the deposits
+    const tx = await this.exchange.submitWithdrawals(web3.utils.hexToBytes(bs.getData()), proofFlattened);
     pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
   }
 
@@ -366,6 +429,8 @@ export class ExchangeTestUtil {
     pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
 
     // await this.watchAndPrintEvent(this.exchange, "TestLog");
+
+    await this.submitWithdrawals();
 
     return tx;
   }

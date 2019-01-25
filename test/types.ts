@@ -77,9 +77,15 @@ export interface RingSettlementData {
 }
 
 export interface Deposit {
+  secretKey: string;
   publicKeyX: string;
   publicKeyY: string;
   dexID: number;
   tokenID: number;
   balance: number;
+}
+
+export interface Withdrawal {
+  account: number;
+  amount: number;
 }

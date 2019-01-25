@@ -1242,13 +1242,13 @@ public:
         publicDataHasher->generate_r1cs_constraints();
 
         // Check that the hash matches the public input
-        /*for (unsigned int i = 0; i < 256; i++)
+        for (unsigned int i = 0; i < 256; i++)
         {
             pb.add_r1cs_constraint(ConstraintT(publicDataHasher->result().bits[255-i], 1, publicDataHash.bits[i]), "publicData.check()");
-        }*/
+        }
 
         // Make sure the merkle root afterwards is correctly passed in
-        //pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewTradingHistoryMerkleRoot(), 1, tradingHistoryMerkleRootAfter.packed), "newMerkleRoot");
+        pb.add_r1cs_constraint(ConstraintT(withdrawals.back().getNewAccountsMerkleRoot(), 1, accountsMerkleRootAfter.packed), "newMerkleRoot");
     }
 
     void printInfo()
