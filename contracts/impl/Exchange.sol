@@ -38,20 +38,19 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     address public  tradeDelegateAddress        = address(0x0);
 
-    bytes32 public accountsMerkleRoot           = 0x282B2D2BEB6A5269A0162C8477825D3D9352526705DFA351483C72E68EAFE9A9;
-    bytes32 public tradeHistoryMerkleRoot       = 0x056E110222A84609DE5696E61A9F18731AFD9C4743F77D85C6F7267CB1617571;
-
-    uint256[14] vk;
-    uint256[] gammaABC;
-
     event TokenRegistered(address tokenAddress, uint16 tokenID);
-    event Deposit(uint16 dexID, address owner, address tokenAddress, uint amount, uint24 account);
+    event Deposit(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
+    event Withdraw(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
+
+    enum BlockState {
+        COMMITTED,
+        VERIFIED,
+        FINALIZED
+    }
 
     struct Token {
         address tokenAddress;
     }
-    Token[] public tokens;
-    mapping (address => uint16) public tokenToTokenID;
 
     struct Account {
         address owner;
@@ -65,17 +64,26 @@ contract Exchange is IExchange, NoDefaultFunc {
         bool done;
     }
 
-    struct Withdrawal {
-        uint32 accountID;
-        uint96 amount;
+    struct Block {
+        bytes32 accountsMerkleRoot;
+        bytes32 tradeHistoryMerkleRoot;
+
+        bytes withdrawals;
+
+        BlockState state;
     }
 
-    struct Block {
-        Withdrawal[] witdrawals;
-    }
+    Token[] public tokens;
+    mapping (address => uint16) public tokenToTokenID;
 
     Account[] public accounts;
+
+    Block[] public blocks;
+
     mapping (uint => DepositBlock) public depositBlocks;
+
+    uint256[14] vk;
+    uint256[] gammaABC;
 
     constructor(
         address _tradeDelegateAddress
@@ -83,8 +91,15 @@ contract Exchange is IExchange, NoDefaultFunc {
         public
     {
         require(_tradeDelegateAddress != address(0x0), ZERO_ADDRESS);
-
         tradeDelegateAddress = _tradeDelegateAddress;
+
+        Block memory genesisBlock = Block(
+            0x282B2D2BEB6A5269A0162C8477825D3D9352526705DFA351483C72E68EAFE9A9,
+            0x056E110222A84609DE5696E61A9F18731AFD9C4743F77D85C6F7267CB1617571,
+            new bytes(0),
+            BlockState.FINALIZED
+        );
+        blocks.push(genesisBlock);
     }
 
     function submitRings(
@@ -93,6 +108,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
+        Block storage currentBlock = blocks[blocks.length - 1];
+
         // TODO: don't send tradeHistoryMerkleRootBefore to save on calldata
         bytes32 accountsMerkleRootBefore;
         bytes32 accountsMerkleRootAfter;
@@ -104,16 +121,21 @@ contract Exchange is IExchange, NoDefaultFunc {
             tradeHistoryMerkleRootBefore := mload(add(data, 96))
             tradeHistoryMerkleRootAfter := mload(add(data, 128))
         }
-        require(accountsMerkleRootBefore == accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
-        require(tradeHistoryMerkleRootBefore == tradeHistoryMerkleRoot, "INVALID_TRADEHISTORY_ROOT");
+        require(accountsMerkleRootBefore == currentBlock.accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
+        require(tradeHistoryMerkleRootBefore == currentBlock.tradeHistoryMerkleRoot, "INVALID_TRADEHISTORY_ROOT");
 
         bytes32 publicDataHash = sha256(data);
         bool verified = verifyProof(publicDataHash, proof);
         require(verified, "INVALID_PROOF");
 
-        // Update the merkle roots
-        accountsMerkleRoot = accountsMerkleRootAfter;
-        tradeHistoryMerkleRoot = tradeHistoryMerkleRootAfter;
+        // Create a new block with the updated merkle roots
+        Block memory newBlock = Block(
+            accountsMerkleRootAfter,
+            tradeHistoryMerkleRootAfter,
+            new bytes(0),
+            BlockState.FINALIZED
+        );
+        blocks.push(newBlock);
     }
 
     function submitDeposits(
@@ -122,6 +144,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
+        Block storage currentBlock = blocks[blocks.length - 1];
+
         // TODO: don't send accountsMerkleRootBefore to save on calldata
         bytes32 accountsMerkleRootBefore;
         bytes32 accountsMerkleRootAfter;
@@ -129,14 +153,20 @@ contract Exchange is IExchange, NoDefaultFunc {
             accountsMerkleRootBefore := mload(add(data, 32))
             accountsMerkleRootAfter := mload(add(data, 64))
         }
-        require(accountsMerkleRootBefore == accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
+        require(accountsMerkleRootBefore == currentBlock.accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
 
         bytes32 publicDataHash = sha256(data);
         bool verified = verifyProof(publicDataHash, proof);
         require(verified, "INVALID_PROOF");
 
-        // Update the merkle root
-        accountsMerkleRoot = accountsMerkleRootAfter;
+        // Create a new block with the updated merkle roots
+        Block memory newBlock = Block(
+            accountsMerkleRootAfter,
+            currentBlock.tradeHistoryMerkleRoot,
+            new bytes(0),
+            BlockState.FINALIZED
+        );
+        blocks.push(newBlock);
     }
 
     function submitWithdrawals(
@@ -145,6 +175,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
+        Block storage currentBlock = blocks[blocks.length - 1];
+
         // TODO: don't send accountsMerkleRootBefore to save on calldata
         bytes32 accountsMerkleRootBefore;
         bytes32 accountsMerkleRootAfter;
@@ -152,14 +184,20 @@ contract Exchange is IExchange, NoDefaultFunc {
             accountsMerkleRootBefore := mload(add(data, 32))
             accountsMerkleRootAfter := mload(add(data, 64))
         }
-        require(accountsMerkleRootBefore == accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
+        require(accountsMerkleRootBefore == currentBlock.accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
 
         bytes32 publicDataHash = sha256(data);
         bool verified = verifyProof(publicDataHash, proof);
         require(verified, "INVALID_PROOF");
 
-        // Update the merkle root
-        accountsMerkleRoot = accountsMerkleRootAfter;
+        // Create a new block with the updated merkle roots
+        Block memory newBlock = Block(
+            accountsMerkleRootAfter,
+            currentBlock.tradeHistoryMerkleRoot,
+            data,
+            BlockState.FINALIZED
+        );
+        blocks.push(newBlock);
     }
 
     function registerToken(
@@ -242,19 +280,51 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint24 accountID = uint24(accounts.length);
         accounts.push(account);
 
-        emit Deposit(dexID, owner, token, amount, accountID);
+        emit Deposit(accountID, dexID, owner, token, amount);
 
         return accountID;
     }
 
     function withdraw(
-        uint dexID,
+        uint16 dexID,
         uint blockIdx,
         uint withdrawalIdx
         )
-        public
+        external
     {
-        // empty
+        Block storage withdrawBlock = blocks[blockIdx];
+        require(withdrawBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+
+        // TODO: optimize
+        bytes memory withdrawals = withdrawBlock.withdrawals;
+        uint offset = 32 + 32 + (3 + 12) * (withdrawalIdx + 1);
+        uint data;
+        assembly {
+            data := mload(add(withdrawals, offset))
+        }
+        uint24 accountID = uint24((data / 0x1000000000000000000000000) & 0xFFFFFF);
+        uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
+
+        if (amount > 0) {
+            Account storage account = accounts[accountID];
+            // Transfer the tokens from the contract to the owner
+            require(
+                account.token.safeTransfer(
+                    account.owner,
+                    amount
+                ),
+                TRANSFER_FAILURE
+            );
+
+            // Set the amount to 0 so it cannot be withdrawn anymore
+            data = data & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000;
+            assembly {
+                mstore(add(withdrawals, offset), data)
+            }
+            withdrawBlock.withdrawals = withdrawals;
+
+            emit Withdraw(accountID, dexID, account.owner, account.token, amount);
+        }
     }
 
     function verifyProof(
@@ -291,5 +361,13 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         vk = _vk;
         gammaABC = _gammaABC;
+    }
+
+    function getLastBlockIdx()
+        external
+        view
+        returns (uint)
+    {
+        return blocks.length - 1;
     }
 }

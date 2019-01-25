@@ -21,6 +21,7 @@ export class ExchangeTestUtil {
   private tokenIDMap = new Map<string, number>();
 
   private pendingDeposits: Deposit[] = [];
+  private pendingWithdrawals: Withdrawal[] = [];
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -305,6 +306,10 @@ export class ExchangeTestUtil {
     return accountID;
   }
 
+  public async withdraw(account: number, amount: number) {
+    this.addWithdrawal(this.pendingWithdrawals, account, amount);
+  }
+
   public addDeposit(deposits: Deposit[], secretKey: string, publicKeyX: string, publicKeyY: string,
                     dexID: number, tokenID: number, balance: number) {
     deposits.push({secretKey, publicKeyX, publicKeyY, dexID, tokenID, balance});
@@ -323,7 +328,6 @@ export class ExchangeTestUtil {
     fs.writeFileSync("deposits_info.json", jDepositsInfo, "utf8");
 
     childProcess.spawnSync("python3", ["generate_proof.py", "1"], {stdio: "inherit"});
-    this.pendingDeposits = [];
 
     const jDeposits = fs.readFileSync("deposits.json", "ascii");
     const jdeposits = JSON.parse(jDeposits);
@@ -351,13 +355,16 @@ export class ExchangeTestUtil {
     // Submit the deposits
     const tx = await this.exchange.submitDeposits(web3.utils.hexToBytes(bs.getData()), proofFlattened);
     pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+
+    this.pendingDeposits = [];
   }
 
   public async submitWithdrawals() {
-    const withdrawals: Withdrawal[] = [];
-    this.addWithdrawal(withdrawals, 0, 1);
+    if (this.pendingWithdrawals.length === 0) {
+      return;
+    }
 
-    const jWithdrawalsInfo = JSON.stringify(withdrawals, null, 4);
+    const jWithdrawalsInfo = JSON.stringify(this.pendingWithdrawals, null, 4);
     fs.writeFileSync("withdrawals_info.json", jWithdrawalsInfo, "utf8");
 
     childProcess.spawnSync("python3", ["generate_proof.py", "2"], {stdio: "inherit"});
@@ -368,7 +375,7 @@ export class ExchangeTestUtil {
     const bs = new pjs.Bitstream();
     bs.addBigNumber(new BigNumber(jwithdrawals.accountsMerkleRootBefore, 10), 32);
     bs.addBigNumber(new BigNumber(jwithdrawals.accountsMerkleRootAfter, 10), 32);
-    for (const withdrawal of withdrawals) {
+    for (const withdrawal of this.pendingWithdrawals) {
       bs.addNumber(withdrawal.account, 3);
       bs.addNumber(withdrawal.amount, 12);
     }
@@ -392,6 +399,27 @@ export class ExchangeTestUtil {
     // Submit the deposits
     const tx = await this.exchange.submitWithdrawals(web3.utils.hexToBytes(bs.getData()), proofFlattened);
     pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+
+    const blockIdx = (await this.exchange.getLastBlockIdx()).toNumber();
+    for (let i = 0; i < this.pendingWithdrawals.length; i++) {
+      const withdrawal = this.pendingWithdrawals[i];
+      const txw = await this.exchange.withdraw(
+        web3.utils.toBN(0),
+        web3.utils.toBN(blockIdx),
+        web3.utils.toBN(i),
+      );
+
+      const eventArr: any = await this.getEventsFromContract(this.exchange, "Withdraw", web3.eth.blockNumber);
+      const items = eventArr.map((eventObj: any) => {
+        return [eventObj.args.owner, eventObj.args.tokenAddress, eventObj.args.amount];
+      });
+      const owner = items[0][0];
+      const token = items[0][1];
+      const amount = items[0][2].toNumber();
+      console.log("Withdrawn: " + owner + ": " + amount + " " + token);
+    }
+
+    this.pendingWithdrawals = [];
   }
 
   public async submitRings(ringsInfo: RingsInfo) {
@@ -461,8 +489,8 @@ export class ExchangeTestUtil {
     const tx = await this.exchange.submitRings(web3.utils.hexToBytes(bs.getData()), proofFlattened);
     pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
 
-    // await this.watchAndPrintEvent(this.exchange, "TestLog");
-
+    // Withdraw some tokens that were bought
+    this.withdraw(ringsInfo.rings[0].orderA.accountB, 1);
     await this.submitWithdrawals();
 
     return tx;
