@@ -325,10 +325,12 @@ int main (int argc, char **argv)
     if (strcmp(argv[1], "-verify") == 0)
     {
         mode = Mode::Verify;
+        std::cout << "Verifying " << argv[2] << "..." << std::endl;
     }
     else if (strcmp(argv[1], "-prove") == 0)
     {
         mode = Mode::Prove;
+        std::cout << "Proving " << argv[2] << "..." << std::endl;
     }
     else
     {

@@ -9,7 +9,7 @@
 #include "utils.hpp"
 #include "jubjub/point.hpp"
 #include "jubjub/eddsa.hpp"
-#include "gadgets/longsightl.hpp"
+#include "gadgets/mimc.hpp"
 #include "gadgets/merkle_tree.hpp"
 #include "gadgets/sha256_many.hpp"
 #include "gadgets/subadd.hpp"
@@ -172,7 +172,7 @@ public:
     const jubjub::VariablePointT sig_R;
     const VariableArrayT sig_s;
     const VariableArrayT sig_m;
-    jubjub::PureEdDSA_Verify signatureVerifier;
+    jubjub::PureEdDSA signatureVerifier;
 
     OrderGadget(
         ProtoboardT& pb,
@@ -271,8 +271,8 @@ public:
 class UpdateTradeHistoryGadget : public GadgetT
 {
 public:
-    typedef merkle_path_authenticator<LongsightL12p5_MP_gadget> MerklePathCheckT;
-    typedef markle_path_compute<LongsightL12p5_MP_gadget> MerklePathT;
+    typedef merkle_path_authenticator<MiMC_hash_gadget> MerklePathCheckT;
+    typedef markle_path_compute<MiMC_hash_gadget> MerklePathT;
 
     const VariableT merkleRootBefore;
 
@@ -284,8 +284,8 @@ public:
     VariableT cancelledBefore;
     VariableT cancelledAfter;
 
-    LongsightL12p5_MP_gadget leafBefore;
-    LongsightL12p5_MP_gadget leafAfter;
+    MiMC_hash_gadget leafBefore;
+    MiMC_hash_gadget leafAfter;
 
     const VariableArrayT proof;
     MerklePathCheckT proofVerifierBefore;
@@ -360,13 +360,13 @@ public:
 class UpdateAccountGadget : public GadgetT
 {
 public:
-    typedef merkle_path_authenticator<LongsightL12p5_MP_gadget> MerklePathCheckT;
-    typedef markle_path_compute<LongsightL12p5_MP_gadget> MerklePathT;
+    typedef merkle_path_authenticator<MiMC_hash_gadget> MerklePathCheckT;
+    typedef markle_path_compute<MiMC_hash_gadget> MerklePathT;
 
     const VariableT merkleRootBefore;
 
-    LongsightL12p5_MP_gadget leafBefore;
-    LongsightL12p5_MP_gadget leafAfter;
+    MiMC_hash_gadget leafBefore;
+    MiMC_hash_gadget leafAfter;
 
     const VariableArrayT proof;
     MerklePathCheckT proofVerifierBefore;
@@ -836,8 +836,8 @@ public:
 class DepositGadget : public GadgetT
 {
 public:
-    typedef merkle_path_authenticator<LongsightL12p5_MP_gadget> MerklePathCheckT;
-    typedef markle_path_compute<LongsightL12p5_MP_gadget> MerklePathT;
+    typedef merkle_path_authenticator<MiMC_hash_gadget> MerklePathCheckT;
+    typedef markle_path_compute<MiMC_hash_gadget> MerklePathT;
 
     const VariableT merkleRootBefore;
 
@@ -855,8 +855,8 @@ public:
     libsnark::dual_variable_gadget<FieldT> token;
     libsnark::dual_variable_gadget<FieldT> balance;
 
-    LongsightL12p5_MP_gadget leafBefore;
-    LongsightL12p5_MP_gadget leafAfter;
+    MiMC_hash_gadget leafBefore;
+    MiMC_hash_gadget leafAfter;
 
     const VariableArrayT proof;
     MerklePathCheckT proofVerifierBefore;
@@ -1074,8 +1074,8 @@ public:
 class WithdrawalGadget : public GadgetT
 {
 public:
-    typedef merkle_path_authenticator<LongsightL12p5_MP_gadget> MerklePathCheckT;
-    typedef markle_path_compute<LongsightL12p5_MP_gadget> MerklePathT;
+    typedef merkle_path_authenticator<MiMC_hash_gadget> MerklePathCheckT;
+    typedef markle_path_compute<MiMC_hash_gadget> MerklePathT;
 
     const VariableT merkleRootBefore;
 
@@ -1096,7 +1096,7 @@ public:
     const jubjub::VariablePointT sig_R;
     const VariableArrayT sig_s;
     const VariableArrayT sig_m;
-    jubjub::PureEdDSA_Verify signatureVerifier;
+    jubjub::PureEdDSA signatureVerifier;
 
     WithdrawalGadget(
         ProtoboardT& pb,
@@ -1321,7 +1321,7 @@ public:
     const jubjub::VariablePointT sig_R;
     const VariableArrayT sig_s;
     const VariableArrayT sig_m;
-    jubjub::PureEdDSA_Verify signatureVerifier;
+    jubjub::PureEdDSA signatureVerifier;
 
     CancelGadget(
         ProtoboardT& pb,

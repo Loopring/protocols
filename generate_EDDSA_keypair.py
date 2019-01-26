@@ -2,9 +2,9 @@ import sys
 sys.path.insert(0, 'ethsnarks')
 import os.path
 import json
-from ethsnarks.eddsa import eddsa_random_keypair
+from ethsnarks.eddsa import PureEdDSA
 
-(secretKey, publicKey) = eddsa_random_keypair()
+(secretKey, publicKey) = PureEdDSA.random_keypair()
 pair = {
     "publicKeyX": str(publicKey.x),
     "publicKeyY": str(publicKey.y),

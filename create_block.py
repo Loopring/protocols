@@ -5,7 +5,6 @@ import os.path
 import subprocess
 import json
 from dex import Account, Dex, Order, Ring
-from ethsnarks.eddsa import eddsa_random_keypair
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
 

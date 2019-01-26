@@ -5,10 +5,10 @@ import copy
 
 from sparse_merkle_tree import SparseMerkleTree
 
-from ethsnarks.eddsa import pureeddsa_sign, eddsa_tobits, PureEdDSA
+from ethsnarks.eddsa import PureEdDSA
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
-from ethsnarks.longsight import LongsightL12p5_MP
+from ethsnarks.mimc import mimc_hash
 
 TREE_DEPTH_TRADING_HISTORY = 28
 TREE_DEPTH_ACCOUNTS = 24
@@ -23,8 +23,8 @@ class Account(object):
         self.balance = balance
 
     def hash(self):
-        #return LongsightL12p5_MP([int(self.publicKeyX), int(self.publicKeyY), int(self.dexID), int(self.token), int(self.balance)], 1)
-        return LongsightL12p5_MP([int(self.publicKeyX), int(self.publicKeyY), int(self.token), int(self.balance)], 1)
+        #return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.dexID), int(self.token), int(self.balance)], 1)
+        return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.token), int(self.balance)], 1)
 
     def fromJSON(self, jAccount):
         self.secretKey = jAccount["secretKey"]
@@ -41,7 +41,7 @@ class TradeHistoryLeaf(object):
         self.cancelled = cancelled
 
     def hash(self):
-        return LongsightL12p5_MP([int(self.filled), int(self.cancelled)], 1)
+        return mimc_hash([int(self.filled), int(self.cancelled)], 1)
 
     def fromJSON(self, jAccount):
         self.filled = jAccount["filled"]
@@ -88,11 +88,11 @@ class Order(object):
                         FQ(int(self.accountS), 1<<24), FQ(int(self.accountB), 1<<24), FQ(int(self.accountF), 1<<24),
                         FQ(self.amountS, 1<<96), FQ(self.amountB, 1<<96), FQ(self.amountF, 1<<96)
                     ]
-        return eddsa_tobits(*msg_parts)
+        return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
         msg = self.message()
-        signedMessage = pureeddsa_sign(msg, k)
+        signedMessage = PureEdDSA.sign(msg, k)
         self.hash = PureEdDSA().hash_public(signedMessage.sig.R, signedMessage.A, signedMessage.msg)
         self.sigRx = str(signedMessage.sig.R.x)
         self.sigRy = str(signedMessage.sig.R.y)
@@ -152,11 +152,11 @@ class Withdrawal(object):
 
     def message(self):
         msg_parts = [FQ(int(self.account), 1<<24), FQ(int(self.amount), 1<<96), FQ(int(0), 1<<2)]
-        return eddsa_tobits(*msg_parts)
+        return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
         msg = self.message()
-        signedMessage = pureeddsa_sign(msg, k)
+        signedMessage = PureEdDSA.sign(msg, k)
         self.sigRx = str(signedMessage.sig.R.x)
         self.sigRy = str(signedMessage.sig.R.y)
         self.sigS = str(signedMessage.sig.s)
@@ -177,11 +177,11 @@ class Cancellation(object):
 
     def message(self):
         msg_parts = [FQ(int(self.account), 1<<24), FQ(int(self.orderID), 1<<4), FQ(int(0), 1<<1)]
-        return eddsa_tobits(*msg_parts)
+        return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
         msg = self.message()
-        signedMessage = pureeddsa_sign(msg, k)
+        signedMessage = PureEdDSA.sign(msg, k)
         self.sigRx = str(signedMessage.sig.R.x)
         self.sigRy = str(signedMessage.sig.R.y)
         self.sigS = str(signedMessage.sig.s)
@@ -193,12 +193,12 @@ class Dex(object):
         self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf(0, 0).hash())
         self._tradeHistoryLeafs = {}
-        #print("Empty trading tree: " + str(self._tradingHistoryTree._root))
+        print("Empty trading tree: " + str(self._tradingHistoryTree._root))
         # Accounts
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
         self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
         self._accounts = []
-        #print("Empty accounts tree: " + str(self._accountsTree._root))
+        print("Empty accounts tree: " + str(self._accountsTree._root))
 
     def loadState(self, filename):
         with open(filename) as f:
