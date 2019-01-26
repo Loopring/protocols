@@ -23,9 +23,9 @@ contract IExchange {
 
     /// @dev   Submit order-rings for settlement.
     /// @param data Packed data.
-    function submitRings(
+    /*function submitRings(
         bytes memory data,
         uint256[8] memory proof
         )
-        public;
+        public;*/
 }

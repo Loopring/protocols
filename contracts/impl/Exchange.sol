@@ -39,8 +39,18 @@ contract Exchange is IExchange, NoDefaultFunc {
     address public  tradeDelegateAddress        = address(0x0);
 
     event TokenRegistered(address tokenAddress, uint16 tokenID);
+
     event Deposit(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
     event Withdraw(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
+
+    event BlockCommitted(uint blockIdx, bytes32 publicDataHash);
+    event BlockFinalized(uint blockIdx);
+
+    enum BlockType {
+        TRADE,
+        DEPOSIT,
+        WITHDRAW
+    }
 
     enum BlockState {
         COMMITTED,
@@ -68,9 +78,11 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes32 accountsMerkleRoot;
         bytes32 tradeHistoryMerkleRoot;
 
-        bytes withdrawals;
+        bytes32 publicDataHash;
 
         BlockState state;
+
+        bytes withdrawals;
     }
 
     Token[] public tokens;
@@ -96,108 +108,112 @@ contract Exchange is IExchange, NoDefaultFunc {
         Block memory genesisBlock = Block(
             0x282B2D2BEB6A5269A0162C8477825D3D9352526705DFA351483C72E68EAFE9A9,
             0x056E110222A84609DE5696E61A9F18731AFD9C4743F77D85C6F7267CB1617571,
-            new bytes(0),
-            BlockState.FINALIZED
+            0x0,
+            BlockState.FINALIZED,
+            new bytes(0)
         );
         blocks.push(genesisBlock);
     }
 
-    function submitRings(
-        bytes memory data,
-        uint256[8] memory proof
+    function commitBlock(
+        uint blockType,
+        bytes memory data
         )
         public
     {
         Block storage currentBlock = blocks[blocks.length - 1];
 
-        // TODO: don't send tradeHistoryMerkleRootBefore to save on calldata
+        // TODO: don't send before merkle tree roots to save on calldata
+
         bytes32 accountsMerkleRootBefore;
         bytes32 accountsMerkleRootAfter;
-        bytes32 tradeHistoryMerkleRootBefore;
-        bytes32 tradeHistoryMerkleRootAfter;
         assembly {
             accountsMerkleRootBefore := mload(add(data, 32))
             accountsMerkleRootAfter := mload(add(data, 64))
-            tradeHistoryMerkleRootBefore := mload(add(data, 96))
-            tradeHistoryMerkleRootAfter := mload(add(data, 128))
         }
         require(accountsMerkleRootBefore == currentBlock.accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
-        require(tradeHistoryMerkleRootBefore == currentBlock.tradeHistoryMerkleRoot, "INVALID_TRADEHISTORY_ROOT");
+
+        bytes32 tradeHistoryMerkleRootBefore;
+        bytes32 tradeHistoryMerkleRootAfter;
+        if (blockType == uint(BlockType.TRADE)) {
+            assembly {
+                tradeHistoryMerkleRootBefore := mload(add(data, 96))
+                tradeHistoryMerkleRootAfter := mload(add(data, 128))
+            }
+            require(tradeHistoryMerkleRootBefore == currentBlock.tradeHistoryMerkleRoot, "INVALID_TRADEHISTORY_ROOT");
+        } else {
+            tradeHistoryMerkleRootBefore = currentBlock.tradeHistoryMerkleRoot;
+            tradeHistoryMerkleRootAfter = tradeHistoryMerkleRootBefore;
+        }
 
         bytes32 publicDataHash = sha256(data);
-        bool verified = verifyProof(publicDataHash, proof);
-        require(verified, "INVALID_PROOF");
 
         // Create a new block with the updated merkle roots
         Block memory newBlock = Block(
             accountsMerkleRootAfter,
             tradeHistoryMerkleRootAfter,
-            new bytes(0),
-            BlockState.FINALIZED
+            publicDataHash,
+            BlockState.COMMITTED,
+            data
         );
         blocks.push(newBlock);
+
+        emit BlockCommitted(blocks.length - 1, publicDataHash);
     }
 
-    function submitDeposits(
-        bytes memory data,
+    function verifyBlock(
+        uint blockIdx,
         uint256[8] memory proof
         )
         public
     {
-        Block storage currentBlock = blocks[blocks.length - 1];
+        require(blockIdx < blocks.length, INVALID_VALUE);
+        Block storage specifiedBlock = blocks[blockIdx];
+        require(specifiedBlock.state == BlockState.COMMITTED, "BLOCK_ALREADY_VERIFIED");
 
-        // TODO: don't send accountsMerkleRootBefore to save on calldata
-        bytes32 accountsMerkleRootBefore;
-        bytes32 accountsMerkleRootAfter;
-        assembly {
-            accountsMerkleRootBefore := mload(add(data, 32))
-            accountsMerkleRootAfter := mload(add(data, 64))
-        }
-        require(accountsMerkleRootBefore == currentBlock.accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
-
-        bytes32 publicDataHash = sha256(data);
-        bool verified = verifyProof(publicDataHash, proof);
+        bool verified = verifyProof(specifiedBlock.publicDataHash, proof);
         require(verified, "INVALID_PROOF");
 
-        // Create a new block with the updated merkle roots
-        Block memory newBlock = Block(
-            accountsMerkleRootAfter,
-            currentBlock.tradeHistoryMerkleRoot,
-            new bytes(0),
-            BlockState.FINALIZED
-        );
-        blocks.push(newBlock);
+        // Update state of this block and potentially the following blocks
+        Block storage previousBlock = blocks[blockIdx - 1];
+        if (previousBlock.state == BlockState.FINALIZED) {
+            specifiedBlock.state = BlockState.FINALIZED;
+            emit BlockFinalized(blockIdx);
+            // The next blocks could become finalized as well so check this now
+            // The number of blocks after the specified block index is limited
+            // so we don't have to worry about running out of gas in this loop
+            uint nextBlockIdx = blockIdx + 1;
+            while (nextBlockIdx < blocks.length && blocks[nextBlockIdx].state == BlockState.VERIFIED) {
+                blocks[nextBlockIdx].state = BlockState.FINALIZED;
+                emit BlockFinalized(nextBlockIdx);
+                nextBlockIdx++;
+            }
+        } else {
+            specifiedBlock.state = BlockState.VERIFIED;
+        }
     }
 
-    function submitWithdrawals(
-        bytes memory data,
-        uint256[8] memory proof
+    function notifyBlockVerificationTooLate(
+        uint blockIdx
         )
-        public
+        external
     {
-        Block storage currentBlock = blocks[blocks.length - 1];
+        require(blockIdx < blocks.length, INVALID_VALUE);
+        Block storage specifiedBlock = blocks[blockIdx];
+        require(specifiedBlock.state == BlockState.COMMITTED, INVALID_VALUE);
+        // TODO: At a time limit in some way (number of blocks, timestamp, ...)
+        revertState(blockIdx);
+    }
 
-        // TODO: don't send accountsMerkleRootBefore to save on calldata
-        bytes32 accountsMerkleRootBefore;
-        bytes32 accountsMerkleRootAfter;
-        assembly {
-            accountsMerkleRootBefore := mload(add(data, 32))
-            accountsMerkleRootAfter := mload(add(data, 64))
-        }
-        require(accountsMerkleRootBefore == currentBlock.accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
+    function revertState(
+        uint blockIdx
+        )
+        internal
+    {
+        // TODO: Burn deposit of operator for LRC
 
-        bytes32 publicDataHash = sha256(data);
-        bool verified = verifyProof(publicDataHash, proof);
-        require(verified, "INVALID_PROOF");
-
-        // Create a new block with the updated merkle roots
-        Block memory newBlock = Block(
-            accountsMerkleRootAfter,
-            currentBlock.tradeHistoryMerkleRoot,
-            data,
-            BlockState.FINALIZED
-        );
-        blocks.push(newBlock);
+        // Remove all blocks after and including blockIdx;
+        blocks.length = blockIdx;
     }
 
     function registerToken(
@@ -363,7 +379,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         gammaABC = _gammaABC;
     }
 
-    function getLastBlockIdx()
+    function getCurrentBlockIdx()
         external
         view
         returns (uint)

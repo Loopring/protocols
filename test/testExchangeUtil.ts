@@ -353,8 +353,11 @@ export class ExchangeTestUtil {
     const proofFlattened = this.flattenProof(proof);
 
     // Submit the deposits
-    const tx = await this.exchange.submitDeposits(web3.utils.hexToBytes(bs.getData()), proofFlattened);
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+    const tx1 = await this.exchange.commitBlock(web3.utils.toBN(1), web3.utils.hexToBytes(bs.getData()));
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx1.receipt.gasUsed);
+    const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
+    const tx2 = await this.exchange.verifyBlock(web3.utils.toBN(blockIdx), proofFlattened);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx2.receipt.gasUsed);
 
     this.pendingDeposits = [];
   }
@@ -396,11 +399,13 @@ export class ExchangeTestUtil {
     const proof = JSON.parse(jProof);
     const proofFlattened = this.flattenProof(proof);
 
-    // Submit the deposits
-    const tx = await this.exchange.submitWithdrawals(web3.utils.hexToBytes(bs.getData()), proofFlattened);
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+    // Submit the withdrawals
+    const tx1 = await this.exchange.commitBlock(web3.utils.toBN(2), web3.utils.hexToBytes(bs.getData()));
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx1.receipt.gasUsed);
+    const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
+    const tx2 = await this.exchange.verifyBlock(web3.utils.toBN(blockIdx), proofFlattened);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx2.receipt.gasUsed);
 
-    const blockIdx = (await this.exchange.getLastBlockIdx()).toNumber();
     for (let i = 0; i < this.pendingWithdrawals.length; i++) {
       const withdrawal = this.pendingWithdrawals[i];
       const txw = await this.exchange.withdraw(
@@ -486,14 +491,17 @@ export class ExchangeTestUtil {
     await this.exchange.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
 
     // Submit the rings
-    const tx = await this.exchange.submitRings(web3.utils.hexToBytes(bs.getData()), proofFlattened);
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+    const tx1 = await this.exchange.commitBlock(web3.utils.toBN(0), web3.utils.hexToBytes(bs.getData()));
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx1.receipt.gasUsed);
+    const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
+    const tx2 = await this.exchange.verifyBlock(web3.utils.toBN(blockIdx), proofFlattened);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx2.receipt.gasUsed);
 
     // Withdraw some tokens that were bought
     this.withdraw(ringsInfo.rings[0].orderA.accountB, 1);
     await this.submitWithdrawals();
 
-    return tx;
+    return tx2;
   }
 
   public async registerTokens() {

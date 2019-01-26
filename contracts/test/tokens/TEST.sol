@@ -86,7 +86,7 @@ contract TEST is DummyToken {
             return true;
         } else if (testCase == TEST_REENTRANCY) {
             // Call submitRings without ever throwing
-            bytes memory callData = abi.encodeWithSelector(
+            /*bytes memory callData = abi.encodeWithSelector(
                 IExchange(exchangeAddress).submitRings.selector,
                 submitRingsData
             );
@@ -105,7 +105,7 @@ contract TEST is DummyToken {
                 REENTRY
             );
             // Throw here when the results are as expected. This way we know the test was correctly executed.
-            require(keccak256(reentryMessageData) != keccak256(returnData), "REVERT_MESSAGE_OK");
+            require(keccak256(reentryMessageData) != keccak256(returnData), "REVERT_MESSAGE_OK");*/
             return true;
         } else if (testCase == TEST_REQUIRE_FAIL) {
             require(false, "REQUIRE_FAILED");
