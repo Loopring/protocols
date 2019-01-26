@@ -12,6 +12,7 @@ from ethsnarks.field import FQ
 
 class TradeExport(object):
     def __init__(self):
+        self.blockType = 0
         self.ringSettlements = []
         self.tradingHistoryMerkleRootBefore = 0
         self.tradingHistoryMerkleRootAfter = 0
@@ -19,37 +20,44 @@ class TradeExport(object):
         self.accountsMerkleRootAfter = 0
 
     def toJSON(self):
+        self.numElements = len(self.ringSettlements)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
 class DepositExport(object):
     def __init__(self):
+        self.blockType = 1
         self.deposits = []
         self.accountsMerkleRootBefore = 0
         self.accountsMerkleRootAfter = 0
 
     def toJSON(self):
+        self.numElements = len(self.deposits)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
 class WithdrawalExport(object):
     def __init__(self):
+        self.blockType = 2
         self.withdrawals = []
         self.accountsMerkleRootBefore = 0
         self.accountsMerkleRootAfter = 0
 
     def toJSON(self):
+        self.numElements = len(self.withdrawals)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
 class CancelExport(object):
     def __init__(self):
+        self.blockType = 3
         self.cancels = []
         self.tradingHistoryMerkleRootBefore = 0
         self.tradingHistoryMerkleRootAfter = 0
         self.accountsMerkleRoot = 0
 
     def toJSON(self):
+        self.numElements = len(self.cancels)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
@@ -95,117 +103,86 @@ def ringFromJSON(jRing, dex):
     return Ring(orderA, orderB, fillS_A, fillB_A, fillF_A, fillS_B, fillB_B, fillF_B)
 
 
-def deposit(dex):
-    with open('deposits_info.json') as f:
-        data = json.load(f)
-
-    depositExport = DepositExport()
-    depositExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
+def deposit(dex, data):
+    export = DepositExport()
+    export.accountsMerkleRootBefore = str(dex._accountsTree._root)
 
     for depositInfo in data:
         deposit = dex.deposit(Account(int(depositInfo["secretKey"]),
                                       Point(int(depositInfo["publicKeyX"]), int(depositInfo["publicKeyY"])),
                                       int(depositInfo["dexID"]), int(depositInfo["tokenID"]), int(depositInfo["balance"])))
-        depositExport.deposits.append(deposit)
+        export.deposits.append(deposit)
 
-    depositExport.accountsMerkleRootAfter = str(dex._accountsTree._root)
-
-    f = open("deposits.json","w+")
-    f.write(depositExport.toJSON())
-    f.close()
-
-    # Create the proof
-    subprocess.check_call(["build/circuit/dex_circuit", str(1), str(len(depositExport.deposits)), "deposits.json"])
+    export.accountsMerkleRootAfter = str(dex._accountsTree._root)
+    return export
 
 
-def withdraw(dex):
-    with open('withdrawals_info.json') as f:
-        data = json.load(f)
-
-    withdrawalExport = WithdrawalExport()
-    withdrawalExport.accountsMerkleRootBefore = str(dex._accountsTree._root)
+def withdraw(dex, data):
+    export = WithdrawalExport()
+    export.accountsMerkleRootBefore = str(dex._accountsTree._root)
 
     for withdrawalInfo in data:
         withdrawal = dex.withdraw(int(withdrawalInfo["account"]), int(withdrawalInfo["amount"]))
-        withdrawalExport.withdrawals.append(withdrawal)
+        export.withdrawals.append(withdrawal)
 
-    withdrawalExport.accountsMerkleRootAfter = str(dex._accountsTree._root)
-
-    f = open("withdrawals.json","w+")
-    f.write(withdrawalExport.toJSON())
-    f.close()
-
-    # Create the proof
-    subprocess.check_call(["build/circuit/dex_circuit", str(2), str(len(withdrawalExport.withdrawals)), "withdrawals.json"])
+    export.accountsMerkleRootAfter = str(dex._accountsTree._root)
+    return export
 
 
-def cancel(dex):
-    cancelExport = CancelExport()
-    cancelExport.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
-    cancelExport.accountsMerkleRoot = str(dex._accountsTree._root)
+def cancel(dex, data):
+    export = CancelExport()
+    export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
+    export.accountsMerkleRoot = str(dex._accountsTree._root)
 
     for i in range(2):
-        cancelExport.cancels.append(dex.cancelOrder(0, 2 + i))
+        export.cancels.append(dex.cancelOrder(0, 2 + i))
 
-    cancelExport.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)
-
-    f = open("cancels.json","w+")
-    f.write(cancelExport.toJSON())
-    f.close()
-
-    # Create the proof
-    subprocess.check_call(["build/circuit/dex_circuit", str(3), str(len(cancelExport.cancels)), "cancels.json"])
+    export.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)
+    return export
 
 
-def trade(dex):
-    with open('rings_info.json') as f:
-        data = json.load(f)
-
+def trade(dex, data):
     export = TradeExport()
     export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
     export.accountsMerkleRootBefore = str(dex._accountsTree._root)
+
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, dex)
         ringSettlement = dex.settleRing(ring)
         export.ringSettlements.append(ringSettlement)
+
     export.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)
     export.accountsMerkleRootAfter = str(dex._accountsTree._root)
-
-    f = open("rings.json","w+")
-    f.write(export.toJSON())
-    f.close()
-
-    # Create the proof
-    subprocess.check_call(["build/circuit/dex_circuit", str(0), str(len(data["rings"])), "rings.json"])
+    return export
 
 
-def main(mode):
-    print("Mode: " + mode)
-
+def main(blockType, inputFilename, outputFilename):
     dex_state_filename = "dex.json"
 
     dex = Dex()
     if os.path.exists(dex_state_filename):
         dex.loadState(dex_state_filename)
 
-    if mode == "0":
-        trade(dex)
-    if mode == "1":
-        deposit(dex)
-    if mode == "2":
-        withdraw(dex)
-    if mode == "3":
-        cancel(dex)
-    if mode == "10":
-        (secretKey, publicKey) = eddsa_random_keypair()
-        pair = {
-            "publicKeyX": str(publicKey.x),
-            "publicKeyY": str(publicKey.y),
-            "secretKey": str(secretKey),
-        }
-        f = open("EDDSA_KeyPair.json","w+")
-        f.write(json.dumps(pair, indent=4))
-        f.close()
+    with open(inputFilename) as f:
+        data = json.load(f)
+
+    #blockType = data["blockType"]
+
+    if blockType == "0":
+        output = trade(dex, data)
+    if blockType == "1":
+        output = deposit(dex, data)
+    if blockType == "2":
+        output = withdraw(dex, data)
+    if blockType == "3":
+        output = cancel(dex, data)
+
+    f = open(outputFilename,"w+")
+    f.write(output.toJSON())
+    f.close()
+
+    # Verify the block
+    subprocess.check_call(["build/circuit/dex_circuit", "-verify", outputFilename])
 
     dex.saveState(dex_state_filename)
 

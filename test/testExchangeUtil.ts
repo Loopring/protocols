@@ -8,7 +8,7 @@ import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Deposit, OrderInfo, OrderSettlementData,
+import { Block, Deposit, OrderInfo, OrderSettlementData,
          RingInfo, RingSettlementData, RingsInfo, Withdrawal } from "./types";
 
 export class ExchangeTestUtil {
@@ -22,6 +22,8 @@ export class ExchangeTestUtil {
 
   private pendingDeposits: Deposit[] = [];
   private pendingWithdrawals: Withdrawal[] = [];
+
+  private pendingBlocks: Block[] = [];
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -178,7 +180,7 @@ export class ExchangeTestUtil {
   }
 
   public getKeyPairEDDSA() {
-    childProcess.spawnSync("python3", ["generate_proof.py", "10"], {stdio: "inherit"});
+    childProcess.spawnSync("python3", ["generate_EDDSA_keypair.py"], {stdio: "inherit"});
     const jKeyPair = fs.readFileSync("EDDSA_KeyPair.json", "ascii");
     const keyPair = JSON.parse(jKeyPair);
     return keyPair;
@@ -319,27 +321,50 @@ export class ExchangeTestUtil {
     withdrawals.push({account, amount});
   }
 
-  public async submitDeposits() {
-    if (this.pendingDeposits.length === 0) {
-      return;
-    }
+  public async createBlock(blockType: number, data: string) {
+    const nextBlockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber() + 1;
+    const inputFilename = "block_info_" + nextBlockIdx + ".json";
+    const outputFilename = "block_" + nextBlockIdx + ".json";
 
-    const jDepositsInfo = JSON.stringify(this.pendingDeposits, null, 4);
-    fs.writeFileSync("deposits_info.json", jDepositsInfo, "utf8");
+    fs.writeFileSync(inputFilename, data, "utf8");
 
-    childProcess.spawnSync("python3", ["generate_proof.py", "1"], {stdio: "inherit"});
+    childProcess.spawnSync(
+      "python3",
+      ["create_block.py", "" + blockType, inputFilename, outputFilename],
+      {stdio: "inherit"},
+    );
 
-    const jDeposits = fs.readFileSync("deposits.json", "ascii");
-    const jdeposits = JSON.parse(jDeposits);
+    return outputFilename;
+  }
 
-    const bs = new pjs.Bitstream();
-    bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootAfter, 10), 32);
-
+  public async commitBlock(blockType: number, data: string, filename: string) {
     // Hash all public inputs to a singe value
-    const publicDataHash = ethUtil.sha256(bs.getData());
-    console.log("DataJS: " + bs.getData());
-    console.log(publicDataHash.toString("hex"));
+    // const publicDataHash = ethUtil.sha256(data);
+    // console.log("DataJS: " + data);
+    // console.log(publicDataHash.toString("hex"));
+
+    const tx = await this.exchange.commitBlock(
+      web3.utils.toBN(blockType),
+      web3.utils.hexToBytes(data),
+    );
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+
+    const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
+    const block: Block = {
+      blockIdx,
+      filename,
+    };
+    this.pendingBlocks.push(block);
+  }
+
+  public async verifyBlock(blockIdx: number, filename: string) {
+    const outputFilename = "proof.json";
+
+    childProcess.spawnSync(
+      "build/circuit/dex_circuit",
+      ["-prove", filename],
+      {stdio: "inherit"},
+    );
 
     // Read the verification key and set it in the smart contract
     const jVK = fs.readFileSync("vk.json", "ascii");
@@ -348,16 +373,38 @@ export class ExchangeTestUtil {
     await this.exchange.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
 
     // Read the proof
-    const jProof = fs.readFileSync("proof.json", "ascii");
+    const jProof = fs.readFileSync(outputFilename, "ascii");
     const proof = JSON.parse(jProof);
     const proofFlattened = this.flattenProof(proof);
+    // console.log(proof);
+    // console.log(this.flattenProof(proof));
 
-    // Submit the deposits
-    const tx1 = await this.exchange.commitBlock(web3.utils.toBN(1), web3.utils.hexToBytes(bs.getData()));
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx1.receipt.gasUsed);
-    const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
-    const tx2 = await this.exchange.verifyBlock(web3.utils.toBN(blockIdx), proofFlattened);
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx2.receipt.gasUsed);
+    const tx = await this.exchange.verifyBlock(web3.utils.toBN(blockIdx), proofFlattened);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+  }
+
+  public async verifyAllPendingBlocks() {
+    for (const block of this.pendingBlocks) {
+      await this.verifyBlock(block.blockIdx, block.filename);
+    }
+    this.pendingBlocks = [];
+  }
+
+  public async submitDeposits() {
+    if (this.pendingDeposits.length === 0) {
+      return;
+    }
+
+    const jDepositsInfo = JSON.stringify(this.pendingDeposits, null, 4);
+    const blockFilename = await this.createBlock(1, jDepositsInfo);
+    const jDeposits = fs.readFileSync(blockFilename, "ascii");
+    const jdeposits = JSON.parse(jDeposits);
+    const bs = new pjs.Bitstream();
+    bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootAfter, 10), 32);
+
+    // Commit the block
+    await this.commitBlock(1, bs.getData(), blockFilename);
 
     this.pendingDeposits = [];
   }
@@ -368,13 +415,9 @@ export class ExchangeTestUtil {
     }
 
     const jWithdrawalsInfo = JSON.stringify(this.pendingWithdrawals, null, 4);
-    fs.writeFileSync("withdrawals_info.json", jWithdrawalsInfo, "utf8");
-
-    childProcess.spawnSync("python3", ["generate_proof.py", "2"], {stdio: "inherit"});
-
-    const jWithdrawals = fs.readFileSync("withdrawals.json", "ascii");
+    const blockFilename = await this.createBlock(2, jWithdrawalsInfo);
+    const jWithdrawals = fs.readFileSync(blockFilename, "ascii");
     const jwithdrawals = JSON.parse(jWithdrawals);
-
     const bs = new pjs.Bitstream();
     bs.addBigNumber(new BigNumber(jwithdrawals.accountsMerkleRootBefore, 10), 32);
     bs.addBigNumber(new BigNumber(jwithdrawals.accountsMerkleRootAfter, 10), 32);
@@ -383,28 +426,13 @@ export class ExchangeTestUtil {
       bs.addNumber(withdrawal.amount, 12);
     }
 
-    // Hash all public inputs to a singe value
-    const publicDataHash = ethUtil.sha256(bs.getData());
-    console.log("DataJS: " + bs.getData());
-    console.log(publicDataHash.toString("hex"));
-
-    // Read the verification key and set it in the smart contract
-    const jVK = fs.readFileSync("vk.json", "ascii");
-    const vk = JSON.parse(jVK);
-    const vkFlattened = this.flattenVK(vk);
-    await this.exchange.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
-
-    // Read the proof
-    const jProof = fs.readFileSync("proof.json", "ascii");
-    const proof = JSON.parse(jProof);
-    const proofFlattened = this.flattenProof(proof);
-
-    // Submit the withdrawals
-    const tx1 = await this.exchange.commitBlock(web3.utils.toBN(2), web3.utils.hexToBytes(bs.getData()));
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx1.receipt.gasUsed);
+    // Commit the block
+    await this.commitBlock(2, bs.getData(), blockFilename);
     const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
-    const tx2 = await this.exchange.verifyBlock(web3.utils.toBN(blockIdx), proofFlattened);
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx2.receipt.gasUsed);
+
+    // We need to verify all blocks before and including the withdraw block before
+    // we can withdraw the tokens from the block
+    await this.verifyAllPendingBlocks();
 
     for (let i = 0; i < this.pendingWithdrawals.length; i++) {
       const withdrawal = this.pendingWithdrawals[i];
@@ -428,7 +456,7 @@ export class ExchangeTestUtil {
   }
 
   public async submitRings(ringsInfo: RingsInfo) {
-
+    // First create the accounts and deposit the tokens
     await this.submitDeposits();
 
     // Generate the token transfers for the ring
@@ -436,19 +464,10 @@ export class ExchangeTestUtil {
 
     // Write out the rings info
     const jRingsInfo = JSON.stringify(ringsInfo, null, 4);
-    fs.writeFileSync("rings_info.json", jRingsInfo, "utf8");
 
-    // Generate the proof
-    childProcess.spawnSync("python3", ["generate_proof.py", "0"], {stdio: "inherit"});
+    const blockFilename = await this.createBlock(0, jRingsInfo);
 
-    // Read the proof
-    const jProof = fs.readFileSync("proof.json", "ascii");
-    const proof = JSON.parse(jProof);
-    const proofFlattened = this.flattenProof(proof);
-    // console.log(proof);
-    // console.log(this.flattenProof(proof));
-
-    const jRings = fs.readFileSync("rings.json", "ascii");
+    const jRings = fs.readFileSync(blockFilename, "ascii");
     const rings = JSON.parse(jRings);
 
     const bs = new pjs.Bitstream();
@@ -478,30 +497,12 @@ export class ExchangeTestUtil {
       }
     }
 
-    // Hash all public inputs to a singe value
-    const publicDataHash = ethUtil.sha256(bs.getData());
-    console.log("DataJS: " + bs.getData());
-    console.log(publicDataHash.toString("hex"));
-    ringsInfo.publicDataHash = publicDataHash.toString("hex");
-
-    // Read the verification key and set it in the smart contract
-    const jVK = fs.readFileSync("vk.json", "ascii");
-    const vk = JSON.parse(jVK);
-    const vkFlattened = this.flattenVK(vk);
-    await this.exchange.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
-
-    // Submit the rings
-    const tx1 = await this.exchange.commitBlock(web3.utils.toBN(0), web3.utils.hexToBytes(bs.getData()));
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx1.receipt.gasUsed);
-    const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
-    const tx2 = await this.exchange.verifyBlock(web3.utils.toBN(blockIdx), proofFlattened);
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx2.receipt.gasUsed);
+    // Commit the block
+    await this.commitBlock(0, bs.getData(), blockFilename);
 
     // Withdraw some tokens that were bought
     this.withdraw(ringsInfo.rings[0].orderA.accountB, 1);
     await this.submitWithdrawals();
-
-    return tx2;
   }
 
   public async registerTokens() {

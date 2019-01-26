@@ -93,3 +93,8 @@ export interface Withdrawal {
   account: number;
   amount: number;
 }
+
+export interface Block {
+  blockIdx: number;
+  filename: string;
+}
