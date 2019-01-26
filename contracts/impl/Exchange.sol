@@ -26,6 +26,8 @@ import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
+import "../lib/MerkleTree.sol";
+
 
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>,
@@ -84,6 +86,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         bytes withdrawals;
     }
+
+    MerkleTree.Data tokenMerkleTree;
 
     Token[] public tokens;
     mapping (address => uint16) public tokenToTokenID;
@@ -222,14 +226,17 @@ contract Exchange is IExchange, NoDefaultFunc {
         external
     {
         require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
+
         Token memory token = Token(
             tokenAddress
         );
         tokens.push(token);
+        uint16 tokenID = uint16(tokens.length);
+        tokenToTokenID[tokenAddress] = tokenID;
 
-        tokenToTokenID[tokenAddress] = uint16(tokens.length);
+        MerkleTree.Insert(tokenMerkleTree, uint256(tokenAddress));
 
-        emit TokenRegistered(tokenAddress, uint16(tokens.length) - 1);
+        emit TokenRegistered(tokenAddress, tokenID);
     }
 
     function getTokenID(

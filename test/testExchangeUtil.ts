@@ -293,7 +293,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(amount),
       {from: owner},
     );
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "Deposit", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -347,7 +347,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(blockType),
       web3.utils.hexToBytes(data),
     );
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
     const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
     const block: Block = {
@@ -380,7 +380,7 @@ export class ExchangeTestUtil {
     // console.log(this.flattenProof(proof));
 
     const tx = await this.exchange.verifyBlock(web3.utils.toBN(blockIdx), proofFlattened);
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "Gas used: " + tx.receipt.gasUsed);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
   }
 
   public async verifyAllPendingBlocks() {
@@ -507,7 +507,9 @@ export class ExchangeTestUtil {
 
   public async registerTokens() {
     for (const token of this.testContext.allTokens) {
-      await this.exchange.registerToken(token.address);
+      const tx = await this.exchange.registerToken(token.address);
+      pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
+
       this.tokenIDMap.set(token.address, (await this.getTokenID(token.address)).toNumber());
     }
     console.log(this.tokenIDMap);

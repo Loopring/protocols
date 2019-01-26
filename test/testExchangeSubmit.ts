@@ -19,7 +19,9 @@ contract("Exchange_Submit", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
   });
 
-  describe("submitRing", () => {
+  describe("submitRing", function() {
+    this.timeout(0);
+
     it("Basic test", async () => {
       const ringsInfo: RingsInfo = {
         rings : [
