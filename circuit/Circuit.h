@@ -811,23 +811,23 @@ public:
 
         // Print out calculated hash of transfer data
         auto full_output_bits = publicDataHasher->result().get_digest();
-        printBits("HashC: ", full_output_bits);
+        //printBits("HashC: ", full_output_bits);
         BigInt publicDataHashDec = 0;
         for (unsigned int i = 0; i < full_output_bits.size(); i++)
         {
             publicDataHashDec = publicDataHashDec * 2 + (full_output_bits[i] ? 1 : 0);
         }
-        std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
+        //std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
         libff::bigint<libff::alt_bn128_r_limbs> bn = libff::bigint<libff::alt_bn128_r_limbs>(publicDataHashDec.to_string().c_str());
         for (unsigned int i = 0; i < 256; i++)
         {
             pb.val(publicDataHash.bits[i]) = bn.test_bit(i);
         }
         publicDataHash.generate_r1cs_witness_from_bits();
-        printBits("publicData: ", publicData.get_bits(pb));
+        //printBits("publicData: ", publicData.get_bits(pb));
 
-        printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
-        printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
+        //printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
+        //printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
 
         return true;
     }
@@ -1049,23 +1049,23 @@ public:
 
         // Print out calculated hash of transfer data
         auto full_output_bits = publicDataHasher->result().get_digest();
-        printBits("HashC: ", full_output_bits);
+        //printBits("HashC: ", full_output_bits);
         BigInt publicDataHashDec = 0;
         for (unsigned int i = 0; i < full_output_bits.size(); i++)
         {
             publicDataHashDec = publicDataHashDec * 2 + (full_output_bits[i] ? 1 : 0);
         }
-        std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
+        //std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
         libff::bigint<libff::alt_bn128_r_limbs> bn = libff::bigint<libff::alt_bn128_r_limbs>(publicDataHashDec.to_string().c_str());
         for (unsigned int i = 0; i < 256; i++)
         {
             pb.val(publicDataHash.bits[i]) = bn.test_bit(i);
         }
         publicDataHash.generate_r1cs_witness_from_bits();
-        printBits("publicData: ", publicData.get_bits(pb));
+        //printBits("publicData: ", publicData.get_bits(pb));
 
-        printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
-        printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
+        //printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
+        //printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
 
         return true;
     }
@@ -1275,23 +1275,23 @@ public:
 
         // Print out calculated hash of transfer data
         auto full_output_bits = publicDataHasher->result().get_digest();
-        printBits("HashC: ", full_output_bits);
+        //printBits("HashC: ", full_output_bits);
         BigInt publicDataHashDec = 0;
         for (unsigned int i = 0; i < full_output_bits.size(); i++)
         {
             publicDataHashDec = publicDataHashDec * 2 + (full_output_bits[i] ? 1 : 0);
         }
-        std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
+        //std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
         libff::bigint<libff::alt_bn128_r_limbs> bn = libff::bigint<libff::alt_bn128_r_limbs>(publicDataHashDec.to_string().c_str());
         for (unsigned int i = 0; i < 256; i++)
         {
             pb.val(publicDataHash.bits[i]) = bn.test_bit(i);
         }
         publicDataHash.generate_r1cs_witness_from_bits();
-        printBits("publicData: ", publicData.get_bits(pb));
+        //printBits("publicData: ", publicData.get_bits(pb));
 
-        printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
-        printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
+        //printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
+        //printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
 
         return true;
     }

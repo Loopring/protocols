@@ -41,6 +41,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     address public  tradeDelegateAddress        = address(0x0);
 
     event TokenRegistered(address tokenAddress, uint16 tokenID);
+    event NewTokenRegistryBlock(bytes32 merkleRoot);
 
     event Deposit(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
     event Withdraw(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
@@ -87,6 +88,11 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes withdrawals;
     }
 
+    struct TokenRegistryBlock {
+        bytes32 merkleRoot;
+        uint validUntil;
+    }
+
     MerkleTree.Data tokenMerkleTree;
 
     Token[] public tokens;
@@ -95,6 +101,8 @@ contract Exchange is IExchange, NoDefaultFunc {
     Account[] public accounts;
 
     Block[] public blocks;
+
+    TokenRegistryBlock[] public tokenRegistryBlocks;
 
     mapping (uint => DepositBlock) public depositBlocks;
 
@@ -117,6 +125,12 @@ contract Exchange is IExchange, NoDefaultFunc {
             new bytes(0)
         );
         blocks.push(genesisBlock);
+
+        TokenRegistryBlock memory noTokensBlock = TokenRegistryBlock(
+            0x0,
+            0xFFFFFFFF
+        );
+        tokenRegistryBlocks.push(noTokensBlock);
     }
 
     function commitBlock(
@@ -234,7 +248,21 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint16 tokenID = uint16(tokens.length);
         tokenToTokenID[tokenAddress] = tokenID;
 
-        MerkleTree.Insert(tokenMerkleTree, uint256(tokenAddress));
+        uint validUntil = 0;
+        uint tier = 4;
+        uint leafData = (validUntil * 256) + tier;
+        (uint newRoot, uint offset) = MerkleTree.Insert(tokenMerkleTree, leafData);
+        assert(offset == tokenID - 1);
+
+        TokenRegistryBlock storage currentBlock = tokenRegistryBlocks[tokenRegistryBlocks.length - 1];
+        // Allow the use of older blocks for 1 hour
+        currentBlock.validUntil = now + 3600;
+        TokenRegistryBlock memory newBlock = TokenRegistryBlock(
+            bytes32(newRoot),
+            0xFFFFFFFF              // The last block is valid forever (until a new block is added)
+        );
+        tokenRegistryBlocks.push(newBlock);
+        emit NewTokenRegistryBlock(bytes32(newRoot));
 
         emit TokenRegistered(tokenAddress, tokenID);
     }

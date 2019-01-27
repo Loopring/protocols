@@ -302,7 +302,7 @@ export class ExchangeTestUtil {
       return eventObj.args.account;
     });
     const accountID = items[0].toNumber();
-    console.log(accountID);
+    // console.log(accountID);
 
     this.addDeposit(this.pendingDeposits, secretKey, publicKeyX, publicKeyY,
                     dexID, this.tokenIDMap.get(token), amount);
@@ -444,7 +444,7 @@ export class ExchangeTestUtil {
 
     // We need to verify all blocks before and including the withdraw block before
     // we can withdraw the tokens from the block
-    await this.verifyAllPendingBlocks();
+    /*await this.verifyAllPendingBlocks();
 
     for (let i = 0; i < this.pendingWithdrawals.length; i++) {
       const withdrawal = this.pendingWithdrawals[i];
@@ -462,7 +462,7 @@ export class ExchangeTestUtil {
       const token = items[0][1];
       const amount = items[0][2].toNumber();
       console.log("Withdrawn: " + owner + ": " + amount + " " + token);
-    }
+    }*/
 
     this.pendingWithdrawals = [];
   }
@@ -488,7 +488,7 @@ export class ExchangeTestUtil {
     bs.addBigNumber(new BigNumber(rings.accountsMerkleRootAfter, 10), 32);
     bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootBefore, 10), 32);
     bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootAfter, 10), 32);
-    console.log(ringSettlements);
+    // console.log(ringSettlements);
     for (const ringSettlement of ringSettlements) {
       const orders = [ringSettlement.orderA, ringSettlement.orderB];
       for (const order of orders) {
@@ -524,7 +524,7 @@ export class ExchangeTestUtil {
 
       this.tokenIDMap.set(token.address, (await this.getTokenID(token.address)).toNumber());
     }
-    console.log(this.tokenIDMap);
+    // console.log(this.tokenIDMap);
   }
 
   public async getTokenID(tokenAddress: string) {

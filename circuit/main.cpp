@@ -277,7 +277,7 @@ int main (int argc, char **argv)
     file >> input;
     file.close();
     int blockType = input["blockType"].get<int>();
-    std::cerr << "BlockType: " << blockType << std::endl;
+    //std::cerr << "BlockType: " << blockType << std::endl;
 
     unsigned int numElements = input["numElements"].get<int>();
 

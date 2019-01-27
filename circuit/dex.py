@@ -193,12 +193,12 @@ class Dex(object):
         self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf(0, 0).hash())
         self._tradeHistoryLeafs = {}
-        print("Empty trading tree: " + str(self._tradingHistoryTree._root))
+        #print("Empty trading tree: " + str(self._tradingHistoryTree._root))
         # Accounts
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
         self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
         self._accounts = []
-        print("Empty accounts tree: " + str(self._accountsTree._root))
+        #print("Empty accounts tree: " + str(self._accountsTree._root))
 
     def loadState(self, filename):
         with open(filename) as f:
@@ -233,11 +233,11 @@ class Dex(object):
             self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0)
 
         leafBefore = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
-        print("leafBefore: " + str(leafBefore))
+        #print("leafBefore: " + str(leafBefore))
         self._tradeHistoryLeafs[str(address)].filled = str(int(self._tradeHistoryLeafs[str(address)].filled) + fill)
         self._tradeHistoryLeafs[str(address)].cancelled = cancelled
         leafAfter = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
-        print("leafAfter: " + str(leafAfter))
+        #print("leafAfter: " + str(leafAfter))
         proof = self._tradingHistoryTree.createProof(address)
         self._tradingHistoryTree.update(address, leafAfter.hash())
 
@@ -251,10 +251,10 @@ class Dex(object):
             print("Account doesn't exist: " + str(address))
 
         accountBefore = copy.deepcopy(self._accounts[address])
-        print("accountBefore: " + str(accountBefore.balance))
+        #print("accountBefore: " + str(accountBefore.balance))
         self._accounts[address].balance += amount
         accountAfter = copy.deepcopy(self._accounts[address])
-        print("accountAfter: " + str(accountAfter.balance))
+        #print("accountAfter: " + str(accountAfter.balance))
         proof = self._accountsTree.createProof(address)
         self._accountsTree.update(address, accountAfter.hash())
 
