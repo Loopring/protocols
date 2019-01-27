@@ -3,6 +3,7 @@ import BN = require("bn.js");
 import childProcess = require("child_process");
 import ethUtil = require("ethereumjs-util");
 import fs = require("fs");
+import path = require("path");
 import * as pjs from "protocol2-js";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
@@ -321,11 +322,21 @@ export class ExchangeTestUtil {
     withdrawals.push({account, amount});
   }
 
+  public ensureDirectoryExists(filePath: string) {
+    const dirname = path.dirname(filePath);
+    if (fs.existsSync(dirname)) {
+      return true;
+    }
+    this.ensureDirectoryExists(dirname);
+    fs.mkdirSync(dirname);
+  }
+
   public async createBlock(blockType: number, data: string) {
     const nextBlockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber() + 1;
-    const inputFilename = "block_info_" + nextBlockIdx + ".json";
-    const outputFilename = "block_" + nextBlockIdx + ".json";
+    const inputFilename = "./blocks/block_" + nextBlockIdx + "_info.json";
+    const outputFilename = "./blocks/block_" + nextBlockIdx + ".json";
 
+    this.ensureDirectoryExists(inputFilename);
     fs.writeFileSync(inputFilename, data, "utf8");
 
     childProcess.spawnSync(
@@ -357,12 +368,11 @@ export class ExchangeTestUtil {
     this.pendingBlocks.push(block);
   }
 
-  public async verifyBlock(blockIdx: number, filename: string) {
-    const outputFilename = "proof.json";
-
+  public async verifyBlock(blockIdx: number, blockFilename: string) {
+    const proofFilename = "./blocks/block_" + blockIdx + "_proof.json";
     childProcess.spawnSync(
       "build/circuit/dex_circuit",
-      ["-prove", filename],
+      ["-prove", blockFilename, proofFilename],
       {stdio: "inherit"},
     );
 
@@ -373,7 +383,7 @@ export class ExchangeTestUtil {
     await this.exchange.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
 
     // Read the proof
-    const jProof = fs.readFileSync(outputFilename, "ascii");
+    const jProof = fs.readFileSync(proofFilename, "ascii");
     const proof = JSON.parse(jProof);
     const proofFlattened = this.flattenProof(proof);
     // console.log(proof);
@@ -381,6 +391,8 @@ export class ExchangeTestUtil {
 
     const tx = await this.exchange.verifyBlock(web3.utils.toBN(blockIdx), proofFlattened);
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
+
+    return proofFilename;
   }
 
   public async verifyAllPendingBlocks() {

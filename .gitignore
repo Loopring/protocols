@@ -1,10 +1,10 @@
 node_modules/
 build/
 transpiled/
+blocks/
 .DS_Store
 .node-*
 *.log
 ganache_account_keys.txt
 __pycache__
 *.pyc
-

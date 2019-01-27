@@ -53,7 +53,8 @@ bool generateKeyPair(const ethsnarks::ProtoboardT& pb, libsnark::r1cs_gg_ppzksna
     return true;
 }
 
-bool generateProof(const ethsnarks::ProtoboardT& pb, const libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT>& keyPair)
+bool generateProof(const ethsnarks::ProtoboardT& pb, const libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT>& keyPair,
+                   const char* proofFilename)
 {
     std::cout << "Generating proof..." << std::endl;
     timespec time1, time2;
@@ -63,7 +64,6 @@ bool generateProof(const ethsnarks::ProtoboardT& pb, const libsnark::r1cs_gg_ppz
     auto auxiliaryInput = pb.auxiliary_input();
     auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(keyPair.pk, primaryInput, auxiliaryInput);
 
-    const char* proofFilename = "proof.json";
     std::ofstream fproof(proofFilename);
     if (!fproof.is_open())
     {
@@ -81,34 +81,10 @@ bool generateProof(const ethsnarks::ProtoboardT& pb, const libsnark::r1cs_gg_ppz
     return true;
 }
 
-bool generateData(Mode mode, const ethsnarks::ProtoboardT& pb)
-{
-    libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT> keypair;
-    if (mode == Mode::CreateKeys || mode == Mode::Prove)
-    {
-        if (!generateKeyPair(pb, keypair))
-        {
-            return false;
-        }
-    }
-
-    if (mode == Mode::Prove)
-    {
-        if (!generateProof(pb, keypair))
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-
-int submitRings(Mode mode, unsigned int numRings, const json& input)
+bool submitRings(Mode mode, unsigned int numRings, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    ethsnarks::ProtoboardT pb;
-    Loopring::TradeCircuitGadget circuit(pb, "circuit");
+    Loopring::TradeCircuitGadget circuit(outPb, "circuit");
     circuit.generate_r1cs_constraints(numRings);
     circuit.printInfo();
 
@@ -118,7 +94,7 @@ int submitRings(Mode mode, unsigned int numRings, const json& input)
         if (jRingSettlements.size() != numRings)
         {
             std::cerr << "Invalid number of rings in input file: " << jRingSettlements.size() << std::endl;
-            return 1;
+            return false;
         }
 
         std::string tradingHistoryMerkleRootBefore = input["tradingHistoryMerkleRootBefore"].get<std::string>();
@@ -139,30 +115,16 @@ int submitRings(Mode mode, unsigned int numRings, const json& input)
                                      accountsMerkleRootBefore, accountsMerkleRootAfter))
         {
             std::cerr << "Could not generate witness!" << std::endl;
-            return 1;
+            return false;
         }
-
-        // Check if the inputs are valid for the circuit
-        if (!pb.is_satisfied())
-        {
-            std::cerr << "Input is not valid!" << std::endl;
-            return 1;
-        }
-        std::cout << "Input is valid." << std::endl;
     }
-
-    if (!generateData(mode, pb))
-    {
-        return 1;
-    }
-    return 0;
+    return true;
 }
 
-int deposit(Mode mode, unsigned int numDeposits, const json& input)
+bool deposit(Mode mode, unsigned int numDeposits, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    ethsnarks::ProtoboardT pb;
-    Loopring::DepositsCircuitGadget circuit(pb, "circuit");
+    Loopring::DepositsCircuitGadget circuit(outPb, "circuit");
     circuit.generate_r1cs_constraints(numDeposits);
     circuit.printInfo();
 
@@ -172,7 +134,7 @@ int deposit(Mode mode, unsigned int numDeposits, const json& input)
         if (jDeposits.size() != numDeposits)
         {
             std::cerr << "Invalid number of deposits in input file: " << jDeposits.size() << std::endl;
-            return 1;
+            return false;
         }
 
         std::string accountsMerkleRootBefore = input["accountsMerkleRootBefore"].get<std::string>();
@@ -189,30 +151,16 @@ int deposit(Mode mode, unsigned int numDeposits, const json& input)
         if (!circuit.generateWitness(deposits, accountsMerkleRootBefore, accountsMerkleRootAfter))
         {
             std::cerr << "Could not generate witness!" << std::endl;
-            return 1;
+            return false;
         }
-
-        // Check if the inputs are valid for the circuit
-        if (!pb.is_satisfied())
-        {
-            std::cerr << "Input is not valid!" << std::endl;
-            return 1;
-        }
-        std::cout << "Input is valid." << std::endl;
     }
-
-    if (!generateData(mode, pb))
-    {
-        return 1;
-    }
-    return 0;
+    return true;
 }
 
-int withdraw(Mode mode, unsigned int numWithdrawals, const json& input)
+bool withdraw(Mode mode, unsigned int numWithdrawals, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    ethsnarks::ProtoboardT pb;
-    Loopring::WithdrawalsCircuitGadget circuit(pb, "circuit");
+    Loopring::WithdrawalsCircuitGadget circuit(outPb, "circuit");
     circuit.generate_r1cs_constraints(numWithdrawals);
     circuit.printInfo();
 
@@ -222,7 +170,7 @@ int withdraw(Mode mode, unsigned int numWithdrawals, const json& input)
         if (jWithdrawals.size() != numWithdrawals)
         {
             std::cerr << "Invalid number of withdrawals in input file: " << jWithdrawals.size() << std::endl;
-            return 1;
+            return false;
         }
 
         std::string accountsMerkleRootBefore = input["accountsMerkleRootBefore"].get<std::string>();
@@ -239,30 +187,16 @@ int withdraw(Mode mode, unsigned int numWithdrawals, const json& input)
         if (!circuit.generateWitness(withdrawals, accountsMerkleRootBefore, accountsMerkleRootAfter))
         {
             std::cerr << "Could not generate witness!" << std::endl;
-            return 1;
+            return false;
         }
-
-        // Check if the inputs are valid for the circuit
-        if (!pb.is_satisfied())
-        {
-            std::cerr << "Input is not valid!" << std::endl;
-            return 1;
-        }
-        std::cout << "Input is valid." << std::endl;
     }
-
-    if (!generateData(mode, pb))
-    {
-        return 1;
-    }
-    return 0;
+    return true;
 }
 
-int cancel(Mode mode, unsigned int numCancels, const json& input)
+bool cancel(Mode mode, unsigned int numCancels, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    ethsnarks::ProtoboardT pb;
-    Loopring::CancelsCircuitGadget circuit(pb, "circuit");
+    Loopring::CancelsCircuitGadget circuit(outPb, "circuit");
     circuit.generate_r1cs_constraints(numCancels);
     circuit.printInfo();
 
@@ -272,7 +206,7 @@ int cancel(Mode mode, unsigned int numCancels, const json& input)
         if (jCancels.size() != numCancels)
         {
             std::cerr << "Invalid number of cancels in input file: " << jCancels.size() << std::endl;
-            return 1;
+            return false;
         }
 
         std::string tradingHistoryMerkleRootBefore = input["tradingHistoryMerkleRootBefore"].get<std::string>();
@@ -290,37 +224,25 @@ int cancel(Mode mode, unsigned int numCancels, const json& input)
         if (!circuit.generateWitness(cancels, tradingHistoryMerkleRootBefore, tradingHistoryMerkleRootAfter, accountsMerkleRoot))
         {
             std::cerr << "Could not generate witness!" << std::endl;
-            return 1;
+            return false;
         }
-
-        // Check if the inputs are valid for the circuit
-        if (!pb.is_satisfied())
-        {
-            std::cerr << "Input is not valid!" << std::endl;
-            return 1;
-        }
-        std::cout << "Input is valid." << std::endl;
     }
-
-    if (!generateData(mode, pb))
-    {
-        return 1;
-    }
-    return 0;
+    return true;
 }
 
 int main (int argc, char **argv)
 {
     ethsnarks::ppT::init_public_params();
 
-    if (argc != 3)
+    if (argc < 3)
     {
         std::cerr << "Usage: " << argv[0] << std::endl;
         std::cerr << "-verify <block.json>: Verifies a block" << std::endl;
-        std::cerr << "-prove <block.json>: Proves a block" << std::endl;
+        std::cerr << "-prove <block.json> <out_proof.json>: Proves a block" << std::endl;
         return 1;
     }
 
+    const char* proofFilename = NULL;
     Mode mode = Mode::Verify;
     if (strcmp(argv[1], "-verify") == 0)
     {
@@ -329,7 +251,12 @@ int main (int argc, char **argv)
     }
     else if (strcmp(argv[1], "-prove") == 0)
     {
+        if (argc != 4)
+        {
+            return 1;
+        }
         mode = Mode::Prove;
+        proofFilename = argv[3];
         std::cout << "Proving " << argv[2] << "..." << std::endl;
     }
     else
@@ -348,28 +275,81 @@ int main (int argc, char **argv)
     }
     json input;
     file >> input;
+    file.close();
     int blockType = input["blockType"].get<int>();
     std::cerr << "BlockType: " << blockType << std::endl;
 
     unsigned int numElements = input["numElements"].get<int>();
 
+    ethsnarks::ProtoboardT pb;
     switch(blockType)
     {
         case 0:
         {
-            return submitRings(mode, numElements, input);
+            if (!submitRings(mode, numElements, input, pb))
+            {
+                return 1;
+            }
+            break;
         }
         case 1:
         {
-            return deposit(mode, numElements, input);
+            if (!deposit(mode, numElements, input, pb))
+            {
+                return 1;
+            }
+            break;
         }
         case 2:
         {
-            return withdraw(mode, numElements, input);
+            if (!withdraw(mode, numElements, input, pb))
+            {
+                return 1;
+            }
+            break;
         }
         case 3:
         {
-            return cancel(mode, numElements, input);
+            if (!cancel(mode, numElements, input, pb))
+            {
+                return 1;
+            }
+            break;
+        }
+        default:
+        {
+            std::cerr << "Unknown block type: " << blockType << std::endl;
+            return 1;
         }
     }
+
+    if (mode == Mode::Verify || mode == Mode::Prove)
+    {
+        // Check if the inputs are valid for the circuit
+        if (!pb.is_satisfied())
+        {
+            std::cerr << "Block is not valid!" << std::endl;
+            return 1;
+        }
+        std::cout << "Block is valid." << std::endl;
+    }
+
+    libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT> keypair;
+    if (mode == Mode::CreateKeys || mode == Mode::Prove)
+    {
+        if (!generateKeyPair(pb, keypair))
+        {
+            return 1;
+        }
+    }
+
+    if (mode == Mode::Prove)
+    {
+        if (!generateProof(pb, keypair, proofFilename))
+        {
+            return 1;
+        }
+    }
+
+    return 0;
 }
