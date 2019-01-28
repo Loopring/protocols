@@ -1,6 +1,13 @@
 # Deployment on Ethereum
 
 ## v2.1-release [main-net]:
+- Source code: https://github.com/Loopring/protocol2/releases/tag/v2.1-st20
+- creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
+- RingSubmitter: [0xe9be8ec2153Cd594dFA2e4a24bB1D27d87C86e45](https://etherscan.io/address/0xe9be8ec2153Cd594dFA2e4a24bB1D27d87C86e45)
+- other contracts are the same as v2.1-release
+
+
+## v2.1-release [main-net]:
 - Source code: https://github.com/Loopring/protocol2/releases/tag/2.1-release
 - creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
 - BrokerRegistry: [0x4e1E917F030556788AB3C9d8D0971Ebf0d5439E9](https://etherscan.io/address/0x4e1E917F030556788AB3C9d8D0971Ebf0d5439E9)
