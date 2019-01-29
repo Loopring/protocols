@@ -9,9 +9,11 @@ from ethsnarks.eddsa import PureEdDSA
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
 from ethsnarks.mimc import mimc_hash
+from ethsnarks.merkletree import MerkleTree
 
 TREE_DEPTH_TRADING_HISTORY = 28
 TREE_DEPTH_ACCOUNTS = 24
+TREE_DEPTH_TOKENS = 16
 
 class Account(object):
     def __init__(self, secretKey, publicKey, dexID, token, balance):
@@ -47,6 +49,18 @@ class TradeHistoryLeaf(object):
         self.filled = jAccount["filled"]
         self.cancelled = int(jAccount["cancelled"])
 
+class TokenLeaf(object):
+    def __init__(self, validUntil, tier):
+        self.validUntil = validUntil
+        self.tier = tier
+
+    def hash(self):
+        return (self.validUntil * 256) + self.tier
+
+    def fromJSON(self, jTokenLeaf):
+        self.validUntil = int(jTokenLeaf["validUntil"])
+        self.tier = int(jTokenLeaf["tier"])
+
 class TradeHistoryUpdateData(object):
     def __init__(self, before, after, proof):
         self.before = before
@@ -57,6 +71,11 @@ class AccountUpdateData(object):
     def __init__(self, before, after, proof):
         self.before = before
         self.after = after
+        self.proof = [str(_) for _ in proof]
+
+class TokenCheckData(object):
+    def __init__(self, tokenData, proof):
+        self.tokenData = tokenData
         self.proof = [str(_) for _ in proof]
 
 class Order(object):
@@ -114,8 +133,10 @@ class Ring(object):
 class RingSettlement(object):
     def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
-                 accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA,
-                 accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB):
+                 accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_BA,
+                 accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_BB,
+                 tokenCheckF_A, burnRateF_A, burnFee_A, walletFee_A,
+                 tokenCheckF_B, burnRateF_B, burnFee_B, walletFee_B):
         self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.ring = ring
@@ -127,11 +148,23 @@ class RingSettlement(object):
         self.accountUpdateB_A = accountUpdateB_A
         self.accountUpdateF_A = accountUpdateF_A
         self.accountUpdateF_WA = accountUpdateF_WA
+        self.accountUpdateF_BA = accountUpdateF_BA
 
         self.accountUpdateS_B = accountUpdateS_B
         self.accountUpdateB_B = accountUpdateB_B
         self.accountUpdateF_B = accountUpdateF_B
         self.accountUpdateF_WB = accountUpdateF_WB
+        self.accountUpdateF_BB = accountUpdateF_BB
+
+        self.tokenCheckF_A = tokenCheckF_A
+        self.burnRateF_A = burnRateF_A
+        self.burnFee_A = burnFee_A
+        self.walletFee_A = walletFee_A
+
+        self.tokenCheckF_B = tokenCheckF_B
+        self.burnRateF_B = burnRateF_B
+        self.burnFee_B = burnFee_B
+        self.walletFee_B = walletFee_B
 
 
 class Deposit(object):
@@ -199,6 +232,9 @@ class Dex(object):
         self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
         self._accounts = []
         #print("Empty accounts tree: " + str(self._accountsTree._root))
+        # Tokens
+        self._tokensTree = MerkleTree(1 << 16)
+        self._tokens = []
 
     def loadState(self, filename):
         with open(filename) as f:
@@ -214,6 +250,11 @@ class Dex(object):
                 self._accounts.append(account)
             self._accountsTree._root = data["accounts_root"]
             self._accountsTree._db.kv = data["accounts_tree"]
+            for jTokenLeaf in data["tokens_values"]:
+                token = TokenLeaf(0, 0)
+                token.fromJSON(jTokenLeaf)
+                self._tokens.append(token)
+                self._tokensTree.append(token.hash())
 
     def saveState(self, filename):
         with open(filename, "w") as file:
@@ -225,6 +266,7 @@ class Dex(object):
                     "accounts_values": self._accounts,
                     "accounts_root": self._accountsTree._root,
                     "accounts_tree": self._accountsTree._db.kv,
+                    "tokens_values": self._tokens,
                 }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
     def updateTradeHistory(self, address, fill, cancelled = 0):
@@ -262,6 +304,16 @@ class Dex(object):
         proof.reverse()
         return AccountUpdateData(accountBefore, accountAfter, proof)
 
+    def checkBurnRate(self, address):
+        # Make sure the token exist in the array
+        if address >= len(self._tokens):
+            print("Token doesn't exist: " + str(address))
+
+        tokenData = copy.deepcopy(self._tokens[address])
+        proof = self._tokensTree.proof(address).path
+
+        return TokenCheckData(tokenData, proof)
+
     def settleRing(self, ring):
         addressA = (ring.orderA.accountS << 4) + ring.orderA.orderID
         addressB = (ring.orderB.accountS << 4) + ring.orderB.orderID
@@ -274,22 +326,43 @@ class Dex(object):
         tradeHistoryUpdate_A = self.updateTradeHistory(addressA, ring.fillS_A)
         tradeHistoryUpdate_B = self.updateTradeHistory(addressB, ring.fillS_B)
 
+        # Check burn rates
+        tokenCheckF_A = self.checkBurnRate(ring.orderA.tokenF)
+        tokenCheckF_B = self.checkBurnRate(ring.orderB.tokenF)
+
+        burnRateF_A = 10
+        burnFee_A = (ring.fillF_A * burnRateF_A) // 100
+        walletFee_A = ring.fillF_A - burnFee_A
+
+        burnRateF_B = 10
+        burnFee_B = (ring.fillF_B * burnRateF_B) // 100
+        walletFee_B = ring.fillF_B - burnFee_B
+
+        #print("burnFee_A: " + str(burnFee_A))
+        #print("walletFee_A: " + str(walletFee_A))
+        #print("burnFee_B: " + str(burnFee_B))
+        #print("walletFee_B: " + str(walletFee_B))
+
         # Update balances A
         accountUpdateS_A = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
         accountUpdateB_A = self.updateBalance(ring.orderA.accountB, ring.fillB_A)
         accountUpdateF_A = self.updateBalance(ring.orderA.accountF, -ring.fillF_A)
-        accountUpdateF_WA = self.updateBalance(ring.orderA.walletF, ring.fillF_A)
+        accountUpdateF_WA = self.updateBalance(ring.orderA.walletF, walletFee_A)
+        accountUpdateF_BA = self.updateBalance(ring.orderA.walletF, burnFee_A)
 
         # Update balances B
         accountUpdateS_B = self.updateBalance(ring.orderB.accountS, -ring.fillS_B)
         accountUpdateB_B = self.updateBalance(ring.orderB.accountB, ring.fillB_B)
         accountUpdateF_B = self.updateBalance(ring.orderB.accountF, -ring.fillF_B)
-        accountUpdateF_WB = self.updateBalance(ring.orderB.walletF, ring.fillF_B)
+        accountUpdateF_WB = self.updateBalance(ring.orderB.walletF, walletFee_B)
+        accountUpdateF_BB = self.updateBalance(ring.orderB.walletF, burnFee_B)
 
         return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
-                              accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA,
-                              accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB)
+                              accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_BA,
+                              accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_BB,
+                              tokenCheckF_A, burnRateF_A, burnFee_A, walletFee_A,
+                              tokenCheckF_B, burnRateF_B, burnFee_B, walletFee_B)
 
     def deposit(self, account):
         # Copy the initial merkle root
@@ -340,3 +413,9 @@ class Dex(object):
         cancellation.sign(FQ(int(account.secretKey)))
         return cancellation
 
+    def addToken(self, validUntil, tier):
+        token = TokenLeaf(validUntil, tier)
+        address = self._tokensTree.append(token.hash())
+        self._tokens.append(token)
+
+        print("Tokens tree root: " + str(hex(self._tokensTree.root)))

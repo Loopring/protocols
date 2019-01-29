@@ -29,10 +29,8 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-    await this.registerTokens();
-    // await this.authorizeTradeDelegate();
-    // await this.approveTradeDelegate();
     await this.cleanTradeHistory();
+    await this.registerTokens();
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -521,6 +519,10 @@ export class ExchangeTestUtil {
     for (const token of this.testContext.allTokens) {
       const tx = await this.exchange.registerToken(token.address);
       pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
+
+      const tokensRoot = await this.exchange.getCurrentTokensMerkleRoot();
+      console.log(tokensRoot);
+      childProcess.spawnSync("python3", ["add_token.py"], {stdio: "inherit"});
 
       this.tokenIDMap.set(token.address, (await this.getTokenID(token.address)).toNumber());
     }

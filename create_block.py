@@ -144,6 +144,7 @@ def trade(dex, data):
     export = TradeExport()
     export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
     export.accountsMerkleRootBefore = str(dex._accountsTree._root)
+    export.tokensMerkleRoot = str(dex._tokensTree.root)
 
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, dex)

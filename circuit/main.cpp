@@ -81,7 +81,7 @@ bool generateProof(const ethsnarks::ProtoboardT& pb, const libsnark::r1cs_gg_ppz
     return true;
 }
 
-bool submitRings(Mode mode, unsigned int numRings, const json& input, ethsnarks::ProtoboardT& outPb)
+bool trade(Mode mode, unsigned int numRings, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
     Loopring::TradeCircuitGadget circuit(outPb, "circuit");
@@ -101,6 +101,7 @@ bool submitRings(Mode mode, unsigned int numRings, const json& input, ethsnarks:
         std::string tradingHistoryMerkleRootAfter = input["tradingHistoryMerkleRootAfter"].get<std::string>();
         std::string accountsMerkleRootBefore = input["accountsMerkleRootBefore"].get<std::string>();
         std::string accountsMerkleRootAfter = input["accountsMerkleRootAfter"].get<std::string>();
+        std::string tokensMerkleRoot = input["tokensMerkleRoot"].get<std::string>();
 
         // Read settlements
         std::vector<Loopring::RingSettlement> ringSettlements;
@@ -112,7 +113,8 @@ bool submitRings(Mode mode, unsigned int numRings, const json& input, ethsnarks:
         // Generate witness values for the given input values
         if (!circuit.generateWitness(ringSettlements,
                                      tradingHistoryMerkleRootBefore, tradingHistoryMerkleRootAfter,
-                                     accountsMerkleRootBefore, accountsMerkleRootAfter))
+                                     accountsMerkleRootBefore, accountsMerkleRootAfter,
+                                     tokensMerkleRoot))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return false;
@@ -286,7 +288,7 @@ int main (int argc, char **argv)
     {
         case 0:
         {
-            if (!submitRings(mode, numElements, input, pb))
+            if (!trade(mode, numElements, input, pb))
             {
                 return 1;
             }

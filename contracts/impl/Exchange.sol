@@ -35,6 +35,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     using MathUint          for uint;
     using BytesUtil         for bytes;
     using ERC20SafeTransfer for address;
+    using MerkleTree        for MerkleTree.Data;
 
     uint public MAX_NUM_DEPOSITS_IN_BLOCK       = 32;
 
@@ -420,5 +421,13 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (uint)
     {
         return blocks.length - 1;
+    }
+
+    function getCurrentTokensMerkleRoot()
+        external
+        view
+        returns (bytes32)
+    {
+        return bytes32(tokenMerkleTree.GetRoot());
     }
 }

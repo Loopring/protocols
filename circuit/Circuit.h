@@ -163,7 +163,7 @@ public:
 
     VariableT tokenS;
     VariableT tokenB;
-    VariableT tokenF;
+    libsnark::dual_variable_gadget<FieldT> tokenF;
 
     const jubjub::VariablePointT publicKey;
     const jubjub::VariablePointT walletPublicKey;
@@ -194,7 +194,7 @@ public:
 
         tokenS(make_variable(pb, FMT(annotation_prefix, ".tokenS"))),
         tokenB(make_variable(pb, FMT(annotation_prefix, ".tokenB"))),
-        tokenF(make_variable(pb, FMT(annotation_prefix, ".tokenF"))),
+        tokenF(pb, 16, FMT(annotation_prefix, ".tokenF")),
 
         publicKey(pb, FMT(annotation_prefix, ".publicKey")),
         walletPublicKey(pb, FMT(annotation_prefix, ".walletPublicKey")),
@@ -237,7 +237,8 @@ public:
 
         this->pb.val(tokenS) = order.tokenS;
         this->pb.val(tokenB) = order.tokenB;
-        this->pb.val(tokenF) = order.tokenF;
+        tokenF.bits.fill_with_bits_of_field_element(this->pb, order.tokenF);
+        tokenF.generate_r1cs_witness_from_bits();
 
         this->pb.val(publicKey.x) = order.publicKey.x;
         this->pb.val(publicKey.y) = order.publicKey.y;
@@ -263,6 +264,8 @@ public:
         amountF.generate_r1cs_constraints(true);
         walletF.generate_r1cs_constraints(true);
         padding.generate_r1cs_constraints(true);
+
+        tokenF.generate_r1cs_constraints(true);
 
         signatureVerifier.generate_r1cs_constraints();
     }
@@ -422,6 +425,60 @@ public:
     }
 };
 
+class CheckTokenGadget : public GadgetT
+{
+public:
+    typedef merkle_path_authenticator<MiMC_hash_gadget> MerklePathCheckT;
+
+    const VariableT merkleRoot;
+
+    VariableT validUntil;
+    VariableT tier;
+
+    VariableT leaf;
+
+    const VariableArrayT proof;
+    MerklePathCheckT proofVerifier;
+
+    CheckTokenGadget(
+        ProtoboardT& pb,
+        const VariableT& _merkleRoot,
+        const VariableArrayT& address,
+        const VariableT& _validUntil,
+        const VariableT& _tier,
+        const std::string& annotation_prefix
+    ) :
+        GadgetT(pb, annotation_prefix),
+
+        merkleRoot(_merkleRoot),
+
+        validUntil(_validUntil),
+        tier(_tier),
+
+        leaf(make_variable(pb, FMT(annotation_prefix, ".leaf"))),
+
+        proof(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(annotation_prefix, ".proof"))),
+        proofVerifier(pb, TREE_DEPTH_TOKENS, address, merkle_tree_IVs(pb), leaf, _merkleRoot, proof, FMT(annotation_prefix, ".path"))
+    {
+
+    }
+
+    void generate_r1cs_witness(const Proof& _proof)
+    {
+        pb.val(leaf) = pb.val(validUntil) * 256 + pb.val(tier);
+
+        proof.fill_with_field_elements(pb, _proof.data);
+        proofVerifier.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        pb.add_r1cs_constraint(ConstraintT(validUntil * 256 + tier, 1, leaf), "validUntil * 256 + tier == leaf");
+
+        proofVerifier.generate_r1cs_constraints();
+    }
+};
+
 class RingSettlementGadget : public GadgetT
 {
 public:
@@ -440,18 +497,38 @@ public:
     libsnark::dual_variable_gadget<FieldT> fillB_B;
     libsnark::dual_variable_gadget<FieldT> fillF_B;
 
+    VariableT fillF_WA;
+    VariableT fillF_BA;
+    VariableT fillF_WB;
+    VariableT fillF_BB;
+
+    VariableT burnRateF_A;
+    VariableT validUntilF_A;
+    VariableT tierF_A;
+
+    VariableT burnRateF_B;
+    VariableT validUntilF_B;
+    VariableT tierF_B;
+
+    CheckTokenGadget checkTokenF_A;
+    CheckTokenGadget checkTokenF_B;
+
     VariableT balanceS_A_before;
     VariableT balanceB_A_before;
     VariableT balanceF_A_before;
     VariableT balanceF_WA_before;
+    VariableT balanceF_BA_before;
     VariableT balanceS_B_before;
     VariableT balanceB_B_before;
     VariableT balanceF_B_before;
     VariableT balanceF_WB_before;
+    VariableT balanceF_BB_before;
     subadd_gadget balanceSB_A;
     subadd_gadget balanceSB_B;
-    subadd_gadget balanceF_A;
-    subadd_gadget balanceF_B;
+    subadd_gadget balanceF_WA;
+    subadd_gadget balanceF_BA;
+    subadd_gadget balanceF_WB;
+    subadd_gadget balanceF_BB;
 
     UpdateTradeHistoryGadget updateTradeHistoryA;
     UpdateTradeHistoryGadget updateTradeHistoryB;
@@ -460,10 +537,12 @@ public:
     UpdateAccountGadget updateAccountB_A;
     UpdateAccountGadget updateAccountF_A;
     UpdateAccountGadget updateAccountF_WA;
+    UpdateAccountGadget updateAccountF_BA;
     UpdateAccountGadget updateAccountS_B;
     UpdateAccountGadget updateAccountB_B;
     UpdateAccountGadget updateAccountF_B;
     UpdateAccountGadget updateAccountF_WB;
+    UpdateAccountGadget updateAccountF_BB;
 
     LeqGadget filledLeqA;
     LeqGadget filledLeqB;
@@ -482,6 +561,7 @@ public:
         const jubjub::Params& params,
         const VariableT& _tradingHistoryMerkleRoot,
         const VariableT& _accountsMerkleRoot,
+        const VariableT& _tokensMerkleRoot,
         const std::string& annotation_prefix
     ) :
         GadgetT(pb, annotation_prefix),
@@ -498,18 +578,38 @@ public:
         fillB_B(pb, 96, FMT(annotation_prefix, ".fillB_B")),
         fillF_B(pb, 96, FMT(annotation_prefix, ".fillF_B")),
 
+        fillF_WA(make_variable(pb, FMT(annotation_prefix, ".fillF_WA"))),
+        fillF_BA(make_variable(pb, FMT(annotation_prefix, ".fillF_BA"))),
+        fillF_WB(make_variable(pb, FMT(annotation_prefix, ".fillF_WB"))),
+        fillF_BB(make_variable(pb, FMT(annotation_prefix, ".fillF_BB"))),
+
+        burnRateF_A(make_variable(pb, FMT(annotation_prefix, ".burnRateF_A"))),
+        validUntilF_A(make_variable(pb, FMT(annotation_prefix, ".validUntilF_A"))),
+        tierF_A(make_variable(pb, FMT(annotation_prefix, ".tierF_A"))),
+
+        burnRateF_B(make_variable(pb, FMT(annotation_prefix, ".burnRateF_B"))),
+        validUntilF_B(make_variable(pb, FMT(annotation_prefix, ".validUntilF_B"))),
+        tierF_B(make_variable(pb, FMT(annotation_prefix, ".tierF_B"))),
+
+        checkTokenF_A(pb, _tokensMerkleRoot, orderA.tokenF.bits, validUntilF_A, tierF_A, FMT(annotation_prefix, ".checkTokenF_A")),
+        checkTokenF_B(pb, _tokensMerkleRoot, orderB.tokenF.bits, validUntilF_B, tierF_B, FMT(annotation_prefix, ".checkTokenF_B")),
+
         balanceS_A_before(make_variable(pb, FMT(annotation_prefix, ".balanceS_A_before"))),
         balanceB_A_before(make_variable(pb, FMT(annotation_prefix, ".balanceB_A_before"))),
         balanceF_A_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_A_before"))),
         balanceF_WA_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_WA_before"))),
+        balanceF_BA_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_BA_before"))),
         balanceS_B_before(make_variable(pb, FMT(annotation_prefix, ".balanceS_B_before"))),
         balanceB_B_before(make_variable(pb, FMT(annotation_prefix, ".balanceB_B_before"))),
         balanceF_B_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_B_before"))),
         balanceF_WB_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_WB_before"))),
+        balanceF_BB_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_BB_before"))),
         balanceSB_A(pb, 96, balanceS_A_before, balanceB_B_before, fillS_A.packed, FMT(annotation_prefix, ".balanceSB_A")),
         balanceSB_B(pb, 96, balanceS_B_before, balanceB_A_before, fillS_B.packed, FMT(annotation_prefix, ".balanceSB_B")),
-        balanceF_A(pb, 96, balanceF_A_before, balanceF_WA_before, fillF_A.packed, FMT(annotation_prefix, ".balanceF_A")),
-        balanceF_B(pb, 96, balanceF_B_before, balanceF_WB_before, fillF_B.packed, FMT(annotation_prefix, ".balanceF_B")),
+        balanceF_WA(pb, 96, balanceF_A_before, balanceF_WA_before, fillF_WA, FMT(annotation_prefix, ".balanceF_WA")),
+        balanceF_BA(pb, 96, balanceF_WA.X, balanceF_BA_before, fillF_BA, FMT(annotation_prefix, ".balanceF_BA")),
+        balanceF_WB(pb, 96, balanceF_B_before, balanceF_WB_before, fillF_WB, FMT(annotation_prefix, ".balanceF_WB")),
+        balanceF_BB(pb, 96, balanceF_WB.X, balanceF_BB_before, fillF_BB, FMT(annotation_prefix, ".balanceF_BB")),
 
         tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
         updateTradeHistoryA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}), FMT(annotation_prefix, ".updateTradeHistoryA")),
@@ -518,12 +618,15 @@ public:
         accountsMerkleRoot(_accountsMerkleRoot),
         updateAccountS_A(pb, accountsMerkleRoot,        orderA.accountS.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenS, balanceS_A_before, balanceSB_A.X, FMT(annotation_prefix, ".updateAccountS_A")),
         updateAccountB_A(pb, updateAccountS_A.result(), orderA.accountB.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenB, balanceB_A_before, balanceSB_B.Y, FMT(annotation_prefix, ".updateAccountB_A")),
-        updateAccountF_A(pb, updateAccountB_A.result(), orderA.accountF.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenF, balanceF_A_before, balanceF_A.X, FMT(annotation_prefix, ".updateAccountF_A")),
-        updateAccountF_WA(pb, updateAccountF_A.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF, balanceF_WA_before, balanceF_A.Y, FMT(annotation_prefix, ".updateAccountF_WA")),
-        updateAccountS_B(pb, updateAccountF_WA.result(), orderB.accountS.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenS, balanceS_B_before, balanceSB_B.X, FMT(annotation_prefix, ".updateAccountS_B")),
+        updateAccountF_A(pb, updateAccountB_A.result(), orderA.accountF.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_A_before, balanceF_BA.X, FMT(annotation_prefix, ".updateAccountF_A")),
+        updateAccountF_WA(pb, updateAccountF_A.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_WA_before, balanceF_WA.Y, FMT(annotation_prefix, ".updateAccountF_WA")),
+        updateAccountF_BA(pb, updateAccountF_WA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_BA_before, balanceF_BA.Y, FMT(annotation_prefix, ".updateAccountF_BA")),
+
+        updateAccountS_B(pb, updateAccountF_BA.result(), orderB.accountS.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenS, balanceS_B_before, balanceSB_B.X, FMT(annotation_prefix, ".updateAccountS_B")),
         updateAccountB_B(pb, updateAccountS_B.result(), orderB.accountB.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenB, balanceB_B_before, balanceSB_A.Y, FMT(annotation_prefix, ".updateAccountB_B")),
-        updateAccountF_B(pb, updateAccountB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenF, balanceF_B_before, balanceF_B.X, FMT(annotation_prefix, ".updateAccountF_B")),
-        updateAccountF_WB(pb, updateAccountF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF, balanceF_WB_before, balanceF_B.Y, FMT(annotation_prefix, ".updateAccountF_WB")),
+        updateAccountF_B(pb, updateAccountB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_B_before, balanceF_BB.X, FMT(annotation_prefix, ".updateAccountF_B")),
+        updateAccountF_WB(pb, updateAccountF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_WB_before, balanceF_WB.Y, FMT(annotation_prefix, ".updateAccountF_WB")),
+        updateAccountF_BB(pb, updateAccountF_WB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_BB_before, balanceF_BB.Y, FMT(annotation_prefix, ".updateAccountF_BB")),
 
         filledLeqA(pb, updateTradeHistoryA.getFilledAfter(), orderA.amountS.packed, FMT(annotation_prefix, ".filled_A <= .amountSA")),
         filledLeqB(pb, updateTradeHistoryB.getFilledAfter(), orderB.amountS.packed, FMT(annotation_prefix, ".filled_B <= .amountSB")),
@@ -547,7 +650,7 @@ public:
 
     const VariableT getNewAccountsMerkleRoot() const
     {
-        return updateAccountF_WB.result();
+        return updateAccountF_BB.result();
     }
 
     const std::vector<VariableArrayT> getPublicData() const
@@ -581,18 +684,39 @@ public:
         fillF_B.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillF_B);
         fillF_B.generate_r1cs_witness_from_bits();
 
+        this->pb.val(fillF_WA) = ringSettlement.walletFee_A;
+        this->pb.val(fillF_BA) = ringSettlement.burnFee_A;
+        this->pb.val(fillF_WB) = ringSettlement.walletFee_B;
+        this->pb.val(fillF_BB) = ringSettlement.burnFee_B;
+
+        this->pb.val(burnRateF_A) = ringSettlement.burnRateF_A;
+        this->pb.val(validUntilF_A) = ringSettlement.tokenCheckF_A.tokenData.validUntil;
+        this->pb.val(tierF_A) = ringSettlement.tokenCheckF_A.tokenData.tier;
+
+        this->pb.val(burnRateF_B) = ringSettlement.burnRateF_B;
+        this->pb.val(validUntilF_B) = ringSettlement.tokenCheckF_B.tokenData.validUntil;
+        this->pb.val(tierF_B) = ringSettlement.tokenCheckF_B.tokenData.tier;
+
+        checkTokenF_A.generate_r1cs_witness(ringSettlement.tokenCheckF_A.proof);
+        checkTokenF_B.generate_r1cs_witness(ringSettlement.tokenCheckF_B.proof);
+
         this->pb.val(balanceS_A_before) = ringSettlement.accountUpdateS_A.before.balance;
         this->pb.val(balanceB_A_before) = ringSettlement.accountUpdateB_A.before.balance;
         this->pb.val(balanceF_A_before) = ringSettlement.accountUpdateF_A.before.balance;
         this->pb.val(balanceF_WA_before) = ringSettlement.accountUpdateF_WA.before.balance;
+        this->pb.val(balanceF_BA_before) = ringSettlement.accountUpdateF_BA.before.balance;
         this->pb.val(balanceS_B_before) = ringSettlement.accountUpdateS_B.before.balance;
         this->pb.val(balanceB_B_before) = ringSettlement.accountUpdateB_B.before.balance;
         this->pb.val(balanceF_B_before) = ringSettlement.accountUpdateF_B.before.balance;
         this->pb.val(balanceF_WB_before) = ringSettlement.accountUpdateF_WB.before.balance;
+        this->pb.val(balanceF_BB_before) = ringSettlement.accountUpdateF_BB.before.balance;
+
         balanceSB_A.generate_r1cs_witness();
         balanceSB_B.generate_r1cs_witness();
-        balanceF_A.generate_r1cs_witness();
-        balanceF_B.generate_r1cs_witness();
+        balanceF_WA.generate_r1cs_witness();
+        balanceF_BA.generate_r1cs_witness();
+        balanceF_WB.generate_r1cs_witness();
+        balanceF_BB.generate_r1cs_witness();
 
         //
         // Update trading history
@@ -613,10 +737,12 @@ public:
         updateAccountB_A.generate_r1cs_witness(ringSettlement.accountUpdateB_A.proof);
         updateAccountF_A.generate_r1cs_witness(ringSettlement.accountUpdateF_A.proof);
         updateAccountF_WA.generate_r1cs_witness(ringSettlement.accountUpdateF_WA.proof);
+        updateAccountF_BA.generate_r1cs_witness(ringSettlement.accountUpdateF_BA.proof);
         updateAccountS_B.generate_r1cs_witness(ringSettlement.accountUpdateS_B.proof);
         updateAccountB_B.generate_r1cs_witness(ringSettlement.accountUpdateB_B.proof);
         updateAccountF_B.generate_r1cs_witness(ringSettlement.accountUpdateF_B.proof);
         updateAccountF_WB.generate_r1cs_witness(ringSettlement.accountUpdateF_WB.proof);
+        updateAccountF_BB.generate_r1cs_witness(ringSettlement.accountUpdateF_BB.proof);
 
         //
         // Matching
@@ -646,10 +772,24 @@ public:
         fillB_B.generate_r1cs_constraints(true);
         fillF_B.generate_r1cs_constraints(true);
 
+        checkTokenF_A.generate_r1cs_constraints();
+        checkTokenF_B.generate_r1cs_constraints();
+
         balanceSB_A.generate_r1cs_constraints();
         balanceSB_B.generate_r1cs_constraints();
-        balanceF_A.generate_r1cs_constraints();
-        balanceF_B.generate_r1cs_constraints();
+        balanceF_WA.generate_r1cs_constraints();
+        balanceF_BA.generate_r1cs_constraints();
+        balanceF_WB.generate_r1cs_constraints();
+        balanceF_BB.generate_r1cs_constraints();
+
+        //
+        // Check burnrate
+        //
+
+        pb.add_r1cs_constraint(ConstraintT(fillF_WA + fillF_BA, 1, fillF_A.packed), "fillF_WA + fillF_BA == fillF_A");
+        pb.add_r1cs_constraint(ConstraintT(fillF_A.packed, burnRateF_A, fillF_BA * 100), "fillF_A * burnRateF_A == fillF_BA");
+        pb.add_r1cs_constraint(ConstraintT(fillF_WB + fillF_BB, 1, fillF_B.packed), "fillF_WB + fillF_BB == fillF_B");
+        pb.add_r1cs_constraint(ConstraintT(fillF_B.packed, burnRateF_B, fillF_BB * 100), "fillF_B * burnRateF_B == fillF_BB");
 
 
         //
@@ -670,10 +810,12 @@ public:
         updateAccountB_A.generate_r1cs_constraints();
         updateAccountF_A.generate_r1cs_constraints();
         updateAccountF_WA.generate_r1cs_constraints();
+        updateAccountF_BA.generate_r1cs_constraints();
         updateAccountS_B.generate_r1cs_constraints();
         updateAccountB_B.generate_r1cs_constraints();
         updateAccountF_B.generate_r1cs_constraints();
         updateAccountF_WB.generate_r1cs_constraints();
+        updateAccountF_BB.generate_r1cs_constraints();
 
         //
         // Matching
@@ -708,6 +850,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootAfter;
     libsnark::dual_variable_gadget<FieldT> accountsMerkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> accountsMerkleRootAfter;
+    VariableT tokensMerkleRoot;
 
     std::vector<VariableArrayT> publicDataBits;
     VariableArrayT publicData;
@@ -722,7 +865,8 @@ public:
         tradingHistoryMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootBefore")),
         tradingHistoryMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootAfter")),
         accountsMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootBefore")),
-        accountsMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootAfter"))
+        accountsMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootAfter")),
+        tokensMerkleRoot(make_variable(pb, FMT(annotation_prefix, ".tokensMerkleRoot")))
     {
         this->publicDataHasher = nullptr;
     }
@@ -750,7 +894,7 @@ public:
         {
             VariableT ringTradingHistoryMerkleRoot = (j == 0) ? tradingHistoryMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
             VariableT ringAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
-            ringSettlements.emplace_back(pb, params, ringTradingHistoryMerkleRoot, ringAccountsMerkleRoot, "ringSettlement");
+            ringSettlements.emplace_back(pb, params, ringTradingHistoryMerkleRoot, ringAccountsMerkleRoot, tokensMerkleRoot, std::string("trade") + std::to_string(j));
 
             // Store transfers from ring settlement
             std::vector<VariableArrayT> ringPublicData = ringSettlements.back().getPublicData();
@@ -786,7 +930,8 @@ public:
 
     bool generateWitness(const std::vector<Loopring::RingSettlement>& ringSettlementsData,
                          const std::string& strTradingHistoryMerkleRootBefore, const std::string& strTradingHistoryMerkleRootAfter,
-                         const std::string& strAccountsMerkleRootBefore, const std::string& strAccountsMerkleRootAfter)
+                         const std::string& strAccountsMerkleRootBefore, const std::string& strAccountsMerkleRootAfter,
+                         const std::string& strTokensMerkleRoot)
     {
         ethsnarks::FieldT tradingHistoryMerkleRootBeforeValue = ethsnarks::FieldT(strTradingHistoryMerkleRootBefore.c_str());
         ethsnarks::FieldT tradingHistoryMerkleRootAfterValue = ethsnarks::FieldT(strTradingHistoryMerkleRootAfter.c_str());
@@ -801,6 +946,8 @@ public:
         accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
         accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootAfterValue);
         accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
+
+        this->pb.val(tokensMerkleRoot) = ethsnarks::FieldT(strTokensMerkleRoot.c_str());
 
         for(unsigned int i = 0; i < ringSettlementsData.size(); i++)
         {
