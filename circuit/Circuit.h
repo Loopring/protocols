@@ -183,18 +183,18 @@ public:
 
         dexID(pb, 16, FMT(annotation_prefix, ".dexID")),
         orderID(pb, 4, FMT(annotation_prefix, ".orderID")),
-        accountS(pb, 24, FMT(annotation_prefix, ".accountS")),
-        accountB(pb, 24, FMT(annotation_prefix, ".accountB")),
-        accountF(pb, 24, FMT(annotation_prefix, ".accountF")),
+        accountS(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".accountS")),
+        accountB(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".accountB")),
+        accountF(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".accountF")),
         amountS(pb, 96, FMT(annotation_prefix, ".amountS")),
         amountB(pb, 96, FMT(annotation_prefix, ".amountB")),
         amountF(pb, 96, FMT(annotation_prefix, ".amountF")),
-        walletF(pb, 24, FMT(annotation_prefix, ".walletF")),
+        walletF(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".walletF")),
         padding(pb, 1, FMT(annotation_prefix, ".padding")),
 
         tokenS(make_variable(pb, FMT(annotation_prefix, ".tokenS"))),
         tokenB(make_variable(pb, FMT(annotation_prefix, ".tokenB"))),
-        tokenF(pb, 16, FMT(annotation_prefix, ".tokenF")),
+        tokenF(pb, TREE_DEPTH_TOKENS, FMT(annotation_prefix, ".tokenF")),
 
         publicKey(pb, FMT(annotation_prefix, ".publicKey")),
         walletPublicKey(pb, FMT(annotation_prefix, ".walletPublicKey")),
@@ -210,45 +210,45 @@ public:
 
     void generate_r1cs_witness(const Order& order)
     {
-        dexID.bits.fill_with_bits_of_field_element(this->pb, order.dexID);
+        dexID.bits.fill_with_bits_of_field_element(pb, order.dexID);
         dexID.generate_r1cs_witness_from_bits();
-        orderID.bits.fill_with_bits_of_field_element(this->pb, order.orderID);
+        orderID.bits.fill_with_bits_of_field_element(pb, order.orderID);
         orderID.generate_r1cs_witness_from_bits();
 
-        accountS.bits.fill_with_bits_of_field_element(this->pb, order.accountS);
+        accountS.bits.fill_with_bits_of_field_element(pb, order.accountS);
         accountS.generate_r1cs_witness_from_bits();
-        accountB.bits.fill_with_bits_of_field_element(this->pb, order.accountB);
+        accountB.bits.fill_with_bits_of_field_element(pb, order.accountB);
         accountB.generate_r1cs_witness_from_bits();
-        accountF.bits.fill_with_bits_of_field_element(this->pb, order.accountF);
+        accountF.bits.fill_with_bits_of_field_element(pb, order.accountF);
         accountF.generate_r1cs_witness_from_bits();
 
-        amountS.bits.fill_with_bits_of_field_element(this->pb, order.amountS);
+        amountS.bits.fill_with_bits_of_field_element(pb, order.amountS);
         amountS.generate_r1cs_witness_from_bits();
-        amountB.bits.fill_with_bits_of_field_element(this->pb, order.amountB);
+        amountB.bits.fill_with_bits_of_field_element(pb, order.amountB);
         amountB.generate_r1cs_witness_from_bits();
-        amountF.bits.fill_with_bits_of_field_element(this->pb, order.amountF);
+        amountF.bits.fill_with_bits_of_field_element(pb, order.amountF);
         amountF.generate_r1cs_witness_from_bits();
 
-        walletF.bits.fill_with_bits_of_field_element(this->pb, order.walletF);
+        walletF.bits.fill_with_bits_of_field_element(pb, order.walletF);
         walletF.generate_r1cs_witness_from_bits();
 
-        padding.bits.fill_with_bits_of_field_element(this->pb, 0);
+        padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        this->pb.val(tokenS) = order.tokenS;
-        this->pb.val(tokenB) = order.tokenB;
-        tokenF.bits.fill_with_bits_of_field_element(this->pb, order.tokenF);
+        pb.val(tokenS) = order.tokenS;
+        pb.val(tokenB) = order.tokenB;
+        tokenF.bits.fill_with_bits_of_field_element(pb, order.tokenF);
         tokenF.generate_r1cs_witness_from_bits();
 
-        this->pb.val(publicKey.x) = order.publicKey.x;
-        this->pb.val(publicKey.y) = order.publicKey.y;
+        pb.val(publicKey.x) = order.publicKey.x;
+        pb.val(publicKey.y) = order.publicKey.y;
 
-        this->pb.val(walletPublicKey.x) = order.walletPublicKey.x;
-        this->pb.val(walletPublicKey.y) = order.walletPublicKey.y;
+        pb.val(walletPublicKey.x) = order.walletPublicKey.x;
+        pb.val(walletPublicKey.y) = order.walletPublicKey.y;
 
-        this->pb.val(sig_R.x) = order.sig.R.x;
-        this->pb.val(sig_R.y) = order.sig.R.y;
-        sig_s.fill_with_bits_of_field_element(this->pb, order.sig.s);
+        pb.val(sig_R.x) = order.sig.R.x;
+        pb.val(sig_R.y) = order.sig.R.y;
+        sig_s.fill_with_bits_of_field_element(pb, order.sig.s);
         signatureVerifier.generate_r1cs_witness();
     }
 
@@ -334,23 +334,23 @@ public:
 
     void generate_r1cs_witness(const TradeHistoryUpdate& tradeHistoryUpdate)
     {
-        this->pb.val(filledBefore) = tradeHistoryUpdate.before.filled;
-        this->pb.val(cancelledBefore) = tradeHistoryUpdate.before.cancelled;
+        pb.val(filledBefore) = tradeHistoryUpdate.before.filled;
+        pb.val(cancelledBefore) = tradeHistoryUpdate.before.cancelled;
 
-        this->pb.val(filledAfter) = tradeHistoryUpdate.after.filled;
-        this->pb.val(cancelledAfter) = tradeHistoryUpdate.after.cancelled;
+        pb.val(filledAfter) = tradeHistoryUpdate.after.filled;
+        pb.val(cancelledAfter) = tradeHistoryUpdate.after.cancelled;
 
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
 
-        proof.fill_with_field_elements(this->pb, tradeHistoryUpdate.proof.data);
+        proof.fill_with_field_elements(pb, tradeHistoryUpdate.proof.data);
         proofVerifierBefore.generate_r1cs_witness();
         rootCalculatorAfter.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints(const VariableT& fill)
     {
-        this->pb.add_r1cs_constraint(ConstraintT(filledBefore + fill, 1, filledAfter), "filledBefore + fill = filledAfter");
+        pb.add_r1cs_constraint(ConstraintT(filledBefore + fill, 1, filledAfter), "filledBefore + fill = filledAfter");
 
         leafBefore.generate_r1cs_constraints();
         leafAfter.generate_r1cs_constraints();
@@ -410,7 +410,7 @@ public:
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
 
-        proof.fill_with_field_elements(this->pb, _proof.data);
+        proof.fill_with_field_elements(pb, _proof.data);
         proofVerifierBefore.generate_r1cs_witness();
         rootCalculatorAfter.generate_r1cs_witness();
     }
@@ -669,47 +669,47 @@ public:
         orderA.generate_r1cs_witness(ringSettlement.ring.orderA);
         orderB.generate_r1cs_witness(ringSettlement.ring.orderB);
 
-        orderIDPadding.fill_with_bits_of_ulong(this->pb, 0);
+        orderIDPadding.fill_with_bits_of_ulong(pb, 0);
 
-        fillS_A.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillS_A);
+        fillS_A.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillS_A);
         fillS_A.generate_r1cs_witness_from_bits();
-        fillB_A.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillB_A);
+        fillB_A.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillB_A);
         fillB_A.generate_r1cs_witness_from_bits();
-        fillF_A.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillF_A);
+        fillF_A.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillF_A);
         fillF_A.generate_r1cs_witness_from_bits();
-        fillS_B.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillS_B);
+        fillS_B.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillS_B);
         fillS_B.generate_r1cs_witness_from_bits();
-        fillB_B.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillB_B);
+        fillB_B.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillB_B);
         fillB_B.generate_r1cs_witness_from_bits();
-        fillF_B.bits.fill_with_bits_of_field_element(this->pb, ringSettlement.ring.fillF_B);
+        fillF_B.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillF_B);
         fillF_B.generate_r1cs_witness_from_bits();
 
-        this->pb.val(fillF_WA) = ringSettlement.walletFee_A;
-        this->pb.val(fillF_BA) = ringSettlement.burnFee_A;
-        this->pb.val(fillF_WB) = ringSettlement.walletFee_B;
-        this->pb.val(fillF_BB) = ringSettlement.burnFee_B;
+        pb.val(fillF_WA) = ringSettlement.walletFee_A;
+        pb.val(fillF_BA) = ringSettlement.burnFee_A;
+        pb.val(fillF_WB) = ringSettlement.walletFee_B;
+        pb.val(fillF_BB) = ringSettlement.burnFee_B;
 
-        this->pb.val(burnRateF_A) = ringSettlement.burnRateF_A;
-        this->pb.val(validUntilF_A) = ringSettlement.tokenCheckF_A.tokenData.validUntil;
-        this->pb.val(tierF_A) = ringSettlement.tokenCheckF_A.tokenData.tier;
+        pb.val(burnRateF_A) = ringSettlement.burnRateF_A;
+        pb.val(validUntilF_A) = ringSettlement.tokenCheckF_A.tokenData.validUntil;
+        pb.val(tierF_A) = ringSettlement.tokenCheckF_A.tokenData.tier;
 
-        this->pb.val(burnRateF_B) = ringSettlement.burnRateF_B;
-        this->pb.val(validUntilF_B) = ringSettlement.tokenCheckF_B.tokenData.validUntil;
-        this->pb.val(tierF_B) = ringSettlement.tokenCheckF_B.tokenData.tier;
+        pb.val(burnRateF_B) = ringSettlement.burnRateF_B;
+        pb.val(validUntilF_B) = ringSettlement.tokenCheckF_B.tokenData.validUntil;
+        pb.val(tierF_B) = ringSettlement.tokenCheckF_B.tokenData.tier;
 
         checkTokenF_A.generate_r1cs_witness(ringSettlement.tokenCheckF_A.proof);
         checkTokenF_B.generate_r1cs_witness(ringSettlement.tokenCheckF_B.proof);
 
-        this->pb.val(balanceS_A_before) = ringSettlement.accountUpdateS_A.before.balance;
-        this->pb.val(balanceB_A_before) = ringSettlement.accountUpdateB_A.before.balance;
-        this->pb.val(balanceF_A_before) = ringSettlement.accountUpdateF_A.before.balance;
-        this->pb.val(balanceF_WA_before) = ringSettlement.accountUpdateF_WA.before.balance;
-        this->pb.val(balanceF_BA_before) = ringSettlement.accountUpdateF_BA.before.balance;
-        this->pb.val(balanceS_B_before) = ringSettlement.accountUpdateS_B.before.balance;
-        this->pb.val(balanceB_B_before) = ringSettlement.accountUpdateB_B.before.balance;
-        this->pb.val(balanceF_B_before) = ringSettlement.accountUpdateF_B.before.balance;
-        this->pb.val(balanceF_WB_before) = ringSettlement.accountUpdateF_WB.before.balance;
-        this->pb.val(balanceF_BB_before) = ringSettlement.accountUpdateF_BB.before.balance;
+        pb.val(balanceS_A_before) = ringSettlement.accountUpdateS_A.before.balance;
+        pb.val(balanceB_A_before) = ringSettlement.accountUpdateB_A.before.balance;
+        pb.val(balanceF_A_before) = ringSettlement.accountUpdateF_A.before.balance;
+        pb.val(balanceF_WA_before) = ringSettlement.accountUpdateF_WA.before.balance;
+        pb.val(balanceF_BA_before) = ringSettlement.accountUpdateF_BA.before.balance;
+        pb.val(balanceS_B_before) = ringSettlement.accountUpdateS_B.before.balance;
+        pb.val(balanceB_B_before) = ringSettlement.accountUpdateB_B.before.balance;
+        pb.val(balanceF_B_before) = ringSettlement.accountUpdateF_B.before.balance;
+        pb.val(balanceF_WB_before) = ringSettlement.accountUpdateF_WB.before.balance;
+        pb.val(balanceF_BB_before) = ringSettlement.accountUpdateF_BB.before.balance;
 
         balanceSB_A.generate_r1cs_witness();
         balanceSB_B.generate_r1cs_witness();
@@ -722,7 +722,7 @@ public:
         // Update trading history
         //
 
-        this->pb.val(tradingHistoryMerkleRoot) = ringSettlement.tradingHistoryMerkleRoot;
+        pb.val(tradingHistoryMerkleRoot) = ringSettlement.tradingHistoryMerkleRoot;
         updateTradeHistoryA.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_A);
         updateTradeHistoryB.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_B);
 
@@ -935,19 +935,19 @@ public:
     {
         ethsnarks::FieldT tradingHistoryMerkleRootBeforeValue = ethsnarks::FieldT(strTradingHistoryMerkleRootBefore.c_str());
         ethsnarks::FieldT tradingHistoryMerkleRootAfterValue = ethsnarks::FieldT(strTradingHistoryMerkleRootAfter.c_str());
-        tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, tradingHistoryMerkleRootBeforeValue);
+        tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, tradingHistoryMerkleRootBeforeValue);
         tradingHistoryMerkleRootBefore.generate_r1cs_witness_from_bits();
-        tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, tradingHistoryMerkleRootAfterValue);
+        tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, tradingHistoryMerkleRootAfterValue);
         tradingHistoryMerkleRootAfter.generate_r1cs_witness_from_bits();
 
         ethsnarks::FieldT accountsMerkleRootBeforeValue = ethsnarks::FieldT(strAccountsMerkleRootBefore.c_str());
         ethsnarks::FieldT accountsMerkleRootAfterValue = ethsnarks::FieldT(strAccountsMerkleRootAfter.c_str());
-        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootBeforeValue);
+        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootBeforeValue);
         accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
-        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootAfterValue);
+        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootAfterValue);
         accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
 
-        this->pb.val(tokensMerkleRoot) = ethsnarks::FieldT(strTokensMerkleRoot.c_str());
+        pb.val(tokensMerkleRoot) = ethsnarks::FieldT(strTokensMerkleRoot.c_str());
 
         for(unsigned int i = 0; i < ringSettlementsData.size(); i++)
         {
@@ -1054,23 +1054,23 @@ public:
 
     void generate_r1cs_witness(const Deposit& deposit)
     {
-        address.fill_with_bits_of_field_element(this->pb, deposit.address);
+        address.fill_with_bits_of_field_element(pb, deposit.address);
 
-        publicKeyX.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.publicKey.x);
+        publicKeyX.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.x);
         publicKeyX.generate_r1cs_witness_from_bits();
-        publicKeyY.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.publicKey.y);
+        publicKeyY.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.y);
         publicKeyY.generate_r1cs_witness_from_bits();
-        dex.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.dexID);
+        dex.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.dexID);
         dex.generate_r1cs_witness_from_bits();
-        token.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.token);
+        token.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.token);
         token.generate_r1cs_witness_from_bits();
-        balance.bits.fill_with_bits_of_field_element(this->pb, deposit.accountUpdate.after.balance);
+        balance.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.balance);
         balance.generate_r1cs_witness_from_bits();
 
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
 
-        proof.fill_with_field_elements(this->pb, deposit.accountUpdate.proof.data);
+        proof.fill_with_field_elements(pb, deposit.accountUpdate.proof.data);
         proofVerifierBefore.generate_r1cs_witness();
         rootCalculatorAfter.generate_r1cs_witness();
     }
@@ -1182,9 +1182,9 @@ public:
     {
         ethsnarks::FieldT accountsMerkleRootBeforeValue = ethsnarks::FieldT(strAccountsMerkleRootBefore.c_str());
         ethsnarks::FieldT accountsMerkleRootAfterValue = ethsnarks::FieldT(strAccountsMerkleRootAfter.c_str());
-        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootBeforeValue);
+        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootBeforeValue);
         accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
-        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootAfterValue);
+        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootAfterValue);
         accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
 
         for(unsigned int i = 0; i < depositsData.size(); i++)
@@ -1288,27 +1288,27 @@ public:
 
     void generate_r1cs_witness(const Withdrawal& withdrawal)
     {
-        this->pb.val(publicKey.x) = withdrawal.publicKey.x;
-        this->pb.val(publicKey.y) = withdrawal.publicKey.y;
+        pb.val(publicKey.x) = withdrawal.publicKey.x;
+        pb.val(publicKey.y) = withdrawal.publicKey.y;
 
-        account.fill_with_bits_of_field_element(this->pb, withdrawal.account);
+        account.fill_with_bits_of_field_element(pb, withdrawal.account);
 
-        amount.bits.fill_with_bits_of_field_element(this->pb, withdrawal.amount);
+        amount.bits.fill_with_bits_of_field_element(pb, withdrawal.amount);
         amount.generate_r1cs_witness_from_bits();
 
-        padding.bits.fill_with_bits_of_field_element(this->pb, 0);
+        padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        this->pb.val(dex) = withdrawal.accountUpdate.before.dexID;
-        this->pb.val(token) = withdrawal.accountUpdate.before.token;
-        this->pb.val(balance_before) = withdrawal.accountUpdate.before.balance;
-        this->pb.val(balance_after) = withdrawal.accountUpdate.after.balance;
+        pb.val(dex) = withdrawal.accountUpdate.before.dexID;
+        pb.val(token) = withdrawal.accountUpdate.before.token;
+        pb.val(balance_before) = withdrawal.accountUpdate.before.balance;
+        pb.val(balance_after) = withdrawal.accountUpdate.after.balance;
 
         updateAccount.generate_r1cs_witness(withdrawal.accountUpdate.proof);
 
-        this->pb.val(sig_R.x) = withdrawal.sig.R.x;
-        this->pb.val(sig_R.y) = withdrawal.sig.R.y;
-        sig_s.fill_with_bits_of_field_element(this->pb, withdrawal.sig.s);
+        pb.val(sig_R.x) = withdrawal.sig.R.x;
+        pb.val(sig_R.y) = withdrawal.sig.R.y;
+        sig_s.fill_with_bits_of_field_element(pb, withdrawal.sig.s);
         signatureVerifier.generate_r1cs_witness();
     }
 
@@ -1408,9 +1408,9 @@ public:
     {
         ethsnarks::FieldT accountsMerkleRootBeforeValue = ethsnarks::FieldT(strAccountsMerkleRootBefore.c_str());
         ethsnarks::FieldT accountsMerkleRootAfterValue = ethsnarks::FieldT(strAccountsMerkleRootAfter.c_str());
-        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootBeforeValue);
+        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootBeforeValue);
         accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
-        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootAfterValue);
+        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootAfterValue);
         accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
 
         for(unsigned int i = 0; i < withdrawalsData.size(); i++)
@@ -1516,26 +1516,26 @@ public:
 
     void generate_r1cs_witness(const Cancellation& cancellation)
     {
-        this->pb.val(publicKey.x) = cancellation.publicKey.x;
-        this->pb.val(publicKey.y) = cancellation.publicKey.y;
+        pb.val(publicKey.x) = cancellation.publicKey.x;
+        pb.val(publicKey.y) = cancellation.publicKey.y;
 
-        account.fill_with_bits_of_field_element(this->pb, cancellation.account);
-        orderID.fill_with_bits_of_field_element(this->pb, cancellation.orderID);
+        account.fill_with_bits_of_field_element(pb, cancellation.account);
+        orderID.fill_with_bits_of_field_element(pb, cancellation.orderID);
 
-        padding.bits.fill_with_bits_of_field_element(this->pb, 0);
+        padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        this->pb.val(dex) = cancellation.accountUpdate.before.dexID;
-        this->pb.val(token) = cancellation.accountUpdate.before.token;
-        this->pb.val(balance) = cancellation.accountUpdate.before.balance;
+        pb.val(dex) = cancellation.accountUpdate.before.dexID;
+        pb.val(token) = cancellation.accountUpdate.before.token;
+        pb.val(balance) = cancellation.accountUpdate.before.balance;
 
         updateTradeHistory.generate_r1cs_witness(cancellation.tradeHistoryUpdate);
 
         checkAccount.generate_r1cs_witness(cancellation.accountUpdate.proof);
 
-        this->pb.val(sig_R.x) = cancellation.sig.R.x;
-        this->pb.val(sig_R.y) = cancellation.sig.R.y;
-        sig_s.fill_with_bits_of_field_element(this->pb, cancellation.sig.s);
+        pb.val(sig_R.x) = cancellation.sig.R.x;
+        pb.val(sig_R.y) = cancellation.sig.R.y;
+        sig_s.fill_with_bits_of_field_element(pb, cancellation.sig.s);
         signatureVerifier.generate_r1cs_witness();
     }
 
@@ -1636,13 +1636,13 @@ public:
     {
         ethsnarks::FieldT tradingHistoryMerkleRootBeforeValue = ethsnarks::FieldT(strTradingHistoryMerkleRootBefore.c_str());
         ethsnarks::FieldT tradingHistoryMerkleRootAfterValue = ethsnarks::FieldT(strTradingHistoryMerkleRootAfter.c_str());
-        tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(this->pb, tradingHistoryMerkleRootBeforeValue);
+        tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, tradingHistoryMerkleRootBeforeValue);
         tradingHistoryMerkleRootBefore.generate_r1cs_witness_from_bits();
-        tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(this->pb, tradingHistoryMerkleRootAfterValue);
+        tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, tradingHistoryMerkleRootAfterValue);
         tradingHistoryMerkleRootAfter.generate_r1cs_witness_from_bits();
 
         ethsnarks::FieldT accountsMerkleRootValue = ethsnarks::FieldT(strAccountsMerkleRoot.c_str());
-        accountsMerkleRoot.bits.fill_with_bits_of_field_element(this->pb, accountsMerkleRootValue);
+        accountsMerkleRoot.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootValue);
         accountsMerkleRoot.generate_r1cs_witness_from_bits();
 
         for(unsigned int i = 0; i < cancelsData.size(); i++)
