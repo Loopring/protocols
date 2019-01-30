@@ -1,32 +1,31 @@
 # Taken and modified from
 # https://github.com/ethereum/research/blob/6ab4a5da40a325c55691dafb6928627fb598e3bd/trie_research/bintrie2/new_bintrie.py
 
-from ethsnarks.merkletree import MerkleHasherLongsight
-from ethsnarks.longsight import LongsightL12p5_MP
+from ethsnarks.merkletree import MerkleHasher_MiMC
 
 class EphemDB():
     def __init__(self, kv=None):
         self.kv = kv or {}
 
     def get(self, k):
-        return self.kv.get(k, None)
+        return self.kv.get(str(k), None)
 
     def put(self, k, v):
-        self.kv[k] = v
+        self.kv[str(k)] = v
 
     def delete(self, k):
-        del self.kv[k]
+        del self.kv[str(k)]
 
 class SparseMerkleTree(object):
     def __init__(self, depth):
         assert depth > 1
         self._depth = depth
-        self._hasher = MerkleHasherLongsight(self._depth)
+        self._hasher = MerkleHasher_MiMC(self._depth)
         self._db = EphemDB()
         self._root = 0
 
-    def newTree(self):
-        h = LongsightL12p5_MP([int(0), int(0)], 1)
+    def newTree(self, defaultLeafHash):
+        h = defaultLeafHash
         for i in range(self._depth):
             newh = self._hasher.hash_pair(i, h, h)
             self._db.put(newh, [h, h])

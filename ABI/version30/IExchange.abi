@@ -1,0 +1,1 @@
+[{"constant":false,"inputs":[{"name":"data","type":"bytes"},{"name":"proof","type":"uint256[8]"}],"name":"submitRings","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]
