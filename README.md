@@ -2,14 +2,14 @@
 
 ## Building
 
-Before building retrieve the source code for the dependencies:
+Before building (not just the first time, also after a git pull) retrieve the source code for the dependencies:
 
-    git submodule update --init --recursive
+    git submodule update --init --remote --merge --recursive
 
 If you are using Linux:
 
     ./install_dependencies_linux.sh
-    
+
 If you are using Mac:
 
     ./install_dependencies_mac.sh
