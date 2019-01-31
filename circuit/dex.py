@@ -49,17 +49,15 @@ class TradeHistoryLeaf(object):
         self.filled = jAccount["filled"]
         self.cancelled = int(jAccount["cancelled"])
 
-class TokenLeaf(object):
-    def __init__(self, validUntil, tier):
-        self.validUntil = validUntil
-        self.tier = tier
+class BurnRateLeaf(object):
+    def __init__(self, burnRate):
+        self.burnRate = burnRate
 
     def hash(self):
-        return (self.validUntil * 256) + self.tier
+        return self.burnRate
 
-    def fromJSON(self, jTokenLeaf):
-        self.validUntil = int(jTokenLeaf["validUntil"])
-        self.tier = int(jTokenLeaf["tier"])
+    def fromJSON(self, jBurnRateLeaf):
+        self.burnRate = int(jBurnRateLeaf["burnRate"])
 
 class TradeHistoryUpdateData(object):
     def __init__(self, before, after, proof):
@@ -73,9 +71,9 @@ class AccountUpdateData(object):
         self.after = after
         self.proof = [str(_) for _ in proof]
 
-class TokenCheckData(object):
-    def __init__(self, tokenData, proof):
-        self.tokenData = tokenData
+class BurnRateCheckData(object):
+    def __init__(self, burnRateData, proof):
+        self.burnRateData = burnRateData
         self.proof = [str(_) for _ in proof]
 
 class Order(object):
@@ -135,8 +133,8 @@ class RingSettlement(object):
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                  accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_BA,
                  accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_BB,
-                 tokenCheckF_A, burnRateF_A, burnFee_A, walletFee_A,
-                 tokenCheckF_B, burnRateF_B, burnFee_B, walletFee_B):
+                 burnRateCheckF_A, burnFee_A, walletFee_A,
+                 burnRateCheckF_B, burnFee_B, walletFee_B):
         self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.ring = ring
@@ -156,13 +154,11 @@ class RingSettlement(object):
         self.accountUpdateF_WB = accountUpdateF_WB
         self.accountUpdateF_BB = accountUpdateF_BB
 
-        self.tokenCheckF_A = tokenCheckF_A
-        self.burnRateF_A = burnRateF_A
+        self.burnRateCheckF_A = burnRateCheckF_A
         self.burnFee_A = burnFee_A
         self.walletFee_A = walletFee_A
 
-        self.tokenCheckF_B = tokenCheckF_B
-        self.burnRateF_B = burnRateF_B
+        self.burnRateCheckF_B = burnRateCheckF_B
         self.burnFee_B = burnFee_B
         self.walletFee_B = walletFee_B
 
@@ -250,9 +246,9 @@ class Dex(object):
                 self._accounts.append(account)
             self._accountsTree._root = data["accounts_root"]
             self._accountsTree._db.kv = data["accounts_tree"]
-            for jTokenLeaf in data["tokens_values"]:
-                token = TokenLeaf(0, 0)
-                token.fromJSON(jTokenLeaf)
+            for jBurnRateLeaf in data["tokens_values"]:
+                token = BurnRateLeaf(0)
+                token.fromJSON(jBurnRateLeaf)
                 self._tokens.append(token)
                 self._tokensTree.append(token.hash())
 
@@ -309,10 +305,10 @@ class Dex(object):
         if address >= len(self._tokens):
             print("Token doesn't exist: " + str(address))
 
-        tokenData = copy.deepcopy(self._tokens[address])
+        burnRateData = copy.deepcopy(self._tokens[address])
         proof = self._tokensTree.proof(address).path
 
-        return TokenCheckData(tokenData, proof)
+        return BurnRateCheckData(burnRateData, proof)
 
     def settleRing(self, ring):
         addressA = (ring.orderA.accountS << 4) + ring.orderA.orderID
@@ -327,21 +323,21 @@ class Dex(object):
         tradeHistoryUpdate_B = self.updateTradeHistory(addressB, ring.fillS_B)
 
         # Check burn rates
-        tokenCheckF_A = self.checkBurnRate(ring.orderA.tokenF)
-        tokenCheckF_B = self.checkBurnRate(ring.orderB.tokenF)
+        burnRateCheckF_A = self.checkBurnRate(ring.orderA.tokenF)
+        burnRateCheckF_B = self.checkBurnRate(ring.orderB.tokenF)
 
-        burnRateF_A = 10
-        burnFee_A = (ring.fillF_A * burnRateF_A) // 100
+        burnRateF_A = burnRateCheckF_A.burnRateData.burnRate
+        burnFee_A = (ring.fillF_A * burnRateF_A) // 1000
         walletFee_A = ring.fillF_A - burnFee_A
 
-        burnRateF_B = 10
-        burnFee_B = (ring.fillF_B * burnRateF_B) // 100
+        burnRateF_B = burnRateCheckF_B.burnRateData.burnRate
+        burnFee_B = (ring.fillF_B * burnRateF_B) // 1000
         walletFee_B = ring.fillF_B - burnFee_B
 
-        #print("burnFee_A: " + str(burnFee_A))
-        #print("walletFee_A: " + str(walletFee_A))
-        #print("burnFee_B: " + str(burnFee_B))
-        #print("walletFee_B: " + str(walletFee_B))
+        print("burnFee_A: " + str(burnFee_A))
+        print("walletFee_A: " + str(walletFee_A))
+        print("burnFee_B: " + str(burnFee_B))
+        print("walletFee_B: " + str(walletFee_B))
 
         # Update balances A
         accountUpdateS_A = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
@@ -361,8 +357,8 @@ class Dex(object):
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                               accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_BA,
                               accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_BB,
-                              tokenCheckF_A, burnRateF_A, burnFee_A, walletFee_A,
-                              tokenCheckF_B, burnRateF_B, burnFee_B, walletFee_B)
+                              burnRateCheckF_A, burnFee_A, walletFee_A,
+                              burnRateCheckF_B, burnFee_B, walletFee_B)
 
     def deposit(self, account):
         # Copy the initial merkle root
@@ -413,8 +409,8 @@ class Dex(object):
         cancellation.sign(FQ(int(account.secretKey)))
         return cancellation
 
-    def addToken(self, validUntil, tier):
-        token = TokenLeaf(validUntil, tier)
+    def addToken(self, burnRate):
+        token = BurnRateLeaf(burnRate)
         address = self._tokensTree.append(token.hash())
         self._tokens.append(token)
 

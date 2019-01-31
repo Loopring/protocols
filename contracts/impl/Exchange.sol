@@ -39,10 +39,16 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     uint public MAX_NUM_DEPOSITS_IN_BLOCK       = 32;
 
+    // Burn rates
+    uint16 public constant BURNRATE_TIER1            =                       25; // 2.5%
+    uint16 public constant BURNRATE_TIER2            =                  15 * 10; //  15%
+    uint16 public constant BURNRATE_TIER3            =                  30 * 10; //  30%
+    uint16 public constant BURNRATE_TIER4            =                  50 * 10; //  50%
+
     address public  tradeDelegateAddress        = address(0x0);
 
     event TokenRegistered(address tokenAddress, uint16 tokenID);
-    event NewTokenRegistryBlock(bytes32 merkleRoot);
+    event NewBurnRateBlock(uint blockIdx, bytes32 merkleRoot);
 
     event Deposit(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
     event Withdraw(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
@@ -64,6 +70,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     struct Token {
         address tokenAddress;
+        uint8 tier;
+        uint32 tierValidUntil;
     }
 
     struct Account {
@@ -89,12 +97,12 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes withdrawals;
     }
 
-    struct TokenRegistryBlock {
+    struct BurnRateBlock {
         bytes32 merkleRoot;
-        uint validUntil;
+        uint32 validUntil;
     }
 
-    MerkleTree.Data tokenMerkleTree;
+    MerkleTree.Data burnRateMerkleTree;
 
     Token[] public tokens;
     mapping (address => uint16) public tokenToTokenID;
@@ -103,7 +111,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     Block[] public blocks;
 
-    TokenRegistryBlock[] public tokenRegistryBlocks;
+    BurnRateBlock[] public burnRateBlocks;
 
     mapping (uint => DepositBlock) public depositBlocks;
 
@@ -127,15 +135,16 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
         blocks.push(genesisBlock);
 
-        TokenRegistryBlock memory noTokensBlock = TokenRegistryBlock(
+        BurnRateBlock memory noTokensBlock = BurnRateBlock(
             0x0,
             0xFFFFFFFF
         );
-        tokenRegistryBlocks.push(noTokensBlock);
+        burnRateBlocks.push(noTokensBlock);
     }
 
     function commitBlock(
         uint blockType,
+        uint burnRateBlockIdx,
         bytes memory data
         )
         public
@@ -155,11 +164,17 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes32 tradeHistoryMerkleRootBefore;
         bytes32 tradeHistoryMerkleRootAfter;
         if (blockType == uint(BlockType.TRADE)) {
+            BurnRateBlock storage burnRateBlock = burnRateBlocks[burnRateBlockIdx];
+            bytes32 burnRateMerkleRoot;
+            uint32 inputTimestamp;
             assembly {
                 tradeHistoryMerkleRootBefore := mload(add(data, 96))
                 tradeHistoryMerkleRootAfter := mload(add(data, 128))
+                burnRateMerkleRoot := mload(add(data, 160))
+                inputTimestamp := and(mload(add(data, 164)), 0xFFFFFFFF)
             }
-            require(tradeHistoryMerkleRootBefore == currentBlock.tradeHistoryMerkleRoot, "INVALID_TRADEHISTORY_ROOT");
+            require(burnRateMerkleRoot == burnRateBlock.merkleRoot, "INVALID_BURNRATE_ROOT");
+            require(inputTimestamp > now - 60 && inputTimestamp < now + 60, "INVALID_TIMESTAMP");
         } else {
             tradeHistoryMerkleRootBefore = currentBlock.tradeHistoryMerkleRoot;
             tradeHistoryMerkleRootAfter = tradeHistoryMerkleRootBefore;
@@ -243,29 +258,88 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
 
         Token memory token = Token(
-            tokenAddress
+            tokenAddress,
+            4,
+            0
         );
         tokens.push(token);
         uint16 tokenID = uint16(tokens.length);
         tokenToTokenID[tokenAddress] = tokenID;
+        emit TokenRegistered(tokenAddress, tokenID - 1);
 
-        uint validUntil = 0;
-        uint tier = 4;
-        uint leafData = (validUntil * 256) + tier;
-        (uint newRoot, uint offset) = MerkleTree.Insert(tokenMerkleTree, leafData);
+        uint16 burnRate = getBurnRate(tokenID - 1);
+        (, uint offset) = burnRateMerkleTree.Insert(burnRate);
         assert(offset == tokenID - 1);
+        createNewBurnRateBlock();
+    }
 
-        TokenRegistryBlock storage currentBlock = tokenRegistryBlocks[tokenRegistryBlocks.length - 1];
+    function getTokenTier(
+        uint24 tokenID
+        )
+        public
+        view
+        returns (uint8 tier)
+    {
+        Token storage token = tokens[tokenID];
+        // Fall back to lowest tier
+        tier = (now > token.tierValidUntil) ? 4 : token.tier;
+    }
+
+    function getBurnRate(
+        uint24 tokenID
+        )
+        public
+        view
+        returns (uint16 burnRate)
+    {
+        uint tier = getTokenTier(tokenID);
+        if (tier == 1) {
+            burnRate = BURNRATE_TIER1;
+        } else if (tier == 2) {
+            burnRate = BURNRATE_TIER2;
+        } else if (tier == 3) {
+            burnRate = BURNRATE_TIER3;
+        } else {
+            burnRate = BURNRATE_TIER4;
+        }
+    }
+
+    function updateBurnRate(
+        uint24 tokenID
+        )
+        external
+    {
+        require(tokenID < tokens.length, "INVALID_TOKENID");
+
+        uint16 burnRate = getBurnRate(tokenID);
+        // TODO: MAKE THIS WORK
+        burnRateMerkleTree.Update(tokenID, burnRate);
+
+        // Create a new block if necessary
+        createNewBurnRateBlock();
+    }
+
+    function createNewBurnRateBlock()
+        internal
+    {
+        bytes32 newRoot = bytes32(burnRateMerkleTree.GetRoot());
+        BurnRateBlock storage currentBlock = burnRateBlocks[burnRateBlocks.length - 1];
+        if (newRoot == currentBlock.merkleRoot) {
+            // No need for a new block
+            return;
+        }
+
         // Allow the use of older blocks for 1 hour
-        currentBlock.validUntil = now + 3600;
-        TokenRegistryBlock memory newBlock = TokenRegistryBlock(
+        currentBlock.validUntil = uint32(now + 3600);
+
+        // Create the new block
+        BurnRateBlock memory newBlock = BurnRateBlock(
             bytes32(newRoot),
             0xFFFFFFFF              // The last block is valid forever (until a new block is added)
         );
-        tokenRegistryBlocks.push(newBlock);
-        emit NewTokenRegistryBlock(bytes32(newRoot));
+        burnRateBlocks.push(newBlock);
 
-        emit TokenRegistered(tokenAddress, tokenID);
+        emit NewBurnRateBlock(burnRateBlocks.length - 1, bytes32(newRoot));
     }
 
     function getTokenID(
@@ -415,7 +489,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         gammaABC = _gammaABC;
     }
 
-    function getCurrentBlockIdx()
+    function getBlockIdx()
         external
         view
         returns (uint)
@@ -423,11 +497,19 @@ contract Exchange is IExchange, NoDefaultFunc {
         return blocks.length - 1;
     }
 
-    function getCurrentTokensMerkleRoot()
+    function getBurnRateRoot()
         external
         view
         returns (bytes32)
     {
-        return bytes32(tokenMerkleTree.GetRoot());
+        return bytes32(burnRateMerkleTree.GetRoot());
+    }
+
+    function getBurnRateBlockIdx()
+        external
+        view
+        returns (uint)
+    {
+        return burnRateBlocks.length - 1;
     }
 }

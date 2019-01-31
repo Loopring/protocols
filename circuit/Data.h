@@ -59,17 +59,15 @@ void from_json(const json& j, Account& account)
     account.balance = ethsnarks::FieldT(j.at("balance"));
 }
 
-class TokenData
+class BurnRateData
 {
 public:
-    ethsnarks::FieldT validUntil;
-    ethsnarks::FieldT tier;
+    ethsnarks::FieldT burnRate;
 };
 
-void from_json(const json& j, TokenData& token)
+void from_json(const json& j, BurnRateData& token)
 {
-    token.validUntil = ethsnarks::FieldT(j.at("validUntil"));
-    token.tier = ethsnarks::FieldT(j.at("tier"));
+    token.burnRate = ethsnarks::FieldT(j.at("burnRate"));
 }
 
 class TradeHistoryUpdate
@@ -102,17 +100,17 @@ void from_json(const json& j, AccountUpdate& accountUpdate)
     accountUpdate.proof = j.at("proof").get<Proof>();
 }
 
-class TokenCheck
+class BurnRateCheck
 {
 public:
-    TokenData tokenData;
+    BurnRateData burnRateData;
     Proof proof;
 };
 
-void from_json(const json& j, TokenCheck& tokenCheck)
+void from_json(const json& j, BurnRateCheck& burnRateCheck)
 {
-    tokenCheck.tokenData = j.at("tokenData").get<TokenData>();
-    tokenCheck.proof = j.at("proof").get<Proof>();
+    burnRateCheck.burnRateData = j.at("burnRateData").get<BurnRateData>();
+    burnRateCheck.proof = j.at("proof").get<Proof>();
 }
 
 class Signature
@@ -217,8 +215,8 @@ public:
     AccountUpdate accountUpdateF_WB;
     AccountUpdate accountUpdateF_BB;
 
-    TokenCheck tokenCheckF_A;
-    TokenCheck tokenCheckF_B;
+    BurnRateCheck burnRateCheckF_A;
+    BurnRateCheck burnRateCheckF_B;
 
     ethsnarks::FieldT burnRateF_A;
     ethsnarks::FieldT burnFee_A;
@@ -251,14 +249,12 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.accountUpdateF_WB = j.at("accountUpdateF_WB").get<AccountUpdate>();
     ringSettlement.accountUpdateF_BB = j.at("accountUpdateF_BB").get<AccountUpdate>();
 
-    ringSettlement.tokenCheckF_A = j.at("tokenCheckF_A").get<TokenCheck>();
-    ringSettlement.tokenCheckF_B = j.at("tokenCheckF_B").get<TokenCheck>();
+    ringSettlement.burnRateCheckF_A = j.at("burnRateCheckF_A").get<BurnRateCheck>();
+    ringSettlement.burnRateCheckF_B = j.at("burnRateCheckF_B").get<BurnRateCheck>();
 
-    ringSettlement.burnRateF_A = ethsnarks::FieldT(j.at("burnRateF_A"));
     ringSettlement.burnFee_A = ethsnarks::FieldT(j.at("burnFee_A"));
     ringSettlement.walletFee_A = ethsnarks::FieldT(j.at("walletFee_A"));
 
-    ringSettlement.burnRateF_B = ethsnarks::FieldT(j.at("burnRateF_B"));
     ringSettlement.burnFee_B = ethsnarks::FieldT(j.at("burnFee_B"));
     ringSettlement.walletFee_B = ethsnarks::FieldT(j.at("walletFee_B"));
 }

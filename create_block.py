@@ -17,6 +17,7 @@ class TradeExport(object):
         self.tradingHistoryMerkleRootAfter = 0
         self.accountsMerkleRootBefore = 0
         self.accountsMerkleRootAfter = 0
+        self.timestamp = 0
 
     def toJSON(self):
         self.numElements = len(self.ringSettlements)
@@ -144,7 +145,8 @@ def trade(dex, data):
     export = TradeExport()
     export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
     export.accountsMerkleRootBefore = str(dex._accountsTree._root)
-    export.tokensMerkleRoot = str(dex._tokensTree.root)
+    export.burnRateMerkleRoot = str(dex._tokensTree.root)
+    export.timestamp = int(data["timestamp"])
 
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, dex)

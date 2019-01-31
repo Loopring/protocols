@@ -330,7 +330,7 @@ export class ExchangeTestUtil {
   }
 
   public async createBlock(blockType: number, data: string) {
-    const nextBlockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber() + 1;
+    const nextBlockIdx = (await this.exchange.getBlockIdx()).toNumber() + 1;
     const inputFilename = "./blocks/block_" + nextBlockIdx + "_info.json";
     const outputFilename = "./blocks/block_" + nextBlockIdx + ".json";
 
@@ -352,13 +352,16 @@ export class ExchangeTestUtil {
     // console.log("DataJS: " + data);
     // console.log(publicDataHash.toString("hex"));
 
+    const tokensBlockIdx = (await this.exchange.getBurnRateBlockIdx()).toNumber();
+
     const tx = await this.exchange.commitBlock(
       web3.utils.toBN(blockType),
+      web3.utils.toBN(tokensBlockIdx),
       web3.utils.hexToBytes(data),
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
-    const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
+    const blockIdx = (await this.exchange.getBlockIdx()).toNumber();
     const block: Block = {
       blockIdx,
       filename,
@@ -438,7 +441,7 @@ export class ExchangeTestUtil {
 
     // Commit the block
     await this.commitBlock(2, bs.getData(), blockFilename);
-    const blockIdx = (await this.exchange.getCurrentBlockIdx()).toNumber();
+    const blockIdx = (await this.exchange.getBlockIdx()).toNumber();
 
     // We need to verify all blocks before and including the withdraw block before
     // we can withdraw the tokens from the block
@@ -470,6 +473,8 @@ export class ExchangeTestUtil {
     await this.submitDeposits();
 
     // Generate the token transfers for the ring
+    const blockNumber = await web3.eth.getBlockNumber();
+    ringsInfo.timestamp = (await web3.eth.getBlock(blockNumber)).timestamp;
     const ringSettlements = await this.settleRings(ringsInfo);
 
     // Write out the rings info
@@ -486,6 +491,8 @@ export class ExchangeTestUtil {
     bs.addBigNumber(new BigNumber(rings.accountsMerkleRootAfter, 10), 32);
     bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootBefore, 10), 32);
     bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootAfter, 10), 32);
+    bs.addBigNumber(new BigNumber(rings.burnRateMerkleRoot, 10), 32);
+    bs.addNumber(ringsInfo.timestamp, 4);
     // console.log(ringSettlements);
     for (const ringSettlement of ringSettlements) {
       const orders = [ringSettlement.orderA, ringSettlement.orderB];
@@ -520,7 +527,7 @@ export class ExchangeTestUtil {
       const tx = await this.exchange.registerToken(token.address);
       pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
 
-      const tokensRoot = await this.exchange.getCurrentTokensMerkleRoot();
+      const tokensRoot = await this.exchange.getBurnRateRoot();
       console.log(tokensRoot);
       childProcess.spawnSync("python3", ["add_token.py"], {stdio: "inherit"});
 

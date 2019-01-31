@@ -76,6 +76,23 @@ library MerkleTree
         return (new_root, offset);
     }
 
+    // TODO: FIX THIS
+    function Update(Data storage self, uint256 offset, uint256 leaf)
+        internal returns (uint256)
+    {
+        require( leaf != 0 );
+
+        uint256[16] memory IVs;
+        FillLevelIVs(IVs);
+
+        require (offset != MAX_LEAF_COUNT - 1);
+
+        self.leaves[0][offset] = leaf;
+
+        uint256 new_root = UpdateTree(self, IVs);
+
+        return new_root;
+    }
 
     /**
     * Returns calculated merkle root

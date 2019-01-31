@@ -11,7 +11,7 @@ def main():
     if os.path.exists(dex_state_filename):
         dex.loadState(dex_state_filename)
 
-    dex.addToken(0, 4)
+    dex.addToken(500)
 
     dex.saveState(dex_state_filename)
 
