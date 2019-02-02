@@ -19,6 +19,7 @@ export interface OrderInfo {
   accountB?: number;
   accountF?: number;
 
+  walletSplitPercentage?: number;
   walletF?: number;
 
   tokenIdS?: number;
@@ -27,6 +28,10 @@ export interface OrderInfo {
 
   validSince?: number;
   validUntil?: number;
+
+  allOrNone?: boolean;
+
+  waiveFeePercentage?: number;
 
   index?: number;
   balanceS?: number;
@@ -72,7 +77,7 @@ export interface OrderSettlementData {
   toWallet: number;                     // 3 bytes
   toOperator: number;                   // 3 bytes
   amountF: number;                      // 12 bytes
-  WalletSplitPercentage: number;        // 1 byte
+  walletSplitPercentage: number;        // 1 byte
 }
 
 export interface RingSettlementData {

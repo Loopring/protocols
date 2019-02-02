@@ -100,7 +100,7 @@ export class ExchangeTestUtil {
       const blockNumber = await web3.eth.getBlockNumber();
       order.validSince = (await web3.eth.getBlock(blockNumber)).timestamp - 1000;
     }
-    if (!order.validUntil && (order.index % 2) === 1) {
+    if (!order.validUntil) {
       // Set the order validUntil time to a bit after the current timestamp;
       const blockNumber = await web3.eth.getBlockNumber();
       order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 2500;
@@ -113,6 +113,11 @@ export class ExchangeTestUtil {
     order.validUntil = order.validUntil ? order.validUntil : 0;
     order.tokenF = order.tokenF ? order.tokenF : this.context.lrcAddress;
     order.amountF = order.amountF ? order.amountF : 0;
+
+    order.allOrNone = order.allOrNone ? order.allOrNone : false;
+    order.walletSplitPercentage = order.walletSplitPercentage ? order.walletSplitPercentage : 50;
+
+    order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 50;
 
     order.dexID = order.dexID ? order.dexID : 0;
     order.orderID = order.orderID ? order.orderID : order.index;
@@ -234,7 +239,7 @@ export class ExchangeTestUtil {
       toWallet: 0,
       toOperator: 0,
       amountF: ring.fillF_A,
-      WalletSplitPercentage: 0,
+      walletSplitPercentage: orderA.walletSplitPercentage,
     };
 
     const orderDataB: OrderSettlementData = {
@@ -251,7 +256,7 @@ export class ExchangeTestUtil {
       toWallet: 0,
       toOperator: 0,
       amountF: ring.fillF_B,
-      WalletSplitPercentage: 0,
+      walletSplitPercentage: orderB.walletSplitPercentage,
     };
 
     const ringSettlement: RingSettlementData = {

@@ -80,7 +80,9 @@ class Order(object):
     def __init__(self, publicKey, walletPublicKey, dexID, orderID,
                  accountS, accountB, accountF, walletF,
                  amountS, amountB, amountF,
-                 tokenS, tokenB, tokenF):
+                 tokenS, tokenB, tokenF,
+                 allOrNone, validSince, validUntil,
+                 walletSplitPercentage, waiveFeePercentage):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.walletPublicKeyX = str(walletPublicKey.x)
@@ -93,6 +95,12 @@ class Order(object):
         self.amountS = amountS
         self.amountB = amountB
         self.amountF = amountF
+
+        self.allOrNone = allOrNone
+        self.validSince = validSince
+        self.validUntil = validUntil
+        self.walletSplitPercentage = walletSplitPercentage
+        self.waiveFeePercentage = waiveFeePercentage
 
         self.walletF = walletF
         self.tokenS = tokenS
@@ -131,10 +139,10 @@ class Ring(object):
 class RingSettlement(object):
     def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
-                 accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_BA,
-                 accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_BB,
-                 burnRateCheckF_A, burnFee_A, walletFee_A,
-                 burnRateCheckF_B, burnFee_B, walletFee_B):
+                 accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_MA, accountUpdateF_BA,
+                 accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_MB, accountUpdateF_BB,
+                 burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
+                 burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B):
         self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.ring = ring
@@ -146,21 +154,25 @@ class RingSettlement(object):
         self.accountUpdateB_A = accountUpdateB_A
         self.accountUpdateF_A = accountUpdateF_A
         self.accountUpdateF_WA = accountUpdateF_WA
+        self.accountUpdateF_MA = accountUpdateF_MA
         self.accountUpdateF_BA = accountUpdateF_BA
 
         self.accountUpdateS_B = accountUpdateS_B
         self.accountUpdateB_B = accountUpdateB_B
         self.accountUpdateF_B = accountUpdateF_B
         self.accountUpdateF_WB = accountUpdateF_WB
+        self.accountUpdateF_MB = accountUpdateF_MB
         self.accountUpdateF_BB = accountUpdateF_BB
 
         self.burnRateCheckF_A = burnRateCheckF_A
-        self.burnFee_A = burnFee_A
         self.walletFee_A = walletFee_A
+        self.matchingFee_A = matchingFee_A
+        self.burnFee_A = burnFee_A
 
         self.burnRateCheckF_B = burnRateCheckF_B
-        self.burnFee_B = burnFee_B
         self.walletFee_B = walletFee_B
+        self.matchingFee_B = matchingFee_B
+        self.burnFee_B = burnFee_B
 
 
 class Deposit(object):
@@ -310,6 +322,21 @@ class Dex(object):
 
         return BurnRateCheckData(burnRateData, proof)
 
+    def calculateFees(self, fee, burnRate, walletSplitPercentage, waiveFeePercentage):
+        walletFee = (fee * walletSplitPercentage) // 100
+        matchingFee = fee - walletFee
+
+        walletFeeToBurn = (walletFee * burnRate) // 1000
+        walletFeeToPay = walletFee - walletFeeToBurn
+
+        matchingFeeAfterWaiving = (matchingFee * waiveFeePercentage) // 100
+        matchingFeeToBurn = (matchingFeeAfterWaiving * burnRate) // 1000
+        matchingFeeToPay = matchingFeeAfterWaiving - matchingFeeToBurn
+
+        feeToBurn = walletFeeToBurn + matchingFeeToBurn
+
+        return (walletFeeToPay, matchingFeeToPay, feeToBurn)
+
     def settleRing(self, ring):
         addressA = (ring.orderA.accountS << 4) + ring.orderA.orderID
         addressB = (ring.orderB.accountS << 4) + ring.orderB.orderID
@@ -326,39 +353,50 @@ class Dex(object):
         burnRateCheckF_A = self.checkBurnRate(ring.orderA.tokenF)
         burnRateCheckF_B = self.checkBurnRate(ring.orderB.tokenF)
 
-        burnRateF_A = burnRateCheckF_A.burnRateData.burnRate
-        burnFee_A = (ring.fillF_A * burnRateF_A) // 1000
-        walletFee_A = ring.fillF_A - burnFee_A
+        (walletFee_A, matchingFee_A, burnFee_A) = self.calculateFees(
+            ring.fillF_A,
+            burnRateCheckF_A.burnRateData.burnRate,
+            ring.orderA.walletSplitPercentage,
+            ring.orderA.waiveFeePercentage
+        )
 
-        burnRateF_B = burnRateCheckF_B.burnRateData.burnRate
-        burnFee_B = (ring.fillF_B * burnRateF_B) // 1000
-        walletFee_B = ring.fillF_B - burnFee_B
+        (walletFee_B, matchingFee_B, burnFee_B) = self.calculateFees(
+            ring.fillF_B,
+            burnRateCheckF_B.burnRateData.burnRate,
+            ring.orderB.walletSplitPercentage,
+            ring.orderB.waiveFeePercentage
+        )
 
-        print("burnFee_A: " + str(burnFee_A))
         print("walletFee_A: " + str(walletFee_A))
-        print("burnFee_B: " + str(burnFee_B))
+        print("matchingFee_A: " + str(matchingFee_A))
+        print("burnFee_A: " + str(burnFee_A))
+
         print("walletFee_B: " + str(walletFee_B))
+        print("matchingFee_B: " + str(matchingFee_B))
+        print("burnFee_B: " + str(burnFee_B))
 
         # Update balances A
         accountUpdateS_A = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
         accountUpdateB_A = self.updateBalance(ring.orderA.accountB, ring.fillB_A)
-        accountUpdateF_A = self.updateBalance(ring.orderA.accountF, -ring.fillF_A)
+        accountUpdateF_A = self.updateBalance(ring.orderA.accountF, -(walletFee_A + matchingFee_A + burnFee_A))
         accountUpdateF_WA = self.updateBalance(ring.orderA.walletF, walletFee_A)
+        accountUpdateF_MA = self.updateBalance(ring.orderA.walletF, matchingFee_A)
         accountUpdateF_BA = self.updateBalance(ring.orderA.walletF, burnFee_A)
 
         # Update balances B
         accountUpdateS_B = self.updateBalance(ring.orderB.accountS, -ring.fillS_B)
         accountUpdateB_B = self.updateBalance(ring.orderB.accountB, ring.fillB_B)
-        accountUpdateF_B = self.updateBalance(ring.orderB.accountF, -ring.fillF_B)
+        accountUpdateF_B = self.updateBalance(ring.orderB.accountF, -(walletFee_B + matchingFee_B + burnFee_B))
         accountUpdateF_WB = self.updateBalance(ring.orderB.walletF, walletFee_B)
+        accountUpdateF_MB = self.updateBalance(ring.orderB.walletF, matchingFee_B)
         accountUpdateF_BB = self.updateBalance(ring.orderB.walletF, burnFee_B)
 
         return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
-                              accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_BA,
-                              accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_BB,
-                              burnRateCheckF_A, burnFee_A, walletFee_A,
-                              burnRateCheckF_B, burnFee_B, walletFee_B)
+                              accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_MA, accountUpdateF_BA,
+                              accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_MB, accountUpdateF_BB,
+                              burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
+                              burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B)
 
     def deposit(self, account):
         # Copy the initial merkle root

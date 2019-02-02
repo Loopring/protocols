@@ -144,6 +144,8 @@ public:
     ethsnarks::FieldT tokenB;
     ethsnarks::FieldT tokenF;
     ethsnarks::FieldT walletF;
+    ethsnarks::FieldT walletSplitPercentage;
+    ethsnarks::FieldT waiveFeePercentage;
     Signature sig;
 };
 
@@ -165,6 +167,8 @@ void from_json(const json& j, Order& order)
     order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
     order.tokenF = ethsnarks::FieldT(j.at("tokenF"));
     order.walletF = ethsnarks::FieldT(j.at("walletF"));
+    order.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
+    order.waiveFeePercentage = ethsnarks::FieldT(j.at("waiveFeePercentage"));
     order.sig = j.get<Signature>();
 }
 
@@ -207,24 +211,26 @@ public:
     AccountUpdate accountUpdateB_A;
     AccountUpdate accountUpdateF_A;
     AccountUpdate accountUpdateF_WA;
+    AccountUpdate accountUpdateF_MA;
     AccountUpdate accountUpdateF_BA;
 
     AccountUpdate accountUpdateS_B;
     AccountUpdate accountUpdateB_B;
     AccountUpdate accountUpdateF_B;
     AccountUpdate accountUpdateF_WB;
+    AccountUpdate accountUpdateF_MB;
     AccountUpdate accountUpdateF_BB;
 
     BurnRateCheck burnRateCheckF_A;
     BurnRateCheck burnRateCheckF_B;
 
     ethsnarks::FieldT burnRateF_A;
-    ethsnarks::FieldT burnFee_A;
-    ethsnarks::FieldT walletFee_A;
-
     ethsnarks::FieldT burnRateF_B;
-    ethsnarks::FieldT burnFee_B;
-    ethsnarks::FieldT walletFee_B;
+
+    //ethsnarks::FieldT burnFee_A;
+    //ethsnarks::FieldT walletFee_A;
+    //ethsnarks::FieldT burnFee_B;
+    //ethsnarks::FieldT walletFee_B;
 };
 
 void from_json(const json& j, RingSettlement& ringSettlement)
@@ -241,22 +247,23 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.accountUpdateB_A = j.at("accountUpdateB_A").get<AccountUpdate>();
     ringSettlement.accountUpdateF_A = j.at("accountUpdateF_A").get<AccountUpdate>();
     ringSettlement.accountUpdateF_WA = j.at("accountUpdateF_WA").get<AccountUpdate>();
+    ringSettlement.accountUpdateF_MA = j.at("accountUpdateF_MA").get<AccountUpdate>();
     ringSettlement.accountUpdateF_BA = j.at("accountUpdateF_BA").get<AccountUpdate>();
 
     ringSettlement.accountUpdateS_B = j.at("accountUpdateS_B").get<AccountUpdate>();
     ringSettlement.accountUpdateB_B = j.at("accountUpdateB_B").get<AccountUpdate>();
     ringSettlement.accountUpdateF_B = j.at("accountUpdateF_B").get<AccountUpdate>();
     ringSettlement.accountUpdateF_WB = j.at("accountUpdateF_WB").get<AccountUpdate>();
+    ringSettlement.accountUpdateF_MB = j.at("accountUpdateF_MB").get<AccountUpdate>();
     ringSettlement.accountUpdateF_BB = j.at("accountUpdateF_BB").get<AccountUpdate>();
 
     ringSettlement.burnRateCheckF_A = j.at("burnRateCheckF_A").get<BurnRateCheck>();
     ringSettlement.burnRateCheckF_B = j.at("burnRateCheckF_B").get<BurnRateCheck>();
 
-    ringSettlement.burnFee_A = ethsnarks::FieldT(j.at("burnFee_A"));
+    /*ringSettlement.burnFee_A = ethsnarks::FieldT(j.at("burnFee_A"));
     ringSettlement.walletFee_A = ethsnarks::FieldT(j.at("walletFee_A"));
-
     ringSettlement.burnFee_B = ethsnarks::FieldT(j.at("burnFee_B"));
-    ringSettlement.walletFee_B = ethsnarks::FieldT(j.at("walletFee_B"));
+    ringSettlement.walletFee_B = ethsnarks::FieldT(j.at("walletFee_B"));*/
 }
 
 class Deposit

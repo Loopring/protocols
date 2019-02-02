@@ -74,6 +74,11 @@ def orderFromJSON(jOrder, dex):
     tokenB = int(jOrder["tokenIdB"])
     tokenF = int(jOrder["tokenIdF"])
     walletF = int(jOrder["walletF"])
+    allOrNone = int(jOrder["allOrNone"])
+    validSince = int(jOrder["validSince"])
+    validUntil = int(jOrder["validUntil"])
+    walletSplitPercentage = int(jOrder["walletSplitPercentage"])
+    waiveFeePercentage = int(jOrder["waiveFeePercentage"])
 
     account = dex.getAccount(accountS)
     wallet = dex.getAccount(walletF)
@@ -82,7 +87,9 @@ def orderFromJSON(jOrder, dex):
                   dexID, orderID,
                   accountS, accountB, accountF, walletF,
                   amountS, amountB, amountF,
-                  tokenS, tokenB, tokenF)
+                  tokenS, tokenB, tokenF,
+                  allOrNone, validSince, validUntil,
+                  walletSplitPercentage, waiveFeePercentage)
     order.sign(FQ(int(account.secretKey)))
 
     return order

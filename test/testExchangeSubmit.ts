@@ -42,7 +42,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
                 tokenB: "WETH",
                 amountS: 200,
                 amountB: 100,
-                amountF: 1000,
+                amountF: 900,
               },
           },
           /*{

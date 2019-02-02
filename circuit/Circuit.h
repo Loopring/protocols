@@ -104,6 +104,69 @@ public:
     }
 };
 
+class MulDivGadget : public GadgetT
+{
+public:
+    const VariableT A;
+    const VariableT B;
+    const VariableT C;
+    const VariableT D;
+
+    const VariableT X;
+    const VariableT Y;
+    const VariableT rest;
+
+    const VariableT lt;
+    const VariableT leq;
+    libsnark::comparison_gadget<ethsnarks::FieldT> comparison;
+
+    // (A * B) / C = D
+    MulDivGadget(
+        ProtoboardT& pb,
+        const VariableT& _A,
+        const VariableT& _B,
+        const VariableT& _C,
+        const VariableT& _D,
+        const std::string& annotation_prefix
+    ) :
+        GadgetT(pb, annotation_prefix),
+
+        A(_A),
+        B(_B),
+        C(_C),
+        D(_D),
+
+        X(make_variable(pb, "X")),
+        Y(make_variable(pb, "Y")),
+        rest(make_variable(pb, "rest")),
+
+        lt(make_variable(pb, "lt")),
+        leq(make_variable(pb, "leq")),
+        comparison(pb, 2*96, rest, C, lt, leq, "rest < C")
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+        pb.val(X) = pb.val(A) * pb.val(B);
+        pb.val(Y) = pb.val(C) * pb.val(D);
+        pb.val(rest) = pb.val(X) - pb.val(Y);
+
+        comparison.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        pb.add_r1cs_constraint(ConstraintT(A, B, X), "A * B == X");
+        pb.add_r1cs_constraint(ConstraintT(C, D, Y), "C * D == Y");
+        pb.add_r1cs_constraint(ConstraintT(Y + rest, FieldT::one(), X), "Y + rest == X");
+
+        comparison.generate_r1cs_constraints();
+        pb.add_r1cs_constraint(ConstraintT(lt, FieldT::one(), FieldT::one()), "lt == 1");
+    }
+};
+
 class RateCheckerGadget : public GadgetT
 {
 public:
@@ -146,6 +209,115 @@ public:
     }
 };
 
+
+class FeePaymentCalculator : public GadgetT
+{
+public:
+
+    VariableT constant1000;
+    VariableT constant100;
+
+    VariableT fee;
+    VariableT burnRate;
+    VariableT walletSplitPercentage;
+    VariableT waiveFeePercentage;
+
+    VariableT walletFee;
+    VariableT matchingFee;
+
+    VariableT walletFeeToBurn;
+    VariableT walletFeeToPay;
+
+    VariableT matchingFeeAfterWaiving;
+
+    VariableT matchingFeeToBurn;
+    VariableT matchingFeeToPay;
+
+    VariableT feeToBurn;
+
+    MulDivGadget walletSplit;
+    MulDivGadget walletBurnSplit;
+    MulDivGadget matchingWaiveSplit;
+    MulDivGadget matchingBurnSplit;
+
+    FeePaymentCalculator(
+        ProtoboardT& pb,
+        const VariableT& _fee,
+        const VariableT& _burnRate,
+        const VariableT& _walletSplitPercentage,
+        const VariableT& _waiveFeePercentage,
+        const std::string& annotation_prefix
+    ) :
+        GadgetT(pb, annotation_prefix),
+
+        constant100(make_variable(pb, 100, FMT(annotation_prefix, ".constant100"))),
+        constant1000(make_variable(pb, 1000, FMT(annotation_prefix, ".constant1000"))),
+
+        fee(_fee),
+        burnRate(_burnRate),
+        walletSplitPercentage(_walletSplitPercentage),
+        waiveFeePercentage(_waiveFeePercentage),
+
+        walletFee(make_variable(pb, FMT(annotation_prefix, ".walletFee"))),
+        matchingFee(make_variable(pb, FMT(annotation_prefix, ".matchingFee"))),
+
+        walletFeeToBurn(make_variable(pb, FMT(annotation_prefix, ".walletFeeToBurn"))),
+        walletFeeToPay(make_variable(pb, FMT(annotation_prefix, ".walletFeeToPay"))),
+
+        matchingFeeAfterWaiving(make_variable(pb, FMT(annotation_prefix, ".matchingFeeAfterWaiving"))),
+
+        matchingFeeToBurn(make_variable(pb, FMT(annotation_prefix, ".matchingFeeToBurn"))),
+        matchingFeeToPay(make_variable(pb, FMT(annotation_prefix, ".matchingFeeToPay"))),
+
+        feeToBurn(make_variable(pb, FMT(annotation_prefix, ".feeToBurn"))),
+
+        walletSplit(pb, fee, walletSplitPercentage, constant100, walletFee, FMT(annotation_prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
+        walletBurnSplit(pb, walletFee, burnRate, constant1000, walletFeeToBurn, FMT(annotation_prefix, "(walletFee * burnRate) / 1000 == walletFeeToBurn")),
+        matchingWaiveSplit(pb, matchingFee, waiveFeePercentage, constant100, matchingFeeAfterWaiving, FMT(annotation_prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving")),
+        matchingBurnSplit(pb, matchingFeeAfterWaiving, burnRate, constant1000, matchingFeeToBurn, FMT(annotation_prefix, "(matchingFeeAfterWaiving * burnRate) / 1000 == matchingFeeToBurn"))
+    {
+
+    }
+
+    const VariableT getWalletFee() const
+    {
+        return walletFeeToPay;
+    }
+
+    const VariableT getMatchingFee() const
+    {
+        return matchingFeeToPay;
+    }
+
+    const VariableT getBurnFee() const
+    {
+        return feeToBurn;
+    }
+
+    void generate_r1cs_witness()
+    {
+        pb.val(walletFee) = (pb.val(fee) * pb.val(walletSplitPercentage)).as_ulong() / 100;
+        pb.val(matchingFee) = pb.val(fee) - pb.val(walletFee);
+
+        pb.val(walletFeeToBurn) = (pb.val(walletFee) * pb.val(burnRate)).as_ulong() / 1000;
+        pb.val(walletFeeToPay) = pb.val(walletFee) - pb.val(walletFeeToBurn);
+
+        pb.val(matchingFeeAfterWaiving) = (pb.val(matchingFee) * pb.val(waiveFeePercentage)).as_ulong() / 100;
+
+        pb.val(matchingFeeToBurn) = (pb.val(matchingFeeAfterWaiving) * pb.val(burnRate)).as_ulong() / 1000;
+        pb.val(matchingFeeToPay) = pb.val(matchingFeeAfterWaiving) - pb.val(matchingFeeToBurn);
+
+        pb.val(feeToBurn) = pb.val(walletFeeToBurn) + pb.val(matchingFeeToBurn);
+    }
+
+    void generate_r1cs_constraints()
+    {
+        pb.add_r1cs_constraint(ConstraintT(walletFee + matchingFee, FieldT::one(), fee), "walletFee + matchingFee == fee");
+        pb.add_r1cs_constraint(ConstraintT(walletFeeToBurn + matchingFeeToBurn, FieldT::one(), feeToBurn), "walletFeeToBurn + matchingFeeToBurn == feeToBurn");
+    }
+};
+
+
 class OrderGadget : public GadgetT
 {
 public:
@@ -160,6 +332,9 @@ public:
     libsnark::dual_variable_gadget<FieldT> amountF;
     libsnark::dual_variable_gadget<FieldT> walletF;
     libsnark::dual_variable_gadget<FieldT> padding;
+
+    libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
+    libsnark::dual_variable_gadget<FieldT> waiveFeePercentage;
 
     VariableT tokenS;
     VariableT tokenB;
@@ -191,6 +366,9 @@ public:
         amountF(pb, 96, FMT(annotation_prefix, ".amountF")),
         walletF(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".walletF")),
         padding(pb, 1, FMT(annotation_prefix, ".padding")),
+
+        walletSplitPercentage(pb, 8, FMT(annotation_prefix, ".walletSplitPercentage")),
+        waiveFeePercentage(pb, 8, FMT(annotation_prefix, ".waiveFeePercentage")),
 
         tokenS(make_variable(pb, FMT(annotation_prefix, ".tokenS"))),
         tokenB(make_variable(pb, FMT(annotation_prefix, ".tokenB"))),
@@ -235,6 +413,13 @@ public:
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
+        walletSplitPercentage.bits.fill_with_bits_of_field_element(pb, order.walletSplitPercentage);
+        walletSplitPercentage.generate_r1cs_witness_from_bits();
+
+        waiveFeePercentage.bits.fill_with_bits_of_field_element(pb, order.waiveFeePercentage);
+        waiveFeePercentage.generate_r1cs_witness_from_bits();
+
+
         pb.val(tokenS) = order.tokenS;
         pb.val(tokenB) = order.tokenB;
         tokenF.bits.fill_with_bits_of_field_element(pb, order.tokenF);
@@ -264,6 +449,9 @@ public:
         amountF.generate_r1cs_constraints(true);
         walletF.generate_r1cs_constraints(true);
         padding.generate_r1cs_constraints(true);
+
+        walletSplitPercentage.generate_r1cs_constraints(true);
+        waiveFeePercentage.generate_r1cs_constraints(true);
 
         tokenF.generate_r1cs_constraints(true);
 
@@ -478,32 +666,34 @@ public:
     libsnark::dual_variable_gadget<FieldT> fillB_B;
     libsnark::dual_variable_gadget<FieldT> fillF_B;
 
-    VariableT fillF_WA;
-    VariableT fillF_BA;
-    VariableT fillF_WB;
-    VariableT fillF_BB;
-
     VariableT burnRateF_A;
     VariableT burnRateF_B;
 
     CheckBurnRateGadget checkBurnRateF_A;
     CheckBurnRateGadget checkBurnRateF_B;
 
+    FeePaymentCalculator feePaymentA;
+    FeePaymentCalculator feePaymentB;
+
     VariableT balanceS_A_before;
     VariableT balanceB_A_before;
     VariableT balanceF_A_before;
     VariableT balanceF_WA_before;
+    VariableT balanceF_MA_before;
     VariableT balanceF_BA_before;
     VariableT balanceS_B_before;
     VariableT balanceB_B_before;
     VariableT balanceF_B_before;
     VariableT balanceF_WB_before;
+    VariableT balanceF_MB_before;
     VariableT balanceF_BB_before;
     subadd_gadget balanceSB_A;
     subadd_gadget balanceSB_B;
     subadd_gadget balanceF_WA;
+    subadd_gadget balanceF_MA;
     subadd_gadget balanceF_BA;
     subadd_gadget balanceF_WB;
+    subadd_gadget balanceF_MB;
     subadd_gadget balanceF_BB;
 
     UpdateTradeHistoryGadget updateTradeHistoryA;
@@ -513,11 +703,13 @@ public:
     UpdateAccountGadget updateAccountB_A;
     UpdateAccountGadget updateAccountF_A;
     UpdateAccountGadget updateAccountF_WA;
+    UpdateAccountGadget updateAccountF_MA;
     UpdateAccountGadget updateAccountF_BA;
     UpdateAccountGadget updateAccountS_B;
     UpdateAccountGadget updateAccountB_B;
     UpdateAccountGadget updateAccountF_B;
     UpdateAccountGadget updateAccountF_WB;
+    UpdateAccountGadget updateAccountF_MB;
     UpdateAccountGadget updateAccountF_BB;
 
     LeqGadget filledLeqA;
@@ -532,6 +724,8 @@ public:
     LeqGadget matchLeqA;
     LeqGadget matchLeqB;
 
+    VariableT constant1000;
+
     RingSettlementGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
@@ -542,6 +736,8 @@ public:
         const std::string& annotation_prefix
     ) :
         GadgetT(pb, annotation_prefix),
+
+        constant1000(make_variable(pb, 1000, FMT(annotation_prefix, ".constant1000"))),
 
         orderA(pb, params, FMT(annotation_prefix, ".orderA")),
         orderB(pb, params, FMT(annotation_prefix, ".orderB")),
@@ -555,33 +751,38 @@ public:
         fillB_B(pb, 96, FMT(annotation_prefix, ".fillB_B")),
         fillF_B(pb, 96, FMT(annotation_prefix, ".fillF_B")),
 
-        fillF_WA(make_variable(pb, FMT(annotation_prefix, ".fillF_WA"))),
-        fillF_BA(make_variable(pb, FMT(annotation_prefix, ".fillF_BA"))),
-        fillF_WB(make_variable(pb, FMT(annotation_prefix, ".fillF_WB"))),
-        fillF_BB(make_variable(pb, FMT(annotation_prefix, ".fillF_BB"))),
-
         burnRateF_A(make_variable(pb, FMT(annotation_prefix, ".burnRateF_A"))),
         burnRateF_B(make_variable(pb, FMT(annotation_prefix, ".burnRateF_B"))),
 
         checkBurnRateF_A(pb, _burnRateMerkleRoot, orderA.tokenF.bits, burnRateF_A, FMT(annotation_prefix, ".checkBurnRateF_A")),
         checkBurnRateF_B(pb, _burnRateMerkleRoot, orderB.tokenF.bits, burnRateF_B, FMT(annotation_prefix, ".checkBurnRateF_B")),
 
+        feePaymentA(pb, fillF_A.packed, burnRateF_A, orderA.walletSplitPercentage.packed, orderA.waiveFeePercentage.packed, FMT(annotation_prefix, "feePaymentA")),
+        feePaymentB(pb, fillF_B.packed, burnRateF_B, orderB.walletSplitPercentage.packed, orderB.waiveFeePercentage.packed, FMT(annotation_prefix, "feePaymentB")),
+
         balanceS_A_before(make_variable(pb, FMT(annotation_prefix, ".balanceS_A_before"))),
         balanceB_A_before(make_variable(pb, FMT(annotation_prefix, ".balanceB_A_before"))),
         balanceF_A_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_A_before"))),
         balanceF_WA_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_WA_before"))),
+        balanceF_MA_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_MA_before"))),
         balanceF_BA_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_BA_before"))),
         balanceS_B_before(make_variable(pb, FMT(annotation_prefix, ".balanceS_B_before"))),
         balanceB_B_before(make_variable(pb, FMT(annotation_prefix, ".balanceB_B_before"))),
         balanceF_B_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_B_before"))),
         balanceF_WB_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_WB_before"))),
+        balanceF_MB_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_MB_before"))),
         balanceF_BB_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_BB_before"))),
+
         balanceSB_A(pb, 96, balanceS_A_before, balanceB_B_before, fillS_A.packed, FMT(annotation_prefix, ".balanceSB_A")),
         balanceSB_B(pb, 96, balanceS_B_before, balanceB_A_before, fillS_B.packed, FMT(annotation_prefix, ".balanceSB_B")),
-        balanceF_WA(pb, 96, balanceF_A_before, balanceF_WA_before, fillF_WA, FMT(annotation_prefix, ".balanceF_WA")),
-        balanceF_BA(pb, 96, balanceF_WA.X, balanceF_BA_before, fillF_BA, FMT(annotation_prefix, ".balanceF_BA")),
-        balanceF_WB(pb, 96, balanceF_B_before, balanceF_WB_before, fillF_WB, FMT(annotation_prefix, ".balanceF_WB")),
-        balanceF_BB(pb, 96, balanceF_WB.X, balanceF_BB_before, fillF_BB, FMT(annotation_prefix, ".balanceF_BB")),
+
+        balanceF_WA(pb, 96, balanceF_A_before, balanceF_WA_before, feePaymentA.getWalletFee(), FMT(annotation_prefix, ".balanceF_WA")),
+        balanceF_MA(pb, 96, balanceF_WA.X, balanceF_MA_before, feePaymentA.getMatchingFee(), FMT(annotation_prefix, ".balanceF_MA")),
+        balanceF_BA(pb, 96, balanceF_MA.X, balanceF_BA_before, feePaymentA.getBurnFee(), FMT(annotation_prefix, ".balanceF_BA")),
+
+        balanceF_WB(pb, 96, balanceF_B_before, balanceF_WB_before, feePaymentB.getWalletFee(), FMT(annotation_prefix, ".balanceF_WB")),
+        balanceF_MB(pb, 96, balanceF_WB.X, balanceF_MB_before, feePaymentB.getMatchingFee(), FMT(annotation_prefix, ".balanceF_MB")),
+        balanceF_BB(pb, 96, balanceF_MB.X, balanceF_BB_before, feePaymentB.getBurnFee(), FMT(annotation_prefix, ".balanceF_BB")),
 
         tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
         updateTradeHistoryA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}), FMT(annotation_prefix, ".updateTradeHistoryA")),
@@ -592,13 +793,15 @@ public:
         updateAccountB_A(pb, updateAccountS_A.result(), orderA.accountB.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenB, balanceB_A_before, balanceSB_B.Y, FMT(annotation_prefix, ".updateAccountB_A")),
         updateAccountF_A(pb, updateAccountB_A.result(), orderA.accountF.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_A_before, balanceF_BA.X, FMT(annotation_prefix, ".updateAccountF_A")),
         updateAccountF_WA(pb, updateAccountF_A.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_WA_before, balanceF_WA.Y, FMT(annotation_prefix, ".updateAccountF_WA")),
-        updateAccountF_BA(pb, updateAccountF_WA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_BA_before, balanceF_BA.Y, FMT(annotation_prefix, ".updateAccountF_BA")),
+        updateAccountF_MA(pb, updateAccountF_WA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_MA_before, balanceF_MA.Y, FMT(annotation_prefix, ".updateAccountF_MA")),
+        updateAccountF_BA(pb, updateAccountF_MA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_BA_before, balanceF_BA.Y, FMT(annotation_prefix, ".updateAccountF_BA")),
 
         updateAccountS_B(pb, updateAccountF_BA.result(), orderB.accountS.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenS, balanceS_B_before, balanceSB_B.X, FMT(annotation_prefix, ".updateAccountS_B")),
         updateAccountB_B(pb, updateAccountS_B.result(), orderB.accountB.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenB, balanceB_B_before, balanceSB_A.Y, FMT(annotation_prefix, ".updateAccountB_B")),
         updateAccountF_B(pb, updateAccountB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_B_before, balanceF_BB.X, FMT(annotation_prefix, ".updateAccountF_B")),
         updateAccountF_WB(pb, updateAccountF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_WB_before, balanceF_WB.Y, FMT(annotation_prefix, ".updateAccountF_WB")),
-        updateAccountF_BB(pb, updateAccountF_WB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_BB_before, balanceF_BB.Y, FMT(annotation_prefix, ".updateAccountF_BB")),
+        updateAccountF_MB(pb, updateAccountF_WB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_MB_before, balanceF_MB.Y, FMT(annotation_prefix, ".updateAccountF_MB")),
+        updateAccountF_BB(pb, updateAccountF_MB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_BB_before, balanceF_BB.Y, FMT(annotation_prefix, ".updateAccountF_BB")),
 
         filledLeqA(pb, updateTradeHistoryA.getFilledAfter(), orderA.amountS.packed, FMT(annotation_prefix, ".filled_A <= .amountSA")),
         filledLeqB(pb, updateTradeHistoryB.getFilledAfter(), orderB.amountS.packed, FMT(annotation_prefix, ".filled_B <= .amountSB")),
@@ -607,7 +810,7 @@ public:
         rateCheckerB(pb, fillS_B.packed, fillB_B.packed, orderA.amountB.packed, orderB.amountB.packed, FMT(annotation_prefix, ".rateB")),
 
         rateCheckerFeeA(pb, fillF_A.packed, fillS_A.packed, orderA.amountF.packed, orderA.amountS.packed, FMT(annotation_prefix, ".rateFeeA")),
-        rateCheckerFeeB(pb, fillF_B.packed, fillS_B.packed, orderA.amountF.packed, orderB.amountS.packed, FMT(annotation_prefix, ".rateFeeB")),
+        rateCheckerFeeB(pb, fillF_B.packed, fillS_B.packed, orderB.amountF.packed, orderB.amountS.packed, FMT(annotation_prefix, ".rateFeeB")),
 
         matchLeqA(pb, fillB_B.packed, fillS_A.packed, FMT(annotation_prefix, ".fillB_B <= .fillS_A")),
         matchLeqB(pb, fillB_A.packed, fillS_B.packed, FMT(annotation_prefix, ".fillB_A <= .fillS_B"))
@@ -656,32 +859,34 @@ public:
         fillF_B.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillF_B);
         fillF_B.generate_r1cs_witness_from_bits();
 
-        pb.val(fillF_WA) = ringSettlement.walletFee_A;
-        pb.val(fillF_BA) = ringSettlement.burnFee_A;
-        pb.val(fillF_WB) = ringSettlement.walletFee_B;
-        pb.val(fillF_BB) = ringSettlement.burnFee_B;
-
         pb.val(burnRateF_A) = ringSettlement.burnRateCheckF_A.burnRateData.burnRate;
         pb.val(burnRateF_B) = ringSettlement.burnRateCheckF_B.burnRateData.burnRate;
         checkBurnRateF_A.generate_r1cs_witness(ringSettlement.burnRateCheckF_A.proof);
         checkBurnRateF_B.generate_r1cs_witness(ringSettlement.burnRateCheckF_B.proof);
 
+        feePaymentA.generate_r1cs_witness();
+        feePaymentB.generate_r1cs_witness();
+
         pb.val(balanceS_A_before) = ringSettlement.accountUpdateS_A.before.balance;
         pb.val(balanceB_A_before) = ringSettlement.accountUpdateB_A.before.balance;
         pb.val(balanceF_A_before) = ringSettlement.accountUpdateF_A.before.balance;
         pb.val(balanceF_WA_before) = ringSettlement.accountUpdateF_WA.before.balance;
+        pb.val(balanceF_MA_before) = ringSettlement.accountUpdateF_MA.before.balance;
         pb.val(balanceF_BA_before) = ringSettlement.accountUpdateF_BA.before.balance;
         pb.val(balanceS_B_before) = ringSettlement.accountUpdateS_B.before.balance;
         pb.val(balanceB_B_before) = ringSettlement.accountUpdateB_B.before.balance;
         pb.val(balanceF_B_before) = ringSettlement.accountUpdateF_B.before.balance;
         pb.val(balanceF_WB_before) = ringSettlement.accountUpdateF_WB.before.balance;
+        pb.val(balanceF_MB_before) = ringSettlement.accountUpdateF_MB.before.balance;
         pb.val(balanceF_BB_before) = ringSettlement.accountUpdateF_BB.before.balance;
 
         balanceSB_A.generate_r1cs_witness();
         balanceSB_B.generate_r1cs_witness();
         balanceF_WA.generate_r1cs_witness();
+        balanceF_MA.generate_r1cs_witness();
         balanceF_BA.generate_r1cs_witness();
         balanceF_WB.generate_r1cs_witness();
+        balanceF_MB.generate_r1cs_witness();
         balanceF_BB.generate_r1cs_witness();
 
         //
@@ -703,11 +908,13 @@ public:
         updateAccountB_A.generate_r1cs_witness(ringSettlement.accountUpdateB_A.proof);
         updateAccountF_A.generate_r1cs_witness(ringSettlement.accountUpdateF_A.proof);
         updateAccountF_WA.generate_r1cs_witness(ringSettlement.accountUpdateF_WA.proof);
+        updateAccountF_MA.generate_r1cs_witness(ringSettlement.accountUpdateF_MA.proof);
         updateAccountF_BA.generate_r1cs_witness(ringSettlement.accountUpdateF_BA.proof);
         updateAccountS_B.generate_r1cs_witness(ringSettlement.accountUpdateS_B.proof);
         updateAccountB_B.generate_r1cs_witness(ringSettlement.accountUpdateB_B.proof);
         updateAccountF_B.generate_r1cs_witness(ringSettlement.accountUpdateF_B.proof);
         updateAccountF_WB.generate_r1cs_witness(ringSettlement.accountUpdateF_WB.proof);
+        updateAccountF_MB.generate_r1cs_witness(ringSettlement.accountUpdateF_MB.proof);
         updateAccountF_BB.generate_r1cs_witness(ringSettlement.accountUpdateF_BB.proof);
 
         //
@@ -744,19 +951,18 @@ public:
         balanceSB_A.generate_r1cs_constraints();
         balanceSB_B.generate_r1cs_constraints();
         balanceF_WA.generate_r1cs_constraints();
+        balanceF_MA.generate_r1cs_constraints();
         balanceF_BA.generate_r1cs_constraints();
         balanceF_WB.generate_r1cs_constraints();
+        balanceF_MB.generate_r1cs_constraints();
         balanceF_BB.generate_r1cs_constraints();
 
         //
         // Check burnrate
         //
 
-        pb.add_r1cs_constraint(ConstraintT(fillF_WA + fillF_BA, 1, fillF_A.packed), "fillF_WA + fillF_BA == fillF_A");
-        pb.add_r1cs_constraint(ConstraintT(fillF_A.packed, burnRateF_A, fillF_BA * 1000), "fillF_A * burnRateF_A == fillF_BA");
-        pb.add_r1cs_constraint(ConstraintT(fillF_WB + fillF_BB, 1, fillF_B.packed), "fillF_WB + fillF_BB == fillF_B");
-        pb.add_r1cs_constraint(ConstraintT(fillF_B.packed, burnRateF_B, fillF_BB * 1000), "fillF_B * burnRateF_B == fillF_BB");
-
+        feePaymentA.generate_r1cs_witness();
+        feePaymentB.generate_r1cs_witness();
 
         //
         // Update trading history
@@ -776,11 +982,13 @@ public:
         updateAccountB_A.generate_r1cs_constraints();
         updateAccountF_A.generate_r1cs_constraints();
         updateAccountF_WA.generate_r1cs_constraints();
+        updateAccountF_MA.generate_r1cs_constraints();
         updateAccountF_BA.generate_r1cs_constraints();
         updateAccountS_B.generate_r1cs_constraints();
         updateAccountB_B.generate_r1cs_constraints();
         updateAccountF_B.generate_r1cs_constraints();
         updateAccountF_WB.generate_r1cs_constraints();
+        updateAccountF_MB.generate_r1cs_constraints();
         updateAccountF_BB.generate_r1cs_constraints();
 
         //
