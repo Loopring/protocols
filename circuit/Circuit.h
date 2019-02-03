@@ -83,9 +83,9 @@ public:
         const VariableT& _condition,
         const VariableT& _T,
         const VariableT& _F,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
         condition(_condition),
         T(_T),
@@ -134,9 +134,9 @@ public:
         ProtoboardT& pb,
         const VariableT& A,
         const VariableT& B,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
         lt(make_variable(pb, 1, "lt")),
         leq(make_variable(pb, 1, "leq")),
@@ -184,9 +184,9 @@ public:
         const VariableT& _A,
         const VariableT& _B,
         const VariableT& _C,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
         A(_A),
         B(_B),
@@ -247,9 +247,9 @@ public:
         const VariableT& _fillB,
         const VariableT& _amountS,
         const VariableT& _amountB,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
         fillS(_fillS),
         fillB(_fillB),
@@ -302,27 +302,27 @@ public:
         const VariableT& _burnRate,
         const VariableT& _walletSplitPercentage,
         const VariableT& _waiveFeePercentage,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
-        constant100(make_variable(pb, 100, FMT(annotation_prefix, ".constant100"))),
-        constant1000(make_variable(pb, 1000, FMT(annotation_prefix, ".constant1000"))),
+        constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
+        constant1000(make_variable(pb, 1000, FMT(prefix, ".constant1000"))),
 
         fee(_fee),
         burnRate(_burnRate),
         walletSplitPercentage(_walletSplitPercentage),
         waiveFeePercentage(_waiveFeePercentage),
 
-        matchingFee(make_variable(pb, FMT(annotation_prefix, ".matchingFee"))),
-        walletFeeToPay(make_variable(pb, FMT(annotation_prefix, ".walletFeeToPay"))),
-        matchingFeeToPay(make_variable(pb, FMT(annotation_prefix, ".matchingFeeToPay"))),
-        feeToBurn(make_variable(pb, FMT(annotation_prefix, ".feeToBurn"))),
+        matchingFee(make_variable(pb, FMT(prefix, ".matchingFee"))),
+        walletFeeToPay(make_variable(pb, FMT(prefix, ".walletFeeToPay"))),
+        matchingFeeToPay(make_variable(pb, FMT(prefix, ".matchingFeeToPay"))),
+        feeToBurn(make_variable(pb, FMT(prefix, ".feeToBurn"))),
 
-        walletFee(pb, fee, walletSplitPercentage, constant100, FMT(annotation_prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
-        walletFeeToBurn(pb, walletFee.result(), burnRate, constant1000, FMT(annotation_prefix, "(walletFee * burnRate) / 1000 == walletFeeToBurn")),
-        matchingFeeAfterWaiving(pb, matchingFee, waiveFeePercentage, constant100, FMT(annotation_prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving")),
-        matchingFeeToBurn(pb, matchingFeeAfterWaiving.result(), burnRate, constant1000, FMT(annotation_prefix, "(matchingFeeAfterWaiving * burnRate) / 1000 == matchingFeeToBurn"))
+        walletFee(pb, fee, walletSplitPercentage, constant100, FMT(prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
+        walletFeeToBurn(pb, walletFee.result(), burnRate, constant1000, FMT(prefix, "(walletFee * burnRate) / 1000 == walletFeeToBurn")),
+        matchingFeeAfterWaiving(pb, matchingFee, waiveFeePercentage, constant100, FMT(prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving")),
+        matchingFeeToBurn(pb, matchingFeeAfterWaiving.result(), burnRate, constant1000, FMT(prefix, "(matchingFeeAfterWaiving * burnRate) / 1000 == matchingFeeToBurn"))
     {
 
     }
@@ -412,42 +412,42 @@ public:
     OrderGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
-        dexID(pb, 16, FMT(annotation_prefix, ".dexID")),
-        orderID(pb, 4, FMT(annotation_prefix, ".orderID")),
-        accountS(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".accountS")),
-        accountB(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".accountB")),
-        accountF(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".accountF")),
-        amountS(pb, 96, FMT(annotation_prefix, ".amountS")),
-        amountB(pb, 96, FMT(annotation_prefix, ".amountB")),
-        amountF(pb, 96, FMT(annotation_prefix, ".amountF")),
-        walletF(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".walletF")),
-        padding(pb, 1, FMT(annotation_prefix, ".padding")),
+        dexID(pb, 16, FMT(prefix, ".dexID")),
+        orderID(pb, 4, FMT(prefix, ".orderID")),
+        accountS(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountS")),
+        accountB(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountB")),
+        accountF(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountF")),
+        amountS(pb, 96, FMT(prefix, ".amountS")),
+        amountB(pb, 96, FMT(prefix, ".amountB")),
+        amountF(pb, 96, FMT(prefix, ".amountF")),
+        walletF(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletF")),
+        padding(pb, 1, FMT(prefix, ".padding")),
 
-        walletSplitPercentage(pb, 8, FMT(annotation_prefix, ".walletSplitPercentage")),
-        waiveFeePercentage(pb, 8, FMT(annotation_prefix, ".waiveFeePercentage")),
+        walletSplitPercentage(pb, 8, FMT(prefix, ".walletSplitPercentage")),
+        waiveFeePercentage(pb, 8, FMT(prefix, ".waiveFeePercentage")),
 
-        tokenS(make_variable(pb, FMT(annotation_prefix, ".tokenS"))),
-        tokenB(make_variable(pb, FMT(annotation_prefix, ".tokenB"))),
-        tokenF(pb, TREE_DEPTH_TOKENS, FMT(annotation_prefix, ".tokenF")),
+        tokenS(make_variable(pb, FMT(prefix, ".tokenS"))),
+        tokenB(make_variable(pb, FMT(prefix, ".tokenB"))),
+        tokenF(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenF")),
 
-        publicKey(pb, FMT(annotation_prefix, ".publicKey")),
-        walletPublicKey(pb, FMT(annotation_prefix, ".walletPublicKey")),
+        publicKey(pb, FMT(prefix, ".publicKey")),
+        walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
 
-        filledBefore(make_variable(pb, FMT(annotation_prefix, ".filledBefore"))),
-        cancelled(make_variable(pb, FMT(annotation_prefix, ".cancelled"))),
+        filledBefore(make_variable(pb, FMT(prefix, ".filledBefore"))),
+        cancelled(make_variable(pb, FMT(prefix, ".cancelled"))),
 
-        balanceS(make_variable(pb, FMT(annotation_prefix, ".balanceS"))),
-        balanceB(make_variable(pb, FMT(annotation_prefix, ".balanceB"))),
-        balanceF(make_variable(pb, FMT(annotation_prefix, ".balanceF"))),
+        balanceS(make_variable(pb, FMT(prefix, ".balanceS"))),
+        balanceB(make_variable(pb, FMT(prefix, ".balanceB"))),
+        balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
-        sig_R(pb, FMT(annotation_prefix, ".R")),
-        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
+        sig_R(pb, FMT(prefix, ".R")),
+        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
         sig_m(flatten({dexID.bits, orderID.bits, accountS.bits, accountB.bits, accountF.bits, amountS.bits, amountB.bits, amountF.bits})),
-        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(annotation_prefix, ".signatureVerifier"))
+        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(prefix, ".signatureVerifier"))
     {
 
     }
@@ -556,20 +556,20 @@ public:
         const VariableT& cancelledBefore,
         const VariableT& filledAfter,
         const VariableT& cancelledAfter,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
         merkleRootBefore(_merkleRoot),
 
-        fill(pb, 96, FMT(annotation_prefix, ".fill")),
+        fill(pb, 96, FMT(prefix, ".fill")),
 
-        leafBefore(pb, libsnark::ONE, {filledBefore, cancelledBefore}, FMT(annotation_prefix, ".leafBefore")),
-        leafAfter(pb, libsnark::ONE, {filledAfter, cancelledAfter}, FMT(annotation_prefix, ".leafAfter")),
+        leafBefore(pb, libsnark::ONE, {filledBefore, cancelledBefore}, FMT(prefix, ".leafBefore")),
+        leafAfter(pb, libsnark::ONE, {filledAfter, cancelledAfter}, FMT(prefix, ".leafAfter")),
 
-        proof(make_var_array(pb, TREE_DEPTH_FILLED, FMT(annotation_prefix, ".proof"))),
-        proofVerifierBefore(pb, TREE_DEPTH_FILLED, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(annotation_prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_FILLED, address, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(annotation_prefix, ".pathAfter"))
+        proof(make_var_array(pb, TREE_DEPTH_FILLED, FMT(prefix, ".proof"))),
+        proofVerifierBefore(pb, TREE_DEPTH_FILLED, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(prefix, ".pathBefore")),
+        rootCalculatorAfter(pb, TREE_DEPTH_FILLED, address, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
     {
 
     }
@@ -623,18 +623,18 @@ public:
         const VariableT& token,
         const VariableT& balanceBefore,
         const VariableT& balanceAfter,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
         merkleRootBefore(_merkleRoot),
 
-        leafBefore(pb, libsnark::ONE, {publicKey.x, publicKey.y, token, balanceBefore}, FMT(annotation_prefix, ".leafBefore")),
-        leafAfter(pb, libsnark::ONE, {publicKey.x, publicKey.y, token, balanceAfter}, FMT(annotation_prefix, ".leafAfter")),
+        leafBefore(pb, libsnark::ONE, {publicKey.x, publicKey.y, token, balanceBefore}, FMT(prefix, ".leafBefore")),
+        leafAfter(pb, libsnark::ONE, {publicKey.x, publicKey.y, token, balanceAfter}, FMT(prefix, ".leafAfter")),
 
-        proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".proof"))),
-        proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(annotation_prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(annotation_prefix, ".pathAfter"))
+        proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".proof"))),
+        proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(prefix, ".pathBefore")),
+        rootCalculatorAfter(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
     {
 
     }
@@ -677,12 +677,12 @@ public:
         const VariableT& merkleRoot,
         const VariableArrayT& address,
         const VariableT& burnRate,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
-        proof(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(annotation_prefix, ".proof"))),
-        proofVerifier(pb, TREE_DEPTH_TOKENS, address, merkle_tree_IVs(pb), burnRate, merkleRoot, proof, FMT(annotation_prefix, ".path"))
+        proof(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".proof"))),
+        proofVerifier(pb, TREE_DEPTH_TOKENS, address, merkle_tree_IVs(pb), burnRate, merkleRoot, proof, FMT(prefix, ".path"))
     {
 
     }
@@ -712,16 +712,16 @@ public:
     MaxFillAmountsGadget(
         ProtoboardT& pb,
         const OrderGadget& _order,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
         order(_order),
 
-        remainingS(make_variable(pb, FMT(annotation_prefix, ".remainingS"))),
-        balanceS_lt_remainingS(pb, order.balanceS, remainingS, FMT(annotation_prefix, ".(spendableS < remainingS)")),
-        fillAmountS(pb, balanceS_lt_remainingS.result(), order.balanceS, remainingS, FMT(annotation_prefix, "fillAmountS = (balanceS < remainingS) ? balanceS : remainingS")),
-        fillAmountB(pb, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(annotation_prefix, "(fillAmountS * amountB) / amountS"))
+        remainingS(make_variable(pb, FMT(prefix, ".remainingS"))),
+        balanceS_lt_remainingS(pb, order.balanceS, remainingS, FMT(prefix, ".(spendableS < remainingS)")),
+        fillAmountS(pb, balanceS_lt_remainingS.result(), order.balanceS, remainingS, FMT(prefix, "fillAmountS = (balanceS < remainingS) ? balanceS : remainingS")),
+        fillAmountB(pb, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(prefix, "(fillAmountS * amountB) / amountS"))
     {
 
     }
@@ -789,38 +789,38 @@ public:
         ProtoboardT& pb,
         const OrderGadget& _orderA,
         const OrderGadget& _orderB,
-        const std::string& ap
+        const std::string& prefix
     ) :
-        GadgetT(pb, ap),
+        GadgetT(pb, prefix),
 
         orderA(_orderA),
         orderB(_orderB),
 
-        maxFillAmountA(pb, orderA, FMT(ap, ".maxFillAmountA")),
-        maxFillAmountB(pb, orderB, FMT(ap, ".maxFillAmountB")),
+        maxFillAmountA(pb, orderA, FMT(prefix, ".maxFillAmountA")),
+        maxFillAmountB(pb, orderB, FMT(prefix, ".maxFillAmountB")),
 
         fillAmountB_A_lt_fillAmountS_B(pb, maxFillAmountA.getAmountB(), maxFillAmountB.getAmountS(),
-                                       FMT(ap, "fillAmountB_A < fillAmountS_B")),
+                                       FMT(prefix, "fillAmountB_A < fillAmountS_B")),
 
         fillAmountB_B_T(maxFillAmountA.getAmountS()),
         fillAmountS_B_T(pb, maxFillAmountB.getAmountB(), orderB.amountS.packed, orderB.amountB.packed,
-                        FMT(ap, "fillAmountS_B = (fillAmountB_B * orderB.amountS) // orderB.amountB")),
+                        FMT(prefix, "fillAmountS_B = (fillAmountB_B * orderB.amountS) // orderB.amountB")),
 
         fillAmountB_A_F(maxFillAmountB.getAmountS()),
         fillAmountS_A_F(pb, maxFillAmountA.getAmountB(), orderA.amountS.packed, orderA.amountB.packed,
-                        FMT(ap, "fillAmountS_A = (fillAmountB_A * orderA.amountS) // orderA.amountB")),
+                        FMT(prefix, "fillAmountS_A = (fillAmountB_A * orderA.amountS) // orderA.amountB")),
 
-        fillAmountS_A(pb, fillAmountB_A_lt_fillAmountS_B.result(), maxFillAmountA.getAmountS(), fillAmountS_A_F.result(), FMT(ap, "fillAmountS_A")),
-        fillAmountB_A(pb, fillAmountB_A_lt_fillAmountS_B.result(), maxFillAmountA.getAmountB(), fillAmountB_A_F, FMT(ap, "fillAmountB_A")),
-        fillAmountS_B(pb, fillAmountB_A_lt_fillAmountS_B.result(), fillAmountS_B_T.result(), maxFillAmountB.getAmountS(), FMT(ap, "fillAmountS_B")),
-        fillAmountB_B(pb, fillAmountB_A_lt_fillAmountS_B.result(), fillAmountB_B_T, maxFillAmountB.getAmountB(), FMT(ap, "fillAmountB_B")),
+        fillAmountS_A(pb, fillAmountB_A_lt_fillAmountS_B.result(), maxFillAmountA.getAmountS(), fillAmountS_A_F.result(), FMT(prefix, "fillAmountS_A")),
+        fillAmountB_A(pb, fillAmountB_A_lt_fillAmountS_B.result(), maxFillAmountA.getAmountB(), fillAmountB_A_F, FMT(prefix, "fillAmountB_A")),
+        fillAmountS_B(pb, fillAmountB_A_lt_fillAmountS_B.result(), fillAmountS_B_T.result(), maxFillAmountB.getAmountS(), FMT(prefix, "fillAmountS_B")),
+        fillAmountB_B(pb, fillAmountB_A_lt_fillAmountS_B.result(), fillAmountB_B_T, maxFillAmountB.getAmountB(), FMT(prefix, "fillAmountB_B")),
 
-        margin(make_variable(pb, FMT(ap, ".margin"))),
+        margin(make_variable(pb, FMT(prefix, ".margin"))),
 
         fillAmountF_A(pb, orderA.amountF.packed, fillAmountS_A.result(), orderA.amountS.packed,
-                      FMT(ap, "fillAmountF_A = (orderA.amountF * fillAmountS_A) // orderA.amountS")),
+                      FMT(prefix, "fillAmountF_A = (orderA.amountF * fillAmountS_A) // orderA.amountS")),
         fillAmountF_B(pb, orderB.amountF.packed, fillAmountS_B.result(), orderB.amountS.packed,
-                      FMT(ap, "fillAmountF_B = (orderB.amountF * fillAmountS_B) // orderB.amountS"))
+                      FMT(prefix, "fillAmountF_B = (orderB.amountF * fillAmountS_B) // orderB.amountS"))
     {
 
     }
@@ -993,92 +993,92 @@ public:
         const VariableT& _accountsMerkleRoot,
         const VariableT& _burnRateMerkleRoot,
         const VariableT& _timestamp,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
-        constant1000(make_variable(pb, 1000, FMT(annotation_prefix, ".constant1000"))),
+        orderA(pb, params, FMT(prefix, ".orderA")),
+        orderB(pb, params, FMT(prefix, ".orderB")),
 
-        orderA(pb, params, FMT(annotation_prefix, ".orderA")),
-        orderB(pb, params, FMT(annotation_prefix, ".orderB")),
+        orderMatching(pb, orderA, orderB, FMT(prefix, ".orderMatching")),
 
-        orderMatching(pb, orderA, orderB, FMT(annotation_prefix, ".orderMatching")),
+        orderIDPadding(make_var_array(pb, 12, FMT(prefix, ".orderIDPadding"))),
 
-        orderIDPadding(make_var_array(pb, 12, FMT(annotation_prefix, ".orderIDPadding"))),
+        fillS_A(pb, 96, FMT(prefix, ".fillS_A")),
+        fillB_A(pb, 96, FMT(prefix, ".fillB_A")),
+        fillF_A(pb, 96, FMT(prefix, ".fillF_A")),
+        fillS_B(pb, 96, FMT(prefix, ".fillS_B")),
+        fillB_B(pb, 96, FMT(prefix, ".fillB_B")),
+        fillF_B(pb, 96, FMT(prefix, ".fillF_B")),
 
-        fillS_A(pb, 96, FMT(annotation_prefix, ".fillS_A")),
-        fillB_A(pb, 96, FMT(annotation_prefix, ".fillB_A")),
-        fillF_A(pb, 96, FMT(annotation_prefix, ".fillF_A")),
-        fillS_B(pb, 96, FMT(annotation_prefix, ".fillS_B")),
-        fillB_B(pb, 96, FMT(annotation_prefix, ".fillB_B")),
-        fillF_B(pb, 96, FMT(annotation_prefix, ".fillF_B")),
+        filledAfterA(make_variable(pb, FMT(prefix, ".filledAfterA"))),
+        filledAfterB(make_variable(pb, FMT(prefix, ".filledAfterB"))),
 
-        filledAfterA(make_variable(pb, FMT(annotation_prefix, ".filledAfterA"))),
-        filledAfterB(make_variable(pb, FMT(annotation_prefix, ".filledAfterB"))),
+        burnRateF_A(make_variable(pb, FMT(prefix, ".burnRateF_A"))),
+        burnRateF_B(make_variable(pb, FMT(prefix, ".burnRateF_B"))),
 
-        burnRateF_A(make_variable(pb, FMT(annotation_prefix, ".burnRateF_A"))),
-        burnRateF_B(make_variable(pb, FMT(annotation_prefix, ".burnRateF_B"))),
+        checkBurnRateF_A(pb, _burnRateMerkleRoot, orderA.tokenF.bits, burnRateF_A, FMT(prefix, ".checkBurnRateF_A")),
+        checkBurnRateF_B(pb, _burnRateMerkleRoot, orderB.tokenF.bits, burnRateF_B, FMT(prefix, ".checkBurnRateF_B")),
 
-        checkBurnRateF_A(pb, _burnRateMerkleRoot, orderA.tokenF.bits, burnRateF_A, FMT(annotation_prefix, ".checkBurnRateF_A")),
-        checkBurnRateF_B(pb, _burnRateMerkleRoot, orderB.tokenF.bits, burnRateF_B, FMT(annotation_prefix, ".checkBurnRateF_B")),
+        feePaymentA(pb, fillF_A.packed, burnRateF_A, orderA.walletSplitPercentage.packed, orderA.waiveFeePercentage.packed, FMT(prefix, "feePaymentA")),
+        feePaymentB(pb, fillF_B.packed, burnRateF_B, orderB.walletSplitPercentage.packed, orderB.waiveFeePercentage.packed, FMT(prefix, "feePaymentB")),
 
-        feePaymentA(pb, fillF_A.packed, burnRateF_A, orderA.walletSplitPercentage.packed, orderA.waiveFeePercentage.packed, FMT(annotation_prefix, "feePaymentA")),
-        feePaymentB(pb, fillF_B.packed, burnRateF_B, orderB.walletSplitPercentage.packed, orderB.waiveFeePercentage.packed, FMT(annotation_prefix, "feePaymentB")),
+        balanceS_A_before(make_variable(pb, FMT(prefix, ".balanceS_A_before"))),
+        balanceB_A_before(make_variable(pb, FMT(prefix, ".balanceB_A_before"))),
+        balanceF_A_before(make_variable(pb, FMT(prefix, ".balanceF_A_before"))),
+        balanceF_WA_before(make_variable(pb, FMT(prefix, ".balanceF_WA_before"))),
+        balanceF_MA_before(make_variable(pb, FMT(prefix, ".balanceF_MA_before"))),
+        balanceF_BA_before(make_variable(pb, FMT(prefix, ".balanceF_BA_before"))),
+        balanceS_B_before(make_variable(pb, FMT(prefix, ".balanceS_B_before"))),
+        balanceB_B_before(make_variable(pb, FMT(prefix, ".balanceB_B_before"))),
+        balanceF_B_before(make_variable(pb, FMT(prefix, ".balanceF_B_before"))),
+        balanceF_WB_before(make_variable(pb, FMT(prefix, ".balanceF_WB_before"))),
+        balanceF_MB_before(make_variable(pb, FMT(prefix, ".balanceF_MB_before"))),
+        balanceF_BB_before(make_variable(pb, FMT(prefix, ".balanceF_BB_before"))),
 
-        balanceS_A_before(make_variable(pb, FMT(annotation_prefix, ".balanceS_A_before"))),
-        balanceB_A_before(make_variable(pb, FMT(annotation_prefix, ".balanceB_A_before"))),
-        balanceF_A_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_A_before"))),
-        balanceF_WA_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_WA_before"))),
-        balanceF_MA_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_MA_before"))),
-        balanceF_BA_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_BA_before"))),
-        balanceS_B_before(make_variable(pb, FMT(annotation_prefix, ".balanceS_B_before"))),
-        balanceB_B_before(make_variable(pb, FMT(annotation_prefix, ".balanceB_B_before"))),
-        balanceF_B_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_B_before"))),
-        balanceF_WB_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_WB_before"))),
-        balanceF_MB_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_MB_before"))),
-        balanceF_BB_before(make_variable(pb, FMT(annotation_prefix, ".balanceF_BB_before"))),
+        balanceSB_A(pb, 96, balanceS_A_before, balanceB_B_before, fillS_A.packed, FMT(prefix, ".balanceSB_A")),
+        balanceSB_B(pb, 96, balanceS_B_before, balanceB_A_before, fillS_B.packed, FMT(prefix, ".balanceSB_B")),
 
-        balanceSB_A(pb, 96, balanceS_A_before, balanceB_B_before, fillS_A.packed, FMT(annotation_prefix, ".balanceSB_A")),
-        balanceSB_B(pb, 96, balanceS_B_before, balanceB_A_before, fillS_B.packed, FMT(annotation_prefix, ".balanceSB_B")),
+        balanceF_WA(pb, 96, balanceF_A_before, balanceF_WA_before, feePaymentA.getWalletFee(), FMT(prefix, ".balanceF_WA")),
+        balanceF_MA(pb, 96, balanceF_WA.X, balanceF_MA_before, feePaymentA.getMatchingFee(), FMT(prefix, ".balanceF_MA")),
+        balanceF_BA(pb, 96, balanceF_MA.X, balanceF_BA_before, feePaymentA.getBurnFee(), FMT(prefix, ".balanceF_BA")),
 
-        balanceF_WA(pb, 96, balanceF_A_before, balanceF_WA_before, feePaymentA.getWalletFee(), FMT(annotation_prefix, ".balanceF_WA")),
-        balanceF_MA(pb, 96, balanceF_WA.X, balanceF_MA_before, feePaymentA.getMatchingFee(), FMT(annotation_prefix, ".balanceF_MA")),
-        balanceF_BA(pb, 96, balanceF_MA.X, balanceF_BA_before, feePaymentA.getBurnFee(), FMT(annotation_prefix, ".balanceF_BA")),
-
-        balanceF_WB(pb, 96, balanceF_B_before, balanceF_WB_before, feePaymentB.getWalletFee(), FMT(annotation_prefix, ".balanceF_WB")),
-        balanceF_MB(pb, 96, balanceF_WB.X, balanceF_MB_before, feePaymentB.getMatchingFee(), FMT(annotation_prefix, ".balanceF_MB")),
-        balanceF_BB(pb, 96, balanceF_MB.X, balanceF_BB_before, feePaymentB.getBurnFee(), FMT(annotation_prefix, ".balanceF_BB")),
+        balanceF_WB(pb, 96, balanceF_B_before, balanceF_WB_before, feePaymentB.getWalletFee(), FMT(prefix, ".balanceF_WB")),
+        balanceF_MB(pb, 96, balanceF_WB.X, balanceF_MB_before, feePaymentB.getMatchingFee(), FMT(prefix, ".balanceF_MB")),
+        balanceF_BB(pb, 96, balanceF_MB.X, balanceF_BB_before, feePaymentB.getBurnFee(), FMT(prefix, ".balanceF_BB")),
 
         tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
-        updateTradeHistoryA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}), orderA.filledBefore, orderA.cancelled, filledAfterA, orderA.cancelled, FMT(annotation_prefix, ".updateTradeHistoryA")),
-        updateTradeHistoryB(pb, updateTradeHistoryA.getNewTradingHistoryMerkleRoot(), flatten({orderB.orderID.bits, orderB.accountS.bits}), orderB.filledBefore, orderB.cancelled, filledAfterB, orderB.cancelled, FMT(annotation_prefix, ".updateTradeHistoryB")),
+        updateTradeHistoryA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}),
+                            orderA.filledBefore, orderA.cancelled, filledAfterA, orderA.cancelled, FMT(prefix, ".updateTradeHistoryA")),
+        updateTradeHistoryB(pb, updateTradeHistoryA.getNewTradingHistoryMerkleRoot(), flatten({orderB.orderID.bits, orderB.accountS.bits}),
+                            orderB.filledBefore, orderB.cancelled, filledAfterB, orderB.cancelled, FMT(prefix, ".updateTradeHistoryB")),
 
         accountsMerkleRoot(_accountsMerkleRoot),
-        updateAccountS_A(pb, accountsMerkleRoot,        orderA.accountS.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenS, balanceS_A_before, balanceSB_A.X, FMT(annotation_prefix, ".updateAccountS_A")),
-        updateAccountB_A(pb, updateAccountS_A.result(), orderA.accountB.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenB, balanceB_A_before, balanceSB_B.Y, FMT(annotation_prefix, ".updateAccountB_A")),
-        updateAccountF_A(pb, updateAccountB_A.result(), orderA.accountF.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_A_before, balanceF_BA.X, FMT(annotation_prefix, ".updateAccountF_A")),
-        updateAccountF_WA(pb, updateAccountF_A.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_WA_before, balanceF_WA.Y, FMT(annotation_prefix, ".updateAccountF_WA")),
-        updateAccountF_MA(pb, updateAccountF_WA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_MA_before, balanceF_MA.Y, FMT(annotation_prefix, ".updateAccountF_MA")),
-        updateAccountF_BA(pb, updateAccountF_MA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_BA_before, balanceF_BA.Y, FMT(annotation_prefix, ".updateAccountF_BA")),
+        updateAccountS_A(pb, accountsMerkleRoot, orderA.accountS.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenS, balanceS_A_before, balanceSB_A.X, FMT(prefix, ".updateAccountS_A")),
+        updateAccountB_A(pb, updateAccountS_A.result(), orderA.accountB.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenB, balanceB_A_before, balanceSB_B.Y, FMT(prefix, ".updateAccountB_A")),
+        updateAccountF_A(pb, updateAccountB_A.result(), orderA.accountF.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_A_before, balanceF_BA.X, FMT(prefix, ".updateAccountF_A")),
+        updateAccountF_WA(pb, updateAccountF_A.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_WA_before, balanceF_WA.Y, FMT(prefix, ".updateAccountF_WA")),
+        updateAccountF_MA(pb, updateAccountF_WA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_MA_before, balanceF_MA.Y, FMT(prefix, ".updateAccountF_MA")),
+        updateAccountF_BA(pb, updateAccountF_MA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_BA_before, balanceF_BA.Y, FMT(prefix, ".updateAccountF_BA")),
 
-        updateAccountS_B(pb, updateAccountF_BA.result(), orderB.accountS.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenS, balanceS_B_before, balanceSB_B.X, FMT(annotation_prefix, ".updateAccountS_B")),
-        updateAccountB_B(pb, updateAccountS_B.result(), orderB.accountB.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenB, balanceB_B_before, balanceSB_A.Y, FMT(annotation_prefix, ".updateAccountB_B")),
-        updateAccountF_B(pb, updateAccountB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_B_before, balanceF_BB.X, FMT(annotation_prefix, ".updateAccountF_B")),
-        updateAccountF_WB(pb, updateAccountF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_WB_before, balanceF_WB.Y, FMT(annotation_prefix, ".updateAccountF_WB")),
-        updateAccountF_MB(pb, updateAccountF_WB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_MB_before, balanceF_MB.Y, FMT(annotation_prefix, ".updateAccountF_MB")),
-        updateAccountF_BB(pb, updateAccountF_MB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_BB_before, balanceF_BB.Y, FMT(annotation_prefix, ".updateAccountF_BB")),
+        updateAccountS_B(pb, updateAccountF_BA.result(), orderB.accountS.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenS, balanceS_B_before, balanceSB_B.X, FMT(prefix, ".updateAccountS_B")),
+        updateAccountB_B(pb, updateAccountS_B.result(), orderB.accountB.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenB, balanceB_B_before, balanceSB_A.Y, FMT(prefix, ".updateAccountB_B")),
+        updateAccountF_B(pb, updateAccountB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_B_before, balanceF_BB.X, FMT(prefix, ".updateAccountF_B")),
+        updateAccountF_WB(pb, updateAccountF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_WB_before, balanceF_WB.Y, FMT(prefix, ".updateAccountF_WB")),
+        updateAccountF_MB(pb, updateAccountF_WB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_MB_before, balanceF_MB.Y, FMT(prefix, ".updateAccountF_MB")),
+        updateAccountF_BB(pb, updateAccountF_MB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_BB_before, balanceF_BB.Y, FMT(prefix, ".updateAccountF_BB")),
 
-        filledLeqA(pb, filledAfterA, orderA.amountS.packed, FMT(annotation_prefix, ".filled_A <= .amountSA")),
-        filledLeqB(pb, filledAfterB, orderB.amountS.packed, FMT(annotation_prefix, ".filled_B <= .amountSB")),
+        filledLeqA(pb, filledAfterA, orderA.amountS.packed, FMT(prefix, ".filled_A <= .amountSA")),
+        filledLeqB(pb, filledAfterB, orderB.amountS.packed, FMT(prefix, ".filled_B <= .amountSB")),
 
-        rateCheckerA(pb, fillS_A.packed, fillB_A.packed, orderA.amountS.packed, orderA.amountB.packed, FMT(annotation_prefix, ".rateA")),
-        rateCheckerB(pb, fillS_B.packed, fillB_B.packed, orderA.amountB.packed, orderB.amountB.packed, FMT(annotation_prefix, ".rateB")),
+        rateCheckerA(pb, fillS_A.packed, fillB_A.packed, orderA.amountS.packed, orderA.amountB.packed, FMT(prefix, ".rateA")),
+        rateCheckerB(pb, fillS_B.packed, fillB_B.packed, orderA.amountB.packed, orderB.amountB.packed, FMT(prefix, ".rateB")),
 
-        rateCheckerFeeA(pb, fillF_A.packed, fillS_A.packed, orderA.amountF.packed, orderA.amountS.packed, FMT(annotation_prefix, ".rateFeeA")),
-        rateCheckerFeeB(pb, fillF_B.packed, fillS_B.packed, orderB.amountF.packed, orderB.amountS.packed, FMT(annotation_prefix, ".rateFeeB")),
+        rateCheckerFeeA(pb, fillF_A.packed, fillS_A.packed, orderA.amountF.packed, orderA.amountS.packed, FMT(prefix, ".rateFeeA")),
+        rateCheckerFeeB(pb, fillF_B.packed, fillS_B.packed, orderB.amountF.packed, orderB.amountS.packed, FMT(prefix, ".rateFeeB")),
 
-        matchLeqA(pb, fillB_B.packed, fillS_A.packed, FMT(annotation_prefix, ".fillB_B <= .fillS_A")),
-        matchLeqB(pb, fillB_A.packed, fillS_B.packed, FMT(annotation_prefix, ".fillB_A <= .fillS_B"))
+        matchLeqA(pb, fillB_B.packed, fillS_A.packed, FMT(prefix, ".fillB_B <= .fillS_A")),
+        matchLeqB(pb, fillB_A.packed, fillS_B.packed, FMT(prefix, ".fillB_A <= .fillS_B"))
     {
 
     }
@@ -1315,17 +1315,17 @@ public:
 
     sha256_many* publicDataHasher;
 
-    TradeCircuitGadget(ProtoboardT& pb, const std::string& annotation_prefix) :
-        GadgetT(pb, annotation_prefix),
+    TradeCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
+        GadgetT(pb, prefix),
 
-        publicDataHash(pb, 256, FMT(annotation_prefix, ".publicDataHash")),
+        publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
 
-        tradingHistoryMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootBefore")),
-        tradingHistoryMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootAfter")),
-        accountsMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootBefore")),
-        accountsMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootAfter")),
-        burnRateMerkleRoot(pb, 256, FMT(annotation_prefix, ".burnRateMerkleRoot")),
-        timestamp(pb, 32, FMT(annotation_prefix, ".timestamp"))
+        tradingHistoryMerkleRootBefore(pb, 256, FMT(prefix, ".tradingHistoryMerkleRootBefore")),
+        tradingHistoryMerkleRootAfter(pb, 256, FMT(prefix, ".tradingHistoryMerkleRootAfter")),
+        accountsMerkleRootBefore(pb, 256, FMT(prefix, ".accountsMerkleRootBefore")),
+        accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter")),
+        burnRateMerkleRoot(pb, 256, FMT(prefix, ".burnRateMerkleRoot")),
+        timestamp(pb, 32, FMT(prefix, ".timestamp"))
     {
         this->publicDataHasher = nullptr;
     }
@@ -1485,32 +1485,32 @@ public:
     DepositGadget(
         ProtoboardT& pb,
         const VariableT& _merkleRoot,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
-        address(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".address"))),
+        address(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".address"))),
 
-        emptyPublicKeyX(make_variable(pb, 0, FMT(annotation_prefix, ".emptyPublicKeyX"))),
-        emptyPublicKeyY(make_variable(pb, 0, FMT(annotation_prefix, ".emptyPublicKeyY"))),
-        emptyDex(make_variable(pb, 0, FMT(annotation_prefix, ".emptyDex"))),
-        emptyToken(make_variable(pb, 0, FMT(annotation_prefix, ".emptyToken"))),
-        emptyBalance(make_variable(pb, 0, FMT(annotation_prefix, ".emptyBalance"))),
+        emptyPublicKeyX(make_variable(pb, 0, FMT(prefix, ".emptyPublicKeyX"))),
+        emptyPublicKeyY(make_variable(pb, 0, FMT(prefix, ".emptyPublicKeyY"))),
+        emptyDex(make_variable(pb, 0, FMT(prefix, ".emptyDex"))),
+        emptyToken(make_variable(pb, 0, FMT(prefix, ".emptyToken"))),
+        emptyBalance(make_variable(pb, 0, FMT(prefix, ".emptyBalance"))),
 
-        publicKeyX(pb, 256, FMT(annotation_prefix, ".publicKeyX")),
-        publicKeyY(pb, 256, FMT(annotation_prefix, ".publicKeyY")),
-        dex(pb, 16, FMT(annotation_prefix, ".dex")),
-        token(pb, 16, FMT(annotation_prefix, ".token")),
-        balance(pb, 96, FMT(annotation_prefix, ".balance")),
+        publicKeyX(pb, 256, FMT(prefix, ".publicKeyX")),
+        publicKeyY(pb, 256, FMT(prefix, ".publicKeyY")),
+        dex(pb, 16, FMT(prefix, ".dex")),
+        token(pb, 16, FMT(prefix, ".token")),
+        balance(pb, 96, FMT(prefix, ".balance")),
 
         merkleRootBefore(_merkleRoot),
 
-        leafBefore(pb, libsnark::ONE, {emptyPublicKeyX, emptyPublicKeyY, emptyToken, emptyBalance}, FMT(annotation_prefix, ".leafBefore")),
-        leafAfter(pb, libsnark::ONE, {publicKeyX.packed, publicKeyY.packed, token.packed, balance.packed}, FMT(annotation_prefix, ".leafAfter")),
+        leafBefore(pb, libsnark::ONE, {emptyPublicKeyX, emptyPublicKeyY, emptyToken, emptyBalance}, FMT(prefix, ".leafBefore")),
+        leafAfter(pb, libsnark::ONE, {publicKeyX.packed, publicKeyY.packed, token.packed, balance.packed}, FMT(prefix, ".leafAfter")),
 
-        proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".proof"))),
-        proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(annotation_prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(annotation_prefix, ".pathAfter"))
+        proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".proof"))),
+        proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(prefix, ".pathBefore")),
+        rootCalculatorAfter(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
     {
 
     }
@@ -1587,13 +1587,13 @@ public:
 
     sha256_many* publicDataHasher;
 
-    DepositsCircuitGadget(ProtoboardT& pb, const std::string& annotation_prefix) :
-        GadgetT(pb, annotation_prefix),
+    DepositsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
+        GadgetT(pb, prefix),
 
-        publicDataHash(pb, 256, FMT(annotation_prefix, ".publicDataHash")),
+        publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
 
-        accountsMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootBefore")),
-        accountsMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootAfter"))
+        accountsMerkleRootBefore(pb, 256, FMT(prefix, ".accountsMerkleRootBefore")),
+        accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter"))
     {
         this->publicDataHasher = nullptr;
     }
@@ -1722,29 +1722,29 @@ public:
         ProtoboardT& pb,
         const jubjub::Params& params,
         const VariableT& _merkleRoot,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
         merkleRootBefore(_merkleRoot),
 
-        publicKey(pb, FMT(annotation_prefix, ".publicKey")),
+        publicKey(pb, FMT(prefix, ".publicKey")),
 
-        account(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".account"))),
-        amount(pb, 96, FMT(annotation_prefix, ".amount")),
-        padding(pb, 2, FMT(annotation_prefix, ".padding")),
+        account(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
+        amount(pb, 96, FMT(prefix, ".amount")),
+        padding(pb, 2, FMT(prefix, ".padding")),
 
-        dex(make_variable(pb, FMT(annotation_prefix, ".dex"))),
-        token(make_variable(pb, FMT(annotation_prefix, ".token"))),
-        balance_before(make_variable(pb, FMT(annotation_prefix, ".balance_before"))),
-        balance_after(make_variable(pb, FMT(annotation_prefix, ".balance_after"))),
+        dex(make_variable(pb, FMT(prefix, ".dex"))),
+        token(make_variable(pb, FMT(prefix, ".token"))),
+        balance_before(make_variable(pb, FMT(prefix, ".balance_before"))),
+        balance_after(make_variable(pb, FMT(prefix, ".balance_after"))),
 
-        updateAccount(pb, merkleRootBefore, account, publicKey, dex, token, balance_before, balance_after, FMT(annotation_prefix, ".updateBalance")),
+        updateAccount(pb, merkleRootBefore, account, publicKey, dex, token, balance_before, balance_after, FMT(prefix, ".updateBalance")),
 
-        sig_R(pb, FMT(annotation_prefix, ".R")),
-        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
+        sig_R(pb, FMT(prefix, ".R")),
+        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
         sig_m(flatten({account, amount.bits, padding.bits})),
-        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(annotation_prefix, ".signatureVerifier"))
+        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(prefix, ".signatureVerifier"))
     {
 
     }
@@ -1813,13 +1813,13 @@ public:
 
     sha256_many* publicDataHasher;
 
-    WithdrawalsCircuitGadget(ProtoboardT& pb, const std::string& annotation_prefix) :
-        GadgetT(pb, annotation_prefix),
+    WithdrawalsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
+        GadgetT(pb, prefix),
 
-        publicDataHash(pb, 256, FMT(annotation_prefix, ".publicDataHash")),
+        publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
 
-        accountsMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootBefore")),
-        accountsMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".accountsMerkleRootAfter"))
+        accountsMerkleRootBefore(pb, 256, FMT(prefix, ".accountsMerkleRootBefore")),
+        accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter"))
     {
         this->publicDataHasher = nullptr;
     }
@@ -1951,33 +1951,33 @@ public:
         const jubjub::Params& params,
         const VariableT& _tradingHistoryMerkleRoot,
         const VariableT& _accountsMerkleRoot,
-        const std::string& annotation_prefix
+        const std::string& prefix
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, prefix),
 
         tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
         accountsMerkleRoot(_accountsMerkleRoot),
 
-        publicKey(pb, FMT(annotation_prefix, ".publicKey")),
+        publicKey(pb, FMT(prefix, ".publicKey")),
 
-        account(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(annotation_prefix, ".account"))),
-        orderID(make_var_array(pb, 4, FMT(annotation_prefix, ".orderID"))),
-        padding(pb, 1, FMT(annotation_prefix, ".padding")),
+        account(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
+        orderID(make_var_array(pb, 4, FMT(prefix, ".orderID"))),
+        padding(pb, 1, FMT(prefix, ".padding")),
 
-        filled(make_variable(pb, 0, FMT(annotation_prefix, ".filled"))),
-        cancelledBefore(make_variable(pb, 0, FMT(annotation_prefix, ".cancelledBefore"))),
-        cancelledAfter(make_variable(pb, 0, FMT(annotation_prefix, ".cancelledAfter"))),
-        updateTradeHistory(pb, tradingHistoryMerkleRoot, flatten({orderID, account}), filled, cancelledBefore, filled, cancelledAfter, FMT(annotation_prefix, ".updateTradeHistory")),
+        filled(make_variable(pb, 0, FMT(prefix, ".filled"))),
+        cancelledBefore(make_variable(pb, 0, FMT(prefix, ".cancelledBefore"))),
+        cancelledAfter(make_variable(pb, 0, FMT(prefix, ".cancelledAfter"))),
+        updateTradeHistory(pb, tradingHistoryMerkleRoot, flatten({orderID, account}), filled, cancelledBefore, filled, cancelledAfter, FMT(prefix, ".updateTradeHistory")),
 
-        dex(make_variable(pb, FMT(annotation_prefix, ".dex"))),
-        token(make_variable(pb, FMT(annotation_prefix, ".token"))),
-        balance(make_variable(pb, FMT(annotation_prefix, ".balance"))),
-        checkAccount(pb, accountsMerkleRoot, account, publicKey, dex, token, balance, balance, FMT(annotation_prefix, ".checkAccount")),
+        dex(make_variable(pb, FMT(prefix, ".dex"))),
+        token(make_variable(pb, FMT(prefix, ".token"))),
+        balance(make_variable(pb, FMT(prefix, ".balance"))),
+        checkAccount(pb, accountsMerkleRoot, account, publicKey, dex, token, balance, balance, FMT(prefix, ".checkAccount")),
 
-        sig_R(pb, FMT(annotation_prefix, ".R")),
-        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
+        sig_R(pb, FMT(prefix, ".R")),
+        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
         sig_m(flatten({account, orderID, padding.bits})),
-        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(annotation_prefix, ".signatureVerifier"))
+        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(prefix, ".signatureVerifier"))
     {
 
     }
@@ -2049,14 +2049,14 @@ public:
 
     sha256_many* publicDataHasher;
 
-    CancelsCircuitGadget(ProtoboardT& pb, const std::string& annotation_prefix) :
-        GadgetT(pb, annotation_prefix),
+    CancelsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
+        GadgetT(pb, prefix),
 
-        publicDataHash(pb, 256, FMT(annotation_prefix, ".publicDataHash")),
+        publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
 
-        tradingHistoryMerkleRootBefore(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootBefore")),
-        tradingHistoryMerkleRootAfter(pb, 256, FMT(annotation_prefix, ".tradingHistoryMerkleRootAfter")),
-        accountsMerkleRoot(pb, 256, FMT(annotation_prefix, ".accountsMerkleRoot"))
+        tradingHistoryMerkleRootBefore(pb, 256, FMT(prefix, ".tradingHistoryMerkleRootBefore")),
+        tradingHistoryMerkleRootAfter(pb, 256, FMT(prefix, ".tradingHistoryMerkleRootAfter")),
+        accountsMerkleRoot(pb, 256, FMT(prefix, ".accountsMerkleRoot"))
     {
         this->publicDataHasher = nullptr;
     }
