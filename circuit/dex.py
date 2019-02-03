@@ -365,12 +365,12 @@ class Dex(object):
         (fillAmountS_A, fillAmountB_A) = self.getMaxFillAmounts(ring.orderA)
         (fillAmountS_B, fillAmountB_B) = self.getMaxFillAmounts(ring.orderB)
 
-        if fillAmountB_A >= fillAmountS_B:
-            fillAmountB_A = fillAmountS_B
-            fillAmountS_A  = (fillAmountB_A * ring.orderA.amountS) // ring.orderA.amountB
-        else:
+        if fillAmountB_A < fillAmountS_B:
             fillAmountB_B = fillAmountS_A
-            fillAmountS_B  = (fillAmountB_B * ring.orderB.amountS) // ring.orderB.amountB
+            fillAmountS_B = (fillAmountB_B * ring.orderB.amountS) // ring.orderB.amountB
+        else:
+            fillAmountB_A = fillAmountS_B
+            fillAmountS_A = (fillAmountB_A * ring.orderA.amountS) // ring.orderA.amountB
 
         margin = fillAmountS_A - fillAmountB_B
 

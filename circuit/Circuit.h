@@ -100,7 +100,7 @@ public:
 
     }
 
-    const VariableT result() const
+    const VariableT& result() const
     {
         return selected;
     }
@@ -205,7 +205,7 @@ public:
 
     }
 
-    const VariableT result() const
+    const VariableT& result() const
     {
         return D;
     }
@@ -706,8 +706,7 @@ public:
 
     VariableT remainingS;
     LeqGadget balanceS_lt_remainingS;
-    TernaryGadget if_balanceS_lt_remainingS;
-    VariableT fillAmountS;
+    TernaryGadget fillAmountS;
     MulDivGadget fillAmountB;
 
     MaxFillAmountsGadget(
@@ -720,25 +719,33 @@ public:
         order(_order),
 
         remainingS(make_variable(pb, FMT(annotation_prefix, ".remainingS"))),
-        balanceS_lt_remainingS(pb, order.balanceS, remainingS, FMT(annotation_prefix, ".spendableS < remainingS")),
-        if_balanceS_lt_remainingS(pb, balanceS_lt_remainingS.result(), order.balanceS, remainingS, FMT(annotation_prefix, "balanceS_lt_remainingS ? balanceS : remainingS")),
-        fillAmountS(if_balanceS_lt_remainingS.result()),
-
-        fillAmountB(pb, fillAmountS, order.amountB.packed, order.amountS.packed, FMT(annotation_prefix, "(fillAmountS * amountB) / amountS"))
+        balanceS_lt_remainingS(pb, order.balanceS, remainingS, FMT(annotation_prefix, ".(spendableS < remainingS)")),
+        fillAmountS(pb, balanceS_lt_remainingS.result(), order.balanceS, remainingS, FMT(annotation_prefix, "fillAmountS = (balanceS < remainingS) ? balanceS : remainingS")),
+        fillAmountB(pb, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(annotation_prefix, "(fillAmountS * amountB) / amountS"))
     {
 
+    }
+
+    const VariableT& getAmountS()
+    {
+        return fillAmountS.result();
+    }
+
+    const VariableT& getAmountB()
+    {
+        return fillAmountB.result();
     }
 
     void generate_r1cs_witness ()
     {
         pb.val(remainingS) = pb.val(order.amountS.packed) - pb.val(order.filledBefore);
         balanceS_lt_remainingS.generate_r1cs_witness();
-        if_balanceS_lt_remainingS.generate_r1cs_witness();
+        fillAmountS.generate_r1cs_witness();
         fillAmountB.generate_r1cs_witness();
         std::cout << "amountS: " << pb.val(order.amountS.packed).as_ulong() << std::endl;
         std::cout << "filledBefore: " << pb.val(order.filledBefore).as_ulong() << std::endl;
         std::cout << "order.balanceS: " << pb.val(order.balanceS).as_ulong() << std::endl;
-        std::cout << "fillAmountS: " << pb.val(fillAmountS).as_ulong() << std::endl;
+        std::cout << "fillAmountS: " << pb.val(fillAmountS.result()).as_ulong() << std::endl;
         std::cout << "fillAmountB: " << pb.val(fillAmountB.result()).as_ulong() << std::endl;
     }
 
@@ -746,7 +753,7 @@ public:
     {
         pb.add_r1cs_constraint(ConstraintT(order.filledBefore + remainingS, 1, order.amountS.packed), "filledBeforeA + remainingS = amountS");
         balanceS_lt_remainingS.generate_r1cs_constraints();
-        if_balanceS_lt_remainingS.generate_r1cs_constraints();
+        fillAmountS.generate_r1cs_constraints();
         fillAmountB.generate_r1cs_constraints();
     }
 };
@@ -760,33 +767,139 @@ public:
     MaxFillAmountsGadget maxFillAmountA;
     MaxFillAmountsGadget maxFillAmountB;
 
+    LeqGadget fillAmountB_A_lt_fillAmountS_B;
+
+    VariableT fillAmountB_B_T;
+    MulDivGadget fillAmountS_B_T;
+
+    VariableT fillAmountB_A_F;
+    MulDivGadget fillAmountS_A_F;
+
+    TernaryGadget fillAmountS_A;
+    TernaryGadget fillAmountB_A;
+    TernaryGadget fillAmountS_B;
+    TernaryGadget fillAmountB_B;
+
+    VariableT margin;
+
+    MulDivGadget fillAmountF_A;
+    MulDivGadget fillAmountF_B;
+
     OrderMatchingGadget(
         ProtoboardT& pb,
         const OrderGadget& _orderA,
         const OrderGadget& _orderB,
-        const std::string& annotation_prefix
+        const std::string& ap
     ) :
-        GadgetT(pb, annotation_prefix),
+        GadgetT(pb, ap),
 
         orderA(_orderA),
         orderB(_orderB),
 
-        maxFillAmountA(pb, orderA, FMT(annotation_prefix, ".maxFillAmountA")),
-        maxFillAmountB(pb, orderB, FMT(annotation_prefix, ".maxFillAmountB"))
+        maxFillAmountA(pb, orderA, FMT(ap, ".maxFillAmountA")),
+        maxFillAmountB(pb, orderB, FMT(ap, ".maxFillAmountB")),
+
+        fillAmountB_A_lt_fillAmountS_B(pb, maxFillAmountA.getAmountB(), maxFillAmountB.getAmountS(),
+                                       FMT(ap, "fillAmountB_A < fillAmountS_B")),
+
+        fillAmountB_B_T(maxFillAmountA.getAmountS()),
+        fillAmountS_B_T(pb, maxFillAmountB.getAmountB(), orderB.amountS.packed, orderB.amountB.packed,
+                        FMT(ap, "fillAmountS_B = (fillAmountB_B * orderB.amountS) // orderB.amountB")),
+
+        fillAmountB_A_F(maxFillAmountB.getAmountS()),
+        fillAmountS_A_F(pb, maxFillAmountA.getAmountB(), orderA.amountS.packed, orderA.amountB.packed,
+                        FMT(ap, "fillAmountS_A = (fillAmountB_A * orderA.amountS) // orderA.amountB")),
+
+        fillAmountS_A(pb, fillAmountB_A_lt_fillAmountS_B.result(), maxFillAmountA.getAmountS(), fillAmountS_A_F.result(), FMT(ap, "fillAmountS_A")),
+        fillAmountB_A(pb, fillAmountB_A_lt_fillAmountS_B.result(), maxFillAmountA.getAmountB(), fillAmountB_A_F, FMT(ap, "fillAmountB_A")),
+        fillAmountS_B(pb, fillAmountB_A_lt_fillAmountS_B.result(), fillAmountS_B_T.result(), maxFillAmountB.getAmountS(), FMT(ap, "fillAmountS_B")),
+        fillAmountB_B(pb, fillAmountB_A_lt_fillAmountS_B.result(), fillAmountB_B_T, maxFillAmountB.getAmountB(), FMT(ap, "fillAmountB_B")),
+
+        margin(make_variable(pb, FMT(ap, ".margin"))),
+
+        fillAmountF_A(pb, orderA.amountF.packed, fillAmountS_A.result(), orderA.amountS.packed,
+                      FMT(ap, "fillAmountF_A = (orderA.amountF * fillAmountS_A) // orderA.amountS")),
+        fillAmountF_B(pb, orderB.amountF.packed, fillAmountS_B.result(), orderB.amountS.packed,
+                      FMT(ap, "fillAmountF_B = (orderB.amountF * fillAmountS_B) // orderB.amountS"))
     {
 
     }
 
-    void generate_r1cs_witness ()
+    const VariableT& getFillAmountS_A() const
+    {
+        return fillAmountS_A.result();
+    }
+
+    const VariableT& getFillAmountB_A() const
+    {
+        return fillAmountB_A.result();
+    }
+
+    const VariableT& getFillAmountF_A() const
+    {
+        return fillAmountF_A.result();
+    }
+
+    const VariableT& getFillAmountS_B() const
+    {
+        return fillAmountS_B.result();
+    }
+
+    const VariableT& getFillAmountB_B() const
+    {
+        return fillAmountB_B.result();
+    }
+
+    const VariableT& getFillAmountF_B() const
+    {
+        return fillAmountF_B.result();
+    }
+
+    const VariableT& getMargin() const
+    {
+        return margin;
+    }
+
+    void generate_r1cs_witness()
     {
         maxFillAmountA.generate_r1cs_witness();
         maxFillAmountB.generate_r1cs_witness();
+
+        fillAmountB_A_lt_fillAmountS_B.generate_r1cs_witness();
+
+        fillAmountS_B_T.generate_r1cs_witness();
+        fillAmountS_A_F.generate_r1cs_witness();
+
+        fillAmountS_A.generate_r1cs_witness();
+        fillAmountB_A.generate_r1cs_witness();
+        fillAmountS_B.generate_r1cs_witness();
+        fillAmountB_B.generate_r1cs_witness();
+
+        pb.val(margin) = pb.val(fillAmountS_A.result()) - pb.val(fillAmountB_B.result());
+
+        fillAmountF_A.generate_r1cs_witness();
+        fillAmountF_B.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
         maxFillAmountA.generate_r1cs_constraints();
         maxFillAmountB.generate_r1cs_constraints();
+
+        fillAmountB_A_lt_fillAmountS_B.generate_r1cs_constraints();
+
+        fillAmountS_B_T.generate_r1cs_constraints();
+        fillAmountS_A_F.generate_r1cs_constraints();
+
+        fillAmountS_A.generate_r1cs_constraints();
+        fillAmountB_A.generate_r1cs_constraints();
+        fillAmountS_B.generate_r1cs_constraints();
+        fillAmountB_B.generate_r1cs_constraints();
+
+        pb.add_r1cs_constraint(ConstraintT(fillAmountB_B.result() + margin, 1, fillAmountS_A.result()), "fillAmountB_B + margin = fillAmountS_A");
+
+        fillAmountF_A.generate_r1cs_constraints();
+        fillAmountF_B.generate_r1cs_constraints();
     }
 };
 
@@ -1096,6 +1209,14 @@ public:
         orderB.generate_r1cs_constraints();
 
         orderMatching.generate_r1cs_constraints();
+
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_A(), FieldT::one(), fillS_A.packed), "FillAmountS_A == fillS_A");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_A(), FieldT::one(), fillB_A.packed), "FillAmountB_A == fillB_A");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_A(), FieldT::one(), fillF_A.packed), "FillAmountF_A == fillF_A");
+
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_B(), FieldT::one(), fillS_B.packed), "FillAmountS_B == fillS_B");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_B(), FieldT::one(), fillB_B.packed), "FillAmountB_B == fillB_B");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_B(), FieldT::one(), fillF_B.packed), "FillAmountF_B == fillF_B");
 
         fillS_A.generate_r1cs_constraints(true);
         fillB_A.generate_r1cs_constraints(true);
