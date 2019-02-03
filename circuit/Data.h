@@ -146,6 +146,11 @@ public:
     ethsnarks::FieldT walletF;
     ethsnarks::FieldT walletSplitPercentage;
     ethsnarks::FieldT waiveFeePercentage;
+    ethsnarks::FieldT filledBefore;
+    ethsnarks::FieldT cancelled;
+    ethsnarks::FieldT balanceS;
+    ethsnarks::FieldT balanceB;
+    ethsnarks::FieldT balanceF;
     Signature sig;
 };
 
@@ -169,6 +174,11 @@ void from_json(const json& j, Order& order)
     order.walletF = ethsnarks::FieldT(j.at("walletF"));
     order.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     order.waiveFeePercentage = ethsnarks::FieldT(j.at("waiveFeePercentage"));
+    order.filledBefore = ethsnarks::FieldT(j.at("filledBefore"));
+    order.cancelled = ethsnarks::FieldT(j.at("cancelled"));
+    order.balanceS = ethsnarks::FieldT(j.at("balanceS"));
+    order.balanceB = ethsnarks::FieldT(j.at("balanceB"));
+    order.balanceF = ethsnarks::FieldT(j.at("balanceF"));
     order.sig = j.get<Signature>();
 }
 

@@ -277,6 +277,13 @@ class Dex(object):
                     "tokens_values": self._tokens,
                 }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
+    def getTradeHistory(self, address):
+        # Make sure the leaf exist in our map
+        if not(str(address) in self._tradeHistoryLeafs):
+            return TradeHistoryLeaf(0, 0)
+        else:
+            return self._tradeHistoryLeafs[str(address)]
+
     def updateTradeHistory(self, address, fill, cancelled = 0):
         # Make sure the leaf exist in our map
         if not(str(address) in self._tradeHistoryLeafs):
@@ -337,17 +344,65 @@ class Dex(object):
 
         return (walletFeeToPay, matchingFeeToPay, feeToBurn)
 
+    def getTradeHistoryAddress(self, order):
+        return (order.accountS << 4) + order.orderID
+
+    def getMaxFillAmounts(self, order):
+        tradeHistory = self.getTradeHistory(self.getTradeHistoryAddress(order))
+        order.filledBefore = int(tradeHistory.filled)
+        order.cancelled = int(tradeHistory.cancelled)
+        order.balanceS = int(self.getAccount(order.accountS).balance)
+        order.balanceB = int(self.getAccount(order.accountB).balance)
+        order.balanceF = int(self.getAccount(order.accountF).balance)
+
+        balanceS = int(self.getAccount(order.accountS).balance)
+        remainingS = order.amountS - order.filledBefore
+        fillAmountS = balanceS if (balanceS < remainingS) else remainingS
+        fillAmountB = (fillAmountS * order.amountB) // order.amountS
+        return (fillAmountS, fillAmountB)
+
     def settleRing(self, ring):
-        addressA = (ring.orderA.accountS << 4) + ring.orderA.orderID
-        addressB = (ring.orderB.accountS << 4) + ring.orderB.orderID
+        (fillAmountS_A, fillAmountB_A) = self.getMaxFillAmounts(ring.orderA)
+        (fillAmountS_B, fillAmountB_B) = self.getMaxFillAmounts(ring.orderB)
+
+        if fillAmountB_A >= fillAmountS_B:
+            fillAmountB_A = fillAmountS_B
+            fillAmountS_A  = (fillAmountB_A * ring.orderA.amountS) // ring.orderA.amountB
+        else:
+            fillAmountB_B = fillAmountS_A
+            fillAmountS_B  = (fillAmountB_B * ring.orderB.amountS) // ring.orderB.amountB
+
+        margin = fillAmountS_A - fillAmountB_B
+
+        fillAmountF_A = (ring.orderA.amountF * fillAmountS_A) // ring.orderA.amountS
+        fillAmountF_B = (ring.orderB.amountF * fillAmountS_B) // ring.orderB.amountS
+
+        ring.fillS_A = fillAmountS_A
+        ring.fillB_A = fillAmountB_A
+        ring.fillF_A = fillAmountF_A
+
+        ring.fillS_B = fillAmountS_B
+        ring.fillB_B = fillAmountB_B
+        ring.fillF_B = fillAmountF_B
+
+        print("fillAmountS_A: " + str(fillAmountS_A))
+        print("fillAmountB_A: " + str(fillAmountB_A))
+        print("fillAmountF_A: " + str(fillAmountF_A))
+
+        print("fillAmountS_B: " + str(fillAmountS_B))
+        print("fillAmountB_B: " + str(fillAmountB_B))
+        print("fillAmountF_B: " + str(fillAmountF_B))
+
+        print("margin: " + str(margin))
+
 
         # Copy the initial merkle root
         tradingHistoryMerkleRoot = self._tradingHistoryTree._root
         accountsMerkleRoot = self._accountsTree._root
 
         # Update filled amounts
-        tradeHistoryUpdate_A = self.updateTradeHistory(addressA, ring.fillS_A)
-        tradeHistoryUpdate_B = self.updateTradeHistory(addressB, ring.fillS_B)
+        tradeHistoryUpdate_A = self.updateTradeHistory(self.getTradeHistoryAddress(ring.orderA), ring.fillS_A)
+        tradeHistoryUpdate_B = self.updateTradeHistory(self.getTradeHistoryAddress(ring.orderB), ring.fillS_B)
 
         # Check burn rates
         burnRateCheckF_A = self.checkBurnRate(ring.orderA.tokenF)
@@ -415,6 +470,8 @@ class Dex(object):
         return Deposit(accountsMerkleRoot, address, AccountUpdateData(accountBefore, accountAfter, proof))
 
     def getAccount(self, accountID):
+        if accountID >= len(self._accounts):
+            print("Invalid account: " + str(accountID))
         return self._accounts[accountID]
 
     def withdraw(self, address, amount):

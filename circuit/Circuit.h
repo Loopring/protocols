@@ -65,6 +65,64 @@ const VariableArrayT flattenReverse( const std::vector<VariableArrayT> &in_scala
     return result;
 }
 
+class TernaryGadget : public GadgetT
+{
+public:
+    VariableT condition;
+    VariableT T;
+    VariableT F;
+
+    VariableT invCondition;
+    VariableT resultT;
+    VariableT resultF;
+
+    VariableT selected;
+
+    TernaryGadget(
+        ProtoboardT& pb,
+        const VariableT& _condition,
+        const VariableT& _T,
+        const VariableT& _F,
+        const std::string& annotation_prefix
+    ) :
+        GadgetT(pb, annotation_prefix),
+
+        condition(_condition),
+        T(_T),
+        F(_F),
+
+        invCondition(make_variable(pb, "invCondition")),
+        resultT(make_variable(pb, "resultT")),
+        resultF(make_variable(pb, "resultF")),
+
+        selected(make_variable(pb, "selected"))
+    {
+
+    }
+
+    const VariableT result() const
+    {
+        return selected;
+    }
+
+    void generate_r1cs_witness()
+    {
+        pb.val(invCondition) = FieldT::one() - pb.val(condition);
+        pb.val(resultT) = pb.val(T) * pb.val(condition);
+        pb.val(resultF) = pb.val(F) * pb.val(invCondition);
+        pb.val(selected) = pb.val(resultT) + pb.val(resultF);
+    }
+
+    void generate_r1cs_constraints()
+    {
+        libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, condition, "bitness");
+        pb.add_r1cs_constraint(ConstraintT(condition + invCondition, FieldT::one(), FieldT::one()), "condition + invCondition == 1");
+        pb.add_r1cs_constraint(ConstraintT(T, condition, resultT), "T * condition == resultT");
+        pb.add_r1cs_constraint(ConstraintT(F, invCondition, resultF), "F * invCondition == resultF");
+        pb.add_r1cs_constraint(ConstraintT(resultT + resultF, FieldT::one(), selected), "resultT + resultF == selected");
+    }
+};
+
 class LeqGadget : public GadgetT
 {
 public:
@@ -100,7 +158,7 @@ public:
     void generate_r1cs_constraints()
     {
         comparison.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(leq, 1, 1), "leq == 1");
+        pb.add_r1cs_constraint(ConstraintT(leq, FieldT::one(), FieldT::one()), "leq == 1");
     }
 };
 
@@ -126,7 +184,6 @@ public:
         const VariableT& _A,
         const VariableT& _B,
         const VariableT& _C,
-        const VariableT& _D,
         const std::string& annotation_prefix
     ) :
         GadgetT(pb, annotation_prefix),
@@ -134,7 +191,8 @@ public:
         A(_A),
         B(_B),
         C(_C),
-        D(_D),
+
+        D(make_variable(pb, "D")),
 
         X(make_variable(pb, "X")),
         Y(make_variable(pb, "Y")),
@@ -147,8 +205,14 @@ public:
 
     }
 
+    const VariableT result() const
+    {
+        return D;
+    }
+
     void generate_r1cs_witness()
     {
+        pb.val(D) = (pb.val(A) * pb.val(B)).as_ulong() / pb.val(C).as_ulong();
         pb.val(X) = pb.val(A) * pb.val(B);
         pb.val(Y) = pb.val(C) * pb.val(D);
         pb.val(rest) = pb.val(X) - pb.val(Y);
@@ -222,23 +286,15 @@ public:
     VariableT walletSplitPercentage;
     VariableT waiveFeePercentage;
 
-    VariableT walletFee;
     VariableT matchingFee;
-
-    VariableT walletFeeToBurn;
     VariableT walletFeeToPay;
-
-    VariableT matchingFeeAfterWaiving;
-
-    VariableT matchingFeeToBurn;
     VariableT matchingFeeToPay;
-
     VariableT feeToBurn;
 
-    MulDivGadget walletSplit;
-    MulDivGadget walletBurnSplit;
-    MulDivGadget matchingWaiveSplit;
-    MulDivGadget matchingBurnSplit;
+    MulDivGadget walletFee;
+    MulDivGadget walletFeeToBurn;
+    MulDivGadget matchingFeeAfterWaiving;
+    MulDivGadget matchingFeeToBurn;
 
     FeePaymentCalculator(
         ProtoboardT& pb,
@@ -258,23 +314,15 @@ public:
         walletSplitPercentage(_walletSplitPercentage),
         waiveFeePercentage(_waiveFeePercentage),
 
-        walletFee(make_variable(pb, FMT(annotation_prefix, ".walletFee"))),
         matchingFee(make_variable(pb, FMT(annotation_prefix, ".matchingFee"))),
-
-        walletFeeToBurn(make_variable(pb, FMT(annotation_prefix, ".walletFeeToBurn"))),
         walletFeeToPay(make_variable(pb, FMT(annotation_prefix, ".walletFeeToPay"))),
-
-        matchingFeeAfterWaiving(make_variable(pb, FMT(annotation_prefix, ".matchingFeeAfterWaiving"))),
-
-        matchingFeeToBurn(make_variable(pb, FMT(annotation_prefix, ".matchingFeeToBurn"))),
         matchingFeeToPay(make_variable(pb, FMT(annotation_prefix, ".matchingFeeToPay"))),
-
         feeToBurn(make_variable(pb, FMT(annotation_prefix, ".feeToBurn"))),
 
-        walletSplit(pb, fee, walletSplitPercentage, constant100, walletFee, FMT(annotation_prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
-        walletBurnSplit(pb, walletFee, burnRate, constant1000, walletFeeToBurn, FMT(annotation_prefix, "(walletFee * burnRate) / 1000 == walletFeeToBurn")),
-        matchingWaiveSplit(pb, matchingFee, waiveFeePercentage, constant100, matchingFeeAfterWaiving, FMT(annotation_prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving")),
-        matchingBurnSplit(pb, matchingFeeAfterWaiving, burnRate, constant1000, matchingFeeToBurn, FMT(annotation_prefix, "(matchingFeeAfterWaiving * burnRate) / 1000 == matchingFeeToBurn"))
+        walletFee(pb, fee, walletSplitPercentage, constant100, FMT(annotation_prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
+        walletFeeToBurn(pb, walletFee.result(), burnRate, constant1000, FMT(annotation_prefix, "(walletFee * burnRate) / 1000 == walletFeeToBurn")),
+        matchingFeeAfterWaiving(pb, matchingFee, waiveFeePercentage, constant100, FMT(annotation_prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving")),
+        matchingFeeToBurn(pb, matchingFeeAfterWaiving.result(), burnRate, constant1000, FMT(annotation_prefix, "(matchingFeeAfterWaiving * burnRate) / 1000 == matchingFeeToBurn"))
     {
 
     }
@@ -296,24 +344,29 @@ public:
 
     void generate_r1cs_witness()
     {
-        pb.val(walletFee) = (pb.val(fee) * pb.val(walletSplitPercentage)).as_ulong() / 100;
-        pb.val(matchingFee) = pb.val(fee) - pb.val(walletFee);
+        walletFee.generate_r1cs_witness();
+        walletFeeToBurn.generate_r1cs_witness();
+        pb.val(walletFeeToPay) = pb.val(walletFee.result()) - pb.val(walletFeeToBurn.result());
 
-        pb.val(walletFeeToBurn) = (pb.val(walletFee) * pb.val(burnRate)).as_ulong() / 1000;
-        pb.val(walletFeeToPay) = pb.val(walletFee) - pb.val(walletFeeToBurn);
+        pb.val(matchingFee) = pb.val(fee) - pb.val(walletFee.result());
+        matchingFeeAfterWaiving.generate_r1cs_witness();
+        matchingFeeToBurn.generate_r1cs_witness();
+        pb.val(matchingFeeToPay) = pb.val(matchingFeeAfterWaiving.result()) - pb.val(matchingFeeToBurn.result());
 
-        pb.val(matchingFeeAfterWaiving) = (pb.val(matchingFee) * pb.val(waiveFeePercentage)).as_ulong() / 100;
-
-        pb.val(matchingFeeToBurn) = (pb.val(matchingFeeAfterWaiving) * pb.val(burnRate)).as_ulong() / 1000;
-        pb.val(matchingFeeToPay) = pb.val(matchingFeeAfterWaiving) - pb.val(matchingFeeToBurn);
-
-        pb.val(feeToBurn) = pb.val(walletFeeToBurn) + pb.val(matchingFeeToBurn);
+        pb.val(feeToBurn) = pb.val(walletFeeToBurn.result()) + pb.val(matchingFeeToBurn.result());
     }
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(walletFee + matchingFee, FieldT::one(), fee), "walletFee + matchingFee == fee");
-        pb.add_r1cs_constraint(ConstraintT(walletFeeToBurn + matchingFeeToBurn, FieldT::one(), feeToBurn), "walletFeeToBurn + matchingFeeToBurn == feeToBurn");
+        walletFee.generate_r1cs_constraints();
+        walletFeeToBurn.generate_r1cs_constraints();
+        matchingFeeAfterWaiving.generate_r1cs_constraints();
+        matchingFeeToBurn.generate_r1cs_constraints();
+
+        pb.add_r1cs_constraint(ConstraintT(walletFeeToPay + walletFeeToBurn.result(), FieldT::one(), walletFee.result()), "walletFeeToPay + walletFeeToBurn == walletFee");
+        pb.add_r1cs_constraint(ConstraintT(walletFee.result() + matchingFee, FieldT::one(), fee), "walletFee + matchingFee == fee");
+        pb.add_r1cs_constraint(ConstraintT(matchingFeeToPay + matchingFeeToBurn.result(), FieldT::one(), matchingFeeAfterWaiving.result()), "matchingFeeToPay + matchingFeeToBurn == matchingFeeAfterWaiving");
+        pb.add_r1cs_constraint(ConstraintT(walletFeeToBurn.result() + matchingFeeToBurn.result(), FieldT::one(), feeToBurn), "walletFeeToBurn + matchingFeeToBurn == feeToBurn");
     }
 };
 
@@ -342,6 +395,13 @@ public:
 
     const jubjub::VariablePointT publicKey;
     const jubjub::VariablePointT walletPublicKey;
+
+    VariableT filledBefore;
+    VariableT cancelled;
+
+    VariableT balanceS;
+    VariableT balanceB;
+    VariableT balanceF;
 
     // variables for signature
     const jubjub::VariablePointT sig_R;
@@ -377,6 +437,12 @@ public:
         publicKey(pb, FMT(annotation_prefix, ".publicKey")),
         walletPublicKey(pb, FMT(annotation_prefix, ".walletPublicKey")),
 
+        filledBefore(make_variable(pb, FMT(annotation_prefix, ".filledBefore"))),
+        cancelled(make_variable(pb, FMT(annotation_prefix, ".cancelled"))),
+
+        balanceS(make_variable(pb, FMT(annotation_prefix, ".balanceS"))),
+        balanceB(make_variable(pb, FMT(annotation_prefix, ".balanceB"))),
+        balanceF(make_variable(pb, FMT(annotation_prefix, ".balanceF"))),
 
         sig_R(pb, FMT(annotation_prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(annotation_prefix, ".s"))),
@@ -419,11 +485,17 @@ public:
         waiveFeePercentage.bits.fill_with_bits_of_field_element(pb, order.waiveFeePercentage);
         waiveFeePercentage.generate_r1cs_witness_from_bits();
 
-
         pb.val(tokenS) = order.tokenS;
         pb.val(tokenB) = order.tokenB;
         tokenF.bits.fill_with_bits_of_field_element(pb, order.tokenF);
         tokenF.generate_r1cs_witness_from_bits();
+
+        pb.val(filledBefore) = order.filledBefore;
+        pb.val(cancelled) = order.cancelled;
+
+        pb.val(balanceS) = order.balanceS;
+        pb.val(balanceB) = order.balanceB;
+        pb.val(balanceF) = order.balanceF;
 
         pb.val(publicKey.x) = order.publicKey.x;
         pb.val(publicKey.y) = order.publicKey.y;
@@ -469,12 +541,6 @@ public:
 
     libsnark::dual_variable_gadget<FieldT> fill;
 
-    VariableT filledBefore;
-    VariableT filledAfter;
-
-    VariableT cancelledBefore;
-    VariableT cancelledAfter;
-
     MiMC_hash_gadget leafBefore;
     MiMC_hash_gadget leafAfter;
 
@@ -486,6 +552,10 @@ public:
         ProtoboardT& pb,
         const VariableT& _merkleRoot,
         const VariableArrayT& address,
+        const VariableT& filledBefore,
+        const VariableT& cancelledBefore,
+        const VariableT& filledAfter,
+        const VariableT& cancelledAfter,
         const std::string& annotation_prefix
     ) :
         GadgetT(pb, annotation_prefix),
@@ -493,12 +563,6 @@ public:
         merkleRootBefore(_merkleRoot),
 
         fill(pb, 96, FMT(annotation_prefix, ".fill")),
-
-        filledBefore(make_variable(pb, FMT(annotation_prefix, ".filledBefore"))),
-        cancelledBefore(make_variable(pb, FMT(annotation_prefix, ".cancelledBefore"))),
-
-        filledAfter(make_variable(pb, FMT(annotation_prefix, ".filledAfter"))),
-        cancelledAfter(make_variable(pb, FMT(annotation_prefix, ".cancelledAfter"))),
 
         leafBefore(pb, libsnark::ONE, {filledBefore, cancelledBefore}, FMT(annotation_prefix, ".leafBefore")),
         leafAfter(pb, libsnark::ONE, {filledAfter, cancelledAfter}, FMT(annotation_prefix, ".leafAfter")),
@@ -515,31 +579,18 @@ public:
         return rootCalculatorAfter.result();
     }
 
-    const VariableT getFilledAfter() const
+    void generate_r1cs_witness(const Proof& _proof)
     {
-        return filledAfter;
-    }
-
-    void generate_r1cs_witness(const TradeHistoryUpdate& tradeHistoryUpdate)
-    {
-        pb.val(filledBefore) = tradeHistoryUpdate.before.filled;
-        pb.val(cancelledBefore) = tradeHistoryUpdate.before.cancelled;
-
-        pb.val(filledAfter) = tradeHistoryUpdate.after.filled;
-        pb.val(cancelledAfter) = tradeHistoryUpdate.after.cancelled;
-
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
 
-        proof.fill_with_field_elements(pb, tradeHistoryUpdate.proof.data);
+        proof.fill_with_field_elements(pb, _proof.data);
         proofVerifierBefore.generate_r1cs_witness();
         rootCalculatorAfter.generate_r1cs_witness();
     }
 
-    void generate_r1cs_constraints(const VariableT& fill)
+    void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(filledBefore + fill, 1, filledAfter), "filledBefore + fill = filledAfter");
-
         leafBefore.generate_r1cs_constraints();
         leafAfter.generate_r1cs_constraints();
 
@@ -648,6 +699,97 @@ public:
     }
 };
 
+class MaxFillAmountsGadget : public GadgetT
+{
+public:
+    const OrderGadget& order;
+
+    VariableT remainingS;
+    LeqGadget balanceS_lt_remainingS;
+    TernaryGadget if_balanceS_lt_remainingS;
+    VariableT fillAmountS;
+    MulDivGadget fillAmountB;
+
+    MaxFillAmountsGadget(
+        ProtoboardT& pb,
+        const OrderGadget& _order,
+        const std::string& annotation_prefix
+    ) :
+        GadgetT(pb, annotation_prefix),
+
+        order(_order),
+
+        remainingS(make_variable(pb, FMT(annotation_prefix, ".remainingS"))),
+        balanceS_lt_remainingS(pb, order.balanceS, remainingS, FMT(annotation_prefix, ".spendableS < remainingS")),
+        if_balanceS_lt_remainingS(pb, balanceS_lt_remainingS.result(), order.balanceS, remainingS, FMT(annotation_prefix, "balanceS_lt_remainingS ? balanceS : remainingS")),
+        fillAmountS(if_balanceS_lt_remainingS.result()),
+
+        fillAmountB(pb, fillAmountS, order.amountB.packed, order.amountS.packed, FMT(annotation_prefix, "(fillAmountS * amountB) / amountS"))
+    {
+
+    }
+
+    void generate_r1cs_witness ()
+    {
+        pb.val(remainingS) = pb.val(order.amountS.packed) - pb.val(order.filledBefore);
+        balanceS_lt_remainingS.generate_r1cs_witness();
+        if_balanceS_lt_remainingS.generate_r1cs_witness();
+        fillAmountB.generate_r1cs_witness();
+        std::cout << "amountS: " << pb.val(order.amountS.packed).as_ulong() << std::endl;
+        std::cout << "filledBefore: " << pb.val(order.filledBefore).as_ulong() << std::endl;
+        std::cout << "order.balanceS: " << pb.val(order.balanceS).as_ulong() << std::endl;
+        std::cout << "fillAmountS: " << pb.val(fillAmountS).as_ulong() << std::endl;
+        std::cout << "fillAmountB: " << pb.val(fillAmountB.result()).as_ulong() << std::endl;
+    }
+
+    void generate_r1cs_constraints()
+    {
+        pb.add_r1cs_constraint(ConstraintT(order.filledBefore + remainingS, 1, order.amountS.packed), "filledBeforeA + remainingS = amountS");
+        balanceS_lt_remainingS.generate_r1cs_constraints();
+        if_balanceS_lt_remainingS.generate_r1cs_constraints();
+        fillAmountB.generate_r1cs_constraints();
+    }
+};
+
+class OrderMatchingGadget : public GadgetT
+{
+public:
+    const OrderGadget& orderA;
+    const OrderGadget& orderB;
+
+    MaxFillAmountsGadget maxFillAmountA;
+    MaxFillAmountsGadget maxFillAmountB;
+
+    OrderMatchingGadget(
+        ProtoboardT& pb,
+        const OrderGadget& _orderA,
+        const OrderGadget& _orderB,
+        const std::string& annotation_prefix
+    ) :
+        GadgetT(pb, annotation_prefix),
+
+        orderA(_orderA),
+        orderB(_orderB),
+
+        maxFillAmountA(pb, orderA, FMT(annotation_prefix, ".maxFillAmountA")),
+        maxFillAmountB(pb, orderB, FMT(annotation_prefix, ".maxFillAmountB"))
+    {
+
+    }
+
+    void generate_r1cs_witness ()
+    {
+        maxFillAmountA.generate_r1cs_witness();
+        maxFillAmountB.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        maxFillAmountA.generate_r1cs_constraints();
+        maxFillAmountB.generate_r1cs_constraints();
+    }
+};
+
 class RingSettlementGadget : public GadgetT
 {
 public:
@@ -657,6 +799,8 @@ public:
     OrderGadget orderA;
     OrderGadget orderB;
 
+    OrderMatchingGadget orderMatching;
+
     VariableArrayT orderIDPadding;
 
     libsnark::dual_variable_gadget<FieldT> fillS_A;
@@ -665,6 +809,9 @@ public:
     libsnark::dual_variable_gadget<FieldT> fillS_B;
     libsnark::dual_variable_gadget<FieldT> fillB_B;
     libsnark::dual_variable_gadget<FieldT> fillF_B;
+
+    VariableT filledAfterA;
+    VariableT filledAfterB;
 
     VariableT burnRateF_A;
     VariableT burnRateF_B;
@@ -742,6 +889,8 @@ public:
         orderA(pb, params, FMT(annotation_prefix, ".orderA")),
         orderB(pb, params, FMT(annotation_prefix, ".orderB")),
 
+        orderMatching(pb, orderA, orderB, FMT(annotation_prefix, ".orderMatching")),
+
         orderIDPadding(make_var_array(pb, 12, FMT(annotation_prefix, ".orderIDPadding"))),
 
         fillS_A(pb, 96, FMT(annotation_prefix, ".fillS_A")),
@@ -750,6 +899,9 @@ public:
         fillS_B(pb, 96, FMT(annotation_prefix, ".fillS_B")),
         fillB_B(pb, 96, FMT(annotation_prefix, ".fillB_B")),
         fillF_B(pb, 96, FMT(annotation_prefix, ".fillF_B")),
+
+        filledAfterA(make_variable(pb, FMT(annotation_prefix, ".filledAfterA"))),
+        filledAfterB(make_variable(pb, FMT(annotation_prefix, ".filledAfterB"))),
 
         burnRateF_A(make_variable(pb, FMT(annotation_prefix, ".burnRateF_A"))),
         burnRateF_B(make_variable(pb, FMT(annotation_prefix, ".burnRateF_B"))),
@@ -785,8 +937,8 @@ public:
         balanceF_BB(pb, 96, balanceF_MB.X, balanceF_BB_before, feePaymentB.getBurnFee(), FMT(annotation_prefix, ".balanceF_BB")),
 
         tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
-        updateTradeHistoryA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}), FMT(annotation_prefix, ".updateTradeHistoryA")),
-        updateTradeHistoryB(pb, updateTradeHistoryA.getNewTradingHistoryMerkleRoot(), flatten({orderB.orderID.bits, orderB.accountS.bits}), FMT(annotation_prefix, ".updateTradeHistoryB")),
+        updateTradeHistoryA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}), orderA.filledBefore, orderA.cancelled, filledAfterA, orderA.cancelled, FMT(annotation_prefix, ".updateTradeHistoryA")),
+        updateTradeHistoryB(pb, updateTradeHistoryA.getNewTradingHistoryMerkleRoot(), flatten({orderB.orderID.bits, orderB.accountS.bits}), orderB.filledBefore, orderB.cancelled, filledAfterB, orderB.cancelled, FMT(annotation_prefix, ".updateTradeHistoryB")),
 
         accountsMerkleRoot(_accountsMerkleRoot),
         updateAccountS_A(pb, accountsMerkleRoot,        orderA.accountS.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenS, balanceS_A_before, balanceSB_A.X, FMT(annotation_prefix, ".updateAccountS_A")),
@@ -803,8 +955,8 @@ public:
         updateAccountF_MB(pb, updateAccountF_WB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_MB_before, balanceF_MB.Y, FMT(annotation_prefix, ".updateAccountF_MB")),
         updateAccountF_BB(pb, updateAccountF_MB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_BB_before, balanceF_BB.Y, FMT(annotation_prefix, ".updateAccountF_BB")),
 
-        filledLeqA(pb, updateTradeHistoryA.getFilledAfter(), orderA.amountS.packed, FMT(annotation_prefix, ".filled_A <= .amountSA")),
-        filledLeqB(pb, updateTradeHistoryB.getFilledAfter(), orderB.amountS.packed, FMT(annotation_prefix, ".filled_B <= .amountSB")),
+        filledLeqA(pb, filledAfterA, orderA.amountS.packed, FMT(annotation_prefix, ".filled_A <= .amountSA")),
+        filledLeqB(pb, filledAfterB, orderB.amountS.packed, FMT(annotation_prefix, ".filled_B <= .amountSB")),
 
         rateCheckerA(pb, fillS_A.packed, fillB_A.packed, orderA.amountS.packed, orderA.amountB.packed, FMT(annotation_prefix, ".rateA")),
         rateCheckerB(pb, fillS_B.packed, fillB_B.packed, orderA.amountB.packed, orderB.amountB.packed, FMT(annotation_prefix, ".rateB")),
@@ -844,6 +996,8 @@ public:
         orderA.generate_r1cs_witness(ringSettlement.ring.orderA);
         orderB.generate_r1cs_witness(ringSettlement.ring.orderB);
 
+        orderMatching.generate_r1cs_witness();
+
         orderIDPadding.fill_with_bits_of_ulong(pb, 0);
 
         fillS_A.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillS_A);
@@ -858,6 +1012,9 @@ public:
         fillB_B.generate_r1cs_witness_from_bits();
         fillF_B.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillF_B);
         fillF_B.generate_r1cs_witness_from_bits();
+
+        pb.val(filledAfterA) = pb.val(orderA.filledBefore) + pb.val(fillS_A.packed);
+        pb.val(filledAfterB) = pb.val(orderB.filledBefore) + pb.val(fillS_B.packed);
 
         pb.val(burnRateF_A) = ringSettlement.burnRateCheckF_A.burnRateData.burnRate;
         pb.val(burnRateF_B) = ringSettlement.burnRateCheckF_B.burnRateData.burnRate;
@@ -894,8 +1051,8 @@ public:
         //
 
         pb.val(tradingHistoryMerkleRoot) = ringSettlement.tradingHistoryMerkleRoot;
-        updateTradeHistoryA.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_A);
-        updateTradeHistoryB.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_B);
+        updateTradeHistoryA.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_A.proof);
+        updateTradeHistoryB.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_B.proof);
 
         filledLeqA.generate_r1cs_witness();
         filledLeqB.generate_r1cs_witness();
@@ -938,12 +1095,17 @@ public:
         orderA.generate_r1cs_constraints();
         orderB.generate_r1cs_constraints();
 
+        orderMatching.generate_r1cs_constraints();
+
         fillS_A.generate_r1cs_constraints(true);
         fillB_A.generate_r1cs_constraints(true);
         fillF_A.generate_r1cs_constraints(true);
         fillS_B.generate_r1cs_constraints(true);
         fillB_B.generate_r1cs_constraints(true);
         fillF_B.generate_r1cs_constraints(true);
+
+        pb.add_r1cs_constraint(ConstraintT(orderA.filledBefore + fillS_A.packed, 1, filledAfterA), "filledBeforeA + fillA = filledAfterA");
+        pb.add_r1cs_constraint(ConstraintT(orderB.filledBefore + fillS_B.packed, 1, filledAfterB), "filledBeforeB + fillB = filledAfterB");
 
         checkBurnRateF_A.generate_r1cs_constraints();
         checkBurnRateF_B.generate_r1cs_constraints();
@@ -968,8 +1130,8 @@ public:
         // Update trading history
         //
 
-        updateTradeHistoryA.generate_r1cs_constraints(fillS_A.packed);
-        updateTradeHistoryB.generate_r1cs_constraints(fillS_B.packed);
+        updateTradeHistoryA.generate_r1cs_constraints();
+        updateTradeHistoryB.generate_r1cs_constraints();
 
         filledLeqA.generate_r1cs_constraints();
         filledLeqB.generate_r1cs_constraints();
@@ -1646,12 +1808,15 @@ public:
     VariableArrayT orderID;
     libsnark::dual_variable_gadget<FieldT> padding;
 
+    VariableT filled;
+    VariableT cancelledBefore;
+    VariableT cancelledAfter;
+
     VariableT dex;
     VariableT token;
     VariableT balance;
     UpdateAccountGadget checkAccount;
 
-    VariableT fill;
     UpdateTradeHistoryGadget updateTradeHistory;
 
     // variables for signature
@@ -1678,8 +1843,10 @@ public:
         orderID(make_var_array(pb, 4, FMT(annotation_prefix, ".orderID"))),
         padding(pb, 1, FMT(annotation_prefix, ".padding")),
 
-        fill(make_variable(pb, 0, FMT(annotation_prefix, ".fill"))),
-        updateTradeHistory(pb, tradingHistoryMerkleRoot, flatten({orderID, account}), FMT(annotation_prefix, ".updateTradeHistory")),
+        filled(make_variable(pb, 0, FMT(annotation_prefix, ".filled"))),
+        cancelledBefore(make_variable(pb, 0, FMT(annotation_prefix, ".cancelledBefore"))),
+        cancelledAfter(make_variable(pb, 0, FMT(annotation_prefix, ".cancelledAfter"))),
+        updateTradeHistory(pb, tradingHistoryMerkleRoot, flatten({orderID, account}), filled, cancelledBefore, filled, cancelledAfter, FMT(annotation_prefix, ".updateTradeHistory")),
 
         dex(make_variable(pb, FMT(annotation_prefix, ".dex"))),
         token(make_variable(pb, FMT(annotation_prefix, ".token"))),
@@ -1715,11 +1882,15 @@ public:
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
+        pb.val(filled) = cancellation.tradeHistoryUpdate.before.filled;
+        pb.val(cancelledBefore) = cancellation.tradeHistoryUpdate.before.cancelled;
+        pb.val(cancelledAfter) = cancellation.tradeHistoryUpdate.after.cancelled;
+
         pb.val(dex) = cancellation.accountUpdate.before.dexID;
         pb.val(token) = cancellation.accountUpdate.before.token;
         pb.val(balance) = cancellation.accountUpdate.before.balance;
 
-        updateTradeHistory.generate_r1cs_witness(cancellation.tradeHistoryUpdate);
+        updateTradeHistory.generate_r1cs_witness(cancellation.tradeHistoryUpdate.proof);
 
         checkAccount.generate_r1cs_witness(cancellation.accountUpdate.proof);
 
@@ -1733,8 +1904,9 @@ public:
     {
         padding.generate_r1cs_constraints(true);
         signatureVerifier.generate_r1cs_constraints();
-        updateTradeHistory.generate_r1cs_constraints(fill);
+        updateTradeHistory.generate_r1cs_constraints();
         checkAccount.generate_r1cs_constraints();
+        pb.add_r1cs_constraint(ConstraintT(cancelledAfter, FieldT::one(), FieldT::one()), "cancelledAfter == 1");
     }
 };
 
