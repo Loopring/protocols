@@ -4,7 +4,7 @@ sys.path.insert(0, 'circuit')
 import os.path
 import subprocess
 import json
-from dex import Account, Dex, Order, Ring
+from dex import Account, Context, Dex, Order, Ring
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
 
@@ -99,15 +99,7 @@ def ringFromJSON(jRing, dex):
     orderA = orderFromJSON(jRing["orderA"], dex)
     orderB = orderFromJSON(jRing["orderB"], dex)
 
-    fillS_A = int(jRing["fillS_A"])
-    fillB_A = int(jRing["fillB_A"])
-    fillF_A = int(jRing["fillF_A"])
-
-    fillS_B = int(jRing["fillS_B"])
-    fillB_B = int(jRing["fillB_B"])
-    fillF_B = int(jRing["fillF_B"])
-
-    return Ring(orderA, orderB, fillS_A, fillB_A, fillF_A, fillS_B, fillB_B, fillF_B)
+    return Ring(orderA, orderB)
 
 
 def deposit(dex, data):
@@ -155,9 +147,11 @@ def trade(dex, data):
     export.burnRateMerkleRoot = str(dex._tokensTree.root)
     export.timestamp = int(data["timestamp"])
 
+    context = Context(export.timestamp)
+
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, dex)
-        ringSettlement = dex.settleRing(ring)
+        ringSettlement = dex.settleRing(context, ring)
         export.ringSettlements.append(ringSettlement)
 
     export.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)

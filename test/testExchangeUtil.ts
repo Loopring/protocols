@@ -214,67 +214,6 @@ export class ExchangeTestUtil {
     ]);
   }
 
-  public async settleRing(ring: RingInfo) {
-    const orderA = ring.orderA;
-    const orderB = ring.orderB;
-
-    ring.fillS_A = orderA.amountS / 100;
-    ring.fillB_A = orderA.amountB / 100;
-    ring.fillF_A = orderA.amountF / 100;
-    ring.fillS_B = orderB.amountS / 100;
-    ring.fillB_B = orderB.amountB / 100;
-    ring.fillF_B = orderB.amountF / 100;
-
-    const orderDataA: OrderSettlementData = {
-      dexID: orderA.dexID,
-      orderID: orderA.orderID,
-
-      fromS: orderA.accountS,
-      toB: orderB.accountB,
-      amountS: ring.fillS_A,
-      toMargin: 0,
-      marginPercentage: 0,
-
-      fromF: orderA.accountF,
-      toWallet: 0,
-      toOperator: 0,
-      amountF: ring.fillF_A,
-      walletSplitPercentage: orderA.walletSplitPercentage,
-    };
-
-    const orderDataB: OrderSettlementData = {
-      dexID: orderB.dexID,
-      orderID: orderB.orderID,
-
-      fromS: orderB.accountS,
-      toB: orderA.accountB,
-      amountS: ring.fillS_B,
-      toMargin: 0,
-      marginPercentage: 0,
-
-      fromF: orderB.accountF,
-      toWallet: 0,
-      toOperator: 0,
-      amountF: ring.fillF_B,
-      walletSplitPercentage: orderB.walletSplitPercentage,
-    };
-
-    const ringSettlement: RingSettlementData = {
-      orderA: orderDataA,
-      orderB: orderDataB,
-    };
-
-    return ringSettlement;
-  }
-
-  public async settleRings(ringsInfo: RingsInfo) {
-    const ringSettlements: RingSettlementData[] = [];
-    for (const ring of ringsInfo.rings) {
-      ringSettlements.push(await this.settleRing(ring));
-    }
-    return ringSettlements;
-  }
-
   public async deposit(owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
                        dexID: number, token: string, amount: number) {
 
@@ -480,43 +419,40 @@ export class ExchangeTestUtil {
     // Generate the token transfers for the ring
     const blockNumber = await web3.eth.getBlockNumber();
     ringsInfo.timestamp = (await web3.eth.getBlock(blockNumber)).timestamp;
-    const ringSettlements = await this.settleRings(ringsInfo);
 
-    // Write out the rings info
-    const jRingsInfo = JSON.stringify(ringsInfo, null, 4);
+    // Create the block
+    const blockFilename = await this.createBlock(0, JSON.stringify(ringsInfo, null, 4));
 
-    const blockFilename = await this.createBlock(0, jRingsInfo);
-
-    const jRings = fs.readFileSync(blockFilename, "ascii");
-    const rings = JSON.parse(jRings);
+    // Read in the block
+    const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
     const bs = new pjs.Bitstream();
-    // console.log(rings.rootBefore);
-    bs.addBigNumber(new BigNumber(rings.accountsMerkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(rings.accountsMerkleRootAfter, 10), 32);
-    bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(rings.tradingHistoryMerkleRootAfter, 10), 32);
-    bs.addBigNumber(new BigNumber(rings.burnRateMerkleRoot, 10), 32);
+    bs.addBigNumber(new BigNumber(block.accountsMerkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(block.accountsMerkleRootAfter, 10), 32);
+    bs.addBigNumber(new BigNumber(block.tradingHistoryMerkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(block.tradingHistoryMerkleRootAfter, 10), 32);
+    bs.addBigNumber(new BigNumber(block.burnRateMerkleRoot, 10), 32);
     bs.addNumber(ringsInfo.timestamp, 4);
-    // console.log(ringSettlements);
-    for (const ringSettlement of ringSettlements) {
-      const orders = [ringSettlement.orderA, ringSettlement.orderB];
-      for (const order of orders) {
-        bs.addNumber(order.dexID, 2);
-        bs.addNumber(order.orderID, 2);
+    for (const ringSettlement of block.ringSettlements) {
+      const ring = ringSettlement.ring;
+      const orderA = ringSettlement.ring.orderA;
+      const orderB = ringSettlement.ring.orderB;
 
-        bs.addNumber(order.fromS, 3);
-        bs.addNumber(order.toB, 3);
-        // bs.addNumber(order.toMargin, 3);
-        bs.addNumber(order.amountS, 12);
-        // bs.addNumber(order.marginPercentage, 1);
+      bs.addNumber(orderA.dexID, 2);
+      bs.addNumber(orderA.orderID, 2);
+      bs.addNumber(orderA.accountS, 3);
+      bs.addNumber(orderB.accountB, 3);
+      bs.addNumber(ring.fillS_A, 12);
+      bs.addNumber(orderA.accountF, 3);
+      bs.addNumber(ring.fillF_A, 12);
 
-        bs.addNumber(order.fromF, 3);
-        // bs.addNumber(order.toWallet, 3);
-        // bs.addNumber(order.toOperator, 3);
-        bs.addNumber(order.amountF, 12);
-        // bs.addNumber(order.WalletSplitPercentage, 1);
-      }
+      bs.addNumber(orderB.dexID, 2);
+      bs.addNumber(orderB.orderID, 2);
+      bs.addNumber(orderB.accountS, 3);
+      bs.addNumber(orderA.accountB, 3);
+      bs.addNumber(ring.fillS_B, 12);
+      bs.addNumber(orderB.accountF, 3);
+      bs.addNumber(ring.fillF_B, 12);
     }
 
     // Commit the block

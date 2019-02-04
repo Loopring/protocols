@@ -126,8 +126,8 @@ public:
 class LeqGadget : public GadgetT
 {
 public:
-    VariableT lt;
-    VariableT leq;
+    VariableT _lt;
+    VariableT _leq;
     libsnark::comparison_gadget<ethsnarks::FieldT> comparison;
 
     LeqGadget(
@@ -138,16 +138,21 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        lt(make_variable(pb, 1, "lt")),
-        leq(make_variable(pb, 1, "leq")),
-        comparison(pb, 128, A, B, lt, leq, "A <= B")
+        _lt(make_variable(pb, 1, FMT(prefix, "lt"))),
+        _leq(make_variable(pb, 1, FMT(prefix, "leq"))),
+        comparison(pb, 128, A, B, _lt, _leq, FMT(prefix, "A <(=) B"))
     {
 
     }
 
-    const VariableT result() const
+    const VariableT& lt() const
     {
-        return leq;
+        return _lt;
+    }
+
+    const VariableT& leq() const
+    {
+        return _leq;
     }
 
     void generate_r1cs_witness()
@@ -158,7 +163,36 @@ public:
     void generate_r1cs_constraints()
     {
         comparison.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(leq, FieldT::one(), FieldT::one()), "leq == 1");
+    }
+};
+
+class ForceLeqGadget : public GadgetT
+{
+public:
+    LeqGadget leqGadget;
+
+    ForceLeqGadget(
+        ProtoboardT& pb,
+        const VariableT& A,
+        const VariableT& B,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        leqGadget(pb, A, B, FMT(prefix, "leq"))
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+        leqGadget.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        leqGadget.generate_r1cs_constraints();
+        pb.add_r1cs_constraint(ConstraintT(leqGadget.leq(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, "leq == 1"));
     }
 };
 
@@ -384,9 +418,11 @@ public:
     libsnark::dual_variable_gadget<FieldT> amountB;
     libsnark::dual_variable_gadget<FieldT> amountF;
     libsnark::dual_variable_gadget<FieldT> walletF;
+    libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
+    libsnark::dual_variable_gadget<FieldT> validSince;
+    libsnark::dual_variable_gadget<FieldT> validUntil;
     libsnark::dual_variable_gadget<FieldT> padding;
 
-    libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
     libsnark::dual_variable_gadget<FieldT> waiveFeePercentage;
 
     VariableT tokenS;
@@ -409,9 +445,16 @@ public:
     const VariableArrayT sig_m;
     jubjub::PureEdDSA signatureVerifier;
 
+    // Validity checking
+    LeqGadget validSince_leq_timestamp;
+    LeqGadget timestamp_leq_validUntil;
+
+    VariableT valid;
+
     OrderGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
+        const VariableT& timestamp,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
@@ -425,6 +468,8 @@ public:
         amountB(pb, 96, FMT(prefix, ".amountB")),
         amountF(pb, 96, FMT(prefix, ".amountF")),
         walletF(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletF")),
+        validSince(pb, 32, FMT(prefix, ".validSince")),
+        validUntil(pb, 32, FMT(prefix, ".validUntil")),
         padding(pb, 1, FMT(prefix, ".padding")),
 
         walletSplitPercentage(pb, 8, FMT(prefix, ".walletSplitPercentage")),
@@ -447,9 +492,19 @@ public:
         sig_R(pb, FMT(prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
         sig_m(flatten({dexID.bits, orderID.bits, accountS.bits, accountB.bits, accountF.bits, amountS.bits, amountB.bits, amountF.bits})),
-        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(prefix, ".signatureVerifier"))
+        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(prefix, ".signatureVerifier")),
+
+        validSince_leq_timestamp(pb, validSince.packed, timestamp, FMT(prefix, "validSince <= timestamp")),
+        timestamp_leq_validUntil(pb, timestamp, validUntil.packed, FMT(prefix, "timestamp <= validUntil")),
+
+        valid(make_variable(pb, FMT(prefix, ".valid")))
     {
 
+    }
+
+    const VariableT& isValid() const
+    {
+        return valid;
     }
 
     void generate_r1cs_witness(const Order& order)
@@ -482,6 +537,11 @@ public:
         walletSplitPercentage.bits.fill_with_bits_of_field_element(pb, order.walletSplitPercentage);
         walletSplitPercentage.generate_r1cs_witness_from_bits();
 
+        validSince.bits.fill_with_bits_of_field_element(pb, order.validSince);
+        validSince.generate_r1cs_witness_from_bits();
+        validUntil.bits.fill_with_bits_of_field_element(pb, order.validUntil);
+        validUntil.generate_r1cs_witness_from_bits();
+
         waiveFeePercentage.bits.fill_with_bits_of_field_element(pb, order.waiveFeePercentage);
         waiveFeePercentage.generate_r1cs_witness_from_bits();
 
@@ -507,6 +567,11 @@ public:
         pb.val(sig_R.y) = order.sig.R.y;
         sig_s.fill_with_bits_of_field_element(pb, order.sig.s);
         signatureVerifier.generate_r1cs_witness();
+
+        validSince_leq_timestamp.generate_r1cs_witness();
+        timestamp_leq_validUntil.generate_r1cs_witness();
+
+        pb.val(valid) = order.valid;
     }
 
     void generate_r1cs_constraints()
@@ -520,6 +585,8 @@ public:
         amountB.generate_r1cs_constraints(true);
         amountF.generate_r1cs_constraints(true);
         walletF.generate_r1cs_constraints(true);
+        validSince.generate_r1cs_constraints(true);
+        validUntil.generate_r1cs_constraints(true);
         padding.generate_r1cs_constraints(true);
 
         walletSplitPercentage.generate_r1cs_constraints(true);
@@ -528,6 +595,12 @@ public:
         tokenF.generate_r1cs_constraints(true);
 
         signatureVerifier.generate_r1cs_constraints();
+
+        validSince_leq_timestamp.generate_r1cs_constraints();
+        timestamp_leq_validUntil.generate_r1cs_constraints();
+
+        pb.add_r1cs_constraint(ConstraintT(validSince_leq_timestamp.leq(), timestamp_leq_validUntil.leq(), valid),
+                               "validSince_leq_timestamp && timestamp_leq_validUntil = valid");
     }
 };
 
@@ -720,7 +793,7 @@ public:
 
         remainingS(make_variable(pb, FMT(prefix, ".remainingS"))),
         balanceS_lt_remainingS(pb, order.balanceS, remainingS, FMT(prefix, ".(spendableS < remainingS)")),
-        fillAmountS(pb, balanceS_lt_remainingS.result(), order.balanceS, remainingS, FMT(prefix, "fillAmountS = (balanceS < remainingS) ? balanceS : remainingS")),
+        fillAmountS(pb, balanceS_lt_remainingS.lt(), order.balanceS, remainingS, FMT(prefix, "fillAmountS = (balanceS < remainingS) ? balanceS : remainingS")),
         fillAmountB(pb, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(prefix, "(fillAmountS * amountB) / amountS"))
     {
 
@@ -810,10 +883,10 @@ public:
         fillAmountS_A_F(pb, maxFillAmountA.getAmountB(), orderA.amountS.packed, orderA.amountB.packed,
                         FMT(prefix, "fillAmountS_A = (fillAmountB_A * orderA.amountS) // orderA.amountB")),
 
-        fillAmountS_A(pb, fillAmountB_A_lt_fillAmountS_B.result(), maxFillAmountA.getAmountS(), fillAmountS_A_F.result(), FMT(prefix, "fillAmountS_A")),
-        fillAmountB_A(pb, fillAmountB_A_lt_fillAmountS_B.result(), maxFillAmountA.getAmountB(), fillAmountB_A_F, FMT(prefix, "fillAmountB_A")),
-        fillAmountS_B(pb, fillAmountB_A_lt_fillAmountS_B.result(), fillAmountS_B_T.result(), maxFillAmountB.getAmountS(), FMT(prefix, "fillAmountS_B")),
-        fillAmountB_B(pb, fillAmountB_A_lt_fillAmountS_B.result(), fillAmountB_B_T, maxFillAmountB.getAmountB(), FMT(prefix, "fillAmountB_B")),
+        fillAmountS_A(pb, fillAmountB_A_lt_fillAmountS_B.lt(), maxFillAmountA.getAmountS(), fillAmountS_A_F.result(), FMT(prefix, "fillAmountS_A")),
+        fillAmountB_A(pb, fillAmountB_A_lt_fillAmountS_B.lt(), maxFillAmountA.getAmountB(), fillAmountB_A_F, FMT(prefix, "fillAmountB_A")),
+        fillAmountS_B(pb, fillAmountB_A_lt_fillAmountS_B.lt(), fillAmountS_B_T.result(), maxFillAmountB.getAmountS(), FMT(prefix, "fillAmountS_B")),
+        fillAmountB_B(pb, fillAmountB_A_lt_fillAmountS_B.lt(), fillAmountB_B_T, maxFillAmountB.getAmountB(), FMT(prefix, "fillAmountB_B")),
 
         margin(make_variable(pb, FMT(prefix, ".margin"))),
 
@@ -914,6 +987,8 @@ public:
 
     OrderMatchingGadget orderMatching;
 
+    VariableT valid;
+
     VariableArrayT orderIDPadding;
 
     libsnark::dual_variable_gadget<FieldT> fillS_A;
@@ -972,19 +1047,14 @@ public:
     UpdateAccountGadget updateAccountF_MB;
     UpdateAccountGadget updateAccountF_BB;
 
-    LeqGadget filledLeqA;
-    LeqGadget filledLeqB;
+    ForceLeqGadget filledLeqA;
+    ForceLeqGadget filledLeqB;
 
     RateCheckerGadget rateCheckerA;
     RateCheckerGadget rateCheckerB;
 
     RateCheckerGadget rateCheckerFeeA;
     RateCheckerGadget rateCheckerFeeB;
-
-    LeqGadget matchLeqA;
-    LeqGadget matchLeqB;
-
-    VariableT constant1000;
 
     RingSettlementGadget(
         ProtoboardT& pb,
@@ -997,10 +1067,12 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        orderA(pb, params, FMT(prefix, ".orderA")),
-        orderB(pb, params, FMT(prefix, ".orderB")),
+        orderA(pb, params, _timestamp, FMT(prefix, ".orderA")),
+        orderB(pb, params, _timestamp, FMT(prefix, ".orderB")),
 
         orderMatching(pb, orderA, orderB, FMT(prefix, ".orderMatching")),
+
+        valid(make_variable(pb, FMT(prefix, ".valid"))),
 
         orderIDPadding(make_var_array(pb, 12, FMT(prefix, ".orderIDPadding"))),
 
@@ -1075,10 +1147,7 @@ public:
         rateCheckerB(pb, fillS_B.packed, fillB_B.packed, orderA.amountB.packed, orderB.amountB.packed, FMT(prefix, ".rateB")),
 
         rateCheckerFeeA(pb, fillF_A.packed, fillS_A.packed, orderA.amountF.packed, orderA.amountS.packed, FMT(prefix, ".rateFeeA")),
-        rateCheckerFeeB(pb, fillF_B.packed, fillS_B.packed, orderB.amountF.packed, orderB.amountS.packed, FMT(prefix, ".rateFeeB")),
-
-        matchLeqA(pb, fillB_B.packed, fillS_A.packed, FMT(prefix, ".fillB_B <= .fillS_A")),
-        matchLeqB(pb, fillB_A.packed, fillS_B.packed, FMT(prefix, ".fillB_A <= .fillS_B"))
+        rateCheckerFeeB(pb, fillF_B.packed, fillS_B.packed, orderB.amountF.packed, orderB.amountS.packed, FMT(prefix, ".rateFeeB"))
     {
 
     }
@@ -1110,6 +1179,8 @@ public:
         orderB.generate_r1cs_witness(ringSettlement.ring.orderB);
 
         orderMatching.generate_r1cs_witness();
+
+        pb.val(valid) = ringSettlement.ring.valid;
 
         orderIDPadding.fill_with_bits_of_ulong(pb, 0);
 
@@ -1196,10 +1267,6 @@ public:
         rateCheckerB.generate_r1cs_witness();
         rateCheckerFeeA.generate_r1cs_witness();
         rateCheckerFeeB.generate_r1cs_witness();
-
-        // Check settlement
-        matchLeqA.generate_r1cs_witness();
-        matchLeqB.generate_r1cs_witness();
     }
 
 
@@ -1210,13 +1277,14 @@ public:
 
         orderMatching.generate_r1cs_constraints();
 
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_A(), FieldT::one(), fillS_A.packed), "FillAmountS_A == fillS_A");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_A(), FieldT::one(), fillB_A.packed), "FillAmountB_A == fillB_A");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_A(), FieldT::one(), fillF_A.packed), "FillAmountF_A == fillF_A");
+        pb.add_r1cs_constraint(ConstraintT(orderA.isValid(), orderB.isValid(), valid), "orderA.isValid() && orderA.isValid() == valid");
 
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_B(), FieldT::one(), fillS_B.packed), "FillAmountS_B == fillS_B");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_B(), FieldT::one(), fillB_B.packed), "FillAmountB_B == fillB_B");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_B(), FieldT::one(), fillF_B.packed), "FillAmountF_B == fillF_B");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_A(), valid, fillS_A.packed), "FillAmountS_A == fillS_A");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_A(), valid, fillB_A.packed), "FillAmountB_A == fillB_A");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_A(), valid, fillF_A.packed), "FillAmountF_A == fillF_A");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_B(), valid, fillS_B.packed), "FillAmountS_B == fillS_B");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_B(), valid, fillB_B.packed), "FillAmountB_B == fillB_B");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_B(), valid, fillF_B.packed), "FillAmountF_B == fillF_B");
 
         fillS_A.generate_r1cs_constraints(true);
         fillB_A.generate_r1cs_constraints(true);
@@ -1287,10 +1355,6 @@ public:
         rateCheckerB.generate_r1cs_constraints();
         rateCheckerFeeA.generate_r1cs_constraints();
         rateCheckerFeeB.generate_r1cs_constraints();
-
-        // Check settlement
-        matchLeqA.generate_r1cs_constraints();
-        matchLeqB.generate_r1cs_constraints();
     }
 };
 

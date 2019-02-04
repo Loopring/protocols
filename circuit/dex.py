@@ -15,6 +15,12 @@ TREE_DEPTH_TRADING_HISTORY = 28
 TREE_DEPTH_ACCOUNTS = 24
 TREE_DEPTH_TOKENS = 16
 
+
+class Context(object):
+    def __init__(self, timestamp):
+        self.timestamp = int(timestamp)
+
+
 class Account(object):
     def __init__(self, secretKey, publicKey, dexID, token, balance):
         self.secretKey = str(secretKey)
@@ -123,17 +129,17 @@ class Order(object):
         self.sigRy = str(signedMessage.sig.R.y)
         self.sigS = str(signedMessage.sig.s)
 
+    def checkValid(self, context):
+        valid = True
+        valid = valid and (self.validSince <= context.timestamp)
+        valid = valid and (context.timestamp <= self.validUntil)
+        self.valid = valid
+
 
 class Ring(object):
-    def __init__(self, orderA, orderB, fillS_A, fillB_A, fillF_A, fillS_B, fillB_B, fillF_B):
+    def __init__(self, orderA, orderB):
         self.orderA = orderA
         self.orderB = orderB
-        self.fillS_A = fillS_A
-        self.fillB_A = fillB_A
-        self.fillF_A = fillF_A
-        self.fillS_B = fillS_B
-        self.fillB_B = fillB_B
-        self.fillF_B = fillF_B
 
 
 class RingSettlement(object):
@@ -361,7 +367,7 @@ class Dex(object):
         fillAmountB = (fillAmountS * order.amountB) // order.amountS
         return (fillAmountS, fillAmountB)
 
-    def settleRing(self, ring):
+    def settleRing(self, context, ring):
         (fillAmountS_A, fillAmountB_A) = self.getMaxFillAmounts(ring.orderA)
         (fillAmountS_B, fillAmountB_B) = self.getMaxFillAmounts(ring.orderB)
 
@@ -371,6 +377,16 @@ class Dex(object):
         else:
             fillAmountB_A = fillAmountS_B
             fillAmountS_A = (fillAmountB_A * ring.orderA.amountS) // ring.orderA.amountB
+
+        ring.orderA.checkValid(context)
+        ring.orderB.checkValid(context)
+        ring.valid = ring.orderA.valid and ring.orderB.valid
+
+        if ring.valid == False:
+            fillAmountS_A = 0
+            fillAmountB_A = 0
+            fillAmountS_B = 0
+            fillAmountB_B = 0
 
         margin = fillAmountS_A - fillAmountB_B
 
@@ -385,6 +401,8 @@ class Dex(object):
         ring.fillB_B = fillAmountB_B
         ring.fillF_B = fillAmountF_B
 
+        ring.margin = margin
+
         print("fillAmountS_A: " + str(fillAmountS_A))
         print("fillAmountB_A: " + str(fillAmountB_A))
         print("fillAmountF_A: " + str(fillAmountF_A))
@@ -394,7 +412,6 @@ class Dex(object):
         print("fillAmountF_B: " + str(fillAmountF_B))
 
         print("margin: " + str(margin))
-
 
         # Copy the initial merkle root
         tradingHistoryMerkleRoot = self._tradingHistoryTree._root

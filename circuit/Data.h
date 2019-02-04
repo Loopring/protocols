@@ -145,6 +145,8 @@ public:
     ethsnarks::FieldT tokenF;
     ethsnarks::FieldT walletF;
     ethsnarks::FieldT walletSplitPercentage;
+    ethsnarks::FieldT validSince;
+    ethsnarks::FieldT validUntil;
     ethsnarks::FieldT waiveFeePercentage;
     ethsnarks::FieldT filledBefore;
     ethsnarks::FieldT cancelled;
@@ -152,6 +154,8 @@ public:
     ethsnarks::FieldT balanceB;
     ethsnarks::FieldT balanceF;
     Signature sig;
+
+    ethsnarks::FieldT valid;
 };
 
 void from_json(const json& j, Order& order)
@@ -173,6 +177,8 @@ void from_json(const json& j, Order& order)
     order.tokenF = ethsnarks::FieldT(j.at("tokenF"));
     order.walletF = ethsnarks::FieldT(j.at("walletF"));
     order.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
+    order.validSince = ethsnarks::FieldT(j.at("validSince"));
+    order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     order.waiveFeePercentage = ethsnarks::FieldT(j.at("waiveFeePercentage"));
     order.filledBefore = ethsnarks::FieldT(j.at("filledBefore"));
     order.cancelled = ethsnarks::FieldT(j.at("cancelled"));
@@ -180,6 +186,8 @@ void from_json(const json& j, Order& order)
     order.balanceB = ethsnarks::FieldT(j.at("balanceB"));
     order.balanceF = ethsnarks::FieldT(j.at("balanceF"));
     order.sig = j.get<Signature>();
+
+    order.valid = ethsnarks::FieldT(j.at("valid").get<bool>() ? 1 : 0);
 }
 
 class Ring
@@ -187,6 +195,9 @@ class Ring
 public:
     Order orderA;
     Order orderB;
+
+    ethsnarks::FieldT valid;
+
     ethsnarks::FieldT fillS_A;
     ethsnarks::FieldT fillB_A;
     ethsnarks::FieldT fillF_A;
@@ -199,6 +210,9 @@ void from_json(const json& j, Ring& ring)
 {
     ring.orderA = j.at("orderA").get<Order>();
     ring.orderB = j.at("orderB").get<Order>();
+
+    ring.valid = ethsnarks::FieldT(j.at("valid").get<bool>() ? 1 : 0);
+
     ring.fillS_A = ethsnarks::FieldT(j.at("fillS_A"));
     ring.fillB_A = ethsnarks::FieldT(j.at("fillB_A"));
     ring.fillF_A = ethsnarks::FieldT(j.at("fillF_A"));
