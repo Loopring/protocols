@@ -26,7 +26,7 @@ class Account(object):
         self.secretKey = str(secretKey)
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.dexID = dexID
+        self.dexID = dexID # walletID
         self.token = token
         self.balance = balance
 
@@ -102,7 +102,7 @@ class Order(object):
         self.amountB = amountB
         self.amountF = amountF
 
-        self.allOrNone = allOrNone
+        self.allOrNone = bool(allOrNone)
         self.validSince = validSince
         self.validUntil = validUntil
         self.walletSplitPercentage = walletSplitPercentage
@@ -134,6 +134,13 @@ class Order(object):
         valid = valid and (self.validSince <= context.timestamp)
         valid = valid and (context.timestamp <= self.validUntil)
         self.valid = valid
+
+    def checkFills(self, fillAmountS, fillAmountB):
+        if self.allOrNone and fillAmountS != self.amountS:
+            valid = False
+        else:
+            valid = True
+        return valid
 
 
 class Ring(object):
@@ -378,17 +385,24 @@ class Dex(object):
             fillAmountB_A = fillAmountS_B
             fillAmountS_A = (fillAmountB_A * ring.orderA.amountS) // ring.orderA.amountB
 
+        margin = fillAmountS_A - fillAmountB_B
+
+        ring.valid = True
+        if fillAmountS_A < fillAmountB_B:
+            ring.valid = False
+
         ring.orderA.checkValid(context)
         ring.orderB.checkValid(context)
-        ring.valid = ring.orderA.valid and ring.orderB.valid
+        fillsValidA = ring.orderA.checkFills(fillAmountS_A, fillAmountB_A)
+        fillsValidB = ring.orderB.checkFills(fillAmountS_B, fillAmountB_B)
+        ring.valid = ring.valid and ring.orderA.valid and ring.orderB.valid and fillsValidA and fillsValidB
 
         if ring.valid == False:
             fillAmountS_A = 0
             fillAmountB_A = 0
             fillAmountS_B = 0
             fillAmountB_B = 0
-
-        margin = fillAmountS_A - fillAmountB_B
+            margin = 0
 
         fillAmountF_A = (ring.orderA.amountF * fillAmountS_A) // ring.orderA.amountS
         fillAmountF_B = (ring.orderB.amountF * fillAmountS_B) // ring.orderB.amountS

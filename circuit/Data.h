@@ -147,6 +147,7 @@ public:
     ethsnarks::FieldT walletSplitPercentage;
     ethsnarks::FieldT validSince;
     ethsnarks::FieldT validUntil;
+    ethsnarks::FieldT allOrNone;
     ethsnarks::FieldT waiveFeePercentage;
     ethsnarks::FieldT filledBefore;
     ethsnarks::FieldT cancelled;
@@ -179,6 +180,7 @@ void from_json(const json& j, Order& order)
     order.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     order.validSince = ethsnarks::FieldT(j.at("validSince"));
     order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
+    order.allOrNone = ethsnarks::FieldT(j.at("allOrNone").get<bool>() ? 1 : 0);
     order.waiveFeePercentage = ethsnarks::FieldT(j.at("waiveFeePercentage"));
     order.filledBefore = ethsnarks::FieldT(j.at("filledBefore"));
     order.cancelled = ethsnarks::FieldT(j.at("cancelled"));
