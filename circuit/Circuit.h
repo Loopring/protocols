@@ -362,6 +362,51 @@ public:
     }
 };
 
+class SignatureVerifier : public GadgetT
+{
+public:
+
+    const jubjub::VariablePointT sig_R;
+    const VariableArrayT sig_s;
+    const VariableArrayT sig_m;
+    jubjub::PureEdDSA signatureVerifier;
+
+    SignatureVerifier(
+        ProtoboardT& pb,
+        const jubjub::Params& params,
+        const jubjub::VariablePointT& publicKey,
+        const VariableArrayT& _message,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        sig_R(pb, FMT(prefix, ".R")),
+        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
+        sig_m(_message),
+        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(prefix, ".signatureVerifier"))
+    {
+
+    }
+
+    const VariableArrayT& getHash()
+    {
+        return signatureVerifier.m_hash_RAM.result();
+    }
+
+    void generate_r1cs_witness(Signature sig)
+    {
+        pb.val(sig_R.x) = sig.R.x;
+        pb.val(sig_R.y) = sig.R.y;
+        sig_s.fill_with_bits_of_field_element(pb, sig.s);
+        signatureVerifier.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        signatureVerifier.generate_r1cs_constraints();
+    }
+};
+
 
 class OrderGadget : public GadgetT
 {
@@ -402,11 +447,7 @@ public:
     VariableT balanceB;
     VariableT balanceF;
 
-    // variables for signature
-    const jubjub::VariablePointT sig_R;
-    const VariableArrayT sig_s;
-    const VariableArrayT sig_m;
-    jubjub::PureEdDSA signatureVerifier;
+    SignatureVerifier signatureVerifier;
 
     // Validity checking
     LeqGadget validSince_leq_timestamp;
@@ -439,7 +480,7 @@ public:
         padding(pb, 1, FMT(prefix, ".padding")),
 
         walletSplitPercentage(pb, 8, FMT(prefix, ".walletSplitPercentage")),
-        waiveFeePercentage(pb, 8, FMT(prefix, ".waiveFeePercentage")),
+        waiveFeePercentage(pb, 7, FMT(prefix, ".waiveFeePercentage")),
 
         tokenS(make_variable(pb, FMT(prefix, ".tokenS"))),
         tokenB(make_variable(pb, FMT(prefix, ".tokenB"))),
@@ -457,10 +498,9 @@ public:
         balanceB(make_variable(pb, FMT(prefix, ".balanceB"))),
         balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
-        sig_R(pb, FMT(prefix, ".R")),
-        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
-        sig_m(flatten({dexID.bits, orderID.bits, accountS.bits, accountB.bits, accountF.bits, amountS.bits, amountB.bits, amountF.bits})),
-        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(prefix, ".signatureVerifier")),
+        signatureVerifier(pb, params, publicKey,
+                          flatten({dexID.bits, orderID.bits, accountS.bits, accountB.bits, accountF.bits, amountS.bits, amountB.bits, amountF.bits}),
+                          FMT(prefix, ".signatureVerifier")),
 
         validSince_leq_timestamp(pb, validSince.packed, timestamp, FMT(prefix, "validSince <= timestamp")),
         timestamp_leq_validUntil(pb, timestamp, validUntil.packed, FMT(prefix, "timestamp <= validUntil")),
@@ -468,6 +508,11 @@ public:
         valid(make_variable(pb, FMT(prefix, ".valid")))
     {
 
+    }
+
+    const VariableArrayT& getHash()
+    {
+        return signatureVerifier.getHash();
     }
 
     const VariableT& isValid() const
@@ -542,10 +587,7 @@ public:
         pb.val(minerPublicKeyS.x) = order.minerPublicKeyS.x;
         pb.val(minerPublicKeyS.y) = order.minerPublicKeyS.y;
 
-        pb.val(sig_R.x) = order.sig.R.x;
-        pb.val(sig_R.y) = order.sig.R.y;
-        sig_s.fill_with_bits_of_field_element(pb, order.sig.s);
-        signatureVerifier.generate_r1cs_witness();
+        signatureVerifier.generate_r1cs_witness(order.sig);
 
         validSince_leq_timestamp.generate_r1cs_witness();
         timestamp_leq_validUntil.generate_r1cs_witness();
@@ -1135,6 +1177,11 @@ public:
     ForceLeqGadget filledLeqA;
     ForceLeqGadget filledLeqB;
 
+    libsnark::dual_variable_gadget<FieldT> nonce;
+
+    const jubjub::VariablePointT publicKey;
+    SignatureVerifier ringSignatureVerifier;
+
     RingSettlementGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
@@ -1230,7 +1277,18 @@ public:
         updateAccountS_M(pb, updateAccountF_BB.result(), orderA.minerS.bits, orderA.minerPublicKeyS, constant0, orderA.tokenS, balanceS_M_before, balanceS_MA.Y, FMT(prefix, ".updateAccountS_M")),
 
         filledLeqA(pb, filledAfterA, orderA.amountS.packed, FMT(prefix, ".filled_A <= .amountSA")),
-        filledLeqB(pb, filledAfterB, orderB.amountS.packed, FMT(prefix, ".filled_B <= .amountSB"))
+        filledLeqB(pb, filledAfterB, orderB.amountS.packed, FMT(prefix, ".filled_B <= .amountSB")),
+
+        nonce(pb, 32, FMT(prefix, ".nonce")),
+
+        publicKey(pb, FMT(prefix, ".publicKey")),
+        ringSignatureVerifier(pb, params, publicKey,
+                              flatten({orderA.getHash(), orderB.getHash(),
+                                       orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
+                                       orderA.minerF.bits, orderB.minerF.bits,
+                                       orderA.minerS.bits,
+                                       nonce.bits}),
+                              FMT(prefix, ".ringSignatureVerifier"))
     {
 
     }
@@ -1346,6 +1404,14 @@ public:
         updateAccountF_MB.generate_r1cs_witness(ringSettlement.accountUpdateF_MB.proof);
         updateAccountF_BB.generate_r1cs_witness(ringSettlement.accountUpdateF_BB.proof);
         updateAccountS_M.generate_r1cs_witness(ringSettlement.accountUpdateS_M.proof);
+
+        nonce.bits.fill_with_bits_of_field_element(pb, 0);
+        nonce.generate_r1cs_witness_from_bits();
+
+        pb.val(publicKey.x) = ringSettlement.ring.publicKey.x;
+        pb.val(publicKey.y) = ringSettlement.ring.publicKey.y;
+
+        ringSignatureVerifier.generate_r1cs_witness(ringSettlement.ring.ringSig);
     }
 
 
@@ -1425,6 +1491,13 @@ public:
         updateAccountF_MB.generate_r1cs_constraints();
         updateAccountF_BB.generate_r1cs_constraints();
         updateAccountS_M.generate_r1cs_constraints();
+
+        //
+        // Signatures
+        //
+
+        nonce.generate_r1cs_constraints(true);
+        ringSignatureVerifier.generate_r1cs_constraints();
     }
 };
 

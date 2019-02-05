@@ -217,6 +217,9 @@ public:
     ethsnarks::FieldT fillB_B;
     ethsnarks::FieldT fillF_B;
     ethsnarks::FieldT margin;
+
+    ethsnarks::jubjub::EdwardsPoint publicKey;
+    Signature ringSig;
 };
 
 void from_json(const json& j, Ring& ring)
@@ -233,6 +236,10 @@ void from_json(const json& j, Ring& ring)
     ring.fillB_B = ethsnarks::FieldT(j.at("fillB_B"));
     ring.fillF_B = ethsnarks::FieldT(j.at("fillF_B"));
     ring.margin = ethsnarks::FieldT(j.at("margin"));
+
+    ring.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
+    ring.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
+    ring.ringSig = j.get<Signature>();
 }
 
 class RingSettlement

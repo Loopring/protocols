@@ -162,8 +162,8 @@ class Ring(object):
 
     def message(self):
         msg_parts = [
-                        FQ(int(self.orderA.hash), 1<<253), FQ(int(self.orderB.hash), 1<<253),
-                        FQ(int(self.orderA.waiveFeePercentage), 1<<8), FQ(int(self.orderB.waiveFeePercentage), 1<<8),
+                        FQ(int(self.orderA.hash), 1<<254), FQ(int(self.orderB.hash), 1<<254),
+                        FQ(int(self.orderA.waiveFeePercentage), 1<<7), FQ(int(self.orderB.waiveFeePercentage), 1<<7),
                         FQ(int(self.orderA.minerF), 1<<24), FQ(int(self.orderB.minerF), 1<<24),
                         FQ(int(self.orderA.minerS), 1<<24),
                         FQ(int(self.nonce), 1<<32)
