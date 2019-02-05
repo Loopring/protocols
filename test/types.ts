@@ -21,6 +21,8 @@ export interface OrderInfo {
 
   walletSplitPercentage?: number;
   walletF?: number;
+  minerF?: number;
+  minerS?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;
@@ -45,13 +47,7 @@ export interface RingInfo {
   orderA: OrderInfo;
   orderB: OrderInfo;
 
-  fillS_A?: number;
-  fillB_A?: number;
-  fillF_A?: number;
-
-  fillS_B?: number;
-  fillB_B?: number;
-  fillF_B?: number;
+  miner?: number;
 }
 
 export interface RingsInfo {

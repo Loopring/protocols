@@ -22,6 +22,35 @@ contract("Exchange_Submit", (accounts: string[]) => {
   describe("submitRing", function() {
     this.timeout(0);
 
+    it("Perfect match", async () => {
+      const ringsInfo: RingsInfo = {
+        rings : [
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "WETH",
+                tokenB: "GTO",
+                amountS: 110,
+                amountB: 200,
+                amountF: 1000,
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "GTO",
+                tokenB: "WETH",
+                amountS: 200,
+                amountB: 100,
+                amountF: 900,
+              },
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      await exchangeTestUtil.submitRings(ringsInfo);
+    });
+
     it("Matchable", async () => {
       const ringsInfo: RingsInfo = {
         rings : [
@@ -31,7 +60,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
                 index: 0,
                 tokenS: "WETH",
                 tokenB: "GTO",
-                amountS: 100,
+                amountS: 110,
                 amountB: 200,
                 amountF: 1000,
               },

@@ -71,7 +71,14 @@ export class ExchangeTestUtil {
   }
 
   public async setupRings(ringsInfo: RingsInfo) {
+    // Make an account for the ringmatcher
+    const wethAddress = this.testContext.tokenSymbolAddrMap.get("WETH");
+    const keyPairM = this.getKeyPairEDDSA();
+    const miner = await this.deposit(this.testContext.miner,
+                                     keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
+                                     0, wethAddress, 0);
     for (const [i, ring] of ringsInfo.rings.entries()) {
+      ring.miner = miner;
       await this.setupOrder(ring.orderA, i);
       await this.setupOrder(ring.orderB, i);
     }
@@ -161,6 +168,15 @@ export class ExchangeTestUtil {
     const keyPairW = this.getKeyPairEDDSA();
     order.walletF = await this.deposit(order.wallet, keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY,
                                        order.dexID, order.tokenF, 0);
+
+    // Make accounts for the miner (margin + fee)
+    const keyPairM = this.getKeyPairEDDSA();
+    order.minerS = await this.deposit(this.testContext.miner,
+                                      keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
+                                      0, order.tokenS, 0);
+    order.minerF = await this.deposit(this.testContext.miner,
+                                      keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
+                                      0, order.tokenF, 0);
   }
 
   public getAddressBook(ringsInfo: RingsInfo) {

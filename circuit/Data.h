@@ -132,6 +132,8 @@ class Order
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::jubjub::EdwardsPoint walletPublicKey;
+    ethsnarks::jubjub::EdwardsPoint minerPublicKeyF;
+    ethsnarks::jubjub::EdwardsPoint minerPublicKeyS;
     ethsnarks::FieldT dexID;
     ethsnarks::FieldT orderID;
     ethsnarks::FieldT accountS;
@@ -144,6 +146,8 @@ public:
     ethsnarks::FieldT tokenB;
     ethsnarks::FieldT tokenF;
     ethsnarks::FieldT walletF;
+    ethsnarks::FieldT minerF;
+    ethsnarks::FieldT minerS;
     ethsnarks::FieldT walletSplitPercentage;
     ethsnarks::FieldT validSince;
     ethsnarks::FieldT validUntil;
@@ -165,6 +169,10 @@ void from_json(const json& j, Order& order)
     order.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     order.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
     order.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
+    order.minerPublicKeyF.x = ethsnarks::FieldT(j.at("minerPublicKeyFX").get<std::string>().c_str());
+    order.minerPublicKeyF.y = ethsnarks::FieldT(j.at("minerPublicKeyFY").get<std::string>().c_str());
+    order.minerPublicKeyS.x = ethsnarks::FieldT(j.at("minerPublicKeySX").get<std::string>().c_str());
+    order.minerPublicKeyS.y = ethsnarks::FieldT(j.at("minerPublicKeySY").get<std::string>().c_str());
     order.dexID = ethsnarks::FieldT(j.at("dexID"));
     order.orderID = ethsnarks::FieldT(j.at("orderID"));
     order.accountS = ethsnarks::FieldT(j.at("accountS"));
@@ -177,6 +185,8 @@ void from_json(const json& j, Order& order)
     order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
     order.tokenF = ethsnarks::FieldT(j.at("tokenF"));
     order.walletF = ethsnarks::FieldT(j.at("walletF"));
+    order.minerF = ethsnarks::FieldT(j.at("minerF"));
+    order.minerS = ethsnarks::FieldT(j.at("minerS"));
     order.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     order.validSince = ethsnarks::FieldT(j.at("validSince"));
     order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
@@ -206,6 +216,7 @@ public:
     ethsnarks::FieldT fillS_B;
     ethsnarks::FieldT fillB_B;
     ethsnarks::FieldT fillF_B;
+    ethsnarks::FieldT margin;
 };
 
 void from_json(const json& j, Ring& ring)
@@ -221,6 +232,7 @@ void from_json(const json& j, Ring& ring)
     ring.fillS_B = ethsnarks::FieldT(j.at("fillS_B"));
     ring.fillB_B = ethsnarks::FieldT(j.at("fillB_B"));
     ring.fillF_B = ethsnarks::FieldT(j.at("fillF_B"));
+    ring.margin = ethsnarks::FieldT(j.at("margin"));
 }
 
 class RingSettlement
@@ -246,6 +258,8 @@ public:
     AccountUpdate accountUpdateF_WB;
     AccountUpdate accountUpdateF_MB;
     AccountUpdate accountUpdateF_BB;
+
+    AccountUpdate accountUpdateS_M;
 
     BurnRateCheck burnRateCheckF_A;
     BurnRateCheck burnRateCheckF_B;
@@ -282,6 +296,8 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.accountUpdateF_WB = j.at("accountUpdateF_WB").get<AccountUpdate>();
     ringSettlement.accountUpdateF_MB = j.at("accountUpdateF_MB").get<AccountUpdate>();
     ringSettlement.accountUpdateF_BB = j.at("accountUpdateF_BB").get<AccountUpdate>();
+
+    ringSettlement.accountUpdateS_M = j.at("accountUpdateS_M").get<AccountUpdate>();
 
     ringSettlement.burnRateCheckF_A = j.at("burnRateCheckF_A").get<BurnRateCheck>();
     ringSettlement.burnRateCheckF_B = j.at("burnRateCheckF_B").get<BurnRateCheck>();

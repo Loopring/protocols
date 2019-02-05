@@ -74,6 +74,8 @@ def orderFromJSON(jOrder, dex):
     tokenB = int(jOrder["tokenIdB"])
     tokenF = int(jOrder["tokenIdF"])
     walletF = int(jOrder["walletF"])
+    minerS = int(jOrder["minerS"])
+    minerF = int(jOrder["minerF"])
     allOrNone = int(jOrder["allOrNone"])
     validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
@@ -82,14 +84,19 @@ def orderFromJSON(jOrder, dex):
 
     account = dex.getAccount(accountS)
     wallet = dex.getAccount(walletF)
+    miner_F = dex.getAccount(minerF)
+    miner_S = dex.getAccount(minerS)
     order = Order(Point(account.publicKeyX, account.publicKeyY),
                   Point(wallet.publicKeyX, wallet.publicKeyY),
+                  Point(miner_F.publicKeyX, miner_F.publicKeyY),
+                  Point(miner_S.publicKeyX, miner_S.publicKeyY),
                   dexID, orderID,
-                  accountS, accountB, accountF, walletF,
+                  accountS, accountB, accountF, walletF, minerF, minerS,
                   amountS, amountB, amountF,
                   tokenS, tokenB, tokenF,
                   allOrNone, validSince, validUntil,
                   walletSplitPercentage, waiveFeePercentage)
+
     order.sign(FQ(int(account.secretKey)))
 
     return order
@@ -98,8 +105,17 @@ def orderFromJSON(jOrder, dex):
 def ringFromJSON(jRing, dex):
     orderA = orderFromJSON(jRing["orderA"], dex)
     orderB = orderFromJSON(jRing["orderB"], dex)
+    minerID = int(jRing["miner"])
 
-    return Ring(orderA, orderB)
+    miner = dex.getAccount(minerID)
+
+    ring = Ring(orderA, orderB,
+                Point(miner.publicKeyX, miner.publicKeyY),
+                miner.nonce)
+
+    ring.sign(FQ(int(miner.secretKey)))
+
+    return ring
 
 
 def deposit(dex, data):
