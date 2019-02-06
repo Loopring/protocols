@@ -122,9 +122,9 @@ public:
 
 void from_json(const json& j, Signature& signature)
 {
-    signature.R.x = ethsnarks::FieldT(j.at("sigRx").get<std::string>().c_str());
-    signature.R.y = ethsnarks::FieldT(j.at("sigRy").get<std::string>().c_str());
-    signature.s = ethsnarks::FieldT(j.at("sigS").get<std::string>().c_str());
+    signature.R.x = ethsnarks::FieldT(j.at("Rx").get<std::string>().c_str());
+    signature.R.y = ethsnarks::FieldT(j.at("Ry").get<std::string>().c_str());
+    signature.s = ethsnarks::FieldT(j.at("s").get<std::string>().c_str());
 }
 
 class Order
@@ -158,7 +158,7 @@ public:
     ethsnarks::FieldT balanceS;
     ethsnarks::FieldT balanceB;
     ethsnarks::FieldT balanceF;
-    Signature sig;
+    Signature signature;
 
     ethsnarks::FieldT valid;
 };
@@ -197,7 +197,7 @@ void from_json(const json& j, Order& order)
     order.balanceS = ethsnarks::FieldT(j.at("balanceS"));
     order.balanceB = ethsnarks::FieldT(j.at("balanceB"));
     order.balanceF = ethsnarks::FieldT(j.at("balanceF"));
-    order.sig = j.get<Signature>();
+    order.signature = j.at("signature").get<Signature>();
 
     order.valid = ethsnarks::FieldT(j.at("valid").get<bool>() ? 1 : 0);
 }
@@ -221,7 +221,9 @@ public:
     ethsnarks::FieldT miner;
     ethsnarks::FieldT fee;
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    Signature ringSig;
+    Signature minerSignature;
+    Signature walletASignature;
+    Signature walletBSignature;
 };
 
 void from_json(const json& j, Ring& ring)
@@ -243,7 +245,9 @@ void from_json(const json& j, Ring& ring)
     ring.fee = ethsnarks::FieldT(j.at("fee"));
     ring.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     ring.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    ring.ringSig = j.get<Signature>();
+    ring.minerSignature = j.at("minerSignature").get<Signature>();
+    ring.walletASignature = j.at("walletASignature").get<Signature>();
+    ring.walletBSignature = j.at("walletBSignature").get<Signature>();
 }
 
 class RingSettlement
@@ -278,11 +282,6 @@ public:
 
     ethsnarks::FieldT burnRateF_A;
     ethsnarks::FieldT burnRateF_B;
-
-    //ethsnarks::FieldT burnFee_A;
-    //ethsnarks::FieldT walletFee_A;
-    //ethsnarks::FieldT burnFee_B;
-    //ethsnarks::FieldT walletFee_B;
 };
 
 void from_json(const json& j, RingSettlement& ringSettlement)
@@ -315,11 +314,6 @@ void from_json(const json& j, RingSettlement& ringSettlement)
 
     ringSettlement.burnRateCheckF_A = j.at("burnRateCheckF_A").get<BurnRateCheck>();
     ringSettlement.burnRateCheckF_B = j.at("burnRateCheckF_B").get<BurnRateCheck>();
-
-    /*ringSettlement.burnFee_A = ethsnarks::FieldT(j.at("burnFee_A"));
-    ringSettlement.walletFee_A = ethsnarks::FieldT(j.at("walletFee_A"));
-    ringSettlement.burnFee_B = ethsnarks::FieldT(j.at("burnFee_B"));
-    ringSettlement.walletFee_B = ethsnarks::FieldT(j.at("walletFee_B"));*/
 }
 
 class TradeContext
@@ -384,7 +378,7 @@ public:
     ethsnarks::FieldT account;
     ethsnarks::FieldT amount;
     AccountUpdate accountUpdate;
-    Signature sig;
+    Signature signature;
 };
 
 void from_json(const json& j, Withdrawal& withdrawal)
@@ -395,7 +389,7 @@ void from_json(const json& j, Withdrawal& withdrawal)
     withdrawal.account = ethsnarks::FieldT(j.at("account"));
     withdrawal.amount = ethsnarks::FieldT(j.at("amount"));
     withdrawal.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
-    withdrawal.sig = j.get<Signature>();
+    withdrawal.signature = j.at("signature").get<Signature>();
 }
 
 class Cancellation
@@ -408,7 +402,7 @@ public:
     ethsnarks::FieldT orderID;
     TradeHistoryUpdate tradeHistoryUpdate;
     AccountUpdate accountUpdate;
-    Signature sig;
+    Signature signature;
 };
 
 void from_json(const json& j, Cancellation& cancellation)
@@ -421,7 +415,7 @@ void from_json(const json& j, Cancellation& cancellation)
     cancellation.orderID = ethsnarks::FieldT(j.at("orderID"));
     cancellation.tradeHistoryUpdate = j.at("tradeHistoryUpdate").get<TradeHistoryUpdate>();
     cancellation.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
-    cancellation.sig = j.get<Signature>();
+    cancellation.signature = j.at("signature").get<Signature>();
 }
 
 }

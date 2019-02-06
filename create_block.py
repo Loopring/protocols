@@ -109,13 +109,15 @@ def ringFromJSON(jRing, dex):
     fee = int(jRing["fee"])
 
     miner = dex.getAccount(minerID)
+    walletA = dex.getAccount(orderA.walletF)
+    walletB = dex.getAccount(orderB.walletF)
 
     ring = Ring(orderA, orderB,
                 Point(miner.publicKeyX, miner.publicKeyY),
                 minerID, fee,
                 miner.nonce)
 
-    ring.sign(FQ(int(miner.secretKey)))
+    ring.sign(FQ(int(miner.secretKey)), FQ(int(walletA.secretKey)), FQ(int(walletB.secretKey)))
 
     return ring
 

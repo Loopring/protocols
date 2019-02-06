@@ -587,7 +587,7 @@ public:
         pb.val(minerPublicKeyS.x) = order.minerPublicKeyS.x;
         pb.val(minerPublicKeyS.y) = order.minerPublicKeyS.y;
 
-        signatureVerifier.generate_r1cs_witness(order.sig);
+        signatureVerifier.generate_r1cs_witness(order.signature);
 
         validSince_leq_timestamp.generate_r1cs_witness();
         timestamp_leq_validUntil.generate_r1cs_witness();
@@ -1186,7 +1186,10 @@ public:
     ForceLeqGadget filledLeqA;
     ForceLeqGadget filledLeqB;
 
-    SignatureVerifier ringSignatureVerifier;
+    const VariableArrayT ringMessage;
+    SignatureVerifier minerSignatureVerifier;
+    SignatureVerifier walletASignatureVerifier;
+    SignatureVerifier walletBSignatureVerifier;
 
     RingSettlementGadget(
         ProtoboardT& pb,
@@ -1296,13 +1299,14 @@ public:
         filledLeqA(pb, filledAfterA, orderA.amountS.packed, FMT(prefix, ".filled_A <= .amountSA")),
         filledLeqB(pb, filledAfterB, orderB.amountS.packed, FMT(prefix, ".filled_B <= .amountSB")),
 
-        ringSignatureVerifier(pb, params, publicKey,
-                              flatten({orderA.getHash(), orderB.getHash(),
-                                       orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
-                                       orderA.minerF.bits, orderB.minerF.bits,
-                                       orderA.minerS.bits,
-                                       nonce.bits}),
-                              FMT(prefix, ".ringSignatureVerifier"))
+        ringMessage(flatten({orderA.getHash(), orderB.getHash(),
+                             orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
+                             orderA.minerF.bits, orderB.minerF.bits,
+                             orderA.minerS.bits,
+                             nonce.bits})),
+        minerSignatureVerifier(pb, params, publicKey, ringMessage, FMT(prefix, ".minerSignatureVerifier")),
+        walletASignatureVerifier(pb, params, orderA.walletPublicKey, ringMessage, FMT(prefix, ".walletASignatureVerifier")),
+        walletBSignatureVerifier(pb, params, orderB.walletPublicKey, ringMessage, FMT(prefix, ".walletASignatureVerifier"))
     {
 
     }
@@ -1438,7 +1442,9 @@ public:
         updateAccountS_M.generate_r1cs_witness(ringSettlement.accountUpdateS_M.proof);
         updateAccount_M.generate_r1cs_witness(ringSettlement.accountUpdate_M.proof);
 
-        ringSignatureVerifier.generate_r1cs_witness(ringSettlement.ring.ringSig);
+        minerSignatureVerifier.generate_r1cs_witness(ringSettlement.ring.minerSignature);
+        walletASignatureVerifier.generate_r1cs_witness(ringSettlement.ring.walletASignature);
+        walletBSignatureVerifier.generate_r1cs_witness(ringSettlement.ring.walletBSignature);
     }
 
 
@@ -1529,7 +1535,9 @@ public:
         // Signatures
         //
 
-        ringSignatureVerifier.generate_r1cs_constraints();
+        minerSignatureVerifier.generate_r1cs_constraints();
+        walletASignatureVerifier.generate_r1cs_constraints();
+        walletBSignatureVerifier.generate_r1cs_constraints();
     }
 };
 
@@ -2039,9 +2047,9 @@ public:
 
         updateAccount.generate_r1cs_witness(withdrawal.accountUpdate.proof);
 
-        pb.val(sig_R.x) = withdrawal.sig.R.x;
-        pb.val(sig_R.y) = withdrawal.sig.R.y;
-        sig_s.fill_with_bits_of_field_element(pb, withdrawal.sig.s);
+        pb.val(sig_R.x) = withdrawal.signature.R.x;
+        pb.val(sig_R.y) = withdrawal.signature.R.y;
+        sig_s.fill_with_bits_of_field_element(pb, withdrawal.signature.s);
         signatureVerifier.generate_r1cs_witness();
     }
 
@@ -2275,9 +2283,9 @@ public:
 
         checkAccount.generate_r1cs_witness(cancellation.accountUpdate.proof);
 
-        pb.val(sig_R.x) = cancellation.sig.R.x;
-        pb.val(sig_R.y) = cancellation.sig.R.y;
-        sig_s.fill_with_bits_of_field_element(pb, cancellation.sig.s);
+        pb.val(sig_R.x) = cancellation.signature.R.x;
+        pb.val(sig_R.y) = cancellation.signature.R.y;
+        sig_s.fill_with_bits_of_field_element(pb, cancellation.signature.s);
         signatureVerifier.generate_r1cs_witness();
     }
 

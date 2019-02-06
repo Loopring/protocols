@@ -21,6 +21,11 @@ class Context(object):
         self.operator = int(operator)
         self.timestamp = int(timestamp)
 
+class Signature(object):
+    def __init__(self, sig):
+        self.Rx = str(sig.R.x)
+        self.Ry = str(sig.R.y)
+        self.s = str(sig.s)
 
 class Account(object):
     def __init__(self, secretKey, publicKey, dexID, token, balance):
@@ -135,9 +140,7 @@ class Order(object):
         msg = self.message()
         signedMessage = PureEdDSA.sign(msg, k)
         self.hash = PureEdDSA().hash_public(signedMessage.sig.R, signedMessage.A, signedMessage.msg)
-        self.sigRx = str(signedMessage.sig.R.x)
-        self.sigRy = str(signedMessage.sig.R.y)
-        self.sigS = str(signedMessage.sig.s)
+        self.signature = Signature(signedMessage.sig)
 
     def checkValid(self, context):
         valid = True
@@ -173,13 +176,17 @@ class Ring(object):
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
-    def sign(self, k):
+    def sign(self, miner_k, walletA_k, walletB_k):
         msg = self.message()
-        signedMessage = PureEdDSA.sign(msg, k)
-        self.hash = PureEdDSA().hash_public(signedMessage.sig.R, signedMessage.A, signedMessage.msg)
-        self.sigRx = str(signedMessage.sig.R.x)
-        self.sigRy = str(signedMessage.sig.R.y)
-        self.sigS = str(signedMessage.sig.s)
+        # miner
+        signedMessage = PureEdDSA.sign(msg, miner_k)
+        self.minerSignature = Signature(signedMessage.sig)
+        # walletA
+        signedMessage = PureEdDSA.sign(msg, walletA_k)
+        self.walletASignature = Signature(signedMessage.sig)
+        # walletB
+        signedMessage = PureEdDSA.sign(msg, walletB_k)
+        self.walletBSignature = Signature(signedMessage.sig)
 
 
 class RingSettlement(object):
@@ -250,9 +257,7 @@ class Withdrawal(object):
     def sign(self, k):
         msg = self.message()
         signedMessage = PureEdDSA.sign(msg, k)
-        self.sigRx = str(signedMessage.sig.R.x)
-        self.sigRy = str(signedMessage.sig.R.y)
-        self.sigS = str(signedMessage.sig.s)
+        self.signature = Signature(signedMessage.sig)
 
 
 class Cancellation(object):
@@ -275,9 +280,7 @@ class Cancellation(object):
     def sign(self, k):
         msg = self.message()
         signedMessage = PureEdDSA.sign(msg, k)
-        self.sigRx = str(signedMessage.sig.R.x)
-        self.sigRy = str(signedMessage.sig.R.y)
-        self.sigS = str(signedMessage.sig.s)
+        self.signature = Signature(signedMessage.sig)
 
 
 class Dex(object):
