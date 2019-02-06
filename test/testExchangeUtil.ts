@@ -71,14 +71,27 @@ export class ExchangeTestUtil {
   }
 
   public async setupRings(ringsInfo: RingsInfo) {
+
+    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
+    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
+
+    // Make an account for the operator
+    const keyPairO = this.getKeyPairEDDSA();
+    const operator = await this.deposit(this.testContext.miner,
+                                        keyPairO.secretKey, keyPairO.publicKeyX, keyPairO.publicKeyY,
+                                        0, lrcAddress, 0);
+    ringsInfo.operator = operator;
+
     // Make an account for the ringmatcher
-    const wethAddress = this.testContext.tokenSymbolAddrMap.get("WETH");
     const keyPairM = this.getKeyPairEDDSA();
+    await LRC.addBalance(this.testContext.miner, web3.utils.toBN(new BigNumber(10000)));
     const miner = await this.deposit(this.testContext.miner,
                                      keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                     0, wethAddress, 0);
+                                     0, lrcAddress, 10000);
+
     for (const [i, ring] of ringsInfo.rings.entries()) {
       ring.miner = miner;
+      ring.fee = ring.fee ? ring.fee : 1;
       await this.setupOrder(ring.orderA, i);
       await this.setupOrder(ring.orderB, i);
     }

@@ -218,6 +218,8 @@ public:
     ethsnarks::FieldT fillF_B;
     ethsnarks::FieldT margin;
 
+    ethsnarks::FieldT miner;
+    ethsnarks::FieldT fee;
     ethsnarks::jubjub::EdwardsPoint publicKey;
     Signature ringSig;
 };
@@ -237,6 +239,8 @@ void from_json(const json& j, Ring& ring)
     ring.fillF_B = ethsnarks::FieldT(j.at("fillF_B"));
     ring.margin = ethsnarks::FieldT(j.at("margin"));
 
+    ring.miner = ethsnarks::FieldT(j.at("miner"));
+    ring.fee = ethsnarks::FieldT(j.at("fee"));
     ring.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     ring.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     ring.ringSig = j.get<Signature>();
@@ -267,6 +271,7 @@ public:
     AccountUpdate accountUpdateF_BB;
 
     AccountUpdate accountUpdateS_M;
+    AccountUpdate accountUpdate_M;
 
     BurnRateCheck burnRateCheckF_A;
     BurnRateCheck burnRateCheckF_B;
@@ -306,6 +311,8 @@ void from_json(const json& j, RingSettlement& ringSettlement)
 
     ringSettlement.accountUpdateS_M = j.at("accountUpdateS_M").get<AccountUpdate>();
 
+    ringSettlement.accountUpdate_M = j.at("accountUpdate_M").get<AccountUpdate>();
+
     ringSettlement.burnRateCheckF_A = j.at("burnRateCheckF_A").get<BurnRateCheck>();
     ringSettlement.burnRateCheckF_B = j.at("burnRateCheckF_B").get<BurnRateCheck>();
 
@@ -313,6 +320,45 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.walletFee_A = ethsnarks::FieldT(j.at("walletFee_A"));
     ringSettlement.burnFee_B = ethsnarks::FieldT(j.at("burnFee_B"));
     ringSettlement.walletFee_B = ethsnarks::FieldT(j.at("walletFee_B"));*/
+}
+
+class TradeContext
+{
+public:
+
+    ethsnarks::FieldT tradingHistoryMerkleRootBefore;
+    ethsnarks::FieldT tradingHistoryMerkleRootAfter;
+    ethsnarks::FieldT accountsMerkleRootBefore;
+    ethsnarks::FieldT accountsMerkleRootAfter;
+    ethsnarks::FieldT burnRateMerkleRoot;
+
+    ethsnarks::FieldT timestamp;
+
+    ethsnarks::FieldT operatorID;
+    AccountUpdate accountUpdate_O;
+
+    std::vector<Loopring::RingSettlement> ringSettlements;
+};
+
+void from_json(const json& j, TradeContext& context)
+{
+    context.tradingHistoryMerkleRootBefore = ethsnarks::FieldT(j["tradingHistoryMerkleRootBefore"].get<std::string>().c_str());
+    context.tradingHistoryMerkleRootAfter = ethsnarks::FieldT(j["tradingHistoryMerkleRootAfter"].get<std::string>().c_str());
+    context.accountsMerkleRootBefore = ethsnarks::FieldT(j["accountsMerkleRootBefore"].get<std::string>().c_str());
+    context.accountsMerkleRootAfter = ethsnarks::FieldT(j["accountsMerkleRootAfter"].get<std::string>().c_str());
+    context.burnRateMerkleRoot = ethsnarks::FieldT(j["burnRateMerkleRoot"].get<std::string>().c_str());
+
+    context.timestamp = ethsnarks::FieldT(j["timestamp"].get<unsigned int>());
+
+    context.operatorID = ethsnarks::FieldT(j.at("operatorID"));
+    context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
+
+    // Read settlements
+    json jRingSettlements = j["ringSettlements"];
+    for(unsigned int i = 0; i < jRingSettlements.size(); i++)
+    {
+        context.ringSettlements.emplace_back(jRingSettlements[i].get<Loopring::RingSettlement>());
+    }
 }
 
 class Deposit

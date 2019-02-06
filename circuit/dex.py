@@ -17,7 +17,8 @@ TREE_DEPTH_TOKENS = 16
 
 
 class Context(object):
-    def __init__(self, timestamp):
+    def __init__(self, operator, timestamp):
+        self.operator = int(operator)
         self.timestamp = int(timestamp)
 
 
@@ -153,11 +154,13 @@ class Order(object):
 
 
 class Ring(object):
-    def __init__(self, orderA, orderB, publicKey, nonce):
+    def __init__(self, orderA, orderB, publicKey, miner, fee, nonce):
         self.orderA = orderA
         self.orderB = orderB
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
+        self.miner = miner
+        self.fee = fee
         self.nonce = nonce
 
     def message(self):
@@ -185,6 +188,7 @@ class RingSettlement(object):
                  accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_MA, accountUpdateF_BA,
                  accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_MB, accountUpdateF_BB,
                  accountUpdateS_M,
+                 accountUpdate_M,
                  burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
                  burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B):
         self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
@@ -209,6 +213,8 @@ class RingSettlement(object):
         self.accountUpdateF_BB = accountUpdateF_BB
 
         self.accountUpdateS_M = accountUpdateS_M
+
+        self.accountUpdate_M = accountUpdate_M
 
         self.burnRateCheckF_A = burnRateCheckF_A
         self.walletFee_A = walletFee_A
@@ -513,11 +519,15 @@ class Dex(object):
         # Margin
         accountUpdateS_M = self.updateBalance(ring.orderA.minerS, ring.margin)
 
+        # Operator payment
+        accountUpdate_M = self.updateBalance(ring.miner, -ring.fee)
+
         return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                               accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_MA, accountUpdateF_BA,
                               accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_MB, accountUpdateF_BB,
                               accountUpdateS_M,
+                              accountUpdate_M,
                               burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
                               burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B)
 

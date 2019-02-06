@@ -106,11 +106,13 @@ def ringFromJSON(jRing, dex):
     orderA = orderFromJSON(jRing["orderA"], dex)
     orderB = orderFromJSON(jRing["orderB"], dex)
     minerID = int(jRing["miner"])
+    fee = int(jRing["fee"])
 
     miner = dex.getAccount(minerID)
 
     ring = Ring(orderA, orderB,
                 Point(miner.publicKeyX, miner.publicKeyY),
+                minerID, fee,
                 miner.nonce)
 
     ring.sign(FQ(int(miner.secretKey)))
@@ -162,13 +164,18 @@ def trade(dex, data):
     export.accountsMerkleRootBefore = str(dex._accountsTree._root)
     export.burnRateMerkleRoot = str(dex._tokensTree.root)
     export.timestamp = int(data["timestamp"])
+    export.operatorID = int(data["operator"])
 
-    context = Context(export.timestamp)
+    context = Context(export.operatorID, export.timestamp)
 
+    totalFee = 0
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, dex)
         ringSettlement = dex.settleRing(context, ring)
+        totalFee += ring.fee
         export.ringSettlements.append(ringSettlement)
+
+    export.accountUpdate_O = dex.updateBalance(export.operatorID, totalFee)
 
     export.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)
     export.accountsMerkleRootAfter = str(dex._accountsTree._root)

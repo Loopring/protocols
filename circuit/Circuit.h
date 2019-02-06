@@ -1102,6 +1102,9 @@ public:
 
     VariableT constant0;
 
+    const jubjub::VariablePointT publicKey;
+    libsnark::dual_variable_gadget<FieldT> nonce;
+
     OrderGadget orderA;
     OrderGadget orderB;
 
@@ -1119,6 +1122,8 @@ public:
     libsnark::dual_variable_gadget<FieldT> fillB_B;
     libsnark::dual_variable_gadget<FieldT> fillF_B;
     libsnark::dual_variable_gadget<FieldT> margin;
+    libsnark::dual_variable_gadget<FieldT> miner;
+    libsnark::dual_variable_gadget<FieldT> fee;
 
     VariableT filledAfterA;
     VariableT filledAfterB;
@@ -1145,6 +1150,7 @@ public:
     VariableT balanceF_MB_before;
     VariableT balanceF_BB_before;
     VariableT balanceS_M_before;
+    VariableT balance_M_before;
 
     subadd_gadget balanceSB_A;
     subadd_gadget balanceSB_B;
@@ -1155,6 +1161,7 @@ public:
     subadd_gadget balanceF_MB;
     subadd_gadget balanceF_BB;
     subadd_gadget balanceS_MA;
+    subadd_gadget balance_M;
 
     UpdateTradeHistoryGadget updateTradeHistoryA;
     UpdateTradeHistoryGadget updateTradeHistoryB;
@@ -1174,12 +1181,11 @@ public:
 
     UpdateAccountGadget updateAccountS_M;
 
+    UpdateAccountGadget updateAccount_M;
+
     ForceLeqGadget filledLeqA;
     ForceLeqGadget filledLeqB;
 
-    libsnark::dual_variable_gadget<FieldT> nonce;
-
-    const jubjub::VariablePointT publicKey;
     SignatureVerifier ringSignatureVerifier;
 
     RingSettlementGadget(
@@ -1189,11 +1195,15 @@ public:
         const VariableT& _accountsMerkleRoot,
         const VariableT& _burnRateMerkleRoot,
         const VariableT& _timestamp,
+        const VariableT& _operatorBalance,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
+
+        publicKey(pb, FMT(prefix, ".publicKey")),
+        nonce(pb, 32, FMT(prefix, ".nonce")),
 
         orderA(pb, params, _timestamp, FMT(prefix, ".orderA")),
         orderB(pb, params, _timestamp, FMT(prefix, ".orderB")),
@@ -1212,6 +1222,8 @@ public:
         fillB_B(pb, 96, FMT(prefix, ".fillB_B")),
         fillF_B(pb, 96, FMT(prefix, ".fillF_B")),
         margin(pb, 96, FMT(prefix, ".margin")),
+        miner(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".miner")),
+        fee(pb, 16, FMT(prefix, ".fee")),
 
         filledAfterA(make_variable(pb, FMT(prefix, ".filledAfterA"))),
         filledAfterB(make_variable(pb, FMT(prefix, ".filledAfterB"))),
@@ -1238,6 +1250,7 @@ public:
         balanceF_MB_before(make_variable(pb, FMT(prefix, ".balanceF_MB_before"))),
         balanceF_BB_before(make_variable(pb, FMT(prefix, ".balanceF_BB_before"))),
         balanceS_M_before(make_variable(pb, FMT(prefix, ".balanceS_M_before"))),
+        balance_M_before(make_variable(pb, FMT(prefix, ".balance_M_before"))),
 
         // fillB_B == fillS_A - margin
         balanceSB_A(pb, 96, balanceS_A_before, balanceB_B_before, fillB_B.packed, FMT(prefix, ".balanceSB_A")),
@@ -1252,6 +1265,8 @@ public:
         balanceF_BB(pb, 96, balanceF_MB.X, balanceF_BB_before, feePaymentB.getBurnFee(), FMT(prefix, ".balanceF_BB")),
 
         balanceS_MA(pb, 96, balanceSB_A.X, balanceS_M_before, margin.packed, FMT(prefix, ".balanceS_MA")),
+
+        balance_M(pb, 96, balance_M_before, _operatorBalance, fee.packed, FMT(prefix, ".balance_M")),
 
         tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
         updateTradeHistoryA(pb, tradingHistoryMerkleRoot, flatten({orderA.orderID.bits, orderA.accountS.bits}),
@@ -1276,12 +1291,11 @@ public:
 
         updateAccountS_M(pb, updateAccountF_BB.result(), orderA.minerS.bits, orderA.minerPublicKeyS, constant0, orderA.tokenS, balanceS_M_before, balanceS_MA.Y, FMT(prefix, ".updateAccountS_M")),
 
+        updateAccount_M(pb, updateAccountS_M.result(), miner.bits, publicKey, constant0, constant0, balance_M_before, balance_M.X, FMT(prefix, ".updateAccount_M")),
+
         filledLeqA(pb, filledAfterA, orderA.amountS.packed, FMT(prefix, ".filled_A <= .amountSA")),
         filledLeqB(pb, filledAfterB, orderB.amountS.packed, FMT(prefix, ".filled_B <= .amountSB")),
 
-        nonce(pb, 32, FMT(prefix, ".nonce")),
-
-        publicKey(pb, FMT(prefix, ".publicKey")),
         ringSignatureVerifier(pb, params, publicKey,
                               flatten({orderA.getHash(), orderB.getHash(),
                                        orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
@@ -1300,7 +1314,12 @@ public:
 
     const VariableT getNewAccountsMerkleRoot() const
     {
-        return updateAccountS_M.result();
+        return updateAccount_M.result();
+    }
+
+    const VariableT& getOperatorBalance() const
+    {
+        return balance_M.Y;
     }
 
     const std::vector<VariableArrayT> getPublicData() const
@@ -1316,6 +1335,13 @@ public:
 
     void generate_r1cs_witness (const RingSettlement& ringSettlement)
     {
+        pb.val(publicKey.x) = ringSettlement.ring.publicKey.x;
+        pb.val(publicKey.y) = ringSettlement.ring.publicKey.y;
+
+        nonce.bits.fill_with_bits_of_field_element(pb, 0);
+        nonce.generate_r1cs_witness_from_bits();
+
+
         orderA.generate_r1cs_witness(ringSettlement.ring.orderA);
         orderB.generate_r1cs_witness(ringSettlement.ring.orderB);
 
@@ -1340,6 +1366,10 @@ public:
         fillF_B.generate_r1cs_witness_from_bits();
         margin.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.margin);
         margin.generate_r1cs_witness_from_bits();
+        miner.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.miner);
+        miner.generate_r1cs_witness_from_bits();
+        fee.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fee);
+        fee.generate_r1cs_witness_from_bits();
 
         pb.val(filledAfterA) = pb.val(orderA.filledBefore) + pb.val(fillS_A.packed);
         pb.val(filledAfterB) = pb.val(orderB.filledBefore) + pb.val(fillS_B.packed);
@@ -1365,6 +1395,7 @@ public:
         pb.val(balanceF_MB_before) = ringSettlement.accountUpdateF_MB.before.balance;
         pb.val(balanceF_BB_before) = ringSettlement.accountUpdateF_BB.before.balance;
         pb.val(balanceS_M_before) = ringSettlement.accountUpdateS_M.before.balance;
+        pb.val(balance_M_before) = ringSettlement.accountUpdate_M.before.balance;
 
         balanceSB_A.generate_r1cs_witness();
         balanceSB_B.generate_r1cs_witness();
@@ -1375,6 +1406,7 @@ public:
         balanceF_MB.generate_r1cs_witness();
         balanceF_BB.generate_r1cs_witness();
         balanceS_MA.generate_r1cs_witness();
+        balance_M.generate_r1cs_witness();
 
         //
         // Update trading history
@@ -1404,12 +1436,7 @@ public:
         updateAccountF_MB.generate_r1cs_witness(ringSettlement.accountUpdateF_MB.proof);
         updateAccountF_BB.generate_r1cs_witness(ringSettlement.accountUpdateF_BB.proof);
         updateAccountS_M.generate_r1cs_witness(ringSettlement.accountUpdateS_M.proof);
-
-        nonce.bits.fill_with_bits_of_field_element(pb, 0);
-        nonce.generate_r1cs_witness_from_bits();
-
-        pb.val(publicKey.x) = ringSettlement.ring.publicKey.x;
-        pb.val(publicKey.y) = ringSettlement.ring.publicKey.y;
+        updateAccount_M.generate_r1cs_witness(ringSettlement.accountUpdate_M.proof);
 
         ringSignatureVerifier.generate_r1cs_witness(ringSettlement.ring.ringSig);
     }
@@ -1417,6 +1444,8 @@ public:
 
     void generate_r1cs_constraints()
     {
+        nonce.generate_r1cs_constraints(true);
+
         orderA.generate_r1cs_constraints();
         orderB.generate_r1cs_constraints();
 
@@ -1439,6 +1468,8 @@ public:
         fillS_B.generate_r1cs_constraints(true);
         fillB_B.generate_r1cs_constraints(true);
         fillF_B.generate_r1cs_constraints(true);
+        miner.generate_r1cs_constraints(true);
+        fee.generate_r1cs_constraints(true);
         margin.generate_r1cs_constraints(true);
 
         pb.add_r1cs_constraint(ConstraintT(orderA.filledBefore + fillS_A.packed, 1, filledAfterA), "filledBeforeA + fillA = filledAfterA");
@@ -1456,6 +1487,7 @@ public:
         balanceF_MB.generate_r1cs_constraints();
         balanceF_BB.generate_r1cs_constraints();
         balanceS_MA.generate_r1cs_constraints();
+        balance_M.generate_r1cs_constraints();
 
         //
         // Check burnrate
@@ -1491,12 +1523,12 @@ public:
         updateAccountF_MB.generate_r1cs_constraints();
         updateAccountF_BB.generate_r1cs_constraints();
         updateAccountS_M.generate_r1cs_constraints();
+        updateAccount_M.generate_r1cs_constraints();
 
         //
         // Signatures
         //
 
-        nonce.generate_r1cs_constraints(true);
         ringSignatureVerifier.generate_r1cs_constraints();
     }
 };
@@ -1522,6 +1554,13 @@ public:
 
     sha256_many* publicDataHasher;
 
+    VariableT constant0;
+
+    const jubjub::VariablePointT publicKey;
+    libsnark::dual_variable_gadget<FieldT> operatorID;
+    VariableT balance_O_before;
+    UpdateAccountGadget* updateAccount_O;
+
     TradeCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
 
@@ -1532,9 +1571,14 @@ public:
         accountsMerkleRootBefore(pb, 256, FMT(prefix, ".accountsMerkleRootBefore")),
         accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter")),
         burnRateMerkleRoot(pb, 256, FMT(prefix, ".burnRateMerkleRoot")),
+        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
+        publicKey(pb, FMT(prefix, ".publicKey")),
+        operatorID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operator")),
+        balance_O_before(make_variable(pb, FMT(prefix, ".balance_O_before"))),
         timestamp(pb, 32, FMT(prefix, ".timestamp"))
     {
         this->publicDataHasher = nullptr;
+        this->updateAccount_O = nullptr;
     }
 
     ~TradeCircuitGadget()
@@ -1542,6 +1586,11 @@ public:
         if (publicDataHasher)
         {
             delete publicDataHasher;
+        }
+
+        if (updateAccount_O)
+        {
+            delete updateAccount_O;
         }
     }
 
@@ -1566,14 +1615,18 @@ public:
         publicDataBits.push_back(timestamp.bits);
         for (size_t j = 0; j < numRings; j++)
         {
-            VariableT ringTradingHistoryMerkleRoot = (j == 0) ? tradingHistoryMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
-            VariableT ringAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
-            ringSettlements.emplace_back(pb, params, ringTradingHistoryMerkleRoot, ringAccountsMerkleRoot, burnRateMerkleRoot.packed, timestamp.packed, std::string("trade") + std::to_string(j));
+            const VariableT ringTradingHistoryMerkleRoot = (j == 0) ? tradingHistoryMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
+            const VariableT ringAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
+            const VariableT& ringOperatorBalance = (j == 0) ? balance_O_before : ringSettlements.back().getOperatorBalance();
+            ringSettlements.emplace_back(pb, params, ringTradingHistoryMerkleRoot, ringAccountsMerkleRoot, burnRateMerkleRoot.packed, timestamp.packed, ringOperatorBalance, std::string("trade") + std::to_string(j));
 
             // Store transfers from ring settlement
             std::vector<VariableArrayT> ringPublicData = ringSettlements.back().getPublicData();
             publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
         }
+
+        updateAccount_O = new UpdateAccountGadget(pb, ringSettlements.back().getNewAccountsMerkleRoot(), operatorID.bits, publicKey, constant0, constant0, balance_O_before, ringSettlements.back().getOperatorBalance(), ".updateAccount_O");
+        updateAccount_O->generate_r1cs_constraints();
 
         publicDataHash.generate_r1cs_constraints(true);
         for (auto& ringSettlement : ringSettlements)
@@ -1593,7 +1646,7 @@ public:
         }
 
         // Make sure the merkle roots afterwards are correctly passed in
-        pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewAccountsMerkleRoot(), 1, accountsMerkleRootAfter.packed), "newAccountsMerkleRoot");
+        pb.add_r1cs_constraint(ConstraintT(updateAccount_O->result(), 1, accountsMerkleRootAfter.packed), "newAccountsMerkleRoot");
         pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewTradingHistoryMerkleRoot(), 1, tradingHistoryMerkleRootAfter.packed), "newTradingHistoryMerkleRoot");
     }
 
@@ -1602,37 +1655,37 @@ public:
         std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numRings) << "/ring)" << std::endl;
     }
 
-    bool generateWitness(const std::vector<Loopring::RingSettlement>& ringSettlementsData,
-                         const std::string& strTradingHistoryMerkleRootBefore, const std::string& strTradingHistoryMerkleRootAfter,
-                         const std::string& strAccountsMerkleRootBefore, const std::string& strAccountsMerkleRootAfter,
-                         const std::string& strBurnRateMerkleRoot, unsigned int uTimestampValue)
+    bool generateWitness(const TradeContext& context)
     {
-        ethsnarks::FieldT tradingHistoryMerkleRootBeforeValue = ethsnarks::FieldT(strTradingHistoryMerkleRootBefore.c_str());
-        ethsnarks::FieldT tradingHistoryMerkleRootAfterValue = ethsnarks::FieldT(strTradingHistoryMerkleRootAfter.c_str());
-        tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, tradingHistoryMerkleRootBeforeValue);
+        tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.tradingHistoryMerkleRootBefore);
         tradingHistoryMerkleRootBefore.generate_r1cs_witness_from_bits();
-        tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, tradingHistoryMerkleRootAfterValue);
+        tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.tradingHistoryMerkleRootAfter);
         tradingHistoryMerkleRootAfter.generate_r1cs_witness_from_bits();
 
-        ethsnarks::FieldT accountsMerkleRootBeforeValue = ethsnarks::FieldT(strAccountsMerkleRootBefore.c_str());
-        ethsnarks::FieldT accountsMerkleRootAfterValue = ethsnarks::FieldT(strAccountsMerkleRootAfter.c_str());
-        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootBeforeValue);
+        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.accountsMerkleRootBefore);
         accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
-        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootAfterValue);
+        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.accountsMerkleRootAfter);
         accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
 
-        ethsnarks::FieldT burnRateMerkleRootValue = ethsnarks::FieldT(strBurnRateMerkleRoot.c_str());
-        burnRateMerkleRoot.bits.fill_with_bits_of_field_element(pb, burnRateMerkleRootValue);
+        burnRateMerkleRoot.bits.fill_with_bits_of_field_element(pb, context.burnRateMerkleRoot);
         burnRateMerkleRoot.generate_r1cs_witness_from_bits();
 
-        ethsnarks::FieldT timestampValue = ethsnarks::FieldT(uTimestampValue);
-        timestamp.bits.fill_with_bits_of_field_element(pb, timestampValue);
+        timestamp.bits.fill_with_bits_of_field_element(pb, context.timestamp);
         timestamp.generate_r1cs_witness_from_bits();
 
-        for(unsigned int i = 0; i < ringSettlementsData.size(); i++)
+        operatorID.bits.fill_with_bits_of_field_element(pb, context.operatorID);
+        operatorID.generate_r1cs_witness_from_bits();
+
+        pb.val(publicKey.x) = context.accountUpdate_O.before.publicKey.x;
+        pb.val(publicKey.y) = context.accountUpdate_O.before.publicKey.y;
+
+        for(unsigned int i = 0; i < context.ringSettlements.size(); i++)
         {
-            ringSettlements[i].generate_r1cs_witness(ringSettlementsData[i]);
+            ringSettlements[i].generate_r1cs_witness(context.ringSettlements[i]);
         }
+
+        pb.val(balance_O_before) = context.accountUpdate_O.before.balance;
+        updateAccount_O->generate_r1cs_witness(context.accountUpdate_O.proof);
 
         publicDataHasher->generate_r1cs_witness();
 

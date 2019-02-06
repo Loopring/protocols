@@ -48,6 +48,7 @@ export interface RingInfo {
   orderB: OrderInfo;
 
   miner?: number;
+  fee?: number;
 }
 
 export interface RingsInfo {
@@ -55,6 +56,8 @@ export interface RingsInfo {
 
   publicDataHash?: string;
   timestamp?: number;
+
+  operator?: number;
 }
 
 export interface OrderSettlementData {

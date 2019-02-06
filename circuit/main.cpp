@@ -97,26 +97,10 @@ bool trade(Mode mode, unsigned int numRings, const json& input, ethsnarks::Proto
             return false;
         }
 
-        std::string tradingHistoryMerkleRootBefore = input["tradingHistoryMerkleRootBefore"].get<std::string>();
-        std::string tradingHistoryMerkleRootAfter = input["tradingHistoryMerkleRootAfter"].get<std::string>();
-        std::string accountsMerkleRootBefore = input["accountsMerkleRootBefore"].get<std::string>();
-        std::string accountsMerkleRootAfter = input["accountsMerkleRootAfter"].get<std::string>();
-        std::string burnRateMerkleRoot = input["burnRateMerkleRoot"].get<std::string>();
-        unsigned int timestamp = input["timestamp"].get<unsigned int>();
-
-        // Read settlements
-        std::vector<Loopring::RingSettlement> ringSettlements;
-        for(unsigned int i = 0; i < numRings; i++)
-        {
-            ringSettlements.emplace_back(jRingSettlements[i].get<Loopring::RingSettlement>());
-        }
+        Loopring::TradeContext context = input.get<Loopring::TradeContext>();
 
         // Generate witness values for the given input values
-        if (!circuit.generateWitness(ringSettlements,
-                                     tradingHistoryMerkleRootBefore, tradingHistoryMerkleRootAfter,
-                                     accountsMerkleRootBefore, accountsMerkleRootAfter,
-                                     burnRateMerkleRoot,
-                                     timestamp))
+        if (!circuit.generateWitness(context))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return false;
