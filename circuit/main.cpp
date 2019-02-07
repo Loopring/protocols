@@ -31,7 +31,7 @@ timespec diff(timespec start, timespec end)
     return temp;
 }
 
-bool generateKeyPair(const ethsnarks::ProtoboardT& pb, libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT>& outKeyPair)
+bool generateKeyPair(ethsnarks::ProtoboardT& pb, libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT>& outKeyPair)
 {
     std::cout << "Generating keys..." << std::endl;
     auto constraints = pb.get_constraint_system();
@@ -51,18 +51,23 @@ bool generateKeyPair(const ethsnarks::ProtoboardT& pb, libsnark::r1cs_gg_ppzksna
     fVK.close();
 
     return true;
+    //int result = stub_genkeys_from_pb(pb, "pk.raw", "vk.json");
+    //return (result == 0);
 }
 
-bool generateProof(const ethsnarks::ProtoboardT& pb, const libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT>& keyPair,
-                   const char* proofFilename)
+bool generateProof(const ethsnarks::ProtoboardT& pb, const ethsnarks::ProvingKeyT& provingKey,
+                   /*const char *provingKeyFilename, */const char* proofFilename)
 {
+    //std::cout << "Reading proving key " << provingKeyFilename << std::endl;
+    //auto provingKey = ethsnarks::loadFromFile<ethsnarks::ProvingKeyT>(provingKeyFilename);
+
     std::cout << "Generating proof..." << std::endl;
     timespec time1, time2;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
 
     auto primaryInput = pb.primary_input();
     auto auxiliaryInput = pb.auxiliary_input();
-    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(keyPair.pk, primaryInput, auxiliaryInput);
+    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(provingKey, primaryInput, auxiliaryInput);
 
     std::ofstream fproof(proofFilename);
     if (!fproof.is_open())
@@ -227,6 +232,7 @@ int main (int argc, char **argv)
         std::cerr << "Usage: " << argv[0] << std::endl;
         std::cerr << "-verify <block.json>: Verifies a block" << std::endl;
         std::cerr << "-prove <block.json> <out_proof.json>: Proves a block" << std::endl;
+        std::cerr << "-createkeys <protoBlock.json>: Creates prover/verifier keys" << std::endl;
         return 1;
     }
 
@@ -247,6 +253,15 @@ int main (int argc, char **argv)
         proofFilename = argv[3];
         std::cout << "Proving " << argv[2] << "..." << std::endl;
     }
+    else if (strcmp(argv[1], "-createkeys") == 0)
+    {
+        if (argc != 3)
+        {
+            return 1;
+        }
+        mode = Mode::CreateKeys;
+        std::cout << "Creating keys for " << argv[2] << "..." << std::endl;
+    }
     else
     {
         std::cerr << "Unknown option: " << argv[1] << std::endl;
@@ -264,11 +279,12 @@ int main (int argc, char **argv)
     json input;
     file >> input;
     file.close();
-    int blockType = input["blockType"].get<int>();
-    //std::cerr << "BlockType: " << blockType << std::endl;
 
+    // Read meta data
+    int blockType = input["blockType"].get<int>();
     unsigned int numElements = input["numElements"].get<int>();
 
+    std::cout << "Building circuit... " << std::endl;
     ethsnarks::ProtoboardT pb;
     switch(blockType)
     {
@@ -327,13 +343,14 @@ int main (int argc, char **argv)
     {
         if (!generateKeyPair(pb, keypair))
         {
+            std::cerr << "Failed to generate keys!" << std::endl;
             return 1;
         }
     }
 
     if (mode == Mode::Prove)
     {
-        if (!generateProof(pb, keypair, proofFilename))
+        if (!generateProof(pb, keypair.pk, proofFilename))
         {
             return 1;
         }
