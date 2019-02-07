@@ -48,6 +48,8 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint public constant MAX_NUM_DEPOSITS_IN_BLOCK               = 32;
     uint public constant MAX_NUM_WITHDRAWALS_IN_BLOCK            = 32;
 
+    uint public constant ACCOUNTS_START_INDEX                    = MAX_NUM_TOKENS;
+
     // Burn rates
     uint16 public constant BURNRATE_TIER1            =                       25; // 2.5%
     uint16 public constant BURNRATE_TIER2            =                  15 * 10; //  15%
@@ -103,7 +105,13 @@ contract Exchange is IExchange, NoDefaultFunc {
     struct DepositBlock {
         uint numDeposits;
         bytes32 hash;
-        bool done;
+        uint doneInBlockIdx;
+    }
+
+    struct WithdrawBlock {
+        uint numWithdrawals;
+        bytes32 hash;
+        uint doneInBlockIdx;
     }
 
     struct Block {
@@ -114,6 +122,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         BlockState state;
 
+        uint depositBlock;
+        uint withdrawBlock;
         bytes withdrawals;
     }
 
@@ -130,6 +140,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         mapping (uint => Block) blocks;
 
         mapping (uint => DepositBlock) depositBlocks;
+        mapping (uint => WithdrawBlock) withdrawBlocks;
     }
 
     MerkleTree.Data burnRateMerkleTree;
@@ -168,7 +179,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         public
     {
         State memory memoryState = State(
-            0,
+            ACCOUNTS_START_INDEX,
             0
         );
         states.push(memoryState);
@@ -178,6 +189,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             0x0A0697EA76AB4C7037053B18C79C928EA7540BC33BC48432FF472C8295A01BBA,
             0x0,
             BlockState.FINALIZED,
+            0,
+            0,
             new bytes(0)
         );
         State storage state = states[states.length - 1];
@@ -231,6 +244,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             tradeHistoryMerkleRootAfter,
             publicDataHash,
             BlockState.COMMITTED,
+            0,
+            0,
             data
         );
         states[0].blocks[states[0].numBlocks] = newBlock;
@@ -458,6 +473,37 @@ contract Exchange is IExchange, NoDefaultFunc {
         return accountID;
     }
 
+    function requestWithdraw(
+        uint24 accountID,
+        uint96 amount
+        )
+        external
+    {
+        require(amount > 0, INVALID_VALUE);
+
+        // Don't check account owner for burn accounts
+        if (accountID >= MAX_NUM_TOKENS) {
+            Account storage account = states[0].accounts[accountID];
+            require(account.owner == msg.sender, "UNAUTHORIZED");
+        }
+
+        uint currentBlock = block.number / 40;
+        WithdrawBlock storage withdrawBlock = states[0].withdrawBlocks[currentBlock];
+        require(withdrawBlock.numWithdrawals < MAX_NUM_WITHDRAWALS_IN_BLOCK, "WITHDRAWAL_BLOCK_FULL");
+        if (withdrawBlock.numWithdrawals == 0) {
+            withdrawBlock.hash = 0x0;
+        }
+
+        withdrawBlock.hash = sha256(
+            abi.encodePacked(
+                withdrawBlock.hash,
+                accountID,
+                amount
+            )
+        );
+        withdrawBlock.numWithdrawals++;
+    }
+
     function withdraw(
         uint blockIdx,
         uint withdrawalIdx
@@ -478,11 +524,24 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
 
         if (amount > 0) {
-            Account storage account = states[0].accounts[accountID];
+            // Burn information
+            address owner = address(0x0);
+            uint16 walletID = 0;
+            address token = tokens[accountID].tokenAddress;
+
+            // Get the account information if this isn't a burn account
+            if (accountID >= MAX_NUM_TOKENS)
+            {
+                Account storage account = states[0].accounts[accountID];
+                owner = account.owner;
+                walletID = account.walletID;
+                token = account.token;
+            }
+
             // Transfer the tokens from the contract to the owner
             require(
-                account.token.safeTransfer(
-                    account.owner,
+                token.safeTransfer(
+                    owner,
                     amount
                 ),
                 TRANSFER_FAILURE
@@ -495,7 +554,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             }
             withdrawBlock.withdrawals = withdrawals;
 
-            emit Withdraw(accountID, account.walletID, account.owner, account.token, amount);
+            emit Withdraw(accountID, walletID, owner, token, amount);
         }
     }
 

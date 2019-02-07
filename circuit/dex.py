@@ -293,7 +293,8 @@ class Dex(object):
         # Accounts
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
         self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
-        self._accounts = []
+        self._accounts = {}
+        self._numAccounts = 1024
         #print("Empty accounts tree: " + str(self._accountsTree._root))
         # Tokens
         self._tokensTree = MerkleTree(1 << 16)
@@ -307,10 +308,12 @@ class Dex(object):
                 self._tradeHistoryLeafs[key] = TradeHistoryLeaf(val["filled"], val["cancelled"])
             self._tradingHistoryTree._root = data["trading_history_root"]
             self._tradingHistoryTree._db.kv = data["trading_history_tree"]
-            for jAccount in data["accounts_values"]:
+            accountLeafsDict = data["accounts_values"]
+            for key, val in accountLeafsDict.items():
                 account = Account(0, Point(0, 0), 0, 0, 0)
-                account.fromJSON(jAccount)
-                self._accounts.append(account)
+                account.fromJSON(val)
+                self._accounts[key] = account
+            self._numAccounts = data["num_accounts"]
             self._accountsTree._root = data["accounts_root"]
             self._accountsTree._db.kv = data["accounts_tree"]
             for jBurnRateLeaf in data["tokens_values"]:
@@ -327,6 +330,7 @@ class Dex(object):
                     "trading_history_root": self._tradingHistoryTree._root,
                     "trading_history_tree": self._tradingHistoryTree._db.kv,
                     "accounts_values": self._accounts,
+                    "num_accounts": self._numAccounts,
                     "accounts_root": self._accountsTree._root,
                     "accounts_tree": self._accountsTree._db.kv,
                     "tokens_values": self._tokens,
@@ -359,13 +363,13 @@ class Dex(object):
 
     def updateBalance(self, address, amount):
         # Make sure the leaf exist in our map
-        if address >= len(self._accounts):
-            print("Account doesn't exist: " + str(address))
+        if not(str(address) in self._accounts):
+            self._accounts[str(address)] = Account(0, Point(0, 0), 0, 0, 0)
 
-        accountBefore = copy.deepcopy(self._accounts[address])
+        accountBefore = copy.deepcopy(self._accounts[str(address)])
         #print("accountBefore: " + str(accountBefore.balance))
-        self._accounts[address].balance += amount
-        accountAfter = copy.deepcopy(self._accounts[address])
+        self._accounts[str(address)].balance += amount
+        accountAfter = copy.deepcopy(self._accounts[str(address)])
         #print("accountAfter: " + str(accountAfter.balance))
         proof = self._accountsTree.createProof(address)
         self._accountsTree.update(address, accountAfter.hash())
@@ -538,34 +542,36 @@ class Dex(object):
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
 
-        address = len(self._accounts)
+        address = self._numAccounts
         proof = self._accountsTree.createProof(address)
 
         accountBefore = copy.deepcopy(Account(0, Point(0, 0), 0, 0, 0))
         self._accountsTree.update(address, account.hash())
         accountAfter = copy.deepcopy(account)
 
-        self._accounts.append(account)
+        self._accounts[str(self._numAccounts)] = account
+        self._numAccounts = self._numAccounts + 1
 
         proof.reverse()
         return Deposit(accountsMerkleRoot, address, AccountUpdateData(accountBefore, accountAfter, proof))
 
     def getAccount(self, accountID):
-        if accountID >= len(self._accounts):
-            print("Invalid account: " + str(accountID))
-        return self._accounts[accountID]
+        # Make sure the leaf exist in our map
+        if not(str(accountID) in self._accounts):
+            self._accounts[str(accountID)] = Account(0, Point(0, 0), 0, 0, 0)
+        return self._accounts[str(accountID)]
 
     def withdraw(self, address, amount):
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
-        account = self._accounts[address]
+        account = self.getAccount(address)
         accountUpdate = self.updateBalance(address, -amount)
         withdrawal = Withdrawal(accountsMerkleRoot, Point(int(account.publicKeyX), int(account.publicKeyY)), address, amount, accountUpdate)
         withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal
 
     def cancelOrder(self, accountAddress, orderID):
-        account = self._accounts[accountAddress]
+        account = self.getAccount(accountAddress)
 
         orderAddress = (accountAddress << 4) + orderID
 
