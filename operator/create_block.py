@@ -1,10 +1,10 @@
 import sys
 sys.path.insert(0, 'ethsnarks')
-sys.path.insert(0, 'circuit')
+sys.path.insert(0, 'operator')
 import os.path
 import subprocess
 import json
-from dex import Account, Context, Dex, Order, Ring
+from state import Account, Context, State, Order, Ring
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
 
@@ -61,7 +61,7 @@ class CancelExport(object):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
-def orderFromJSON(jOrder, dex):
+def orderFromJSON(jOrder, state):
     walletID = int(jOrder["walletID"])
     orderID = int(jOrder["orderID"])
     accountS = int(jOrder["accountS"])
@@ -82,10 +82,10 @@ def orderFromJSON(jOrder, dex):
     walletSplitPercentage = int(jOrder["walletSplitPercentage"])
     waiveFeePercentage = int(jOrder["waiveFeePercentage"])
 
-    account = dex.getAccount(accountS)
-    wallet = dex.getAccount(walletF)
-    miner_F = dex.getAccount(minerF)
-    miner_S = dex.getAccount(minerS)
+    account = state.getAccount(accountS)
+    wallet = state.getAccount(walletF)
+    miner_F = state.getAccount(minerF)
+    miner_S = state.getAccount(minerS)
     order = Order(Point(account.publicKeyX, account.publicKeyY),
                   Point(wallet.publicKeyX, wallet.publicKeyY),
                   Point(miner_F.publicKeyX, miner_F.publicKeyY),
@@ -102,15 +102,15 @@ def orderFromJSON(jOrder, dex):
     return order
 
 
-def ringFromJSON(jRing, dex):
-    orderA = orderFromJSON(jRing["orderA"], dex)
-    orderB = orderFromJSON(jRing["orderB"], dex)
+def ringFromJSON(jRing, state):
+    orderA = orderFromJSON(jRing["orderA"], state)
+    orderB = orderFromJSON(jRing["orderB"], state)
     minerID = int(jRing["miner"])
     fee = int(jRing["fee"])
 
-    miner = dex.getAccount(minerID)
-    walletA = dex.getAccount(orderA.walletF)
-    walletB = dex.getAccount(orderB.walletF)
+    miner = state.getAccount(minerID)
+    walletA = state.getAccount(orderA.walletF)
+    walletB = state.getAccount(orderB.walletF)
 
     ring = Ring(orderA, orderB,
                 Point(miner.publicKeyX, miner.publicKeyY),
@@ -122,49 +122,49 @@ def ringFromJSON(jRing, dex):
     return ring
 
 
-def deposit(dex, data):
+def deposit(state, data):
     export = DepositExport()
-    export.accountsMerkleRootBefore = str(dex._accountsTree._root)
+    export.accountsMerkleRootBefore = str(state._accountsTree._root)
 
     for depositInfo in data:
-        deposit = dex.deposit(Account(int(depositInfo["secretKey"]),
-                                      Point(int(depositInfo["publicKeyX"]), int(depositInfo["publicKeyY"])),
-                                      int(depositInfo["walletID"]), int(depositInfo["tokenID"]), int(depositInfo["balance"])))
+        deposit = state.deposit(Account(int(depositInfo["secretKey"]),
+                                        Point(int(depositInfo["publicKeyX"]), int(depositInfo["publicKeyY"])),
+                                        int(depositInfo["walletID"]), int(depositInfo["tokenID"]), int(depositInfo["balance"])))
         export.deposits.append(deposit)
 
-    export.accountsMerkleRootAfter = str(dex._accountsTree._root)
+    export.accountsMerkleRootAfter = str(state._accountsTree._root)
     return export
 
 
-def withdraw(dex, data):
+def withdraw(state, data):
     export = WithdrawalExport()
-    export.accountsMerkleRootBefore = str(dex._accountsTree._root)
+    export.accountsMerkleRootBefore = str(state._accountsTree._root)
 
     for withdrawalInfo in data:
-        withdrawal = dex.withdraw(int(withdrawalInfo["account"]), int(withdrawalInfo["amount"]))
+        withdrawal = state.withdraw(int(withdrawalInfo["account"]), int(withdrawalInfo["amount"]))
         export.withdrawals.append(withdrawal)
 
-    export.accountsMerkleRootAfter = str(dex._accountsTree._root)
+    export.accountsMerkleRootAfter = str(state._accountsTree._root)
     return export
 
 
-def cancel(dex, data):
+def cancel(state, data):
     export = CancelExport()
-    export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
-    export.accountsMerkleRoot = str(dex._accountsTree._root)
+    export.tradingHistoryMerkleRootBefore = str(state._tradingHistoryTree._root)
+    export.accountsMerkleRoot = str(state._accountsTree._root)
 
     for i in range(2):
-        export.cancels.append(dex.cancelOrder(0, 2 + i))
+        export.cancels.append(state.cancelOrder(0, 2 + i))
 
-    export.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)
+    export.tradingHistoryMerkleRootAfter = str(state._tradingHistoryTree._root)
     return export
 
 
-def trade(dex, data):
+def trade(state, data):
     export = TradeExport()
-    export.tradingHistoryMerkleRootBefore = str(dex._tradingHistoryTree._root)
-    export.accountsMerkleRootBefore = str(dex._accountsTree._root)
-    export.burnRateMerkleRoot = str(dex._tokensTree.root)
+    export.tradingHistoryMerkleRootBefore = str(state._tradingHistoryTree._root)
+    export.accountsMerkleRootBefore = str(state._accountsTree._root)
+    export.burnRateMerkleRoot = str(state._tokensTree.root)
     export.timestamp = int(data["timestamp"])
     export.operatorID = int(data["operator"])
 
@@ -172,24 +172,24 @@ def trade(dex, data):
 
     totalFee = 0
     for ringInfo in data["rings"]:
-        ring = ringFromJSON(ringInfo, dex)
-        ringSettlement = dex.settleRing(context, ring)
+        ring = ringFromJSON(ringInfo, state)
+        ringSettlement = state.settleRing(context, ring)
         totalFee += ring.fee
         export.ringSettlements.append(ringSettlement)
 
-    export.accountUpdate_O = dex.updateBalance(export.operatorID, totalFee)
+    export.accountUpdate_O = state.updateBalance(export.operatorID, totalFee)
 
-    export.tradingHistoryMerkleRootAfter = str(dex._tradingHistoryTree._root)
-    export.accountsMerkleRootAfter = str(dex._accountsTree._root)
+    export.tradingHistoryMerkleRootAfter = str(state._tradingHistoryTree._root)
+    export.accountsMerkleRootAfter = str(state._accountsTree._root)
     return export
 
 
 def main(blockType, inputFilename, outputFilename):
-    dex_state_filename = "dex.json"
+    state_filename = "state.json"
 
-    dex = Dex()
-    if os.path.exists(dex_state_filename):
-        dex.loadState(dex_state_filename)
+    state = State()
+    if os.path.exists(state_filename):
+        state.load(state_filename)
 
     with open(inputFilename) as f:
         data = json.load(f)
@@ -197,13 +197,13 @@ def main(blockType, inputFilename, outputFilename):
     #blockType = data["blockType"]
 
     if blockType == "0":
-        output = trade(dex, data)
+        output = trade(state, data)
     if blockType == "1":
-        output = deposit(dex, data)
+        output = deposit(state, data)
     if blockType == "2":
-        output = withdraw(dex, data)
+        output = withdraw(state, data)
     if blockType == "3":
-        output = cancel(dex, data)
+        output = cancel(state, data)
 
     f = open(outputFilename,"w+")
     f.write(output.toJSON())
@@ -212,7 +212,7 @@ def main(blockType, inputFilename, outputFilename):
     # Verify the block
     subprocess.check_call(["build/circuit/dex_circuit", "-verify", outputFilename])
 
-    dex.saveState(dex_state_filename)
+    state.save(state_filename)
 
 
 if __name__ == "__main__":

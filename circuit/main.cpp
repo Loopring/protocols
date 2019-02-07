@@ -1,7 +1,10 @@
-#include "Data.h"
-#include "Circuit.h"
+#include "Utils/Data.h"
+#include "Circuits/TradeCircuit.h"
+#include "Circuits/DepositCircuit.h"
+#include "Circuits/WithdrawCircuit.h"
+#include "Circuits/CancelCircuit.h"
 
-#include "json.hpp"
+#include "ThirdParty/json.hpp"
 #include "ethsnarks.hpp"
 #include "stubs.hpp"
 #include <fstream>

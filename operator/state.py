@@ -283,7 +283,7 @@ class Cancellation(object):
         self.signature = Signature(signedMessage.sig)
 
 
-class Dex(object):
+class State(object):
     def __init__(self):
         # Trading history
         self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
@@ -300,7 +300,7 @@ class Dex(object):
         self._tokensTree = MerkleTree(1 << 16)
         self._tokens = []
 
-    def loadState(self, filename):
+    def load(self, filename):
         with open(filename) as f:
             data = json.load(f)
             tradeHistoryLeafsDict = data["trading_history_values"]
@@ -322,7 +322,7 @@ class Dex(object):
                 self._tokens.append(token)
                 self._tokensTree.append(token.hash())
 
-    def saveState(self, filename):
+    def save(self, filename):
         with open(filename, "w") as file:
             file.write(json.dumps(
                 {

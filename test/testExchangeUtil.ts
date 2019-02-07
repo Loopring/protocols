@@ -212,7 +212,7 @@ export class ExchangeTestUtil {
   }
 
   public getKeyPairEDDSA() {
-    childProcess.spawnSync("python3", ["generate_EDDSA_keypair.py"], {stdio: "inherit"});
+    childProcess.spawnSync("python3", ["util/generate_EDDSA_keypair.py"], {stdio: "inherit"});
     const jKeyPair = fs.readFileSync("EDDSA_KeyPair.json", "ascii");
     const keyPair = JSON.parse(jKeyPair);
     return keyPair;
@@ -311,7 +311,7 @@ export class ExchangeTestUtil {
 
     childProcess.spawnSync(
       "python3",
-      ["create_block.py", "" + blockType, inputFilename, outputFilename],
+      ["operator/create_block.py", "" + blockType, inputFilename, outputFilename],
       {stdio: "inherit"},
     );
 
@@ -508,7 +508,7 @@ export class ExchangeTestUtil {
 
       const tokensRoot = await this.exchange.getBurnRateRoot();
       console.log(tokensRoot);
-      childProcess.spawnSync("python3", ["add_token.py"], {stdio: "inherit"});
+      childProcess.spawnSync("python3", ["operator/add_token.py"], {stdio: "inherit"});
 
       this.tokenIDMap.set(token.address, (await this.getTokenID(token.address)).toNumber());
     }
@@ -521,8 +521,8 @@ export class ExchangeTestUtil {
   }
 
   public async cleanTradeHistory() {
-    if (fs.existsSync("dex.json")) {
-      fs.unlinkSync("dex.json");
+    if (fs.existsSync("state.json")) {
+      fs.unlinkSync("state.json");
     }
   }
 
