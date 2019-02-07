@@ -12,7 +12,7 @@ export interface OrderInfo {
 
   wallet?: string;
 
-  dexID?: number;
+  walletID?: number;
   orderID?: number;
 
   accountS?: number;
@@ -60,35 +60,11 @@ export interface RingsInfo {
   operator?: number;
 }
 
-export interface OrderSettlementData {
-  dexID: number;                        // 2 bytes
-  orderID: number;                      // 2 bytes
-
-  // TokenS -> TokenB
-  fromS: number;                        // 3 bytes
-  toB: number;                          // 3 bytes
-  amountS: number;                      // 12 bytes
-  toMargin: number;                     // 3 bytes
-  marginPercentage: number;             // 1 byte
-
-  // TokenF -> FeeRecipients (wallet, operator, burn)
-  fromF: number;                        // 3 bytes
-  toWallet: number;                     // 3 bytes
-  toOperator: number;                   // 3 bytes
-  amountF: number;                      // 12 bytes
-  walletSplitPercentage: number;        // 1 byte
-}
-
-export interface RingSettlementData {
-  orderA: OrderSettlementData;
-  orderB: OrderSettlementData;
-}
-
 export interface Deposit {
   secretKey: string;
   publicKeyX: string;
   publicKeyY: string;
-  dexID: number;
+  walletID: number;
   tokenID: number;
   balance: number;
 }

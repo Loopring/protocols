@@ -9,8 +9,7 @@ import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Block, Deposit, OrderInfo, OrderSettlementData,
-         RingInfo, RingSettlementData, RingsInfo, Withdrawal } from "./types";
+import { Block, Deposit, OrderInfo, RingInfo, RingsInfo, Withdrawal } from "./types";
 
 export class ExchangeTestUtil {
   public context: Context;
@@ -139,7 +138,7 @@ export class ExchangeTestUtil {
 
     order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 50;
 
-    order.dexID = order.dexID ? order.dexID : 0;
+    order.walletID = order.walletID ? order.walletID : 0;
     order.orderID = order.orderID ? order.orderID : order.index;
 
     order.tokenIdS = this.tokenIDMap.get(order.tokenS);
@@ -157,7 +156,7 @@ export class ExchangeTestUtil {
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
     await tokenS.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceS)));
     order.accountS = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                        order.dexID, order.tokenS, balanceS);
+                                        order.walletID, order.tokenS, balanceS);
 
     const balanceF = (order.balanceF !== undefined) ? order.balanceF : order.amountF;
     if (order.tokenF === order.tokenS) {
@@ -166,7 +165,7 @@ export class ExchangeTestUtil {
       const tokenF = this.testContext.tokenAddrInstanceMap.get(order.tokenF);
       await tokenF.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceF)));
       order.accountF = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                          order.dexID, order.tokenF, balanceF);
+                                          order.walletID, order.tokenF, balanceF);
     }
 
     const balanceB = (order.balanceB !== undefined) ? order.balanceB : 0;
@@ -175,12 +174,12 @@ export class ExchangeTestUtil {
       await tokenB.setBalance(order.owner, web3.utils.toBN(new BigNumber(order.balanceB)));
     }
     order.accountB = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                        order.dexID, order.tokenB, balanceB);
+                                        order.walletID, order.tokenB, balanceB);
 
     // Make an account for the wallet
     const keyPairW = this.getKeyPairEDDSA();
     order.walletF = await this.deposit(order.wallet, keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY,
-                                       order.dexID, order.tokenF, 0);
+                                       order.walletID, order.tokenF, 0);
 
     // Make accounts for the miner (margin + fee)
     const keyPairM = this.getKeyPairEDDSA();
@@ -244,7 +243,7 @@ export class ExchangeTestUtil {
   }
 
   public async deposit(owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
-                       dexID: number, token: string, amount: number) {
+                       walletID: number, token: string, amount: number) {
 
     if (amount > 0) {
       const Token = this.testContext.tokenAddrInstanceMap.get(token);
@@ -260,7 +259,7 @@ export class ExchangeTestUtil {
       owner,
       new BN(publicKeyX),
       new BN(publicKeyY),
-      web3.utils.toBN(dexID),
+      web3.utils.toBN(walletID),
       token,
       web3.utils.toBN(amount),
       {from: owner},
@@ -276,7 +275,7 @@ export class ExchangeTestUtil {
     // console.log(accountID);
 
     this.addDeposit(this.pendingDeposits, secretKey, publicKeyX, publicKeyY,
-                    dexID, this.tokenIDMap.get(token), amount);
+                    walletID, this.tokenIDMap.get(token), amount);
     return accountID;
   }
 
@@ -285,8 +284,8 @@ export class ExchangeTestUtil {
   }
 
   public addDeposit(deposits: Deposit[], secretKey: string, publicKeyX: string, publicKeyY: string,
-                    dexID: number, tokenID: number, balance: number) {
-    deposits.push({secretKey, publicKeyX, publicKeyY, dexID, tokenID, balance});
+                    walletID: number, tokenID: number, balance: number) {
+    deposits.push({secretKey, publicKeyX, publicKeyY, walletID, tokenID, balance});
   }
 
   public addWithdrawal(withdrawals: Withdrawal[], account: number, amount: number) {
@@ -423,7 +422,6 @@ export class ExchangeTestUtil {
     for (let i = 0; i < this.pendingWithdrawals.length; i++) {
       const withdrawal = this.pendingWithdrawals[i];
       const txw = await this.exchange.withdraw(
-        web3.utils.toBN(0),
         web3.utils.toBN(blockIdx),
         web3.utils.toBN(i),
       );
@@ -447,7 +445,7 @@ export class ExchangeTestUtil {
 
     // Generate the token transfers for the ring
     const blockNumber = await web3.eth.getBlockNumber();
-    ringsInfo.timestamp = (await web3.eth.getBlock(blockNumber)).timestamp;
+    ringsInfo.timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
 
     // Create the block
     const blockFilename = await this.createBlock(0, JSON.stringify(ringsInfo, null, 4));
@@ -467,7 +465,7 @@ export class ExchangeTestUtil {
       const orderA = ringSettlement.ring.orderA;
       const orderB = ringSettlement.ring.orderB;
 
-      bs.addNumber(orderA.dexID, 2);
+      bs.addNumber(orderA.walletID, 2);
       bs.addNumber(orderA.orderID, 2);
       bs.addNumber(orderA.accountS, 3);
       bs.addNumber(orderB.accountB, 3);
@@ -475,7 +473,7 @@ export class ExchangeTestUtil {
       bs.addNumber(orderA.accountF, 3);
       bs.addNumber(ring.fillF_A, 12);
 
-      bs.addNumber(orderB.dexID, 2);
+      bs.addNumber(orderB.walletID, 2);
       bs.addNumber(orderB.orderID, 2);
       bs.addNumber(orderB.accountS, 3);
       bs.addNumber(orderA.accountB, 3);
@@ -493,8 +491,19 @@ export class ExchangeTestUtil {
   }
 
   public async registerTokens() {
+    const tokenRegistrationFee = await this.exchange.TOKEN_REGISTRATION_FEE_IN_LRC();
+    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
+    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
+
     for (const token of this.testContext.allTokens) {
-      const tx = await this.exchange.registerToken(token.address);
+      await LRC.addBalance(this.testContext.orderOwners[0], tokenRegistrationFee);
+      await LRC.approve(
+        this.exchange.address,
+        tokenRegistrationFee,
+        {from: this.testContext.orderOwners[0]},
+      );
+
+      const tx = await this.exchange.registerToken(token.address, {from: this.testContext.orderOwners[0]});
       pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
 
       const tokensRoot = await this.exchange.getBurnRateRoot();
@@ -511,28 +520,6 @@ export class ExchangeTestUtil {
     return tokenID;
   }
 
-  public async authorizeTradeDelegate() {
-    const alreadyAuthorized = await this.context.tradeDelegate.methods.isAddressAuthorized(
-      this.exchange.address,
-    ).call();
-    if (!alreadyAuthorized) {
-      await this.context.tradeDelegate.methods.authorizeAddress(
-        this.exchange.address,
-      ).send({from: this.testContext.deployer});
-    }
-  }
-
-  public async approveTradeDelegate() {
-    for (const token of this.testContext.allTokens) {
-      // approve once for all orders:
-      for (const orderOwner of this.testContext.orderOwners) {
-        await token.approve(this.context.tradeDelegate.options.address,
-                            web3.utils.toBN(new BigNumber(1e31)),
-                            {from: orderOwner});
-      }
-    }
-  }
-
   public async cleanTradeHistory() {
     if (fs.existsSync("dex.json")) {
       fs.unlinkSync("dex.json");
@@ -547,9 +534,8 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const [exchange, tradeDelegate, lrcToken] = await Promise.all([
+    const [exchange, lrcToken] = await Promise.all([
         this.contracts.Exchange.deployed(),
-        this.contracts.TradeDelegate.deployed(),
         this.contracts.LRCToken.deployed(),
       ]);
 
@@ -559,7 +545,6 @@ export class ExchangeTestUtil {
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;
     return new Context(currBlockNumber,
                        currBlockTimestamp,
-                       this.contracts.TradeDelegate.address,
                        this.contracts.LRCToken.address);
   }
 

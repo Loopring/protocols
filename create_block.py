@@ -62,7 +62,7 @@ class CancelExport(object):
 
 
 def orderFromJSON(jOrder, dex):
-    dexID = int(jOrder["dexID"])
+    walletID = int(jOrder["walletID"])
     orderID = int(jOrder["orderID"])
     accountS = int(jOrder["accountS"])
     accountB = int(jOrder["accountB"])
@@ -90,7 +90,7 @@ def orderFromJSON(jOrder, dex):
                   Point(wallet.publicKeyX, wallet.publicKeyY),
                   Point(miner_F.publicKeyX, miner_F.publicKeyY),
                   Point(miner_S.publicKeyX, miner_S.publicKeyY),
-                  dexID, orderID,
+                  walletID, orderID,
                   accountS, accountB, accountF, walletF, minerF, minerS,
                   amountS, amountB, amountF,
                   tokenS, tokenB, tokenF,
@@ -129,7 +129,7 @@ def deposit(dex, data):
     for depositInfo in data:
         deposit = dex.deposit(Account(int(depositInfo["secretKey"]),
                                       Point(int(depositInfo["publicKeyX"]), int(depositInfo["publicKeyY"])),
-                                      int(depositInfo["dexID"]), int(depositInfo["tokenID"]), int(depositInfo["balance"])))
+                                      int(depositInfo["walletID"]), int(depositInfo["tokenID"]), int(depositInfo["balance"])))
         export.deposits.append(deposit)
 
     export.accountsMerkleRootAfter = str(dex._accountsTree._root)

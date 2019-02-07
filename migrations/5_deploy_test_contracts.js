@@ -1,4 +1,3 @@
-var TradeDelegate = artifacts.require("./impl/TradeDelegate");
 var TestableExchange = artifacts.require("./test/TestableExchange");
 
 module.exports = function(deployer, network, accounts) {

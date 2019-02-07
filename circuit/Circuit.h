@@ -412,7 +412,7 @@ class OrderGadget : public GadgetT
 {
 public:
 
-    libsnark::dual_variable_gadget<FieldT> dexID;
+    libsnark::dual_variable_gadget<FieldT> walletID;
     libsnark::dual_variable_gadget<FieldT> orderID;
     libsnark::dual_variable_gadget<FieldT> accountS;
     libsnark::dual_variable_gadget<FieldT> accountB;
@@ -463,7 +463,7 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        dexID(pb, 16, FMT(prefix, ".dexID")),
+        walletID(pb, 16, FMT(prefix, ".walletID")),
         orderID(pb, 4, FMT(prefix, ".orderID")),
         accountS(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountS")),
         accountB(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountB")),
@@ -499,7 +499,7 @@ public:
         balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
         signatureVerifier(pb, params, publicKey,
-                          flatten({dexID.bits, orderID.bits, accountS.bits, accountB.bits, accountF.bits, amountS.bits, amountB.bits, amountF.bits}),
+                          flatten({walletID.bits, orderID.bits, accountS.bits, accountB.bits, accountF.bits, amountS.bits, amountB.bits, amountF.bits}),
                           FMT(prefix, ".signatureVerifier")),
 
         validSince_leq_timestamp(pb, validSince.packed, timestamp, FMT(prefix, "validSince <= timestamp")),
@@ -522,8 +522,8 @@ public:
 
     void generate_r1cs_witness(const Order& order)
     {
-        dexID.bits.fill_with_bits_of_field_element(pb, order.dexID);
-        dexID.generate_r1cs_witness_from_bits();
+        walletID.bits.fill_with_bits_of_field_element(pb, order.walletID);
+        walletID.generate_r1cs_witness_from_bits();
         orderID.bits.fill_with_bits_of_field_element(pb, order.orderID);
         orderID.generate_r1cs_witness_from_bits();
 
@@ -597,7 +597,7 @@ public:
 
     void generate_r1cs_constraints()
     {
-        dexID.generate_r1cs_constraints(true);
+        walletID.generate_r1cs_constraints(true);
         orderID.generate_r1cs_constraints(true);
         accountS.generate_r1cs_constraints(true);
         accountB.generate_r1cs_constraints(true);
@@ -1278,19 +1278,19 @@ public:
                             orderB.filledBefore, orderB.cancelled, filledAfterB, orderB.cancelled, FMT(prefix, ".updateTradeHistoryB")),
 
         accountsMerkleRoot(_accountsMerkleRoot),
-        updateAccountS_A(pb, accountsMerkleRoot, orderA.accountS.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenS, balanceS_A_before, balanceS_MA.X, FMT(prefix, ".updateAccountS_A")),
-        updateAccountB_A(pb, updateAccountS_A.result(), orderA.accountB.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenB, balanceB_A_before, balanceSB_B.Y, FMT(prefix, ".updateAccountB_A")),
-        updateAccountF_A(pb, updateAccountB_A.result(), orderA.accountF.bits, orderA.publicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_A_before, balanceF_BA.X, FMT(prefix, ".updateAccountF_A")),
-        updateAccountF_WA(pb, updateAccountF_A.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_WA_before, balanceF_WA.Y, FMT(prefix, ".updateAccountF_WA")),
-        updateAccountF_MA(pb, updateAccountF_WA.result(), orderA.minerF.bits, orderA.minerPublicKeyF, orderA.dexID.packed, orderA.tokenF.packed, balanceF_MA_before, balanceF_MA.Y, FMT(prefix, ".updateAccountF_MA")),
-        updateAccountF_BA(pb, updateAccountF_MA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.dexID.packed, orderA.tokenF.packed, balanceF_BA_before, balanceF_BA.Y, FMT(prefix, ".updateAccountF_BA")),
+        updateAccountS_A(pb, accountsMerkleRoot, orderA.accountS.bits, orderA.publicKey, orderA.walletID.packed, orderA.tokenS, balanceS_A_before, balanceS_MA.X, FMT(prefix, ".updateAccountS_A")),
+        updateAccountB_A(pb, updateAccountS_A.result(), orderA.accountB.bits, orderA.publicKey, orderA.walletID.packed, orderA.tokenB, balanceB_A_before, balanceSB_B.Y, FMT(prefix, ".updateAccountB_A")),
+        updateAccountF_A(pb, updateAccountB_A.result(), orderA.accountF.bits, orderA.publicKey, orderA.walletID.packed, orderA.tokenF.packed, balanceF_A_before, balanceF_BA.X, FMT(prefix, ".updateAccountF_A")),
+        updateAccountF_WA(pb, updateAccountF_A.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.walletID.packed, orderA.tokenF.packed, balanceF_WA_before, balanceF_WA.Y, FMT(prefix, ".updateAccountF_WA")),
+        updateAccountF_MA(pb, updateAccountF_WA.result(), orderA.minerF.bits, orderA.minerPublicKeyF, orderA.walletID.packed, orderA.tokenF.packed, balanceF_MA_before, balanceF_MA.Y, FMT(prefix, ".updateAccountF_MA")),
+        updateAccountF_BA(pb, updateAccountF_MA.result(), orderA.walletF.bits, orderA.walletPublicKey, orderA.walletID.packed, orderA.tokenF.packed, balanceF_BA_before, balanceF_BA.Y, FMT(prefix, ".updateAccountF_BA")),
 
-        updateAccountS_B(pb, updateAccountF_BA.result(), orderB.accountS.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenS, balanceS_B_before, balanceSB_B.X, FMT(prefix, ".updateAccountS_B")),
-        updateAccountB_B(pb, updateAccountS_B.result(), orderB.accountB.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenB, balanceB_B_before, balanceSB_A.Y, FMT(prefix, ".updateAccountB_B")),
-        updateAccountF_B(pb, updateAccountB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_B_before, balanceF_BB.X, FMT(prefix, ".updateAccountF_B")),
-        updateAccountF_WB(pb, updateAccountF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_WB_before, balanceF_WB.Y, FMT(prefix, ".updateAccountF_WB")),
-        updateAccountF_MB(pb, updateAccountF_WB.result(), orderB.minerF.bits, orderB.minerPublicKeyF, orderB.dexID.packed, orderB.tokenF.packed, balanceF_MB_before, balanceF_MB.Y, FMT(prefix, ".updateAccountF_MB")),
-        updateAccountF_BB(pb, updateAccountF_MB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.dexID.packed, orderB.tokenF.packed, balanceF_BB_before, balanceF_BB.Y, FMT(prefix, ".updateAccountF_BB")),
+        updateAccountS_B(pb, updateAccountF_BA.result(), orderB.accountS.bits, orderB.publicKey, orderB.walletID.packed, orderB.tokenS, balanceS_B_before, balanceSB_B.X, FMT(prefix, ".updateAccountS_B")),
+        updateAccountB_B(pb, updateAccountS_B.result(), orderB.accountB.bits, orderB.publicKey, orderB.walletID.packed, orderB.tokenB, balanceB_B_before, balanceSB_A.Y, FMT(prefix, ".updateAccountB_B")),
+        updateAccountF_B(pb, updateAccountB_B.result(), orderB.accountF.bits, orderB.publicKey, orderB.walletID.packed, orderB.tokenF.packed, balanceF_B_before, balanceF_BB.X, FMT(prefix, ".updateAccountF_B")),
+        updateAccountF_WB(pb, updateAccountF_B.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.walletID.packed, orderB.tokenF.packed, balanceF_WB_before, balanceF_WB.Y, FMT(prefix, ".updateAccountF_WB")),
+        updateAccountF_MB(pb, updateAccountF_WB.result(), orderB.minerF.bits, orderB.minerPublicKeyF, orderB.walletID.packed, orderB.tokenF.packed, balanceF_MB_before, balanceF_MB.Y, FMT(prefix, ".updateAccountF_MB")),
+        updateAccountF_BB(pb, updateAccountF_MB.result(), orderB.walletF.bits, orderB.walletPublicKey, orderB.walletID.packed, orderB.tokenF.packed, balanceF_BB_before, balanceF_BB.Y, FMT(prefix, ".updateAccountF_BB")),
 
         updateAccountS_M(pb, updateAccountF_BB.result(), orderA.minerS.bits, orderA.minerPublicKeyS, constant0, orderA.tokenS, balanceS_M_before, balanceS_MA.Y, FMT(prefix, ".updateAccountS_M")),
 
@@ -1328,11 +1328,11 @@ public:
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {orderA.dexID.bits, orderIDPadding, orderA.orderID.bits,
+        return {orderA.walletID.bits, orderIDPadding, orderA.orderID.bits,
                 orderA.accountS.bits, orderB.accountB.bits, fillS_A.bits,
                 orderA.accountF.bits, fillF_A.bits,
 
-                orderB.dexID.bits, orderIDPadding, orderB.orderID.bits,
+                orderB.walletID.bits, orderIDPadding, orderB.orderID.bits,
                 orderB.accountS.bits, orderA.accountB.bits, fillS_B.bits,
                 orderB.accountF.bits, fillF_B.bits};
     }
@@ -1801,7 +1801,7 @@ public:
         publicKeyX.generate_r1cs_witness_from_bits();
         publicKeyY.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.y);
         publicKeyY.generate_r1cs_witness_from_bits();
-        dex.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.dexID);
+        dex.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.walletID);
         dex.generate_r1cs_witness_from_bits();
         token.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.token);
         token.generate_r1cs_witness_from_bits();
@@ -1973,7 +1973,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> amount;
     libsnark::dual_variable_gadget<FieldT> padding;
 
-    VariableT dex;
+    VariableT walletID;
     VariableT token;
     VariableT balance_before;
     VariableT balance_after;
@@ -2002,12 +2002,12 @@ public:
         amount(pb, 96, FMT(prefix, ".amount")),
         padding(pb, 2, FMT(prefix, ".padding")),
 
-        dex(make_variable(pb, FMT(prefix, ".dex"))),
+        walletID(make_variable(pb, FMT(prefix, ".walletID"))),
         token(make_variable(pb, FMT(prefix, ".token"))),
         balance_before(make_variable(pb, FMT(prefix, ".balance_before"))),
         balance_after(make_variable(pb, FMT(prefix, ".balance_after"))),
 
-        updateAccount(pb, merkleRootBefore, account, publicKey, dex, token, balance_before, balance_after, FMT(prefix, ".updateBalance")),
+        updateAccount(pb, merkleRootBefore, account, publicKey, walletID, token, balance_before, balance_after, FMT(prefix, ".updateBalance")),
 
         sig_R(pb, FMT(prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
@@ -2040,7 +2040,7 @@ public:
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        pb.val(dex) = withdrawal.accountUpdate.before.dexID;
+        pb.val(walletID) = withdrawal.accountUpdate.before.walletID;
         pb.val(token) = withdrawal.accountUpdate.before.token;
         pb.val(balance_before) = withdrawal.accountUpdate.before.balance;
         pb.val(balance_after) = withdrawal.accountUpdate.after.balance;
@@ -2201,7 +2201,7 @@ public:
     VariableT cancelledBefore;
     VariableT cancelledAfter;
 
-    VariableT dex;
+    VariableT walletID;
     VariableT token;
     VariableT balance;
     UpdateAccountGadget checkAccount;
@@ -2237,10 +2237,10 @@ public:
         cancelledAfter(make_variable(pb, 0, FMT(prefix, ".cancelledAfter"))),
         updateTradeHistory(pb, tradingHistoryMerkleRoot, flatten({orderID, account}), filled, cancelledBefore, filled, cancelledAfter, FMT(prefix, ".updateTradeHistory")),
 
-        dex(make_variable(pb, FMT(prefix, ".dex"))),
+        walletID(make_variable(pb, FMT(prefix, ".walletID"))),
         token(make_variable(pb, FMT(prefix, ".token"))),
         balance(make_variable(pb, FMT(prefix, ".balance"))),
-        checkAccount(pb, accountsMerkleRoot, account, publicKey, dex, token, balance, balance, FMT(prefix, ".checkAccount")),
+        checkAccount(pb, accountsMerkleRoot, account, publicKey, walletID, token, balance, balance, FMT(prefix, ".checkAccount")),
 
         sig_R(pb, FMT(prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
@@ -2275,7 +2275,7 @@ public:
         pb.val(cancelledBefore) = cancellation.tradeHistoryUpdate.before.cancelled;
         pb.val(cancelledAfter) = cancellation.tradeHistoryUpdate.after.cancelled;
 
-        pb.val(dex) = cancellation.accountUpdate.before.dexID;
+        pb.val(walletID) = cancellation.accountUpdate.before.walletID;
         pb.val(token) = cancellation.accountUpdate.before.token;
         pb.val(balance) = cancellation.accountUpdate.before.balance;
 

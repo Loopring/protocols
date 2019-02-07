@@ -1,4 +1,4 @@
-var TradeDelegate = artifacts.require("./impl/TradeDelegate");
+var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var Exchange = artifacts.require("./impl/Exchange");
 
 module.exports = function(deployer, network, accounts) {
@@ -7,13 +7,13 @@ module.exports = function(deployer, network, accounts) {
   } else {
     deployer.then(() => {
       return Promise.all([
-        TradeDelegate.deployed(),
+        LRCToken.deployed(),
       ]);
     }).then(() => {
       return Promise.all([
         deployer.deploy(
           Exchange,
-          TradeDelegate.address,
+          LRCToken.address,
         ),
       ]);
     }).then(() => {

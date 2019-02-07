@@ -45,7 +45,7 @@ class Account
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::FieldT dexID;
+    ethsnarks::FieldT walletID;
     ethsnarks::FieldT token;
     ethsnarks::FieldT balance;
 };
@@ -54,7 +54,7 @@ void from_json(const json& j, Account& account)
 {
     account.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    account.dexID = ethsnarks::FieldT(j.at("dexID"));
+    account.walletID = ethsnarks::FieldT(j.at("walletID"));
     account.token = ethsnarks::FieldT(j.at("token"));
     account.balance = ethsnarks::FieldT(j.at("balance"));
 }
@@ -134,7 +134,7 @@ public:
     ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::jubjub::EdwardsPoint minerPublicKeyF;
     ethsnarks::jubjub::EdwardsPoint minerPublicKeyS;
-    ethsnarks::FieldT dexID;
+    ethsnarks::FieldT walletID;
     ethsnarks::FieldT orderID;
     ethsnarks::FieldT accountS;
     ethsnarks::FieldT accountB;
@@ -173,7 +173,7 @@ void from_json(const json& j, Order& order)
     order.minerPublicKeyF.y = ethsnarks::FieldT(j.at("minerPublicKeyFY").get<std::string>().c_str());
     order.minerPublicKeyS.x = ethsnarks::FieldT(j.at("minerPublicKeySX").get<std::string>().c_str());
     order.minerPublicKeyS.y = ethsnarks::FieldT(j.at("minerPublicKeySY").get<std::string>().c_str());
-    order.dexID = ethsnarks::FieldT(j.at("dexID"));
+    order.walletID = ethsnarks::FieldT(j.at("walletID"));
     order.orderID = ethsnarks::FieldT(j.at("orderID"));
     order.accountS = ethsnarks::FieldT(j.at("accountS"));
     order.accountB = ethsnarks::FieldT(j.at("accountB"));

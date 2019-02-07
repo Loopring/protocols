@@ -1,7 +1,6 @@
 
 export class Artifacts {
   public Exchange: any;
-  public TradeDelegate: any;
   public DummyExchange: any;
   public DummyToken: any;
   public LRCToken: any;
@@ -14,7 +13,6 @@ export class Artifacts {
   public TESTToken: any;
   constructor(artifacts: any) {
     this.Exchange = artifacts.require("impl/Exchange");
-    this.TradeDelegate = artifacts.require("impl/TradeDelegate");
     this.DummyExchange = artifacts.require("impl/DummyExchange");
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");

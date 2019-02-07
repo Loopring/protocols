@@ -28,24 +28,24 @@ class Signature(object):
         self.s = str(sig.s)
 
 class Account(object):
-    def __init__(self, secretKey, publicKey, dexID, token, balance):
+    def __init__(self, secretKey, publicKey, walletID, token, balance):
         self.secretKey = str(secretKey)
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.dexID = dexID # walletID
+        self.walletID = walletID
         self.token = token
         self.balance = balance
         self.nonce = 0
 
     def hash(self):
-        #return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.dexID), int(self.token), int(self.balance)], 1)
+        #return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.walletID), int(self.token), int(self.balance)], 1)
         return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.token), int(self.balance)], 1)
 
     def fromJSON(self, jAccount):
         self.secretKey = jAccount["secretKey"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
-        self.dexID = int(jAccount["dexID"])
+        self.walletID = int(jAccount["walletID"])
         self.token = int(jAccount["token"])
         self.balance = int(jAccount["balance"])
 
@@ -91,7 +91,7 @@ class BurnRateCheckData(object):
 
 class Order(object):
     def __init__(self, publicKey, walletPublicKey, minerPublicKeyF, minerPublicKeyS,
-                 dexID, orderID,
+                 walletID, orderID,
                  accountS, accountB, accountF, walletF, minerF, minerS,
                  amountS, amountB, amountF,
                  tokenS, tokenB, tokenF,
@@ -105,7 +105,7 @@ class Order(object):
         self.minerPublicKeyFY = str(minerPublicKeyF.y)
         self.minerPublicKeySX = str(minerPublicKeyS.x)
         self.minerPublicKeySY = str(minerPublicKeyS.y)
-        self.dexID = dexID
+        self.walletID = walletID
         self.orderID = orderID
         self.accountS = accountS
         self.accountB = accountB
@@ -130,7 +130,7 @@ class Order(object):
 
     def message(self):
         msg_parts = [
-                        FQ(int(self.dexID), 1<<16), FQ(int(self.orderID), 1<<4),
+                        FQ(int(self.walletID), 1<<16), FQ(int(self.orderID), 1<<4),
                         FQ(int(self.accountS), 1<<24), FQ(int(self.accountB), 1<<24), FQ(int(self.accountF), 1<<24),
                         FQ(self.amountS, 1<<96), FQ(self.amountB, 1<<96), FQ(self.amountF, 1<<96)
                     ]

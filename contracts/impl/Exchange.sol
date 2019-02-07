@@ -17,8 +17,8 @@
 pragma solidity 0.5.2;
 
 import "../iface/IExchange.sol";
-import "../iface/ITradeDelegate.sol";
 
+import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/Verifier.sol";
 
@@ -37,7 +37,16 @@ contract Exchange is IExchange, NoDefaultFunc {
     using ERC20SafeTransfer for address;
     using MerkleTree        for MerkleTree.Data;
 
-    uint public MAX_NUM_DEPOSITS_IN_BLOCK       = 32;
+    uint public constant TOKEN_REGISTRATION_FEE_IN_LRC           = 100000 ether;
+    uint public constant WALLET_REGISTRATION_FEE_IN_LRC          = 100000 ether;
+    uint public constant RINGMATCHER_REGISTRATION_FEE_IN_LRC     = 100000 ether;
+
+    uint public constant MAX_NUM_TOKENS                          = 1024;
+    uint public constant MAX_NUM_WALLETS                         = 1024;
+    uint public constant MAX_NUM_RINGMATCHERS                    = 1024;
+
+    uint public constant MAX_NUM_DEPOSITS_IN_BLOCK               = 32;
+    uint public constant MAX_NUM_WITHDRAWALS_IN_BLOCK            = 32;
 
     // Burn rates
     uint16 public constant BURNRATE_TIER1            =                       25; // 2.5%
@@ -45,13 +54,16 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint16 public constant BURNRATE_TIER3            =                  30 * 10; //  30%
     uint16 public constant BURNRATE_TIER4            =                  50 * 10; //  50%
 
-    address public  tradeDelegateAddress        = address(0x0);
+    address public lrcAddress        = address(0x0);
 
     event TokenRegistered(address tokenAddress, uint16 tokenID);
+    event WalletRegistered(address walletOwner, uint16 walletID);
+    event RingMatcherRegistered(address ringMatcherOwner, uint16 ringMatcherID);
+
     event NewBurnRateBlock(uint blockIdx, bytes32 merkleRoot);
 
-    event Deposit(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
-    event Withdraw(uint24 account, uint16 dexID, address owner, address tokenAddress, uint amount);
+    event Deposit(uint24 account, uint16 walletID, address owner, address tokenAddress, uint amount);
+    event Withdraw(uint24 account, uint16 walletID, address owner, address tokenAddress, uint amount);
 
     event BlockCommitted(uint blockIdx, bytes32 publicDataHash);
     event BlockFinalized(uint blockIdx);
@@ -68,6 +80,14 @@ contract Exchange is IExchange, NoDefaultFunc {
         FINALIZED
     }
 
+    struct Wallet {
+        address owner;
+    }
+
+    struct RingMatcher {
+        address owner;
+    }
+
     struct Token {
         address tokenAddress;
         uint8 tier;
@@ -76,7 +96,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     struct Account {
         address owner;
-        uint16 dexID;
+        uint16 walletID;
         address token;
     }
 
@@ -102,29 +122,56 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint32 validUntil;
     }
 
+    struct State {
+        uint numAccounts;
+        mapping (uint => Account) accounts;
+
+        uint numBlocks;
+        mapping (uint => Block) blocks;
+
+        mapping (uint => DepositBlock) depositBlocks;
+    }
+
     MerkleTree.Data burnRateMerkleTree;
+
+    Wallet[] public wallets;
+    RingMatcher[] public ringMatchers;
 
     Token[] public tokens;
     mapping (address => uint16) public tokenToTokenID;
 
-    Account[] public accounts;
-
-    Block[] public blocks;
-
     BurnRateBlock[] public burnRateBlocks;
 
-    mapping (uint => DepositBlock) public depositBlocks;
+    State[] private states;
 
     uint256[14] vk;
     uint256[] gammaABC;
 
     constructor(
-        address _tradeDelegateAddress
+        address _lrcAddress
         )
         public
     {
-        require(_tradeDelegateAddress != address(0x0), ZERO_ADDRESS);
-        tradeDelegateAddress = _tradeDelegateAddress;
+        require(_lrcAddress != address(0x0), ZERO_ADDRESS);
+        lrcAddress = _lrcAddress;
+
+        BurnRateBlock memory noTokensBlock = BurnRateBlock(
+            0x0,
+            0xFFFFFFFF
+        );
+        burnRateBlocks.push(noTokensBlock);
+
+        createNewState();
+    }
+
+    function createNewState()
+        public
+    {
+        State memory memoryState = State(
+            0,
+            0
+        );
+        states.push(memoryState);
 
         Block memory genesisBlock = Block(
             0x05DB23ABCB8B9FE614D065E0ABE095569A8CD6ACFE62FCA1646CE8A32A08CF1D,
@@ -133,13 +180,9 @@ contract Exchange is IExchange, NoDefaultFunc {
             BlockState.FINALIZED,
             new bytes(0)
         );
-        blocks.push(genesisBlock);
-
-        BurnRateBlock memory noTokensBlock = BurnRateBlock(
-            0x0,
-            0xFFFFFFFF
-        );
-        burnRateBlocks.push(noTokensBlock);
+        State storage state = states[states.length - 1];
+        state.blocks[state.numBlocks] = genesisBlock;
+        state.numBlocks++;
     }
 
     function commitBlock(
@@ -149,7 +192,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
-        Block storage currentBlock = blocks[blocks.length - 1];
+        Block storage currentBlock = states[0].blocks[states[0].numBlocks - 1];
 
         // TODO: don't send before merkle tree roots to save on calldata
 
@@ -190,9 +233,10 @@ contract Exchange is IExchange, NoDefaultFunc {
             BlockState.COMMITTED,
             data
         );
-        blocks.push(newBlock);
+        states[0].blocks[states[0].numBlocks] = newBlock;
+        states[0].numBlocks++;
 
-        emit BlockCommitted(blocks.length - 1, publicDataHash);
+        emit BlockCommitted(states[0].numBlocks - 1, publicDataHash);
     }
 
     function verifyBlock(
@@ -201,15 +245,15 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
-        require(blockIdx < blocks.length, INVALID_VALUE);
-        Block storage specifiedBlock = blocks[blockIdx];
+        require(blockIdx < states[0].numBlocks, INVALID_VALUE);
+        Block storage specifiedBlock = states[0].blocks[blockIdx];
         require(specifiedBlock.state == BlockState.COMMITTED, "BLOCK_ALREADY_VERIFIED");
 
         bool verified = verifyProof(specifiedBlock.publicDataHash, proof);
         require(verified, "INVALID_PROOF");
 
         // Update state of this block and potentially the following blocks
-        Block storage previousBlock = blocks[blockIdx - 1];
+        Block storage previousBlock = states[0].blocks[blockIdx - 1];
         if (previousBlock.state == BlockState.FINALIZED) {
             specifiedBlock.state = BlockState.FINALIZED;
             emit BlockFinalized(blockIdx);
@@ -217,8 +261,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             // The number of blocks after the specified block index is limited
             // so we don't have to worry about running out of gas in this loop
             uint nextBlockIdx = blockIdx + 1;
-            while (nextBlockIdx < blocks.length && blocks[nextBlockIdx].state == BlockState.VERIFIED) {
-                blocks[nextBlockIdx].state = BlockState.FINALIZED;
+            while (nextBlockIdx < states[0].numBlocks && states[0].blocks[nextBlockIdx].state == BlockState.VERIFIED) {
+                states[0].blocks[nextBlockIdx].state = BlockState.FINALIZED;
                 emit BlockFinalized(nextBlockIdx);
                 nextBlockIdx++;
             }
@@ -232,8 +276,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         external
     {
-        require(blockIdx < blocks.length, INVALID_VALUE);
-        Block storage specifiedBlock = blocks[blockIdx];
+        require(blockIdx < states[0].numBlocks, INVALID_VALUE);
+        Block storage specifiedBlock = states[0].blocks[blockIdx];
         require(specifiedBlock.state == BlockState.COMMITTED, INVALID_VALUE);
         // TODO: At a time limit in some way (number of blocks, timestamp, ...)
         revertState(blockIdx);
@@ -247,7 +291,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         // TODO: Burn deposit of operator for LRC
 
         // Remove all blocks after and including blockIdx;
-        blocks.length = blockIdx;
+        states[0].numBlocks = blockIdx;
     }
 
     function registerToken(
@@ -256,6 +300,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         external
     {
         require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
+
+        burn(msg.sender, TOKEN_REGISTRATION_FEE_IN_LRC);
 
         Token memory token = Token(
             tokenAddress,
@@ -357,7 +403,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         address owner,
         uint brokerPublicKeyX,
         uint brokerPublicKeyY,
-        uint16 dexID,
+        uint16 walletID,
         address token,
         uint amount
         )
@@ -368,10 +414,10 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint16 tokenID = getTokenID(token);
 
         uint currentBlock = block.number / 40;
-        DepositBlock storage depositBlock = depositBlocks[currentBlock];
+        DepositBlock storage depositBlock = states[0].depositBlocks[currentBlock];
         require(depositBlock.numDeposits < MAX_NUM_DEPOSITS_IN_BLOCK, "DEPOSIT_BLOCK_FULL");
         if (depositBlock.numDeposits == 0) {
-            depositBlock.hash = bytes32(accounts.length);
+            depositBlock.hash = bytes32(states[0].numAccounts);
         }
 
         if (amount > 0) {
@@ -391,7 +437,7 @@ contract Exchange is IExchange, NoDefaultFunc {
                 depositBlock.hash,
                 brokerPublicKeyX,
                 brokerPublicKeyY,
-                dexID,
+                walletID,
                 tokenID,
                 amount
             )
@@ -400,25 +446,25 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         Account memory account = Account(
             owner,
-            dexID,
+            walletID,
             token
         );
-        uint24 accountID = uint24(accounts.length);
-        accounts.push(account);
+        uint24 accountID = uint24(states[0].numAccounts);
+        states[0].accounts[accountID] = account;
+        states[0].numAccounts++;
 
-        emit Deposit(accountID, dexID, owner, token, amount);
+        emit Deposit(accountID, walletID, owner, token, amount);
 
         return accountID;
     }
 
     function withdraw(
-        uint16 dexID,
         uint blockIdx,
         uint withdrawalIdx
         )
         external
     {
-        Block storage withdrawBlock = blocks[blockIdx];
+        Block storage withdrawBlock = states[0].blocks[blockIdx];
         require(withdrawBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
         // TODO: optimize
@@ -432,7 +478,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
 
         if (amount > 0) {
-            Account storage account = accounts[accountID];
+            Account storage account = states[0].accounts[accountID];
             // Transfer the tokens from the contract to the owner
             require(
                 account.token.safeTransfer(
@@ -449,8 +495,52 @@ contract Exchange is IExchange, NoDefaultFunc {
             }
             withdrawBlock.withdrawals = withdrawals;
 
-            emit Withdraw(accountID, dexID, account.owner, account.token, amount);
+            emit Withdraw(accountID, account.walletID, account.owner, account.token, amount);
         }
+    }
+
+    function registerWallet()
+        external
+    {
+        burn(msg.sender, WALLET_REGISTRATION_FEE_IN_LRC);
+
+        Wallet memory wallet = Wallet(
+            msg.sender
+        );
+        wallets.push(wallet);
+
+        emit WalletRegistered(wallet.owner, uint16(wallets.length - 1));
+    }
+
+    function registerRingMatcher()
+        external
+    {
+        burn(msg.sender, RINGMATCHER_REGISTRATION_FEE_IN_LRC);
+
+        RingMatcher memory ringMatcher = RingMatcher(
+            msg.sender
+        );
+        ringMatchers.push(ringMatcher);
+
+        emit RingMatcherRegistered(ringMatcher.owner, uint16(ringMatchers.length - 1));
+    }
+
+    function registerOperator()
+        external
+    {
+
+    }
+
+    function burn(address from, uint amount)
+        internal
+    {
+        require(
+            BurnableERC20(lrcAddress).burnFrom(
+                from,
+                amount
+            ),
+            BURN_FAILURE
+        );
     }
 
     function verifyProof(
@@ -494,7 +584,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         view
         returns (uint)
     {
-        return blocks.length - 1;
+        return states[0].numBlocks - 1;
     }
 
     function getBurnRateRoot()
