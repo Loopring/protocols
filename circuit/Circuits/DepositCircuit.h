@@ -26,17 +26,19 @@ public:
 
     VariableArrayT address;
 
-    const VariableT emptyPublicKeyX;
-    const VariableT emptyPublicKeyY;
-    const VariableT emptyDex;
-    const VariableT emptyToken;
-    const VariableT emptyBalance;
+    const VariableT publicKeyX_before;
+    const VariableT publicKeyY_before;
+    const VariableT walletID_before;
+    const VariableT token_before;
+    const VariableT balance_before;
 
-    libsnark::dual_variable_gadget<FieldT> publicKeyX;
-    libsnark::dual_variable_gadget<FieldT> publicKeyY;
-    libsnark::dual_variable_gadget<FieldT> dex;
-    libsnark::dual_variable_gadget<FieldT> token;
-    libsnark::dual_variable_gadget<FieldT> balance;
+    libsnark::dual_variable_gadget<FieldT> publicKeyX_after;
+    libsnark::dual_variable_gadget<FieldT> publicKeyY_after;
+    libsnark::dual_variable_gadget<FieldT> walletID_after;
+    libsnark::dual_variable_gadget<FieldT> token_after;
+    const VariableT balance_after;
+
+    libsnark::dual_variable_gadget<FieldT> amount;
 
     MiMC_hash_gadget leafBefore;
     MiMC_hash_gadget leafAfter;
@@ -52,24 +54,26 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        address(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".address"))),
-
-        emptyPublicKeyX(make_variable(pb, 0, FMT(prefix, ".emptyPublicKeyX"))),
-        emptyPublicKeyY(make_variable(pb, 0, FMT(prefix, ".emptyPublicKeyY"))),
-        emptyDex(make_variable(pb, 0, FMT(prefix, ".emptyDex"))),
-        emptyToken(make_variable(pb, 0, FMT(prefix, ".emptyToken"))),
-        emptyBalance(make_variable(pb, 0, FMT(prefix, ".emptyBalance"))),
-
-        publicKeyX(pb, 256, FMT(prefix, ".publicKeyX")),
-        publicKeyY(pb, 256, FMT(prefix, ".publicKeyY")),
-        dex(pb, 16, FMT(prefix, ".dex")),
-        token(pb, 16, FMT(prefix, ".token")),
-        balance(pb, 96, FMT(prefix, ".balance")),
-
         merkleRootBefore(_merkleRoot),
 
-        leafBefore(pb, libsnark::ONE, {emptyPublicKeyX, emptyPublicKeyY, emptyToken, emptyBalance}, FMT(prefix, ".leafBefore")),
-        leafAfter(pb, libsnark::ONE, {publicKeyX.packed, publicKeyY.packed, token.packed, balance.packed}, FMT(prefix, ".leafAfter")),
+        address(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".address"))),
+
+        publicKeyX_before(make_variable(pb, 0, FMT(prefix, ".publicKeyX_before"))),
+        publicKeyY_before(make_variable(pb, 0, FMT(prefix, ".publicKeyY_before"))),
+        walletID_before(make_variable(pb, 0, FMT(prefix, ".walletID_before"))),
+        token_before(make_variable(pb, 0, FMT(prefix, ".token_before"))),
+        balance_before(make_variable(pb, 0, FMT(prefix, ".balance_before"))),
+
+        publicKeyX_after(pb, 256, FMT(prefix, ".publicKeyX_after")),
+        publicKeyY_after(pb, 256, FMT(prefix, ".publicKeyY_after")),
+        walletID_after(pb, 16, FMT(prefix, ".walletID_after")),
+        token_after(pb, 16, FMT(prefix, ".token_after")),
+        balance_after(make_variable(pb, 0, FMT(prefix, ".balance_after"))),
+
+        amount(pb, 96, FMT(prefix, ".amount")),
+
+        leafBefore(pb, libsnark::ONE, {publicKeyX_before, publicKeyY_before, token_before, balance_before}, FMT(prefix, ".leafBefore")),
+        leafAfter(pb, libsnark::ONE, {publicKeyX_after.packed, publicKeyY_after.packed, token_after.packed, balance_after}, FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".proof"))),
         proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(prefix, ".pathBefore")),
@@ -85,23 +89,31 @@ public:
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {publicKeyX.bits, publicKeyY.bits, dex.bits, token.bits, balance.bits};
+        return {address, publicKeyX_after.bits, publicKeyY_after.bits, walletID_after.bits, token_after.bits, amount.bits};
     }
 
     void generate_r1cs_witness(const Deposit& deposit)
     {
         address.fill_with_bits_of_field_element(pb, deposit.address);
 
-        publicKeyX.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.x);
-        publicKeyX.generate_r1cs_witness_from_bits();
-        publicKeyY.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.y);
-        publicKeyY.generate_r1cs_witness_from_bits();
-        dex.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.walletID);
-        dex.generate_r1cs_witness_from_bits();
-        token.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.token);
-        token.generate_r1cs_witness_from_bits();
-        balance.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.balance);
-        balance.generate_r1cs_witness_from_bits();
+        pb.val(publicKeyX_before) = deposit.accountUpdate.before.publicKey.x;
+        pb.val(publicKeyY_before) = deposit.accountUpdate.before.publicKey.y;
+        pb.val(walletID_before) = deposit.accountUpdate.before.walletID;
+        pb.val(token_before) = deposit.accountUpdate.before.token;
+        pb.val(balance_before) = deposit.accountUpdate.before.publicKey.x;
+
+        publicKeyX_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.x);
+        publicKeyX_after.generate_r1cs_witness_from_bits();
+        publicKeyY_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.y);
+        publicKeyY_after.generate_r1cs_witness_from_bits();
+        walletID_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.walletID);
+        walletID_after.generate_r1cs_witness_from_bits();
+        token_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.token);
+        token_after.generate_r1cs_witness_from_bits();
+        pb.val(balance_after) = deposit.accountUpdate.after.balance;
+
+        amount.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.balance - deposit.accountUpdate.before.balance);
+        amount.generate_r1cs_witness_from_bits();
 
         leafBefore.generate_r1cs_witness();
         leafAfter.generate_r1cs_witness();
@@ -113,24 +125,20 @@ public:
 
     void generate_r1cs_constraints()
     {
-        // Force constants
-        pb.add_r1cs_constraint(ConstraintT(emptyPublicKeyX, 1, 0), "emptyPublicKeyX == 0");
-        pb.add_r1cs_constraint(ConstraintT(emptyPublicKeyY, 1, 0), "emptyPublicKeyY == 0");
-        pb.add_r1cs_constraint(ConstraintT(emptyDex, 1, 0), "emptyDex == 0");
-        pb.add_r1cs_constraint(ConstraintT(emptyToken, 1, 0), "emptyToken == 0");
-        pb.add_r1cs_constraint(ConstraintT(emptyBalance, 1, 0), "emptyBalance == 0");
+        publicKeyX_after.generate_r1cs_constraints(true);
+        publicKeyY_after.generate_r1cs_constraints(true);
+        walletID_after.generate_r1cs_constraints(true);
+        token_after.generate_r1cs_constraints(true);
 
-        publicKeyX.generate_r1cs_constraints(true);
-        publicKeyY.generate_r1cs_constraints(true);
-        dex.generate_r1cs_constraints(true);
-        token.generate_r1cs_constraints(true);
-        balance.generate_r1cs_constraints(true);
+        amount.generate_r1cs_constraints(true);
 
         leafBefore.generate_r1cs_constraints();
         leafAfter.generate_r1cs_constraints();
 
         proofVerifierBefore.generate_r1cs_constraints();
         rootCalculatorAfter.generate_r1cs_constraints();
+
+        pb.add_r1cs_constraint(ConstraintT(balance_before + amount.packed, 1, balance_after), "balance_before + amount == balance_after");
     }
 };
 
@@ -146,17 +154,22 @@ public:
     libsnark::dual_variable_gadget<FieldT> accountsMerkleRootAfter;
 
     std::vector<VariableArrayT> publicDataBits;
-    VariableArrayT publicData;
+
+    libsnark::dual_variable_gadget<FieldT> depositBlockHashStart;
+    std::vector<VariableArrayT> depositDataBits;
+    std::vector<sha256_many> hashers;
 
     sha256_many* publicDataHasher;
 
     DepositsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
 
-        publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
-
         accountsMerkleRootBefore(pb, 256, FMT(prefix, ".accountsMerkleRootBefore")),
-        accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter"))
+        accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter")),
+
+        depositBlockHashStart(pb, 256, FMT(prefix, ".depositBlockHashStart")),
+
+        publicDataHash(pb, 256, FMT(prefix, ".publicDataHash"))
     {
         this->publicDataHasher = nullptr;
     }
@@ -182,9 +195,16 @@ public:
             VariableT depositAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : deposits.back().getNewAccountsMerkleRoot();
             deposits.emplace_back(pb, depositAccountsMerkleRoot, std::string("deposits") + std::to_string(j));
 
-            // Store data from deposit
-            //std::vector<VariableArrayT> ringPublicData = deposits.back().getPublicData();
-            //publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
+            VariableArrayT depositBlockHash = (j == 0) ? depositBlockHashStart.bits : hashers.back().result().bits;
+
+            // Hash data from deposit
+            std::vector<VariableArrayT> depositData = deposits.back().getPublicData();
+            std::vector<VariableArrayT> hashBits;
+            hashBits.push_back(flattenReverse({depositBlockHash}));
+            hashBits.insert(hashBits.end(), depositData.begin(), depositData.end());
+            depositDataBits.push_back(flattenReverse(hashBits));
+            hashers.emplace_back(pb, depositDataBits.back(), std::string("hash") + std::to_string(j));
+            hashers.back().generate_r1cs_constraints();
         }
 
         publicDataHash.generate_r1cs_constraints(true);
@@ -193,9 +213,10 @@ public:
             deposit.generate_r1cs_constraints();
         }
 
+        publicDataBits.push_back(flattenReverse({hashers.back().result().bits}));
+
         // Check public data
-        publicData = flattenReverse(publicDataBits);
-        publicDataHasher = new sha256_many(pb, publicData, ".publicDataHash");
+        publicDataHasher = new sha256_many(pb, flattenReverse(publicDataBits), ".publicDataHash");
         publicDataHasher->generate_r1cs_constraints();
 
         // Check that the hash matches the public input
@@ -223,10 +244,24 @@ public:
         accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootAfterValue);
         accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
 
+        depositBlockHashStart.bits.fill_with_bits_of_field_element(pb, 0);
+        depositBlockHashStart.generate_r1cs_witness_from_bits();
+
         for(unsigned int i = 0; i < depositsData.size(); i++)
         {
             deposits[i].generate_r1cs_witness(depositsData[i]);
         }
+
+        for (auto& hasher : hashers)
+        {
+            hasher.generate_r1cs_witness();
+        }
+
+        /*for (auto& depositDataBit : depositDataBits)
+        {
+            printBits("deposit data: ", depositDataBit.get_bits(pb));
+        }
+        printBits("Public data: ", flattenReverse(publicDataBits).get_bits(pb));*/
 
         publicDataHasher->generate_r1cs_witness();
 
@@ -249,6 +284,11 @@ public:
 
         //printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
         //printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
+
+        /*for (auto& hasher : hashers)
+        {
+            printBits("Deposit block hash bits: ", hasher.result().bits.get_bits(pb), true);
+        }*/
 
         return true;
     }

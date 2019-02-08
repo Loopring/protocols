@@ -256,6 +256,7 @@ export class ExchangeTestUtil {
 
     // Submit the deposits
     const tx = await this.exchange.deposit(
+      new BN(0xFFFFFF),
       owner,
       new BN(publicKeyX),
       new BN(publicKeyY),
@@ -266,6 +267,10 @@ export class ExchangeTestUtil {
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
 
+    /*const depositHash = await this.exchange.getDepositHash(web3.utils.toBN(0));
+    console.log("DepositHash: ");
+    console.log(depositHash.toString(16));*/
+
     const eventArr: any = await this.getEventsFromContract(this.exchange, "Deposit", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
       // console.log(eventObj);
@@ -274,7 +279,7 @@ export class ExchangeTestUtil {
     const accountID = items[0].toNumber();
     // console.log(accountID);
 
-    this.addDeposit(this.pendingDeposits, secretKey, publicKeyX, publicKeyY,
+    this.addDeposit(this.pendingDeposits, accountID, secretKey, publicKeyX, publicKeyY,
                     walletID, this.tokenIDMap.get(token), amount);
     return accountID;
   }
@@ -283,9 +288,9 @@ export class ExchangeTestUtil {
     this.addWithdrawal(this.pendingWithdrawals, account, amount);
   }
 
-  public addDeposit(deposits: Deposit[], secretKey: string, publicKeyX: string, publicKeyY: string,
+  public addDeposit(deposits: Deposit[], accountID: number, secretKey: string, publicKeyX: string, publicKeyY: string,
                     walletID: number, tokenID: number, balance: number) {
-    deposits.push({secretKey, publicKeyX, publicKeyY, walletID, tokenID, balance});
+    deposits.push({accountID, secretKey, publicKeyX, publicKeyY, walletID, tokenID, balance});
   }
 
   public addWithdrawal(withdrawals: Withdrawal[], account: number, amount: number) {
@@ -387,6 +392,8 @@ export class ExchangeTestUtil {
     const bs = new pjs.Bitstream();
     bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootBefore, 10), 32);
     bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootAfter, 10), 32);
+    const depositHash = await this.exchange.getDepositHash(web3.utils.toBN(0));
+    bs.addHex(depositHash.toString(16));
 
     // Commit the block
     await this.commitBlock(1, bs.getData(), blockFilename);

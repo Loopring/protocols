@@ -70,6 +70,8 @@ contract Exchange is IExchange, NoDefaultFunc {
     event BlockCommitted(uint blockIdx, bytes32 publicDataHash);
     event BlockFinalized(uint blockIdx);
 
+    event LogDepositBytes(bytes data);
+
     enum BlockType {
         TRADE,
         DEPOSIT,
@@ -102,10 +104,17 @@ contract Exchange is IExchange, NoDefaultFunc {
         address token;
     }
 
+    struct PendingDeposit {
+        uint24 accountID;
+        uint96 amount;
+    }
+
     struct DepositBlock {
         uint numDeposits;
         bytes32 hash;
         uint doneInBlockIdx;
+
+        PendingDeposit[] pendingDeposits;
     }
 
     struct WithdrawBlock {
@@ -139,6 +148,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint numBlocks;
         mapping (uint => Block) blocks;
 
+        uint numDepositBlocks;
         mapping (uint => DepositBlock) depositBlocks;
         mapping (uint => WithdrawBlock) withdrawBlocks;
     }
@@ -180,6 +190,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         State memory memoryState = State(
             ACCOUNTS_START_INDEX,
+            0,
             0
         );
         states.push(memoryState);
@@ -231,7 +242,18 @@ contract Exchange is IExchange, NoDefaultFunc {
             }
             require(burnRateMerkleRoot == burnRateBlock.merkleRoot, "INVALID_BURNRATE_ROOT");
             require(inputTimestamp > now - 60 && inputTimestamp < now + 60, "INVALID_TIMESTAMP");
-        } else {
+        } else if (blockType == uint(BlockType.DEPOSIT)) {
+            bytes32 depositBlockHash;
+            assembly {
+                depositBlockHash := mload(add(data, 96))
+            }
+            require(depositBlockHash == states[0].depositBlocks[0].hash, "INVALID_DEPOSIT_HASH");
+            emit LogDepositBytes(data);
+
+            tradeHistoryMerkleRootBefore = currentBlock.tradeHistoryMerkleRoot;
+            tradeHistoryMerkleRootAfter = tradeHistoryMerkleRootBefore;
+        }
+        else {
             tradeHistoryMerkleRootBefore = currentBlock.tradeHistoryMerkleRoot;
             tradeHistoryMerkleRootAfter = tradeHistoryMerkleRootBefore;
         }
@@ -415,24 +437,25 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function deposit(
+        uint24 accountID,
         address owner,
         uint brokerPublicKeyX,
         uint brokerPublicKeyY,
         uint16 walletID,
         address token,
-        uint amount
+        uint96 amount
         )
         public
         returns (uint24)
     {
-        require(msg.sender == owner, "UNAUTHORIZED");
+        require(msg.sender == owner, UNAUTHORIZED);
         uint16 tokenID = getTokenID(token);
 
-        uint currentBlock = block.number / 40;
+        uint currentBlock = states[0].numDepositBlocks;
         DepositBlock storage depositBlock = states[0].depositBlocks[currentBlock];
         require(depositBlock.numDeposits < MAX_NUM_DEPOSITS_IN_BLOCK, "DEPOSIT_BLOCK_FULL");
         if (depositBlock.numDeposits == 0) {
-            depositBlock.hash = bytes32(states[0].numAccounts);
+            depositBlock.hash = 0;
         }
 
         if (amount > 0) {
@@ -447,9 +470,39 @@ contract Exchange is IExchange, NoDefaultFunc {
             );
         }
 
+        if (accountID == 0xFFFFFF) {
+            Account memory account = Account(
+                owner,
+                walletID,
+                token
+            );
+            uint24 newAccountID = uint24(states[0].numAccounts);
+            states[0].accounts[newAccountID] = account;
+            states[0].numAccounts++;
+
+            accountID = newAccountID;
+        } else {
+            Account storage account = states[0].accounts[accountID];
+            require(account.owner == owner, INVALID_VALUE);
+            require(account.token == token, INVALID_VALUE);
+            require(account.walletID == walletID, INVALID_VALUE);
+        }
+
+        bytes memory data = abi.encodePacked(
+                depositBlock.hash,
+                accountID,
+                brokerPublicKeyX,
+                brokerPublicKeyY,
+                walletID,
+                tokenID,
+                amount
+        );
+        emit LogDepositBytes(data);
+
         depositBlock.hash = sha256(
             abi.encodePacked(
                 depositBlock.hash,
+                accountID,
                 brokerPublicKeyX,
                 brokerPublicKeyY,
                 walletID,
@@ -459,14 +512,11 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
         depositBlock.numDeposits++;
 
-        Account memory account = Account(
-            owner,
-            walletID,
-            token
+        PendingDeposit memory pendingDeposit = PendingDeposit(
+            accountID,
+            amount
         );
-        uint24 accountID = uint24(states[0].numAccounts);
-        states[0].accounts[accountID] = account;
-        states[0].numAccounts++;
+        depositBlock.pendingDeposits.push(pendingDeposit);
 
         emit Deposit(accountID, walletID, owner, token, amount);
 
@@ -660,5 +710,15 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (uint)
     {
         return burnRateBlocks.length - 1;
+    }
+
+    function getDepositHash(
+        uint depositBlockIdx
+        )
+        external
+        view
+        returns (bytes32)
+    {
+        return states[0].depositBlocks[0].hash;
     }
 }

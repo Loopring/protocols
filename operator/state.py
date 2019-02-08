@@ -538,11 +538,10 @@ class State(object):
                               burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
                               burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B)
 
-    def deposit(self, account):
+    def deposit(self, address, account):
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
 
-        address = self._numAccounts
         proof = self._accountsTree.createProof(address)
 
         accountBefore = copy.deepcopy(Account(0, Point(0, 0), 0, 0, 0))

@@ -484,7 +484,6 @@ public:
     libsnark::dual_variable_gadget<FieldT> timestamp;
 
     std::vector<VariableArrayT> publicDataBits;
-    VariableArrayT publicData;
 
     sha256_many* publicDataHasher;
 
@@ -569,8 +568,7 @@ public:
         }
 
         // Check public data
-        publicData = flattenReverse(publicDataBits);
-        publicDataHasher = new sha256_many(pb, publicData, ".publicDataHash");
+        publicDataHasher = new sha256_many(pb, flattenReverse(publicDataBits), ".publicDataHash");
         publicDataHasher->generate_r1cs_constraints();
 
         // Check that the hash matches the public input

@@ -127,7 +127,8 @@ def deposit(state, data):
     export.accountsMerkleRootBefore = str(state._accountsTree._root)
 
     for depositInfo in data:
-        deposit = state.deposit(Account(int(depositInfo["secretKey"]),
+        deposit = state.deposit(int(depositInfo["accountID"]),
+                                Account(int(depositInfo["secretKey"]),
                                         Point(int(depositInfo["publicKeyX"]), int(depositInfo["publicKeyY"])),
                                         int(depositInfo["walletID"]), int(depositInfo["tokenID"]), int(depositInfo["balance"])))
         export.deposits.append(deposit)

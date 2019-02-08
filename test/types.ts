@@ -61,6 +61,7 @@ export interface RingsInfo {
 }
 
 export interface Deposit {
+  accountID: number;
   secretKey: string;
   publicKeyX: string;
   publicKeyY: string;
