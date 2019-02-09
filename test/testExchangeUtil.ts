@@ -244,6 +244,17 @@ export class ExchangeTestUtil {
 
   public async deposit(owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
                        walletID: number, token: string, amount: number) {
+    let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
+    console.log("Open slots: " + numAvailableSlots);
+    if (numAvailableSlots === 0) {
+        const timeToWait = (await this.exchange.MIN_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
+        console.log(timeToWait);
+        await this.advanceBlockTimestamp(timeToWait);
+
+        numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
+        console.log("Open slots after: " + numAvailableSlots);
+        assert(numAvailableSlots > 0, "numAvailableSlots > 0");
+    }
 
     if (amount > 0) {
       const Token = this.testContext.tokenAddrInstanceMap.get(token);
@@ -255,6 +266,7 @@ export class ExchangeTestUtil {
     }
 
     // Submit the deposits
+    const depositFee = await this.exchange.DEPOSIT_FEE_IN_ETH();
     const tx = await this.exchange.deposit(
       new BN(0xFFFFFF),
       owner,
@@ -263,7 +275,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(walletID),
       token,
       web3.utils.toBN(amount),
-      {from: owner},
+      {from: owner, value: depositFee},
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
 
@@ -274,12 +286,15 @@ export class ExchangeTestUtil {
     const eventArr: any = await this.getEventsFromContract(this.exchange, "Deposit", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
       // console.log(eventObj);
-      return eventObj.args.account;
+      return [eventObj.args.account, eventObj.args.depositBlockIdx];
     });
-    const accountID = items[0].toNumber();
-    // console.log(accountID);
+    const accountID = items[0][0].toNumber();
+    const depositBlockIdx = items[0][1].toNumber();
+    console.log(accountID);
+    console.log(depositBlockIdx);
 
-    this.addDeposit(this.pendingDeposits, accountID, secretKey, publicKeyX, publicKeyY,
+    this.addDeposit(this.pendingDeposits, depositBlockIdx, accountID,
+                    secretKey, publicKeyX, publicKeyY,
                     walletID, this.tokenIDMap.get(token), amount);
     return accountID;
   }
@@ -288,9 +303,10 @@ export class ExchangeTestUtil {
     this.addWithdrawal(this.pendingWithdrawals, account, amount);
   }
 
-  public addDeposit(deposits: Deposit[], accountID: number, secretKey: string, publicKeyX: string, publicKeyY: string,
+  public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
+                    secretKey: string, publicKeyX: string, publicKeyY: string,
                     walletID: number, tokenID: number, balance: number) {
-    deposits.push({accountID, secretKey, publicKeyX, publicKeyY, walletID, tokenID, balance});
+    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID, tokenID, balance});
   }
 
   public addWithdrawal(withdrawals: Withdrawal[], account: number, amount: number) {
@@ -385,6 +401,10 @@ export class ExchangeTestUtil {
       return;
     }
 
+    const timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
+    console.log(timeToWait);
+    await this.advanceBlockTimestamp(timeToWait);
+
     const jDepositsInfo = JSON.stringify(this.pendingDeposits, null, 4);
     const blockFilename = await this.createBlock(1, jDepositsInfo);
     const jDeposits = fs.readFileSync(blockFilename, "ascii");
@@ -424,7 +444,7 @@ export class ExchangeTestUtil {
 
     // We need to verify all blocks before and including the withdraw block before
     // we can withdraw the tokens from the block
-    await this.verifyAllPendingBlocks();
+    /*await this.verifyAllPendingBlocks();
 
     for (let i = 0; i < this.pendingWithdrawals.length; i++) {
       const withdrawal = this.pendingWithdrawals[i];
@@ -441,7 +461,7 @@ export class ExchangeTestUtil {
       const token = items[0][1];
       const amount = items[0][2].toNumber();
       console.log("Withdrawn: " + owner + ": " + amount + " " + token);
-    }
+    }*/
 
     this.pendingWithdrawals = [];
   }
@@ -531,6 +551,39 @@ export class ExchangeTestUtil {
     if (fs.existsSync("state.json")) {
       fs.unlinkSync("state.json");
     }
+  }
+
+  public evmIncreaseTime(seconds: number) {
+    return new Promise((resolve, reject) => {
+      web3.currentProvider.send({
+        jsonrpc: "2.0",
+        method: "evm_increaseTime",
+        params: [seconds],
+      }, (err: any, res: any) => {
+        return err ? reject(err) : resolve(res);
+      });
+    });
+  }
+
+  public evmMine() {
+    return new Promise((resolve, reject) => {
+      web3.currentProvider.send({
+        jsonrpc: "2.0",
+        method: "evm_mine",
+        id: Date.now(),
+      }, (err: any, res: any) => {
+        return err ? reject(err) : resolve(res);
+      });
+    });
+  }
+
+  public async advanceBlockTimestamp(seconds: number) {
+    const previousTimestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
+    await this.evmIncreaseTime(seconds);
+    await this.evmMine();
+    const currentTimestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
+    assert(Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
+           "Timestamp should have been increased by roughly the expected value");
   }
 
   private getPrivateKey(address: string) {
