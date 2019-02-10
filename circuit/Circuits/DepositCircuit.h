@@ -100,7 +100,7 @@ public:
         pb.val(publicKeyY_before) = deposit.accountUpdate.before.publicKey.y;
         pb.val(walletID_before) = deposit.accountUpdate.before.walletID;
         pb.val(token_before) = deposit.accountUpdate.before.token;
-        pb.val(balance_before) = deposit.accountUpdate.before.publicKey.x;
+        pb.val(balance_before) = deposit.accountUpdate.before.balance;
 
         publicKeyX_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.x);
         publicKeyX_after.generate_r1cs_witness_from_bits();

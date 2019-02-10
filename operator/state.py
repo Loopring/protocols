@@ -294,7 +294,6 @@ class State(object):
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
         self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
         self._accounts = {}
-        self._numAccounts = 1024
         #print("Empty accounts tree: " + str(self._accountsTree._root))
         # Tokens
         self._tokensTree = MerkleTree(1 << 16)
@@ -313,7 +312,6 @@ class State(object):
                 account = Account(0, Point(0, 0), 0, 0, 0)
                 account.fromJSON(val)
                 self._accounts[key] = account
-            self._numAccounts = data["num_accounts"]
             self._accountsTree._root = data["accounts_root"]
             self._accountsTree._db.kv = data["accounts_tree"]
             for jBurnRateLeaf in data["tokens_values"]:
@@ -330,7 +328,6 @@ class State(object):
                     "trading_history_root": self._tradingHistoryTree._root,
                     "trading_history_tree": self._tradingHistoryTree._db.kv,
                     "accounts_values": self._accounts,
-                    "num_accounts": self._numAccounts,
                     "accounts_root": self._accountsTree._root,
                     "accounts_tree": self._accountsTree._db.kv,
                     "tokens_values": self._tokens,
@@ -424,6 +421,12 @@ class State(object):
         (fillAmountS_A, fillAmountB_A) = self.getMaxFillAmounts(ring.orderA)
         (fillAmountS_B, fillAmountB_B) = self.getMaxFillAmounts(ring.orderB)
 
+        print("mfillAmountS_A: " + str(fillAmountS_A))
+        print("mfillAmountB_A: " + str(fillAmountB_A))
+        print("mfillAmountS_B: " + str(fillAmountS_B))
+        print("mfillAmountB_B: " + str(fillAmountB_B))
+
+
         if fillAmountB_A < fillAmountS_B:
             fillAmountB_B = fillAmountS_A
             fillAmountS_B = (fillAmountB_B * ring.orderB.amountS) // ring.orderB.amountB
@@ -435,6 +438,7 @@ class State(object):
 
         ring.valid = True
         if fillAmountS_A < fillAmountB_B:
+            print("fills false: ")
             ring.valid = False
 
         ring.orderA.checkValid(context)
@@ -443,7 +447,13 @@ class State(object):
         fillsValidB = ring.orderB.checkFills(fillAmountS_B, fillAmountB_B)
         ring.valid = ring.valid and ring.orderA.valid and ring.orderB.valid and fillsValidA and fillsValidB
 
+        print("ring.orderA.valid " + str(ring.orderA.valid))
+        print("ring.orderB.valid " + str(ring.orderB.valid))
+        print("fillsValidA " + str(fillsValidA))
+        print("fillsValidB " + str(fillsValidB))
+
         if ring.valid == False:
+            print("ring.valid false: ")
             fillAmountS_A = 0
             fillAmountB_A = 0
             fillAmountS_B = 0
@@ -544,12 +554,10 @@ class State(object):
 
         proof = self._accountsTree.createProof(address)
 
-        accountBefore = copy.deepcopy(Account(0, Point(0, 0), 0, 0, 0))
+        accountBefore = copy.deepcopy(self.getAccount(address))
+        self._accounts[str(address)] = account
         self._accountsTree.update(address, account.hash())
         accountAfter = copy.deepcopy(account)
-
-        self._accounts[str(self._numAccounts)] = account
-        self._numAccounts = self._numAccounts + 1
 
         proof.reverse()
         return Deposit(accountsMerkleRoot, address, AccountUpdateData(accountBefore, accountAfter, proof))

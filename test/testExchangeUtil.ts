@@ -25,11 +25,23 @@ export class ExchangeTestUtil {
 
   private pendingBlocks: Block[] = [];
 
+  private zeroAddress = "0x" + "00".repeat(20);
+
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
     await this.cleanTradeHistory();
     await this.registerTokens();
+
+    this.deposit(
+      this.zeroAddress,
+      (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
+      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
+      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
+      0,
+      this.zeroAddress,
+      0,
+    );
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -117,12 +129,12 @@ export class ExchangeTestUtil {
     if (!order.validSince) {
       // Set the order validSince time to a bit before the current timestamp;
       const blockNumber = await web3.eth.getBlockNumber();
-      order.validSince = (await web3.eth.getBlock(blockNumber)).timestamp - 1000;
+      order.validSince = (await web3.eth.getBlock(blockNumber)).timestamp - 10000;
     }
     if (!order.validUntil) {
       // Set the order validUntil time to a bit after the current timestamp;
       const blockNumber = await web3.eth.getBlockNumber();
-      order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 2500;
+      order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 25000;
     }
 
     order.wallet = order.wallet ? order.wallet : this.testContext.wallets[0];
@@ -256,12 +268,14 @@ export class ExchangeTestUtil {
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
+    const txOrigin = (owner === this.zeroAddress) ? this.testContext.orderOwners[0] : owner;
+
     if (amount > 0) {
       const Token = this.testContext.tokenAddrInstanceMap.get(token);
       await Token.approve(
         this.exchange.address,
         web3.utils.toBN(new BigNumber(amount)),
-        {from: owner},
+        {from: txOrigin},
       );
     }
 
@@ -275,7 +289,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(walletID),
       token,
       web3.utils.toBN(amount),
-      {from: owner, value: depositFee},
+      {from: txOrigin, value: depositFee},
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
 
@@ -401,22 +415,52 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
-    console.log(timeToWait);
-    await this.advanceBlockTimestamp(timeToWait);
+    const numBlocks = Math.floor((this.pendingDeposits.length + 7) / 8);
+    for (let i = 0; i < numBlocks; i++) {
 
-    const jDepositsInfo = JSON.stringify(this.pendingDeposits, null, 4);
-    const blockFilename = await this.createBlock(1, jDepositsInfo);
-    const jDeposits = fs.readFileSync(blockFilename, "ascii");
-    const jdeposits = JSON.parse(jDeposits);
-    const bs = new pjs.Bitstream();
-    bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootAfter, 10), 32);
-    const depositHash = await this.exchange.getDepositHash(web3.utils.toBN(0));
-    bs.addHex(depositHash.toString(16));
+      const deposits: Deposit[] = [];
+      let isFull = true;
+      // Get all deposits for the block
+      for (let b = i * 8; b < (i + 1) * 8; b++) {
+          if (b < this.pendingDeposits.length) {
+            deposits.push(this.pendingDeposits[b]);
+          } else {
+            const dummyDeposit: Deposit = {
+              depositBlockIdx: deposits[0].depositBlockIdx,
+              accountID: 0,
+              secretKey: (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
+              publicKeyX: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
+              publicKeyY: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
+              walletID: 0,
+              tokenID: 0,
+              balance: 0,
+            };
+            deposits.push(dummyDeposit);
+            isFull = false;
+          }
+      }
+      assert(deposits.length === 8);
 
-    // Commit the block
-    await this.commitBlock(1, bs.getData(), blockFilename);
+      let timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
+      if (!isFull) {
+        timeToWait += (await this.exchange.MAX_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
+      }
+      await this.advanceBlockTimestamp(timeToWait);
+
+      const jDepositsInfo = JSON.stringify(deposits, null, 4);
+      const blockFilename = await this.createBlock(1, jDepositsInfo);
+      const jDeposits = fs.readFileSync(blockFilename, "ascii");
+      const jdeposits = JSON.parse(jDeposits);
+      const bs = new pjs.Bitstream();
+      bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootBefore, 10), 32);
+      bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootAfter, 10), 32);
+      bs.addNumber(0, 32);
+      // const depositHash = await this.exchange.getDepositHash(web3.utils.toBN(0));
+      // bs.addNumber(depositHash.toString(16));
+
+      // Commit the block
+      await this.commitBlock(1, bs.getData(), blockFilename);
+    }
 
     this.pendingDeposits = [];
   }
@@ -515,6 +559,8 @@ export class ExchangeTestUtil {
     // Withdraw some tokens that were bought
     this.withdraw(ringsInfo.rings[0].orderA.accountB, 1);
     await this.submitWithdrawals();
+
+    assert(false);
   }
 
   public async registerTokens() {
@@ -522,7 +568,7 @@ export class ExchangeTestUtil {
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
 
-    for (const token of this.testContext.allTokens) {
+    for (const token of [this.zeroAddress, ...this.testContext.allTokens]) {
       await LRC.addBalance(this.testContext.orderOwners[0], tokenRegistrationFee);
       await LRC.approve(
         this.exchange.address,
@@ -530,14 +576,17 @@ export class ExchangeTestUtil {
         {from: this.testContext.orderOwners[0]},
       );
 
-      const tx = await this.exchange.registerToken(token.address, {from: this.testContext.orderOwners[0]});
+      const tokenAddress = (token === this.zeroAddress) ? this.zeroAddress : token.address;
+      console.log(tokenAddress);
+
+      const tx = await this.exchange.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
       pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
 
       const tokensRoot = await this.exchange.getBurnRateRoot();
       console.log(tokensRoot);
       childProcess.spawnSync("python3", ["operator/add_token.py"], {stdio: "inherit"});
 
-      this.tokenIDMap.set(token.address, (await this.getTokenID(token.address)).toNumber());
+      this.tokenIDMap.set(tokenAddress, (await this.getTokenID(tokenAddress)).toNumber());
     }
     // console.log(this.tokenIDMap);
   }

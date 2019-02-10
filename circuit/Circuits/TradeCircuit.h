@@ -27,6 +27,7 @@ public:
     const VariableT accountsMerkleRoot;
 
     VariableT constant0;
+    VariableT constant1;
 
     const jubjub::VariablePointT publicKey;
     libsnark::dual_variable_gadget<FieldT> nonce;
@@ -130,6 +131,7 @@ public:
         GadgetT(pb, prefix),
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
+        constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
         nonce(pb, 32, FMT(prefix, ".nonce")),
@@ -220,7 +222,7 @@ public:
 
         updateAccountS_M(pb, updateAccountF_BB.result(), orderA.minerS.bits, orderA.minerPublicKeyS, constant0, orderA.tokenS, balanceS_M_before, balanceS_MA.Y, FMT(prefix, ".updateAccountS_M")),
 
-        updateAccount_M(pb, updateAccountS_M.result(), miner.bits, publicKey, constant0, constant0, balance_M_before, balance_M.X, FMT(prefix, ".updateAccount_M")),
+        updateAccount_M(pb, updateAccountS_M.result(), miner.bits, publicKey, constant0, constant1, balance_M_before, balance_M.X, FMT(prefix, ".updateAccount_M")),
 
         filledLeqA(pb, filledAfterA, orderA.amountS.packed, FMT(prefix, ".filled_A <= .amountSA")),
         filledLeqB(pb, filledAfterB, orderB.amountS.packed, FMT(prefix, ".filled_B <= .amountSB")),
@@ -232,7 +234,7 @@ public:
                              nonce.bits})),
         minerSignatureVerifier(pb, params, publicKey, ringMessage, FMT(prefix, ".minerSignatureVerifier")),
         walletASignatureVerifier(pb, params, orderA.walletPublicKey, ringMessage, FMT(prefix, ".walletASignatureVerifier")),
-        walletBSignatureVerifier(pb, params, orderB.walletPublicKey, ringMessage, FMT(prefix, ".walletASignatureVerifier"))
+        walletBSignatureVerifier(pb, params, orderB.walletPublicKey, ringMessage, FMT(prefix, ".walletBSignatureVerifier"))
     {
 
     }
@@ -488,6 +490,7 @@ public:
     sha256_many* publicDataHasher;
 
     VariableT constant0;
+    VariableT constant1;
 
     const jubjub::VariablePointT publicKey;
     libsnark::dual_variable_gadget<FieldT> operatorID;
@@ -505,6 +508,7 @@ public:
         accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter")),
         burnRateMerkleRoot(pb, 256, FMT(prefix, ".burnRateMerkleRoot")),
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
+        constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
         publicKey(pb, FMT(prefix, ".publicKey")),
         operatorID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operator")),
         balance_O_before(make_variable(pb, FMT(prefix, ".balance_O_before"))),
@@ -558,7 +562,7 @@ public:
             publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
         }
 
-        updateAccount_O = new UpdateAccountGadget(pb, ringSettlements.back().getNewAccountsMerkleRoot(), operatorID.bits, publicKey, constant0, constant0, balance_O_before, ringSettlements.back().getOperatorBalance(), ".updateAccount_O");
+        updateAccount_O = new UpdateAccountGadget(pb, ringSettlements.back().getNewAccountsMerkleRoot(), operatorID.bits, publicKey, constant0, constant1, balance_O_before, ringSettlements.back().getOperatorBalance(), ".updateAccount_O");
         updateAccount_O->generate_r1cs_constraints();
 
         publicDataHash.generate_r1cs_constraints(true);
