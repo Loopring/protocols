@@ -33,7 +33,7 @@ export class ExchangeTestUtil {
     await this.cleanTradeHistory();
     await this.registerTokens();
 
-    this.deposit(
+    await this.deposit(
       this.zeroAddress,
       (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
       (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
@@ -488,7 +488,7 @@ export class ExchangeTestUtil {
 
     // We need to verify all blocks before and including the withdraw block before
     // we can withdraw the tokens from the block
-    /*await this.verifyAllPendingBlocks();
+    await this.verifyAllPendingBlocks();
 
     for (let i = 0; i < this.pendingWithdrawals.length; i++) {
       const withdrawal = this.pendingWithdrawals[i];
@@ -505,7 +505,7 @@ export class ExchangeTestUtil {
       const token = items[0][1];
       const amount = items[0][2].toNumber();
       console.log("Withdrawn: " + owner + ": " + amount + " " + token);
-    }*/
+    }
 
     this.pendingWithdrawals = [];
   }
@@ -559,8 +559,6 @@ export class ExchangeTestUtil {
     // Withdraw some tokens that were bought
     this.withdraw(ringsInfo.rings[0].orderA.accountB, 1);
     await this.submitWithdrawals();
-
-    assert(false);
   }
 
   public async registerTokens() {

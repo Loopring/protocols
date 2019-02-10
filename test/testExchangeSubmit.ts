@@ -4,7 +4,6 @@ import { ExchangeTestUtil } from "./testExchangeUtil";
 import { OrderInfo, RingInfo, RingsInfo } from "./types";
 
 const {
-  DummyExchange,
   TESTToken,
 } = new Artifacts(artifacts);
 
