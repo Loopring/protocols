@@ -384,15 +384,27 @@ export class ExchangeTestUtil {
       {stdio: "inherit"},
     );
 
+    const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+    let verificationKeyFilename = "keys/";
+    if (block.blockType === 0) {
+      verificationKeyFilename += "trade";
+    } else if (block.blockType === 1) {
+      verificationKeyFilename += "deposit";
+    } else if (block.blockType === 2) {
+      verificationKeyFilename += "withdraw";
+    } else if (block.blockType === 3) {
+      verificationKeyFilename += "cancel";
+    }
+
+    verificationKeyFilename += "_" + block.numElements + "_vk.json";
+
     // Read the verification key and set it in the smart contract
-    const jVK = fs.readFileSync("vk.json", "ascii");
-    const vk = JSON.parse(jVK);
+    const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
     const vkFlattened = this.flattenVK(vk);
     await this.exchange.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
 
     // Read the proof
-    const jProof = fs.readFileSync(proofFilename, "ascii");
-    const proof = JSON.parse(jProof);
+    const proof = JSON.parse(fs.readFileSync(proofFilename, "ascii"));
     const proofFlattened = this.flattenProof(proof);
     // console.log(proof);
     // console.log(this.flattenProof(proof));

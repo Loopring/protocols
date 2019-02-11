@@ -1,6 +1,7 @@
 node_modules/
 build/
 transpiled/
+keys/
 blocks/
 .DS_Store
 .node-*

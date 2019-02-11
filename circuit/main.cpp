@@ -9,6 +9,10 @@
 #include "stubs.hpp"
 #include <fstream>
 
+#ifdef MULTICORE
+#include <omp.h>
+#endif
+
 using json = nlohmann::json;
 
 enum class Mode
@@ -34,43 +38,36 @@ timespec diff(timespec start, timespec end)
     return temp;
 }
 
-bool generateKeyPair(ethsnarks::ProtoboardT& pb, libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT>& outKeyPair)
+bool fileExists(const char *fileName)
 {
-    std::cout << "Generating keys..." << std::endl;
-    auto constraints = pb.get_constraint_system();
-    auto temp = libsnark::r1cs_gg_ppzksnark_zok_generator<ethsnarks::ppT>(constraints);
-    outKeyPair.pk = temp.pk;
-    outKeyPair.vk = temp.vk;
-
-    std::string jVK = vk2json(outKeyPair.vk);
-    const char* vkFilename = "vk.json";
-    std::ofstream fVK(vkFilename);
-    if (!fVK.is_open())
-    {
-        std::cerr << "Cannot create proof file: " << vkFilename << std::endl;
-        return false;
-    }
-    fVK << jVK;
-    fVK.close();
-
-    return true;
-    //int result = stub_genkeys_from_pb(pb, "pk.raw", "vk.json");
-    //return (result == 0);
+    std::ifstream infile(fileName);
+    return infile.good();
 }
 
-bool generateProof(const ethsnarks::ProtoboardT& pb, const ethsnarks::ProvingKeyT& provingKey,
-                   /*const char *provingKeyFilename, */const char* proofFilename)
+bool generateKeyPair(ethsnarks::ProtoboardT& pb, std::string& baseFilename)
 {
-    //std::cout << "Reading proving key " << provingKeyFilename << std::endl;
-    //auto provingKey = ethsnarks::loadFromFile<ethsnarks::ProvingKeyT>(provingKeyFilename);
+    std::string provingKeyFilename = baseFilename + "_pk.raw";
+    std::string verificationKeyFilename = baseFilename + "_vk.json";
+    if (fileExists(provingKeyFilename.c_str()) && fileExists(verificationKeyFilename.c_str()))
+    {
+        return true;
+    }
+    std::cout << "Generating keys..." << std::endl;
+    int result = stub_genkeys_from_pb(pb, provingKeyFilename.c_str(), verificationKeyFilename.c_str());
+    return (result == 0);
+}
 
+bool generateProof(ethsnarks::ProtoboardT& pb, const char *provingKeyFilename, const char* proofFilename)
+{
     std::cout << "Generating proof..." << std::endl;
     timespec time1, time2;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+    clock_gettime(CLOCK_MONOTONIC, &time1);
 
-    auto primaryInput = pb.primary_input();
-    auto auxiliaryInput = pb.auxiliary_input();
-    auto proof = libsnark::r1cs_gg_ppzksnark_zok_prover<ethsnarks::ppT>(provingKey, primaryInput, auxiliaryInput);
+    std::string jProof = stub_prove_from_pb(pb, provingKeyFilename);
+
+    clock_gettime(CLOCK_MONOTONIC, &time2);
+    timespec duration = diff(time1,time2);
+    std::cout << "Generated proof in " << duration.tv_sec << " seconds (" << pb.num_constraints() / duration.tv_sec << " constraints/second)" << std::endl;
 
     std::ofstream fproof(proofFilename);
     if (!fproof.is_open())
@@ -78,13 +75,8 @@ bool generateProof(const ethsnarks::ProtoboardT& pb, const ethsnarks::ProvingKey
         std::cerr << "Cannot create proof file: " << proofFilename << std::endl;
         return 1;
     }
-    std::string jProof = proof_to_json(proof, primaryInput);
     fproof << jProof;
     fproof.close();
-
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    timespec duration = diff(time1,time2);
-    std::cout << "Generated proof in " << duration.tv_sec << " seconds (" << pb.num_constraints() / duration.tv_sec << " constraints/second)" << std::endl;
 
     return true;
 }
@@ -239,6 +231,11 @@ int main (int argc, char **argv)
         return 1;
     }
 
+#ifdef MULTICORE
+    const int max_threads = omp_get_max_threads();
+    std::cout << "Num threads: " << max_threads << std::endl;
+#endif
+
     const char* proofFilename = NULL;
     Mode mode = Mode::Verify;
     if (strcmp(argv[1], "-verify") == 0)
@@ -288,11 +285,13 @@ int main (int argc, char **argv)
     unsigned int numElements = input["numElements"].get<int>();
 
     std::cout << "Building circuit... " << std::endl;
+    std::string baseFilename = "keys/";
     ethsnarks::ProtoboardT pb;
     switch(blockType)
     {
         case 0:
         {
+            baseFilename += "trade_" + std::to_string(numElements);
             if (!trade(mode, numElements, input, pb))
             {
                 return 1;
@@ -301,6 +300,7 @@ int main (int argc, char **argv)
         }
         case 1:
         {
+            baseFilename += "deposit_" + std::to_string(numElements);
             if (!deposit(mode, numElements, input, pb))
             {
                 return 1;
@@ -309,6 +309,7 @@ int main (int argc, char **argv)
         }
         case 2:
         {
+            baseFilename += "withdraw_" + std::to_string(numElements);
             if (!withdraw(mode, numElements, input, pb))
             {
                 return 1;
@@ -317,6 +318,7 @@ int main (int argc, char **argv)
         }
         case 3:
         {
+            baseFilename += "cancel_" + std::to_string(numElements);
             if (!cancel(mode, numElements, input, pb))
             {
                 return 1;
@@ -341,10 +343,9 @@ int main (int argc, char **argv)
         std::cout << "Block is valid." << std::endl;
     }
 
-    libsnark::r1cs_gg_ppzksnark_zok_keypair<ethsnarks::ppT> keypair;
     if (mode == Mode::CreateKeys || mode == Mode::Prove)
     {
-        if (!generateKeyPair(pb, keypair))
+        if (!generateKeyPair(pb, baseFilename))
         {
             std::cerr << "Failed to generate keys!" << std::endl;
             return 1;
@@ -353,7 +354,7 @@ int main (int argc, char **argv)
 
     if (mode == Mode::Prove)
     {
-        if (!generateProof(pb, keypair.pk, proofFilename))
+        if (!generateProof(pb, (baseFilename + "_pk.raw").c_str(), proofFilename))
         {
             return 1;
         }
