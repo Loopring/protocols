@@ -510,9 +510,12 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         // require(msg.sender == owner, UNAUTHORIZED);
 
-        // Pay the fee
-        require(msg.value == DEPOSIT_FEE_IN_ETH, "INSUFFICIENT ETH");
-        // address(this).transfer(DEPOSIT_FEE_IN_ETH);
+        // Check expected ETH value sent
+        if (token != address(0x0)) {
+            require(msg.value == DEPOSIT_FEE_IN_ETH, "WRONG_ETH_VALUE");
+        } else {
+            require(msg.value == (DEPOSIT_FEE_IN_ETH + amount), "WRONG_ETH_VALUE");
+        }
 
         uint16 tokenID = getTokenID(token);
 
@@ -527,21 +530,16 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
         require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, "DEPOSIT_BLOCK_FULL");
 
-        if (amount > 0) {
-            if (token == address(0x0)) {
-                // ETH
-                // address(this).transfer(amount);
-            } else {
-                // Transfer the tokens from the owner into this contract
-                require(
-                    token.safeTransferFrom(
-                        owner,
-                        address(this),
-                        amount
-                    ),
-                    "UNSUFFICIENT_FUNDS"
-                );
-            }
+        if (amount > 0 && token != address(0x0)) {
+            // Transfer the tokens from the owner into this contract
+            require(
+                token.safeTransferFrom(
+                    owner,
+                    address(this),
+                    amount
+                ),
+                "UNSUFFICIENT_FUNDS"
+            );
         }
 
         if (accountID == 0xFFFFFF) {

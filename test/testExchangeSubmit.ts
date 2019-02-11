@@ -48,6 +48,11 @@ contract("Exchange_Submit", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupRings(ringsInfo);
       await exchangeTestUtil.submitRings(ringsInfo);
+
+      // Withdraw the tokens that were bought
+      exchangeTestUtil.withdraw(ringsInfo.rings[0].orderA.accountB, ringsInfo.rings[0].orderA.amountB);
+      exchangeTestUtil.withdraw(ringsInfo.rings[0].orderB.accountB, ringsInfo.rings[0].orderB.amountB);
+      await exchangeTestUtil.submitWithdrawals(ringsInfo);
     });
 
     it("Matchable", async () => {
@@ -199,5 +204,40 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.setupRings(ringsInfo);
       await exchangeTestUtil.submitRings(ringsInfo);
     });
+
+    it.only("ETH", async () => {
+      const ringsInfo: RingsInfo = {
+        rings : [
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "ETH",
+                tokenB: "GTO",
+                amountS: 110,
+                amountB: 200,
+                amountF: 1000,
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "GTO",
+                tokenB: "ETH",
+                amountS: 200,
+                amountB: 100,
+                amountF: 900,
+              },
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      await exchangeTestUtil.submitRings(ringsInfo);
+
+      // Withdraw the tokens that were bought
+      exchangeTestUtil.withdraw(ringsInfo.rings[0].orderA.accountB, ringsInfo.rings[0].orderA.amountB);
+      exchangeTestUtil.withdraw(ringsInfo.rings[0].orderB.accountB, ringsInfo.rings[0].orderB.amountB);
+      await exchangeTestUtil.submitWithdrawals(ringsInfo);
+    });
+
   });
 });

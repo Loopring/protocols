@@ -164,27 +164,15 @@ export class ExchangeTestUtil {
   public async setOrderBalances(order: OrderInfo) {
     const keyPair = this.getKeyPairEDDSA();
 
-    const tokenS = this.testContext.tokenAddrInstanceMap.get(order.tokenS);
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
-    await tokenS.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceS)));
     order.accountS = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                         order.walletID, order.tokenS, balanceS);
 
     const balanceF = (order.balanceF !== undefined) ? order.balanceF : order.amountF;
-    if (order.tokenF === order.tokenS) {
-      tokenS.addBalance(order.owner, web3.utils.toBN(new BigNumber(balanceF)));
-    } else {
-      const tokenF = this.testContext.tokenAddrInstanceMap.get(order.tokenF);
-      await tokenF.setBalance(order.owner, web3.utils.toBN(new BigNumber(balanceF)));
-      order.accountF = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                          order.walletID, order.tokenF, balanceF);
-    }
+    order.accountF = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                        order.walletID, order.tokenF, balanceF);
 
     const balanceB = (order.balanceB !== undefined) ? order.balanceB : 0;
-    if (order.balanceB) {
-      const tokenB = this.testContext.tokenAddrInstanceMap.get(order.tokenB);
-      await tokenB.setBalance(order.owner, web3.utils.toBN(new BigNumber(order.balanceB)));
-    }
     order.accountB = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                         order.walletID, order.tokenB, balanceB);
 
@@ -269,18 +257,31 @@ export class ExchangeTestUtil {
     }
 
     const txOrigin = (owner === this.zeroAddress) ? this.testContext.orderOwners[0] : owner;
+    const depositFee = await this.exchange.DEPOSIT_FEE_IN_ETH();
+
+    let ethToSend = depositFee;
+    console.log(ethToSend);
 
     if (amount > 0) {
-      const Token = this.testContext.tokenAddrInstanceMap.get(token);
-      await Token.approve(
-        this.exchange.address,
-        web3.utils.toBN(new BigNumber(amount)),
-        {from: txOrigin},
-      );
+      if (token !== this.zeroAddress) {
+        const Token = this.testContext.tokenAddrInstanceMap.get(token);
+        await Token.setBalance(
+          owner,
+          web3.utils.toBN(new BigNumber(amount)),
+        );
+        await Token.approve(
+          this.exchange.address,
+          web3.utils.toBN(new BigNumber(amount)),
+          {from: txOrigin},
+        );
+      } else {
+        ethToSend = ethToSend.add(web3.utils.toBN(amount));
+      }
     }
 
+    console.log("ethToSend: " + ethToSend.toString());
+
     // Submit the deposits
-    const depositFee = await this.exchange.DEPOSIT_FEE_IN_ETH();
     const tx = await this.exchange.deposit(
       new BN(0xFFFFFF),
       owner,
@@ -289,7 +290,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(walletID),
       token,
       web3.utils.toBN(amount),
-      {from: txOrigin, value: depositFee},
+      {from: txOrigin, value: ethToSend},
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
 
@@ -477,7 +478,7 @@ export class ExchangeTestUtil {
     this.pendingDeposits = [];
   }
 
-  public async submitWithdrawals() {
+  public async submitWithdrawals(ringsInfo: RingsInfo) {
     if (this.pendingWithdrawals.length === 0) {
       return;
     }
@@ -502,6 +503,7 @@ export class ExchangeTestUtil {
     // we can withdraw the tokens from the block
     await this.verifyAllPendingBlocks();
 
+    const addressBook = this.getAddressBook(ringsInfo);
     for (let i = 0; i < this.pendingWithdrawals.length; i++) {
       const withdrawal = this.pendingWithdrawals[i];
       const txw = await this.exchange.withdraw(
@@ -513,10 +515,11 @@ export class ExchangeTestUtil {
       const items = eventArr.map((eventObj: any) => {
         return [eventObj.args.owner, eventObj.args.tokenAddress, eventObj.args.amount];
       });
-      const owner = items[0][0];
-      const token = items[0][1];
-      const amount = items[0][2].toNumber();
-      console.log("Withdrawn: " + owner + ": " + amount + " " + token);
+      const owner = addressBook[items[0][0]];
+      const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(items[0][1]);
+      const decimals = this.testContext.tokenAddrDecimalsMap.get(items[0][1]);
+      const amount = (items[0][2].toNumber() / (10 ** decimals));
+      console.log("Withdrawn: " + owner + ": " + amount + " " + tokenSymbol);
     }
 
     this.pendingWithdrawals = [];
@@ -567,10 +570,6 @@ export class ExchangeTestUtil {
 
     // Commit the block
     await this.commitBlock(0, bs.getData(), blockFilename);
-
-    // Withdraw some tokens that were bought
-    this.withdraw(ringsInfo.rings[0].orderA.accountB, 1);
-    await this.submitWithdrawals();
   }
 
   public async registerTokens() {
@@ -578,7 +577,7 @@ export class ExchangeTestUtil {
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
 
-    for (const token of [this.zeroAddress, ...this.testContext.allTokens]) {
+    for (const token of this.testContext.allTokens) {
       await LRC.addBalance(this.testContext.orderOwners[0], tokenRegistrationFee);
       await LRC.approve(
         this.exchange.address,
@@ -586,7 +585,7 @@ export class ExchangeTestUtil {
         {from: this.testContext.orderOwners[0]},
       );
 
-      const tokenAddress = (token === this.zeroAddress) ? this.zeroAddress : token.address;
+      const tokenAddress = (token === null) ? this.zeroAddress : token.address;
       console.log(tokenAddress);
 
       const tx = await this.exchange.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
@@ -673,7 +672,8 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [lrc, gto, rdn, rep, weth, inda, indb, test] = await Promise.all([
+    const [eth, lrc, gto, rdn, rep, weth, inda, indb, test] = await Promise.all([
+      null,
       this.contracts.LRCToken.deployed(),
       this.contracts.GTOToken.deployed(),
       this.contracts.RDNToken.deployed(),
@@ -684,8 +684,9 @@ export class ExchangeTestUtil {
       this.contracts.TESTToken.deployed(),
     ]);
 
-    const allTokens = [lrc, gto, rdn, rep, weth, inda, indb, test];
+    const allTokens = [eth, lrc, gto, rdn, rep, weth, inda, indb, test];
 
+    tokenSymbolAddrMap.set("ETH", this.zeroAddress);
     tokenSymbolAddrMap.set("LRC", this.contracts.LRCToken.address);
     tokenSymbolAddrMap.set("GTO", this.contracts.GTOToken.address);
     tokenSymbolAddrMap.set("RDN", this.contracts.RDNToken.address);
@@ -696,9 +697,14 @@ export class ExchangeTestUtil {
     tokenSymbolAddrMap.set("TEST", this.contracts.TESTToken.address);
 
     for (const token of allTokens) {
-      tokenAddrDecimalsMap.set(token.address, (await token.decimals()));
+      if (token === null) {
+        tokenAddrDecimalsMap.set(this.zeroAddress, 18);
+      } else {
+        tokenAddrDecimalsMap.set(token.address, (await token.decimals()));
+      }
     }
 
+    tokenAddrSymbolMap.set(this.zeroAddress, "ETH");
     tokenAddrSymbolMap.set(this.contracts.LRCToken.address, "LRC");
     tokenAddrSymbolMap.set(this.contracts.GTOToken.address, "GTO");
     tokenAddrSymbolMap.set(this.contracts.RDNToken.address, "RDN");
@@ -708,6 +714,7 @@ export class ExchangeTestUtil {
     tokenAddrSymbolMap.set(this.contracts.INDBToken.address, "INDB");
     tokenAddrSymbolMap.set(this.contracts.TESTToken.address, "TEST");
 
+    tokenAddrInstanceMap.set(this.zeroAddress, null);
     tokenAddrInstanceMap.set(this.contracts.LRCToken.address, lrc);
     tokenAddrInstanceMap.set(this.contracts.GTOToken.address, gto);
     tokenAddrInstanceMap.set(this.contracts.RDNToken.address, rdn);
