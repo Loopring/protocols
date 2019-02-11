@@ -34,7 +34,7 @@ class Account(object):
         self.publicKeyY = str(publicKey.y)
         self.walletID = walletID
         self.token = token
-        self.balance = balance
+        self.balance = str(balance)
         self.nonce = 0
 
     def hash(self):
@@ -47,7 +47,7 @@ class Account(object):
         self.publicKeyY = jAccount["publicKeyY"]
         self.walletID = int(jAccount["walletID"])
         self.token = int(jAccount["token"])
-        self.balance = int(jAccount["balance"])
+        self.balance = jAccount["balance"]
 
 
 class TradeHistoryLeaf(object):
@@ -110,9 +110,9 @@ class Order(object):
         self.accountS = accountS
         self.accountB = accountB
         self.accountF = accountF
-        self.amountS = amountS
-        self.amountB = amountB
-        self.amountF = amountF
+        self.amountS = str(amountS)
+        self.amountB = str(amountB)
+        self.amountF = str(amountF)
 
         self.allOrNone = bool(allOrNone)
         self.validSince = validSince
@@ -132,7 +132,7 @@ class Order(object):
         msg_parts = [
                         FQ(int(self.walletID), 1<<16), FQ(int(self.orderID), 1<<4),
                         FQ(int(self.accountS), 1<<24), FQ(int(self.accountB), 1<<24), FQ(int(self.accountF), 1<<24),
-                        FQ(self.amountS, 1<<96), FQ(self.amountB, 1<<96), FQ(self.amountF, 1<<96)
+                        FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -149,7 +149,7 @@ class Order(object):
         self.valid = valid
 
     def checkFills(self, fillAmountS, fillAmountB):
-        if self.allOrNone and fillAmountS != self.amountS:
+        if self.allOrNone and fillAmountS != int(self.amountS):
             valid = False
         else:
             valid = True
@@ -247,7 +247,7 @@ class Withdrawal(object):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.account = account
-        self.amount = amount
+        self.amount = str(amount)
         self.accountUpdate = accountUpdate
 
     def message(self):
@@ -347,7 +347,7 @@ class State(object):
 
         leafBefore = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
         #print("leafBefore: " + str(leafBefore))
-        self._tradeHistoryLeafs[str(address)].filled = str(int(self._tradeHistoryLeafs[str(address)].filled) + fill)
+        self._tradeHistoryLeafs[str(address)].filled = str(int(self._tradeHistoryLeafs[str(address)].filled) + int(fill))
         self._tradeHistoryLeafs[str(address)].cancelled = cancelled
         leafAfter = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
         #print("leafAfter: " + str(leafAfter))
@@ -365,7 +365,7 @@ class State(object):
 
         accountBefore = copy.deepcopy(self._accounts[str(address)])
         #print("accountBefore: " + str(accountBefore.balance))
-        self._accounts[str(address)].balance += amount
+        self._accounts[str(address)].balance = str(int(self._accounts[str(address)].balance) + amount)
         accountAfter = copy.deepcopy(self._accounts[str(address)])
         #print("accountAfter: " + str(accountAfter.balance))
         proof = self._accountsTree.createProof(address)
@@ -405,16 +405,16 @@ class State(object):
 
     def getMaxFillAmounts(self, order):
         tradeHistory = self.getTradeHistory(self.getTradeHistoryAddress(order))
-        order.filledBefore = int(tradeHistory.filled)
+        order.filledBefore = str(tradeHistory.filled)
         order.cancelled = int(tradeHistory.cancelled)
-        order.balanceS = int(self.getAccount(order.accountS).balance)
-        order.balanceB = int(self.getAccount(order.accountB).balance)
-        order.balanceF = int(self.getAccount(order.accountF).balance)
+        order.balanceS = str(self.getAccount(order.accountS).balance)
+        order.balanceB = str(self.getAccount(order.accountB).balance)
+        order.balanceF = str(self.getAccount(order.accountF).balance)
 
         balanceS = int(self.getAccount(order.accountS).balance)
-        remainingS = order.amountS - order.filledBefore
+        remainingS = int(order.amountS) - int(order.filledBefore)
         fillAmountS = balanceS if (balanceS < remainingS) else remainingS
-        fillAmountB = (fillAmountS * order.amountB) // order.amountS
+        fillAmountB = (fillAmountS * int(order.amountB)) // int(order.amountS)
         return (fillAmountS, fillAmountB)
 
     def settleRing(self, context, ring):
@@ -429,10 +429,10 @@ class State(object):
 
         if fillAmountB_A < fillAmountS_B:
             fillAmountB_B = fillAmountS_A
-            fillAmountS_B = (fillAmountB_B * ring.orderB.amountS) // ring.orderB.amountB
+            fillAmountS_B = (fillAmountB_B * int(ring.orderB.amountS)) // int(ring.orderB.amountB)
         else:
             fillAmountB_A = fillAmountS_B
-            fillAmountS_A = (fillAmountB_A * ring.orderA.amountS) // ring.orderA.amountB
+            fillAmountS_A = (fillAmountB_A * int(ring.orderA.amountS)) // int(ring.orderA.amountB)
 
         margin = fillAmountS_A - fillAmountB_B
 
@@ -460,18 +460,18 @@ class State(object):
             fillAmountB_B = 0
             margin = 0
 
-        fillAmountF_A = (ring.orderA.amountF * fillAmountS_A) // ring.orderA.amountS
-        fillAmountF_B = (ring.orderB.amountF * fillAmountS_B) // ring.orderB.amountS
+        fillAmountF_A = (int(ring.orderA.amountF) * fillAmountS_A) // int(ring.orderA.amountS)
+        fillAmountF_B = (int(ring.orderB.amountF) * fillAmountS_B) // int(ring.orderB.amountS)
 
-        ring.fillS_A = fillAmountS_A
-        ring.fillB_A = fillAmountB_A
-        ring.fillF_A = fillAmountF_A
+        ring.fillS_A = str(fillAmountS_A)
+        ring.fillB_A = str(fillAmountB_A)
+        ring.fillF_A = str(fillAmountF_A)
 
-        ring.fillS_B = fillAmountS_B
-        ring.fillB_B = fillAmountB_B
-        ring.fillF_B = fillAmountF_B
+        ring.fillS_B = str(fillAmountS_B)
+        ring.fillB_B = str(fillAmountB_B)
+        ring.fillF_B = str(fillAmountF_B)
 
-        ring.margin = margin
+        ring.margin = str(margin)
 
         print("fillAmountS_A: " + str(fillAmountS_A))
         print("fillAmountB_A: " + str(fillAmountB_A))
@@ -488,22 +488,22 @@ class State(object):
         accountsMerkleRoot = self._accountsTree._root
 
         # Update filled amounts
-        tradeHistoryUpdate_A = self.updateTradeHistory(self.getTradeHistoryAddress(ring.orderA), ring.fillS_A)
-        tradeHistoryUpdate_B = self.updateTradeHistory(self.getTradeHistoryAddress(ring.orderB), ring.fillS_B)
+        tradeHistoryUpdate_A = self.updateTradeHistory(self.getTradeHistoryAddress(ring.orderA), int(ring.fillS_A))
+        tradeHistoryUpdate_B = self.updateTradeHistory(self.getTradeHistoryAddress(ring.orderB), int(ring.fillS_B))
 
         # Check burn rates
         burnRateCheckF_A = self.checkBurnRate(ring.orderA.tokenF)
         burnRateCheckF_B = self.checkBurnRate(ring.orderB.tokenF)
 
         (walletFee_A, matchingFee_A, burnFee_A) = self.calculateFees(
-            ring.fillF_A,
+            int(ring.fillF_A),
             burnRateCheckF_A.burnRateData.burnRate,
             ring.orderA.walletSplitPercentage,
             ring.orderA.waiveFeePercentage
         )
 
         (walletFee_B, matchingFee_B, burnFee_B) = self.calculateFees(
-            ring.fillF_B,
+            int(ring.fillF_B),
             burnRateCheckF_B.burnRateData.burnRate,
             ring.orderB.walletSplitPercentage,
             ring.orderB.waiveFeePercentage
@@ -518,26 +518,26 @@ class State(object):
         print("burnFee_B: " + str(burnFee_B))
 
         # Update balances A
-        accountUpdateS_A = self.updateBalance(ring.orderA.accountS, -ring.fillS_A)
-        accountUpdateB_A = self.updateBalance(ring.orderA.accountB, ring.fillB_A)
+        accountUpdateS_A = self.updateBalance(ring.orderA.accountS, -int(ring.fillS_A))
+        accountUpdateB_A = self.updateBalance(ring.orderA.accountB, int(ring.fillB_A))
         accountUpdateF_A = self.updateBalance(ring.orderA.accountF, -(walletFee_A + matchingFee_A + burnFee_A))
         accountUpdateF_WA = self.updateBalance(ring.orderA.walletF, walletFee_A)
         accountUpdateF_MA = self.updateBalance(ring.orderA.minerF, matchingFee_A)
         accountUpdateF_BA = self.updateBalance(ring.orderA.walletF, burnFee_A)
 
         # Update balances B
-        accountUpdateS_B = self.updateBalance(ring.orderB.accountS, -ring.fillS_B)
-        accountUpdateB_B = self.updateBalance(ring.orderB.accountB, ring.fillB_B)
+        accountUpdateS_B = self.updateBalance(ring.orderB.accountS, -int(ring.fillS_B))
+        accountUpdateB_B = self.updateBalance(ring.orderB.accountB, int(ring.fillB_B))
         accountUpdateF_B = self.updateBalance(ring.orderB.accountF, -(walletFee_B + matchingFee_B + burnFee_B))
         accountUpdateF_WB = self.updateBalance(ring.orderB.walletF, walletFee_B)
         accountUpdateF_MB = self.updateBalance(ring.orderB.minerF, matchingFee_B)
         accountUpdateF_BB = self.updateBalance(ring.orderB.walletF, burnFee_B)
 
         # Margin
-        accountUpdateS_M = self.updateBalance(ring.orderA.minerS, ring.margin)
+        accountUpdateS_M = self.updateBalance(ring.orderA.minerS, int(ring.margin))
 
         # Operator payment
-        accountUpdate_M = self.updateBalance(ring.miner, -ring.fee)
+        accountUpdate_M = self.updateBalance(ring.miner, -int(ring.fee))
 
         return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
@@ -603,4 +603,4 @@ class State(object):
         address = self._tokensTree.append(token.hash())
         self._tokens.append(token)
 
-        print("Tokens tree root: " + str(hex(self._tokensTree.root)))
+        # print("Tokens tree root: " + str(hex(self._tokensTree.root)))

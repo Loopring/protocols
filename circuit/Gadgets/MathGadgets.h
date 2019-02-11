@@ -40,11 +40,11 @@ public:
         T(_T),
         F(_F),
 
-        invCondition(make_variable(pb, "invCondition")),
-        resultT(make_variable(pb, "resultT")),
-        resultF(make_variable(pb, "resultF")),
+        invCondition(make_variable(pb, FMT(prefix, ".invCondition"))),
+        resultT(make_variable(pb, FMT(prefix, ".resultT"))),
+        resultF(make_variable(pb, FMT(prefix, ".resultF"))),
 
-        selected(make_variable(pb, "selected"))
+        selected(make_variable(pb, FMT(prefix, ".selected")))
     {
 
     }
@@ -64,11 +64,11 @@ public:
 
     void generate_r1cs_constraints()
     {
-        libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, condition, "bitness");
-        pb.add_r1cs_constraint(ConstraintT(condition + invCondition, FieldT::one(), FieldT::one()), "condition + invCondition == 1");
-        pb.add_r1cs_constraint(ConstraintT(T, condition, resultT), "T * condition == resultT");
-        pb.add_r1cs_constraint(ConstraintT(F, invCondition, resultF), "F * invCondition == resultF");
-        pb.add_r1cs_constraint(ConstraintT(resultT + resultF, FieldT::one(), selected), "resultT + resultF == selected");
+        libsnark::generate_boolean_r1cs_constraint<ethsnarks::FieldT>(pb, condition, FMT(annotation_prefix, ".bitness"));
+        pb.add_r1cs_constraint(ConstraintT(condition + invCondition, FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".condition + invCondition == 1"));
+        pb.add_r1cs_constraint(ConstraintT(T, condition, resultT), FMT(annotation_prefix, ".T * condition == resultT"));
+        pb.add_r1cs_constraint(ConstraintT(F, invCondition, resultF), FMT(annotation_prefix, ".F * invCondition == resultF"));
+        pb.add_r1cs_constraint(ConstraintT(resultT + resultF, FieldT::one(), selected), FMT(annotation_prefix, ".resultT + resultF == selected"));
     }
 };
 
@@ -87,9 +87,9 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        _lt(make_variable(pb, 1, FMT(prefix, "lt"))),
-        _leq(make_variable(pb, 1, FMT(prefix, "leq"))),
-        comparison(pb, 128, A, B, _lt, _leq, FMT(prefix, "A <(=) B"))
+        _lt(make_variable(pb, 1, FMT(prefix, ".lt"))),
+        _leq(make_variable(pb, 1, FMT(prefix, ".leq"))),
+        comparison(pb, 2*96, A, B, _lt, _leq, FMT(prefix, ".A <(=) B"))
     {
 
     }
@@ -128,7 +128,7 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        leqGadget(pb, A, B, FMT(prefix, "leq"))
+        leqGadget(pb, A, B, FMT(prefix, ".leq"))
     {
 
     }
@@ -141,7 +141,7 @@ public:
     void generate_r1cs_constraints()
     {
         leqGadget.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(leqGadget.leq(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, "leq == 1"));
+        pb.add_r1cs_constraint(ConstraintT(leqGadget.leq(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".leq == 1"));
     }
 };
 
@@ -175,15 +175,15 @@ public:
         B(_B),
         C(_C),
 
-        D(make_variable(pb, "D")),
+        D(make_variable(pb, FMT(prefix, ".D"))),
 
-        X(make_variable(pb, "X")),
-        Y(make_variable(pb, "Y")),
-        rest(make_variable(pb, "rest")),
+        X(make_variable(pb, FMT(prefix, ".X"))),
+        Y(make_variable(pb, FMT(prefix, ".Y"))),
+        rest(make_variable(pb, FMT(prefix, ".rest"))),
 
-        lt(make_variable(pb, "lt")),
-        leq(make_variable(pb, "leq")),
-        comparison(pb, 2*96, rest, C, lt, leq, "rest < C")
+        lt(make_variable(pb, FMT(prefix, ".lt"))),
+        leq(make_variable(pb, FMT(prefix, ".leq"))),
+        comparison(pb, 2*96, rest, C, lt, leq, FMT(prefix, ".rest < C"))
     {
 
     }
@@ -195,7 +195,7 @@ public:
 
     void generate_r1cs_witness()
     {
-        pb.val(D) = (pb.val(A) * pb.val(B)).as_ulong() / pb.val(C).as_ulong();
+        pb.val(D) = (pb.val(A) * pb.val(B)) * pb.val(C).inverse();
         pb.val(X) = pb.val(A) * pb.val(B);
         pb.val(Y) = pb.val(C) * pb.val(D);
         pb.val(rest) = pb.val(X) - pb.val(Y);
@@ -205,12 +205,12 @@ public:
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(A, B, X), "A * B == X");
-        pb.add_r1cs_constraint(ConstraintT(C, D, Y), "C * D == Y");
-        pb.add_r1cs_constraint(ConstraintT(Y + rest, FieldT::one(), X), "Y + rest == X");
+        pb.add_r1cs_constraint(ConstraintT(A, B, X), FMT(annotation_prefix, ".A * B == X"));
+        pb.add_r1cs_constraint(ConstraintT(C, D, Y), FMT(annotation_prefix, ".C * D == Y"));
+        pb.add_r1cs_constraint(ConstraintT(Y + rest, FieldT::one(), X), FMT(annotation_prefix, ".Y + rest == X"));
 
         comparison.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(lt, FieldT::one(), FieldT::one()), "lt == 1");
+        pb.add_r1cs_constraint(ConstraintT(lt, FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".(rest < C) == 1"));
     }
 };
 

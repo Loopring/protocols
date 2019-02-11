@@ -9,7 +9,7 @@ build/circuit/dex_circuit: cmake-release
 	mkdir -p keys
 
 cmake-debug:
-	mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
+	mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..
 
 cmake-release:
 	mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..

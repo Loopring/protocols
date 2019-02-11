@@ -6,9 +6,9 @@ export interface OrderInfo {
   tokenS: string;
   tokenB: string;
   tokenF?: string;
-  amountS: number;
-  amountB: number;
-  amountF?: number;
+  amountS: BN;
+  amountB: BN;
+  amountF?: BN;
 
   wallet?: string;
 
@@ -36,9 +36,9 @@ export interface OrderInfo {
   waiveFeePercentage?: number;
 
   index?: number;
-  balanceS?: number;
-  balanceB?: number;
-  balanceF?: number;
+  balanceS?: BN;
+  balanceB?: BN;
+  balanceF?: BN;
 
   [key: string]: any;
 }
@@ -68,12 +68,12 @@ export interface Deposit {
   publicKeyY: string;
   walletID: number;
   tokenID: number;
-  balance: number;
+  balance: BN;
 }
 
 export interface Withdrawal {
   account: number;
-  amount: number;
+  amount: BN;
 }
 
 export interface Block {

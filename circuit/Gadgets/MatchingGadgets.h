@@ -190,11 +190,11 @@ public:
         balanceS_lt_remainingS.generate_r1cs_witness();
         fillAmountS.generate_r1cs_witness();
         fillAmountB.generate_r1cs_witness();
-        std::cout << "amountS: " << pb.val(order.amountS.packed).as_ulong() << std::endl;
-        std::cout << "filledBefore: " << pb.val(order.filledBefore).as_ulong() << std::endl;
-        std::cout << "order.balanceS: " << pb.val(order.balanceS).as_ulong() << std::endl;
-        std::cout << "fillAmountS: " << pb.val(fillAmountS.result()).as_ulong() << std::endl;
-        std::cout << "fillAmountB: " << pb.val(fillAmountB.result()).as_ulong() << std::endl;
+        print(pb, "amountS", order.amountS.packed);
+        print(pb, "filledBefore", order.filledBefore);
+        print(pb, "order.balanceS", order.balanceS);
+        print(pb, "fillAmountS", fillAmountS.result());
+        print(pb, "fillAmountB", fillAmountB.result());
     }
 
     void generate_r1cs_constraints()
@@ -361,7 +361,7 @@ public:
         pb.val(fillsValid) = pb.val(checkFillsA.isValid()) * pb.val(checkFillsB.isValid());
         pb.val(valid) = pb.val(fillsValid) * (FieldT::one() - pb.val(fillAmountS_A_lt_fillAmountB_B.lt()));
 
-        std::cout << "margin: " << pb.val(margin).as_ulong() << std::endl;
+        print(pb, "margin", margin);
     }
 
     void generate_r1cs_constraints()

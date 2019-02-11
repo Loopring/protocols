@@ -20,6 +20,17 @@ using namespace ethsnarks;
 namespace Loopring
 {
 
+void print(const char* description, const ethsnarks::FieldT& value)
+{
+    std::cout << description << ": ";
+    value.as_bigint().print();
+}
+
+void print(const ProtoboardT& pb, const char* description, const ethsnarks::VariableT& variable)
+{
+    print(description, pb.val(variable));
+}
+
 void printBits(const char* name, const libff::bit_vector& _bits, bool reverse = false)
 {
     libff::bit_vector bits = _bits;

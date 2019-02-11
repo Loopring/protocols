@@ -56,7 +56,7 @@ void from_json(const json& j, Account& account)
     account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     account.walletID = ethsnarks::FieldT(j.at("walletID"));
     account.token = ethsnarks::FieldT(j.at("token"));
-    account.balance = ethsnarks::FieldT(j.at("balance"));
+    account.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
 }
 
 class BurnRateData
@@ -178,9 +178,9 @@ void from_json(const json& j, Order& order)
     order.accountS = ethsnarks::FieldT(j.at("accountS"));
     order.accountB = ethsnarks::FieldT(j.at("accountB"));
     order.accountF = ethsnarks::FieldT(j.at("accountF"));
-    order.amountS = ethsnarks::FieldT(j.at("amountS"));
-    order.amountB = ethsnarks::FieldT(j.at("amountB"));
-    order.amountF = ethsnarks::FieldT(j.at("amountF"));
+    order.amountS = ethsnarks::FieldT(j.at("amountS").get<std::string>().c_str());
+    order.amountB = ethsnarks::FieldT(j.at("amountB").get<std::string>().c_str());
+    order.amountF = ethsnarks::FieldT(j.at("amountF").get<std::string>().c_str());
     order.tokenS = ethsnarks::FieldT(j.at("tokenS"));
     order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
     order.tokenF = ethsnarks::FieldT(j.at("tokenF"));
@@ -192,11 +192,11 @@ void from_json(const json& j, Order& order)
     order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
     order.allOrNone = ethsnarks::FieldT(j.at("allOrNone").get<bool>() ? 1 : 0);
     order.waiveFeePercentage = ethsnarks::FieldT(j.at("waiveFeePercentage"));
-    order.filledBefore = ethsnarks::FieldT(j.at("filledBefore"));
+    order.filledBefore = ethsnarks::FieldT(j.at("filledBefore").get<std::string>().c_str());
     order.cancelled = ethsnarks::FieldT(j.at("cancelled"));
-    order.balanceS = ethsnarks::FieldT(j.at("balanceS"));
-    order.balanceB = ethsnarks::FieldT(j.at("balanceB"));
-    order.balanceF = ethsnarks::FieldT(j.at("balanceF"));
+    order.balanceS = ethsnarks::FieldT(j.at("balanceS").get<std::string>().c_str());
+    order.balanceB = ethsnarks::FieldT(j.at("balanceB").get<std::string>().c_str());
+    order.balanceF = ethsnarks::FieldT(j.at("balanceF").get<std::string>().c_str());
     order.signature = j.at("signature").get<Signature>();
 
     order.valid = ethsnarks::FieldT(j.at("valid").get<bool>() ? 1 : 0);
@@ -233,13 +233,13 @@ void from_json(const json& j, Ring& ring)
 
     ring.valid = ethsnarks::FieldT(j.at("valid").get<bool>() ? 1 : 0);
 
-    ring.fillS_A = ethsnarks::FieldT(j.at("fillS_A"));
-    ring.fillB_A = ethsnarks::FieldT(j.at("fillB_A"));
-    ring.fillF_A = ethsnarks::FieldT(j.at("fillF_A"));
-    ring.fillS_B = ethsnarks::FieldT(j.at("fillS_B"));
-    ring.fillB_B = ethsnarks::FieldT(j.at("fillB_B"));
-    ring.fillF_B = ethsnarks::FieldT(j.at("fillF_B"));
-    ring.margin = ethsnarks::FieldT(j.at("margin"));
+    ring.fillS_A = ethsnarks::FieldT(j.at("fillS_A").get<std::string>().c_str());
+    ring.fillB_A = ethsnarks::FieldT(j.at("fillB_A").get<std::string>().c_str());
+    ring.fillF_A = ethsnarks::FieldT(j.at("fillF_A").get<std::string>().c_str());
+    ring.fillS_B = ethsnarks::FieldT(j.at("fillS_B").get<std::string>().c_str());
+    ring.fillB_B = ethsnarks::FieldT(j.at("fillB_B").get<std::string>().c_str());
+    ring.fillF_B = ethsnarks::FieldT(j.at("fillF_B").get<std::string>().c_str());
+    ring.margin = ethsnarks::FieldT(j.at("margin").get<std::string>().c_str());
 
     ring.miner = ethsnarks::FieldT(j.at("miner"));
     ring.fee = ethsnarks::FieldT(j.at("fee"));
@@ -387,7 +387,7 @@ void from_json(const json& j, Withdrawal& withdrawal)
     withdrawal.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     withdrawal.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     withdrawal.account = ethsnarks::FieldT(j.at("account"));
-    withdrawal.amount = ethsnarks::FieldT(j.at("amount"));
+    withdrawal.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
     withdrawal.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
     withdrawal.signature = j.at("signature").get<Signature>();
 }

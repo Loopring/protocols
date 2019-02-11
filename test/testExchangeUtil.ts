@@ -11,6 +11,15 @@ import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Block, Deposit, OrderInfo, RingInfo, RingsInfo, Withdrawal } from "./types";
 
+// JSON replacer function for BN values
+function replacer(name: any, val: any) {
+  if (name === "balance" || name === "amountS" || name === "amountB" || name === "amountF" || name === "amount" ) {
+    return new BN(val, 16).toString(10);
+  } else {
+    return val;
+  }
+}
+
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
@@ -40,7 +49,7 @@ export class ExchangeTestUtil {
       (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
       0,
       this.zeroAddress,
-      0,
+      new BN(0),
     );
   }
 
@@ -90,7 +99,7 @@ export class ExchangeTestUtil {
     const keyPairO = this.getKeyPairEDDSA();
     const operator = await this.deposit(this.testContext.miner,
                                         keyPairO.secretKey, keyPairO.publicKeyX, keyPairO.publicKeyY,
-                                        0, lrcAddress, 0);
+                                        0, lrcAddress, new BN(0));
     ringsInfo.operator = operator;
 
     // Make an account for the ringmatcher
@@ -98,7 +107,7 @@ export class ExchangeTestUtil {
     await LRC.addBalance(this.testContext.miner, web3.utils.toBN(new BigNumber(10000)));
     const miner = await this.deposit(this.testContext.miner,
                                      keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                     0, lrcAddress, 10000);
+                                     0, lrcAddress, new BN(10000));
 
     for (const [i, ring] of ringsInfo.rings.entries()) {
       ring.miner = miner;
@@ -143,7 +152,7 @@ export class ExchangeTestUtil {
     order.version = 0;
     order.validUntil = order.validUntil ? order.validUntil : 0;
     order.tokenF = order.tokenF ? order.tokenF : this.context.lrcAddress;
-    order.amountF = order.amountF ? order.amountF : 0;
+    order.amountF = order.amountF ? order.amountF : new BN(0);
 
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
     order.walletSplitPercentage = order.walletSplitPercentage ? order.walletSplitPercentage : 50;
@@ -172,23 +181,23 @@ export class ExchangeTestUtil {
     order.accountF = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                         order.walletID, order.tokenF, balanceF);
 
-    const balanceB = (order.balanceB !== undefined) ? order.balanceB : 0;
+    const balanceB = (order.balanceB !== undefined) ? order.balanceB : new BN(0);
     order.accountB = await this.deposit(order.owner, keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                         order.walletID, order.tokenB, balanceB);
 
     // Make an account for the wallet
     const keyPairW = this.getKeyPairEDDSA();
     order.walletF = await this.deposit(order.wallet, keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY,
-                                       order.walletID, order.tokenF, 0);
+                                       order.walletID, order.tokenF, new BN(0));
 
     // Make accounts for the miner (margin + fee)
     const keyPairM = this.getKeyPairEDDSA();
     order.minerS = await this.deposit(this.testContext.miner,
                                       keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                      0, order.tokenS, 0);
+                                      0, order.tokenS, new BN(0));
     order.minerF = await this.deposit(this.testContext.miner,
                                       keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                      0, order.tokenF, 0);
+                                      0, order.tokenF, new BN(0));
   }
 
   public getAddressBook(ringsInfo: RingsInfo) {
@@ -243,16 +252,16 @@ export class ExchangeTestUtil {
   }
 
   public async deposit(owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
-                       walletID: number, token: string, amount: number) {
+                       walletID: number, token: string, amount: BN) {
     let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
-    console.log("Open slots: " + numAvailableSlots);
+    // console.log("Open slots: " + numAvailableSlots);
     if (numAvailableSlots === 0) {
         const timeToWait = (await this.exchange.MIN_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
-        console.log(timeToWait);
+        // console.log(timeToWait);
         await this.advanceBlockTimestamp(timeToWait);
 
         numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
-        console.log("Open slots after: " + numAvailableSlots);
+        // console.log("Open slots after: " + numAvailableSlots);
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
@@ -260,26 +269,22 @@ export class ExchangeTestUtil {
     const depositFee = await this.exchange.DEPOSIT_FEE_IN_ETH();
 
     let ethToSend = depositFee;
-    console.log(ethToSend);
-
-    if (amount > 0) {
+    if (amount.gt(0)) {
       if (token !== this.zeroAddress) {
         const Token = this.testContext.tokenAddrInstanceMap.get(token);
         await Token.setBalance(
           owner,
-          web3.utils.toBN(new BigNumber(amount)),
+          amount,
         );
         await Token.approve(
           this.exchange.address,
-          web3.utils.toBN(new BigNumber(amount)),
+          amount,
           {from: txOrigin},
         );
       } else {
         ethToSend = ethToSend.add(web3.utils.toBN(amount));
       }
     }
-
-    console.log("ethToSend: " + ethToSend.toString());
 
     // Submit the deposits
     const tx = await this.exchange.deposit(
@@ -305,8 +310,8 @@ export class ExchangeTestUtil {
     });
     const accountID = items[0][0].toNumber();
     const depositBlockIdx = items[0][1].toNumber();
-    console.log(accountID);
-    console.log(depositBlockIdx);
+    // console.log(accountID);
+    // console.log(depositBlockIdx);
 
     this.addDeposit(this.pendingDeposits, depositBlockIdx, accountID,
                     secretKey, publicKeyX, publicKeyY,
@@ -314,17 +319,17 @@ export class ExchangeTestUtil {
     return accountID;
   }
 
-  public async withdraw(account: number, amount: number) {
+  public async withdraw(account: number, amount: BN) {
     this.addWithdrawal(this.pendingWithdrawals, account, amount);
   }
 
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
                     secretKey: string, publicKeyX: string, publicKeyY: string,
-                    walletID: number, tokenID: number, balance: number) {
+                    walletID: number, tokenID: number, balance: BN) {
     deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID, tokenID, balance});
   }
 
-  public addWithdrawal(withdrawals: Withdrawal[], account: number, amount: number) {
+  public addWithdrawal(withdrawals: Withdrawal[], account: number, amount: BN) {
     withdrawals.push({account, amount});
   }
 
@@ -345,11 +350,12 @@ export class ExchangeTestUtil {
     this.ensureDirectoryExists(inputFilename);
     fs.writeFileSync(inputFilename, data, "utf8");
 
-    childProcess.spawnSync(
+    const result = childProcess.spawnSync(
       "python3",
       ["operator/create_block.py", "" + blockType, inputFilename, outputFilename],
       {stdio: "inherit"},
     );
+    assert(result.status === 0, "create_block failed: " + blockType);
 
     return outputFilename;
   }
@@ -379,11 +385,12 @@ export class ExchangeTestUtil {
 
   public async verifyBlock(blockIdx: number, blockFilename: string) {
     const proofFilename = "./blocks/block_" + blockIdx + "_proof.json";
-    childProcess.spawnSync(
+    const result = childProcess.spawnSync(
       "build/circuit/dex_circuit",
       ["-prove", blockFilename, proofFilename],
       {stdio: "inherit"},
     );
+    assert(result.status === 0, "verifyBlock failed: " + blockFilename);
 
     const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
     let verificationKeyFilename = "keys/";
@@ -446,7 +453,7 @@ export class ExchangeTestUtil {
               publicKeyY: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
               walletID: 0,
               tokenID: 0,
-              balance: 0,
+              balance: new BN(0),
             };
             deposits.push(dummyDeposit);
             isFull = false;
@@ -460,7 +467,7 @@ export class ExchangeTestUtil {
       }
       await this.advanceBlockTimestamp(timeToWait);
 
-      const jDepositsInfo = JSON.stringify(deposits, null, 4);
+      const jDepositsInfo = JSON.stringify(deposits, replacer, 4);
       const blockFilename = await this.createBlock(1, jDepositsInfo);
       const jDeposits = fs.readFileSync(blockFilename, "ascii");
       const jdeposits = JSON.parse(jDeposits);
@@ -483,7 +490,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const jWithdrawalsInfo = JSON.stringify(this.pendingWithdrawals, null, 4);
+    const jWithdrawalsInfo = JSON.stringify(this.pendingWithdrawals, replacer, 4);
     const blockFilename = await this.createBlock(2, jWithdrawalsInfo);
     const jWithdrawals = fs.readFileSync(blockFilename, "ascii");
     const jwithdrawals = JSON.parse(jWithdrawals);
@@ -492,7 +499,7 @@ export class ExchangeTestUtil {
     bs.addBigNumber(new BigNumber(jwithdrawals.accountsMerkleRootAfter, 10), 32);
     for (const withdrawal of this.pendingWithdrawals) {
       bs.addNumber(withdrawal.account, 3);
-      bs.addNumber(withdrawal.amount, 12);
+      bs.addBN(withdrawal.amount, 12);
     }
 
     // Commit the block
@@ -513,13 +520,13 @@ export class ExchangeTestUtil {
 
       const eventArr: any = await this.getEventsFromContract(this.exchange, "Withdraw", web3.eth.blockNumber);
       const items = eventArr.map((eventObj: any) => {
-        return [eventObj.args.owner, eventObj.args.tokenAddress, eventObj.args.amount];
+        return [eventObj.args.to, eventObj.args.tokenAddress, eventObj.args.amount];
       });
-      const owner = addressBook[items[0][0]];
+      const to = addressBook[items[0][0]];
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(items[0][1]);
       const decimals = this.testContext.tokenAddrDecimalsMap.get(items[0][1]);
-      const amount = (items[0][2].toNumber() / (10 ** decimals));
-      console.log("Withdrawn: " + owner + ": " + amount + " " + tokenSymbol);
+      const amount = items[0][2].div(web3.utils.toBN(10 ** decimals)).toString(10);
+      console.log("Withdrawn: " + to + ": " + amount + " " + tokenSymbol);
     }
 
     this.pendingWithdrawals = [];
@@ -534,7 +541,7 @@ export class ExchangeTestUtil {
     ringsInfo.timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
 
     // Create the block
-    const blockFilename = await this.createBlock(0, JSON.stringify(ringsInfo, null, 4));
+    const blockFilename = await this.createBlock(0, JSON.stringify(ringsInfo, replacer, 4));
 
     // Read in the block
     const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
@@ -592,8 +599,9 @@ export class ExchangeTestUtil {
       pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
 
       const tokensRoot = await this.exchange.getBurnRateRoot();
-      console.log(tokensRoot);
-      childProcess.spawnSync("python3", ["operator/add_token.py"], {stdio: "inherit"});
+      // console.log(tokensRoot);
+      const result = childProcess.spawnSync("python3", ["operator/add_token.py"], {stdio: "inherit"});
+      assert(result.status === 0, "add_token failed: " + tokenAddress);
 
       this.tokenIDMap.set(tokenAddress, (await this.getTokenID(tokenAddress)).toNumber());
     }
