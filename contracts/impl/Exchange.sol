@@ -43,10 +43,14 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint32 public constant MIN_TIME_OPEN_DEPOSIT_BLOCK                          =       5 * 60;     //  5 minutes
     uint32 public constant MAX_TIME_OPEN_DEPOSIT_BLOCK                          =  1 * 60 * 60;     // 60 minutes
     uint32 public constant MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE      =       5 * 60;     //  5 minutes
-    uint32 public constant MAX_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_FORCED           =      15 * 60;     // 15 minutes
+    //uint32 public constant MAX_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_FORCED           =      15 * 60;     // 15 minutes
+    uint32 public constant MAX_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_FORCED           =     15000 * 60;     // TESTING
 
     uint16 public constant NUM_DEPOSITS_IN_BLOCK                 = 8;
     uint16 public constant NUM_WITHDRAWALS_IN_BLOCK              = 8;
+
+    //uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 60;          // +- 60 seconds
+    uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 6000;        // TESTING
 
     uint public constant DEPOSIT_FEE_IN_ETH                      = 0.001 ether;
 
@@ -278,7 +282,8 @@ contract Exchange is IExchange, NoDefaultFunc {
                 inputTimestamp := and(mload(add(data, 164)), 0xFFFFFFFF)
             }
             require(burnRateMerkleRoot == burnRateBlock.merkleRoot, "INVALID_BURNRATE_ROOT");
-            require(inputTimestamp > now - 60 && inputTimestamp < now + 60, "INVALID_TIMESTAMP");
+            require(inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
+                    inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS, "INVALID_TIMESTAMP");
         } else if (blockType == uint(BlockType.DEPOSIT)) {
             require(isDepositBlockCommittable(numDepositBlocksCommitted), "CANNOT_COMMIT_DEPOSIT_BLOCK_YET");
             DepositBlock storage depositBlock = states[0].depositBlocks[numDepositBlocksCommitted];

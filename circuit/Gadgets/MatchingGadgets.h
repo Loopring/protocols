@@ -184,13 +184,14 @@ public:
         return fillAmountB.result();
     }
 
-    void generate_r1cs_witness ()
+    void generate_r1cs_witness()
     {
         pb.val(remainingS) = pb.val(order.amountS.packed) - pb.val(order.filledBefore);
         balanceS_lt_remainingS.generate_r1cs_witness();
         fillAmountS.generate_r1cs_witness();
         fillAmountB.generate_r1cs_witness();
         print(pb, "amountS", order.amountS.packed);
+        print(pb, "remainingS", remainingS);
         print(pb, "filledBefore", order.filledBefore);
         print(pb, "order.balanceS", order.balanceS);
         print(pb, "fillAmountS", fillAmountS.result());

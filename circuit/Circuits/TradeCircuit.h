@@ -475,7 +475,7 @@ public:
 
     unsigned int numRings;
     jubjub::Params params;
-    std::vector<RingSettlementGadget> ringSettlements;
+    std::vector<RingSettlementGadget*> ringSettlements;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootBefore;
@@ -529,6 +529,11 @@ public:
         {
             delete updateAccount_O;
         }
+
+        for(unsigned int i = 0; i < ringSettlements.size(); i++)
+        {
+            delete ringSettlements[i];
+        }
     }
 
     void generate_r1cs_constraints(int numRings)
@@ -552,24 +557,30 @@ public:
         publicDataBits.push_back(timestamp.bits);
         for (size_t j = 0; j < numRings; j++)
         {
-            const VariableT ringTradingHistoryMerkleRoot = (j == 0) ? tradingHistoryMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
-            const VariableT ringAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : ringSettlements.back().getNewTradingHistoryMerkleRoot();
-            const VariableT& ringOperatorBalance = (j == 0) ? balance_O_before : ringSettlements.back().getOperatorBalance();
-            ringSettlements.emplace_back(pb, params, ringTradingHistoryMerkleRoot, ringAccountsMerkleRoot, burnRateMerkleRoot.packed, timestamp.packed, ringOperatorBalance, std::string("trade") + std::to_string(j));
+            const VariableT ringTradingHistoryMerkleRoot = (j == 0) ? tradingHistoryMerkleRootBefore.packed : ringSettlements.back()->getNewTradingHistoryMerkleRoot();
+            const VariableT ringAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : ringSettlements.back()->getNewAccountsMerkleRoot();
+            const VariableT& ringOperatorBalance = (j == 0) ? balance_O_before : ringSettlements.back()->getOperatorBalance();
+            ringSettlements.push_back(new RingSettlementGadget(
+                pb,
+                params,
+                ringTradingHistoryMerkleRoot,
+                ringAccountsMerkleRoot,
+                burnRateMerkleRoot.packed,
+                timestamp.packed,
+                ringOperatorBalance,
+                std::string("trade_") + std::to_string(j)
+            ));
+            ringSettlements.back()->generate_r1cs_constraints();
 
             // Store transfers from ring settlement
-            std::vector<VariableArrayT> ringPublicData = ringSettlements.back().getPublicData();
+            std::vector<VariableArrayT> ringPublicData = ringSettlements.back()->getPublicData();
             publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
         }
 
-        updateAccount_O = new UpdateAccountGadget(pb, ringSettlements.back().getNewAccountsMerkleRoot(), operatorID.bits, publicKey, constant0, constant1, balance_O_before, ringSettlements.back().getOperatorBalance(), ".updateAccount_O");
+        updateAccount_O = new UpdateAccountGadget(pb, ringSettlements.back()->getNewAccountsMerkleRoot(), operatorID.bits, publicKey, constant0, constant1, balance_O_before, ringSettlements.back()->getOperatorBalance(), ".updateAccount_O");
         updateAccount_O->generate_r1cs_constraints();
 
         publicDataHash.generate_r1cs_constraints(true);
-        for (auto& ringSettlement : ringSettlements)
-        {
-            ringSettlement.generate_r1cs_constraints();
-        }
 
         // Check public data
         publicDataHasher = new sha256_many(pb, flattenReverse(publicDataBits), ".publicDataHash");
@@ -583,7 +594,7 @@ public:
 
         // Make sure the merkle roots afterwards are correctly passed in
         pb.add_r1cs_constraint(ConstraintT(updateAccount_O->result(), 1, accountsMerkleRootAfter.packed), "newAccountsMerkleRoot");
-        pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewTradingHistoryMerkleRoot(), 1, tradingHistoryMerkleRootAfter.packed), "newTradingHistoryMerkleRoot");
+        pb.add_r1cs_constraint(ConstraintT(ringSettlements.back()->getNewTradingHistoryMerkleRoot(), 1, tradingHistoryMerkleRootAfter.packed), "newTradingHistoryMerkleRoot");
     }
 
     void printInfo()
@@ -593,6 +604,12 @@ public:
 
     bool generateWitness(const TradeContext& context)
     {
+        if (context.ringSettlements.size() != numRings)
+        {
+            std::cout << "Invalid number of rings: " << context.ringSettlements.size()  << std::endl;
+            return false;
+        }
+
         tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.tradingHistoryMerkleRootBefore);
         tradingHistoryMerkleRootBefore.generate_r1cs_witness_from_bits();
         tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.tradingHistoryMerkleRootAfter);
@@ -617,7 +634,7 @@ public:
 
         for(unsigned int i = 0; i < context.ringSettlements.size(); i++)
         {
-            ringSettlements[i].generate_r1cs_witness(context.ringSettlements[i]);
+            ringSettlements[i]->generate_r1cs_witness(context.ringSettlements[i]);
         }
 
         pb.val(balance_O_before) = context.accountUpdate_O.before.balance;

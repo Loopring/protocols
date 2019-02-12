@@ -239,5 +239,176 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitWithdrawals(ringsInfo);
     });
 
+    it("Multiple rings", async () => {
+      const ringsInfo: RingsInfo = {
+        rings : [
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "WETH",
+                tokenB: "GTO",
+                amountS: new BN(web3.utils.toWei("110", "ether")),
+                amountB: new BN(web3.utils.toWei("200", "ether")),
+                amountF: new BN(web3.utils.toWei("100", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "GTO",
+                tokenB: "WETH",
+                amountS: new BN(web3.utils.toWei("200", "ether")),
+                amountB: new BN(web3.utils.toWei("100", "ether")),
+                amountF: new BN(web3.utils.toWei("90", "ether")),
+              },
+          },
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "REP",
+                tokenB: "RDN",
+                amountS: new BN(web3.utils.toWei("50", "ether")),
+                amountB: new BN(web3.utils.toWei("10", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "RDN",
+                tokenB: "REP",
+                amountS: new BN(web3.utils.toWei("10", "ether")),
+                amountB: new BN(web3.utils.toWei("50", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+          },
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "REP",
+                tokenB: "RDN",
+                amountS: new BN(web3.utils.toWei("50", "ether")),
+                amountB: new BN(web3.utils.toWei("10", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "RDN",
+                tokenB: "REP",
+                amountS: new BN(web3.utils.toWei("10", "ether")),
+                amountB: new BN(web3.utils.toWei("50", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+          },
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "REP",
+                tokenB: "RDN",
+                amountS: new BN(web3.utils.toWei("50", "ether")),
+                amountB: new BN(web3.utils.toWei("10", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "RDN",
+                tokenB: "REP",
+                amountS: new BN(web3.utils.toWei("10", "ether")),
+                amountB: new BN(web3.utils.toWei("50", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+          },
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "WETH",
+                tokenB: "GTO",
+                amountS: new BN(web3.utils.toWei("110", "ether")),
+                amountB: new BN(web3.utils.toWei("200", "ether")),
+                amountF: new BN(web3.utils.toWei("100", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "GTO",
+                tokenB: "WETH",
+                amountS: new BN(web3.utils.toWei("200", "ether")),
+                amountB: new BN(web3.utils.toWei("100", "ether")),
+                amountF: new BN(web3.utils.toWei("90", "ether")),
+              },
+          },
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "REP",
+                tokenB: "RDN",
+                amountS: new BN(web3.utils.toWei("50", "ether")),
+                amountB: new BN(web3.utils.toWei("10", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "RDN",
+                tokenB: "REP",
+                amountS: new BN(web3.utils.toWei("10", "ether")),
+                amountB: new BN(web3.utils.toWei("50", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+          },
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "REP",
+                tokenB: "RDN",
+                amountS: new BN(web3.utils.toWei("50", "ether")),
+                amountB: new BN(web3.utils.toWei("10", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "RDN",
+                tokenB: "REP",
+                amountS: new BN(web3.utils.toWei("10", "ether")),
+                amountB: new BN(web3.utils.toWei("50", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+          },
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "REP",
+                tokenB: "RDN",
+                amountS: new BN(web3.utils.toWei("50", "ether")),
+                amountB: new BN(web3.utils.toWei("10", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "RDN",
+                tokenB: "REP",
+                amountS: new BN(web3.utils.toWei("10", "ether")),
+                amountB: new BN(web3.utils.toWei("50", "ether")),
+                amountF: new BN(web3.utils.toWei("1", "ether")),
+              },
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      await exchangeTestUtil.submitRings(ringsInfo);
+
+      await exchangeTestUtil.verifyAllPendingBlocks();
+    });
+
   });
 });
