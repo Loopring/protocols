@@ -18,7 +18,7 @@ using json = nlohmann::json;
 enum class Mode
 {
     CreateKeys = 0,
-    Verify,
+    Validate,
     Prove
 };
 
@@ -88,7 +88,7 @@ bool trade(Mode mode, unsigned int numRings, const json& input, ethsnarks::Proto
     circuit.generate_r1cs_constraints(numRings);
     circuit.printInfo();
 
-    if (mode == Mode::Verify || mode == Mode::Prove)
+    if (mode == Mode::Validate || mode == Mode::Prove)
     {
         json jRingSettlements = input["ringSettlements"];
         if (jRingSettlements.size() != numRings)
@@ -116,7 +116,7 @@ bool deposit(Mode mode, unsigned int numDeposits, const json& input, ethsnarks::
     circuit.generate_r1cs_constraints(numDeposits);
     circuit.printInfo();
 
-    if (mode == Mode::Verify || mode == Mode::Prove)
+    if (mode == Mode::Validate || mode == Mode::Prove)
     {
         json jDeposits = input["deposits"];
         if (jDeposits.size() != numDeposits)
@@ -152,7 +152,7 @@ bool withdraw(Mode mode, unsigned int numWithdrawals, const json& input, ethsnar
     circuit.generate_r1cs_constraints(numWithdrawals);
     circuit.printInfo();
 
-    if (mode == Mode::Verify || mode == Mode::Prove)
+    if (mode == Mode::Validate || mode == Mode::Prove)
     {
         json jWithdrawals = input["withdrawals"];
         if (jWithdrawals.size() != numWithdrawals)
@@ -188,7 +188,7 @@ bool cancel(Mode mode, unsigned int numCancels, const json& input, ethsnarks::Pr
     circuit.generate_r1cs_constraints(numCancels);
     circuit.printInfo();
 
-    if (mode == Mode::Verify || mode == Mode::Prove)
+    if (mode == Mode::Validate || mode == Mode::Prove)
     {
         json jCancels = input["cancels"];
         if (jCancels.size() != numCancels)
@@ -225,7 +225,7 @@ int main (int argc, char **argv)
     if (argc < 3)
     {
         std::cerr << "Usage: " << argv[0] << std::endl;
-        std::cerr << "-verify <block.json>: Verifies a block" << std::endl;
+        std::cerr << "-validate <block.json>: Validates a block" << std::endl;
         std::cerr << "-prove <block.json> <out_proof.json>: Proves a block" << std::endl;
         std::cerr << "-createkeys <protoBlock.json>: Creates prover/verifier keys" << std::endl;
         return 1;
@@ -237,11 +237,11 @@ int main (int argc, char **argv)
 #endif
 
     const char* proofFilename = NULL;
-    Mode mode = Mode::Verify;
-    if (strcmp(argv[1], "-verify") == 0)
+    Mode mode = Mode::Validate;
+    if (strcmp(argv[1], "-validate") == 0)
     {
-        mode = Mode::Verify;
-        std::cout << "Verifying " << argv[2] << "..." << std::endl;
+        mode = Mode::Validate;
+        std::cout << "Validating " << argv[2] << "..." << std::endl;
     }
     else if (strcmp(argv[1], "-prove") == 0)
     {
@@ -332,7 +332,7 @@ int main (int argc, char **argv)
         }
     }
 
-    if (mode == Mode::Verify || mode == Mode::Prove)
+    if (mode == Mode::Validate || mode == Mode::Prove)
     {
         // Check if the inputs are valid for the circuit
         if (!pb.is_satisfied())

@@ -210,8 +210,8 @@ def main(blockType, inputFilename, outputFilename):
     f.write(output.toJSON())
     f.close()
 
-    # Verify the block
-    subprocess.check_call(["build/circuit/dex_circuit", "-verify", outputFilename])
+    # Validate the block
+    subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
 
     state.save(state_filename)
 
