@@ -84,6 +84,41 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitRings(ringsInfo);
     });
 
+    it("Separate state", async () => {
+      // Create a new state
+      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.miner);
+
+      const ringsInfo: RingsInfo = {
+        stateID,
+        rings : [
+          {
+            orderA:
+              {
+                stateID,
+                index: 0,
+                tokenS: "WETH",
+                tokenB: "GTO",
+                amountS: new BN(web3.utils.toWei("110", "ether")),
+                amountB: new BN(web3.utils.toWei("200", "ether")),
+                amountF: new BN(web3.utils.toWei("100", "ether")),
+              },
+            orderB:
+              {
+                stateID,
+                index: 1,
+                tokenS: "GTO",
+                tokenB: "WETH",
+                amountS: new BN(web3.utils.toWei("200", "ether")),
+                amountB: new BN(web3.utils.toWei("100", "ether")),
+                amountF: new BN(web3.utils.toWei("90", "ether")),
+              },
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      await exchangeTestUtil.submitRings(ringsInfo);
+    });
+
     it("Unmatchable", async () => {
       const ringsInfo: RingsInfo = {
         rings : [

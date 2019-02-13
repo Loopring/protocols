@@ -17,7 +17,8 @@ TREE_DEPTH_TOKENS = 16
 
 
 class Context(object):
-    def __init__(self, operator, timestamp):
+    def __init__(self, globalState, operator, timestamp):
+        self.globalState = globalState
         self.operator = int(operator)
         self.timestamp = int(timestamp)
 
@@ -96,7 +97,8 @@ class Order(object):
                  amountS, amountB, amountF,
                  tokenS, tokenB, tokenF,
                  allOrNone, validSince, validUntil,
-                 walletSplitPercentage, waiveFeePercentage):
+                 walletSplitPercentage, waiveFeePercentage,
+                 stateID):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.walletPublicKeyX = str(walletPublicKey.x)
@@ -119,6 +121,8 @@ class Order(object):
         self.validUntil = validUntil
         self.walletSplitPercentage = walletSplitPercentage
         self.waiveFeePercentage = waiveFeePercentage
+
+        self.stateID = int(stateID)
 
         self.walletF = walletF
         self.minerF = minerF
@@ -283,8 +287,48 @@ class Cancellation(object):
         self.signature = Signature(signedMessage.sig)
 
 
-class State(object):
+class GlobalState(object):
     def __init__(self):
+        self._tokensTree = MerkleTree(1 << 16)
+        self._tokens = []
+
+    def load(self, filename):
+        with open(filename) as f:
+            data = json.load(f)
+            for jBurnRateLeaf in data["tokens_values"]:
+                token = BurnRateLeaf(0)
+                token.fromJSON(jBurnRateLeaf)
+                self._tokens.append(token)
+                self._tokensTree.append(token.hash())
+
+    def save(self, filename):
+        with open(filename, "w") as file:
+            file.write(json.dumps(
+                {
+                    "tokens_values": self._tokens,
+                }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
+
+    def checkBurnRate(self, address):
+        # Make sure the token exist in the array
+        if address >= len(self._tokens):
+            print("Token doesn't exist: " + str(address))
+
+        burnRateData = copy.deepcopy(self._tokens[address])
+        proof = self._tokensTree.proof(address).path
+
+        return BurnRateCheckData(burnRateData, proof)
+
+    def addToken(self, burnRate):
+        token = BurnRateLeaf(burnRate)
+        # address = self._tokensTree.append(token.hash())
+        self._tokens.append(token)
+
+        # print("Tokens tree root: " + str(hex(self._tokensTree.root)))
+
+
+class State(object):
+    def __init__(self, stateID):
+        self.stateID = int(stateID)
         # Trading history
         self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf(0, 0).hash())
@@ -295,13 +339,11 @@ class State(object):
         self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
         self._accounts = {}
         #print("Empty accounts tree: " + str(self._accountsTree._root))
-        # Tokens
-        self._tokensTree = MerkleTree(1 << 16)
-        self._tokens = []
 
     def load(self, filename):
         with open(filename) as f:
             data = json.load(f)
+            self.stateID = int(data["stateID"])
             tradeHistoryLeafsDict = data["trading_history_values"]
             for key, val in tradeHistoryLeafsDict.items():
                 self._tradeHistoryLeafs[key] = TradeHistoryLeaf(val["filled"], val["cancelled"])
@@ -314,23 +356,18 @@ class State(object):
                 self._accounts[key] = account
             self._accountsTree._root = data["accounts_root"]
             self._accountsTree._db.kv = data["accounts_tree"]
-            for jBurnRateLeaf in data["tokens_values"]:
-                token = BurnRateLeaf(0)
-                token.fromJSON(jBurnRateLeaf)
-                self._tokens.append(token)
-                self._tokensTree.append(token.hash())
 
     def save(self, filename):
         with open(filename, "w") as file:
             file.write(json.dumps(
                 {
+                    "stateID": self.stateID,
                     "trading_history_values": self._tradeHistoryLeafs,
                     "trading_history_root": self._tradingHistoryTree._root,
                     "trading_history_tree": self._tradingHistoryTree._db.kv,
                     "accounts_values": self._accounts,
                     "accounts_root": self._accountsTree._root,
                     "accounts_tree": self._accountsTree._db.kv,
-                    "tokens_values": self._tokens,
                 }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
     def getTradeHistory(self, address):
@@ -374,16 +411,6 @@ class State(object):
         # The circuit expects the proof in the reverse direction from bottom to top
         proof.reverse()
         return AccountUpdateData(accountBefore, accountAfter, proof)
-
-    def checkBurnRate(self, address):
-        # Make sure the token exist in the array
-        if address >= len(self._tokens):
-            print("Token doesn't exist: " + str(address))
-
-        burnRateData = copy.deepcopy(self._tokens[address])
-        proof = self._tokensTree.proof(address).path
-
-        return BurnRateCheckData(burnRateData, proof)
 
     def calculateFees(self, fee, burnRate, walletSplitPercentage, waiveFeePercentage):
         walletFee = (fee * walletSplitPercentage) // 100
@@ -492,8 +519,8 @@ class State(object):
         tradeHistoryUpdate_B = self.updateTradeHistory(self.getTradeHistoryAddress(ring.orderB), int(ring.fillS_B))
 
         # Check burn rates
-        burnRateCheckF_A = self.checkBurnRate(ring.orderA.tokenF)
-        burnRateCheckF_B = self.checkBurnRate(ring.orderB.tokenF)
+        burnRateCheckF_A = context.globalState.checkBurnRate(ring.orderA.tokenF)
+        burnRateCheckF_B = context.globalState.checkBurnRate(ring.orderB.tokenF)
 
         (walletFee_A, matchingFee_A, burnFee_A) = self.calculateFees(
             int(ring.fillF_A),
@@ -597,10 +624,3 @@ class State(object):
                                     tradeHistoryUpdate, accountUpdate)
         cancellation.sign(FQ(int(account.secretKey)))
         return cancellation
-
-    def addToken(self, burnRate):
-        token = BurnRateLeaf(burnRate)
-        address = self._tokensTree.append(token.hash())
-        self._tokens.append(token)
-
-        # print("Tokens tree root: " + str(hex(self._tokensTree.root)))

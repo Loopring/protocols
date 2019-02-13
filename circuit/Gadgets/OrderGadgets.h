@@ -16,6 +16,9 @@ class OrderGadget : public GadgetT
 {
 public:
 
+    VariableT blockStateID;
+
+    libsnark::dual_variable_gadget<FieldT> stateID;
     libsnark::dual_variable_gadget<FieldT> walletID;
     libsnark::dual_variable_gadget<FieldT> orderID;
     libsnark::dual_variable_gadget<FieldT> accountS;
@@ -62,11 +65,15 @@ public:
     OrderGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
+        const VariableT& _blockStateID,
         const VariableT& timestamp,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
+        blockStateID(_blockStateID),
+
+        stateID(pb, 16, FMT(prefix, ".stateID")),
         walletID(pb, 16, FMT(prefix, ".walletID")),
         orderID(pb, 4, FMT(prefix, ".orderID")),
         accountS(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountS")),
@@ -126,6 +133,8 @@ public:
 
     void generate_r1cs_witness(const Order& order)
     {
+        stateID.bits.fill_with_bits_of_field_element(pb, order.stateID);
+        stateID.generate_r1cs_witness_from_bits();
         walletID.bits.fill_with_bits_of_field_element(pb, order.walletID);
         walletID.generate_r1cs_witness_from_bits();
         orderID.bits.fill_with_bits_of_field_element(pb, order.orderID);
@@ -201,6 +210,9 @@ public:
 
     void generate_r1cs_constraints()
     {
+        forceEqual(pb, blockStateID, stateID.packed, FMT(annotation_prefix, ".blockStateID == stateID"));
+
+        stateID.generate_r1cs_constraints(true);
         walletID.generate_r1cs_constraints(true);
         orderID.generate_r1cs_constraints(true);
         accountS.generate_r1cs_constraints(true);
@@ -228,7 +240,7 @@ public:
         timestamp_leq_validUntil.generate_r1cs_constraints();
 
         pb.add_r1cs_constraint(ConstraintT(validSince_leq_timestamp.leq(), timestamp_leq_validUntil.leq(), valid),
-                               "validSince_leq_timestamp && timestamp_leq_validUntil = valid");
+                               FMT(annotation_prefix, ".validSince_leq_timestamp && timestamp_leq_validUntil = valid"));
     }
 };
 

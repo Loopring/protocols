@@ -37,26 +37,31 @@ contract Exchange is IExchange, NoDefaultFunc {
     using ERC20SafeTransfer for address;
     using MerkleTree        for MerkleTree.Data;
 
-    uint32 public constant MIN_NUM_ETH_BLOCKS_INACTIVE_UNTIL_DISABLED           =  24 * 60 * 4;     // ~1 day
-    uint32 public constant MIN_TIME_INACTIVE_UNTIL_DISABLED                     = 24 * 60 * 60;     //  1 day
+    uint32 public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS                 = 1 hours;
 
-    uint32 public constant MIN_TIME_OPEN_DEPOSIT_BLOCK                          =       5 * 60;     //  5 minutes
-    uint32 public constant MAX_TIME_OPEN_DEPOSIT_BLOCK                          =  1 * 60 * 60;     // 60 minutes
-    uint32 public constant MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE      =       5 * 60;     //  5 minutes
-    //uint32 public constant MAX_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_FORCED           =      15 * 60;     // 15 minutes
-    uint32 public constant MAX_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_FORCED           =     15000 * 60;     // TESTING
+    uint public constant MIN_STAKE_AMOUNT_IN_LRC                                = 100000 ether;
+
+    uint32 public constant MAX_INACTIVE_UNTIL_DISABLED_IN_SECONDS               = 1 days;
+
+    uint32 public constant MIN_TIME_OPEN_DEPOSIT_BLOCK                          = 5 minutes;
+    uint32 public constant MAX_TIME_OPEN_DEPOSIT_BLOCK                          = 1 hours;
+    uint32 public constant MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE      = 5 minutes;
+    //uint32 public constant MAX_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_FORCED           = 15 minutes;
+    uint32 public constant MAX_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_FORCED           = 1 days;     // TESTING
 
     uint16 public constant NUM_DEPOSITS_IN_BLOCK                 = 8;
     uint16 public constant NUM_WITHDRAWALS_IN_BLOCK              = 8;
 
-    //uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 60;          // +- 60 seconds
-    uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 6000;        // TESTING
+    //uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 1 minutes;
+    uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 1 days;        // TESTING
 
     uint public constant DEPOSIT_FEE_IN_ETH                      = 0.001 ether;
 
     uint public constant TOKEN_REGISTRATION_FEE_IN_LRC           = 100000 ether;
     uint public constant WALLET_REGISTRATION_FEE_IN_LRC          = 100000 ether;
     uint public constant RINGMATCHER_REGISTRATION_FEE_IN_LRC     = 100000 ether;
+
+    uint public constant NEW_STATE_CREATION_FEE_IN_LRC           = 100000 ether;
 
     uint public constant MAX_NUM_TOKENS                          = 1024;
     uint public constant MAX_NUM_WALLETS                         = 1024;
@@ -77,6 +82,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
 
     address public lrcAddress        = address(0x0);
+
+    event NewState(uint16 stateID, address owner);
 
     event TokenRegistered(address tokenAddress, uint16 tokenID);
     event WalletRegistered(address walletOwner, uint16 walletID);
@@ -166,6 +173,8 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     struct State {
+        address owner;
+
         uint numAccounts;
         mapping (uint => Account) accounts;
 
@@ -175,13 +184,15 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint numDepositBlocks;
         mapping (uint => DepositBlock) depositBlocks;
         mapping (uint => WithdrawBlock) withdrawBlocks;
+
+        uint numOperators;
+        mapping (uint => Operator) operators;
     }
 
     MerkleTree.Data burnRateMerkleTree;
 
     Wallet[] public wallets;
     RingMatcher[] public ringMatchers;
-    Operator[] public operators;
 
     Token[] public tokens;
     mapping (address => uint16) public tokenToTokenID;
@@ -210,16 +221,29 @@ contract Exchange is IExchange, NoDefaultFunc {
         // Register ETH
         // registerTokenInternal(address(0x0));
 
-        createNewState();
+        // Create the default state
+        createNewStateInternal(address(0x0));
     }
 
     function createNewState()
-        public
+        external
+    {
+        // Pay the fee
+        burn(msg.sender, NEW_STATE_CREATION_FEE_IN_LRC);
+
+        // Create the new state
+        createNewStateInternal(msg.sender);
+    }
+
+    function createNewStateInternal(address owner)
+        internal
     {
         State memory memoryState = State(
+            owner,
             ACCOUNTS_START_INDEX,
             0,
-            1
+            1,
+            0
         );
         states.push(memoryState);
 
@@ -235,6 +259,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         State storage state = states[states.length - 1];
         state.blocks[state.numBlocks] = genesisBlock;
         state.numBlocks++;
+
+        emit NewState(uint16(states.length - 1), owner);
 
         /*depositInternal(
             uint24(0xFFFFFF),
@@ -256,15 +282,23 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
-        Block storage currentBlock = states[0].blocks[states[0].numBlocks - 1];
+        uint16 stateID = 0;
+        assembly {
+            stateID := and(mload(add(data, 2)), 0xFFFF)
+        }
+
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+
+        Block storage currentBlock = state.blocks[state.numBlocks - 1];
 
         // TODO: don't send before merkle tree roots to save on calldata
 
         bytes32 accountsMerkleRootBefore;
         bytes32 accountsMerkleRootAfter;
         assembly {
-            accountsMerkleRootBefore := mload(add(data, 32))
-            accountsMerkleRootAfter := mload(add(data, 64))
+            accountsMerkleRootBefore := mload(add(data, 34))
+            accountsMerkleRootAfter := mload(add(data, 66))
         }
         require(accountsMerkleRootBefore == currentBlock.accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
 
@@ -276,17 +310,17 @@ contract Exchange is IExchange, NoDefaultFunc {
             bytes32 burnRateMerkleRoot;
             uint32 inputTimestamp;
             assembly {
-                tradeHistoryMerkleRootBefore := mload(add(data, 96))
-                tradeHistoryMerkleRootAfter := mload(add(data, 128))
-                burnRateMerkleRoot := mload(add(data, 160))
-                inputTimestamp := and(mload(add(data, 164)), 0xFFFFFFFF)
+                tradeHistoryMerkleRootBefore := mload(add(data, 98))
+                tradeHistoryMerkleRootAfter := mload(add(data, 130))
+                burnRateMerkleRoot := mload(add(data, 162))
+                inputTimestamp := and(mload(add(data, 166)), 0xFFFFFFFF)
             }
             require(burnRateMerkleRoot == burnRateBlock.merkleRoot, "INVALID_BURNRATE_ROOT");
             require(inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
                     inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS, "INVALID_TIMESTAMP");
         } else if (blockType == uint(BlockType.DEPOSIT)) {
-            require(isDepositBlockCommittable(numDepositBlocksCommitted), "CANNOT_COMMIT_DEPOSIT_BLOCK_YET");
-            DepositBlock storage depositBlock = states[0].depositBlocks[numDepositBlocksCommitted];
+            require(isDepositBlockCommittable(stateID, numDepositBlocksCommitted), "CANNOT_COMMIT_DEPOSIT_BLOCK_YET");
+            DepositBlock storage depositBlock = state.depositBlocks[numDepositBlocksCommitted];
             // Pad the block so it's full
             for (uint i = depositBlock.numDeposits; i < NUM_DEPOSITS_IN_BLOCK; i++) {
                 depositBlock.hash = sha256(
@@ -303,7 +337,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             }
             bytes32 depositBlockHash = depositBlock.hash;
             assembly {
-                mstore(add(data, 96), depositBlockHash)
+                mstore(add(data, 98), depositBlockHash)
             }
             numDepositBlocksCommitted++;
             emit LogDepositBytes(data);
@@ -317,7 +351,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
 
         // Check if we need to commit a deposit block
-        require(!isDepositBlockForced(numDepositBlocksCommitted), "DEPOSIT_BLOCK_COMMIT_FORCED");
+        require(!isDepositBlockForced(stateID, numDepositBlocksCommitted), "DEPOSIT_BLOCK_COMMIT_FORCED");
 
         bytes32 publicDataHash = sha256(data);
 
@@ -333,20 +367,24 @@ contract Exchange is IExchange, NoDefaultFunc {
             numDepositBlocksCommitted,
             data
         );
-        states[0].blocks[states[0].numBlocks] = newBlock;
-        states[0].numBlocks++;
+        state.blocks[state.numBlocks] = newBlock;
+        state.numBlocks++;
 
-        emit BlockCommitted(states[0].numBlocks - 1, publicDataHash);
+        emit BlockCommitted(state.numBlocks - 1, publicDataHash);
     }
 
     function verifyBlock(
+        uint16 stateID,
         uint blockIdx,
         uint256[8] memory proof
         )
         public
     {
-        require(blockIdx < states[0].numBlocks, INVALID_VALUE);
-        Block storage specifiedBlock = states[0].blocks[blockIdx];
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+
+        require(blockIdx < state.numBlocks, INVALID_VALUE);
+        Block storage specifiedBlock = state.blocks[blockIdx];
         require(specifiedBlock.state == BlockState.COMMITTED, "BLOCK_ALREADY_VERIFIED");
 
         bool verified = verifyProof(specifiedBlock.publicDataHash, proof);
@@ -361,8 +399,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             // The number of blocks after the specified block index is limited
             // so we don't have to worry about running out of gas in this loop
             uint nextBlockIdx = blockIdx + 1;
-            while (nextBlockIdx < states[0].numBlocks && states[0].blocks[nextBlockIdx].state == BlockState.VERIFIED) {
-                states[0].blocks[nextBlockIdx].state = BlockState.FINALIZED;
+            while (nextBlockIdx < state.numBlocks && state.blocks[nextBlockIdx].state == BlockState.VERIFIED) {
+                state.blocks[nextBlockIdx].state = BlockState.FINALIZED;
                 emit BlockFinalized(nextBlockIdx);
                 nextBlockIdx++;
             }
@@ -372,26 +410,33 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function notifyBlockVerificationTooLate(
+        uint16 stateID,
         uint blockIdx
         )
         external
     {
-        require(blockIdx < states[0].numBlocks, INVALID_VALUE);
-        Block storage specifiedBlock = states[0].blocks[blockIdx];
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+
+        require(blockIdx < state.numBlocks, INVALID_VALUE);
+        Block storage specifiedBlock = state.blocks[blockIdx];
         require(specifiedBlock.state == BlockState.COMMITTED, INVALID_VALUE);
         // TODO: At a time limit in some way (number of blocks, timestamp, ...)
-        revertState(blockIdx);
+        revertBlock(stateID, blockIdx);
     }
 
-    function revertState(
+    function revertBlock(
+        uint16 stateID,
         uint blockIdx
         )
         internal
     {
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
         // TODO: Burn deposit of operator for LRC
 
         // Remove all blocks after and including blockIdx;
-        states[0].numBlocks = blockIdx;
+        state.numBlocks = blockIdx;
     }
 
     function registerToken(
@@ -401,7 +446,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
 
-         // Pay the fee
+        // Pay the fee
         burn(msg.sender, TOKEN_REGISTRATION_FEE_IN_LRC);
 
         Token memory token = Token(
@@ -501,6 +546,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function deposit(
+        uint16 stateID,
         uint24 accountID,
         address owner,
         uint brokerPublicKeyX,
@@ -513,6 +559,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         payable
         returns (uint24)
     {
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
         // require(msg.sender == owner, UNAUTHORIZED);
 
         // Check expected ETH value sent
@@ -525,10 +573,10 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint16 tokenID = getTokenID(token);
 
         // Get the deposit block
-        DepositBlock storage depositBlock = states[0].depositBlocks[states[0].numDepositBlocks - 1];
-        if (isActiveDepositBlockClosed()) {
-            states[0].numDepositBlocks++;
-            depositBlock = states[0].depositBlocks[states[0].numDepositBlocks - 1];
+        DepositBlock storage depositBlock = state.depositBlocks[state.numDepositBlocks - 1];
+        if (isActiveDepositBlockClosed(stateID)) {
+            state.numDepositBlocks++;
+            depositBlock = state.depositBlocks[state.numDepositBlocks - 1];
         }
         if (depositBlock.numDeposits == 0) {
             depositBlock.timestampOpened = uint32(now);
@@ -553,13 +601,13 @@ contract Exchange is IExchange, NoDefaultFunc {
                 walletID,
                 tokenID
             );
-            uint24 newAccountID = uint24(states[0].numAccounts);
-            states[0].accounts[newAccountID] = account;
-            states[0].numAccounts++;
+            uint24 newAccountID = uint24(state.numAccounts);
+            state.accounts[newAccountID] = account;
+            state.numAccounts++;
 
             accountID = newAccountID;
         } else {
-            Account storage account = states[0].accounts[accountID];
+            Account storage account = state.accounts[accountID];
             require(account.owner == owner, "INVALID OWNER");
             require(account.tokenID == tokenID, "INVALID TOKEN");
         }
@@ -597,12 +645,13 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
         depositBlock.pendingDeposits.push(pendingDeposit);
 
-        emit Deposit(uint32(states[0].numDepositBlocks - 1), accountID, walletID, owner, token, amount);
+        emit Deposit(uint32(state.numDepositBlocks - 1), accountID, walletID, owner, token, amount);
 
         return accountID;
     }
 
     function requestWithdraw(
+        uint16 stateID,
         uint24 accountID,
         uint96 amount
         )
@@ -610,14 +659,17 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         require(amount > 0, INVALID_VALUE);
 
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+
         // Don't check account owner for burn accounts
         if (accountID >= MAX_NUM_TOKENS) {
-            Account storage account = states[0].accounts[accountID];
+            Account storage account = state.accounts[accountID];
             require(account.owner == msg.sender, "UNAUTHORIZED");
         }
 
         uint currentBlock = block.number / 40;
-        WithdrawBlock storage withdrawBlock = states[0].withdrawBlocks[currentBlock];
+        WithdrawBlock storage withdrawBlock = state.withdrawBlocks[currentBlock];
         require(withdrawBlock.numWithdrawals < NUM_WITHDRAWALS_IN_BLOCK, "WITHDRAWAL_BLOCK_FULL");
         if (withdrawBlock.numWithdrawals == 0) {
             withdrawBlock.hash = 0x0;
@@ -634,17 +686,23 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function withdraw(
+        uint16 stateID,
         uint blockIdx,
         uint withdrawalIdx
         )
         external
     {
-        Block storage withdrawBlock = states[0].blocks[blockIdx];
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+
+        require(blockIdx < state.numBlocks, "INVALID_BLOCKIDX");
+        Block storage withdrawBlock = state.blocks[blockIdx];
         require(withdrawBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
         // TODO: optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 32 + 32 + (3 + 12) * (withdrawalIdx + 1);
+        uint offset = 2 + 32 + 32 + (3 + 12) * (withdrawalIdx + 1);
+        require(offset < withdrawals.length + 32, "INVALID_WITHDRAWALIDX");
         uint data;
         assembly {
             data := mload(add(withdrawals, offset))
@@ -661,13 +719,15 @@ contract Exchange is IExchange, NoDefaultFunc {
             // Get the account information if this isn't a burn account
             if (accountID >= MAX_NUM_TOKENS)
             {
-                Account storage account = states[0].accounts[accountID];
+                assert(accountID < state.numAccounts);
+                Account storage account = state.accounts[accountID];
                 owner = address(uint160(account.owner));
                 walletID = account.walletID;
                 tokenID = account.tokenID;
             }
 
             // Transfer the tokens from the contract to the owner
+            assert(tokenID < tokens.length);
             address token = tokens[tokenID].tokenAddress;
             if (token == address(0x0)) {
                 // ETH
@@ -732,19 +792,22 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         external
     {
-        require(blockIdx > 0, INVALID_VALUE);
-        require(blockIdx < states[0].numBlocks, INVALID_VALUE);
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
 
-        Block storage requestedBlock = states[0].blocks[blockIdx];
-        Block storage previousBlock = states[0].blocks[blockIdx - 1];
+        require(blockIdx > 0, INVALID_VALUE);
+        require(blockIdx < state.numBlocks, INVALID_VALUE);
+
+        Block storage requestedBlock = state.blocks[blockIdx];
+        Block storage previousBlock = state.blocks[blockIdx - 1];
 
         require(requestedBlock.numDepositBlocksCommitted > previousBlock.numDepositBlocksCommitted, "NO_FEE_AVAILABLE");
         require(requestedBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
-        address payable operator = operators[requestedBlock.operatorID].owner;
+        address payable operator = states[stateID].operators[requestedBlock.operatorID].owner;
         uint32 depositBlockIdx = previousBlock.numDepositBlocksCommitted;
 
-        DepositBlock storage depositBlock = states[0].depositBlocks[depositBlockIdx];
+        DepositBlock storage depositBlock = state.depositBlocks[depositBlockIdx];
         uint fee = depositBlock.numDeposits * DEPOSIT_FEE_IN_ETH;
 
         operator.transfer(fee);
@@ -801,12 +864,14 @@ contract Exchange is IExchange, NoDefaultFunc {
         gammaABC = _gammaABC;
     }
 
-    function getBlockIdx()
+    function getBlockIdx(
+        uint16 stateID
+        )
         external
         view
         returns (uint)
     {
-        return states[0].numBlocks - 1;
+        return states[stateID].numBlocks - 1;
     }
 
     function getBurnRateRoot()
@@ -826,16 +891,19 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function getDepositHash(
+        uint16 stateID,
         uint depositBlockIdx
         )
         external
         view
         returns (bytes32)
     {
-        return states[0].depositBlocks[depositBlockIdx].hash;
+        return states[stateID].depositBlocks[depositBlockIdx].hash;
     }
 
-    function isActiveDepositBlockClosed()
+    function isActiveDepositBlockClosed(
+        uint16 stateID
+        )
         internal
         view
         returns (bool)
@@ -846,7 +914,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         // - block is partially full: the old block is at least MAX_TIME_OPEN_DEPOSIT_BLOCK seconds old
         //                            (so we can guarantee a maximum amount of time to the users
         //                             when the deposits will be available)
-        DepositBlock storage depositBlock = states[0].depositBlocks[states[0].numDepositBlocks - 1];
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+        DepositBlock storage depositBlock = state.depositBlocks[state.numDepositBlocks - 1];
         if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK && now > depositBlock.timestampOpened + MIN_TIME_OPEN_DEPOSIT_BLOCK) ||
             (depositBlock.numDeposits > 0 && now > depositBlock.timestampOpened + MAX_TIME_OPEN_DEPOSIT_BLOCK)) {
             return true;
@@ -856,14 +926,17 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function isDepositBlockCommittable(
+        uint16 stateID,
         uint32 depositBlockIdx
         )
         internal
         view
         returns (bool)
     {
-        require(depositBlockIdx < states[0].numDepositBlocks, "INVALID_DEPOSITBLOCK_IDX_COMMIT");
-        DepositBlock storage depositBlock = states[0].depositBlocks[depositBlockIdx];
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+        require(depositBlockIdx < state.numDepositBlocks, "INVALID_DEPOSITBLOCK_IDX_COMMIT");
+        DepositBlock storage depositBlock = state.depositBlocks[depositBlockIdx];
         if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK && now > depositBlock.timestampFilled + MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE) ||
             (depositBlock.numDeposits > 0 && now > depositBlock.timestampOpened + MAX_TIME_OPEN_DEPOSIT_BLOCK + MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE)) {
             return true;
@@ -873,14 +946,17 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     function isDepositBlockForced(
+        uint16 stateID,
         uint32 depositBlockIdx
         )
         internal
         view
         returns (bool)
     {
-        require(depositBlockIdx <= states[0].numDepositBlocks, "INVALID_DEPOSITBLOCK_IDX_FORCED");
-        DepositBlock storage depositBlock = states[0].depositBlocks[depositBlockIdx];
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+        require(depositBlockIdx <= state.numDepositBlocks, "INVALID_DEPOSITBLOCK_IDX_FORCED");
+        DepositBlock storage depositBlock = state.depositBlocks[depositBlockIdx];
         if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK && now > depositBlock.timestampFilled + MAX_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_FORCED) ||
             (depositBlock.numDeposits > 0 && now > depositBlock.timestampOpened + MAX_TIME_OPEN_DEPOSIT_BLOCK + MAX_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_FORCED)) {
             return true;
@@ -889,15 +965,19 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
     }
 
-    function getNumAvailableDepositSlots()
+    function getNumAvailableDepositSlots(
+        uint16 stateID
+        )
         external
         view
         returns (uint)
     {
-        if (isActiveDepositBlockClosed()) {
+        require(stateID < states.length, "INVALID_STATEID");
+        if (isActiveDepositBlockClosed(stateID)) {
             return NUM_DEPOSITS_IN_BLOCK;
         } else {
-            DepositBlock storage depositBlock = states[0].depositBlocks[states[0].numDepositBlocks - 1];
+            State storage state = states[stateID];
+            DepositBlock storage depositBlock = state.depositBlocks[state.numDepositBlocks - 1];
             return NUM_DEPOSITS_IN_BLOCK - depositBlock.numDeposits;
         }
     }

@@ -125,18 +125,10 @@ bool deposit(Mode mode, unsigned int numDeposits, const json& input, ethsnarks::
             return false;
         }
 
-        std::string accountsMerkleRootBefore = input["accountsMerkleRootBefore"].get<std::string>();
-        std::string accountsMerkleRootAfter = input["accountsMerkleRootAfter"].get<std::string>();
-
-        // Read deposits
-        std::vector<Loopring::Deposit> deposits;
-        for(unsigned int i = 0; i < numDeposits; i++)
-        {
-            deposits.emplace_back(jDeposits[i].get<Loopring::Deposit>());
-        }
+        Loopring::DepositContext context = input.get<Loopring::DepositContext>();
 
         // Generate witness values for the given input values
-        if (!circuit.generateWitness(deposits, accountsMerkleRootBefore, accountsMerkleRootAfter))
+        if (!circuit.generateWitness(context))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return false;
@@ -161,18 +153,10 @@ bool withdraw(Mode mode, unsigned int numWithdrawals, const json& input, ethsnar
             return false;
         }
 
-        std::string accountsMerkleRootBefore = input["accountsMerkleRootBefore"].get<std::string>();
-        std::string accountsMerkleRootAfter = input["accountsMerkleRootAfter"].get<std::string>();
-
-        // Read withdrawals
-        std::vector<Loopring::Withdrawal> withdrawals;
-        for(unsigned int i = 0; i < numWithdrawals; i++)
-        {
-            withdrawals.emplace_back(jWithdrawals[i].get<Loopring::Withdrawal>());
-        }
+        Loopring::WithdrawContext context = input.get<Loopring::WithdrawContext>();
 
         // Generate witness values for the given input values
-        if (!circuit.generateWitness(withdrawals, accountsMerkleRootBefore, accountsMerkleRootAfter))
+        if (!circuit.generateWitness(context))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return false;

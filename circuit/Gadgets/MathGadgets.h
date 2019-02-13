@@ -14,6 +14,11 @@ using namespace ethsnarks;
 namespace Loopring
 {
 
+void forceEqual(ProtoboardT& pb, const VariableT& A, const VariableT& B, const std::string& annotation_prefix)
+{
+    pb.add_r1cs_constraint(ConstraintT(A, FieldT::one(), B), FMT(annotation_prefix, ".forceEqual"));
+}
+
 class TernaryGadget : public GadgetT
 {
 public:

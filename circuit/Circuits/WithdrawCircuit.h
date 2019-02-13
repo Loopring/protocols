@@ -135,6 +135,7 @@ public:
     std::vector<WithdrawalGadget> withdrawals;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
+    libsnark::dual_variable_gadget<FieldT> stateID;
     libsnark::dual_variable_gadget<FieldT> accountsMerkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> accountsMerkleRootAfter;
 
@@ -148,6 +149,7 @@ public:
 
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
 
+        stateID(pb, 16, FMT(prefix, ".stateID")),
         accountsMerkleRootBefore(pb, 256, FMT(prefix, ".accountsMerkleRootBefore")),
         accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter"))
     {
@@ -167,7 +169,12 @@ public:
         this->numAccounts = numAccounts;
 
         pb.set_input_sizes(1);
+
+        stateID.generate_r1cs_constraints(true);
         accountsMerkleRootBefore.generate_r1cs_constraints(true);
+        accountsMerkleRootAfter.generate_r1cs_constraints(true);
+
+        publicDataBits.push_back(stateID.bits);
         publicDataBits.push_back(accountsMerkleRootBefore.bits);
         publicDataBits.push_back(accountsMerkleRootAfter.bits);
         for (size_t j = 0; j < numAccounts; j++)
@@ -206,19 +213,19 @@ public:
         std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numAccounts) << "/withdrawal)" << std::endl;
     }
 
-    bool generateWitness(const std::vector<Loopring::Withdrawal>& withdrawalsData,
-                         const std::string& strAccountsMerkleRootBefore, const std::string& strAccountsMerkleRootAfter)
+    bool generateWitness(const WithdrawContext& context)
     {
-        ethsnarks::FieldT accountsMerkleRootBeforeValue = ethsnarks::FieldT(strAccountsMerkleRootBefore.c_str());
-        ethsnarks::FieldT accountsMerkleRootAfterValue = ethsnarks::FieldT(strAccountsMerkleRootAfter.c_str());
-        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootBeforeValue);
+        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
+        stateID.generate_r1cs_witness_from_bits();
+
+        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.accountsMerkleRootBefore);
         accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
-        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootAfterValue);
+        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.accountsMerkleRootAfter);
         accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
 
-        for(unsigned int i = 0; i < withdrawalsData.size(); i++)
+        for(unsigned int i = 0; i < context.withdrawals.size(); i++)
         {
-            withdrawals[i].generate_r1cs_witness(withdrawalsData[i]);
+            withdrawals[i].generate_r1cs_witness(context.withdrawals[i]);
         }
 
         publicDataHasher->generate_r1cs_witness();

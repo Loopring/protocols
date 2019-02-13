@@ -4,7 +4,7 @@ sys.path.insert(0, 'operator')
 import os.path
 import subprocess
 import json
-from state import Account, Context, State, Order, Ring
+from state import Account, Context, GlobalState,State, Order, Ring
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
 
@@ -18,6 +18,7 @@ class TradeExport(object):
         self.accountsMerkleRootBefore = 0
         self.accountsMerkleRootAfter = 0
         self.timestamp = 0
+        self.stateID = 0
 
     def toJSON(self):
         self.numElements = len(self.ringSettlements)
@@ -30,6 +31,7 @@ class DepositExport(object):
         self.deposits = []
         self.accountsMerkleRootBefore = 0
         self.accountsMerkleRootAfter = 0
+        self.stateID = 0
 
     def toJSON(self):
         self.numElements = len(self.deposits)
@@ -42,6 +44,7 @@ class WithdrawalExport(object):
         self.withdrawals = []
         self.accountsMerkleRootBefore = 0
         self.accountsMerkleRootAfter = 0
+        self.stateID = 0
 
     def toJSON(self):
         self.numElements = len(self.withdrawals)
@@ -55,6 +58,7 @@ class CancelExport(object):
         self.tradingHistoryMerkleRootBefore = 0
         self.tradingHistoryMerkleRootAfter = 0
         self.accountsMerkleRoot = 0
+        self.stateID = 0
 
     def toJSON(self):
         self.numElements = len(self.cancels)
@@ -81,6 +85,7 @@ def orderFromJSON(jOrder, state):
     validUntil = int(jOrder["validUntil"])
     walletSplitPercentage = int(jOrder["walletSplitPercentage"])
     waiveFeePercentage = int(jOrder["waiveFeePercentage"])
+    stateID = int(jOrder["stateID"])
 
     account = state.getAccount(accountS)
     wallet = state.getAccount(walletF)
@@ -95,7 +100,8 @@ def orderFromJSON(jOrder, state):
                   amountS, amountB, amountF,
                   tokenS, tokenB, tokenF,
                   allOrNone, validSince, validUntil,
-                  walletSplitPercentage, waiveFeePercentage)
+                  walletSplitPercentage, waiveFeePercentage,
+                  stateID)
 
     order.sign(FQ(int(account.secretKey)))
 
@@ -124,6 +130,7 @@ def ringFromJSON(jRing, state):
 
 def deposit(state, data):
     export = DepositExport()
+    export.stateID = state.stateID
     export.accountsMerkleRootBefore = str(state._accountsTree._root)
 
     for depositInfo in data:
@@ -139,6 +146,7 @@ def deposit(state, data):
 
 def withdraw(state, data):
     export = WithdrawalExport()
+    export.stateID = state.stateID
     export.accountsMerkleRootBefore = str(state._accountsTree._root)
 
     for withdrawalInfo in data:
@@ -151,6 +159,7 @@ def withdraw(state, data):
 
 def cancel(state, data):
     export = CancelExport()
+    export.stateID = state.stateID
     export.tradingHistoryMerkleRootBefore = str(state._tradingHistoryTree._root)
     export.accountsMerkleRoot = str(state._accountsTree._root)
 
@@ -162,14 +171,21 @@ def cancel(state, data):
 
 
 def trade(state, data):
+
+    global_state_filename = "state_global.json"
+    global_state = GlobalState()
+    if os.path.exists(global_state_filename):
+        global_state.load(global_state_filename)
+
     export = TradeExport()
+    export.stateID = state.stateID
     export.tradingHistoryMerkleRootBefore = str(state._tradingHistoryTree._root)
     export.accountsMerkleRootBefore = str(state._accountsTree._root)
-    export.burnRateMerkleRoot = str(state._tokensTree.root)
+    export.burnRateMerkleRoot = str(global_state._tokensTree.root)
     export.timestamp = int(data["timestamp"])
     export.operatorID = int(data["operator"])
 
-    context = Context(export.operatorID, export.timestamp)
+    context = Context(global_state, export.operatorID, export.timestamp)
 
     totalFee = 0
     for ringInfo in data["rings"]:
@@ -185,10 +201,10 @@ def trade(state, data):
     return export
 
 
-def main(blockType, inputFilename, outputFilename):
-    state_filename = "state.json"
+def main(stateID, blockType, inputFilename, outputFilename):
+    state_filename = "state_" + str(stateID) + ".json"
 
-    state = State()
+    state = State(stateID)
     if os.path.exists(state_filename):
         state.load(state_filename)
 

@@ -29,6 +29,8 @@ public:
     VariableT constant0;
     VariableT constant1;
 
+    VariableT stateID;
+
     const jubjub::VariablePointT publicKey;
     libsnark::dual_variable_gadget<FieldT> nonce;
 
@@ -121,6 +123,7 @@ public:
     RingSettlementGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
+        const VariableT& _stateID,
         const VariableT& _tradingHistoryMerkleRoot,
         const VariableT& _accountsMerkleRoot,
         const VariableT& _burnRateMerkleRoot,
@@ -136,8 +139,8 @@ public:
         publicKey(pb, FMT(prefix, ".publicKey")),
         nonce(pb, 32, FMT(prefix, ".nonce")),
 
-        orderA(pb, params, _timestamp, FMT(prefix, ".orderA")),
-        orderB(pb, params, _timestamp, FMT(prefix, ".orderB")),
+        orderA(pb, params, _stateID, _timestamp, FMT(prefix, ".orderA")),
+        orderB(pb, params, _stateID, _timestamp, FMT(prefix, ".orderB")),
 
         orderMatching(pb, orderA, orderB, FMT(prefix, ".orderMatching")),
 
@@ -478,6 +481,7 @@ public:
     std::vector<RingSettlementGadget*> ringSettlements;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
+    libsnark::dual_variable_gadget<FieldT> stateID;
     libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootAfter;
     libsnark::dual_variable_gadget<FieldT> accountsMerkleRootBefore;
@@ -502,6 +506,7 @@ public:
 
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
 
+        stateID(pb, 16, FMT(prefix, ".stateID")),
         tradingHistoryMerkleRootBefore(pb, 256, FMT(prefix, ".tradingHistoryMerkleRootBefore")),
         tradingHistoryMerkleRootAfter(pb, 256, FMT(prefix, ".tradingHistoryMerkleRootAfter")),
         accountsMerkleRootBefore(pb, 256, FMT(prefix, ".accountsMerkleRootBefore")),
@@ -542,6 +547,7 @@ public:
 
         pb.set_input_sizes(1);
 
+        stateID.generate_r1cs_constraints(true);
         tradingHistoryMerkleRootBefore.generate_r1cs_constraints(true);
         tradingHistoryMerkleRootAfter.generate_r1cs_constraints(true);
         accountsMerkleRootBefore.generate_r1cs_constraints(true);
@@ -549,6 +555,7 @@ public:
         burnRateMerkleRoot.generate_r1cs_constraints(true);
         timestamp.generate_r1cs_constraints(true);
 
+        publicDataBits.push_back(stateID.bits);
         publicDataBits.push_back(accountsMerkleRootBefore.bits);
         publicDataBits.push_back(accountsMerkleRootAfter.bits);
         publicDataBits.push_back(tradingHistoryMerkleRootBefore.bits);
@@ -563,6 +570,7 @@ public:
             ringSettlements.push_back(new RingSettlementGadget(
                 pb,
                 params,
+                stateID.packed,
                 ringTradingHistoryMerkleRoot,
                 ringAccountsMerkleRoot,
                 burnRateMerkleRoot.packed,
@@ -609,6 +617,9 @@ public:
             std::cout << "Invalid number of rings: " << context.ringSettlements.size()  << std::endl;
             return false;
         }
+
+        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
+        stateID.generate_r1cs_witness_from_bits();
 
         tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.tradingHistoryMerkleRootBefore);
         tradingHistoryMerkleRootBefore.generate_r1cs_witness_from_bits();

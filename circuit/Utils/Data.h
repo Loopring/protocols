@@ -134,6 +134,7 @@ public:
     ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::jubjub::EdwardsPoint minerPublicKeyF;
     ethsnarks::jubjub::EdwardsPoint minerPublicKeyS;
+    ethsnarks::FieldT stateID;
     ethsnarks::FieldT walletID;
     ethsnarks::FieldT orderID;
     ethsnarks::FieldT accountS;
@@ -173,6 +174,7 @@ void from_json(const json& j, Order& order)
     order.minerPublicKeyF.y = ethsnarks::FieldT(j.at("minerPublicKeyFY").get<std::string>().c_str());
     order.minerPublicKeyS.x = ethsnarks::FieldT(j.at("minerPublicKeySX").get<std::string>().c_str());
     order.minerPublicKeyS.y = ethsnarks::FieldT(j.at("minerPublicKeySY").get<std::string>().c_str());
+    order.stateID = ethsnarks::FieldT(j.at("stateID"));
     order.walletID = ethsnarks::FieldT(j.at("walletID"));
     order.orderID = ethsnarks::FieldT(j.at("orderID"));
     order.accountS = ethsnarks::FieldT(j.at("accountS"));
@@ -320,6 +322,8 @@ class TradeContext
 {
 public:
 
+    ethsnarks::FieldT stateID;
+
     ethsnarks::FieldT tradingHistoryMerkleRootBefore;
     ethsnarks::FieldT tradingHistoryMerkleRootAfter;
     ethsnarks::FieldT accountsMerkleRootBefore;
@@ -336,6 +340,8 @@ public:
 
 void from_json(const json& j, TradeContext& context)
 {
+    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+
     context.tradingHistoryMerkleRootBefore = ethsnarks::FieldT(j["tradingHistoryMerkleRootBefore"].get<std::string>().c_str());
     context.tradingHistoryMerkleRootAfter = ethsnarks::FieldT(j["tradingHistoryMerkleRootAfter"].get<std::string>().c_str());
     context.accountsMerkleRootBefore = ethsnarks::FieldT(j["accountsMerkleRootBefore"].get<std::string>().c_str());
@@ -370,6 +376,33 @@ void from_json(const json& j, Deposit& deposit)
     deposit.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
 }
 
+class DepositContext
+{
+public:
+
+    ethsnarks::FieldT stateID;
+
+    ethsnarks::FieldT accountsMerkleRootBefore;
+    ethsnarks::FieldT accountsMerkleRootAfter;
+
+    std::vector<Loopring::Deposit> deposits;
+};
+
+void from_json(const json& j, DepositContext& context)
+{
+    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+
+    context.accountsMerkleRootBefore = ethsnarks::FieldT(j["accountsMerkleRootBefore"].get<std::string>().c_str());
+    context.accountsMerkleRootAfter = ethsnarks::FieldT(j["accountsMerkleRootAfter"].get<std::string>().c_str());
+
+    // Read deposits
+    json jDeposits = j["deposits"];
+    for(unsigned int i = 0; i < jDeposits.size(); i++)
+    {
+        context.deposits.emplace_back(jDeposits[i].get<Loopring::Deposit>());
+    }
+}
+
 class Withdrawal
 {
 public:
@@ -391,6 +424,34 @@ void from_json(const json& j, Withdrawal& withdrawal)
     withdrawal.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
     withdrawal.signature = j.at("signature").get<Signature>();
 }
+
+class WithdrawContext
+{
+public:
+
+    ethsnarks::FieldT stateID;
+
+    ethsnarks::FieldT accountsMerkleRootBefore;
+    ethsnarks::FieldT accountsMerkleRootAfter;
+
+    std::vector<Loopring::Withdrawal> withdrawals;
+};
+
+void from_json(const json& j, WithdrawContext& context)
+{
+    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+
+    context.accountsMerkleRootBefore = ethsnarks::FieldT(j["accountsMerkleRootBefore"].get<std::string>().c_str());
+    context.accountsMerkleRootAfter = ethsnarks::FieldT(j["accountsMerkleRootAfter"].get<std::string>().c_str());
+
+    // Read withdrawals
+    json jWithdrawals = j["withdrawals"];
+    for(unsigned int i = 0; i < jWithdrawals.size(); i++)
+    {
+        context.withdrawals.emplace_back(jWithdrawals[i].get<Loopring::Withdrawal>());
+    }
+}
+
 
 class Cancellation
 {

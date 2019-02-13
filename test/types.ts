@@ -35,6 +35,8 @@ export interface OrderInfo {
 
   waiveFeePercentage?: number;
 
+  stateID?: number;
+
   index?: number;
   balanceS?: BN;
   balanceB?: BN;
@@ -57,6 +59,7 @@ export interface RingsInfo {
   publicDataHash?: string;
   timestamp?: number;
 
+  stateID?: number;
   operator?: number;
 }
 

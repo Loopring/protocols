@@ -150,6 +150,7 @@ public:
     std::vector<DepositGadget> deposits;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
+    libsnark::dual_variable_gadget<FieldT> stateID;
     libsnark::dual_variable_gadget<FieldT> accountsMerkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> accountsMerkleRootAfter;
 
@@ -164,6 +165,7 @@ public:
     DepositsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
 
+        stateID(pb, 16, FMT(prefix, ".stateID")),
         accountsMerkleRootBefore(pb, 256, FMT(prefix, ".accountsMerkleRootBefore")),
         accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter")),
 
@@ -187,7 +189,12 @@ public:
         this->numAccounts = numAccounts;
 
         pb.set_input_sizes(1);
+
+        stateID.generate_r1cs_constraints(true);
         accountsMerkleRootBefore.generate_r1cs_constraints(true);
+        accountsMerkleRootAfter.generate_r1cs_constraints(true);
+
+        publicDataBits.push_back(stateID.bits);
         publicDataBits.push_back(accountsMerkleRootBefore.bits);
         publicDataBits.push_back(accountsMerkleRootAfter.bits);
         for (size_t j = 0; j < numAccounts; j++)
@@ -234,22 +241,22 @@ public:
         std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numAccounts) << "/deposit)" << std::endl;
     }
 
-    bool generateWitness(const std::vector<Loopring::Deposit>& depositsData,
-                         const std::string& strAccountsMerkleRootBefore, const std::string& strAccountsMerkleRootAfter)
+    bool generateWitness(const DepositContext& context)
     {
-        ethsnarks::FieldT accountsMerkleRootBeforeValue = ethsnarks::FieldT(strAccountsMerkleRootBefore.c_str());
-        ethsnarks::FieldT accountsMerkleRootAfterValue = ethsnarks::FieldT(strAccountsMerkleRootAfter.c_str());
-        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootBeforeValue);
+        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
+        stateID.generate_r1cs_witness_from_bits();
+
+        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.accountsMerkleRootBefore);
         accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
-        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootAfterValue);
+        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.accountsMerkleRootAfter);
         accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
 
         depositBlockHashStart.bits.fill_with_bits_of_field_element(pb, 0);
         depositBlockHashStart.generate_r1cs_witness_from_bits();
 
-        for(unsigned int i = 0; i < depositsData.size(); i++)
+        for(unsigned int i = 0; i < context.deposits.size(); i++)
         {
-            deposits[i].generate_r1cs_witness(depositsData[i]);
+            deposits[i].generate_r1cs_witness(context.deposits[i]);
         }
 
         for (auto& hasher : hashers)
