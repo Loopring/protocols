@@ -59,6 +59,8 @@ export class ExchangeTestUtil {
       this.zeroAddress,
       new BN(0),
     );
+
+    await this.registerOperator(0, this.testContext.miner);
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -393,6 +395,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(blockType),
       web3.utils.toBN(tokensBlockIdx),
       web3.utils.hexToBytes(data),
+      {from: this.testContext.miner},
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
@@ -648,13 +651,8 @@ export class ExchangeTestUtil {
   }
 
   public async createNewState(owner: string) {
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
-
     const fee = await this.exchange.NEW_STATE_CREATION_FEE_IN_LRC();
-
-    await LRC.setBalance(owner, fee);
-    await LRC.approve(this.exchange.address, fee, {from: owner});
+    await this.setBalanceAndApproveLRC(owner, fee);
 
     // Create the new state
     const tx = await this.exchange.createNewState({from: owner});
@@ -679,6 +677,30 @@ export class ExchangeTestUtil {
     );
 
     return stateID;
+  }
+
+  public async registerOperator(stateID: number, owner: string) {
+    const fee = await this.exchange.NEW_STATE_CREATION_FEE_IN_LRC();
+    await this.setBalanceAndApproveLRC(owner, fee);
+
+    // Create the new state
+    const tx = await this.exchange.registerOperator(web3.utils.toBN(stateID), fee, {from: owner});
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[NewState] Gas used: " + tx.receipt.gasUsed);
+
+    const eventArr: any = await this.getEventsFromContract(this.exchange, "OperatorRegistered", web3.eth.blockNumber);
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.operatorID];
+    });
+    const operatorID = items[0][0].toNumber();
+
+    return operatorID;
+  }
+
+  public async setBalanceAndApproveLRC(owner: string, amount: BN) {
+    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
+    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
+    await LRC.setBalance(owner, amount);
+    await LRC.approve(this.exchange.address, amount, {from: owner});
   }
 
   public async cleanTradeHistory() {

@@ -40,6 +40,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint32 public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS                 = 1 hours;
 
     uint public constant MIN_STAKE_AMOUNT_IN_LRC                                = 100000 ether;
+    uint32 public constant MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAWAL               = 1 days;
 
     uint32 public constant MAX_INACTIVE_UNTIL_DISABLED_IN_SECONDS               = 1 days;
 
@@ -85,6 +86,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     event NewState(uint16 stateID, address owner);
 
+    event OperatorRegistered(address operator, uint16 operatorID);
+
     event TokenRegistered(address tokenAddress, uint16 tokenID);
     event WalletRegistered(address walletOwner, uint16 walletID);
     event RingMatcherRegistered(address ringMatcherOwner, uint16 ringMatcherID);
@@ -121,6 +124,10 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     struct Operator {
         address payable owner;
+        uint16 ID;
+        uint16 activeOperatorIdx;
+        uint amountStaked;
+        uint32 unregisterTimestamp;
     }
 
     struct Token {
@@ -162,6 +169,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         BlockState state;
 
+        uint32 timestamp;
         uint16 operatorID;
         uint32 numDepositBlocksCommitted;
         bytes withdrawals;
@@ -185,8 +193,10 @@ contract Exchange is IExchange, NoDefaultFunc {
         mapping (uint => DepositBlock) depositBlocks;
         mapping (uint => WithdrawBlock) withdrawBlocks;
 
-        uint numOperators;
+        uint16 numActiveOperators;
+        uint16 totalNumOperators;
         mapping (uint => Operator) operators;
+        mapping (uint16 => uint16) activeOperators;          // list idx -> operatorID
     }
 
     MerkleTree.Data burnRateMerkleTree;
@@ -243,6 +253,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             ACCOUNTS_START_INDEX,
             0,
             1,
+            0,
             0
         );
         states.push(memoryState);
@@ -252,6 +263,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             0x0A0697EA76AB4C7037053B18C79C928EA7540BC33BC48432FF472C8295A01BBA,
             0x0,
             BlockState.FINALIZED,
+            uint32(now),
             0xFFFF,
             0,
             new bytes(0)
@@ -289,6 +301,12 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         require(stateID < states.length, "INVALID_STATEID");
         State storage state = states[stateID];
+
+        // Check operator
+        require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
+        uint16 operatorIdx = getActiveOperatorIdx(stateID);
+        Operator storage operator = state.operators[state.activeOperators[operatorIdx]];
+        require(operator.owner == msg.sender, "SENDER_NOT_ACTIVE_OPERATOR");
 
         Block storage currentBlock = state.blocks[state.numBlocks - 1];
 
@@ -355,15 +373,14 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         bytes32 publicDataHash = sha256(data);
 
-        uint16 operatorID = 0;
-
         // Create a new block with the updated merkle roots
         Block memory newBlock = Block(
             accountsMerkleRootAfter,
             tradeHistoryMerkleRootAfter,
             publicDataHash,
             BlockState.COMMITTED,
-            operatorID,
+            uint32(now),
+            operator.ID,
             numDepositBlocksCommitted,
             data
         );
@@ -411,29 +428,34 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     function notifyBlockVerificationTooLate(
         uint16 stateID,
-        uint blockIdx
+        uint32 blockIdx
         )
         external
     {
         require(stateID < states.length, "INVALID_STATEID");
         State storage state = states[stateID];
 
-        require(blockIdx < state.numBlocks, INVALID_VALUE);
+        require(blockIdx < state.numBlocks, "INVALID_BLOCKIDX");
         Block storage specifiedBlock = state.blocks[blockIdx];
-        require(specifiedBlock.state == BlockState.COMMITTED, INVALID_VALUE);
-        // TODO: At a time limit in some way (number of blocks, timestamp, ...)
-        revertBlock(stateID, blockIdx);
-    }
+        require(specifiedBlock.state == BlockState.COMMITTED, "INVALID_BLOCKSTATE");
 
-    function revertBlock(
-        uint16 stateID,
-        uint blockIdx
-        )
-        internal
-    {
-        require(stateID < states.length, "INVALID_STATEID");
-        State storage state = states[stateID];
-        // TODO: Burn deposit of operator for LRC
+        // The specified block needs to be the first block not finalized
+        // (this way we always revert to a guaranteed valid block and don't need to revert multiple times)
+        Block storage previousBlock = state.blocks[uint(blockIdx).sub(1)];
+        require(previousBlock.state == BlockState.FINALIZED, "PREVIOUS_BLOCK_NOT_FINALIZED");
+
+        // Check if this block is verified too late
+        require(now > specifiedBlock.timestamp + MAX_PROOF_GENERATION_TIME_IN_SECONDS, "PROOF_NOT_TOO_LATE");
+
+         // Burn the LRC staked
+        Operator storage operator = state.operators[specifiedBlock.operatorID];
+        operator.amountStaked = operator.amountStaked.sub(MIN_STAKE_AMOUNT_IN_LRC);
+        burn(address(this), MIN_STAKE_AMOUNT_IN_LRC);
+
+        // Check if this operator can still be an operator, if not unregister the operator (if still registered)
+        /*if (operator.amountStaked < MIN_STAKE_AMOUNT_IN_LRC && operator.unregisterTimestamp == 0) {
+            unregisterOperator(stateID, specifiedBlock.operatorID);
+        }*/
 
         // Remove all blocks after and including blockIdx;
         state.numBlocks = blockIdx;
@@ -780,10 +802,114 @@ contract Exchange is IExchange, NoDefaultFunc {
         emit RingMatcherRegistered(ringMatcher.owner, uint16(ringMatchers.length - 1));
     }
 
-    function registerOperator()
+    function registerOperator(
+        uint16 stateID,
+        uint amountLRC
+        )
         external
     {
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
 
+        require(amountLRC >= MIN_STAKE_AMOUNT_IN_LRC, "INSUFFICIENT_STAKE_AMOUNT");
+
+        // Move the LRC to this contract
+        require(
+            lrcAddress.safeTransferFrom(
+                msg.sender,
+                address(this),
+                amountLRC
+            ),
+            TRANSFER_FAILURE
+        );
+
+        // Add the operator
+        Operator memory operator = Operator(
+            msg.sender,
+            state.totalNumOperators++,
+            state.numActiveOperators++,
+            amountLRC,
+            0
+        );
+        state.operators[operator.ID] = operator;
+
+        emit OperatorRegistered(msg.sender, operator.ID);
+    }
+
+    /*function unregisterOperator(
+        uint16 stateID,
+        uint16 operatorID
+        )
+        public
+    {
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATORIDX");
+        Operator storage operator = state.operators[operatorID];
+        require(msg.sender == operator.owner, UNAUTHORIZED);
+
+        // Set the timestamp so we know when the operator is allowed to withdraw his staked LRC
+        // (the operator could still have unproven blocks)
+        operator.unregisterTimestamp = uint32(now);
+
+        // Move the last operator to the slot of the operator we're unregistering
+        uint16 movedOperatorID = state.numActiveOperators - 1;
+        Operator storage movedOperator = state.operators[movedOperatorID];
+        state.activeOperators[operator.activeOperatorIdx] = movedOperatorID;
+        movedOperator.activeOperatorIdx = operator.activeOperatorIdx;
+
+        // Reduce the length of the array of active operators
+        state.numActiveOperators--;
+    }*/
+
+    function getActiveOperatorIdx(
+        uint16 stateID
+        )
+        public
+        view
+        returns (uint16)
+    {
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+
+        if (state.numActiveOperators == 0) {
+            return 0;
+        }
+
+        // Use a previous blockhash as the source of randomness
+        // Keep the operator the same for 4 blocks
+        bytes32 hash = blockhash(block.number - (block.number % 4));
+        uint randomOperatorIdx = (uint(hash) % state.numActiveOperators);
+
+        return uint16(randomOperatorIdx);
+    }
+
+    /*function withdrawOperatorStake(
+        uint16 stateID,
+        uint16 operatorID
+        )
+        external
+    {
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATORIDX");
+        Operator storage operator = state.operators[operatorID];
+
+        require(operator.unregisterTimestamp > 0, "OPERATOR_NOT_UNREGISTERED");
+        require(now > operator.unregisterTimestamp + MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAWAL, "TOO_EARLY_TO_WITHDRAW");
+
+        uint amount = operator.amountStaked;
+        operator.amountStaked = 0;
+
+        require(
+            lrcAddress.safeTransfer(
+                operator.owner,
+                amount
+            ),
+            TRANSFER_FAILURE
+        );
     }
 
     function withdrawFeeEarnedInBlock(
@@ -811,7 +937,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint fee = depositBlock.numDeposits * DEPOSIT_FEE_IN_ETH;
 
         operator.transfer(fee);
-    }
+    }*/
 
     function burn(
         address from,
