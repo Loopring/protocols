@@ -24,6 +24,7 @@ export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
   public exchange: any;
+  public tokenRegistry: any;
 
   private contracts = new Artifacts(artifacts);
 
@@ -386,7 +387,7 @@ export class ExchangeTestUtil {
     // console.log("DataJS: " + data);
     // console.log(publicDataHash.toString("hex"));
 
-    const tokensBlockIdx = (await this.exchange.getBurnRateBlockIdx()).toNumber();
+    const tokensBlockIdx = (await this.tokenRegistry.getBurnRateBlockIdx()).toNumber();
 
     const bitstream = new pjs.Bitstream(data);
     const stateID = bitstream.extractUint16(0);
@@ -617,14 +618,14 @@ export class ExchangeTestUtil {
   }
 
   public async registerTokens() {
-    const tokenRegistrationFee = await this.exchange.TOKEN_REGISTRATION_FEE_IN_LRC();
+    const tokenRegistrationFee = await this.tokenRegistry.TOKEN_REGISTRATION_FEE_IN_LRC();
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
 
     for (const token of this.testContext.allTokens) {
       await LRC.addBalance(this.testContext.orderOwners[0], tokenRegistrationFee);
       await LRC.approve(
-        this.exchange.address,
+        this.tokenRegistry.address,
         tokenRegistrationFee,
         {from: this.testContext.orderOwners[0]},
       );
@@ -632,10 +633,10 @@ export class ExchangeTestUtil {
       const tokenAddress = (token === null) ? this.zeroAddress : token.address;
       console.log(tokenAddress);
 
-      const tx = await this.exchange.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
+      const tx = await this.tokenRegistry.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
       pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
 
-      const tokensRoot = await this.exchange.getBurnRateRoot();
+      const tokensRoot = await this.tokenRegistry.getBurnRateRoot();
       // console.log(tokensRoot);
       const result = childProcess.spawnSync("python3", ["operator/add_token.py"], {stdio: "inherit"});
       assert(result.status === 0, "add_token failed: " + tokenAddress);
@@ -646,7 +647,7 @@ export class ExchangeTestUtil {
   }
 
   public async getTokenID(tokenAddress: string) {
-    const tokenID = await this.exchange.getTokenID(tokenAddress);
+    const tokenID = await this.tokenRegistry.getTokenID(tokenAddress);
     return tokenID;
   }
 
@@ -756,12 +757,14 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const [exchange, lrcToken] = await Promise.all([
+    const [exchange, tokenRegistry, lrcToken] = await Promise.all([
         this.contracts.Exchange.deployed(),
+        this.contracts.TokenRegistry.deployed(),
         this.contracts.LRCToken.deployed(),
       ]);
 
     this.exchange = exchange;
+    this.tokenRegistry = tokenRegistry;
 
     const currBlockNumber = await web3.eth.getBlockNumber();
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;

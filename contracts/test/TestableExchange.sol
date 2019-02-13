@@ -26,9 +26,10 @@ contract TestableExchange is Exchange
     uint256[] gammaABC;
 
     constructor(
+        address _tokenRegistryAddress,
         address _lrcAddress
         )
-        Exchange(_lrcAddress)
+        Exchange(_tokenRegistryAddress, _lrcAddress)
         public
     {
         // Empty

@@ -1,4 +1,5 @@
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
+var TokenRegistry = artifacts.require("./impl/TokenRegistry.sol");
 var Exchange = artifacts.require("./impl/Exchange");
 
 module.exports = function(deployer, network, accounts) {
@@ -12,12 +13,18 @@ module.exports = function(deployer, network, accounts) {
     }).then(() => {
       return Promise.all([
         deployer.deploy(
-          Exchange,
+          TokenRegistry,
           LRCToken.address,
         ),
       ]);
     }).then(() => {
-      // do nothing
+      return Promise.all([
+        deployer.deploy(
+          Exchange,
+          TokenRegistry.address,
+          LRCToken.address,
+        ),
+      ]);
     });
   }
 };

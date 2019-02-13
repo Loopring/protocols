@@ -17,25 +17,21 @@
 pragma solidity 0.5.2;
 
 import "../iface/IExchange.sol";
+import "../iface/ITokenRegistry.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/Verifier.sol";
 
-import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
-
-import "../lib/MerkleTree.sol";
 
 
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>,
 contract Exchange is IExchange, NoDefaultFunc {
     using MathUint          for uint;
-    using BytesUtil         for bytes;
     using ERC20SafeTransfer for address;
-    using MerkleTree        for MerkleTree.Data;
 
     uint32 public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS                 = 1 hours;
 
@@ -58,7 +54,6 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     uint public constant DEPOSIT_FEE_IN_ETH                      = 0.001 ether;
 
-    uint public constant TOKEN_REGISTRATION_FEE_IN_LRC           = 100000 ether;
     uint public constant WALLET_REGISTRATION_FEE_IN_LRC          = 100000 ether;
     uint public constant RINGMATCHER_REGISTRATION_FEE_IN_LRC     = 100000 ether;
 
@@ -70,29 +65,21 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     uint public constant ACCOUNTS_START_INDEX                    = MAX_NUM_TOKENS;
 
-    // Burn rates
-    uint16 public constant BURNRATE_TIER1            =                       25; // 2.5%
-    uint16 public constant BURNRATE_TIER2            =                  15 * 10; //  15%
-    uint16 public constant BURNRATE_TIER3            =                  30 * 10; //  30%
-    uint16 public constant BURNRATE_TIER4            =                  50 * 10; //  50%
-
     // Default account
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X =  2760979366321990647384327991146539505488430080750363450053902718557853404165;
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
     uint public constant DEFAULT_ACCOUNT_SECRETKEY   =   531595266505639429282323989096889429445309320547115026296307576144623272935;
 
 
-    address public lrcAddress        = address(0x0);
+    address public lrcAddress                = address(0x0);
+    address public tokenRegistryAddress      = address(0x0);
 
     event NewState(uint16 stateID, address owner);
 
     event OperatorRegistered(address operator, uint16 operatorID);
 
-    event TokenRegistered(address tokenAddress, uint16 tokenID);
     event WalletRegistered(address walletOwner, uint16 walletID);
     event RingMatcherRegistered(address ringMatcherOwner, uint16 ringMatcherID);
-
-    event NewBurnRateBlock(uint blockIdx, bytes32 merkleRoot);
 
     event Deposit(uint32 depositBlockIdx, uint24 account, uint16 walletID, address owner, address tokenAddress, uint amount);
     event Withdraw(uint24 account, uint16 walletID, address owner, address tokenAddress, uint amount);
@@ -128,12 +115,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint16 activeOperatorIdx;
         uint amountStaked;
         uint32 unregisterTimestamp;
-    }
-
-    struct Token {
-        address tokenAddress;
-        uint8 tier;
-        uint32 tierValidUntil;
     }
 
     struct Account {
@@ -175,11 +156,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes withdrawals;
     }
 
-    struct BurnRateBlock {
-        bytes32 merkleRoot;
-        uint32 validUntil;
-    }
-
     struct State {
         address owner;
 
@@ -199,15 +175,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         mapping (uint16 => uint16) activeOperators;          // list idx -> operatorID
     }
 
-    MerkleTree.Data burnRateMerkleTree;
-
     Wallet[] public wallets;
     RingMatcher[] public ringMatchers;
-
-    Token[] public tokens;
-    mapping (address => uint16) public tokenToTokenID;
-
-    BurnRateBlock[] public burnRateBlocks;
 
     State[] private states;
 
@@ -215,21 +184,15 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint256[] gammaABC;
 
     constructor(
+        address _tokenRegistryAddress,
         address _lrcAddress
         )
         public
     {
+        require(_tokenRegistryAddress != address(0x0), ZERO_ADDRESS);
         require(_lrcAddress != address(0x0), ZERO_ADDRESS);
+        tokenRegistryAddress = _tokenRegistryAddress;
         lrcAddress = _lrcAddress;
-
-        BurnRateBlock memory noTokensBlock = BurnRateBlock(
-            0x0,
-            0xFFFFFFFF
-        );
-        burnRateBlocks.push(noTokensBlock);
-
-        // Register ETH
-        // registerTokenInternal(address(0x0));
 
         // Create the default state
         createNewStateInternal(address(0x0));
@@ -324,7 +287,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes32 tradeHistoryMerkleRootBefore;
         bytes32 tradeHistoryMerkleRootAfter;
         if (blockType == uint(BlockType.TRADE)) {
-            BurnRateBlock storage burnRateBlock = burnRateBlocks[burnRateBlockIdx];
+            bytes32 burnRateMerkleRootContract = ITokenRegistry(tokenRegistryAddress).getBurnRateMerkleRoot(burnRateBlockIdx);
             bytes32 burnRateMerkleRoot;
             uint32 inputTimestamp;
             assembly {
@@ -333,7 +296,7 @@ contract Exchange is IExchange, NoDefaultFunc {
                 burnRateMerkleRoot := mload(add(data, 162))
                 inputTimestamp := and(mload(add(data, 166)), 0xFFFFFFFF)
             }
-            require(burnRateMerkleRoot == burnRateBlock.merkleRoot, "INVALID_BURNRATE_ROOT");
+            require(burnRateMerkleRoot == burnRateMerkleRootContract, "INVALID_BURNRATE_ROOT");
             require(inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
                     inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS, "INVALID_TIMESTAMP");
         } else if (blockType == uint(BlockType.DEPOSIT)) {
@@ -453,118 +416,12 @@ contract Exchange is IExchange, NoDefaultFunc {
         burn(address(this), MIN_STAKE_AMOUNT_IN_LRC);
 
         // Check if this operator can still be an operator, if not unregister the operator (if still registered)
-        /*if (operator.amountStaked < MIN_STAKE_AMOUNT_IN_LRC && operator.unregisterTimestamp == 0) {
+        if (operator.amountStaked < MIN_STAKE_AMOUNT_IN_LRC && operator.unregisterTimestamp == 0) {
             unregisterOperator(stateID, specifiedBlock.operatorID);
-        }*/
+        }
 
         // Remove all blocks after and including blockIdx;
         state.numBlocks = blockIdx;
-    }
-
-    function registerToken(
-        address tokenAddress
-        )
-        external
-    {
-        require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
-
-        // Pay the fee
-        burn(msg.sender, TOKEN_REGISTRATION_FEE_IN_LRC);
-
-        Token memory token = Token(
-            tokenAddress,
-            4,
-            0
-        );
-        tokens.push(token);
-        uint16 tokenID = uint16(tokens.length);
-        tokenToTokenID[tokenAddress] = tokenID;
-        emit TokenRegistered(tokenAddress, tokenID - 1);
-
-        uint16 burnRate = getBurnRate(tokenID - 1);
-        (, uint offset) = burnRateMerkleTree.Insert(burnRate);
-        assert(offset == tokenID - 1);
-        createNewBurnRateBlock();
-    }
-
-    function getTokenTier(
-        uint24 tokenID
-        )
-        public
-        view
-        returns (uint8 tier)
-    {
-        Token storage token = tokens[tokenID];
-        // Fall back to lowest tier
-        tier = (now > token.tierValidUntil) ? 4 : token.tier;
-    }
-
-    function getBurnRate(
-        uint24 tokenID
-        )
-        public
-        view
-        returns (uint16 burnRate)
-    {
-        uint tier = getTokenTier(tokenID);
-        if (tier == 1) {
-            burnRate = BURNRATE_TIER1;
-        } else if (tier == 2) {
-            burnRate = BURNRATE_TIER2;
-        } else if (tier == 3) {
-            burnRate = BURNRATE_TIER3;
-        } else {
-            burnRate = BURNRATE_TIER4;
-        }
-    }
-
-    function updateBurnRate(
-        uint24 tokenID
-        )
-        external
-    {
-        require(tokenID < tokens.length, "INVALID_TOKENID");
-
-        uint16 burnRate = getBurnRate(tokenID);
-        // TODO: MAKE THIS WORK
-        burnRateMerkleTree.Update(tokenID, burnRate);
-
-        // Create a new block if necessary
-        createNewBurnRateBlock();
-    }
-
-    function createNewBurnRateBlock()
-        internal
-    {
-        bytes32 newRoot = bytes32(burnRateMerkleTree.GetRoot());
-        BurnRateBlock storage currentBlock = burnRateBlocks[burnRateBlocks.length - 1];
-        if (newRoot == currentBlock.merkleRoot) {
-            // No need for a new block
-            return;
-        }
-
-        // Allow the use of older blocks for 1 hour
-        currentBlock.validUntil = uint32(now + 3600);
-
-        // Create the new block
-        BurnRateBlock memory newBlock = BurnRateBlock(
-            bytes32(newRoot),
-            0xFFFFFFFF              // The last block is valid forever (until a new block is added)
-        );
-        burnRateBlocks.push(newBlock);
-
-        emit NewBurnRateBlock(burnRateBlocks.length - 1, bytes32(newRoot));
-    }
-
-    function getTokenID(
-        address tokenAddress
-        )
-        public
-        view
-        returns (uint16)
-    {
-        require(tokenToTokenID[tokenAddress] != 0, "TOKEN_NOT_REGISTERED");
-        return tokenToTokenID[tokenAddress] - 1;
     }
 
     function deposit(
@@ -592,7 +449,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             require(msg.value == (DEPOSIT_FEE_IN_ETH + amount), "WRONG_ETH_VALUE");
         }
 
-        uint16 tokenID = getTokenID(token);
+        uint16 tokenID = ITokenRegistry(tokenRegistryAddress).getTokenID(token);
 
         // Get the deposit block
         DepositBlock storage depositBlock = state.depositBlocks[state.numDepositBlocks - 1];
@@ -749,8 +606,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             }
 
             // Transfer the tokens from the contract to the owner
-            assert(tokenID < tokens.length);
-            address token = tokens[tokenID].tokenAddress;
+            address token = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
             if (token == address(0x0)) {
                 // ETH
                 owner.transfer(amount);
@@ -836,7 +692,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         emit OperatorRegistered(msg.sender, operator.ID);
     }
 
-    /*function unregisterOperator(
+    function unregisterOperator(
         uint16 stateID,
         uint16 operatorID
         )
@@ -861,7 +717,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // Reduce the length of the array of active operators
         state.numActiveOperators--;
-    }*/
+    }
 
     function getActiveOperatorIdx(
         uint16 stateID
@@ -885,7 +741,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         return uint16(randomOperatorIdx);
     }
 
-    /*function withdrawOperatorStake(
+    function withdrawOperatorStake(
         uint16 stateID,
         uint16 operatorID
         )
@@ -937,7 +793,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint fee = depositBlock.numDeposits * DEPOSIT_FEE_IN_ETH;
 
         operator.transfer(fee);
-    }*/
+    }
 
     function burn(
         address from,
@@ -998,22 +854,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (uint)
     {
         return states[stateID].numBlocks - 1;
-    }
-
-    function getBurnRateRoot()
-        external
-        view
-        returns (bytes32)
-    {
-        return bytes32(burnRateMerkleTree.GetRoot());
-    }
-
-    function getBurnRateBlockIdx()
-        external
-        view
-        returns (uint)
-    {
-        return burnRateBlocks.length - 1;
     }
 
     function getDepositHash(
