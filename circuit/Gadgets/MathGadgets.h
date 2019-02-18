@@ -120,6 +120,44 @@ public:
     }
 };
 
+class MinGadget : public GadgetT
+{
+public:
+    LeqGadget A_lt_B;
+    TernaryGadget minimum;
+
+    MinGadget(
+        ProtoboardT& pb,
+        const VariableT& A,
+        const VariableT& B,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        A_lt_B(pb, A, B, FMT(prefix, ".(A < B)")),
+        minimum(pb, A_lt_B.lt(), A, B, FMT(prefix, ".minimum = (A < B) ? A : B"))
+    {
+
+    }
+
+    const VariableT& result() const
+    {
+        return minimum.result();
+    }
+
+    void generate_r1cs_witness()
+    {
+        A_lt_B.generate_r1cs_witness();
+        minimum.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        A_lt_B.generate_r1cs_constraints();
+        minimum.generate_r1cs_constraints();
+    }
+};
+
 class ForceLeqGadget : public GadgetT
 {
 public:

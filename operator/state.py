@@ -521,12 +521,13 @@ class Withdrawal(object):
     def __init__(self,
                  publicKey,
                  accountID, tokenID, amount,
-                 balanceUpdate, accountUpdate):
+                 amountWithdrawn, balanceUpdate, accountUpdate):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.accountID = accountID
         self.tokenID = tokenID
         self.amount = str(amount)
+        self.amountWithdrawn = str(amountWithdrawn)
         self.balanceUpdate = balanceUpdate
         self.accountUpdate = accountUpdate
 
@@ -924,7 +925,11 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(accountID))
         proof = self._accountsTree.createProof(accountID)
 
-        balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -int(amount))
+        balance = int(self.getAccount(accountID).getBalance(tokenID))
+        amountWithdrawn = int(amount) if (int(amount) < balance) else balance
+        print("Withdraw: " + str(amountWithdrawn) + " (requested: " + str(amount) + ")")
+
+        balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn)
 
         self.updateAccountTree(accountID)
         accountAfter = copyAccountInfo(self.getAccount(accountID))
@@ -934,7 +939,7 @@ class State(object):
         account = self.getAccount(accountID)
         withdrawal = Withdrawal(Point(int(account.publicKeyX), int(account.publicKeyY)),
                                 accountID, tokenID, amount,
-                                balanceUpdate, accountUpdate)
+                                amountWithdrawn, balanceUpdate, accountUpdate)
         withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal
 

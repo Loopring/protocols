@@ -153,8 +153,7 @@ public:
     const OrderGadget& order;
 
     VariableT remainingS;
-    LeqGadget balanceS_lt_remainingS;
-    TernaryGadget fillAmountS;
+    MinGadget fillAmountS;
     MulDivGadget fillAmountB;
 
     MaxFillAmountsGadget(
@@ -167,8 +166,7 @@ public:
         order(_order),
 
         remainingS(make_variable(pb, FMT(prefix, ".remainingS"))),
-        balanceS_lt_remainingS(pb, order.balanceS, remainingS, FMT(prefix, ".(spendableS < remainingS)")),
-        fillAmountS(pb, balanceS_lt_remainingS.lt(), order.balanceS, remainingS, FMT(prefix, "fillAmountS = (balanceS < remainingS) ? balanceS : remainingS")),
+        fillAmountS(pb, order.balanceS, remainingS, FMT(prefix, ".min(balanceS, remainingS)")),
         fillAmountB(pb, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(prefix, "(fillAmountS * amountB) / amountS"))
     {
 
@@ -187,7 +185,6 @@ public:
     void generate_r1cs_witness()
     {
         pb.val(remainingS) = pb.val(order.amountS.packed) - pb.val(order.filledBefore);
-        balanceS_lt_remainingS.generate_r1cs_witness();
         fillAmountS.generate_r1cs_witness();
         fillAmountB.generate_r1cs_witness();
         print(pb, "amountS", order.amountS.packed);
@@ -201,7 +198,6 @@ public:
     void generate_r1cs_constraints()
     {
         pb.add_r1cs_constraint(ConstraintT(order.filledBefore + remainingS, 1, order.amountS.packed), "filledBeforeA + remainingS = amountS");
-        balanceS_lt_remainingS.generate_r1cs_constraints();
         fillAmountS.generate_r1cs_constraints();
         fillAmountB.generate_r1cs_constraints();
     }

@@ -644,9 +644,8 @@ public:
     jubjub::Params params;
     std::vector<RingSettlementGadget*> ringSettlements;
 
-    VariableArrayT lrcTokenID;
-
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
+
     libsnark::dual_variable_gadget<FieldT> stateID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
@@ -664,6 +663,7 @@ public:
     const VariableT tradeHistoryBefore;
     const VariableT feesRootBefore;
 
+    VariableArrayT lrcTokenID;
     VariableT constant0;
     VariableT constant1;
 
@@ -678,8 +678,6 @@ public:
     TradeCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
 
-        lrcTokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".lrcTokenID"))),
-
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
 
         stateID(pb, 16, FMT(prefix, ".stateID")),
@@ -691,6 +689,7 @@ public:
         tradeHistoryBefore(make_variable(pb, FMT(prefix, ".tradeHistoryBefore"))),
         feesRootBefore(make_variable(pb, FMT(prefix, ".feesRootBefore"))),
 
+        lrcTokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".lrcTokenID"))),
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
 

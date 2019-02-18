@@ -30,7 +30,8 @@ public:
     const jubjub::VariablePointT publicKey;
     VariableArrayT accountID;
     VariableArrayT tokenID;
-    libsnark::dual_variable_gadget<FieldT> amount;
+    libsnark::dual_variable_gadget<FieldT> amountRequested;
+    libsnark::dual_variable_gadget<FieldT> amountWithdrawn;
     libsnark::dual_variable_gadget<FieldT> padding;
 
     VariableT walletID;
@@ -41,6 +42,8 @@ public:
 
     VariableT tradingHistoryRoot;
     VariableT balancesRoot_before;
+
+    MinGadget amountToWithdraw;
 
     UpdateBalanceGadget updateBalance;
     UpdateAccountGadget updateAccount;
@@ -61,7 +64,7 @@ public:
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".tokenID"))),
-        amount(pb, 96, FMT(prefix, ".amount")),
+        amountRequested(pb, 96, FMT(prefix, ".amountRequested")),
         padding(pb, 2, FMT(prefix, ".padding")),
 
         walletID(make_variable(pb, FMT(prefix, ".walletID"))),
@@ -73,6 +76,8 @@ public:
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
         tradingHistoryRoot(make_variable(pb, FMT(prefix, ".tradeHistoryRoot"))),
 
+        amountToWithdraw(pb, amountRequested.packed, balance_before, FMT(prefix, ".min(amountRequested, balance)")),
+        amountWithdrawn(pb, 96, FMT(prefix, ".amount")),
 
         updateBalance(pb, balancesRoot_before, tokenID,
                       {balance_before, tradingHistoryRoot},
@@ -85,7 +90,7 @@ public:
                       FMT(prefix, ".updateAccount")),
 
         signatureVerifier(pb, params, publicKey,
-                          flatten({accountID, tokenID, amount.bits, padding.bits}),
+                          flatten({accountID, tokenID, amountRequested.bits, padding.bits}),
                           FMT(prefix, ".signatureVerifier"))
     {
 
@@ -98,7 +103,7 @@ public:
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {accountID, uint16_padding, tokenID, amount.bits};
+        return {accountID, uint16_padding, tokenID, amountWithdrawn.bits};
     }
 
     void generate_r1cs_witness(const Withdrawal& withdrawal)
@@ -109,8 +114,8 @@ public:
         accountID.fill_with_bits_of_field_element(pb, withdrawal.accountID);
         tokenID.fill_with_bits_of_field_element(pb, withdrawal.tokenID);
 
-        amount.bits.fill_with_bits_of_field_element(pb, withdrawal.amount);
-        amount.generate_r1cs_witness_from_bits();
+        amountRequested.bits.fill_with_bits_of_field_element(pb, withdrawal.amount);
+        amountRequested.generate_r1cs_witness_from_bits();
 
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
@@ -124,6 +129,11 @@ public:
         pb.val(tradingHistoryRoot) = withdrawal.balanceUpdate.before.tradingHistoryRoot;
         pb.val(balancesRoot_before) = withdrawal.accountUpdate.before.balancesRoot;
 
+        amountToWithdraw.generate_r1cs_witness();
+
+        amountWithdrawn.bits.fill_with_bits_of_field_element(pb, pb.val(balance_before) - pb.val(balance_after));
+        amountWithdrawn.generate_r1cs_witness_from_bits();
+
         updateBalance.generate_r1cs_witness(withdrawal.balanceUpdate.proof);
         updateAccount.generate_r1cs_witness(withdrawal.accountUpdate.proof);
 
@@ -132,12 +142,15 @@ public:
 
     void generate_r1cs_constraints()
     {
-        amount.generate_r1cs_constraints(true);
+        amountRequested.generate_r1cs_constraints(true);
+        amountWithdrawn.generate_r1cs_constraints(true);
         padding.generate_r1cs_constraints(true);
 
         signatureVerifier.generate_r1cs_constraints();
 
-        pb.add_r1cs_constraint(ConstraintT(balance_before - amount.packed, 1, balance_after), "balance_before - amount == balance_after");
+        amountToWithdraw.generate_r1cs_constraints();
+        pb.add_r1cs_constraint(ConstraintT(amountToWithdraw.result(), 1, amountWithdrawn.packed), "amountToWithdraw == amountWithdrawn");
+        pb.add_r1cs_constraint(ConstraintT(balance_before - amountWithdrawn.packed, 1, balance_after), "balance_before - amount == balance_after");
 
         updateBalance.generate_r1cs_constraints();
         updateAccount.generate_r1cs_constraints();

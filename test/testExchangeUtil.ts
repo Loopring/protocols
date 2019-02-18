@@ -525,10 +525,10 @@ export class ExchangeTestUtil {
     bs.addNumber(jwithdrawals.stateID, 2);
     bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootBefore, 10), 32);
     bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootAfter, 10), 32);
-    for (const withdrawal of this.pendingWithdrawals) {
+    for (const withdrawal of jwithdrawals.withdrawals) {
       bs.addNumber(withdrawal.accountID, 3);
       bs.addNumber(withdrawal.tokenID, 2);
-      bs.addBN(withdrawal.amount, 12);
+      bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
     }
 
     // Commit the block

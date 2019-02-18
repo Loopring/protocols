@@ -52,8 +52,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // Withdraw the tokens that were bought
       const orderA = ringsInfo.rings[0].orderA;
       const orderB = ringsInfo.rings[0].orderB;
-      exchangeTestUtil.withdraw(orderA.accountID, orderA.tokenIdB, orderA.amountB);
-      exchangeTestUtil.withdraw(orderB.accountID, orderB.tokenIdB, orderB.amountB);
+      exchangeTestUtil.withdraw(orderA.accountID, orderA.tokenIdB, orderA.amountB.mul(new BN(2)));
+      exchangeTestUtil.withdraw(orderB.accountID, orderB.tokenIdB, orderB.amountB.mul(new BN(2)));
       await exchangeTestUtil.submitWithdrawals(ringsInfo);
     });
 

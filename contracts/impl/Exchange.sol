@@ -504,6 +504,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     function requestWithdraw(
         uint16 stateID,
         uint24 accountID,
+        uint16 tokenID,
         uint96 amount
         )
         external
@@ -530,6 +531,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             abi.encodePacked(
                 withdrawBlock.hash,
                 accountID,
+                tokenID,
                 amount
             )
         );
