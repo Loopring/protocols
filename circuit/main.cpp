@@ -181,19 +181,10 @@ bool cancel(Mode mode, unsigned int numCancels, const json& input, ethsnarks::Pr
             return false;
         }
 
-        std::string tradingHistoryMerkleRootBefore = input["tradingHistoryMerkleRootBefore"].get<std::string>();
-        std::string tradingHistoryMerkleRootAfter = input["tradingHistoryMerkleRootAfter"].get<std::string>();
-        std::string accountsMerkleRoot = input["accountsMerkleRoot"].get<std::string>();
-
-        // Read cancels
-        std::vector<Loopring::Cancellation> cancels;
-        for(unsigned int i = 0; i < numCancels; i++)
-        {
-            cancels.emplace_back(jCancels[i].get<Loopring::Cancellation>());
-        }
+        Loopring::CancelContext context = input.get<Loopring::CancelContext>();
 
         // Generate witness values for the given input values
-        if (!circuit.generateWitness(cancels, tradingHistoryMerkleRootBefore, tradingHistoryMerkleRootAfter, accountsMerkleRoot))
+        if (!circuit.generateWitness(context))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return false;

@@ -163,26 +163,26 @@ public:
     std::vector<DepositGadget> deposits;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
+    PublicDataGadget publicData;
+
     libsnark::dual_variable_gadget<FieldT> stateID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
-
-    std::vector<VariableArrayT> publicDataBits;
 
     libsnark::dual_variable_gadget<FieldT> depositBlockHashStart;
     std::vector<VariableArrayT> depositDataBits;
     std::vector<sha256_many> hashers;
 
-    MiMC_hash_gadget* hashRootsBefore;
-    MiMC_hash_gadget* hashRootsAfter;
-
     const VariableT accountsRootBefore;
     const VariableT feesRoot;
 
-    sha256_many* publicDataHasher;
+    MerkleRootGadget merkleRootGadget;
 
     DepositsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
+
+        publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
+        publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
         stateID(pb, 16, FMT(prefix, ".stateID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
@@ -193,25 +193,16 @@ public:
         accountsRootBefore(make_variable(pb, FMT(prefix, ".accountsRootBefore"))),
         feesRoot(make_variable(pb, FMT(prefix, ".feesRoot"))),
 
-        publicDataHash(pb, 256, FMT(prefix, ".publicDataHash"))
+        merkleRootGadget(pb, merkleRootBefore.packed, merkleRootAfter.packed,
+                         accountsRootBefore, feesRoot,
+                         FMT(prefix, ".merkleRootGadget"))
     {
-        this->publicDataHasher = nullptr;
+
     }
 
     ~DepositsCircuitGadget()
     {
-        if (hashRootsBefore)
-        {
-            delete hashRootsBefore;
-        }
-        if (hashRootsAfter)
-        {
-            delete hashRootsAfter;
-        }
-        if (publicDataHasher)
-        {
-            delete publicDataHasher;
-        }
+
     }
 
     void generate_r1cs_constraints(int numAccounts)
@@ -224,13 +215,14 @@ public:
         merkleRootBefore.generate_r1cs_constraints(true);
         merkleRootAfter.generate_r1cs_constraints(true);
 
-        publicDataBits.push_back(stateID.bits);
-        publicDataBits.push_back(merkleRootBefore.bits);
-        publicDataBits.push_back(merkleRootAfter.bits);
+        publicData.add(stateID.bits);
+        publicData.add(merkleRootBefore.bits);
+        publicData.add(merkleRootAfter.bits);
         for (size_t j = 0; j < numAccounts; j++)
         {
             VariableT depositAccountsRoot = (j == 0) ? accountsRootBefore : deposits.back().getNewAccountsRoot();
             deposits.emplace_back(pb, depositAccountsRoot, std::string("deposit_") + std::to_string(j));
+            deposits.back().generate_r1cs_constraints();
 
             VariableArrayT depositBlockHash = (j == 0) ? depositBlockHashStart.bits : hashers.back().result().bits;
 
@@ -244,32 +236,15 @@ public:
             hashers.back().generate_r1cs_constraints();
         }
 
+        // Add the block hash
+        publicData.add(flattenReverse({hashers.back().result().bits}));
+
+        // Check the input hash
         publicDataHash.generate_r1cs_constraints(true);
-        for (auto& deposit : deposits)
-        {
-            deposit.generate_r1cs_constraints();
-        }
+        publicData.generate_r1cs_constraints();
 
-        publicDataBits.push_back(flattenReverse({hashers.back().result().bits}));
-
-        // Check public data
-        publicDataHasher = new sha256_many(pb, flattenReverse(publicDataBits), ".publicDataHash");
-        publicDataHasher->generate_r1cs_constraints();
-
-        // Check that the hash matches the public input
-        for (unsigned int i = 0; i < 256; i++)
-        {
-            pb.add_r1cs_constraint(ConstraintT(publicDataHasher->result().bits[255-i], 1, publicDataHash.bits[i]), "publicData.check()");
-        }
-
-        hashRootsBefore = new MiMC_hash_gadget(pb, libsnark::ONE, {accountsRootBefore, feesRoot}, FMT(annotation_prefix, ".rootBefore"));
-        hashRootsBefore->generate_r1cs_constraints();
-        hashRootsAfter = new MiMC_hash_gadget(pb, libsnark::ONE, {deposits.back().getNewAccountsRoot(), feesRoot}, FMT(annotation_prefix, ".rootAfter"));
-        hashRootsAfter->generate_r1cs_constraints();
-
-        // Make sure the merkle roots are correctly passed in
-        pb.add_r1cs_constraint(ConstraintT(hashRootsBefore->result(), 1, merkleRootBefore.packed), "oldMerkleRoot");
-        pb.add_r1cs_constraint(ConstraintT(hashRootsAfter->result(), 1, merkleRootAfter.packed), "newMerkleRoot");
+        // Check the merkle roots
+        merkleRootGadget.generate_r1cs_constraints(deposits.back().getNewAccountsRoot(), feesRoot);
     }
 
     void printInfo()
@@ -287,7 +262,7 @@ public:
         merkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.merkleRootAfter);
         merkleRootAfter.generate_r1cs_witness_from_bits();
 
-        pb.val(accountsRootBefore) = context.deposits[0].accountUpdate.rootBefore;
+        pb.val(accountsRootBefore) = context.accountsRootBefore;
         pb.val(feesRoot) = context.feesRoot;
 
         depositBlockHashStart.bits.fill_with_bits_of_field_element(pb, 0);
@@ -303,43 +278,9 @@ public:
             hasher.generate_r1cs_witness();
         }
 
-        /*for (auto& depositDataBit : depositDataBits)
-        {
-            printBits("deposit data: ", depositDataBit.get_bits(pb));
-        }
-        printBits("Public data: ", flattenReverse(publicDataBits).get_bits(pb));*/
+        publicData.generate_r1cs_witness();
 
-        publicDataHasher->generate_r1cs_witness();
-
-        hashRootsBefore->generate_r1cs_witness();
-        hashRootsAfter->generate_r1cs_witness();
-
-        // Print out calculated hash of transfer data
-        auto full_output_bits = publicDataHasher->result().get_digest();
-        //printBits("HashC: ", full_output_bits);
-        BigInt publicDataHashDec = 0;
-        for (unsigned int i = 0; i < full_output_bits.size(); i++)
-        {
-            publicDataHashDec = publicDataHashDec * 2 + (full_output_bits[i] ? 1 : 0);
-        }
-        //std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
-        libff::bigint<libff::alt_bn128_r_limbs> bn = libff::bigint<libff::alt_bn128_r_limbs>(publicDataHashDec.to_string().c_str());
-        for (unsigned int i = 0; i < 256; i++)
-        {
-            pb.val(publicDataHash.bits[i]) = bn.test_bit(i);
-        }
-        publicDataHash.generate_r1cs_witness_from_bits();
-        //printBits("publicData: ", publicData.get_bits(pb));
-
-        //printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
-        //printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
-
-        /*for (auto& hasher : hashers)
-        {
-            printBits("Deposit block hash bits: ", hasher.result().bits.get_bits(pb), true);
-        }*/
-
-        printBits("publicDataHash: 0x", flattenReverse({publicDataHasher->result().bits}).get_bits(pb), true);
+        merkleRootGadget.generate_r1cs_witness();
 
         return true;
     }

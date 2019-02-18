@@ -302,6 +302,143 @@ public:
     }
 };
 
+class PublicDataGadget : public GadgetT
+{
+public:
+
+    libsnark::dual_variable_gadget<FieldT>& inputHash;
+    std::vector<VariableArrayT> publicDataBits;
+
+    sha256_many* hasher;
+
+    PublicDataGadget(
+        ProtoboardT& pb,
+        libsnark::dual_variable_gadget<FieldT>& _inputHash,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+        inputHash(_inputHash)
+    {
+        this->hasher = nullptr;
+    }
+
+    ~PublicDataGadget()
+    {
+        if (hasher)
+        {
+            delete hasher;
+        }
+    }
+
+    void add(const VariableArrayT& bits)
+    {
+        publicDataBits.push_back(bits);
+    }
+
+    void add(const std::vector<VariableArrayT>& bits)
+    {
+        publicDataBits.insert(publicDataBits.end(), bits.begin(), bits.end());
+    }
+
+    void generate_r1cs_witness()
+    {
+        hasher->generate_r1cs_witness();
+
+         // Get the calculated hash in bits
+        auto full_output_bits = hasher->result().get_digest();
+        BigInt publicDataHashDec = 0;
+        for (unsigned int i = 0; i < full_output_bits.size(); i++)
+        {
+            publicDataHashDec = publicDataHashDec * 2 + (full_output_bits[i] ? 1 : 0);
+        }
+        libff::bigint<libff::alt_bn128_r_limbs> bn = libff::bigint<libff::alt_bn128_r_limbs>(publicDataHashDec.to_string().c_str());
+        printBits("publicDataHash: 0x", flattenReverse({hasher->result().bits}).get_bits(pb), true);
+
+        // Store the input hash
+        for (unsigned int i = 0; i < 256; i++)
+        {
+            pb.val(inputHash.bits[i]) = bn.test_bit(i);
+        }
+        inputHash.generate_r1cs_witness_from_bits();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        hasher = new sha256_many(pb, flattenReverse(publicDataBits), ".hasher");
+        hasher->generate_r1cs_constraints();
+
+        // Check that the hash matches the public input
+        for (unsigned int i = 0; i < 256; i++)
+        {
+            pb.add_r1cs_constraint(ConstraintT(hasher->result().bits[255-i], 1, inputHash.bits[i]), "publicData.check()");
+        }
+    }
+};
+
+class MerkleRootGadget : public GadgetT
+{
+public:
+
+    const VariableT& merkleRootBefore;
+    const VariableT& merkleRootAfter;
+
+    const VariableT& accountsRootBefore;
+    const VariableT& feesRootBefore;
+
+    MiMC_hash_gadget* hashRootsBefore;
+    MiMC_hash_gadget* hashRootsAfter;
+
+    MerkleRootGadget(
+        ProtoboardT& pb,
+        const VariableT& _merkleRootBefore,
+        const VariableT& _merkleRootAfter,
+        const VariableT& _accountsRootBefore,
+        const VariableT& _feesRootBefore,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        merkleRootBefore(_merkleRootBefore),
+        merkleRootAfter(_merkleRootAfter),
+        accountsRootBefore(_accountsRootBefore),
+        feesRootBefore(_feesRootBefore)
+    {
+        hashRootsBefore = nullptr;
+        hashRootsAfter = nullptr;
+    }
+
+    ~MerkleRootGadget()
+    {
+        if (hashRootsBefore)
+        {
+            delete hashRootsBefore;
+        }
+        if (hashRootsAfter)
+        {
+            delete hashRootsAfter;
+        }
+    }
+
+    void generate_r1cs_witness()
+    {
+        hashRootsBefore->generate_r1cs_witness();
+        hashRootsAfter->generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints(const VariableT& accountsRootAfter, const VariableT& feesRootAfter)
+    {
+        // Calculate the combined merkle root
+        hashRootsBefore = new MiMC_hash_gadget(pb, libsnark::ONE, {accountsRootBefore, feesRootBefore}, FMT(annotation_prefix, ".rootBefore"));
+        hashRootsBefore->generate_r1cs_constraints();
+        hashRootsAfter = new MiMC_hash_gadget(pb, libsnark::ONE, {accountsRootAfter, feesRootAfter}, FMT(annotation_prefix, ".rootAfter"));
+        hashRootsAfter->generate_r1cs_constraints();
+
+        // Make sure the merkle roots are correctly passed in
+        pb.add_r1cs_constraint(ConstraintT(hashRootsBefore->result(), 1, merkleRootBefore), "oldMerkleRoot");
+        pb.add_r1cs_constraint(ConstraintT(hashRootsAfter->result(), 1, merkleRootAfter), "newMerkleRoot");
+    }
+};
+
 }
 
 #endif

@@ -457,6 +457,9 @@ public:
     ethsnarks::FieldT merkleRootAfter;
     ethsnarks::FieldT burnRateMerkleRoot;
 
+    ethsnarks::FieldT accountsRootBefore;
+    ethsnarks::FieldT feesRootBefore;
+
     ethsnarks::FieldT timestamp;
 
     ethsnarks::FieldT operatorAccountID;
@@ -473,6 +476,9 @@ void from_json(const json& j, TradeContext& context)
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
     context.burnRateMerkleRoot = ethsnarks::FieldT(j["burnRateMerkleRoot"].get<std::string>().c_str());
+
+    context.accountsRootBefore = ethsnarks::FieldT(j["accountsRootBefore"].get<std::string>().c_str());
+    context.feesRootBefore = ethsnarks::FieldT(j["feesRootBefore"].get<std::string>().c_str());
 
     context.timestamp = ethsnarks::FieldT(j["timestamp"].get<unsigned int>());
 
@@ -508,7 +514,9 @@ public:
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
+
     ethsnarks::FieldT feesRoot;
+    ethsnarks::FieldT accountsRootBefore;
 
     std::vector<Loopring::Deposit> deposits;
 };
@@ -519,7 +527,9 @@ void from_json(const json& j, DepositContext& context)
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+
     context.feesRoot = ethsnarks::FieldT(j["feesRootBefore"].get<std::string>().c_str());
+    context.accountsRootBefore = ethsnarks::FieldT(j["accountsRootBefore"].get<std::string>().c_str());
 
     // Read deposits
     json jDeposits = j["deposits"];
@@ -564,7 +574,9 @@ public:
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
+
     ethsnarks::FieldT feesRoot;
+    ethsnarks::FieldT accountsRootBefore;
 
     std::vector<Loopring::Withdrawal> withdrawals;
 };
@@ -575,7 +587,9 @@ void from_json(const json& j, WithdrawContext& context)
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+
     context.feesRoot = ethsnarks::FieldT(j["feesRootBefore"].get<std::string>().c_str());
+    context.accountsRootBefore = ethsnarks::FieldT(j["accountsRootBefore"].get<std::string>().c_str());
 
     // Read withdrawals
     json jWithdrawals = j["withdrawals"];
@@ -595,6 +609,7 @@ public:
     ethsnarks::FieldT account;
     ethsnarks::FieldT orderID;
     TradeHistoryUpdate tradeHistoryUpdate;
+    BalanceUpdate balanceUpdate;
     AccountUpdate accountUpdate;
     Signature signature;
 };
@@ -610,6 +625,39 @@ void from_json(const json& j, Cancellation& cancellation)
     cancellation.tradeHistoryUpdate = j.at("tradeHistoryUpdate").get<TradeHistoryUpdate>();
     cancellation.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
     cancellation.signature = j.at("signature").get<Signature>();
+}
+
+class CancelContext
+{
+public:
+
+    ethsnarks::FieldT stateID;
+
+    ethsnarks::FieldT merkleRootBefore;
+    ethsnarks::FieldT merkleRootAfter;
+
+    ethsnarks::FieldT feesRoot;
+    ethsnarks::FieldT accountsRootBefore;
+
+    std::vector<Loopring::Cancellation> cancels;
+};
+
+void from_json(const json& j, CancelContext& context)
+{
+    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+
+    context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+    context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+
+    context.feesRoot = ethsnarks::FieldT(j["feesRootBefore"].get<std::string>().c_str());
+    context.accountsRootBefore = ethsnarks::FieldT(j["accountsRootBefore"].get<std::string>().c_str());
+
+    // Read cancels
+    json jCancels = j["cancels"];
+    for(unsigned int i = 0; i < jCancels.size(); i++)
+    {
+        context.cancels.emplace_back(jCancels[i].get<Loopring::Cancellation>());
+    }
 }
 
 }

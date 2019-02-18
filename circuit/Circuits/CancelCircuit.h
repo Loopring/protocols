@@ -85,7 +85,7 @@ public:
 
     }
 
-    const VariableT getNewTradingHistoryMerkleRoot() const
+    const VariableT getNewAccountsRoot() const
     {
         return updateTradeHistory.getNewRoot();
     }
@@ -143,33 +143,42 @@ public:
     std::vector<CancelGadget> cancels;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
-    libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootBefore;
-    libsnark::dual_variable_gadget<FieldT> tradingHistoryMerkleRootAfter;
-    libsnark::dual_variable_gadget<FieldT> accountsMerkleRoot;
+    PublicDataGadget publicData;
 
-    std::vector<VariableArrayT> publicDataBits;
-    VariableArrayT publicData;
+    libsnark::dual_variable_gadget<FieldT> stateID;
+    libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
+    libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
-    sha256_many* publicDataHasher;
+    const VariableT accountsRootBefore;
+    const VariableT feesRoot;
+
+    const VariableT tradeHistoryBefore;
+
+    MerkleRootGadget merkleRootGadget;
 
     CancelsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
 
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
+        publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
-        tradingHistoryMerkleRootBefore(pb, 256, FMT(prefix, ".tradingHistoryMerkleRootBefore")),
-        tradingHistoryMerkleRootAfter(pb, 256, FMT(prefix, ".tradingHistoryMerkleRootAfter")),
-        accountsMerkleRoot(pb, 256, FMT(prefix, ".accountsMerkleRoot"))
+        stateID(pb, 16, FMT(prefix, ".stateID")),
+        merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
+        merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
+
+        accountsRootBefore(make_variable(pb, FMT(prefix, ".accountsRootBefore"))),
+        feesRoot(make_variable(pb, FMT(prefix, ".feesRoot"))),
+
+        merkleRootGadget(pb, merkleRootBefore.packed, merkleRootAfter.packed,
+                         accountsRootBefore, feesRoot,
+                         FMT(prefix, ".merkleRootGadget"))
     {
-        this->publicDataHasher = nullptr;
+
     }
 
     ~CancelsCircuitGadget()
     {
-        if (publicDataHasher)
-        {
-            delete publicDataHasher;
-        }
+
     }
 
     void generate_r1cs_constraints(int numCancels)
@@ -177,38 +186,27 @@ public:
         this->numCancels = numCancels;
 
         pb.set_input_sizes(1);
-        tradingHistoryMerkleRootBefore.generate_r1cs_constraints(true);
-        publicDataBits.push_back(tradingHistoryMerkleRootBefore.bits);
-        publicDataBits.push_back(tradingHistoryMerkleRootAfter.bits);
+
+        publicData.add(stateID.bits);
+        publicData.add(merkleRootBefore.bits);
+        publicData.add(merkleRootAfter.bits);
         for (size_t j = 0; j < numCancels; j++)
         {
-            VariableT cancelTradingHistoryMerkleRoot = (j == 0) ? tradingHistoryMerkleRootBefore.packed : cancels.back().getNewTradingHistoryMerkleRoot();
-            cancels.emplace_back(pb, params, cancelTradingHistoryMerkleRoot, accountsMerkleRoot.packed, std::string("cancels") + std::to_string(j));
+            VariableT cancelAccountsRoot = (j == 0) ? accountsRootBefore : cancels.back().getNewAccountsRoot();
+            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelAccountsRoot, std::string("cancels") + std::to_string(j));
+            cancels.back().generate_r1cs_constraints();
 
             // Store data from withdrawal
             std::vector<VariableArrayT> ringPublicData = cancels.back().getPublicData();
-            publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
+            publicData.add(cancels.back().getPublicData());
         }
 
+        // Check the input hash
         publicDataHash.generate_r1cs_constraints(true);
-        for (auto& cancel : cancels)
-        {
-            cancel.generate_r1cs_constraints();
-        }
+        publicData.generate_r1cs_constraints();
 
-        // Check public data
-        publicData = flattenReverse(publicDataBits);
-        publicDataHasher = new sha256_many(pb, publicData, ".publicDataHash");
-        publicDataHasher->generate_r1cs_constraints();
-
-        // Check that the hash matches the public input
-        /*for (unsigned int i = 0; i < 256; i++)
-        {
-            pb.add_r1cs_constraint(ConstraintT(publicDataHasher->result().bits[255-i], 1, publicDataHash.bits[i]), "publicData.check()");
-        }*/
-
-        // Make sure the merkle root afterwards is correctly passed in
-        //pb.add_r1cs_constraint(ConstraintT(ringSettlements.back().getNewTradingHistoryMerkleRoot(), 1, tradingHistoryMerkleRootAfter.packed), "newMerkleRoot");
+        // Check the merkle roots
+        merkleRootGadget.generate_r1cs_constraints(cancels.back().getNewAccountsRoot(), feesRoot);
     }
 
     void printInfo()
@@ -216,47 +214,27 @@ public:
         std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numCancels) << "/cancel)" << std::endl;
     }
 
-    bool generateWitness(const std::vector<Loopring::Cancellation>& cancelsData,
-                         const std::string& strTradingHistoryMerkleRootBefore, const std::string& strTradingHistoryMerkleRootAfter,
-                         const std::string& strAccountsMerkleRoot)
+    bool generateWitness(const Loopring::CancelContext& context)
     {
-        ethsnarks::FieldT tradingHistoryMerkleRootBeforeValue = ethsnarks::FieldT(strTradingHistoryMerkleRootBefore.c_str());
-        ethsnarks::FieldT tradingHistoryMerkleRootAfterValue = ethsnarks::FieldT(strTradingHistoryMerkleRootAfter.c_str());
-        tradingHistoryMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, tradingHistoryMerkleRootBeforeValue);
-        tradingHistoryMerkleRootBefore.generate_r1cs_witness_from_bits();
-        tradingHistoryMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, tradingHistoryMerkleRootAfterValue);
-        tradingHistoryMerkleRootAfter.generate_r1cs_witness_from_bits();
+        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
+        stateID.generate_r1cs_witness_from_bits();
 
-        ethsnarks::FieldT accountsMerkleRootValue = ethsnarks::FieldT(strAccountsMerkleRoot.c_str());
-        accountsMerkleRoot.bits.fill_with_bits_of_field_element(pb, accountsMerkleRootValue);
-        accountsMerkleRoot.generate_r1cs_witness_from_bits();
+        merkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.merkleRootBefore);
+        merkleRootBefore.generate_r1cs_witness_from_bits();
+        merkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.merkleRootAfter);
+        merkleRootAfter.generate_r1cs_witness_from_bits();
 
-        for(unsigned int i = 0; i < cancelsData.size(); i++)
+        pb.val(accountsRootBefore) = context.accountsRootBefore;
+        pb.val(feesRoot) = context.feesRoot;
+
+        for(unsigned int i = 0; i < context.cancels.size(); i++)
         {
-            cancels[i].generate_r1cs_witness(cancelsData[i]);
+            cancels[i].generate_r1cs_witness(context.cancels[i]);
         }
 
-        publicDataHasher->generate_r1cs_witness();
+        publicData.generate_r1cs_witness();
 
-        // Print out calculated hash of transfer data
-        auto full_output_bits = publicDataHasher->result().get_digest();
-        printBits("HashC: ", full_output_bits);
-        BigInt publicDataHashDec = 0;
-        for (unsigned int i = 0; i < full_output_bits.size(); i++)
-        {
-            publicDataHashDec = publicDataHashDec * 2 + (full_output_bits[i] ? 1 : 0);
-        }
-        std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
-        libff::bigint<libff::alt_bn128_r_limbs> bn = libff::bigint<libff::alt_bn128_r_limbs>(publicDataHashDec.to_string().c_str());
-        for (unsigned int i = 0; i < 256; i++)
-        {
-            pb.val(publicDataHash.bits[i]) = bn.test_bit(i);
-        }
-        publicDataHash.generate_r1cs_witness_from_bits();
-        printBits("publicData: ", publicData.get_bits(pb));
-
-        printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
-        printBits("Hash bits: ", publicDataHasher->result().bits.get_bits(pb), true);
+        merkleRootGadget.generate_r1cs_witness();
 
         return true;
     }

@@ -645,19 +645,13 @@ public:
     std::vector<RingSettlementGadget*> ringSettlements;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
+    PublicDataGadget publicData;
 
     libsnark::dual_variable_gadget<FieldT> stateID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
     libsnark::dual_variable_gadget<FieldT> burnRateMerkleRoot;
     libsnark::dual_variable_gadget<FieldT> timestamp;
-
-    std::vector<VariableArrayT> publicDataBits;
-
-    sha256_many* publicDataHasher;
-
-    MiMC_hash_gadget* hashRootsBefore;
-    MiMC_hash_gadget* hashRootsAfter;
 
     const VariableT accountsRootBefore;
     const VariableT tradeHistoryBefore;
@@ -675,10 +669,13 @@ public:
     UpdateBalanceGadget* updateBalance_O;
     UpdateAccountGadget* updateAccount_O;
 
+    MerkleRootGadget merkleRootGadget;
+
     TradeCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
 
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
+        publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
         stateID(pb, 16, FMT(prefix, ".stateID")),
 
@@ -697,28 +694,17 @@ public:
         operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operator")),
         balance_O_before(make_variable(pb, FMT(prefix, ".balance_O_before"))),
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
-        timestamp(pb, 32, FMT(prefix, ".timestamp"))
+        timestamp(pb, 32, FMT(prefix, ".timestamp")),
+
+        merkleRootGadget(pb, merkleRootBefore.packed, merkleRootAfter.packed,
+                             accountsRootBefore, feesRootBefore,
+                             FMT(prefix, ".merkleRootGadget"))
     {
-        this->publicDataHasher = nullptr;
         this->updateAccount_O = nullptr;
     }
 
     ~TradeCircuitGadget()
     {
-        if (hashRootsBefore)
-        {
-            delete hashRootsBefore;
-        }
-        if (hashRootsAfter)
-        {
-            delete hashRootsAfter;
-        }
-
-        if (publicDataHasher)
-        {
-            delete publicDataHasher;
-        }
-
         if (updateAccount_O)
         {
             delete updateAccount_O;
@@ -747,11 +733,11 @@ public:
         burnRateMerkleRoot.generate_r1cs_constraints(true);
         timestamp.generate_r1cs_constraints(true);
 
-        publicDataBits.push_back(stateID.bits);
-        publicDataBits.push_back(merkleRootBefore.bits);
-        publicDataBits.push_back(merkleRootAfter.bits);
-        publicDataBits.push_back(burnRateMerkleRoot.bits);
-        publicDataBits.push_back(timestamp.bits);
+        publicData.add(stateID.bits);
+        publicData.add(merkleRootBefore.bits);
+        publicData.add(merkleRootAfter.bits);
+        publicData.add(burnRateMerkleRoot.bits);
+        publicData.add(timestamp.bits);
         for (size_t j = 0; j < numRings; j++)
         {
             const VariableT ringAccountsRoot = (j == 0) ? accountsRootBefore : ringSettlements.back()->getNewAccountsRoot();
@@ -770,11 +756,11 @@ public:
             ));
             ringSettlements.back()->generate_r1cs_constraints();
 
-            // Store transfers from ring settlement
-            std::vector<VariableArrayT> ringPublicData = ringSettlements.back()->getPublicData();
-            publicDataBits.insert(publicDataBits.end(), ringPublicData.begin(), ringPublicData.end());
+            // Store data from ring settlement
+            publicData.add(ringSettlements.back()->getPublicData());
         }
 
+        // Pay the operator
         updateBalance_O = new UpdateBalanceGadget(pb, balancesRoot_before, lrcTokenID,
                       {balance_O_before, tradeHistoryBefore},
                       {ringSettlements.back()->getOperatorBalance(), tradeHistoryBefore},
@@ -787,27 +773,12 @@ public:
                       FMT(annotation_prefix, ".updateAccount_O"));
         updateAccount_O->generate_r1cs_constraints();
 
-
+        // Check the input hash
         publicDataHash.generate_r1cs_constraints(true);
+        publicData.generate_r1cs_constraints();
 
-        // Check public data
-        publicDataHasher = new sha256_many(pb, flattenReverse(publicDataBits), ".publicDataHash");
-        publicDataHasher->generate_r1cs_constraints();
-
-        // Check that the hash matches the public input
-        for (unsigned int i = 0; i < 256; i++)
-        {
-            pb.add_r1cs_constraint(ConstraintT(publicDataHasher->result().bits[255-i], 1, publicDataHash.bits[i]), "publicData.check()");
-        }
-
-        hashRootsBefore = new MiMC_hash_gadget(pb, libsnark::ONE, {accountsRootBefore, feesRootBefore}, FMT(annotation_prefix, ".rootBefore"));
-        hashRootsBefore->generate_r1cs_constraints();
-        hashRootsAfter = new MiMC_hash_gadget(pb, libsnark::ONE, {updateAccount_O->result(), ringSettlements.back()->getNewFeesRoot()}, FMT(annotation_prefix, ".rootAfter"));
-        hashRootsAfter->generate_r1cs_constraints();
-
-        // Make sure the merkle roots are correctly passed in
-        pb.add_r1cs_constraint(ConstraintT(hashRootsBefore->result(), 1, merkleRootBefore.packed), "oldMerkleRoot");
-        pb.add_r1cs_constraint(ConstraintT(hashRootsAfter->result(), 1, merkleRootAfter.packed), "newMerkleRoot");
+        // Check the merkle roots
+        merkleRootGadget.generate_r1cs_constraints(updateAccount_O->result(), ringSettlements.back()->getNewFeesRoot());
     }
 
     void printInfo()
@@ -842,8 +813,8 @@ public:
         operatorAccountID.bits.fill_with_bits_of_field_element(pb, context.operatorAccountID);
         operatorAccountID.generate_r1cs_witness_from_bits();
 
-        pb.val(accountsRootBefore) = context.ringSettlements[0].accountUpdate_A.rootBefore;
-        pb.val(feesRootBefore) = context.ringSettlements[0].feeTokenUpdate_FA.rootBefore;
+        pb.val(accountsRootBefore) = context.accountsRootBefore;
+        pb.val(feesRootBefore) = context.feesRootBefore;
 
         pb.val(publicKey.x) = context.accountUpdate_O.before.publicKey.x;
         pb.val(publicKey.y) = context.accountUpdate_O.before.publicKey.y;
@@ -861,30 +832,9 @@ public:
         updateBalance_O->generate_r1cs_witness(context.balanceUpdate_O.proof);
         updateAccount_O->generate_r1cs_witness(context.accountUpdate_O.proof);
 
-        publicDataHasher->generate_r1cs_witness();
+        publicData.generate_r1cs_witness();
 
-        hashRootsBefore->generate_r1cs_witness();
-        hashRootsAfter->generate_r1cs_witness();
-
-        // Print out calculated hash of transfer data
-        auto full_output_bits = publicDataHasher->result().get_digest();
-        //printBits("HashC: ", full_output_bits);
-        BigInt publicDataHashDec = 0;
-        for (unsigned int i = 0; i < full_output_bits.size(); i++)
-        {
-            publicDataHashDec = publicDataHashDec * 2 + (full_output_bits[i] ? 1 : 0);
-        }
-        //std::cout << "publicDataHashDec: " << publicDataHashDec.to_string() << std::endl;
-        libff::bigint<libff::alt_bn128_r_limbs> bn = libff::bigint<libff::alt_bn128_r_limbs>(publicDataHashDec.to_string().c_str());
-        for (unsigned int i = 0; i < 256; i++)
-        {
-            pb.val(publicDataHash.bits[i]) = bn.test_bit(i);
-        }
-        publicDataHash.generate_r1cs_witness_from_bits();
-        //printBits("publicData: ", publicData.get_bits(pb));
-
-        //printBits("Public data bits: ", publicDataHash.bits.get_bits(pb));
-        printBits("publicDataHash: 0x", flattenReverse({publicDataHasher->result().bits}).get_bits(pb), true);
+        merkleRootGadget.generate_r1cs_witness();
 
         return true;
     }
