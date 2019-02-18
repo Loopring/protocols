@@ -24,69 +24,81 @@ namespace Loopring
 class WithdrawalGadget : public GadgetT
 {
 public:
-    typedef merkle_path_authenticator<MiMC_hash_gadget> MerklePathCheckT;
-    typedef markle_path_compute<MiMC_hash_gadget> MerklePathT;
 
-    const VariableT merkleRootBefore;
+    VariableArrayT uint16_padding;
 
     const jubjub::VariablePointT publicKey;
-
-    VariableArrayT account;
+    VariableArrayT accountID;
+    VariableArrayT tokenID;
     libsnark::dual_variable_gadget<FieldT> amount;
     libsnark::dual_variable_gadget<FieldT> padding;
 
     VariableT walletID;
-    VariableT token;
     VariableT balance_before;
     VariableT balance_after;
+    VariableT nonce_before;
+    VariableT nonce_after;
 
+    VariableT tradingHistoryRoot;
+    VariableT balancesRoot_before;
+
+    UpdateBalanceGadget updateBalance;
     UpdateAccountGadget updateAccount;
 
-    // variables for signature
-    const jubjub::VariablePointT sig_R;
-    const VariableArrayT sig_s;
-    const VariableArrayT sig_m;
-    jubjub::PureEdDSA signatureVerifier;
+    SignatureVerifier signatureVerifier;
 
     WithdrawalGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
-        const VariableT& _merkleRoot,
+        const VariableT& root,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
-        merkleRootBefore(_merkleRoot),
+        uint16_padding(make_var_array(pb, 16 - NUM_BITS_WALLETID, FMT(prefix, ".uint16_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
 
-        account(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
+        accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
+        tokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".tokenID"))),
         amount(pb, 96, FMT(prefix, ".amount")),
         padding(pb, 2, FMT(prefix, ".padding")),
 
         walletID(make_variable(pb, FMT(prefix, ".walletID"))),
-        token(make_variable(pb, FMT(prefix, ".token"))),
         balance_before(make_variable(pb, FMT(prefix, ".balance_before"))),
         balance_after(make_variable(pb, FMT(prefix, ".balance_after"))),
+        nonce_before(make_variable(pb, FMT(prefix, ".nonce_before"))),
+        nonce_after(make_variable(pb, FMT(prefix, ".nonce_after"))),
 
-        updateAccount(pb, merkleRootBefore, account, publicKey, walletID, token, balance_before, balance_after, FMT(prefix, ".updateBalance")),
+        balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
+        tradingHistoryRoot(make_variable(pb, FMT(prefix, ".tradeHistoryRoot"))),
 
-        sig_R(pb, FMT(prefix, ".R")),
-        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
-        sig_m(flatten({account, amount.bits, padding.bits})),
-        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(prefix, ".signatureVerifier"))
+
+        updateBalance(pb, balancesRoot_before, tokenID,
+                      {balance_before, tradingHistoryRoot},
+                      {balance_after, tradingHistoryRoot},
+                      FMT(prefix, ".updateBalance")),
+
+        updateAccount(pb, root, accountID,
+                      {publicKey.x, publicKey.y, walletID, nonce_before, balancesRoot_before},
+                      {publicKey.x, publicKey.y, walletID, nonce_after, updateBalance.getNewRoot()},
+                      FMT(prefix, ".updateAccount")),
+
+        signatureVerifier(pb, params, publicKey,
+                          flatten({accountID, tokenID, amount.bits, padding.bits}),
+                          FMT(prefix, ".signatureVerifier"))
     {
 
     }
 
-    const VariableT getNewAccountsMerkleRoot() const
+    const VariableT getNewAccountsRoot() const
     {
         return updateAccount.result();
     }
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {account, amount.bits};
+        return {accountID, uint16_padding, tokenID, amount.bits};
     }
 
     void generate_r1cs_witness(const Withdrawal& withdrawal)
@@ -94,7 +106,8 @@ public:
         pb.val(publicKey.x) = withdrawal.publicKey.x;
         pb.val(publicKey.y) = withdrawal.publicKey.y;
 
-        account.fill_with_bits_of_field_element(pb, withdrawal.account);
+        accountID.fill_with_bits_of_field_element(pb, withdrawal.accountID);
+        tokenID.fill_with_bits_of_field_element(pb, withdrawal.tokenID);
 
         amount.bits.fill_with_bits_of_field_element(pb, withdrawal.amount);
         amount.generate_r1cs_witness_from_bits();
@@ -103,16 +116,18 @@ public:
         padding.generate_r1cs_witness_from_bits();
 
         pb.val(walletID) = withdrawal.accountUpdate.before.walletID;
-        pb.val(token) = withdrawal.accountUpdate.before.token;
-        pb.val(balance_before) = withdrawal.accountUpdate.before.balance;
-        pb.val(balance_after) = withdrawal.accountUpdate.after.balance;
+        pb.val(balance_before) = withdrawal.balanceUpdate.before.balance;
+        pb.val(balance_after) = withdrawal.balanceUpdate.after.balance;
+        pb.val(nonce_before) = withdrawal.accountUpdate.before.nonce;
+        pb.val(nonce_after) = withdrawal.accountUpdate.after.nonce;
 
+        pb.val(tradingHistoryRoot) = withdrawal.balanceUpdate.before.tradingHistoryRoot;
+        pb.val(balancesRoot_before) = withdrawal.accountUpdate.before.balancesRoot;
+
+        updateBalance.generate_r1cs_witness(withdrawal.balanceUpdate.proof);
         updateAccount.generate_r1cs_witness(withdrawal.accountUpdate.proof);
 
-        pb.val(sig_R.x) = withdrawal.signature.R.x;
-        pb.val(sig_R.y) = withdrawal.signature.R.y;
-        sig_s.fill_with_bits_of_field_element(pb, withdrawal.signature.s);
-        signatureVerifier.generate_r1cs_witness();
+        signatureVerifier.generate_r1cs_witness(withdrawal.signature);
     }
 
     void generate_r1cs_constraints()
@@ -122,6 +137,9 @@ public:
 
         signatureVerifier.generate_r1cs_constraints();
 
+        pb.add_r1cs_constraint(ConstraintT(balance_before - amount.packed, 1, balance_after), "balance_before - amount == balance_after");
+
+        updateBalance.generate_r1cs_constraints();
         updateAccount.generate_r1cs_constraints();
     }
 };
@@ -136,13 +154,19 @@ public:
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     libsnark::dual_variable_gadget<FieldT> stateID;
-    libsnark::dual_variable_gadget<FieldT> accountsMerkleRootBefore;
-    libsnark::dual_variable_gadget<FieldT> accountsMerkleRootAfter;
+    libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
+    libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
     std::vector<VariableArrayT> publicDataBits;
     VariableArrayT publicData;
 
     sha256_many* publicDataHasher;
+
+    MiMC_hash_gadget* hashRootsBefore;
+    MiMC_hash_gadget* hashRootsAfter;
+
+    const VariableT accountsRootBefore;
+    const VariableT feesRoot;
 
     WithdrawalsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
@@ -150,14 +174,25 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
 
         stateID(pb, 16, FMT(prefix, ".stateID")),
-        accountsMerkleRootBefore(pb, 256, FMT(prefix, ".accountsMerkleRootBefore")),
-        accountsMerkleRootAfter(pb, 256, FMT(prefix, ".accountsMerkleRootAfter"))
+        merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
+        merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
+
+        accountsRootBefore(make_variable(pb, FMT(prefix, ".accountsRootBefore"))),
+        feesRoot(make_variable(pb, FMT(prefix, ".feesRoot")))
     {
         this->publicDataHasher = nullptr;
     }
 
     ~WithdrawalsCircuitGadget()
     {
+        if (hashRootsBefore)
+        {
+            delete hashRootsBefore;
+        }
+        if (hashRootsAfter)
+        {
+            delete hashRootsAfter;
+        }
         if (publicDataHasher)
         {
             delete publicDataHasher;
@@ -171,16 +206,16 @@ public:
         pb.set_input_sizes(1);
 
         stateID.generate_r1cs_constraints(true);
-        accountsMerkleRootBefore.generate_r1cs_constraints(true);
-        accountsMerkleRootAfter.generate_r1cs_constraints(true);
+        merkleRootBefore.generate_r1cs_constraints(true);
+        merkleRootAfter.generate_r1cs_constraints(true);
 
         publicDataBits.push_back(stateID.bits);
-        publicDataBits.push_back(accountsMerkleRootBefore.bits);
-        publicDataBits.push_back(accountsMerkleRootAfter.bits);
+        publicDataBits.push_back(merkleRootBefore.bits);
+        publicDataBits.push_back(merkleRootAfter.bits);
         for (size_t j = 0; j < numAccounts; j++)
         {
-            VariableT withdrawalAccountsMerkleRoot = (j == 0) ? accountsMerkleRootBefore.packed : withdrawals.back().getNewAccountsMerkleRoot();
-            withdrawals.emplace_back(pb, params, withdrawalAccountsMerkleRoot, std::string("withdrawals") + std::to_string(j));
+            VariableT withdrawalAccountsRoot = (j == 0) ? accountsRootBefore : withdrawals.back().getNewAccountsRoot();
+            withdrawals.emplace_back(pb, params, withdrawalAccountsRoot, std::string("withdrawals") + std::to_string(j));
 
             // Store data from withdrawal
             std::vector<VariableArrayT> ringPublicData = withdrawals.back().getPublicData();
@@ -204,8 +239,14 @@ public:
             pb.add_r1cs_constraint(ConstraintT(publicDataHasher->result().bits[255-i], 1, publicDataHash.bits[i]), "publicData.check()");
         }
 
-        // Make sure the merkle root afterwards is correctly passed in
-        pb.add_r1cs_constraint(ConstraintT(withdrawals.back().getNewAccountsMerkleRoot(), 1, accountsMerkleRootAfter.packed), "newMerkleRoot");
+        hashRootsBefore = new MiMC_hash_gadget(pb, libsnark::ONE, {accountsRootBefore, feesRoot}, FMT(annotation_prefix, ".rootBefore"));
+        hashRootsBefore->generate_r1cs_constraints();
+        hashRootsAfter = new MiMC_hash_gadget(pb, libsnark::ONE, {withdrawals.back().getNewAccountsRoot(), feesRoot}, FMT(annotation_prefix, ".rootAfter"));
+        hashRootsAfter->generate_r1cs_constraints();
+
+        // Make sure the merkle roots are correctly passed in
+        pb.add_r1cs_constraint(ConstraintT(hashRootsBefore->result(), 1, merkleRootBefore.packed), "oldMerkleRoot");
+        pb.add_r1cs_constraint(ConstraintT(hashRootsAfter->result(), 1, merkleRootAfter.packed), "newMerkleRoot");
     }
 
     void printInfo()
@@ -218,10 +259,13 @@ public:
         stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
         stateID.generate_r1cs_witness_from_bits();
 
-        accountsMerkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.accountsMerkleRootBefore);
-        accountsMerkleRootBefore.generate_r1cs_witness_from_bits();
-        accountsMerkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.accountsMerkleRootAfter);
-        accountsMerkleRootAfter.generate_r1cs_witness_from_bits();
+        merkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.merkleRootBefore);
+        merkleRootBefore.generate_r1cs_witness_from_bits();
+        merkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.merkleRootAfter);
+        merkleRootAfter.generate_r1cs_witness_from_bits();
+
+        pb.val(accountsRootBefore) = context.withdrawals[0].accountUpdate.rootBefore;
+        pb.val(feesRoot) = context.feesRoot;
 
         for(unsigned int i = 0; i < context.withdrawals.size(); i++)
         {
@@ -229,6 +273,9 @@ public:
         }
 
         publicDataHasher->generate_r1cs_witness();
+
+        hashRootsBefore->generate_r1cs_witness();
+        hashRootsAfter->generate_r1cs_witness();
 
         // Print out calculated hash of transfer data
         auto full_output_bits = publicDataHasher->result().get_digest();

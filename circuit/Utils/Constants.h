@@ -3,9 +3,14 @@
 
 namespace Loopring
 {
-    static const unsigned int TREE_DEPTH_FILLED = 28;
+    static const unsigned int TREE_DEPTH_TRADING_HISTORY = 16;
     static const unsigned int TREE_DEPTH_ACCOUNTS = 24;
     static const unsigned int TREE_DEPTH_TOKENS = 16;
+    static const unsigned int TREE_DEPTH_BALANCES = 12;
+
+    static const unsigned int NUM_BITS_TOKENID = 12;
+    static const unsigned int NUM_BITS_WALLETID = 12;
+    static const unsigned int NUM_BITS_MINERID = 12;
 }
 
 #endif

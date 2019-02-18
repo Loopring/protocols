@@ -37,7 +37,9 @@ public:
     VariableT walletID;
     VariableT token;
     VariableT balance;
-    UpdateAccountGadget checkAccount;
+    VariableT tradeHistoryRootBefore;
+    VariableT tradeHistoryRootAfter;
+    //UpdateAccountGadget checkAccount;
 
     UpdateTradeHistoryGadget updateTradeHistory;
 
@@ -73,7 +75,7 @@ public:
         walletID(make_variable(pb, FMT(prefix, ".walletID"))),
         token(make_variable(pb, FMT(prefix, ".token"))),
         balance(make_variable(pb, FMT(prefix, ".balance"))),
-        checkAccount(pb, accountsMerkleRoot, account, publicKey, walletID, token, balance, balance, FMT(prefix, ".checkAccount")),
+        //checkAccount(pb, accountsMerkleRoot, account, publicKey, walletID, token, balance, tradeHistoryRootBefore, balance, tradeHistoryRootAfter, FMT(prefix, ".checkAccount")),
 
         sig_R(pb, FMT(prefix, ".R")),
         sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
@@ -85,7 +87,7 @@ public:
 
     const VariableT getNewTradingHistoryMerkleRoot() const
     {
-        return updateTradeHistory.getNewTradingHistoryMerkleRoot();
+        return updateTradeHistory.getNewRoot();
     }
 
     const std::vector<VariableArrayT> getPublicData() const
@@ -109,12 +111,12 @@ public:
         pb.val(cancelledAfter) = cancellation.tradeHistoryUpdate.after.cancelled;
 
         pb.val(walletID) = cancellation.accountUpdate.before.walletID;
-        pb.val(token) = cancellation.accountUpdate.before.token;
-        pb.val(balance) = cancellation.accountUpdate.before.balance;
+        //pb.val(token) = cancellation.accountUpdate.before.token;
+       //pb.val(balance) = cancellation.accountUpdate.before.balance;
 
         updateTradeHistory.generate_r1cs_witness(cancellation.tradeHistoryUpdate.proof);
 
-        checkAccount.generate_r1cs_witness(cancellation.accountUpdate.proof);
+        //checkAccount.generate_r1cs_witness(cancellation.accountUpdate.proof);
 
         pb.val(sig_R.x) = cancellation.signature.R.x;
         pb.val(sig_R.y) = cancellation.signature.R.y;
@@ -127,7 +129,7 @@ public:
         padding.generate_r1cs_constraints(true);
         signatureVerifier.generate_r1cs_constraints();
         updateTradeHistory.generate_r1cs_constraints();
-        checkAccount.generate_r1cs_constraints();
+        //checkAccount.generate_r1cs_constraints();
         pb.add_r1cs_constraint(ConstraintT(cancelledAfter, FieldT::one(), FieldT::one()), "cancelledAfter == 1");
     }
 };

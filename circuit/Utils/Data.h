@@ -41,13 +41,26 @@ void from_json(const json& j, TradeHistoryLeaf& leaf)
     leaf.cancelled = ethsnarks::FieldT(j.at("cancelled"));
 }
 
+class BalanceLeaf
+{
+public:
+    ethsnarks::FieldT balance;
+    ethsnarks::FieldT tradingHistoryRoot;
+};
+
+void from_json(const json& j, BalanceLeaf& leaf)
+{
+    leaf.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
+    leaf.tradingHistoryRoot = ethsnarks::FieldT(j.at("tradingHistoryRoot").get<std::string>().c_str());
+}
+
 class Account
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::FieldT walletID;
-    ethsnarks::FieldT token;
-    ethsnarks::FieldT balance;
+    ethsnarks::FieldT nonce;
+    ethsnarks::FieldT balancesRoot;
 };
 
 void from_json(const json& j, Account& account)
@@ -55,8 +68,8 @@ void from_json(const json& j, Account& account)
     account.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     account.walletID = ethsnarks::FieldT(j.at("walletID"));
-    account.token = ethsnarks::FieldT(j.at("token"));
-    account.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
+    account.nonce = ethsnarks::FieldT(j.at("nonce"));
+    account.balancesRoot = ethsnarks::FieldT(j.at("balancesRoot").get<std::string>().c_str());
 }
 
 class BurnRateData
@@ -70,34 +83,67 @@ void from_json(const json& j, BurnRateData& token)
     token.burnRate = ethsnarks::FieldT(j.at("burnRate"));
 }
 
+class BalanceUpdate
+{
+public:
+    ethsnarks::FieldT tokenID;
+    Proof proof;
+    ethsnarks::FieldT rootBefore;
+    ethsnarks::FieldT rootAfter;
+    BalanceLeaf before;
+    BalanceLeaf after;
+};
+
+void from_json(const json& j, BalanceUpdate& balanceUpdate)
+{
+    balanceUpdate.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    balanceUpdate.proof = j.at("proof").get<Proof>();
+    balanceUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+    balanceUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
+    balanceUpdate.before = j.at("before").get<BalanceLeaf>();
+    balanceUpdate.after = j.at("after").get<BalanceLeaf>();
+}
+
 class TradeHistoryUpdate
 {
 public:
+    ethsnarks::FieldT orderID;
+    Proof proof;
+    ethsnarks::FieldT rootBefore;
+    ethsnarks::FieldT rootAfter;
     TradeHistoryLeaf before;
     TradeHistoryLeaf after;
-    Proof proof;
 };
 
 void from_json(const json& j, TradeHistoryUpdate& tradeHistoryUpdate)
 {
+    tradeHistoryUpdate.orderID = ethsnarks::FieldT(j.at("orderID"));
+    tradeHistoryUpdate.proof = j.at("proof").get<Proof>();
+    tradeHistoryUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+    tradeHistoryUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
     tradeHistoryUpdate.before = j.at("before").get<TradeHistoryLeaf>();
     tradeHistoryUpdate.after = j.at("after").get<TradeHistoryLeaf>();
-    tradeHistoryUpdate.proof = j.at("proof").get<Proof>();
 }
 
 class AccountUpdate
 {
 public:
+    ethsnarks::FieldT accountID;
+    Proof proof;
+    ethsnarks::FieldT rootBefore;
+    ethsnarks::FieldT rootAfter;
     Account before;
     Account after;
-    Proof proof;
 };
 
 void from_json(const json& j, AccountUpdate& accountUpdate)
 {
+    accountUpdate.accountID = ethsnarks::FieldT(j.at("accountID"));
+    accountUpdate.proof = j.at("proof").get<Proof>();
+    accountUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+    accountUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
     accountUpdate.before = j.at("before").get<Account>();
     accountUpdate.after = j.at("after").get<Account>();
-    accountUpdate.proof = j.at("proof").get<Proof>();
 }
 
 class BurnRateCheck
@@ -112,6 +158,78 @@ void from_json(const json& j, BurnRateCheck& burnRateCheck)
     burnRateCheck.burnRateData = j.at("burnRateData").get<BurnRateData>();
     burnRateCheck.proof = j.at("proof").get<Proof>();
 }
+
+class FeeBalanceLeaf
+{
+public:
+    ethsnarks::FieldT balance;
+};
+
+void from_json(const json& j, FeeBalanceLeaf& leaf)
+{
+    leaf.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
+}
+
+
+class FeeTokenLeaf
+{
+public:
+    ethsnarks::FieldT balance;
+    ethsnarks::FieldT walletsRoot;
+    ethsnarks::FieldT ringmatchersRoot;
+};
+
+void from_json(const json& j, FeeTokenLeaf& leaf)
+{
+    leaf.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
+    leaf.walletsRoot = ethsnarks::FieldT(j.at("walletsRoot").get<std::string>().c_str());
+    leaf.ringmatchersRoot = ethsnarks::FieldT(j.at("ringmatchersRoot").get<std::string>().c_str());
+}
+
+class FeeBalanceUpdate
+{
+public:
+    ethsnarks::FieldT ID;
+    Proof proof;
+    ethsnarks::FieldT rootBefore;
+    ethsnarks::FieldT rootAfter;
+    FeeBalanceLeaf before;
+    FeeBalanceLeaf after;
+};
+
+void from_json(const json& j, FeeBalanceUpdate& update)
+{
+    update.ID = ethsnarks::FieldT(j.at("ID"));
+    update.proof = j.at("proof").get<Proof>();
+    update.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+    update.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
+    update.before = j.at("before").get<FeeBalanceLeaf>();
+    update.after = j.at("after").get<FeeBalanceLeaf>();
+}
+
+
+class FeeTokenUpdate
+{
+public:
+    ethsnarks::FieldT tokenID;
+    Proof proof;
+    ethsnarks::FieldT rootBefore;
+    ethsnarks::FieldT rootAfter;
+    FeeTokenLeaf before;
+    FeeTokenLeaf after;
+};
+
+void from_json(const json& j, FeeTokenUpdate& update)
+{
+    update.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    update.proof = j.at("proof").get<Proof>();
+    update.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
+    update.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
+    update.before = j.at("before").get<FeeTokenLeaf>();
+    update.after = j.at("after").get<FeeTokenLeaf>();
+}
+
+
 
 class Signature
 {
@@ -132,28 +250,24 @@ class Order
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::jubjub::EdwardsPoint walletPublicKey;
-    ethsnarks::jubjub::EdwardsPoint minerPublicKeyF;
-    ethsnarks::jubjub::EdwardsPoint minerPublicKeyS;
     ethsnarks::FieldT stateID;
     ethsnarks::FieldT walletID;
     ethsnarks::FieldT orderID;
-    ethsnarks::FieldT accountS;
-    ethsnarks::FieldT accountB;
-    ethsnarks::FieldT accountF;
-    ethsnarks::FieldT amountS;
-    ethsnarks::FieldT amountB;
-    ethsnarks::FieldT amountF;
+    ethsnarks::FieldT accountID;
+    ethsnarks::FieldT dualAuthAccountID;
     ethsnarks::FieldT tokenS;
     ethsnarks::FieldT tokenB;
     ethsnarks::FieldT tokenF;
-    ethsnarks::FieldT walletF;
-    ethsnarks::FieldT minerF;
-    ethsnarks::FieldT minerS;
-    ethsnarks::FieldT walletSplitPercentage;
+    ethsnarks::FieldT amountS;
+    ethsnarks::FieldT amountB;
+    ethsnarks::FieldT amountF;
+
+    ethsnarks::FieldT allOrNone;
     ethsnarks::FieldT validSince;
     ethsnarks::FieldT validUntil;
-    ethsnarks::FieldT allOrNone;
+    ethsnarks::FieldT walletSplitPercentage;
     ethsnarks::FieldT waiveFeePercentage;
+
     ethsnarks::FieldT filledBefore;
     ethsnarks::FieldT cancelled;
     ethsnarks::FieldT balanceS;
@@ -170,30 +284,25 @@ void from_json(const json& j, Order& order)
     order.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     order.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
     order.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
-    order.minerPublicKeyF.x = ethsnarks::FieldT(j.at("minerPublicKeyFX").get<std::string>().c_str());
-    order.minerPublicKeyF.y = ethsnarks::FieldT(j.at("minerPublicKeyFY").get<std::string>().c_str());
-    order.minerPublicKeyS.x = ethsnarks::FieldT(j.at("minerPublicKeySX").get<std::string>().c_str());
-    order.minerPublicKeyS.y = ethsnarks::FieldT(j.at("minerPublicKeySY").get<std::string>().c_str());
+
     order.stateID = ethsnarks::FieldT(j.at("stateID"));
     order.walletID = ethsnarks::FieldT(j.at("walletID"));
     order.orderID = ethsnarks::FieldT(j.at("orderID"));
-    order.accountS = ethsnarks::FieldT(j.at("accountS"));
-    order.accountB = ethsnarks::FieldT(j.at("accountB"));
-    order.accountF = ethsnarks::FieldT(j.at("accountF"));
-    order.amountS = ethsnarks::FieldT(j.at("amountS").get<std::string>().c_str());
-    order.amountB = ethsnarks::FieldT(j.at("amountB").get<std::string>().c_str());
-    order.amountF = ethsnarks::FieldT(j.at("amountF").get<std::string>().c_str());
+    order.accountID = ethsnarks::FieldT(j.at("accountID"));
+    order.dualAuthAccountID = ethsnarks::FieldT(j.at("dualAuthAccountID"));
     order.tokenS = ethsnarks::FieldT(j.at("tokenS"));
     order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
     order.tokenF = ethsnarks::FieldT(j.at("tokenF"));
-    order.walletF = ethsnarks::FieldT(j.at("walletF"));
-    order.minerF = ethsnarks::FieldT(j.at("minerF"));
-    order.minerS = ethsnarks::FieldT(j.at("minerS"));
-    order.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
+    order.amountS = ethsnarks::FieldT(j.at("amountS").get<std::string>().c_str());
+    order.amountB = ethsnarks::FieldT(j.at("amountB").get<std::string>().c_str());
+    order.amountF = ethsnarks::FieldT(j.at("amountF").get<std::string>().c_str());
+
+    order.allOrNone = ethsnarks::FieldT(j.at("allOrNone").get<bool>() ? 1 : 0);
     order.validSince = ethsnarks::FieldT(j.at("validSince"));
     order.validUntil = ethsnarks::FieldT(j.at("validUntil"));
-    order.allOrNone = ethsnarks::FieldT(j.at("allOrNone").get<bool>() ? 1 : 0);
+    order.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     order.waiveFeePercentage = ethsnarks::FieldT(j.at("waiveFeePercentage"));
+
     order.filledBefore = ethsnarks::FieldT(j.at("filledBefore").get<std::string>().c_str());
     order.cancelled = ethsnarks::FieldT(j.at("cancelled"));
     order.balanceS = ethsnarks::FieldT(j.at("balanceS").get<std::string>().c_str());
@@ -220,9 +329,12 @@ public:
     ethsnarks::FieldT fillF_B;
     ethsnarks::FieldT margin;
 
-    ethsnarks::FieldT miner;
-    ethsnarks::FieldT fee;
     ethsnarks::jubjub::EdwardsPoint publicKey;
+    ethsnarks::FieldT minerID;
+    ethsnarks::FieldT minerAccountID;
+    ethsnarks::FieldT fee;
+    ethsnarks::FieldT nonce;
+
     Signature minerSignature;
     Signature walletASignature;
     Signature walletBSignature;
@@ -243,10 +355,13 @@ void from_json(const json& j, Ring& ring)
     ring.fillF_B = ethsnarks::FieldT(j.at("fillF_B").get<std::string>().c_str());
     ring.margin = ethsnarks::FieldT(j.at("margin").get<std::string>().c_str());
 
-    ring.miner = ethsnarks::FieldT(j.at("miner"));
-    ring.fee = ethsnarks::FieldT(j.at("fee"));
     ring.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     ring.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
+    ring.minerID = ethsnarks::FieldT(j.at("minerID"));
+    ring.minerAccountID = ethsnarks::FieldT(j.at("minerAccountID"));
+    ring.fee = ethsnarks::FieldT(j.at("fee"));
+    ring.nonce = ethsnarks::FieldT(j.at("nonce"));
+
     ring.minerSignature = j.at("minerSignature").get<Signature>();
     ring.walletASignature = j.at("walletASignature").get<Signature>();
     ring.walletBSignature = j.at("walletBSignature").get<Signature>();
@@ -255,29 +370,35 @@ void from_json(const json& j, Ring& ring)
 class RingSettlement
 {
 public:
-    ethsnarks::FieldT tradingHistoryMerkleRoot;
     ethsnarks::FieldT accountsMerkleRoot;
     Ring ring;
 
     TradeHistoryUpdate tradeHistoryUpdate_A;
     TradeHistoryUpdate tradeHistoryUpdate_B;
 
-    AccountUpdate accountUpdateS_A;
-    AccountUpdate accountUpdateB_A;
-    AccountUpdate accountUpdateF_A;
-    AccountUpdate accountUpdateF_WA;
-    AccountUpdate accountUpdateF_MA;
-    AccountUpdate accountUpdateF_BA;
+    BalanceUpdate balanceUpdateS_A;
+    BalanceUpdate balanceUpdateB_A;
+    BalanceUpdate balanceUpdateF_A;
+    AccountUpdate accountUpdate_A;
 
-    AccountUpdate accountUpdateS_B;
-    AccountUpdate accountUpdateB_B;
-    AccountUpdate accountUpdateF_B;
-    AccountUpdate accountUpdateF_WB;
-    AccountUpdate accountUpdateF_MB;
-    AccountUpdate accountUpdateF_BB;
+    BalanceUpdate balanceUpdateS_B;
+    BalanceUpdate balanceUpdateB_B;
+    BalanceUpdate balanceUpdateF_B;
+    AccountUpdate accountUpdate_B;
 
-    AccountUpdate accountUpdateS_M;
+    BalanceUpdate balanceUpdate_M;
     AccountUpdate accountUpdate_M;
+
+    FeeBalanceUpdate feeBalanceUpdateF_WA;
+    FeeBalanceUpdate feeBalanceUpdateF_MA;
+    FeeTokenUpdate feeTokenUpdate_FA;
+
+    FeeBalanceUpdate feeBalanceUpdateF_WB;
+    FeeBalanceUpdate feeBalanceUpdateF_MB;
+    FeeTokenUpdate feeTokenUpdate_FB;
+
+    FeeBalanceUpdate feeBalanceUpdateS_MA;
+    FeeTokenUpdate feeTokenUpdate_SA;
 
     BurnRateCheck burnRateCheckF_A;
     BurnRateCheck burnRateCheckF_B;
@@ -288,7 +409,6 @@ public:
 
 void from_json(const json& j, RingSettlement& ringSettlement)
 {
-    ringSettlement.tradingHistoryMerkleRoot = ethsnarks::FieldT(j.at("tradingHistoryMerkleRoot").get<std::string>().c_str());
     ringSettlement.accountsMerkleRoot = ethsnarks::FieldT(j.at("accountsMerkleRoot").get<std::string>().c_str());
 
     ringSettlement.ring = j.at("ring").get<Ring>();
@@ -296,23 +416,32 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.tradeHistoryUpdate_A = j.at("tradeHistoryUpdate_A").get<TradeHistoryUpdate>();
     ringSettlement.tradeHistoryUpdate_B = j.at("tradeHistoryUpdate_B").get<TradeHistoryUpdate>();
 
-    ringSettlement.accountUpdateS_A = j.at("accountUpdateS_A").get<AccountUpdate>();
-    ringSettlement.accountUpdateB_A = j.at("accountUpdateB_A").get<AccountUpdate>();
-    ringSettlement.accountUpdateF_A = j.at("accountUpdateF_A").get<AccountUpdate>();
-    ringSettlement.accountUpdateF_WA = j.at("accountUpdateF_WA").get<AccountUpdate>();
-    ringSettlement.accountUpdateF_MA = j.at("accountUpdateF_MA").get<AccountUpdate>();
-    ringSettlement.accountUpdateF_BA = j.at("accountUpdateF_BA").get<AccountUpdate>();
 
-    ringSettlement.accountUpdateS_B = j.at("accountUpdateS_B").get<AccountUpdate>();
-    ringSettlement.accountUpdateB_B = j.at("accountUpdateB_B").get<AccountUpdate>();
-    ringSettlement.accountUpdateF_B = j.at("accountUpdateF_B").get<AccountUpdate>();
-    ringSettlement.accountUpdateF_WB = j.at("accountUpdateF_WB").get<AccountUpdate>();
-    ringSettlement.accountUpdateF_MB = j.at("accountUpdateF_MB").get<AccountUpdate>();
-    ringSettlement.accountUpdateF_BB = j.at("accountUpdateF_BB").get<AccountUpdate>();
+    ringSettlement.balanceUpdateS_A = j.at("balanceUpdateS_A").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateB_A = j.at("balanceUpdateB_A").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateF_A = j.at("balanceUpdateF_A").get<BalanceUpdate>();
+    ringSettlement.accountUpdate_A = j.at("accountUpdate_A").get<AccountUpdate>();
 
-    ringSettlement.accountUpdateS_M = j.at("accountUpdateS_M").get<AccountUpdate>();
+    ringSettlement.balanceUpdateS_B = j.at("balanceUpdateS_B").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateB_B = j.at("balanceUpdateB_B").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateF_B = j.at("balanceUpdateF_B").get<BalanceUpdate>();
+    ringSettlement.accountUpdate_B = j.at("accountUpdate_B").get<AccountUpdate>();
 
+    ringSettlement.balanceUpdate_M = j.at("balanceUpdate_M").get<BalanceUpdate>();
     ringSettlement.accountUpdate_M = j.at("accountUpdate_M").get<AccountUpdate>();
+
+
+    ringSettlement.feeBalanceUpdateF_WA = j.at("feeBalanceUpdateF_WA").get<FeeBalanceUpdate>();
+    ringSettlement.feeBalanceUpdateF_MA = j.at("feeBalanceUpdateF_MA").get<FeeBalanceUpdate>();
+    ringSettlement.feeTokenUpdate_FA = j.at("feeTokenUpdate_FA").get<FeeTokenUpdate>();
+
+    ringSettlement.feeBalanceUpdateF_WB = j.at("feeBalanceUpdateF_WB").get<FeeBalanceUpdate>();
+    ringSettlement.feeBalanceUpdateF_MB = j.at("feeBalanceUpdateF_MB").get<FeeBalanceUpdate>();
+    ringSettlement.feeTokenUpdate_FB = j.at("feeTokenUpdate_FB").get<FeeTokenUpdate>();
+
+    ringSettlement.feeBalanceUpdateS_MA = j.at("feeBalanceUpdateS_MA").get<FeeBalanceUpdate>();
+    ringSettlement.feeTokenUpdate_SA = j.at("feeTokenUpdate_SA").get<FeeTokenUpdate>();
+
 
     ringSettlement.burnRateCheckF_A = j.at("burnRateCheckF_A").get<BurnRateCheck>();
     ringSettlement.burnRateCheckF_B = j.at("burnRateCheckF_B").get<BurnRateCheck>();
@@ -324,15 +453,14 @@ public:
 
     ethsnarks::FieldT stateID;
 
-    ethsnarks::FieldT tradingHistoryMerkleRootBefore;
-    ethsnarks::FieldT tradingHistoryMerkleRootAfter;
-    ethsnarks::FieldT accountsMerkleRootBefore;
-    ethsnarks::FieldT accountsMerkleRootAfter;
+    ethsnarks::FieldT merkleRootBefore;
+    ethsnarks::FieldT merkleRootAfter;
     ethsnarks::FieldT burnRateMerkleRoot;
 
     ethsnarks::FieldT timestamp;
 
-    ethsnarks::FieldT operatorID;
+    ethsnarks::FieldT operatorAccountID;
+    BalanceUpdate balanceUpdate_O;
     AccountUpdate accountUpdate_O;
 
     std::vector<Loopring::RingSettlement> ringSettlements;
@@ -342,15 +470,14 @@ void from_json(const json& j, TradeContext& context)
 {
     context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
 
-    context.tradingHistoryMerkleRootBefore = ethsnarks::FieldT(j["tradingHistoryMerkleRootBefore"].get<std::string>().c_str());
-    context.tradingHistoryMerkleRootAfter = ethsnarks::FieldT(j["tradingHistoryMerkleRootAfter"].get<std::string>().c_str());
-    context.accountsMerkleRootBefore = ethsnarks::FieldT(j["accountsMerkleRootBefore"].get<std::string>().c_str());
-    context.accountsMerkleRootAfter = ethsnarks::FieldT(j["accountsMerkleRootAfter"].get<std::string>().c_str());
+    context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+    context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
     context.burnRateMerkleRoot = ethsnarks::FieldT(j["burnRateMerkleRoot"].get<std::string>().c_str());
 
     context.timestamp = ethsnarks::FieldT(j["timestamp"].get<unsigned int>());
 
-    context.operatorID = ethsnarks::FieldT(j.at("operatorID"));
+    context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
+    context.balanceUpdate_O = j.at("balanceUpdate_O").get<BalanceUpdate>();
     context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read settlements
@@ -364,26 +491,24 @@ void from_json(const json& j, TradeContext& context)
 class Deposit
 {
 public:
-    ethsnarks::FieldT accountsMerkleRoot;
-    ethsnarks::FieldT address;
     AccountUpdate accountUpdate;
+    BalanceUpdate balanceUpdate;
 };
 
 void from_json(const json& j, Deposit& deposit)
 {
-    deposit.accountsMerkleRoot = ethsnarks::FieldT(j.at("accountsMerkleRoot").get<std::string>().c_str());
-    deposit.address = ethsnarks::FieldT(j.at("address"));
     deposit.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
+    deposit.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
 }
 
 class DepositContext
 {
 public:
-
     ethsnarks::FieldT stateID;
 
-    ethsnarks::FieldT accountsMerkleRootBefore;
-    ethsnarks::FieldT accountsMerkleRootAfter;
+    ethsnarks::FieldT merkleRootBefore;
+    ethsnarks::FieldT merkleRootAfter;
+    ethsnarks::FieldT feesRoot;
 
     std::vector<Loopring::Deposit> deposits;
 };
@@ -392,8 +517,9 @@ void from_json(const json& j, DepositContext& context)
 {
     context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
 
-    context.accountsMerkleRootBefore = ethsnarks::FieldT(j["accountsMerkleRootBefore"].get<std::string>().c_str());
-    context.accountsMerkleRootAfter = ethsnarks::FieldT(j["accountsMerkleRootAfter"].get<std::string>().c_str());
+    context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+    context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+    context.feesRoot = ethsnarks::FieldT(j["feesRootBefore"].get<std::string>().c_str());
 
     // Read deposits
     json jDeposits = j["deposits"];
@@ -408,21 +534,26 @@ class Withdrawal
 public:
     ethsnarks::FieldT accountsMerkleRoot;
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::FieldT account;
+    ethsnarks::FieldT accountID;
+    ethsnarks::FieldT tokenID;
     ethsnarks::FieldT amount;
-    AccountUpdate accountUpdate;
     Signature signature;
+
+    AccountUpdate accountUpdate;
+    BalanceUpdate balanceUpdate;
 };
 
 void from_json(const json& j, Withdrawal& withdrawal)
 {
-    withdrawal.accountsMerkleRoot = ethsnarks::FieldT(j.at("accountsMerkleRoot").get<std::string>().c_str());
     withdrawal.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     withdrawal.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    withdrawal.account = ethsnarks::FieldT(j.at("account"));
+    withdrawal.accountID = ethsnarks::FieldT(j.at("accountID"));
+    withdrawal.tokenID = ethsnarks::FieldT(j.at("tokenID"));
     withdrawal.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
-    withdrawal.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
     withdrawal.signature = j.at("signature").get<Signature>();
+
+    withdrawal.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
+    withdrawal.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
 }
 
 class WithdrawContext
@@ -431,8 +562,9 @@ public:
 
     ethsnarks::FieldT stateID;
 
-    ethsnarks::FieldT accountsMerkleRootBefore;
-    ethsnarks::FieldT accountsMerkleRootAfter;
+    ethsnarks::FieldT merkleRootBefore;
+    ethsnarks::FieldT merkleRootAfter;
+    ethsnarks::FieldT feesRoot;
 
     std::vector<Loopring::Withdrawal> withdrawals;
 };
@@ -441,8 +573,9 @@ void from_json(const json& j, WithdrawContext& context)
 {
     context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
 
-    context.accountsMerkleRootBefore = ethsnarks::FieldT(j["accountsMerkleRootBefore"].get<std::string>().c_str());
-    context.accountsMerkleRootAfter = ethsnarks::FieldT(j["accountsMerkleRootAfter"].get<std::string>().c_str());
+    context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+    context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+    context.feesRoot = ethsnarks::FieldT(j["feesRootBefore"].get<std::string>().c_str());
 
     // Read withdrawals
     json jWithdrawals = j["withdrawals"];

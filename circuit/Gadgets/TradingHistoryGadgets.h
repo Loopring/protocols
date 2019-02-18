@@ -54,14 +54,14 @@ public:
         leafBefore(pb, libsnark::ONE, {filledBefore, cancelledBefore}, FMT(prefix, ".leafBefore")),
         leafAfter(pb, libsnark::ONE, {filledAfter, cancelledAfter}, FMT(prefix, ".leafAfter")),
 
-        proof(make_var_array(pb, TREE_DEPTH_FILLED, FMT(prefix, ".proof"))),
-        proofVerifierBefore(pb, TREE_DEPTH_FILLED, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_FILLED, address, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
+        proof(make_var_array(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".proof"))),
+        proofVerifierBefore(pb, TREE_DEPTH_TRADING_HISTORY, address, merkle_tree_IVs(pb), leafBefore.result(), merkleRootBefore, proof, FMT(prefix, ".pathBefore")),
+        rootCalculatorAfter(pb, TREE_DEPTH_TRADING_HISTORY, address, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
     {
 
     }
 
-    const VariableT getNewTradingHistoryMerkleRoot() const
+    const VariableT getNewRoot() const
     {
         return rootCalculatorAfter.result();
     }

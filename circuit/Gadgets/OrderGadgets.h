@@ -18,34 +18,28 @@ public:
 
     VariableT blockStateID;
 
+    libsnark::dual_variable_gadget<FieldT> padding;
+
     libsnark::dual_variable_gadget<FieldT> stateID;
     libsnark::dual_variable_gadget<FieldT> walletID;
     libsnark::dual_variable_gadget<FieldT> orderID;
-    libsnark::dual_variable_gadget<FieldT> accountS;
-    libsnark::dual_variable_gadget<FieldT> accountB;
-    libsnark::dual_variable_gadget<FieldT> accountF;
+    libsnark::dual_variable_gadget<FieldT> accountID;
+    libsnark::dual_variable_gadget<FieldT> dualAuthAccountID;
+    libsnark::dual_variable_gadget<FieldT> tokenS;
+    libsnark::dual_variable_gadget<FieldT> tokenB;
+    libsnark::dual_variable_gadget<FieldT> tokenF;
     libsnark::dual_variable_gadget<FieldT> amountS;
     libsnark::dual_variable_gadget<FieldT> amountB;
     libsnark::dual_variable_gadget<FieldT> amountF;
-    libsnark::dual_variable_gadget<FieldT> walletF;
-    libsnark::dual_variable_gadget<FieldT> minerF;
-    libsnark::dual_variable_gadget<FieldT> minerS;
-    libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
+
+    libsnark::dual_variable_gadget<FieldT> allOrNone;
     libsnark::dual_variable_gadget<FieldT> validSince;
     libsnark::dual_variable_gadget<FieldT> validUntil;
-    libsnark::dual_variable_gadget<FieldT> allOrNone;
-    libsnark::dual_variable_gadget<FieldT> padding;
-
+    libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
     libsnark::dual_variable_gadget<FieldT> waiveFeePercentage;
-
-    VariableT tokenS;
-    VariableT tokenB;
-    libsnark::dual_variable_gadget<FieldT> tokenF;
 
     const jubjub::VariablePointT publicKey;
     const jubjub::VariablePointT walletPublicKey;
-    const jubjub::VariablePointT minerPublicKeyF;
-    const jubjub::VariablePointT minerPublicKeyS;
 
     VariableT filledBefore;
     VariableT cancelled;
@@ -73,34 +67,28 @@ public:
 
         blockStateID(_blockStateID),
 
+        padding(pb, 1, FMT(prefix, ".padding")),
+
         stateID(pb, 16, FMT(prefix, ".stateID")),
-        walletID(pb, 16, FMT(prefix, ".walletID")),
-        orderID(pb, 4, FMT(prefix, ".orderID")),
-        accountS(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountS")),
-        accountB(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountB")),
-        accountF(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountF")),
+        walletID(pb, 12, FMT(prefix, ".walletID")),
+        orderID(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".orderID")),
+        accountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID")),
+        dualAuthAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID")),
+        tokenS(pb, 12, FMT(prefix, ".tokenS")),
+        tokenB(pb, 12, FMT(prefix, ".tokenB")),
+        tokenF(pb, 12, FMT(prefix, ".tokenF")),
         amountS(pb, 96, FMT(prefix, ".amountS")),
         amountB(pb, 96, FMT(prefix, ".amountB")),
         amountF(pb, 96, FMT(prefix, ".amountF")),
-        walletF(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletF")),
-        minerF(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".minerF")),
-        minerS(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".minerS")),
+
+        allOrNone(pb, 1, FMT(prefix, ".allOrNone")),
         validSince(pb, 32, FMT(prefix, ".validSince")),
         validUntil(pb, 32, FMT(prefix, ".validUntil")),
-        allOrNone(pb, 1, FMT(prefix, ".allOrNone")),
-        padding(pb, 1, FMT(prefix, ".padding")),
-
-        walletSplitPercentage(pb, 8, FMT(prefix, ".walletSplitPercentage")),
+        walletSplitPercentage(pb, 7, FMT(prefix, ".walletSplitPercentage")),
         waiveFeePercentage(pb, 7, FMT(prefix, ".waiveFeePercentage")),
-
-        tokenS(make_variable(pb, FMT(prefix, ".tokenS"))),
-        tokenB(make_variable(pb, FMT(prefix, ".tokenB"))),
-        tokenF(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenF")),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
         walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
-        minerPublicKeyF(pb, FMT(prefix, ".minerPublicKeyF")),
-        minerPublicKeyS(pb, FMT(prefix, ".minerPublicKeyS")),
 
         filledBefore(make_variable(pb, FMT(prefix, ".filledBefore"))),
         cancelled(make_variable(pb, FMT(prefix, ".cancelled"))),
@@ -110,7 +98,11 @@ public:
         balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
         signatureVerifier(pb, params, publicKey,
-                          flatten({walletID.bits, orderID.bits, accountS.bits, accountB.bits, accountF.bits, amountS.bits, amountB.bits, amountF.bits}),
+                          flatten({stateID.bits, walletID.bits, orderID.bits, accountID.bits, dualAuthAccountID.bits,
+                          tokenS.bits, tokenB.bits, tokenF.bits,
+                          amountS.bits, amountB.bits, amountF.bits,
+                          allOrNone.bits, validSince.bits, validUntil.bits,
+                          walletSplitPercentage.bits}),
                           FMT(prefix, ".signatureVerifier")),
 
         validSince_leq_timestamp(pb, validSince.packed, timestamp, FMT(prefix, "validSince <= timestamp")),
@@ -133,19 +125,26 @@ public:
 
     void generate_r1cs_witness(const Order& order)
     {
+        padding.bits.fill_with_bits_of_field_element(pb, 0);
+        padding.generate_r1cs_witness_from_bits();
+
         stateID.bits.fill_with_bits_of_field_element(pb, order.stateID);
         stateID.generate_r1cs_witness_from_bits();
         walletID.bits.fill_with_bits_of_field_element(pb, order.walletID);
         walletID.generate_r1cs_witness_from_bits();
         orderID.bits.fill_with_bits_of_field_element(pb, order.orderID);
         orderID.generate_r1cs_witness_from_bits();
+        accountID.bits.fill_with_bits_of_field_element(pb, order.accountID);
+        accountID.generate_r1cs_witness_from_bits();
+        dualAuthAccountID.bits.fill_with_bits_of_field_element(pb, order.dualAuthAccountID);
+        dualAuthAccountID.generate_r1cs_witness_from_bits();
 
-        accountS.bits.fill_with_bits_of_field_element(pb, order.accountS);
-        accountS.generate_r1cs_witness_from_bits();
-        accountB.bits.fill_with_bits_of_field_element(pb, order.accountB);
-        accountB.generate_r1cs_witness_from_bits();
-        accountF.bits.fill_with_bits_of_field_element(pb, order.accountF);
-        accountF.generate_r1cs_witness_from_bits();
+        tokenS.bits.fill_with_bits_of_field_element(pb, order.tokenS);
+        tokenS.generate_r1cs_witness_from_bits();
+        tokenB.bits.fill_with_bits_of_field_element(pb, order.tokenB);
+        tokenB.generate_r1cs_witness_from_bits();
+        tokenF.bits.fill_with_bits_of_field_element(pb, order.tokenF);
+        tokenF.generate_r1cs_witness_from_bits();
 
         amountS.bits.fill_with_bits_of_field_element(pb, order.amountS);
         amountS.generate_r1cs_witness_from_bits();
@@ -154,34 +153,16 @@ public:
         amountF.bits.fill_with_bits_of_field_element(pb, order.amountF);
         amountF.generate_r1cs_witness_from_bits();
 
-        walletF.bits.fill_with_bits_of_field_element(pb, order.walletF);
-        walletF.generate_r1cs_witness_from_bits();
-        minerF.bits.fill_with_bits_of_field_element(pb, order.minerF);
-        minerF.generate_r1cs_witness_from_bits();
-        minerS.bits.fill_with_bits_of_field_element(pb, order.minerS);
-        minerS.generate_r1cs_witness_from_bits();
-
-        padding.bits.fill_with_bits_of_field_element(pb, 0);
-        padding.generate_r1cs_witness_from_bits();
-
-        walletSplitPercentage.bits.fill_with_bits_of_field_element(pb, order.walletSplitPercentage);
-        walletSplitPercentage.generate_r1cs_witness_from_bits();
-
+        allOrNone.bits.fill_with_bits_of_field_element(pb, order.allOrNone);
+        allOrNone.generate_r1cs_witness_from_bits();
         validSince.bits.fill_with_bits_of_field_element(pb, order.validSince);
         validSince.generate_r1cs_witness_from_bits();
         validUntil.bits.fill_with_bits_of_field_element(pb, order.validUntil);
         validUntil.generate_r1cs_witness_from_bits();
-
-        allOrNone.bits.fill_with_bits_of_field_element(pb, order.allOrNone);
-        allOrNone.generate_r1cs_witness_from_bits();
-
+        walletSplitPercentage.bits.fill_with_bits_of_field_element(pb, order.walletSplitPercentage);
+        walletSplitPercentage.generate_r1cs_witness_from_bits();
         waiveFeePercentage.bits.fill_with_bits_of_field_element(pb, order.waiveFeePercentage);
         waiveFeePercentage.generate_r1cs_witness_from_bits();
-
-        pb.val(tokenS) = order.tokenS;
-        pb.val(tokenB) = order.tokenB;
-        tokenF.bits.fill_with_bits_of_field_element(pb, order.tokenF);
-        tokenF.generate_r1cs_witness_from_bits();
 
         pb.val(filledBefore) = order.filledBefore;
         pb.val(cancelled) = order.cancelled;
@@ -195,10 +176,6 @@ public:
 
         pb.val(walletPublicKey.x) = order.walletPublicKey.x;
         pb.val(walletPublicKey.y) = order.walletPublicKey.y;
-        pb.val(minerPublicKeyF.x) = order.minerPublicKeyF.x;
-        pb.val(minerPublicKeyF.y) = order.minerPublicKeyF.y;
-        pb.val(minerPublicKeyS.x) = order.minerPublicKeyS.x;
-        pb.val(minerPublicKeyS.y) = order.minerPublicKeyS.y;
 
         signatureVerifier.generate_r1cs_witness(order.signature);
 
@@ -212,27 +189,26 @@ public:
     {
         forceEqual(pb, blockStateID, stateID.packed, FMT(annotation_prefix, ".blockStateID == stateID"));
 
+        padding.generate_r1cs_constraints(true);
+
         stateID.generate_r1cs_constraints(true);
         walletID.generate_r1cs_constraints(true);
         orderID.generate_r1cs_constraints(true);
-        accountS.generate_r1cs_constraints(true);
-        accountB.generate_r1cs_constraints(true);
-        accountF.generate_r1cs_constraints(true);
+        accountID.generate_r1cs_constraints(true);
+        dualAuthAccountID.generate_r1cs_constraints(true);
+
+        tokenS.generate_r1cs_constraints(true);
+        tokenB.generate_r1cs_constraints(true);
+        tokenF.generate_r1cs_constraints(true);
         amountS.generate_r1cs_constraints(true);
         amountB.generate_r1cs_constraints(true);
         amountF.generate_r1cs_constraints(true);
-        walletF.generate_r1cs_constraints(true);
-        minerF.generate_r1cs_constraints(true);
-        minerS.generate_r1cs_constraints(true);
+
+        allOrNone.generate_r1cs_constraints(true);
         validSince.generate_r1cs_constraints(true);
         validUntil.generate_r1cs_constraints(true);
-        allOrNone.generate_r1cs_constraints(true);
-        padding.generate_r1cs_constraints(true);
-
         walletSplitPercentage.generate_r1cs_constraints(true);
         waiveFeePercentage.generate_r1cs_constraints(true);
-
-        tokenF.generate_r1cs_constraints(true);
 
         signatureVerifier.generate_r1cs_constraints();
 

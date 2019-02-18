@@ -11,15 +11,41 @@ from ethsnarks.field import FQ
 from ethsnarks.mimc import mimc_hash
 from ethsnarks.merkletree import MerkleTree
 
-TREE_DEPTH_TRADING_HISTORY = 28
+TREE_DEPTH_TRADING_HISTORY = 16
 TREE_DEPTH_ACCOUNTS = 24
 TREE_DEPTH_TOKENS = 16
+TREE_DEPTH_BALANCES = 12
+TREE_DEPTH_WALLETS = 12
+TREE_DEPTH_RINGMATCHERS = 12
 
+def copyBalanceInfo(leaf):
+    c = copy.deepcopy(leaf)
+    c.tradingHistoryRoot = str(leaf._tradingHistoryTree._root)
+    c._tradingHistoryTree = None
+    c._tradeHistoryLeafs = None
+    return c
+
+def copyAccountInfo(account):
+    c = copy.deepcopy(account)
+    c.balancesRoot = str(account._balancesTree._root)
+    c._balancesTree = None
+    c._balancesLeafs = None
+    return c
+
+def copyFeeTokenInfo(feeToken):
+    c = copy.deepcopy(feeToken)
+    c.walletsRoot = str(feeToken._walletsTree._root)
+    c._walletsTree = None
+    c._wallets = None
+    c.ringmatchersRoot = str(feeToken._ringmatchersTree._root)
+    c._ringmatchersTree = None
+    c._ringmatchers = None
+    return c
 
 class Context(object):
-    def __init__(self, globalState, operator, timestamp):
+    def __init__(self, globalState, operatorAccountID, timestamp):
         self.globalState = globalState
-        self.operator = int(operator)
+        self.operatorAccountID = int(operatorAccountID)
         self.timestamp = int(timestamp)
 
 class Signature(object):
@@ -28,31 +54,68 @@ class Signature(object):
         self.Ry = str(sig.R.y)
         self.s = str(sig.s)
 
-class Account(object):
-    def __init__(self, secretKey, publicKey, walletID, token, balance):
-        self.secretKey = str(secretKey)
-        self.publicKeyX = str(publicKey.x)
-        self.publicKeyY = str(publicKey.y)
-        self.walletID = walletID
-        self.token = token
+
+class FeeBalanceLeaf(object):
+    def __init__(self, balance = 0):
         self.balance = str(balance)
-        self.nonce = 0
 
     def hash(self):
-        #return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.walletID), int(self.token), int(self.balance)], 1)
-        return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.token), int(self.balance)], 1)
+        return int(self.balance)
 
-    def fromJSON(self, jAccount):
-        self.secretKey = jAccount["secretKey"]
-        self.publicKeyX = jAccount["publicKeyX"]
-        self.publicKeyY = jAccount["publicKeyY"]
-        self.walletID = int(jAccount["walletID"])
-        self.token = int(jAccount["token"])
-        self.balance = jAccount["balance"]
+    def fromJSON(self, jBalance):
+        self.balance = jBalance["balance"]
+
+
+class BalanceLeaf(object):
+    def __init__(self, balance = 0):
+        self.balance = str(balance)
+        # Trading history
+        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
+        self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
+        self._tradeHistoryLeafs = {}
+
+    def hash(self):
+        return mimc_hash([int(self.balance), int(self._tradingHistoryTree._root)], 1)
+
+    def fromJSON(self, jBalance):
+        self.balance = jBalance["balance"]
+        # Trading history
+        tradeHistoryLeafsDict = jBalance["_tradeHistoryLeafs"]
+        for key, val in tradeHistoryLeafsDict.items():
+            self._tradeHistoryLeafs[key] = TradeHistoryLeaf(val["filled"], val["cancelled"])
+        self._tradingHistoryTree._root = jBalance["_tradingHistoryTree"]["_root"]
+        self._tradingHistoryTree._db.kv = jBalance["_tradingHistoryTree"]["_db"]["kv"]
+
+    def getTradeHistory(self, address):
+        # Make sure the leaf exist in our map
+        if not(str(address) in self._tradeHistoryLeafs):
+            return TradeHistoryLeaf()
+        else:
+            return self._tradeHistoryLeafs[str(address)]
+
+    def updateTradeHistory(self, address, fill, cancelled = 0):
+        # Make sure the leaf exist in our map
+        if not(str(address) in self._tradeHistoryLeafs):
+            self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0)
+
+        leafBefore = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
+        rootBefore = self._tradingHistoryTree._root
+        #print("leafBefore: " + str(leafBefore))
+        self._tradeHistoryLeafs[str(address)].filled = str(int(self._tradeHistoryLeafs[str(address)].filled) + int(fill))
+        self._tradeHistoryLeafs[str(address)].cancelled = cancelled
+        leafAfter = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
+        #print("leafAfter: " + str(leafAfter))
+        proof = self._tradingHistoryTree.createProof(address)
+        self._tradingHistoryTree.update(address, leafAfter.hash())
+        rootAfter = self._tradingHistoryTree._root
+
+        return TradeHistoryUpdateData(address, proof,
+                                      rootBefore, rootAfter,
+                                      leafBefore, leafAfter)
 
 
 class TradeHistoryLeaf(object):
-    def __init__(self, filled, cancelled):
+    def __init__(self, filled = 0, cancelled = 0):
         self.filled = str(filled)
         self.cancelled = cancelled
 
@@ -62,6 +125,161 @@ class TradeHistoryLeaf(object):
     def fromJSON(self, jAccount):
         self.filled = jAccount["filled"]
         self.cancelled = int(jAccount["cancelled"])
+
+
+class FeeToken(object):
+    def __init__(self):
+        self.balance = str(int(0))
+        # Wallets
+        self._walletsTree = SparseMerkleTree(TREE_DEPTH_WALLETS)
+        self._walletsTree.newTree(FeeBalanceLeaf().hash())
+        self._wallets = {}
+        print("Empty wallets tree: " + str(self._walletsTree._root))
+        # Ringmatchers
+        self._ringmatchersTree = SparseMerkleTree(TREE_DEPTH_RINGMATCHERS)
+        self._ringmatchersTree.newTree(FeeBalanceLeaf().hash())
+        self._ringmatchers = {}
+        print("Empty ringmatchers tree: " + str(self._ringmatchersTree._root))
+
+    def hash(self):
+        return mimc_hash([int(self.balance), int(self._walletsTree._root), int(self._ringmatchersTree._root)], 1)
+
+    def fromJSON(self, jFeeToken):
+        self.balance = jFeeToken["balance"]
+        # Wallets
+        walletsDict = jFeeToken["_wallets"]
+        for key, val in walletsDict.items():
+            feeBalanceLeaf = FeeBalanceLeaf()
+            feeBalanceLeaf.fromJSON(val)
+            self._wallets[key] = feeBalanceLeaf
+        self._walletsTree._root = jFeeToken["_walletsTree"]["_root"]
+        self._walletsTree._db.kv = jFeeToken["_walletsTree"]["_db"]["kv"]
+        # Ringmatchers
+        ringmatchersDict = jFeeToken["_ringmatchers"]
+        for key, val in ringmatchersDict.items():
+            feeBalanceLeaf = FeeBalanceLeaf()
+            feeBalanceLeaf.fromJSON(val)
+            self._ringmatchers[key] = feeBalanceLeaf
+        self._ringmatchersTree._root = jFeeToken["_ringmatchersTree"]["_root"]
+        self._ringmatchersTree._db.kv = jFeeToken["_ringmatchersTree"]["_db"]["kv"]
+
+    def updateWalletBalance(self, walletID, amount):
+        # Make sure the leaf exist in our map
+        if not(str(walletID) in self._wallets):
+            self._wallets[str(walletID)] = FeeBalanceLeaf()
+
+        balanceBefore = copy.deepcopy(self._wallets[str(walletID)])
+        rootBefore = self._walletsTree._root
+        self._wallets[str(walletID)].balance = str(int(self._wallets[str(walletID)].balance) + amount)
+        balanceAfter = copy.deepcopy(self._wallets[str(walletID)])
+        #print("accountAfter: " + str(accountAfter.balance))
+        proof = self._walletsTree.createProof(walletID)
+        self._walletsTree.update(walletID, self._wallets[str(walletID)].hash())
+        rootAfter = self._walletsTree._root
+
+        return FeeBalanceUpdateData(walletID, proof,
+                                    rootBefore, rootAfter,
+                                    balanceBefore, balanceAfter)
+
+    def updateMinerBalance(self, minerID, amount):
+        # Make sure the leaf exist in our map
+        if not(str(minerID) in self._ringmatchers):
+            self._ringmatchers[str(minerID)] = FeeBalanceLeaf()
+
+        balanceBefore = copy.deepcopy(self._ringmatchers[str(minerID)])
+        rootBefore = self._ringmatchersTree._root
+        self._ringmatchers[str(minerID)].balance = str(int(self._ringmatchers[str(minerID)].balance) + amount)
+        balanceAfter = copy.deepcopy(self._ringmatchers[str(minerID)])
+        #print("accountAfter: " + str(accountAfter.balance))
+        proof = self._ringmatchersTree.createProof(minerID)
+        self._ringmatchersTree.update(minerID, self._ringmatchers[str(minerID)].hash())
+        rootAfter = self._ringmatchersTree._root
+
+        return FeeBalanceUpdateData(minerID, proof,
+                                    rootBefore, rootAfter,
+                                    balanceBefore, balanceAfter)
+
+
+class Account(object):
+    def __init__(self, secretKey, publicKey, walletID):
+        self.secretKey = str(secretKey)
+        self.publicKeyX = str(publicKey.x)
+        self.publicKeyY = str(publicKey.y)
+        self.walletID = walletID
+        self.nonce = 0
+        #print("Empty trading tree: " + str(self._tradingHistoryTree._root))
+        # Balances
+        self._balancesTree = SparseMerkleTree(TREE_DEPTH_BALANCES)
+        self._balancesTree.newTree(BalanceLeaf().hash())
+        self._balancesLeafs = {}
+        #print("Empty balances tree: " + str(self._balancesTree._root))
+
+    def hash(self):
+        return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.walletID), int(self.nonce), int(self._balancesTree._root)], 1)
+
+    def fromJSON(self, jAccount):
+        self.secretKey = jAccount["secretKey"]
+        self.publicKeyX = jAccount["publicKeyX"]
+        self.publicKeyY = jAccount["publicKeyY"]
+        self.walletID = int(jAccount["walletID"])
+        self.nonce = int(jAccount["nonce"])
+        # Balances
+        balancesLeafsDict = jAccount["_balancesLeafs"]
+        for key, val in balancesLeafsDict.items():
+            balanceLeaf = BalanceLeaf()
+            balanceLeaf.fromJSON(val)
+            self._balancesLeafs[key] = balanceLeaf
+        self._balancesTree._root = jAccount["_balancesTree"]["_root"]
+        self._balancesTree._db.kv = jAccount["_balancesTree"]["_db"]["kv"]
+
+    def getBalance(self, address):
+        # Make sure the leaf exist in our map
+        if not(str(address) in self._balancesLeafs):
+            return int(0)
+        else:
+            return self._balancesLeafs[str(address)].balance
+
+    def updateBalance(self, tokenID, amount):
+        # Make sure the leaf exist in our map
+        if not(str(tokenID) in self._balancesLeafs):
+            self._balancesLeafs[str(tokenID)] = BalanceLeaf()
+
+        balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
+        rootBefore = self._balancesTree._root
+
+        self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
+
+        balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
+        proof = self._balancesTree.createProof(tokenID)
+        self._balancesTree.update(tokenID, self._balancesLeafs[str(tokenID)].hash())
+        rootAfter = self._balancesTree._root
+
+        return BalanceUpdateData(tokenID, proof,
+                                 rootBefore, rootAfter,
+                                 balancesBefore, balancesAfter)
+
+    def updateBalanceAndTradeHistory(self, tokenID, orderID, amount):
+        # Make sure the leaf exist in our map
+        if not(str(tokenID) in self._balancesLeafs):
+            self._balancesLeafs[str(tokenID)] = BalanceLeaf()
+
+        balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
+        rootBefore = self._balancesTree._root
+
+        # Update filled amounts
+        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, -amount)
+        self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
+
+        balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
+        proof = self._balancesTree.createProof(tokenID)
+        self._balancesTree.update(tokenID, self._balancesLeafs[str(tokenID)].hash())
+        rootAfter = self._balancesTree._root
+
+        return (BalanceUpdateData(tokenID, proof,
+                                 rootBefore, rootAfter,
+                                 balancesBefore, balancesAfter),
+                tradeHistoryUpdate)
+
 
 class BurnRateLeaf(object):
     def __init__(self, burnRate):
@@ -74,47 +292,103 @@ class BurnRateLeaf(object):
         self.burnRate = int(jBurnRateLeaf["burnRate"])
 
 class TradeHistoryUpdateData(object):
-    def __init__(self, before, after, proof):
+    def __init__(self,
+                 orderID, proof,
+                 rootBefore, rootAfter,
+                 before, after):
+        self.orderID = int(orderID)
+        self.proof = [str(_) for _ in proof]
+        self.rootBefore = str(rootBefore)
+        self.rootAfter = str(rootAfter)
         self.before = before
         self.after = after
+
+class BalanceUpdateData(object):
+    def __init__(self,
+                 tokenID, proof,
+                 rootBefore, rootAfter,
+                 before, after):
+        self.tokenID = int(tokenID)
         self.proof = [str(_) for _ in proof]
+        self.rootBefore = str(rootBefore)
+        self.rootAfter = str(rootAfter)
+        self.before = before
+        self.after = after
 
 class AccountUpdateData(object):
-    def __init__(self, before, after, proof):
+    def __init__(self,
+                 accountID, proof,
+                 rootBefore, rootAfter,
+                 before, after):
+        self.accountID = int(accountID)
+        self.proof = [str(_) for _ in proof]
+        self.rootBefore = str(rootBefore)
+        self.rootAfter = str(rootAfter)
         self.before = before
         self.after = after
+
+class FeeTokenUpdateData(object):
+    def __init__(self,
+                 tokenID, proof,
+                 rootBefore, rootAfter,
+                 before, after):
+        self.tokenID = int(tokenID)
         self.proof = [str(_) for _ in proof]
+        self.rootBefore = str(rootBefore)
+        self.rootAfter = str(rootAfter)
+        self.before = before
+        self.after = after
+
+class FeeBalanceUpdateData(object):
+    def __init__(self,
+                 ID, proof,
+                 rootBefore, rootAfter,
+                 before, after):
+        self.ID = int(ID)
+        self.proof = [str(_) for _ in proof]
+        self.rootBefore = str(rootBefore)
+        self.rootAfter = str(rootAfter)
+        self.before = before
+        self.after = after
+
 
 class BurnRateCheckData(object):
     def __init__(self, burnRateData, proof):
         self.burnRateData = burnRateData
         self.proof = [str(_) for _ in proof]
 
+
+class Deposit(object):
+    def __init__(self, balanceUpdate, accountUpdate):
+        self.balanceUpdate = balanceUpdate
+        self.accountUpdate = accountUpdate
+
 class Order(object):
-    def __init__(self, publicKey, walletPublicKey, minerPublicKeyF, minerPublicKeyS,
-                 walletID, orderID,
-                 accountS, accountB, accountF, walletF, minerF, minerS,
-                 amountS, amountB, amountF,
+    def __init__(self,
+                 publicKey, walletPublicKey,
+                 stateID, walletID, orderID, accountID, dualAuthAccountID,
                  tokenS, tokenB, tokenF,
+                 amountS, amountB, amountF,
                  allOrNone, validSince, validUntil,
-                 walletSplitPercentage, waiveFeePercentage,
-                 stateID):
+                 walletSplitPercentage, waiveFeePercentage):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.walletPublicKeyX = str(walletPublicKey.x)
         self.walletPublicKeyY = str(walletPublicKey.y)
-        self.minerPublicKeyFX = str(minerPublicKeyF.x)
-        self.minerPublicKeyFY = str(minerPublicKeyF.y)
-        self.minerPublicKeySX = str(minerPublicKeyS.x)
-        self.minerPublicKeySY = str(minerPublicKeyS.y)
-        self.walletID = walletID
-        self.orderID = orderID
-        self.accountS = accountS
-        self.accountB = accountB
-        self.accountF = accountF
+
+        self.stateID = int(stateID)
+        self.walletID = int(walletID)
+        self.orderID = int(orderID)
+        self.accountID = int(accountID)
+        self.dualAuthAccountID = int(dualAuthAccountID)
+
         self.amountS = str(amountS)
         self.amountB = str(amountB)
         self.amountF = str(amountF)
+
+        self.tokenS = tokenS
+        self.tokenB = tokenB
+        self.tokenF = tokenF
 
         self.allOrNone = bool(allOrNone)
         self.validSince = validSince
@@ -122,21 +396,15 @@ class Order(object):
         self.walletSplitPercentage = walletSplitPercentage
         self.waiveFeePercentage = waiveFeePercentage
 
-        self.stateID = int(stateID)
-
-        self.walletF = walletF
-        self.minerF = minerF
-        self.minerS = minerS
-
-        self.tokenS = tokenS
-        self.tokenB = tokenB
-        self.tokenF = tokenF
 
     def message(self):
         msg_parts = [
-                        FQ(int(self.walletID), 1<<16), FQ(int(self.orderID), 1<<4),
-                        FQ(int(self.accountS), 1<<24), FQ(int(self.accountB), 1<<24), FQ(int(self.accountF), 1<<24),
-                        FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96)
+                        FQ(int(self.stateID), 1<<16), FQ(int(self.walletID), 1<<12), FQ(int(self.orderID), 1<<16),
+                        FQ(int(self.accountID), 1<<24), FQ(int(self.dualAuthAccountID), 1<<24),
+                        FQ(int(self.tokenS), 1<<12), FQ(int(self.tokenB), 1<<12), FQ(int(self.tokenF), 1<<12),
+                        FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96),
+                        FQ(int(self.allOrNone), 1<<1), FQ(int(self.validSince), 1<<32), FQ(int(self.validUntil), 1<<32),
+                        FQ(int(self.walletSplitPercentage), 1<<7)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -161,12 +429,13 @@ class Order(object):
 
 
 class Ring(object):
-    def __init__(self, orderA, orderB, publicKey, miner, fee, nonce):
+    def __init__(self, orderA, orderB, publicKey, minerID, minerAccountID, fee, nonce):
         self.orderA = orderA
         self.orderB = orderB
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.miner = miner
+        self.minerID = minerID
+        self.minerAccountID = minerAccountID
         self.fee = fee
         self.nonce = nonce
 
@@ -174,8 +443,8 @@ class Ring(object):
         msg_parts = [
                         FQ(int(self.orderA.hash), 1<<254), FQ(int(self.orderB.hash), 1<<254),
                         FQ(int(self.orderA.waiveFeePercentage), 1<<7), FQ(int(self.orderB.waiveFeePercentage), 1<<7),
-                        FQ(int(self.orderA.minerF), 1<<24), FQ(int(self.orderB.minerF), 1<<24),
-                        FQ(int(self.orderA.minerS), 1<<24),
+                        FQ(int(self.minerID), 1<<12), FQ(int(self.minerAccountID), 1<<24),
+                        FQ(int(self.fee), 1<<96),
                         FQ(int(self.nonce), 1<<32)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
@@ -192,40 +461,50 @@ class Ring(object):
         signedMessage = PureEdDSA.sign(msg, walletB_k)
         self.walletBSignature = Signature(signedMessage.sig)
 
-
 class RingSettlement(object):
-    def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
+    def __init__(self,
+                 ring,
+                 accountsMerkleRoot, feesMerkleRoot,
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
-                 accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_MA, accountUpdateF_BA,
-                 accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_MB, accountUpdateF_BB,
-                 accountUpdateS_M,
-                 accountUpdate_M,
+                 balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, accountUpdate_A,
+                 balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, accountUpdate_B,
+                 balanceUpdate_M, accountUpdate_M,
+                 feeBalanceUpdateF_WA, feeBalanceUpdateF_MA, feeTokenUpdate_FA,
+                 feeBalanceUpdateF_WB, feeBalanceUpdateF_MB, feeTokenUpdate_FB,
+                 feeBalanceUpdateS_MA, feeTokenUpdate_SA,
                  burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
                  burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B):
-        self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
-        self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.ring = ring
+
+        self.accountsMerkleRoot = str(accountsMerkleRoot)
+        self.feesMerkleRoot = str(feesMerkleRoot)
 
         self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
         self.tradeHistoryUpdate_B = tradeHistoryUpdate_B
 
-        self.accountUpdateS_A = accountUpdateS_A
-        self.accountUpdateB_A = accountUpdateB_A
-        self.accountUpdateF_A = accountUpdateF_A
-        self.accountUpdateF_WA = accountUpdateF_WA
-        self.accountUpdateF_MA = accountUpdateF_MA
-        self.accountUpdateF_BA = accountUpdateF_BA
+        self.balanceUpdateS_A = balanceUpdateS_A
+        self.balanceUpdateB_A = balanceUpdateB_A
+        self.balanceUpdateF_A = balanceUpdateF_A
+        self.accountUpdate_A = accountUpdate_A
 
-        self.accountUpdateS_B = accountUpdateS_B
-        self.accountUpdateB_B = accountUpdateB_B
-        self.accountUpdateF_B = accountUpdateF_B
-        self.accountUpdateF_WB = accountUpdateF_WB
-        self.accountUpdateF_MB = accountUpdateF_MB
-        self.accountUpdateF_BB = accountUpdateF_BB
+        self.balanceUpdateS_B = balanceUpdateS_B
+        self.balanceUpdateB_B = balanceUpdateB_B
+        self.balanceUpdateF_B = balanceUpdateF_B
+        self.accountUpdate_B = accountUpdate_B
 
-        self.accountUpdateS_M = accountUpdateS_M
-
+        self.balanceUpdate_M = balanceUpdate_M
         self.accountUpdate_M = accountUpdate_M
+
+        self.feeBalanceUpdateF_WA = feeBalanceUpdateF_WA
+        self.feeBalanceUpdateF_MA = feeBalanceUpdateF_MA
+        self.feeTokenUpdate_FA = feeTokenUpdate_FA
+
+        self.feeBalanceUpdateF_WB = feeBalanceUpdateF_WB
+        self.feeBalanceUpdateF_MB = feeBalanceUpdateF_MB
+        self.feeTokenUpdate_FB = feeTokenUpdate_FB
+
+        self.feeBalanceUpdateS_MA = feeBalanceUpdateS_MA
+        self.feeTokenUpdate_SA = feeTokenUpdate_SA
 
         self.burnRateCheckF_A = burnRateCheckF_A
         self.walletFee_A = walletFee_A
@@ -238,24 +517,21 @@ class RingSettlement(object):
         self.burnFee_B = burnFee_B
 
 
-class Deposit(object):
-    def __init__(self, accountsMerkleRoot, address, accountUpdate):
-        self.accountsMerkleRoot = str(accountsMerkleRoot)
-        self.address = address
-        self.accountUpdate = accountUpdate
-
-
 class Withdrawal(object):
-    def __init__(self, accountsMerkleRoot, publicKey, account, amount, accountUpdate):
-        self.accountsMerkleRoot = str(accountsMerkleRoot)
+    def __init__(self,
+                 publicKey,
+                 accountID, tokenID, amount,
+                 balanceUpdate, accountUpdate):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.account = account
+        self.accountID = accountID
+        self.tokenID = tokenID
         self.amount = str(amount)
+        self.balanceUpdate = balanceUpdate
         self.accountUpdate = accountUpdate
 
     def message(self):
-        msg_parts = [FQ(int(self.account), 1<<24), FQ(int(self.amount), 1<<96), FQ(int(0), 1<<2)]
+        msg_parts = [FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.amount), 1<<96), FQ(int(0), 1<<2)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
@@ -265,10 +541,9 @@ class Withdrawal(object):
 
 
 class Cancellation(object):
-    def __init__(self, tradingHistoryMerkleRoot, accountsMerkleRoot,
+    def __init__(self, accountsMerkleRoot,
                  publicKey, account, orderID,
                  tradeHistoryUpdate, accountUpdate):
-        self.tradingHistoryMerkleRoot = str(tradingHistoryMerkleRoot)
         self.accountsMerkleRoot = str(accountsMerkleRoot)
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
@@ -313,6 +588,7 @@ class GlobalState(object):
         if address >= len(self._tokens):
             print("Token doesn't exist: " + str(address))
 
+        print("burn address: " + str(address))
         burnRateData = copy.deepcopy(self._tokens[address])
         proof = self._tokensTree.proof(address).path
 
@@ -329,88 +605,51 @@ class GlobalState(object):
 class State(object):
     def __init__(self, stateID):
         self.stateID = int(stateID)
-        # Trading history
-        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
-        self._tradingHistoryTree.newTree(TradeHistoryLeaf(0, 0).hash())
-        self._tradeHistoryLeafs = {}
-        #print("Empty trading tree: " + str(self._tradingHistoryTree._root))
         # Accounts
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
-        self._accountsTree.newTree(Account(0, Point(0, 0), 0, 0, 0).hash())
+        self._accountsTree.newTree(Account(0, Point(0, 0), 0).hash())
         self._accounts = {}
-        #print("Empty accounts tree: " + str(self._accountsTree._root))
+        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        # FeeBalances
+        self._feeTokensTree = SparseMerkleTree(TREE_DEPTH_BALANCES)
+        self._feeTokensTree.newTree(FeeToken().hash())
+        self._feeTokens = {}
+        print("Empty feeTokens tree: " + str(hex(self._feeTokensTree._root)))
+        print("Empty merkle tree: " + str(hex(self.getRoot())))
 
     def load(self, filename):
         with open(filename) as f:
             data = json.load(f)
             self.stateID = int(data["stateID"])
-            tradeHistoryLeafsDict = data["trading_history_values"]
-            for key, val in tradeHistoryLeafsDict.items():
-                self._tradeHistoryLeafs[key] = TradeHistoryLeaf(val["filled"], val["cancelled"])
-            self._tradingHistoryTree._root = data["trading_history_root"]
-            self._tradingHistoryTree._db.kv = data["trading_history_tree"]
+            # Accounts
             accountLeafsDict = data["accounts_values"]
             for key, val in accountLeafsDict.items():
-                account = Account(0, Point(0, 0), 0, 0, 0)
+                account = Account(0, Point(0, 0), 0)
                 account.fromJSON(val)
                 self._accounts[key] = account
             self._accountsTree._root = data["accounts_root"]
             self._accountsTree._db.kv = data["accounts_tree"]
+            # FeeTokens
+            feeTokensDict = data["feeToken_values"]
+            for key, val in feeTokensDict.items():
+                feeToken = FeeToken()
+                feeToken.fromJSON(val)
+                self._feeTokens[key] = feeToken
+            self._feeTokensTree._root = data["feeTokens_root"]
+            self._feeTokensTree._db.kv = data["feeTokens_tree"]
 
     def save(self, filename):
         with open(filename, "w") as file:
             file.write(json.dumps(
                 {
                     "stateID": self.stateID,
-                    "trading_history_values": self._tradeHistoryLeafs,
-                    "trading_history_root": self._tradingHistoryTree._root,
-                    "trading_history_tree": self._tradingHistoryTree._db.kv,
                     "accounts_values": self._accounts,
                     "accounts_root": self._accountsTree._root,
                     "accounts_tree": self._accountsTree._db.kv,
+                    "feeToken_values": self._feeTokens,
+                    "feeTokens_root": self._feeTokensTree._root,
+                    "feeTokens_tree": self._feeTokensTree._db.kv,
                 }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
-
-    def getTradeHistory(self, address):
-        # Make sure the leaf exist in our map
-        if not(str(address) in self._tradeHistoryLeafs):
-            return TradeHistoryLeaf(0, 0)
-        else:
-            return self._tradeHistoryLeafs[str(address)]
-
-    def updateTradeHistory(self, address, fill, cancelled = 0):
-        # Make sure the leaf exist in our map
-        if not(str(address) in self._tradeHistoryLeafs):
-            self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0)
-
-        leafBefore = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
-        #print("leafBefore: " + str(leafBefore))
-        self._tradeHistoryLeafs[str(address)].filled = str(int(self._tradeHistoryLeafs[str(address)].filled) + int(fill))
-        self._tradeHistoryLeafs[str(address)].cancelled = cancelled
-        leafAfter = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
-        #print("leafAfter: " + str(leafAfter))
-        proof = self._tradingHistoryTree.createProof(address)
-        self._tradingHistoryTree.update(address, leafAfter.hash())
-
-        # The circuit expects the proof in the reverse direction from bottom to top
-        proof.reverse()
-        return TradeHistoryUpdateData(leafBefore, leafAfter, proof)
-
-    def updateBalance(self, address, amount):
-        # Make sure the leaf exist in our map
-        if not(str(address) in self._accounts):
-            self._accounts[str(address)] = Account(0, Point(0, 0), 0, 0, 0)
-
-        accountBefore = copy.deepcopy(self._accounts[str(address)])
-        #print("accountBefore: " + str(accountBefore.balance))
-        self._accounts[str(address)].balance = str(int(self._accounts[str(address)].balance) + amount)
-        accountAfter = copy.deepcopy(self._accounts[str(address)])
-        #print("accountAfter: " + str(accountAfter.balance))
-        proof = self._accountsTree.createProof(address)
-        self._accountsTree.update(address, accountAfter.hash())
-
-        # The circuit expects the proof in the reverse direction from bottom to top
-        proof.reverse()
-        return AccountUpdateData(accountBefore, accountAfter, proof)
 
     def calculateFees(self, fee, burnRate, walletSplitPercentage, waiveFeePercentage):
         walletFee = (fee * walletSplitPercentage) // 100
@@ -427,18 +666,16 @@ class State(object):
 
         return (walletFeeToPay, matchingFeeToPay, feeToBurn)
 
-    def getTradeHistoryAddress(self, order):
-        return (order.accountS << 4) + order.orderID
-
     def getMaxFillAmounts(self, order):
-        tradeHistory = self.getTradeHistory(self.getTradeHistoryAddress(order))
+        account = self.getAccount(order.accountID)
+        tradeHistory = account._balancesLeafs[str(order.tokenS)].getTradeHistory(order.orderID)
         order.filledBefore = str(tradeHistory.filled)
         order.cancelled = int(tradeHistory.cancelled)
-        order.balanceS = str(self.getAccount(order.accountS).balance)
-        order.balanceB = str(self.getAccount(order.accountB).balance)
-        order.balanceF = str(self.getAccount(order.accountF).balance)
+        order.balanceS = str(account.getBalance(order.tokenS))
+        order.balanceB = str(account.getBalance(order.tokenB))
+        order.balanceF = str(account.getBalance(order.tokenF))
 
-        balanceS = int(self.getAccount(order.accountS).balance)
+        balanceS = int(account.getBalance(order.tokenS))
         remainingS = int(order.amountS) - int(order.filledBefore)
         fillAmountS = balanceS if (balanceS < remainingS) else remainingS
         fillAmountB = (fillAmountS * int(order.amountB)) // int(order.amountS)
@@ -452,7 +689,6 @@ class State(object):
         print("mfillAmountB_A: " + str(fillAmountB_A))
         print("mfillAmountS_B: " + str(fillAmountS_B))
         print("mfillAmountB_B: " + str(fillAmountB_B))
-
 
         if fillAmountB_A < fillAmountS_B:
             fillAmountB_B = fillAmountS_A
@@ -511,12 +747,13 @@ class State(object):
         print("margin: " + str(margin))
 
         # Copy the initial merkle root
-        tradingHistoryMerkleRoot = self._tradingHistoryTree._root
         accountsMerkleRoot = self._accountsTree._root
+        feesMerkleRoot = self._feeTokensTree._root
 
-        # Update filled amounts
-        tradeHistoryUpdate_A = self.updateTradeHistory(self.getTradeHistoryAddress(ring.orderA), int(ring.fillS_A))
-        tradeHistoryUpdate_B = self.updateTradeHistory(self.getTradeHistoryAddress(ring.orderB), int(ring.fillS_B))
+        # Accounts
+        accountA = self.getAccount(ring.orderA.accountID)
+        accountB = self.getAccount(ring.orderB.accountID)
+        accountM = self.getAccount(ring.minerAccountID)
 
         # Check burn rates
         burnRateCheckF_A = context.globalState.checkBurnRate(ring.orderA.tokenF)
@@ -545,82 +782,198 @@ class State(object):
         print("burnFee_B: " + str(burnFee_B))
 
         # Update balances A
-        accountUpdateS_A = self.updateBalance(ring.orderA.accountS, -int(ring.fillS_A))
-        accountUpdateB_A = self.updateBalance(ring.orderA.accountB, int(ring.fillB_A))
-        accountUpdateF_A = self.updateBalance(ring.orderA.accountF, -(walletFee_A + matchingFee_A + burnFee_A))
-        accountUpdateF_WA = self.updateBalance(ring.orderA.walletF, walletFee_A)
-        accountUpdateF_MA = self.updateBalance(ring.orderA.minerF, matchingFee_A)
-        accountUpdateF_BA = self.updateBalance(ring.orderA.walletF, burnFee_A)
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(ring.orderA.accountID))
+        proof = self._accountsTree.createProof(ring.orderA.accountID)
+
+        (balanceUpdateS_A, tradeHistoryUpdate_A) = accountA.updateBalanceAndTradeHistory(ring.orderA.tokenS, ring.orderA.orderID, -int(ring.fillS_A))
+        balanceUpdateB_A = accountA.updateBalance(ring.orderA.tokenB, int(ring.fillB_A))
+        balanceUpdateF_A = accountA.updateBalance(ring.orderA.tokenF, -(walletFee_A + matchingFee_A + burnFee_A))
+
+        self.updateAccountTree(ring.orderA.accountID)
+        accountAfter = copyAccountInfo(self.getAccount(ring.orderA.accountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate_A = AccountUpdateData(ring.orderA.accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        ###
+
 
         # Update balances B
-        accountUpdateS_B = self.updateBalance(ring.orderB.accountS, -int(ring.fillS_B))
-        accountUpdateB_B = self.updateBalance(ring.orderB.accountB, int(ring.fillB_B))
-        accountUpdateF_B = self.updateBalance(ring.orderB.accountF, -(walletFee_B + matchingFee_B + burnFee_B))
-        accountUpdateF_WB = self.updateBalance(ring.orderB.walletF, walletFee_B)
-        accountUpdateF_MB = self.updateBalance(ring.orderB.minerF, matchingFee_B)
-        accountUpdateF_BB = self.updateBalance(ring.orderB.walletF, burnFee_B)
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(ring.orderB.accountID))
+        proof = self._accountsTree.createProof(ring.orderB.accountID)
 
-        # Margin
-        accountUpdateS_M = self.updateBalance(ring.orderA.minerS, int(ring.margin))
+        (balanceUpdateS_B, tradeHistoryUpdate_B) = accountB.updateBalanceAndTradeHistory(ring.orderB.tokenS, ring.orderB.orderID, -int(ring.fillS_B))
+        balanceUpdateB_B = accountB.updateBalance(ring.orderB.tokenB, int(ring.fillB_B))
+        balanceUpdateF_B = accountB.updateBalance(ring.orderB.tokenF, -(walletFee_B + matchingFee_B + burnFee_B))
+
+        self.updateAccountTree(ring.orderB.accountID)
+        accountAfter = copyAccountInfo(self.getAccount(ring.orderB.accountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate_B = AccountUpdateData(ring.orderB.accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        ###
+
 
         # Operator payment
-        accountUpdate_M = self.updateBalance(ring.miner, -int(ring.fee))
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(ring.minerAccountID))
+        proof = self._accountsTree.createProof(ring.minerAccountID)
 
-        return RingSettlement(tradingHistoryMerkleRoot, accountsMerkleRoot, ring,
+        balanceUpdate_M = accountM.updateBalance(1, -int(ring.fee))
+
+        self.updateAccountTree(ring.minerAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(ring.minerAccountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate_M = AccountUpdateData(ring.minerAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        ###
+
+
+        # Update orderA fees
+        rootBefore = self._feeTokensTree._root
+        feeTokenBefore = copyFeeTokenInfo(self.getFeeToken(ring.orderA.tokenF))
+        proof = self._feeTokensTree.createProof(ring.orderA.tokenF)
+
+        feeBalanceUpdateF_WA = self.getFeeToken(ring.orderA.tokenF).updateWalletBalance(ring.orderA.walletID, walletFee_A)
+        feeBalanceUpdateF_MA = self.getFeeToken(ring.orderA.tokenF).updateMinerBalance(ring.minerID, matchingFee_A)
+        self.updateBurnBalance(ring.orderA.tokenF, burnFee_A)
+
+        self.updateFeeTokensTree(ring.orderA.tokenF)
+        feeTokenAfter = copyFeeTokenInfo(self.getFeeToken(ring.orderA.tokenF))
+        rootAfter = self._feeTokensTree._root
+        feeTokenUpdate_FA = FeeTokenUpdateData(ring.orderA.tokenF, proof, rootBefore, rootAfter, feeTokenBefore, feeTokenAfter)
+
+         # Update orderB fees
+        rootBefore = self._feeTokensTree._root
+        feeTokenBefore = copyFeeTokenInfo(self.getFeeToken(ring.orderB.tokenF))
+        proof = self._feeTokensTree.createProof(ring.orderB.tokenF)
+
+        feeBalanceUpdateF_WB = self.getFeeToken(ring.orderB.tokenF).updateWalletBalance(ring.orderB.walletID, walletFee_B)
+        feeBalanceUpdateF_MB = self.getFeeToken(ring.orderB.tokenF).updateMinerBalance(ring.minerID, matchingFee_B)
+        self.updateBurnBalance(ring.orderB.tokenF, burnFee_B)
+
+        self.updateFeeTokensTree(ring.orderB.tokenF)
+        feeTokenAfter = copyFeeTokenInfo(self.getFeeToken(ring.orderB.tokenF))
+        rootAfter = self._feeTokensTree._root
+        feeTokenUpdate_FB = FeeTokenUpdateData(ring.orderB.tokenF, proof, rootBefore, rootAfter, feeTokenBefore, feeTokenAfter)
+
+        # Margin
+        rootBefore = self._feeTokensTree._root
+        feeTokenBefore = copyFeeTokenInfo(self.getFeeToken(ring.orderA.tokenS))
+        proof = self._feeTokensTree.createProof(ring.orderA.tokenS)
+
+        feeBalanceUpdateS_MA = self.getFeeToken(ring.orderA.tokenS).updateMinerBalance(ring.minerID, int(ring.margin))
+
+        self.updateFeeTokensTree(ring.orderA.tokenS)
+        feeTokenAfter = copyFeeTokenInfo(self.getFeeToken(ring.orderA.tokenS))
+        rootAfter = self._feeTokensTree._root
+        feeTokenUpdate_SA = FeeTokenUpdateData(ring.orderA.tokenS, proof, rootBefore, rootAfter, feeTokenBefore, feeTokenAfter)
+
+
+        return RingSettlement(ring,
+                              accountsMerkleRoot, feesMerkleRoot,
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
-                              accountUpdateS_A, accountUpdateB_A, accountUpdateF_A, accountUpdateF_WA, accountUpdateF_MA, accountUpdateF_BA,
-                              accountUpdateS_B, accountUpdateB_B, accountUpdateF_B, accountUpdateF_WB, accountUpdateF_MB, accountUpdateF_BB,
-                              accountUpdateS_M,
-                              accountUpdate_M,
+                              balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, accountUpdate_A,
+                              balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, accountUpdate_B,
+                              balanceUpdate_M, accountUpdate_M,
+                              feeBalanceUpdateF_WA, feeBalanceUpdateF_MA, feeTokenUpdate_FA,
+                              feeBalanceUpdateF_WB, feeBalanceUpdateF_MB, feeTokenUpdate_FB,
+                              feeBalanceUpdateS_MA, feeTokenUpdate_SA,
                               burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
                               burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B)
 
-    def deposit(self, address, account):
+
+    def deposit(self, accountID, secretKey, publicKeyX, publicKeyY, walletID, token, amount):
         # Copy the initial merkle root
-        accountsMerkleRoot = self._accountsTree._root
+        rootBefore = self._accountsTree._root
 
-        proof = self._accountsTree.createProof(address)
+        if not(str(accountID) in self._accounts):
+            accountBefore = copyAccountInfo(Account(0, Point(0, 0), 0))
+        else:
+            accountBefore = copyAccountInfo(self.getAccount(accountID))
 
-        accountBefore = copy.deepcopy(self.getAccount(address))
-        self._accounts[str(address)] = account
-        self._accountsTree.update(address, account.hash())
-        accountAfter = copy.deepcopy(account)
+        proof = self._accountsTree.createProof(accountID)
 
-        proof.reverse()
-        return Deposit(accountsMerkleRoot, address, AccountUpdateData(accountBefore, accountAfter, proof))
+        # Create the account if necessary
+        if not(str(accountID) in self._accounts):
+            self._accounts[str(accountID)] = Account(secretKey, Point(publicKeyX, publicKeyY), walletID)
+
+        account = self.getAccount(accountID)
+        balanceUpdate = account.updateBalance(token, amount)
+        self._accountsTree.update(accountID, account.hash())
+
+        accountAfter = copyAccountInfo(account)
+
+        rootAfter = self._accountsTree._root
+
+        accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        return Deposit(balanceUpdate, accountUpdate)
 
     def getAccount(self, accountID):
         # Make sure the leaf exist in our map
         if not(str(accountID) in self._accounts):
-            self._accounts[str(accountID)] = Account(0, Point(0, 0), 0, 0, 0)
+            print("Account doesn't exist: " + str(accountID))
         return self._accounts[str(accountID)]
 
-    def withdraw(self, address, amount):
-        # Copy the initial merkle root
-        accountsMerkleRoot = self._accountsTree._root
-        account = self.getAccount(address)
-        accountUpdate = self.updateBalance(address, -amount)
-        withdrawal = Withdrawal(accountsMerkleRoot, Point(int(account.publicKeyX), int(account.publicKeyY)), address, amount, accountUpdate)
+    def getFeeToken(self, tokenID):
+        # Make sure the leaf exist in our map
+        if not(str(tokenID) in self._feeTokens):
+            self._feeTokens[str(tokenID)] = FeeToken()
+        return self._feeTokens[str(tokenID)]
+
+    def withdraw(self, accountID, tokenID, amount):
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(accountID))
+        proof = self._accountsTree.createProof(accountID)
+
+        balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -int(amount))
+
+        self.updateAccountTree(accountID)
+        accountAfter = copyAccountInfo(self.getAccount(accountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+
+        account = self.getAccount(accountID)
+        withdrawal = Withdrawal(Point(int(account.publicKeyX), int(account.publicKeyY)),
+                                accountID, tokenID, amount,
+                                balanceUpdate, accountUpdate)
         withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal
 
-    def cancelOrder(self, accountAddress, orderID):
-        account = self.getAccount(accountAddress)
-
-        orderAddress = (accountAddress << 4) + orderID
+    def cancelOrder(self, accountID, tokenID, orderID):
+        account = self.getAccount(accountID)
 
         # Copy the initial merkle roots
-        tradingHistoryMerkleRoot = self._tradingHistoryTree._root
         accountsMerkleRoot = self._accountsTree._root
 
         # Update trading history
-        tradeHistoryUpdate = self.updateTradeHistory(orderAddress, 0, 1)
+        tradeHistoryUpdate = account.updateTradeHistory(orderID, 0, 1)
 
         # Create a proof the signer is the owner of the account
-        accountUpdate = self.updateBalance(accountAddress, 0)
+        accountUpdate = account.updateBalance(tokenID, 0)
 
-        cancellation = Cancellation(tradingHistoryMerkleRoot, accountsMerkleRoot,
-                                    Point(int(account.publicKeyX), int(account.publicKeyY)), accountAddress, orderID,
+        cancellation = Cancellation(accountsMerkleRoot,
+                                    Point(int(account.publicKeyX), int(account.publicKeyY)), accountID, orderID,
                                     tradeHistoryUpdate, accountUpdate)
         cancellation.sign(FQ(int(account.secretKey)))
         return cancellation
+
+    def updateAccountTree(self, accountID):
+        self._accountsTree.update(accountID, self.getAccount(accountID).hash())
+
+    def updateFeeTokensTree(self, tokenID):
+        self._feeTokensTree.update(tokenID, self.getFeeToken(tokenID).hash())
+
+    def updateBurnBalance(self, tokenID, amount):
+        # Make sure the leaf exist in our map
+        if not(str(tokenID) in self._feeTokens):
+            self._feeTokens[str(tokenID)] = FeeToken()
+        self._feeTokens[str(tokenID)].balance = str(int(self._feeTokens[str(tokenID)].balance) + amount)
+
+    def getRoot(self):
+        return mimc_hash([int(self.getAccountsRoot()), int(self.getFeesRoot())], 1)
+
+    def getAccountsRoot(self):
+        return self._accountsTree._root
+
+    def getFeesRoot(self):
+        return self._feeTokensTree._root
+

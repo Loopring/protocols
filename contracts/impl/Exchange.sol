@@ -33,6 +33,8 @@ contract Exchange is IExchange, NoDefaultFunc {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
+    uint24 public constant INVALID_ACCOUNTID                     = 0xFFFFFF;
+
     uint32 public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS                 = 1 hours;
 
     uint public constant MIN_STAKE_AMOUNT_IN_LRC                                = 100000 ether;
@@ -81,8 +83,8 @@ contract Exchange is IExchange, NoDefaultFunc {
     event WalletRegistered(address walletOwner, uint16 walletID);
     event RingMatcherRegistered(address ringMatcherOwner, uint16 ringMatcherID);
 
-    event Deposit(uint32 depositBlockIdx, uint24 account, uint16 walletID, address owner, address tokenAddress, uint amount);
-    event Withdraw(uint24 account, uint16 walletID, address owner, address tokenAddress, uint amount);
+    event Deposit(uint16 stateID, uint32 depositBlockIdx, uint24 account, uint16 walletID, address owner, address tokenAddress, uint amount);
+    event Withdraw(uint24 account, address owner, address tokenAddress, uint amount);
 
     event BlockCommitted(uint blockIdx, bytes32 publicDataHash);
     event BlockFinalized(uint blockIdx);
@@ -119,8 +121,6 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     struct Account {
         address owner;
-        uint16 walletID;
-        uint16 tokenID;
     }
 
     struct PendingDeposit {
@@ -143,8 +143,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     struct Block {
-        bytes32 accountsMerkleRoot;
-        bytes32 tradeHistoryMerkleRoot;
+        bytes32 merkleRoot;
 
         bytes32 publicDataHash;
 
@@ -222,8 +221,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         states.push(memoryState);
 
         Block memory genesisBlock = Block(
-            0x05DB23ABCB8B9FE614D065E0ABE095569A8CD6ACFE62FCA1646CE8A32A08CF1D,
-            0x0A0697EA76AB4C7037053B18C79C928EA7540BC33BC48432FF472C8295A01BBA,
+            0x29aee3aa7302ca632563403683928f1479f5b077c665bea1c447e0bb253431f8,
             0x0,
             BlockState.FINALIZED,
             uint32(now),
@@ -275,26 +273,22 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // TODO: don't send before merkle tree roots to save on calldata
 
-        bytes32 accountsMerkleRootBefore;
-        bytes32 accountsMerkleRootAfter;
+        bytes32 merkleRootBefore;
+        bytes32 merkleRootAfter;
         assembly {
-            accountsMerkleRootBefore := mload(add(data, 34))
-            accountsMerkleRootAfter := mload(add(data, 66))
+            merkleRootBefore := mload(add(data, 34))
+            merkleRootAfter := mload(add(data, 66))
         }
-        require(accountsMerkleRootBefore == currentBlock.accountsMerkleRoot, "INVALID_ACCOUNTS_ROOT");
+        require(merkleRootBefore == currentBlock.merkleRoot, "INVALID_MERKLE_ROOT");
 
         uint32 numDepositBlocksCommitted = currentBlock.numDepositBlocksCommitted;
-        bytes32 tradeHistoryMerkleRootBefore;
-        bytes32 tradeHistoryMerkleRootAfter;
         if (blockType == uint(BlockType.TRADE)) {
             bytes32 burnRateMerkleRootContract = ITokenRegistry(tokenRegistryAddress).getBurnRateMerkleRoot(burnRateBlockIdx);
             bytes32 burnRateMerkleRoot;
             uint32 inputTimestamp;
             assembly {
-                tradeHistoryMerkleRootBefore := mload(add(data, 98))
-                tradeHistoryMerkleRootAfter := mload(add(data, 130))
-                burnRateMerkleRoot := mload(add(data, 162))
-                inputTimestamp := and(mload(add(data, 166)), 0xFFFFFFFF)
+                burnRateMerkleRoot := mload(add(data, 98))
+                inputTimestamp := and(mload(add(data, 102)), 0xFFFFFFFF)
             }
             require(burnRateMerkleRoot == burnRateMerkleRootContract, "INVALID_BURNRATE_ROOT");
             require(inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
@@ -322,13 +316,6 @@ contract Exchange is IExchange, NoDefaultFunc {
             }
             numDepositBlocksCommitted++;
             emit LogDepositBytes(data);
-
-            tradeHistoryMerkleRootBefore = currentBlock.tradeHistoryMerkleRoot;
-            tradeHistoryMerkleRootAfter = tradeHistoryMerkleRootBefore;
-        }
-        else {
-            tradeHistoryMerkleRootBefore = currentBlock.tradeHistoryMerkleRoot;
-            tradeHistoryMerkleRootAfter = tradeHistoryMerkleRootBefore;
         }
 
         // Check if we need to commit a deposit block
@@ -338,14 +325,13 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // Create a new block with the updated merkle roots
         Block memory newBlock = Block(
-            accountsMerkleRootAfter,
-            tradeHistoryMerkleRootAfter,
+            merkleRootAfter,
             publicDataHash,
             BlockState.COMMITTED,
             uint32(now),
             operator.ID,
             numDepositBlocksCommitted,
-            data
+            (blockType == uint(BlockType.WITHDRAW)) ? data : new bytes(0)
         );
         state.blocks[state.numBlocks] = newBlock;
         state.numBlocks++;
@@ -474,11 +460,9 @@ contract Exchange is IExchange, NoDefaultFunc {
             );
         }
 
-        if (accountID == 0xFFFFFF) {
+        if (accountID == INVALID_ACCOUNTID) {
             Account memory account = Account(
-                owner,
-                walletID,
-                tokenID
+                owner
             );
             uint24 newAccountID = uint24(state.numAccounts);
             state.accounts[newAccountID] = account;
@@ -487,20 +471,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             accountID = newAccountID;
         } else {
             Account storage account = state.accounts[accountID];
-            require(account.owner == owner, "INVALID OWNER");
-            require(account.tokenID == tokenID, "INVALID TOKEN");
+            require(account.owner == owner, "INVALID_OWNER");
         }
-
-        /*bytes memory data = abi.encodePacked(
-                depositBlock.hash,
-                accountID,
-                brokerPublicKeyX,
-                brokerPublicKeyY,
-                walletID,
-                tokenID,
-                amount
-        );
-        emit LogDepositBytes(data);*/
 
         depositBlock.hash = sha256(
             abi.encodePacked(
@@ -524,7 +496,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
         depositBlock.pendingDeposits.push(pendingDeposit);
 
-        emit Deposit(uint32(state.numDepositBlocks - 1), accountID, walletID, owner, token, amount);
+        emit Deposit(stateID, uint32(state.numDepositBlocks - 1), accountID, walletID, owner, token, amount);
 
         return accountID;
     }
@@ -580,20 +552,19 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // TODO: optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 2 + 32 + 32 + (3 + 12) * (withdrawalIdx + 1);
+        uint offset = 2 + 32 + 32 + (3 + 2 + 12) * (withdrawalIdx + 1);
         require(offset < withdrawals.length + 32, "INVALID_WITHDRAWALIDX");
         uint data;
         assembly {
             data := mload(add(withdrawals, offset))
         }
-        uint24 accountID = uint24((data / 0x1000000000000000000000000) & 0xFFFFFF);
+        uint24 accountID = uint24((data / 0x10000000000000000000000000000) & 0xFFFFFF);
+        uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
         uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
 
         if (amount > 0) {
             // Burn information
             address payable owner = address(0x0);
-            uint16 walletID = 0;
-            uint16 tokenID = uint16(accountID);
 
             // Get the account information if this isn't a burn account
             if (accountID >= MAX_NUM_TOKENS)
@@ -601,8 +572,6 @@ contract Exchange is IExchange, NoDefaultFunc {
                 assert(accountID < state.numAccounts);
                 Account storage account = state.accounts[accountID];
                 owner = address(uint160(account.owner));
-                walletID = account.walletID;
-                tokenID = account.tokenID;
             }
 
             // Transfer the tokens from the contract to the owner
@@ -628,7 +597,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             }
             withdrawBlock.withdrawals = withdrawals;
 
-            emit Withdraw(accountID, walletID, owner, token, amount);
+            emit Withdraw(accountID, owner, token, amount);
         }
     }
 

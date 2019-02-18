@@ -4,7 +4,7 @@ sys.path.insert(0, 'operator')
 import os.path
 import subprocess
 import json
-from state import Account, Context, GlobalState,State, Order, Ring
+from state import Account, Context, GlobalState, State, Order, Ring, copyAccountInfo, AccountUpdateData
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
 
@@ -13,12 +13,6 @@ class TradeExport(object):
     def __init__(self):
         self.blockType = 0
         self.ringSettlements = []
-        self.tradingHistoryMerkleRootBefore = 0
-        self.tradingHistoryMerkleRootAfter = 0
-        self.accountsMerkleRootBefore = 0
-        self.accountsMerkleRootAfter = 0
-        self.timestamp = 0
-        self.stateID = 0
 
     def toJSON(self):
         self.numElements = len(self.ringSettlements)
@@ -29,9 +23,6 @@ class DepositExport(object):
     def __init__(self):
         self.blockType = 1
         self.deposits = []
-        self.accountsMerkleRootBefore = 0
-        self.accountsMerkleRootAfter = 0
-        self.stateID = 0
 
     def toJSON(self):
         self.numElements = len(self.deposits)
@@ -42,9 +33,6 @@ class WithdrawalExport(object):
     def __init__(self):
         self.blockType = 2
         self.withdrawals = []
-        self.accountsMerkleRootBefore = 0
-        self.accountsMerkleRootAfter = 0
-        self.stateID = 0
 
     def toJSON(self):
         self.numElements = len(self.withdrawals)
@@ -55,10 +43,6 @@ class CancelExport(object):
     def __init__(self):
         self.blockType = 3
         self.cancels = []
-        self.tradingHistoryMerkleRootBefore = 0
-        self.tradingHistoryMerkleRootAfter = 0
-        self.accountsMerkleRoot = 0
-        self.stateID = 0
 
     def toJSON(self):
         self.numElements = len(self.cancels)
@@ -66,42 +50,33 @@ class CancelExport(object):
 
 
 def orderFromJSON(jOrder, state):
+    stateID = int(jOrder["stateID"])
     walletID = int(jOrder["walletID"])
     orderID = int(jOrder["orderID"])
-    accountS = int(jOrder["accountS"])
-    accountB = int(jOrder["accountB"])
-    accountF = int(jOrder["accountF"])
-    amountS = int(jOrder["amountS"])
-    amountB = int(jOrder["amountB"])
-    amountF = int(jOrder["amountF"])
+    accountID = int(jOrder["accountID"])
+    dualAuthAccountID = int(jOrder["dualAuthAccountID"])
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
     tokenF = int(jOrder["tokenIdF"])
-    walletF = int(jOrder["walletF"])
-    minerS = int(jOrder["minerS"])
-    minerF = int(jOrder["minerF"])
+    amountS = int(jOrder["amountS"])
+    amountB = int(jOrder["amountB"])
+    amountF = int(jOrder["amountF"])
     allOrNone = int(jOrder["allOrNone"])
     validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
     walletSplitPercentage = int(jOrder["walletSplitPercentage"])
     waiveFeePercentage = int(jOrder["waiveFeePercentage"])
-    stateID = int(jOrder["stateID"])
 
-    account = state.getAccount(accountS)
-    wallet = state.getAccount(walletF)
-    miner_F = state.getAccount(minerF)
-    miner_S = state.getAccount(minerS)
+    account = state.getAccount(accountID)
+    walletAccount = state.getAccount(dualAuthAccountID)
+
     order = Order(Point(account.publicKeyX, account.publicKeyY),
-                  Point(wallet.publicKeyX, wallet.publicKeyY),
-                  Point(miner_F.publicKeyX, miner_F.publicKeyY),
-                  Point(miner_S.publicKeyX, miner_S.publicKeyY),
-                  walletID, orderID,
-                  accountS, accountB, accountF, walletF, minerF, minerS,
-                  amountS, amountB, amountF,
+                  Point(walletAccount.publicKeyX, walletAccount.publicKeyY),
+                  stateID, walletID, orderID, accountID, dualAuthAccountID,
                   tokenS, tokenB, tokenF,
+                  amountS, amountB, amountF,
                   allOrNone, validSince, validUntil,
-                  walletSplitPercentage, waiveFeePercentage,
-                  stateID)
+                  walletSplitPercentage, waiveFeePercentage)
 
     order.sign(FQ(int(account.secretKey)))
 
@@ -111,19 +86,21 @@ def orderFromJSON(jOrder, state):
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
-    minerID = int(jRing["miner"])
+    minerID = int(jRing["minerID"])
+    minerAccountID = int(jRing["minerAccountID"])
     fee = int(jRing["fee"])
 
-    miner = state.getAccount(minerID)
-    walletA = state.getAccount(orderA.walletF)
-    walletB = state.getAccount(orderB.walletF)
+    minerAccount = state.getAccount(minerAccountID)
+    dualAuthA = state.getAccount(orderA.dualAuthAccountID)
+    dualAuthB = state.getAccount(orderB.dualAuthAccountID)
 
     ring = Ring(orderA, orderB,
-                Point(miner.publicKeyX, miner.publicKeyY),
-                minerID, fee,
-                miner.nonce)
+                Point(minerAccount.publicKeyX, minerAccount.publicKeyY),
+                minerID, minerAccountID,
+                fee,
+                minerAccount.nonce)
 
-    ring.sign(FQ(int(miner.secretKey)), FQ(int(walletA.secretKey)), FQ(int(walletB.secretKey)))
+    ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(dualAuthA.secretKey)), FQ(int(dualAuthB.secretKey)))
 
     return ring
 
@@ -131,42 +108,56 @@ def ringFromJSON(jRing, state):
 def deposit(state, data):
     export = DepositExport()
     export.stateID = state.stateID
-    export.accountsMerkleRootBefore = str(state._accountsTree._root)
+    export.merkleRootBefore = str(state.getRoot())
+    export.feesRootBefore = str(state.getFeesRoot())
+    export.accountsRootBefore = str(state.getAccountsRoot())
 
     for depositInfo in data:
-        deposit = state.deposit(int(depositInfo["accountID"]),
-                                Account(int(depositInfo["secretKey"]),
-                                        Point(int(depositInfo["publicKeyX"]), int(depositInfo["publicKeyY"])),
-                                        int(depositInfo["walletID"]), int(depositInfo["tokenID"]), int(depositInfo["balance"])))
+        accountID = int(depositInfo["accountID"])
+        secretKey = int(depositInfo["secretKey"])
+        publicKeyX = int(depositInfo["publicKeyX"])
+        publicKeyY = int(depositInfo["publicKeyY"])
+        walletID = int(depositInfo["walletID"])
+        token = int(depositInfo["tokenID"])
+        amount = int(depositInfo["amount"])
+
+        deposit = state.deposit(accountID, secretKey, publicKeyX, publicKeyY, walletID, token, amount)
+
         export.deposits.append(deposit)
 
-    export.accountsMerkleRootAfter = str(state._accountsTree._root)
+    export.merkleRootAfter = str(state.getRoot())
+    export.feesRootAfter = str(state.getFeesRoot())
+    export.accountsRootAfter = str(state.getAccountsRoot())
     return export
 
 
 def withdraw(state, data):
     export = WithdrawalExport()
     export.stateID = state.stateID
-    export.accountsMerkleRootBefore = str(state._accountsTree._root)
+    export.merkleRootBefore = str(state.getRoot())
+    export.feesRootBefore = str(state.getFeesRoot())
+    export.accountsRootBefore = str(state.getAccountsRoot())
 
     for withdrawalInfo in data:
-        withdrawal = state.withdraw(int(withdrawalInfo["account"]), int(withdrawalInfo["amount"]))
+        withdrawal = state.withdraw(int(withdrawalInfo["accountID"]), int(withdrawalInfo["tokenID"]), int(withdrawalInfo["amount"]))
         export.withdrawals.append(withdrawal)
 
-    export.accountsMerkleRootAfter = str(state._accountsTree._root)
+    export.merkleRootAfter = str(state.getRoot())
+    export.feesRootAfter = str(state.getFeesRoot())
+    export.accountsRootAfter = str(state.getAccountsRoot())
     return export
 
 
 def cancel(state, data):
     export = CancelExport()
     export.stateID = state.stateID
-    export.tradingHistoryMerkleRootBefore = str(state._tradingHistoryTree._root)
-    export.accountsMerkleRoot = str(state._accountsTree._root)
+    export.feesMerkleRoot = str(state._feeTokensTree._root)
+    export.accountsMerkleRootBefore = str(state._accountsTree._root)
 
     for i in range(2):
         export.cancels.append(state.cancelOrder(0, 2 + i))
 
-    export.tradingHistoryMerkleRootAfter = str(state._tradingHistoryTree._root)
+    export.accountsMerkleRootAfter = str(state._accountsTree._root)
     return export
 
 
@@ -179,13 +170,14 @@ def trade(state, data):
 
     export = TradeExport()
     export.stateID = state.stateID
-    export.tradingHistoryMerkleRootBefore = str(state._tradingHistoryTree._root)
-    export.accountsMerkleRootBefore = str(state._accountsTree._root)
+    export.merkleRootBefore = str(state.getRoot())
+    export.feesRootBefore = str(state.getFeesRoot())
+    export.accountsRootBefore = str(state.getAccountsRoot())
     export.burnRateMerkleRoot = str(global_state._tokensTree.root)
     export.timestamp = int(data["timestamp"])
-    export.operatorID = int(data["operator"])
+    export.operatorAccountID = int(data["operatorAccountID"])
 
-    context = Context(global_state, export.operatorID, export.timestamp)
+    context = Context(global_state, export.operatorAccountID, export.timestamp)
 
     totalFee = 0
     for ringInfo in data["rings"]:
@@ -194,10 +186,22 @@ def trade(state, data):
         totalFee += ring.fee
         export.ringSettlements.append(ringSettlement)
 
-    export.accountUpdate_O = state.updateBalance(export.operatorID, totalFee)
+    # Total payment to operator
+    rootBefore = state._accountsTree._root
+    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    proof = state._accountsTree.createProof(export.operatorAccountID)
 
-    export.tradingHistoryMerkleRootAfter = str(state._tradingHistoryTree._root)
-    export.accountsMerkleRootAfter = str(state._accountsTree._root)
+    export.balanceUpdate_O = state.getAccount(export.operatorAccountID).updateBalance(1, totalFee)
+
+    state.updateAccountTree(export.operatorAccountID)
+    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    rootAfter = state._accountsTree._root
+    export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+    ###
+
+    export.merkleRootAfter = str(state.getRoot())
+    export.feesRootAfter = str(state.getFeesRoot())
+    export.accountsRootAfter = str(state.getAccountsRoot())
     return export
 
 

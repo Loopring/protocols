@@ -50,8 +50,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitRings(ringsInfo);
 
       // Withdraw the tokens that were bought
-      exchangeTestUtil.withdraw(ringsInfo.rings[0].orderA.accountB, ringsInfo.rings[0].orderA.amountB);
-      exchangeTestUtil.withdraw(ringsInfo.rings[0].orderB.accountB, ringsInfo.rings[0].orderB.amountB);
+      const orderA = ringsInfo.rings[0].orderA;
+      const orderB = ringsInfo.rings[0].orderB;
+      exchangeTestUtil.withdraw(orderA.accountID, orderA.tokenIdB, orderA.amountB);
+      exchangeTestUtil.withdraw(orderB.accountID, orderB.tokenIdB, orderB.amountB);
       await exchangeTestUtil.submitWithdrawals(ringsInfo);
     });
 
@@ -82,6 +84,8 @@ contract("Exchange_Submit", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupRings(ringsInfo);
       await exchangeTestUtil.submitRings(ringsInfo);
+
+      await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Separate state", async () => {
@@ -269,8 +273,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.submitRings(ringsInfo);
 
       // Withdraw the tokens that were bought
-      exchangeTestUtil.withdraw(ringsInfo.rings[0].orderA.accountB, ringsInfo.rings[0].orderA.amountB);
-      exchangeTestUtil.withdraw(ringsInfo.rings[0].orderB.accountB, ringsInfo.rings[0].orderB.amountB);
+      const orderA = ringsInfo.rings[0].orderA;
+      const orderB = ringsInfo.rings[0].orderB;
+      exchangeTestUtil.withdraw(orderA.accountID, orderA.tokenIdB, orderA.amountB);
+      exchangeTestUtil.withdraw(orderB.accountID, orderB.tokenIdB, orderB.amountB);
       await exchangeTestUtil.submitWithdrawals(ringsInfo);
     });
 

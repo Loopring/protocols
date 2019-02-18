@@ -110,21 +110,22 @@ export class ExchangeTestUtil {
 
     // Make an account for the operator
     const keyPairO = this.getKeyPairEDDSA();
-    const operator = await this.deposit(ringsInfo.stateID, this.testContext.miner,
-                                        keyPairO.secretKey, keyPairO.publicKeyX, keyPairO.publicKeyY,
-                                        0, lrcAddress, new BN(0));
-    ringsInfo.operator = operator;
+    const operatorAccountID = await this.deposit(ringsInfo.stateID, this.testContext.miner,
+                                                 keyPairO.secretKey, keyPairO.publicKeyX, keyPairO.publicKeyY,
+                                                 0, lrcAddress, new BN(0));
+    ringsInfo.operatorAccountID = operatorAccountID;
 
     // Make an account for the ringmatcher
     const keyPairM = this.getKeyPairEDDSA();
     await LRC.addBalance(this.testContext.miner, web3.utils.toBN(new BigNumber(10000)));
-    const miner = await this.deposit(ringsInfo.stateID, this.testContext.miner,
-                                     keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                     0, lrcAddress, new BN(10000));
+    const minerAccountID = await this.deposit(ringsInfo.stateID, this.testContext.miner,
+                                              keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
+                                              0, lrcAddress, new BN(10000));
 
     let orderIndex = 0;
     for (const [i, ring] of ringsInfo.rings.entries()) {
-      ring.miner = miner;
+      ring.minerID = ring.minerID ? ring.minerID : 0;
+      ring.minerAccountID = minerAccountID;
       ring.fee = ring.fee ? ring.fee : 1;
       await this.setupOrder(ring.orderA, orderIndex++);
       await this.setupOrder(ring.orderB, orderIndex++);
@@ -190,34 +191,25 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
 
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
-    order.accountS = await this.deposit(order.stateID, order.owner,
-                                        keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                        order.walletID, order.tokenS, balanceS);
+    order.accountID = await this.deposit(order.stateID, order.owner,
+                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                         order.walletID, order.tokenS, balanceS);
 
     const balanceF = (order.balanceF !== undefined) ? order.balanceF : order.amountF;
-    order.accountF = await this.deposit(order.stateID, order.owner,
-                                        keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                        order.walletID, order.tokenF, balanceF);
+    order.accountID = await this.deposit(order.stateID, order.owner,
+                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                         order.walletID, order.tokenF, balanceF, order.accountID);
 
     const balanceB = (order.balanceB !== undefined) ? order.balanceB : new BN(0);
-    order.accountB = await this.deposit(order.stateID, order.owner,
-                                        keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                        order.walletID, order.tokenB, balanceB);
+    order.accountID = await this.deposit(order.stateID, order.owner,
+                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                         order.walletID, order.tokenB, balanceB, order.accountID);
 
-    // Make an account for the wallet
+    // Make a dual author account
     const keyPairW = this.getKeyPairEDDSA();
-    order.walletF = await this.deposit(order.stateID, order.wallet,
-                                       keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY,
-                                       order.walletID, order.tokenF, new BN(0));
-
-    // Make accounts for the miner (margin + fee)
-    const keyPairM = this.getKeyPairEDDSA();
-    order.minerS = await this.deposit(order.stateID, this.testContext.miner,
-                                      keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                      0, order.tokenS, new BN(0));
-    order.minerF = await this.deposit(order.stateID, this.testContext.miner,
-                                      keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                      0, order.tokenF, new BN(0));
+    order.dualAuthAccountID = await this.deposit(order.stateID, order.wallet,
+                                                 keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY,
+                                                 order.walletID, order.tokenF, new BN(0));
   }
 
   public getAddressBook(ringsInfo: RingsInfo) {
@@ -272,7 +264,7 @@ export class ExchangeTestUtil {
   }
 
   public async deposit(stateID: number, owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
-                       walletID: number, token: string, amount: BN) {
+                       walletID: number, token: string, amount: BN, accountID: number = 0xFFFFFF) {
     let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots(web3.utils.toBN(stateID))).toNumber();
     // console.log("Open slots: " + numAvailableSlots);
     if (numAvailableSlots === 0) {
@@ -309,7 +301,7 @@ export class ExchangeTestUtil {
     // Submit the deposits
     const tx = await this.exchange.deposit(
       web3.utils.toBN(stateID),
-      new BN(0xFFFFFF),
+      web3.utils.toBN(accountID),
       owner,
       new BN(publicKeyX),
       new BN(publicKeyY),
@@ -329,29 +321,29 @@ export class ExchangeTestUtil {
       // console.log(eventObj);
       return [eventObj.args.account, eventObj.args.depositBlockIdx];
     });
-    const accountID = items[0][0].toNumber();
+    const eventAccountID = items[0][0].toNumber();
     const depositBlockIdx = items[0][1].toNumber();
     // console.log(accountID);
     // console.log(depositBlockIdx);
 
-    this.addDeposit(this.pendingDeposits[stateID], depositBlockIdx, accountID,
+    this.addDeposit(this.pendingDeposits[stateID], depositBlockIdx, eventAccountID,
                     secretKey, publicKeyX, publicKeyY,
                     walletID, this.tokenIDMap.get(token), amount);
-    return accountID;
+    return eventAccountID;
   }
 
-  public async withdraw(account: number, amount: BN) {
-    this.addWithdrawal(this.pendingWithdrawals, account, amount);
+  public async withdraw(accountID: number, tokenID: number, amount: BN) {
+    this.addWithdrawal(this.pendingWithdrawals, accountID, tokenID, amount);
   }
 
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
                     secretKey: string, publicKeyX: string, publicKeyY: string,
-                    walletID: number, tokenID: number, balance: BN) {
-    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID, tokenID, balance});
+                    walletID: number, tokenID: number, amount: BN) {
+    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID, tokenID, amount});
   }
 
-  public addWithdrawal(withdrawals: Withdrawal[], account: number, amount: BN) {
-    withdrawals.push({account, amount});
+  public addWithdrawal(withdrawals: Withdrawal[], accountID: number, tokenID: number, amount: BN) {
+    withdrawals.push({accountID, tokenID, amount});
   }
 
   public ensureDirectoryExists(filePath: string) {
@@ -485,7 +477,7 @@ export class ExchangeTestUtil {
               publicKeyY: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
               walletID: 0,
               tokenID: 0,
-              balance: new BN(0),
+              amount: new BN(0),
             };
             deposits.push(dummyDeposit);
             isFull = false;
@@ -505,8 +497,8 @@ export class ExchangeTestUtil {
       const jdeposits = JSON.parse(jDeposits);
       const bs = new pjs.Bitstream();
       bs.addNumber(jdeposits.stateID, 2);
-      bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootBefore, 10), 32);
-      bs.addBigNumber(new BigNumber(jdeposits.accountsMerkleRootAfter, 10), 32);
+      bs.addBigNumber(new BigNumber(jdeposits.merkleRootBefore, 10), 32);
+      bs.addBigNumber(new BigNumber(jdeposits.merkleRootAfter, 10), 32);
       bs.addNumber(jdeposits.stateID, 32);
       // const depositHash = await this.exchange.getDepositHash(web3.utils.toBN(0));
       // bs.addNumber(depositHash.toString(16));
@@ -523,6 +515,7 @@ export class ExchangeTestUtil {
       return;
     }
 
+    console.log(this.pendingWithdrawals);
     const jWithdrawalsInfo = JSON.stringify(this.pendingWithdrawals, replacer, 4);
     const blockFilename = await this.createBlock(ringsInfo.stateID, 2, jWithdrawalsInfo);
     const jWithdrawals = fs.readFileSync(blockFilename, "ascii");
@@ -530,10 +523,11 @@ export class ExchangeTestUtil {
     const stateID = jwithdrawals.stateID;
     const bs = new pjs.Bitstream();
     bs.addNumber(jwithdrawals.stateID, 2);
-    bs.addBigNumber(new BigNumber(jwithdrawals.accountsMerkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(jwithdrawals.accountsMerkleRootAfter, 10), 32);
+    bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootAfter, 10), 32);
     for (const withdrawal of this.pendingWithdrawals) {
-      bs.addNumber(withdrawal.account, 3);
+      bs.addNumber(withdrawal.accountID, 3);
+      bs.addNumber(withdrawal.tokenID, 2);
       bs.addBN(withdrawal.amount, 12);
     }
 
@@ -585,10 +579,8 @@ export class ExchangeTestUtil {
 
     const bs = new pjs.Bitstream();
     bs.addNumber(block.stateID, 2);
-    bs.addBigNumber(new BigNumber(block.accountsMerkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(block.accountsMerkleRootAfter, 10), 32);
-    bs.addBigNumber(new BigNumber(block.tradingHistoryMerkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(block.tradingHistoryMerkleRootAfter, 10), 32);
+    bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
     bs.addBigNumber(new BigNumber(block.burnRateMerkleRoot, 10), 32);
     bs.addNumber(ringsInfo.timestamp, 4);
     for (const ringSettlement of block.ringSettlements) {
@@ -596,20 +588,16 @@ export class ExchangeTestUtil {
       const orderA = ringSettlement.ring.orderA;
       const orderB = ringSettlement.ring.orderB;
 
-      bs.addNumber(orderA.walletID, 2);
+      // bs.addNumber(orderA.walletID, 2);
+      bs.addNumber(orderA.accountID, 3);
       bs.addNumber(orderA.orderID, 2);
-      bs.addNumber(orderA.accountS, 3);
-      bs.addNumber(orderB.accountB, 3);
       bs.addNumber(ring.fillS_A, 12);
-      bs.addNumber(orderA.accountF, 3);
       bs.addNumber(ring.fillF_A, 12);
 
-      bs.addNumber(orderB.walletID, 2);
+      // bs.addNumber(orderB.walletID, 2);
+      bs.addNumber(orderB.accountID, 3);
       bs.addNumber(orderB.orderID, 2);
-      bs.addNumber(orderB.accountS, 3);
-      bs.addNumber(orderA.accountB, 3);
       bs.addNumber(ring.fillS_B, 12);
-      bs.addNumber(orderB.accountF, 3);
       bs.addNumber(ring.fillF_B, 12);
     }
 

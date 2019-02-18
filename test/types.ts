@@ -12,30 +12,21 @@ export interface OrderInfo {
 
   wallet?: string;
 
+  stateID?: number;
   walletID?: number;
   orderID?: number;
-
-  accountS?: number;
-  accountB?: number;
-  accountF?: number;
-
-  walletSplitPercentage?: number;
-  walletF?: number;
-  minerF?: number;
-  minerS?: number;
+  accountID?: number;
+  dualAuthAccountID?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;
   tokenIdF?: number;
 
+  allOrNone?: boolean;
   validSince?: number;
   validUntil?: number;
-
-  allOrNone?: boolean;
-
+  walletSplitPercentage?: number;
   waiveFeePercentage?: number;
-
-  stateID?: number;
 
   index?: number;
   balanceS?: BN;
@@ -49,7 +40,8 @@ export interface RingInfo {
   orderA: OrderInfo;
   orderB: OrderInfo;
 
-  miner?: number;
+  minerID?: number;
+  minerAccountID?: number;
   fee?: number;
 }
 
@@ -60,7 +52,7 @@ export interface RingsInfo {
   timestamp?: number;
 
   stateID?: number;
-  operator?: number;
+  operatorAccountID?: number;
 }
 
 export interface Deposit {
@@ -71,11 +63,12 @@ export interface Deposit {
   publicKeyY: string;
   walletID: number;
   tokenID: number;
-  balance: BN;
+  amount: BN;
 }
 
 export interface Withdrawal {
-  account: number;
+  accountID: number;
+  tokenID: number;
   amount: BN;
 }
 

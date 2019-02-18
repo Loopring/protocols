@@ -80,6 +80,8 @@ class SparseMerkleTree(object):
                 sidenodes.append(self._db.get(v)[1])
                 v = self._db.get(v)[0]
             path <<= 1
+        # The circuit expects the proof in the reverse direction from bottom to top
+        sidenodes.reverse()
         return sidenodes
 
     def verifyProof(self, proof, key, value):
