@@ -25,10 +25,12 @@ export class ExchangeTestUtil {
   public testContext: ExchangeTestContext;
   public exchange: any;
   public tokenRegistry: any;
+  public blockVerifier: any;
 
   private contracts = new Artifacts(artifacts);
 
-  private tokenIDMap = new Map<string, number>();
+  private tokenAddressToIDMap = new Map<string, number>();
+  private tokenIDToAddressMap = new Map<number, string>();
 
   private pendingDeposits: Deposit[][] = [];
   private pendingWithdrawals: Withdrawal[] = [];
@@ -179,9 +181,9 @@ export class ExchangeTestUtil {
 
     order.stateID = order.stateID ? order.stateID : 0;
 
-    order.tokenIdS = this.tokenIDMap.get(order.tokenS);
-    order.tokenIdB = this.tokenIDMap.get(order.tokenB);
-    order.tokenIdF = this.tokenIDMap.get(order.tokenF);
+    order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
+    order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
+    order.tokenIdF = this.tokenAddressToIDMap.get(order.tokenF);
 
     // setup initial balances:
     await this.setOrderBalances(order);
@@ -319,7 +321,7 @@ export class ExchangeTestUtil {
     const eventArr: any = await this.getEventsFromContract(this.exchange, "Deposit", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
       // console.log(eventObj);
-      return [eventObj.args.account, eventObj.args.depositBlockIdx];
+      return [eventObj.args.accountID, eventObj.args.depositBlockIdx];
     });
     const eventAccountID = items[0][0].toNumber();
     const depositBlockIdx = items[0][1].toNumber();
@@ -328,7 +330,7 @@ export class ExchangeTestUtil {
 
     this.addDeposit(this.pendingDeposits[stateID], depositBlockIdx, eventAccountID,
                     secretKey, publicKeyX, publicKeyY,
-                    walletID, this.tokenIDMap.get(token), amount);
+                    walletID, this.tokenAddressToIDMap.get(token), amount);
     return eventAccountID;
   }
 
@@ -427,7 +429,7 @@ export class ExchangeTestUtil {
     // Read the verification key and set it in the smart contract
     const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
     const vkFlattened = this.flattenVK(vk);
-    await this.exchange.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
+    await this.blockVerifier.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
 
     // Read the proof
     const proof = JSON.parse(fs.readFileSync(proofFilename, "ascii"));
@@ -550,11 +552,13 @@ export class ExchangeTestUtil {
 
       const eventArr: any = await this.getEventsFromContract(this.exchange, "Withdraw", web3.eth.blockNumber);
       const items = eventArr.map((eventObj: any) => {
-        return [eventObj.args.to, eventObj.args.tokenAddress, eventObj.args.amount];
+        return [eventObj.args.to, eventObj.args.tokenID, eventObj.args.amount];
       });
+      const tokenID = items[0][1].toNumber();
+      const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
       const to = addressBook[items[0][0]];
-      const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(items[0][1]);
-      const decimals = this.testContext.tokenAddrDecimalsMap.get(items[0][1]);
+      const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
+      const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
       const amount = items[0][2].div(web3.utils.toBN(10 ** decimals)).toString(10);
       console.log("Withdrawn: " + to + ": " + amount + " " + tokenSymbol);
     }
@@ -629,7 +633,9 @@ export class ExchangeTestUtil {
       const result = childProcess.spawnSync("python3", ["operator/add_token.py"], {stdio: "inherit"});
       assert(result.status === 0, "add_token failed: " + tokenAddress);
 
-      this.tokenIDMap.set(tokenAddress, (await this.getTokenID(tokenAddress)).toNumber());
+      const tokenID = (await this.getTokenID(tokenAddress)).toNumber();
+      this.tokenAddressToIDMap.set(tokenAddress, tokenID);
+      this.tokenIDToAddressMap.set(tokenID, tokenAddress);
     }
     // console.log(this.tokenIDMap);
   }
@@ -745,14 +751,16 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const [exchange, tokenRegistry, lrcToken] = await Promise.all([
+    const [exchange, tokenRegistry, blockVerifier, lrcToken] = await Promise.all([
         this.contracts.Exchange.deployed(),
         this.contracts.TokenRegistry.deployed(),
+        this.contracts.BlockVerifier.deployed(),
         this.contracts.LRCToken.deployed(),
       ]);
 
     this.exchange = exchange;
     this.tokenRegistry = tokenRegistry;
+    this.blockVerifier = blockVerifier;
 
     const currBlockNumber = await web3.eth.getBlockNumber();
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;

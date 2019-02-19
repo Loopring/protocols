@@ -27,6 +27,8 @@ public:
 
     VariableArrayT uint16_padding;
 
+    bool onchain;
+
     const jubjub::VariablePointT publicKey;
     VariableArrayT accountID;
     VariableArrayT tokenID;
@@ -53,10 +55,13 @@ public:
     WithdrawalGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
+        bool _onchain,
         const VariableT& root,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
+
+        onchain(_onchain),
 
         uint16_padding(make_var_array(pb, 16 - NUM_BITS_WALLETID, FMT(prefix, ".uint16_padding"))),
 
@@ -106,6 +111,11 @@ public:
         return {accountID, uint16_padding, tokenID, amountWithdrawn.bits};
     }
 
+    const std::vector<VariableArrayT> getOnchainData() const
+    {
+        return {accountID, uint16_padding, tokenID, amountRequested.bits};
+    }
+
     void generate_r1cs_witness(const Withdrawal& withdrawal)
     {
         pb.val(publicKey.x) = withdrawal.publicKey.x;
@@ -137,7 +147,10 @@ public:
         updateBalance.generate_r1cs_witness(withdrawal.balanceUpdate.proof);
         updateAccount.generate_r1cs_witness(withdrawal.accountUpdate.proof);
 
-        signatureVerifier.generate_r1cs_witness(withdrawal.signature);
+        if (!onchain)
+        {
+            signatureVerifier.generate_r1cs_witness(withdrawal.signature);
+        }
     }
 
     void generate_r1cs_constraints()
@@ -146,14 +159,17 @@ public:
         amountWithdrawn.generate_r1cs_constraints(true);
         padding.generate_r1cs_constraints(true);
 
-        signatureVerifier.generate_r1cs_constraints();
-
         amountToWithdraw.generate_r1cs_constraints();
         pb.add_r1cs_constraint(ConstraintT(amountToWithdraw.result(), 1, amountWithdrawn.packed), "amountToWithdraw == amountWithdrawn");
         pb.add_r1cs_constraint(ConstraintT(balance_before - amountWithdrawn.packed, 1, balance_after), "balance_before - amount == balance_after");
 
         updateBalance.generate_r1cs_constraints();
         updateAccount.generate_r1cs_constraints();
+
+        if (!onchain)
+        {
+            signatureVerifier.generate_r1cs_constraints();
+        }
     }
 };
 
@@ -163,6 +179,7 @@ public:
     jubjub::Params params;
 
     unsigned int numAccounts;
+    bool onchain;
     std::vector<WithdrawalGadget> withdrawals;
 
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
@@ -172,13 +189,19 @@ public:
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
+    libsnark::dual_variable_gadget<FieldT> withdrawalBlockHashStart;
+    std::vector<VariableArrayT> withdrawalDataBits;
+    std::vector<sha256_many> hashers;
+
     const VariableT accountsRootBefore;
     const VariableT feesRoot;
 
     MerkleRootGadget merkleRootGadget;
 
-    WithdrawalsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
+    WithdrawalsCircuitGadget(ProtoboardT& pb, bool _onchain, const std::string& prefix) :
         GadgetT(pb, prefix),
+
+        onchain(_onchain),
 
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
@@ -186,6 +209,8 @@ public:
         stateID(pb, 16, FMT(prefix, ".stateID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
+
+        withdrawalBlockHashStart(pb, 256, FMT(prefix, ".withdrawalBlockHashStart")),
 
         accountsRootBefore(make_variable(pb, FMT(prefix, ".accountsRootBefore"))),
         feesRoot(make_variable(pb, FMT(prefix, ".feesRoot"))),
@@ -218,11 +243,31 @@ public:
         for (size_t j = 0; j < numAccounts; j++)
         {
             VariableT withdrawalAccountsRoot = (j == 0) ? accountsRootBefore : withdrawals.back().getNewAccountsRoot();
-            withdrawals.emplace_back(pb, params, withdrawalAccountsRoot, std::string("withdrawals") + std::to_string(j));
+            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, std::string("withdrawals") + std::to_string(j));
             withdrawals.back().generate_r1cs_constraints();
 
             // Store data from withdrawal
             publicData.add(withdrawals.back().getPublicData());
+
+            if (onchain)
+            {
+                VariableArrayT withdrawalBlockHash = (j == 0) ? withdrawalBlockHashStart.bits : hashers.back().result().bits;
+
+                // Hash data from deposit
+                std::vector<VariableArrayT> withdrawalData = withdrawals.back().getOnchainData();
+                std::vector<VariableArrayT> hashBits;
+                hashBits.push_back(flattenReverse({withdrawalBlockHash}));
+                hashBits.insert(hashBits.end(), withdrawalData.begin(), withdrawalData.end());
+                withdrawalDataBits.push_back(flattenReverse(hashBits));
+                hashers.emplace_back(pb, withdrawalDataBits.back(), std::string("hash_") + std::to_string(j));
+                hashers.back().generate_r1cs_constraints();
+            }
+        }
+
+        if (onchain)
+        {
+             // Add the block hash
+            publicData.add(flattenReverse({hashers.back().result().bits}));
         }
 
         // Check the input hash
@@ -251,9 +296,17 @@ public:
         pb.val(accountsRootBefore) = context.accountsRootBefore;
         pb.val(feesRoot) = context.feesRoot;
 
+        withdrawalBlockHashStart.bits.fill_with_bits_of_field_element(pb, 0);
+        withdrawalBlockHashStart.generate_r1cs_witness_from_bits();
+
         for(unsigned int i = 0; i < context.withdrawals.size(); i++)
         {
             withdrawals[i].generate_r1cs_witness(context.withdrawals[i]);
+        }
+
+        for (auto& hasher : hashers)
+        {
+            hasher.generate_r1cs_witness();
         }
 
         publicData.generate_r1cs_witness();

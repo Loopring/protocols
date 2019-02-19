@@ -102,7 +102,7 @@ public:
         return updateAccount.result();
     }
 
-    const std::vector<VariableArrayT> getPublicData() const
+    const std::vector<VariableArrayT> getOnchainData() const
     {
         return {accountID, publicKeyX_after.bits, publicKeyY_after.bits,
                 uint16_padding, walletID_after.bits,
@@ -227,12 +227,12 @@ public:
             VariableArrayT depositBlockHash = (j == 0) ? depositBlockHashStart.bits : hashers.back().result().bits;
 
             // Hash data from deposit
-            std::vector<VariableArrayT> depositData = deposits.back().getPublicData();
+            std::vector<VariableArrayT> depositData = deposits.back().getOnchainData();
             std::vector<VariableArrayT> hashBits;
             hashBits.push_back(flattenReverse({depositBlockHash}));
             hashBits.insert(hashBits.end(), depositData.begin(), depositData.end());
             depositDataBits.push_back(flattenReverse(hashBits));
-            hashers.emplace_back(pb, depositDataBits.back(), std::string("hash") + std::to_string(j));
+            hashers.emplace_back(pb, depositDataBits.back(), std::string("hash_") + std::to_string(j));
             hashers.back().generate_r1cs_constraints();
         }
 

@@ -2,6 +2,7 @@
 export class Artifacts {
   public Exchange: any;
   public TokenRegistry: any;
+  public BlockVerifier: any;
   public DummyToken: any;
   public LRCToken: any;
   public GTOToken: any;
@@ -14,6 +15,7 @@ export class Artifacts {
   constructor(artifacts: any) {
     this.Exchange = artifacts.require("impl/Exchange");
     this.TokenRegistry = artifacts.require("impl/TokenRegistry");
+    this.BlockVerifier = artifacts.require("impl/BlockVerifier");
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");
     this.GTOToken = artifacts.require("test/tokens/GTO");

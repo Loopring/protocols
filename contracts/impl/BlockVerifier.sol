@@ -16,39 +16,35 @@
 */
 pragma solidity 0.5.2;
 
-import "../impl/Exchange.sol";
+import "../iface/IBlockVerifier.sol";
+
+import "../lib/Verifier.sol";
+import "../lib/NoDefaultFunc.sol";
 
 
-/// @author Brecht Devos - <brecht@loopring.org>
-contract TestableExchange is Exchange
-{
+/// @title An Implementation of IBlockVerifier.
+/// @author Brecht Devos - <brecht@loopring.org>,
+contract BlockVerifier is IBlockVerifier, NoDefaultFunc {
     uint256[14] vk;
     uint256[] gammaABC;
 
-    constructor(
-        address _tokenRegistryAddress,
-        address _lrcAddress
+    function verifyProof(
+        bytes32 publicDataHash,
+        uint256[8] calldata proof
         )
-        Exchange(_tokenRegistryAddress, _lrcAddress)
-        public
-    {
-        // Empty
-    }
-
-
-    function testVerify(
-        uint256[14] memory _vk,
-        uint256[] memory _vk_gammaABC,
-        uint256[8] memory _proof,
-        uint256[] memory _publicInputs
-        )
-        public
+        external
         view
         returns (bool)
     {
-        return Verifier.Verify(_vk, _vk_gammaABC, _proof, _publicInputs);
-    }
+        uint256[] memory publicInputs = new uint256[](1);
+        publicInputs[0] = uint256(publicDataHash);
 
+        uint256[14] memory _vk;
+        uint256[] memory _vk_gammaABC;
+        (_vk, _vk_gammaABC) = getVerifyingKey();
+
+        return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
+    }
 
     function getVerifyingKey()
         public
