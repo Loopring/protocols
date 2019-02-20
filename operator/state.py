@@ -280,6 +280,27 @@ class Account(object):
                                  balancesBefore, balancesAfter),
                 tradeHistoryUpdate)
 
+    def cancelOrder(self, tokenID, orderID):
+        # Make sure the leaf exist in our map
+        if not(str(tokenID) in self._balancesLeafs):
+            self._balancesLeafs[str(tokenID)] = BalanceLeaf()
+
+        balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
+        rootBefore = self._balancesTree._root
+
+        # Update cancelled state
+        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, 0, 1)
+
+        balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
+        proof = self._balancesTree.createProof(tokenID)
+        self._balancesTree.update(tokenID, self._balancesLeafs[str(tokenID)].hash())
+        rootAfter = self._balancesTree._root
+
+        return (BalanceUpdateData(tokenID, proof,
+                                 rootBefore, rootAfter,
+                                 balancesBefore, balancesAfter),
+                tradeHistoryUpdate)
+
 
 class BurnRateLeaf(object):
     def __init__(self, burnRate):
@@ -542,19 +563,24 @@ class Withdrawal(object):
 
 
 class Cancellation(object):
-    def __init__(self, accountsMerkleRoot,
-                 publicKey, account, orderID,
-                 tradeHistoryUpdate, accountUpdate):
-        self.accountsMerkleRoot = str(accountsMerkleRoot)
+    def __init__(self,
+                 publicKey,
+                 accountID, tokenID, orderID,
+                 nonce,
+                 tradeHistoryUpdate, balanceUpdate, accountUpdate):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.account = account
+        self.accountID = accountID
+        self.tokenID = tokenID
         self.orderID = orderID
+        self.nonce = nonce
         self.tradeHistoryUpdate = tradeHistoryUpdate
+        self.balanceUpdate = balanceUpdate
         self.accountUpdate = accountUpdate
 
     def message(self):
-        msg_parts = [FQ(int(self.account), 1<<24), FQ(int(self.orderID), 1<<4), FQ(int(0), 1<<1)]
+        msg_parts = [FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.orderID), 1<<16),
+                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<2)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
@@ -920,7 +946,7 @@ class State(object):
             self._feeTokens[str(tokenID)] = FeeToken()
         return self._feeTokens[str(tokenID)]
 
-    def withdraw(self, accountID, tokenID, amount):
+    def withdraw(self, onchain, accountID, tokenID, amount):
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(accountID))
         proof = self._accountsTree.createProof(accountID)
@@ -944,20 +970,21 @@ class State(object):
         return withdrawal
 
     def cancelOrder(self, accountID, tokenID, orderID):
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(accountID))
+        proof = self._accountsTree.createProof(accountID)
+
+        (balanceUpdate, tradeHistoryUpdate) = self.getAccount(accountID).cancelOrder(tokenID, orderID)
+
+        self.updateAccountTree(accountID)
+        accountAfter = copyAccountInfo(self.getAccount(accountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+
         account = self.getAccount(accountID)
-
-        # Copy the initial merkle roots
-        accountsMerkleRoot = self._accountsTree._root
-
-        # Update trading history
-        tradeHistoryUpdate = account.updateTradeHistory(orderID, 0, 1)
-
-        # Create a proof the signer is the owner of the account
-        accountUpdate = account.updateBalance(tokenID, 0)
-
-        cancellation = Cancellation(accountsMerkleRoot,
-                                    Point(int(account.publicKeyX), int(account.publicKeyY)), accountID, orderID,
-                                    tradeHistoryUpdate, accountUpdate)
+        cancellation = Cancellation(Point(int(account.publicKeyX), int(account.publicKeyY)),
+                                    accountID, tokenID, orderID, account.nonce,
+                                    tradeHistoryUpdate, balanceUpdate, accountUpdate)
         cancellation.sign(FQ(int(account.secretKey)))
         return cancellation
 

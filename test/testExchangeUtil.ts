@@ -9,7 +9,7 @@ import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Block, Deposit, OrderInfo, RingInfo, RingsInfo, Withdrawal } from "./types";
+import { Block, Cancel, Deposit, OrderInfo, RingInfo, RingsInfo, Withdrawal, WithdrawalRequest } from "./types";
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -33,7 +33,12 @@ export class ExchangeTestUtil {
   private tokenIDToAddressMap = new Map<number, string>();
 
   private pendingDeposits: Deposit[][] = [];
+
+  private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
+  private pendingOnchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingWithdrawals: Withdrawal[] = [];
+
+  private pendingCancels: Cancel[][] = [];
 
   private pendingBlocks: Block[] = [];
 
@@ -50,6 +55,15 @@ export class ExchangeTestUtil {
     for (let i = 0; i < this.MAX_NUM_STATES; i++) {
       const deposits: Deposit[] = [];
       this.pendingDeposits.push(deposits);
+
+      const offchainWithdrawalRequests: WithdrawalRequest[] = [];
+      this.pendingOffchainWithdrawalRequests.push(offchainWithdrawalRequests);
+
+      const onchainWithdrawalRequests: WithdrawalRequest[] = [];
+      this.pendingOnchainWithdrawalRequests.push(onchainWithdrawalRequests);
+
+      const cancels: Cancel[] = [];
+      this.pendingCancels.push(cancels);
     }
 
     await this.deposit(
@@ -132,6 +146,9 @@ export class ExchangeTestUtil {
       await this.setupOrder(ring.orderA, orderIndex++);
       await this.setupOrder(ring.orderB, orderIndex++);
     }
+
+    // Create the accounts and deposit the tokens
+    await this.commitDeposits(ringsInfo.stateID);
   }
 
   public async setupOrder(order: OrderInfo, index: number) {
@@ -268,14 +285,10 @@ export class ExchangeTestUtil {
   public async deposit(stateID: number, owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
                        walletID: number, token: string, amount: BN, accountID: number = 0xFFFFFF) {
     let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots(web3.utils.toBN(stateID))).toNumber();
-    // console.log("Open slots: " + numAvailableSlots);
     if (numAvailableSlots === 0) {
         const timeToWait = (await this.exchange.MIN_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
-        // console.log(timeToWait);
         await this.advanceBlockTimestamp(timeToWait);
-
         numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots(web3.utils.toBN(stateID))).toNumber();
-        // console.log("Open slots after: " + numAvailableSlots);
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
@@ -314,19 +327,12 @@ export class ExchangeTestUtil {
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
 
-    /*const depositHash = await this.exchange.getDepositHash(web3.utils.toBN(0));
-    console.log("DepositHash: ");
-    console.log(depositHash.toString(16));*/
-
     const eventArr: any = await this.getEventsFromContract(this.exchange, "Deposit", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      // console.log(eventObj);
       return [eventObj.args.accountID, eventObj.args.depositBlockIdx];
     });
     const eventAccountID = items[0][0].toNumber();
     const depositBlockIdx = items[0][1].toNumber();
-    // console.log(accountID);
-    // console.log(depositBlockIdx);
 
     this.addDeposit(this.pendingDeposits[stateID], depositBlockIdx, eventAccountID,
                     secretKey, publicKeyX, publicKeyY,
@@ -334,8 +340,43 @@ export class ExchangeTestUtil {
     return eventAccountID;
   }
 
-  public async withdraw(accountID: number, tokenID: number, amount: BN) {
-    this.addWithdrawal(this.pendingWithdrawals, accountID, tokenID, amount);
+  public async requestWithdrawalOffchain(stateID: number, accountID: number, tokenID: number, amount: BN) {
+    this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[stateID], accountID, tokenID, amount);
+  }
+
+  public async requestWithdrawalOnchain(stateID: number, accountID: number, tokenID: number,
+                                        amount: BN, owner: string) {
+    let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawSlots(web3.utils.toBN(stateID))).toNumber();
+    console.log("numAvailableSlots: " + numAvailableSlots);
+    if (numAvailableSlots === 0) {
+        const timeToWait = (await this.exchange.MIN_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
+        await this.advanceBlockTimestamp(timeToWait);
+        numAvailableSlots = (await this.exchange.getNumAvailableWithdrawSlots(web3.utils.toBN(stateID))).toNumber();
+        console.log("numAvailableSlots: " + numAvailableSlots);
+        assert(numAvailableSlots > 0, "numAvailableSlots > 0");
+    }
+
+    const txOrigin = (owner === this.zeroAddress) ? this.testContext.orderOwners[0] : owner;
+    const withdrawFee = await this.exchange.WITHDRAW_FEE_IN_ETH();
+
+    // Submit the withdraw request
+    const tx = await this.exchange.requestWithdraw(
+      web3.utils.toBN(stateID),
+      web3.utils.toBN(accountID),
+      web3.utils.toBN(tokenID),
+      web3.utils.toBN(amount),
+      {from: txOrigin, value: withdrawFee},
+    );
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
+
+    const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawRequest", web3.eth.blockNumber);
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.withdrawBlockIdx];
+    });
+    const withdrawBlockIdx = items[0][0].toNumber();
+
+    this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[stateID],
+                              accountID, tokenID, amount, withdrawBlockIdx);
   }
 
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
@@ -344,8 +385,21 @@ export class ExchangeTestUtil {
     deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID, tokenID, amount});
   }
 
-  public addWithdrawal(withdrawals: Withdrawal[], accountID: number, tokenID: number, amount: BN) {
-    withdrawals.push({accountID, tokenID, amount});
+  public addCancel(cancels: Cancel[], accountID: number, tokenID: number, orderID: number) {
+    cancels.push({accountID, tokenID, orderID});
+  }
+
+  public cancelOrderID(stateID: number, accountID: number, tokenID: number, orderID: number) {
+    this.addCancel(this.pendingCancels[stateID], accountID, tokenID, orderID);
+  }
+
+  public cancelOrder(stateID: number, order: OrderInfo) {
+    this.cancelOrderID(stateID, order.accountID, order.tokenIdS, order.orderID);
+  }
+
+  public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
+                              accountID: number, tokenID: number, amount: BN, withdrawBlockIdx?: number) {
+    withdrawalRequests.push({accountID, tokenID, amount, withdrawBlockIdx});
   }
 
   public ensureDirectoryExists(filePath: string) {
@@ -419,8 +473,10 @@ export class ExchangeTestUtil {
     } else if (block.blockType === 1) {
       verificationKeyFilename += "deposit";
     } else if (block.blockType === 2) {
-      verificationKeyFilename += "withdraw";
+      verificationKeyFilename += "withdraw_onchain";
     } else if (block.blockType === 3) {
+      verificationKeyFilename += "withdraw_offchain";
+    } else if (block.blockType === 4) {
       verificationKeyFilename += "cancel";
     }
 
@@ -454,20 +510,19 @@ export class ExchangeTestUtil {
     this.pendingBlocks = [];
   }
 
-  public async submitDeposits(stateID: number) {
-    if (this.pendingDeposits[stateID].length === 0) {
+  public async commitDeposits(stateID: number) {
+    let pendingDeposits = this.pendingDeposits[stateID];
+    if (pendingDeposits.length === 0) {
       return;
     }
 
-    const pendingDeposits = this.pendingDeposits[stateID];
-
-    const numBlocks = Math.floor((pendingDeposits.length + 7) / 8);
+    const numDepositsPerBlock = (await this.exchange.NUM_DEPOSITS_IN_BLOCK()).toNumber();
+    const numBlocks = Math.floor((pendingDeposits.length + numDepositsPerBlock - 1) / numDepositsPerBlock);
     for (let i = 0; i < numBlocks; i++) {
-
       const deposits: Deposit[] = [];
       let isFull = true;
       // Get all deposits for the block
-      for (let b = i * 8; b < (i + 1) * 8; b++) {
+      for (let b = i * numDepositsPerBlock; b < (i + 1) * numDepositsPerBlock; b++) {
           if (b < pendingDeposits.length) {
             deposits.push(pendingDeposits[b]);
           } else {
@@ -485,7 +540,7 @@ export class ExchangeTestUtil {
             isFull = false;
           }
       }
-      assert(deposits.length === 8);
+      assert(deposits.length === numDepositsPerBlock);
 
       let timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
       if (!isFull) {
@@ -501,53 +556,106 @@ export class ExchangeTestUtil {
       bs.addNumber(jdeposits.stateID, 2);
       bs.addBigNumber(new BigNumber(jdeposits.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(jdeposits.merkleRootAfter, 10), 32);
-      bs.addNumber(jdeposits.stateID, 32);
-      // const depositHash = await this.exchange.getDepositHash(web3.utils.toBN(0));
-      // bs.addNumber(depositHash.toString(16));
+      bs.addNumber(0, 32);
 
       // Commit the block
       await this.commitBlock(1, bs.getData(), blockFilename);
     }
 
-    this.pendingDeposits[stateID] = [];
+    pendingDeposits = [];
   }
 
-  public async submitWithdrawals(ringsInfo: RingsInfo) {
-    if (this.pendingWithdrawals.length === 0) {
+  public async commitWithdrawalRequests(onchain: boolean, stateID: number) {
+    let pendingWithdrawals: WithdrawalRequest[];
+    if (onchain) {
+      pendingWithdrawals = this.pendingOnchainWithdrawalRequests[stateID];
+    } else {
+      pendingWithdrawals = this.pendingOffchainWithdrawalRequests[stateID];
+    }
+    if (pendingWithdrawals.length === 0) {
       return;
     }
 
-    console.log(this.pendingWithdrawals);
-    const jWithdrawalsInfo = JSON.stringify(this.pendingWithdrawals, replacer, 4);
-    const blockFilename = await this.createBlock(ringsInfo.stateID, 2, jWithdrawalsInfo);
-    const jWithdrawals = fs.readFileSync(blockFilename, "ascii");
-    const jwithdrawals = JSON.parse(jWithdrawals);
-    const stateID = jwithdrawals.stateID;
-    const bs = new pjs.Bitstream();
-    bs.addNumber(jwithdrawals.stateID, 2);
-    bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootAfter, 10), 32);
-    for (const withdrawal of jwithdrawals.withdrawals) {
-      bs.addNumber(withdrawal.accountID, 3);
-      bs.addNumber(withdrawal.tokenID, 2);
-      bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
+    const blockType = onchain ? 2 : 3;
+
+    const numWithdrawsPerBlock = (await this.exchange.NUM_WITHDRAWALS_IN_BLOCK()).toNumber();
+    const numBlocks = Math.floor((pendingWithdrawals.length + numWithdrawsPerBlock - 1) / numWithdrawsPerBlock);
+    for (let i = 0; i < numBlocks; i++) {
+      const withdrawalRequests: WithdrawalRequest[] = [];
+      let isFull = true;
+      // Get all withdrawals for the block
+      for (let b = i * numWithdrawsPerBlock; b < (i + 1) * numWithdrawsPerBlock; b++) {
+        if (b < pendingWithdrawals.length) {
+          withdrawalRequests.push(pendingWithdrawals[b]);
+        } else {
+          const dummyWithdrawalRequest: WithdrawalRequest = {
+            accountID: 0,
+            tokenID: 0,
+            amount: new BN(0),
+          };
+          pendingWithdrawals.push(dummyWithdrawalRequest);
+          isFull = false;
+        }
+      }
+      assert(pendingWithdrawals.length === numWithdrawsPerBlock);
+
+      let timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
+      if (!isFull) {
+        timeToWait += (await this.exchange.MAX_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
+      }
+      await this.advanceBlockTimestamp(timeToWait);
+
+      const jWithdrawalsInfo = JSON.stringify(pendingWithdrawals, replacer, 4);
+      const blockFilename = await this.createBlock(stateID, blockType, jWithdrawalsInfo);
+      const jWithdrawals = fs.readFileSync(blockFilename, "ascii");
+      const jwithdrawals = JSON.parse(jWithdrawals);
+      const bs = new pjs.Bitstream();
+      bs.addNumber(jwithdrawals.stateID, 2);
+      bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootBefore, 10), 32);
+      bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootAfter, 10), 32);
+      bs.addNumber(0, 32);
+      for (const withdrawal of jwithdrawals.withdrawals) {
+        bs.addNumber(withdrawal.accountID, 3);
+        bs.addNumber(withdrawal.tokenID, 2);
+        bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
+      }
+
+      // Commit the block
+      await this.commitBlock(blockType, bs.getData(), blockFilename);
+      const blockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
+
+      // Add as a pending withdrawal
+      let withdrawalIdx = 0;
+      for (const withdrawalRequest of jwithdrawals.withdrawals) {
+        const withdrawal: Withdrawal = {
+          stateID,
+          blockIdx,
+          withdrawalIdx,
+        };
+        this.pendingWithdrawals.push(withdrawal);
+        withdrawalIdx++;
+      }
     }
 
-    // Commit the block
-    await this.commitBlock(2, bs.getData(), blockFilename);
-    const blockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
+    pendingWithdrawals = [];
+  }
 
-    // We need to verify all blocks before and including the withdraw block before
-    // we can withdraw the tokens from the block
-    await this.verifyAllPendingBlocks();
+  public async commitOffchainWithdrawalRequests(stateID: number) {
+    return this.commitWithdrawalRequests(false, stateID);
+  }
 
+  public async commitOnchainWithdrawalRequests(stateID: number) {
+    return this.commitWithdrawalRequests(true, stateID);
+  }
+
+  public async submitPendingWithdrawals(ringsInfo: RingsInfo) {
     const addressBook = this.getAddressBook(ringsInfo);
-    for (let i = 0; i < this.pendingWithdrawals.length; i++) {
-      const withdrawal = this.pendingWithdrawals[i];
+
+    for (const withdrawal of this.pendingWithdrawals) {
       const txw = await this.exchange.withdraw(
-        web3.utils.toBN(stateID),
-        web3.utils.toBN(blockIdx),
-        web3.utils.toBN(i),
+        web3.utils.toBN(withdrawal.stateID),
+        web3.utils.toBN(withdrawal.blockIdx),
+        web3.utils.toBN(withdrawal.withdrawalIdx),
       );
 
       const eventArr: any = await this.getEventsFromContract(this.exchange, "Withdraw", web3.eth.blockNumber);
@@ -566,10 +674,7 @@ export class ExchangeTestUtil {
     this.pendingWithdrawals = [];
   }
 
-  public async submitRings(ringsInfo: RingsInfo) {
-    // First create the accounts and deposit the tokens
-    await this.submitDeposits(ringsInfo.stateID);
-
+  public async commitRings(ringsInfo: RingsInfo) {
     // Generate the token transfers for the ring
     const blockNumber = await web3.eth.getBlockNumber();
     ringsInfo.stateID = ringsInfo.stateID ? ringsInfo.stateID : 0;
@@ -607,6 +712,34 @@ export class ExchangeTestUtil {
 
     // Commit the block
     await this.commitBlock(0, bs.getData(), blockFilename);
+  }
+
+  public async commitCancels(stateID: number) {
+    let pendingCancels = this.pendingCancels[stateID];
+    if (pendingCancels.length === 0) {
+      return;
+    }
+
+    // Create the block
+    const blockFilename = await this.createBlock(stateID, 4, JSON.stringify(pendingCancels, replacer, 4));
+
+    // Read in the block
+    const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+
+    const bs = new pjs.Bitstream();
+    bs.addNumber(block.stateID, 2);
+    bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
+    bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+    for (const cancel of pendingCancels) {
+      bs.addNumber(cancel.accountID, 3);
+      bs.addNumber(cancel.tokenID, 2);
+      bs.addNumber(cancel.orderID, 2);
+    }
+
+    // Commit the block
+    await this.commitBlock(4, bs.getData(), blockFilename);
+
+    pendingCancels = [];
   }
 
   public async registerTokens() {

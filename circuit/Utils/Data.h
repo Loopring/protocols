@@ -603,11 +603,7 @@ void from_json(const json& j, WithdrawContext& context)
 class Cancellation
 {
 public:
-    ethsnarks::FieldT tradingHistoryMerkleRoot;
-    ethsnarks::FieldT accountsMerkleRoot;
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::FieldT account;
-    ethsnarks::FieldT orderID;
     TradeHistoryUpdate tradeHistoryUpdate;
     BalanceUpdate balanceUpdate;
     AccountUpdate accountUpdate;
@@ -616,13 +612,10 @@ public:
 
 void from_json(const json& j, Cancellation& cancellation)
 {
-    cancellation.tradingHistoryMerkleRoot = ethsnarks::FieldT(j.at("tradingHistoryMerkleRoot").get<std::string>().c_str());
-    cancellation.accountsMerkleRoot = ethsnarks::FieldT(j.at("accountsMerkleRoot").get<std::string>().c_str());
     cancellation.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     cancellation.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    cancellation.account = ethsnarks::FieldT(j.at("account"));
-    cancellation.orderID = ethsnarks::FieldT(j.at("orderID"));
     cancellation.tradeHistoryUpdate = j.at("tradeHistoryUpdate").get<TradeHistoryUpdate>();
+    cancellation.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
     cancellation.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
     cancellation.signature = j.at("signature").get<Signature>();
 }

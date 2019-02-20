@@ -55,6 +55,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 1 days;        // TESTING
 
     uint public constant DEPOSIT_FEE_IN_ETH                      = 0.001 ether;
+    uint public constant WITHDRAW_FEE_IN_ETH                     = 0.001 ether;
 
     uint public constant WALLET_REGISTRATION_FEE_IN_LRC          = 100000 ether;
     uint public constant RINGMATCHER_REGISTRATION_FEE_IN_LRC     = 100000 ether;
@@ -91,13 +92,11 @@ contract Exchange is IExchange, NoDefaultFunc {
     event BlockCommitted(uint blockIdx, bytes32 publicDataHash);
     event BlockFinalized(uint blockIdx);
 
-    event LogDepositBytes(bytes data);
-
     enum BlockType {
         TRADE,
         DEPOSIT,
-        WITHDRAW,
         ONCHAIN_WITHDRAW,
+        OFFCHAIN_WITHDRAW,
         CANCEL
     }
 
@@ -224,7 +223,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             ACCOUNTS_START_INDEX,
             0,
             1,
-            0,
+            1,
             0,
             0
         );
@@ -327,7 +326,6 @@ contract Exchange is IExchange, NoDefaultFunc {
                 mstore(add(data, 98), depositBlockHash)
             }
             numDepositBlocksCommitted++;
-            emit LogDepositBytes(data);
         } else if (blockType == uint(BlockType.ONCHAIN_WITHDRAW)) {
             require(isWithdrawBlockCommittable(stateID, numWithdrawBlocksCommitted), "CANNOT_COMMIT_WITHDRAW_BLOCK_YET");
             WithdrawBlock storage withdrawBlock = state.withdrawBlocks[numWithdrawBlocksCommitted];
@@ -347,7 +345,6 @@ contract Exchange is IExchange, NoDefaultFunc {
                 mstore(add(data, 98), withdrawBlockHash)
             }
             numWithdrawBlocksCommitted++;
-            emit LogDepositBytes(data);
         }
 
         // Check if we need to commit a deposit block
@@ -542,8 +539,12 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint96 amount
         )
         external
+        payable
     {
         require(amount > 0, INVALID_VALUE);
+
+        // Check expected ETH value sent
+        require(msg.value == WITHDRAW_FEE_IN_ETH, "WRONG_ETH_VALUE");
 
         require(stateID < states.length, "INVALID_STATEID");
         State storage state = states[stateID];
@@ -556,7 +557,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // Get the withdraw block
         WithdrawBlock storage withdrawBlock = state.withdrawBlocks[state.numWithdrawBlocks - 1];
-        if (isActiveDepositBlockClosed(stateID)) {
+        if (isActiveWithdrawBlockClosed(stateID)) {
             state.numWithdrawBlocks++;
             withdrawBlock = state.withdrawBlocks[state.numWithdrawBlocks - 1];
         }
@@ -597,7 +598,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // TODO: optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 2 + 32 + 32 + (3 + 2 + 12) * (withdrawalIdx + 1);
+        uint offset = 2 + 32 + 32 + 32 + (3 + 2 + 12) * (withdrawalIdx + 1);
         require(offset < withdrawals.length + 32, "INVALID_WITHDRAWALIDX");
         uint data;
         assembly {
@@ -607,18 +608,18 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
         uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
 
+        // Burn information
+        address payable owner = address(0x0);
+
+        // Get the account information if this isn't a burn account
+        if (accountID >= MAX_NUM_TOKENS)
+        {
+            assert(accountID < state.numAccounts);
+            Account storage account = state.accounts[accountID];
+            owner = address(uint160(account.owner));
+        }
+
         if (amount > 0) {
-            // Burn information
-            address payable owner = address(0x0);
-
-            // Get the account information if this isn't a burn account
-            if (accountID >= MAX_NUM_TOKENS)
-            {
-                assert(accountID < state.numAccounts);
-                Account storage account = state.accounts[accountID];
-                owner = address(uint160(account.owner));
-            }
-
             // Transfer the tokens from the contract to the owner
             address token = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
             if (token == address(0x0)) {
@@ -641,9 +642,9 @@ contract Exchange is IExchange, NoDefaultFunc {
                 mstore(add(withdrawals, offset), data)
             }
             withdrawBlock.withdrawals = withdrawals;
-
-            emit Withdraw(stateID, accountID, tokenID, owner, uint96(amount));
         }
+
+        emit Withdraw(stateID, accountID, tokenID, owner, uint96(amount));
     }
 
     function registerWallet()
@@ -832,17 +833,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (uint)
     {
         return states[stateID].numBlocks - 1;
-    }
-
-    function getDepositHash(
-        uint16 stateID,
-        uint depositBlockIdx
-        )
-        external
-        view
-        returns (bytes32)
-    {
-        return states[stateID].depositBlocks[depositBlockIdx].hash;
     }
 
     function isActiveDepositBlockClosed(

@@ -21,33 +21,35 @@ namespace Loopring
 class CancelGadget : public GadgetT
 {
 public:
-    const VariableT tradingHistoryMerkleRoot;
     const VariableT accountsMerkleRoot;
+
+    libsnark::dual_variable_gadget<FieldT> padding;
+    VariableArrayT uint16_padding;
 
     const jubjub::VariablePointT publicKey;
 
-    VariableArrayT account;
+    VariableArrayT accountID;
+    VariableArrayT tokenID;
     VariableArrayT orderID;
-    libsnark::dual_variable_gadget<FieldT> padding;
 
     VariableT filled;
-    VariableT cancelledBefore;
-    VariableT cancelledAfter;
+    VariableT cancelled_before;
+    VariableT cancelled_after;
+
+    VariableT balance;
+    VariableT tradingHistoryRoot_before;
 
     VariableT walletID;
-    VariableT token;
-    VariableT balance;
-    VariableT tradeHistoryRootBefore;
-    VariableT tradeHistoryRootAfter;
-    //UpdateAccountGadget checkAccount;
+    libsnark::dual_variable_gadget<FieldT> nonce_before;
+    VariableT nonce_after;
+    VariableT balancesRoot_before;
 
     UpdateTradeHistoryGadget updateTradeHistory;
+    UpdateBalanceGadget updateBalance;
+    UpdateAccountGadget updateAccount;
 
     // variables for signature
-    const jubjub::VariablePointT sig_R;
-    const VariableArrayT sig_s;
-    const VariableArrayT sig_m;
-    jubjub::PureEdDSA signatureVerifier;
+    SignatureVerifier signatureVerifier;
 
     CancelGadget(
         ProtoboardT& pb,
@@ -58,79 +60,106 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        tradingHistoryMerkleRoot(_tradingHistoryMerkleRoot),
         accountsMerkleRoot(_accountsMerkleRoot),
+
+        padding(pb, 2, FMT(prefix, ".padding")),
+        uint16_padding(make_var_array(pb, 16 - NUM_BITS_WALLETID, FMT(prefix, ".uint16_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
 
-        account(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
-        orderID(make_var_array(pb, 4, FMT(prefix, ".orderID"))),
-        padding(pb, 1, FMT(prefix, ".padding")),
+        accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
+        tokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".tokenID"))),
+        orderID(make_var_array(pb, 16, FMT(prefix, ".orderID"))),
 
         filled(make_variable(pb, 0, FMT(prefix, ".filled"))),
-        cancelledBefore(make_variable(pb, 0, FMT(prefix, ".cancelledBefore"))),
-        cancelledAfter(make_variable(pb, 0, FMT(prefix, ".cancelledAfter"))),
-        updateTradeHistory(pb, tradingHistoryMerkleRoot, flatten({orderID, account}), filled, cancelledBefore, filled, cancelledAfter, FMT(prefix, ".updateTradeHistory")),
+        cancelled_before(make_variable(pb, 0, FMT(prefix, ".cancelled_before"))),
+        cancelled_after(make_variable(pb, 1, FMT(prefix, ".cancelled_after"))),
+
+        balance(make_variable(pb, FMT(prefix, ".balance"))),
+        tradingHistoryRoot_before(make_variable(pb, FMT(prefix, ".tradingHistoryRoot_before"))),
 
         walletID(make_variable(pb, FMT(prefix, ".walletID"))),
-        token(make_variable(pb, FMT(prefix, ".token"))),
-        balance(make_variable(pb, FMT(prefix, ".balance"))),
-        //checkAccount(pb, accountsMerkleRoot, account, publicKey, walletID, token, balance, tradeHistoryRootBefore, balance, tradeHistoryRootAfter, FMT(prefix, ".checkAccount")),
+        nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
+        nonce_after(make_variable(pb, 1, FMT(prefix, ".cancelled_after"))),
+        balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
 
-        sig_R(pb, FMT(prefix, ".R")),
-        sig_s(make_var_array(pb, FieldT::size_in_bits(), FMT(prefix, ".s"))),
-        sig_m(flatten({account, orderID, padding.bits})),
-        signatureVerifier(pb, params, jubjub::EdwardsPoint(params.Gx, params.Gy), publicKey, sig_R, sig_s, sig_m, FMT(prefix, ".signatureVerifier"))
+        updateTradeHistory(pb, tradingHistoryRoot_before, orderID,
+                           filled, cancelled_before, filled, cancelled_after, FMT(prefix, ".updateTradeHistory")),
+
+        updateBalance(pb, balancesRoot_before, tokenID,
+                      {balance, tradingHistoryRoot_before},
+                      {balance, updateTradeHistory.getNewRoot()},
+                      FMT(prefix, ".updateBalance")),
+
+        updateAccount(pb, accountsMerkleRoot, accountID,
+                      {publicKey.x, publicKey.y, walletID, nonce_before.packed, balancesRoot_before},
+                      {publicKey.x, publicKey.y, walletID, nonce_after, updateBalance.getNewRoot()},
+                      FMT(prefix, ".updateAccount")),
+
+        signatureVerifier(pb, params, publicKey,
+                          flatten({accountID, tokenID, orderID, nonce_before.bits, padding.bits}),
+                          FMT(prefix, ".signatureVerifier"))
     {
 
     }
 
     const VariableT getNewAccountsRoot() const
     {
-        return updateTradeHistory.getNewRoot();
+        return updateAccount.result();
     }
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {account, orderID};
+        return {accountID, uint16_padding, tokenID, orderID};
     }
 
     void generate_r1cs_witness(const Cancellation& cancellation)
     {
-        pb.val(publicKey.x) = cancellation.publicKey.x;
-        pb.val(publicKey.y) = cancellation.publicKey.y;
-
-        account.fill_with_bits_of_field_element(pb, cancellation.account);
-        orderID.fill_with_bits_of_field_element(pb, cancellation.orderID);
+        uint16_padding.fill_with_bits_of_ulong(pb, 0);
 
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
+        pb.val(publicKey.x) = cancellation.publicKey.x;
+        pb.val(publicKey.y) = cancellation.publicKey.y;
+
+        accountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate.accountID);
+        tokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdate.tokenID);
+        orderID.fill_with_bits_of_field_element(pb, cancellation.tradeHistoryUpdate.orderID);
+
         pb.val(filled) = cancellation.tradeHistoryUpdate.before.filled;
-        pb.val(cancelledBefore) = cancellation.tradeHistoryUpdate.before.cancelled;
-        pb.val(cancelledAfter) = cancellation.tradeHistoryUpdate.after.cancelled;
+        pb.val(cancelled_before) = cancellation.tradeHistoryUpdate.before.cancelled;
+        pb.val(cancelled_after) = 1;
+
+        pb.val(balance) = cancellation.balanceUpdate.before.balance;
+        pb.val(tradingHistoryRoot_before) = cancellation.balanceUpdate.before.tradingHistoryRoot;
 
         pb.val(walletID) = cancellation.accountUpdate.before.walletID;
-        //pb.val(token) = cancellation.accountUpdate.before.token;
-       //pb.val(balance) = cancellation.accountUpdate.before.balance;
+        nonce_before.bits.fill_with_bits_of_field_element(pb, cancellation.accountUpdate.before.nonce);
+        nonce_before.generate_r1cs_witness_from_bits();
+        pb.val(nonce_after) = cancellation.accountUpdate.after.nonce;
+        pb.val(balancesRoot_before) = cancellation.accountUpdate.before.balancesRoot;
 
         updateTradeHistory.generate_r1cs_witness(cancellation.tradeHistoryUpdate.proof);
+        updateBalance.generate_r1cs_witness(cancellation.balanceUpdate.proof);
+        updateAccount.generate_r1cs_witness(cancellation.accountUpdate.proof);
 
-        //checkAccount.generate_r1cs_witness(cancellation.accountUpdate.proof);
-
-        pb.val(sig_R.x) = cancellation.signature.R.x;
-        pb.val(sig_R.y) = cancellation.signature.R.y;
-        sig_s.fill_with_bits_of_field_element(pb, cancellation.signature.s);
-        signatureVerifier.generate_r1cs_witness();
+        signatureVerifier.generate_r1cs_witness(cancellation.signature);
     }
 
     void generate_r1cs_constraints()
     {
         padding.generate_r1cs_constraints(true);
-        signatureVerifier.generate_r1cs_constraints();
+
+        nonce_before.generate_r1cs_constraints(true);
+
         updateTradeHistory.generate_r1cs_constraints();
-        //checkAccount.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(cancelledAfter, FieldT::one(), FieldT::one()), "cancelledAfter == 1");
+        updateBalance.generate_r1cs_constraints();
+        updateAccount.generate_r1cs_constraints();
+
+        signatureVerifier.generate_r1cs_constraints();
+
+        pb.add_r1cs_constraint(ConstraintT(cancelled_after, FieldT::one(), FieldT::one()), "cancelled_after == 1");
     }
 };
 
@@ -151,8 +180,6 @@ public:
 
     const VariableT accountsRootBefore;
     const VariableT feesRoot;
-
-    const VariableT tradeHistoryBefore;
 
     MerkleRootGadget merkleRootGadget;
 
@@ -193,7 +220,7 @@ public:
         for (size_t j = 0; j < numCancels; j++)
         {
             VariableT cancelAccountsRoot = (j == 0) ? accountsRootBefore : cancels.back().getNewAccountsRoot();
-            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelAccountsRoot, std::string("cancels") + std::to_string(j));
+            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelAccountsRoot, std::string("cancels_") + std::to_string(j));
             cancels.back().generate_r1cs_constraints();
 
             // Store data from withdrawal

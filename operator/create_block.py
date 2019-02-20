@@ -30,8 +30,8 @@ class DepositExport(object):
 
 
 class WithdrawalExport(object):
-    def __init__(self):
-        self.blockType = 2
+    def __init__(self, onchain):
+        self.blockType = 2 if onchain else 3
         self.withdrawals = []
 
     def toJSON(self):
@@ -41,7 +41,7 @@ class WithdrawalExport(object):
 
 class CancelExport(object):
     def __init__(self):
-        self.blockType = 3
+        self.blockType = 4
         self.cancels = []
 
     def toJSON(self):
@@ -131,15 +131,15 @@ def deposit(state, data):
     return export
 
 
-def withdraw(state, data):
-    export = WithdrawalExport()
+def withdraw(onchain, state, data):
+    export = WithdrawalExport(onchain)
     export.stateID = state.stateID
     export.merkleRootBefore = str(state.getRoot())
     export.feesRootBefore = str(state.getFeesRoot())
     export.accountsRootBefore = str(state.getAccountsRoot())
 
     for withdrawalInfo in data:
-        withdrawal = state.withdraw(int(withdrawalInfo["accountID"]), int(withdrawalInfo["tokenID"]), int(withdrawalInfo["amount"]))
+        withdrawal = state.withdraw(onchain, int(withdrawalInfo["accountID"]), int(withdrawalInfo["tokenID"]), int(withdrawalInfo["amount"]))
         export.withdrawals.append(withdrawal)
 
     export.merkleRootAfter = str(state.getRoot())
@@ -151,13 +151,20 @@ def withdraw(state, data):
 def cancel(state, data):
     export = CancelExport()
     export.stateID = state.stateID
-    export.feesMerkleRoot = str(state._feeTokensTree._root)
-    export.accountsMerkleRootBefore = str(state._accountsTree._root)
+    export.merkleRootBefore = str(state.getRoot())
+    export.feesRootBefore = str(state.getFeesRoot())
+    export.accountsRootBefore = str(state.getAccountsRoot())
 
-    for i in range(2):
-        export.cancels.append(state.cancelOrder(0, 2 + i))
+    for cancelInfo in data:
+        accountID = int(cancelInfo["accountID"])
+        tokenID = int(cancelInfo["tokenID"])
+        orderID = int(cancelInfo["orderID"])
 
-    export.accountsMerkleRootAfter = str(state._accountsTree._root)
+        export.cancels.append(state.cancelOrder(accountID, tokenID, orderID))
+
+    export.merkleRootAfter = str(state.getRoot())
+    export.feesRootAfter = str(state.getFeesRoot())
+    export.accountsRootAfter = str(state.getAccountsRoot())
     return export
 
 
@@ -222,8 +229,10 @@ def main(stateID, blockType, inputFilename, outputFilename):
     if blockType == "1":
         output = deposit(state, data)
     if blockType == "2":
-        output = withdraw(state, data)
+        output = withdraw(True, state, data)
     if blockType == "3":
+        output = withdraw(False, state, data)
+    if blockType == "4":
         output = cancel(state, data)
 
     f = open(outputFilename,"w+")

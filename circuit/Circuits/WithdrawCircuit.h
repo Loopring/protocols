@@ -63,7 +63,7 @@ public:
 
         onchain(_onchain),
 
-        uint16_padding(make_var_array(pb, 16 - NUM_BITS_WALLETID, FMT(prefix, ".uint16_padding"))),
+        uint16_padding(make_var_array(pb, 16 - NUM_BITS_TOKENID, FMT(prefix, ".uint16_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
 
@@ -118,6 +118,8 @@ public:
 
     void generate_r1cs_witness(const Withdrawal& withdrawal)
     {
+        uint16_padding.fill_with_bits_of_ulong(pb, 0);
+
         pb.val(publicKey.x) = withdrawal.publicKey.x;
         pb.val(publicKey.y) = withdrawal.publicKey.y;
 
@@ -246,9 +248,6 @@ public:
             withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, std::string("withdrawals") + std::to_string(j));
             withdrawals.back().generate_r1cs_constraints();
 
-            // Store data from withdrawal
-            publicData.add(withdrawals.back().getPublicData());
-
             if (onchain)
             {
                 VariableArrayT withdrawalBlockHash = (j == 0) ? withdrawalBlockHashStart.bits : hashers.back().result().bits;
@@ -268,6 +267,16 @@ public:
         {
              // Add the block hash
             publicData.add(flattenReverse({hashers.back().result().bits}));
+        }
+        else
+        {
+            publicData.add(withdrawalBlockHashStart.bits);
+        }
+
+        for (auto& withdrawal : withdrawals)
+        {
+            // Store data from withdrawal
+            publicData.add(withdrawal.getPublicData());
         }
 
         // Check the input hash
@@ -304,9 +313,13 @@ public:
             withdrawals[i].generate_r1cs_witness(context.withdrawals[i]);
         }
 
-        for (auto& hasher : hashers)
+        if (onchain)
         {
-            hasher.generate_r1cs_witness();
+            for (auto& hasher : hashers)
+            {
+                hasher.generate_r1cs_witness();
+            }
+            printBits("WithdrawBlockHash: 0x", flattenReverse({hashers.back().result().bits}).get_bits(pb), true);
         }
 
         publicData.generate_r1cs_witness();

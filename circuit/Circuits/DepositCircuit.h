@@ -112,6 +112,8 @@ public:
 
     void generate_r1cs_witness(const Deposit& deposit)
     {
+        uint16_padding.fill_with_bits_of_ulong(pb, 0);
+
         accountID.fill_with_bits_of_field_element(pb, deposit.accountUpdate.accountID);
         tokenID.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.tokenID);
 
@@ -277,6 +279,7 @@ public:
         {
             hasher.generate_r1cs_witness();
         }
+        printBits("DepositBlockHash: 0x", flattenReverse({hashers.back().result().bits}).get_bits(pb), true);
 
         publicData.generate_r1cs_witness();
 

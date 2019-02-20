@@ -47,14 +47,23 @@ contract("Exchange_Submit", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
 
       // Withdraw the tokens that were bought
       const orderA = ringsInfo.rings[0].orderA;
       const orderB = ringsInfo.rings[0].orderB;
-      exchangeTestUtil.withdraw(orderA.accountID, orderA.tokenIdB, orderA.amountB.mul(new BN(2)));
-      exchangeTestUtil.withdraw(orderB.accountID, orderB.tokenIdB, orderB.amountB.mul(new BN(2)));
-      await exchangeTestUtil.submitWithdrawals(ringsInfo);
+      /*exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderA.accountID,
+                                                 orderA.tokenIdB, orderA.amountB.mul(new BN(2)));
+      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderB.accountID,
+                                                 orderB.tokenIdB, orderB.amountB.mul(new BN(2)));
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(ringsInfo.stateID);*/
+      await exchangeTestUtil.requestWithdrawalOnchain(ringsInfo.stateID, orderA.accountID,
+                                                      orderA.tokenIdB, orderA.amountB.mul(new BN(2)), orderA.owner);
+      await exchangeTestUtil.requestWithdrawalOnchain(ringsInfo.stateID, orderB.accountID,
+                                                      orderB.tokenIdB, orderB.amountB.mul(new BN(2)), orderB.owner);
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(ringsInfo.stateID);
+      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.submitPendingWithdrawals(ringsInfo);
     });
 
     it("Matchable", async () => {
@@ -83,7 +92,41 @@ contract("Exchange_Submit", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
+
+      await exchangeTestUtil.verifyAllPendingBlocks();
+    });
+
+    it.only("Cancel", async () => {
+      const ringsInfo: RingsInfo = {
+        rings : [
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "WETH",
+                tokenB: "GTO",
+                amountS: new BN(web3.utils.toWei("110", "ether")),
+                amountB: new BN(web3.utils.toWei("200", "ether")),
+                amountF: new BN(web3.utils.toWei("100", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "GTO",
+                tokenB: "WETH",
+                amountS: new BN(web3.utils.toWei("200", "ether")),
+                amountB: new BN(web3.utils.toWei("100", "ether")),
+                amountF: new BN(web3.utils.toWei("90", "ether")),
+              },
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+
+      await exchangeTestUtil.cancelOrder(ringsInfo.stateID, ringsInfo.rings[0].orderA);
+      await exchangeTestUtil.commitCancels(ringsInfo.stateID);
+      // await exchangeTestUtil.commitRings(ringsInfo);
 
       await exchangeTestUtil.verifyAllPendingBlocks();
     });
@@ -120,7 +163,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
     });
 
     it("Unmatchable", async () => {
@@ -150,7 +193,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
     });
 
     it("Invalid validSince/validUntil", async () => {
@@ -181,7 +224,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
     });
 
     it("Valid allOrNone", async () => {
@@ -211,7 +254,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
     });
 
     it("Invalid allOrNone", async () => {
@@ -241,7 +284,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
     });
 
     it("ETH", async () => {
@@ -270,14 +313,18 @@ contract("Exchange_Submit", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
 
       // Withdraw the tokens that were bought
       const orderA = ringsInfo.rings[0].orderA;
       const orderB = ringsInfo.rings[0].orderB;
-      exchangeTestUtil.withdraw(orderA.accountID, orderA.tokenIdB, orderA.amountB);
-      exchangeTestUtil.withdraw(orderB.accountID, orderB.tokenIdB, orderB.amountB);
-      await exchangeTestUtil.submitWithdrawals(ringsInfo);
+      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderA.accountID,
+                                                 orderA.tokenIdB, orderA.amountB);
+      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderB.accountID,
+                                                 orderB.tokenIdB, orderB.amountB);
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(ringsInfo.stateID);
+      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.submitPendingWithdrawals(ringsInfo);
     });
 
     it("Multiple rings", async () => {
@@ -446,7 +493,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         ],
       };
       await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
 
       await exchangeTestUtil.verifyAllPendingBlocks();
     });

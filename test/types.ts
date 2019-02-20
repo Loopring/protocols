@@ -66,10 +66,24 @@ export interface Deposit {
   amount: BN;
 }
 
-export interface Withdrawal {
+export interface WithdrawalRequest {
   accountID: number;
   tokenID: number;
   amount: BN;
+
+  withdrawBlockIdx?: number;
+}
+
+export interface Withdrawal {
+  stateID: number;
+  blockIdx: number;
+  withdrawalIdx: number;
+}
+
+export interface Cancel {
+  accountID: number;
+  tokenID: number;
+  orderID: number;
 }
 
 export interface Block {

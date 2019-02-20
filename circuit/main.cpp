@@ -137,10 +137,10 @@ bool deposit(Mode mode, unsigned int numDeposits, const json& input, ethsnarks::
     return true;
 }
 
-bool withdraw(Mode mode, unsigned int numWithdrawals, const json& input, ethsnarks::ProtoboardT& outPb)
+bool withdraw(Mode mode, bool onchain, unsigned int numWithdrawals, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    Loopring::WithdrawalsCircuitGadget circuit(outPb, false, "circuit");
+    Loopring::WithdrawalsCircuitGadget circuit(outPb, onchain, "circuit");
     circuit.generate_r1cs_constraints(numWithdrawals);
     circuit.printInfo();
 
@@ -283,15 +283,17 @@ int main (int argc, char **argv)
             break;
         }
         case 2:
+        case 3:
         {
-            baseFilename += "withdraw_" + std::to_string(numElements);
-            if (!withdraw(mode, numElements, input, pb))
+            bool onchain = (blockType == 2) ? true : false;
+            baseFilename += "withdraw_" + (onchain ? std::string("onchain_") : std::string("offchain_")) + std::to_string(numElements);
+            if (!withdraw(mode, onchain, numElements, input, pb))
             {
                 return 1;
             }
             break;
         }
-        case 3:
+        case 4:
         {
             baseFilename += "cancel_" + std::to_string(numElements);
             if (!cancel(mode, numElements, input, pb))
