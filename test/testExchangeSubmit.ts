@@ -126,7 +126,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
       await exchangeTestUtil.cancelOrder(ringsInfo.stateID, ringsInfo.rings[0].orderA);
       await exchangeTestUtil.commitCancels(ringsInfo.stateID);
-      // await exchangeTestUtil.commitRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
 
       await exchangeTestUtil.verifyAllPendingBlocks();
     });

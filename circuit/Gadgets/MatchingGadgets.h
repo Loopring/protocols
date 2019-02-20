@@ -152,6 +152,7 @@ class MaxFillAmountsGadget : public GadgetT
 public:
     const OrderGadget& order;
 
+    VariableT remainingSBeforeCancelled;
     VariableT remainingS;
     MinGadget fillAmountS;
     MulDivGadget fillAmountB;
@@ -165,6 +166,7 @@ public:
 
         order(_order),
 
+        remainingSBeforeCancelled(make_variable(pb, FMT(prefix, ".remainingSBeforeCancelled"))),
         remainingS(make_variable(pb, FMT(prefix, ".remainingS"))),
         fillAmountS(pb, order.balanceS, remainingS, FMT(prefix, ".min(balanceS, remainingS)")),
         fillAmountB(pb, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(prefix, "(fillAmountS * amountB) / amountS"))
@@ -184,10 +186,12 @@ public:
 
     void generate_r1cs_witness()
     {
-        pb.val(remainingS) = pb.val(order.amountS.packed) - pb.val(order.filledBefore);
+        pb.val(remainingSBeforeCancelled) = pb.val(order.amountS.packed) - pb.val(order.filledBefore);
+        pb.val(remainingS) = (FieldT::one() - pb.val(order.cancelled)) * pb.val(remainingSBeforeCancelled);
         fillAmountS.generate_r1cs_witness();
         fillAmountB.generate_r1cs_witness();
         print(pb, "amountS", order.amountS.packed);
+        print(pb, "remainingSBeforeCancelled", remainingSBeforeCancelled);
         print(pb, "remainingS", remainingS);
         print(pb, "filledBefore", order.filledBefore);
         print(pb, "order.balanceS", order.balanceS);
@@ -197,7 +201,8 @@ public:
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(order.filledBefore + remainingS, 1, order.amountS.packed), "filledBeforeA + remainingS = amountS");
+        pb.add_r1cs_constraint(ConstraintT(order.filledBefore + remainingSBeforeCancelled, 1, order.amountS.packed), "filledBeforeA + remainingSBeforeCancelled = amountS");
+        pb.add_r1cs_constraint(ConstraintT(remainingSBeforeCancelled, 1 - order.cancelled, remainingS), "remainingSBeforeCancelled * cancelled = remainingS");
         fillAmountS.generate_r1cs_constraints();
         fillAmountB.generate_r1cs_constraints();
     }

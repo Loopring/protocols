@@ -166,6 +166,7 @@ public:
 
         pb.val(filledBefore) = order.filledBefore;
         pb.val(cancelled) = order.cancelled;
+        print("Cancelled: ", order.cancelled);
 
         pb.val(balanceS) = order.balanceS;
         pb.val(balanceB) = order.balanceB;

@@ -93,7 +93,7 @@ class BalanceLeaf(object):
         else:
             return self._tradeHistoryLeafs[str(address)]
 
-    def updateTradeHistory(self, address, fill, cancelled = 0):
+    def updateTradeHistory(self, address, fill, cancelled):
         # Make sure the leaf exist in our map
         if not(str(address) in self._tradeHistoryLeafs):
             self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0)
@@ -267,7 +267,8 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         # Update filled amounts
-        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, -amount)
+        tradeHistory = self._balancesLeafs[str(tokenID)].getTradeHistory(orderID)
+        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, -amount, tradeHistory.cancelled)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
@@ -704,6 +705,8 @@ class State(object):
 
         balanceS = int(account.getBalance(order.tokenS))
         remainingS = int(order.amountS) - int(order.filledBefore)
+        if order.cancelled == 1:
+            remainingS = 0
         fillAmountS = balanceS if (balanceS < remainingS) else remainingS
         fillAmountB = (fillAmountS * int(order.amountB)) // int(order.amountS)
         return (fillAmountS, fillAmountB)
