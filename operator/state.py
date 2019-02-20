@@ -543,18 +543,21 @@ class Withdrawal(object):
     def __init__(self,
                  publicKey,
                  accountID, tokenID, amount,
+                 nonce,
                  amountWithdrawn, balanceUpdate, accountUpdate):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.accountID = accountID
         self.tokenID = tokenID
         self.amount = str(amount)
+        self.nonce = int(nonce)
         self.amountWithdrawn = str(amountWithdrawn)
         self.balanceUpdate = balanceUpdate
         self.accountUpdate = accountUpdate
 
     def message(self):
-        msg_parts = [FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.amount), 1<<96), FQ(int(0), 1<<2)]
+        msg_parts = [FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.amount), 1<<96),
+                     FQ(int(self.nonce), 1<<32)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
@@ -699,6 +702,7 @@ class State(object):
         tradeHistory = account._balancesLeafs[str(order.tokenS)].getTradeHistory(order.orderID)
         order.filledBefore = str(tradeHistory.filled)
         order.cancelled = int(tradeHistory.cancelled)
+        order.nonce = int(account.nonce)
         order.balanceS = str(account.getBalance(order.tokenS))
         order.balanceB = str(account.getBalance(order.tokenB))
         order.balanceF = str(account.getBalance(order.tokenF))
@@ -849,6 +853,7 @@ class State(object):
         proof = self._accountsTree.createProof(ring.minerAccountID)
 
         balanceUpdate_M = accountM.updateBalance(1, -int(ring.fee))
+        accountM.nonce += 1
 
         self.updateAccountTree(ring.minerAccountID)
         accountAfter = copyAccountInfo(self.getAccount(ring.minerAccountID))
@@ -959,6 +964,8 @@ class State(object):
         print("Withdraw: " + str(amountWithdrawn) + " (requested: " + str(amount) + ")")
 
         balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn)
+        if not onchain:
+            self.getAccount(accountID).nonce += 1
 
         self.updateAccountTree(accountID)
         accountAfter = copyAccountInfo(self.getAccount(accountID))
@@ -968,6 +975,7 @@ class State(object):
         account = self.getAccount(accountID)
         withdrawal = Withdrawal(Point(int(account.publicKeyX), int(account.publicKeyY)),
                                 accountID, tokenID, amount,
+                                accountBefore.nonce,
                                 amountWithdrawn, balanceUpdate, accountUpdate)
         withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal
@@ -978,6 +986,7 @@ class State(object):
         proof = self._accountsTree.createProof(accountID)
 
         (balanceUpdate, tradeHistoryUpdate) = self.getAccount(accountID).cancelOrder(tokenID, orderID)
+        self.getAccount(accountID).nonce += 1
 
         self.updateAccountTree(accountID)
         accountAfter = copyAccountInfo(self.getAccount(accountID))
@@ -986,7 +995,7 @@ class State(object):
 
         account = self.getAccount(accountID)
         cancellation = Cancellation(Point(int(account.publicKeyX), int(account.publicKeyY)),
-                                    accountID, tokenID, orderID, account.nonce,
+                                    accountID, tokenID, orderID, accountBefore.nonce,
                                     tradeHistoryUpdate, balanceUpdate, accountUpdate)
         cancellation.sign(FQ(int(account.secretKey)))
         return cancellation

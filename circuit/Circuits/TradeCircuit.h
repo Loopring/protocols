@@ -56,7 +56,8 @@ public:
     libsnark::dual_variable_gadget<FieldT> minerID;
     libsnark::dual_variable_gadget<FieldT> minerAccountID;
     libsnark::dual_variable_gadget<FieldT> fee;
-    libsnark::dual_variable_gadget<FieldT> nonce;
+    libsnark::dual_variable_gadget<FieldT> nonce_before;
+    VariableT nonce_after;
 
     OrderGadget orderA;
     OrderGadget orderB;
@@ -172,7 +173,8 @@ public:
         minerID(pb, 12, FMT(prefix, ".minerID")),
         minerAccountID(pb, 24, FMT(prefix, ".minerAccountID")),
         fee(pb, 96, FMT(prefix, ".fee")),
-        nonce(pb, 32, FMT(prefix, ".nonce")),
+        nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
+        nonce_after(make_variable(pb, 1, FMT(prefix, ".nonce_after"))),
 
         orderA(pb, params, _stateID, _timestamp, FMT(prefix, ".orderA")),
         orderB(pb, params, _stateID, _timestamp, FMT(prefix, ".orderB")),
@@ -280,8 +282,8 @@ public:
                          {balanceF_BA.X, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
         updateAccount_A(pb, _accountsRoot, orderA.accountID.bits,
-                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID.packed, constant0, balancesRootA},
-                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID.packed, constant0, updateBalanceF_A.getNewRoot()},
+                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID.packed, orderA.nonce, balancesRootA},
+                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID.packed, orderA.nonce, updateBalanceF_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
 
         updateBalanceS_B(pb, balancesRootB, orderB.tokenS.bits,
@@ -297,8 +299,8 @@ public:
                          {balanceF_BB.X, tradingHistoryRootF_B},
                          FMT(prefix, ".updateBalanceF_B")),
         updateAccount_B(pb, updateAccount_A.result(), orderB.accountID.bits,
-                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID.packed, constant0, balancesRootB},
-                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID.packed, constant0, updateBalanceF_B.getNewRoot()},
+                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID.packed, orderB.nonce, balancesRootB},
+                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID.packed, orderB.nonce, updateBalanceF_B.getNewRoot()},
                         FMT(prefix, ".updateAccount_B")),
 
         updateBalance_M(pb, balancesRootM, lrcTokenID,
@@ -306,8 +308,8 @@ public:
                         {balance_M.X, tradingHistoryRoot_M},
                         FMT(prefix, ".updateBalance_M")),
         updateAccount_M(pb, updateAccount_B.result(), minerAccountID.bits,
-                        {publicKey.x, publicKey.y, constant0, constant0, balancesRootM},
-                        {publicKey.x, publicKey.y, constant0, constant0, updateBalance_M.getNewRoot()},
+                        {publicKey.x, publicKey.y, constant0, nonce_before.packed, balancesRootM},
+                        {publicKey.x, publicKey.y, constant0, nonce_after, updateBalance_M.getNewRoot()},
                         FMT(prefix, ".updateAccount_M")),
 
         updateWalletFeeF_A(pb, walletsRootF_A, orderA.walletID.bits,
@@ -349,7 +351,7 @@ public:
                              orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
                              minerID.bits, minerAccountID.bits,
                              fee.bits,
-                             nonce.bits})),
+                             nonce_before.bits})),
         minerSignatureVerifier(pb, params, publicKey, ringMessage, FMT(prefix, ".minerSignatureVerifier")),
         walletASignatureVerifier(pb, params, orderA.walletPublicKey, ringMessage, FMT(prefix, ".walletASignatureVerifier")),
         walletBSignatureVerifier(pb, params, orderB.walletPublicKey, ringMessage, FMT(prefix, ".walletBSignatureVerifier"))
@@ -396,8 +398,9 @@ public:
         minerAccountID.generate_r1cs_witness_from_bits();
         fee.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fee);
         fee.generate_r1cs_witness_from_bits();
-        nonce.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.nonce);
-        nonce.generate_r1cs_witness_from_bits();
+        nonce_before.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.nonce);
+        nonce_before.generate_r1cs_witness_from_bits();
+        pb.val(nonce_after) = ringSettlement.ring.nonce + 1;
 
         orderA.generate_r1cs_witness(ringSettlement.ring.orderA);
         orderB.generate_r1cs_witness(ringSettlement.ring.orderB);
@@ -541,7 +544,7 @@ public:
         minerID.generate_r1cs_constraints(true);
         minerAccountID.generate_r1cs_constraints(true);
         fee.generate_r1cs_constraints(true);
-        nonce.generate_r1cs_constraints(true);
+        nonce_before.generate_r1cs_constraints(true);
 
         orderA.generate_r1cs_constraints();
         orderB.generate_r1cs_constraints();
@@ -633,6 +636,8 @@ public:
         minerSignatureVerifier.generate_r1cs_constraints();
         walletASignatureVerifier.generate_r1cs_constraints();
         walletBSignatureVerifier.generate_r1cs_constraints();
+
+        pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
     }
 };
 

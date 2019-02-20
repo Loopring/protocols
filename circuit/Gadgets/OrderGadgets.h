@@ -43,6 +43,7 @@ public:
 
     VariableT filledBefore;
     VariableT cancelled;
+    VariableT nonce;
 
     VariableT balanceS;
     VariableT balanceB;
@@ -92,6 +93,7 @@ public:
 
         filledBefore(make_variable(pb, FMT(prefix, ".filledBefore"))),
         cancelled(make_variable(pb, FMT(prefix, ".cancelled"))),
+        nonce(make_variable(pb, FMT(prefix, ".nonce"))),
 
         balanceS(make_variable(pb, FMT(prefix, ".balanceS"))),
         balanceB(make_variable(pb, FMT(prefix, ".balanceB"))),
@@ -166,6 +168,7 @@ public:
 
         pb.val(filledBefore) = order.filledBefore;
         pb.val(cancelled) = order.cancelled;
+        pb.val(nonce) = order.nonce;
         print("Cancelled: ", order.cancelled);
 
         pb.val(balanceS) = order.balanceS;

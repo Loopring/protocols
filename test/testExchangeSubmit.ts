@@ -48,22 +48,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupRings(ringsInfo);
       await exchangeTestUtil.commitRings(ringsInfo);
-
-      // Withdraw the tokens that were bought
-      const orderA = ringsInfo.rings[0].orderA;
-      const orderB = ringsInfo.rings[0].orderB;
-      /*exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderA.accountID,
-                                                 orderA.tokenIdB, orderA.amountB.mul(new BN(2)));
-      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderB.accountID,
-                                                 orderB.tokenIdB, orderB.amountB.mul(new BN(2)));
-      await exchangeTestUtil.commitOffchainWithdrawalRequests(ringsInfo.stateID);*/
-      await exchangeTestUtil.requestWithdrawalOnchain(ringsInfo.stateID, orderA.accountID,
-                                                      orderA.tokenIdB, orderA.amountB.mul(new BN(2)), orderA.owner);
-      await exchangeTestUtil.requestWithdrawalOnchain(ringsInfo.stateID, orderB.accountID,
-                                                      orderB.tokenIdB, orderB.amountB.mul(new BN(2)), orderB.owner);
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(ringsInfo.stateID);
       await exchangeTestUtil.verifyAllPendingBlocks();
-      await exchangeTestUtil.submitPendingWithdrawals(ringsInfo);
     });
 
     it("Matchable", async () => {
@@ -97,7 +82,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
-    it.only("Cancel", async () => {
+    it("Cancel", async () => {
       const ringsInfo: RingsInfo = {
         rings : [
           {
@@ -129,6 +114,84 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.commitRings(ringsInfo);
 
       await exchangeTestUtil.verifyAllPendingBlocks();
+    });
+
+    it("Onchain withdrawal", async () => {
+      const ringsInfo: RingsInfo = {
+        rings : [
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "WETH",
+                tokenB: "GTO",
+                amountS: new BN(web3.utils.toWei("110", "ether")),
+                amountB: new BN(web3.utils.toWei("200", "ether")),
+                amountF: new BN(web3.utils.toWei("100", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "GTO",
+                tokenB: "WETH",
+                amountS: new BN(web3.utils.toWei("200", "ether")),
+                amountB: new BN(web3.utils.toWei("100", "ether")),
+                amountF: new BN(web3.utils.toWei("90", "ether")),
+              },
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
+
+      const orderA = ringsInfo.rings[0].orderA;
+      const orderB = ringsInfo.rings[0].orderB;
+      await exchangeTestUtil.requestWithdrawalOnchain(ringsInfo.stateID, orderA.accountID,
+                                                      orderA.tokenIdB, orderA.amountB.mul(new BN(2)), orderA.owner);
+      await exchangeTestUtil.requestWithdrawalOnchain(ringsInfo.stateID, orderB.accountID,
+                                                      orderB.tokenIdB, orderB.amountB.mul(new BN(2)), orderB.owner);
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(ringsInfo.stateID);
+      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.submitPendingWithdrawals(ringsInfo);
+    });
+
+    it.only("Offchain withdrawal", async () => {
+      const ringsInfo: RingsInfo = {
+        rings : [
+          {
+            orderA:
+              {
+                index: 0,
+                tokenS: "WETH",
+                tokenB: "GTO",
+                amountS: new BN(web3.utils.toWei("110", "ether")),
+                amountB: new BN(web3.utils.toWei("200", "ether")),
+                amountF: new BN(web3.utils.toWei("100", "ether")),
+              },
+            orderB:
+              {
+                index: 1,
+                tokenS: "GTO",
+                tokenB: "WETH",
+                amountS: new BN(web3.utils.toWei("200", "ether")),
+                amountB: new BN(web3.utils.toWei("100", "ether")),
+                amountF: new BN(web3.utils.toWei("90", "ether")),
+              },
+          },
+        ],
+      };
+      await exchangeTestUtil.setupRings(ringsInfo);
+      await exchangeTestUtil.commitRings(ringsInfo);
+
+      const orderA = ringsInfo.rings[0].orderA;
+      const orderB = ringsInfo.rings[0].orderB;
+      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderA.accountID,
+                                                 orderA.tokenIdB, orderA.amountB.mul(new BN(2)));
+      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderB.accountID,
+                                                 orderB.tokenIdB, orderB.amountB.mul(new BN(2)));
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(ringsInfo.stateID);
+      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.submitPendingWithdrawals(ringsInfo);
     });
 
     it("Separate state", async () => {

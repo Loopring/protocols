@@ -270,6 +270,8 @@ public:
 
     ethsnarks::FieldT filledBefore;
     ethsnarks::FieldT cancelled;
+    ethsnarks::FieldT nonce;
+
     ethsnarks::FieldT balanceS;
     ethsnarks::FieldT balanceB;
     ethsnarks::FieldT balanceF;
@@ -305,6 +307,8 @@ void from_json(const json& j, Order& order)
 
     order.filledBefore = ethsnarks::FieldT(j.at("filledBefore").get<std::string>().c_str());
     order.cancelled = ethsnarks::FieldT(j.at("cancelled"));
+    order.nonce = ethsnarks::FieldT(j.at("nonce"));
+
     order.balanceS = ethsnarks::FieldT(j.at("balanceS").get<std::string>().c_str());
     order.balanceB = ethsnarks::FieldT(j.at("balanceB").get<std::string>().c_str());
     order.balanceF = ethsnarks::FieldT(j.at("balanceF").get<std::string>().c_str());

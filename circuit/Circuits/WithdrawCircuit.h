@@ -39,7 +39,7 @@ public:
     VariableT walletID;
     VariableT balance_before;
     VariableT balance_after;
-    VariableT nonce_before;
+    libsnark::dual_variable_gadget<FieldT> nonce_before;
     VariableT nonce_after;
 
     VariableT tradingHistoryRoot;
@@ -75,7 +75,7 @@ public:
         walletID(make_variable(pb, FMT(prefix, ".walletID"))),
         balance_before(make_variable(pb, FMT(prefix, ".balance_before"))),
         balance_after(make_variable(pb, FMT(prefix, ".balance_after"))),
-        nonce_before(make_variable(pb, FMT(prefix, ".nonce_before"))),
+        nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, FMT(prefix, ".nonce_after"))),
 
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
@@ -90,12 +90,12 @@ public:
                       FMT(prefix, ".updateBalance")),
 
         updateAccount(pb, root, accountID,
-                      {publicKey.x, publicKey.y, walletID, nonce_before, balancesRoot_before},
+                      {publicKey.x, publicKey.y, walletID, nonce_before.packed, balancesRoot_before},
                       {publicKey.x, publicKey.y, walletID, nonce_after, updateBalance.getNewRoot()},
                       FMT(prefix, ".updateAccount")),
 
         signatureVerifier(pb, params, publicKey,
-                          flatten({accountID, tokenID, amountRequested.bits, padding.bits}),
+                          flatten({accountID, tokenID, amountRequested.bits, nonce_before.bits}),
                           FMT(prefix, ".signatureVerifier"))
     {
 
@@ -135,7 +135,8 @@ public:
         pb.val(walletID) = withdrawal.accountUpdate.before.walletID;
         pb.val(balance_before) = withdrawal.balanceUpdate.before.balance;
         pb.val(balance_after) = withdrawal.balanceUpdate.after.balance;
-        pb.val(nonce_before) = withdrawal.accountUpdate.before.nonce;
+        nonce_before.bits.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate.before.nonce);
+        nonce_before.generate_r1cs_witness_from_bits();
         pb.val(nonce_after) = withdrawal.accountUpdate.after.nonce;
 
         pb.val(tradingHistoryRoot) = withdrawal.balanceUpdate.before.tradingHistoryRoot;
@@ -171,6 +172,11 @@ public:
         if (!onchain)
         {
             signatureVerifier.generate_r1cs_constraints();
+            pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
+        }
+        else
+        {
+            pb.add_r1cs_constraint(ConstraintT(nonce_before.packed, FieldT::one(), nonce_after), "nonce_before == nonce_after");
         }
     }
 };
