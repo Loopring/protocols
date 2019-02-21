@@ -3,8 +3,8 @@ import BN = require("bn.js");
 export interface OrderInfo {
   // required fields in contract
   owner?: string;
-  tokenS: string;
-  tokenB: string;
+  tokenS?: string;
+  tokenB?: string;
   tokenF?: string;
   amountS: BN;
   amountB: BN;
@@ -28,7 +28,6 @@ export interface OrderInfo {
   walletSplitPercentage?: number;
   waiveFeePercentage?: number;
 
-  index?: number;
   balanceS?: BN;
   balanceB?: BN;
   balanceF?: BN;
@@ -45,12 +44,10 @@ export interface RingInfo {
   fee?: number;
 }
 
-export interface RingsInfo {
+export interface RingBlock {
   rings: RingInfo[];
 
-  publicDataHash?: string;
   timestamp?: number;
-
   stateID?: number;
   operatorAccountID?: number;
 }

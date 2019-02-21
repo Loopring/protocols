@@ -9,7 +9,7 @@ import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Block, Cancel, Deposit, OrderInfo, RingInfo, RingsInfo, Withdrawal, WithdrawalRequest } from "./types";
+import { Block, Cancel, Deposit, OrderInfo, RingBlock, RingInfo, Withdrawal, WithdrawalRequest } from "./types";
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -27,24 +27,31 @@ export class ExchangeTestUtil {
   public tokenRegistry: any;
   public blockVerifier: any;
 
+  public operatorAccountID: number;
+  public minerAccountID: number;
+
   private contracts = new Artifacts(artifacts);
 
   private tokenAddressToIDMap = new Map<string, number>();
   private tokenIDToAddressMap = new Map<number, string>();
 
+  private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
-
   private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingOnchainWithdrawalRequests: WithdrawalRequest[][] = [];
-  private pendingWithdrawals: Withdrawal[] = [];
-
   private pendingCancels: Cancel[][] = [];
+
+  private pendingWithdrawals: Withdrawal[] = [];
 
   private pendingBlocks: Block[] = [];
 
   private zeroAddress = "0x" + "00".repeat(20);
 
   private MAX_NUM_STATES: number = 16;
+
+  private orderIDGenerator: number = 0;
+
+  private addressBook: { [id: string]: string; } = {};
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -53,6 +60,9 @@ export class ExchangeTestUtil {
     await this.registerTokens();
 
     for (let i = 0; i < this.MAX_NUM_STATES; i++) {
+      const rings: RingInfo[] = [];
+      this.pendingRings.push(rings);
+
       const deposits: Deposit[] = [];
       this.pendingDeposits.push(deposits);
 
@@ -77,7 +87,34 @@ export class ExchangeTestUtil {
       new BN(0),
     );
 
-    await this.registerOperator(0, this.testContext.miner);
+    this.operatorAccountID = await this.createOperator(0);
+    this.minerAccountID = await this.createRingMatcher(0);
+  }
+
+  public async createOperator(stateID: number) {
+    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
+
+    // Make an account for the operator
+    const keyPairO = this.getKeyPairEDDSA();
+    const operatorAccountID = await this.deposit(stateID, this.testContext.miner,
+                                                 keyPairO.secretKey, keyPairO.publicKeyX, keyPairO.publicKeyY,
+                                                 0, lrcAddress, new BN(0));
+
+    await this.registerOperator(stateID, this.testContext.miner);
+    return operatorAccountID;
+  }
+
+  public async createRingMatcher(stateID: number) {
+    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
+    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
+
+    // Make an account for the ringmatcher
+    const keyPairM = this.getKeyPairEDDSA();
+    await LRC.addBalance(this.testContext.miner, web3.utils.toBN(new BigNumber(10000)));
+    const minerAccountID = await this.deposit(stateID, this.testContext.miner,
+                                              keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
+                                              0, lrcAddress, new BN(10000));
+    return minerAccountID;
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -117,38 +154,12 @@ export class ExchangeTestUtil {
     });
   }
 
-  public async setupRings(ringsInfo: RingsInfo) {
-
-    ringsInfo.stateID = ringsInfo.stateID ? ringsInfo.stateID : 0;
-
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
-
-    // Make an account for the operator
-    const keyPairO = this.getKeyPairEDDSA();
-    const operatorAccountID = await this.deposit(ringsInfo.stateID, this.testContext.miner,
-                                                 keyPairO.secretKey, keyPairO.publicKeyX, keyPairO.publicKeyY,
-                                                 0, lrcAddress, new BN(0));
-    ringsInfo.operatorAccountID = operatorAccountID;
-
-    // Make an account for the ringmatcher
-    const keyPairM = this.getKeyPairEDDSA();
-    await LRC.addBalance(this.testContext.miner, web3.utils.toBN(new BigNumber(10000)));
-    const minerAccountID = await this.deposit(ringsInfo.stateID, this.testContext.miner,
-                                              keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                              0, lrcAddress, new BN(10000));
-
-    let orderIndex = 0;
-    for (const [i, ring] of ringsInfo.rings.entries()) {
-      ring.minerID = ring.minerID ? ring.minerID : 0;
-      ring.minerAccountID = minerAccountID;
-      ring.fee = ring.fee ? ring.fee : 1;
-      await this.setupOrder(ring.orderA, orderIndex++);
-      await this.setupOrder(ring.orderB, orderIndex++);
-    }
-
-    // Create the accounts and deposit the tokens
-    await this.commitDeposits(ringsInfo.stateID);
+  public async setupRing(ring: RingInfo) {
+    ring.minerID = ring.minerID ? ring.minerID : 0;
+    ring.minerAccountID = this.minerAccountID;
+    ring.fee = ring.fee ? ring.fee : 1;
+    await this.setupOrder(ring.orderA, this.orderIDGenerator++);
+    await this.setupOrder(ring.orderB, this.orderIDGenerator++);
   }
 
   public async setupOrder(order: OrderInfo, index: number) {
@@ -194,7 +205,7 @@ export class ExchangeTestUtil {
     order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 50;
 
     order.walletID = order.walletID ? order.walletID : 0;
-    order.orderID = order.orderID ? order.orderID : order.index;
+    order.orderID = order.orderID ? order.orderID : index;
 
     order.stateID = order.stateID ? order.stateID : 0;
 
@@ -231,24 +242,18 @@ export class ExchangeTestUtil {
                                                  order.walletID, order.tokenF, new BN(0));
   }
 
-  public getAddressBook(ringsInfo: RingsInfo) {
+  public getAddressBook(ring: RingInfo) {
     const addAddress = (addrBook: { [id: string]: any; }, address: string, name: string) => {
       addrBook[address] = (addrBook[address] ? addrBook[address] + "=" : "") + name;
     };
 
-    const addressBook: { [id: string]: string; } = {};
-    for (const ring of ringsInfo.rings) {
-      const orders = [ring.orderA, ring.orderB];
-      for (const [i, order] of orders.entries()) {
-        addAddress(addressBook, order.owner, "Owner[" + i + "]");
-        if (order.owner !== order.tokenRecipient) {
-          addAddress(addressBook, order.tokenRecipient, "TokenRecipient[" + i + "]");
-        }
-        addAddress(addressBook, order.walletAddr, "Wallet[" + i + "]");
-        // addAddress(addressBook, order.hash.toString("hex"), "Hash[" + i + "]");
-      }
+    const orders = [ring.orderA, ring.orderB];
+    for (const [i, order] of orders.entries()) {
+      addAddress(this.addressBook, order.owner, "Owner[" + i + "]");
+      addAddress(this.addressBook, order.walletAddr, "Wallet[" + i + "]");
+      // addAddress(addressBook, order.hash.toString("hex"), "Hash[" + i + "]");
     }
-    return addressBook;
+    return this.addressBook;
   }
 
   public getKeyPairEDDSA() {
@@ -393,13 +398,17 @@ export class ExchangeTestUtil {
     this.addCancel(this.pendingCancels[stateID], accountID, tokenID, orderID);
   }
 
-  public cancelOrder(stateID: number, order: OrderInfo) {
-    this.cancelOrderID(stateID, order.accountID, order.tokenIdS, order.orderID);
+  public cancelOrder(order: OrderInfo) {
+    this.cancelOrderID(order.stateID, order.accountID, order.tokenIdS, order.orderID);
   }
 
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
                               accountID: number, tokenID: number, amount: BN, withdrawBlockIdx?: number) {
     withdrawalRequests.push({accountID, tokenID, amount, withdrawBlockIdx});
+  }
+
+  public sendRing(stateID: number, ring: RingInfo) {
+    this.pendingRings[stateID].push(ring);
   }
 
   public ensureDirectoryExists(filePath: string) {
@@ -430,11 +439,6 @@ export class ExchangeTestUtil {
   }
 
   public async commitBlock(blockType: number, data: string, filename: string) {
-    // Hash all public inputs to a singe value
-    // const publicDataHash = ethUtil.sha256(data);
-    // console.log("DataJS: " + data);
-    // console.log(publicDataHash.toString("hex"));
-
     const tokensBlockIdx = (await this.tokenRegistry.getBurnRateBlockIdx()).toNumber();
 
     const bitstream = new pjs.Bitstream(data);
@@ -511,7 +515,7 @@ export class ExchangeTestUtil {
   }
 
   public async commitDeposits(stateID: number) {
-    let pendingDeposits = this.pendingDeposits[stateID];
+    const pendingDeposits = this.pendingDeposits[stateID];
     if (pendingDeposits.length === 0) {
       return;
     }
@@ -562,7 +566,7 @@ export class ExchangeTestUtil {
       await this.commitBlock(1, bs.getData(), blockFilename);
     }
 
-    pendingDeposits = [];
+    this.pendingDeposits[stateID] = [];
   }
 
   public async commitWithdrawalRequests(onchain: boolean, stateID: number) {
@@ -593,11 +597,11 @@ export class ExchangeTestUtil {
             tokenID: 0,
             amount: new BN(0),
           };
-          pendingWithdrawals.push(dummyWithdrawalRequest);
+          withdrawalRequests.push(dummyWithdrawalRequest);
           isFull = false;
         }
       }
-      assert(pendingWithdrawals.length === numWithdrawsPerBlock);
+      assert(withdrawalRequests.length === numWithdrawsPerBlock);
 
       let timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
       if (!isFull) {
@@ -605,7 +609,7 @@ export class ExchangeTestUtil {
       }
       await this.advanceBlockTimestamp(timeToWait);
 
-      const jWithdrawalsInfo = JSON.stringify(pendingWithdrawals, replacer, 4);
+      const jWithdrawalsInfo = JSON.stringify(withdrawalRequests, replacer, 4);
       const blockFilename = await this.createBlock(stateID, blockType, jWithdrawalsInfo);
       const jWithdrawals = fs.readFileSync(blockFilename, "ascii");
       const jwithdrawals = JSON.parse(jWithdrawals);
@@ -637,7 +641,11 @@ export class ExchangeTestUtil {
       }
     }
 
-    pendingWithdrawals = [];
+    if (onchain) {
+      this.pendingOnchainWithdrawalRequests[stateID] = [];
+    } else {
+      this.pendingOffchainWithdrawalRequests[stateID] = [];
+    }
   }
 
   public async commitOffchainWithdrawalRequests(stateID: number) {
@@ -648,8 +656,8 @@ export class ExchangeTestUtil {
     return this.commitWithdrawalRequests(true, stateID);
   }
 
-  public async submitPendingWithdrawals(ringsInfo: RingsInfo) {
-    const addressBook = this.getAddressBook(ringsInfo);
+  public async submitPendingWithdrawals(ring: RingInfo) {
+    const addressBook = this.getAddressBook(ring);
 
     for (const withdrawal of this.pendingWithdrawals) {
       const txw = await this.exchange.withdraw(
@@ -674,72 +682,170 @@ export class ExchangeTestUtil {
     this.pendingWithdrawals = [];
   }
 
-  public async commitRings(ringsInfo: RingsInfo) {
-    // Generate the token transfers for the ring
-    const blockNumber = await web3.eth.getBlockNumber();
-    ringsInfo.stateID = ringsInfo.stateID ? ringsInfo.stateID : 0;
-    ringsInfo.timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
-
-    // Create the block
-    const blockFilename = await this.createBlock(ringsInfo.stateID, 0, JSON.stringify(ringsInfo, replacer, 4));
-
-    // Read in the block
-    const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
-
-    const bs = new pjs.Bitstream();
-    bs.addNumber(block.stateID, 2);
-    bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
-    bs.addBigNumber(new BigNumber(block.burnRateMerkleRoot, 10), 32);
-    bs.addNumber(ringsInfo.timestamp, 4);
-    for (const ringSettlement of block.ringSettlements) {
-      const ring = ringSettlement.ring;
-      const orderA = ringSettlement.ring.orderA;
-      const orderB = ringSettlement.ring.orderB;
-
-      // bs.addNumber(orderA.walletID, 2);
-      bs.addNumber(orderA.accountID, 3);
-      bs.addNumber(orderA.orderID, 2);
-      bs.addNumber(ring.fillS_A, 12);
-      bs.addNumber(ring.fillF_A, 12);
-
-      // bs.addNumber(orderB.walletID, 2);
-      bs.addNumber(orderB.accountID, 3);
-      bs.addNumber(orderB.orderID, 2);
-      bs.addNumber(ring.fillS_B, 12);
-      bs.addNumber(ring.fillF_B, 12);
+  public async commitRings(stateID: number, operatorAccountID?: number) {
+    const pendingRings = this.pendingRings[stateID];
+    if (pendingRings.length === 0) {
+      return;
     }
 
-    // Commit the block
-    await this.commitBlock(0, bs.getData(), blockFilename);
+    // Generate the token transfers for the ring
+    operatorAccountID = operatorAccountID ? operatorAccountID : this.operatorAccountID;
+    const blockNumber = await web3.eth.getBlockNumber();
+    const timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
+
+    const numRingsPerBlock = 2;
+    const numBlocks = Math.floor((pendingRings.length + numRingsPerBlock - 1) / numRingsPerBlock);
+    for (let i = 0; i < numBlocks; i++) {
+      // Get all rings for the block
+      const rings: RingInfo[] = [];
+      for (let b = i * numRingsPerBlock; b < (i + 1) * numRingsPerBlock; b++) {
+        if (b < pendingRings.length) {
+          rings.push(pendingRings[b]);
+        } else {
+          const dummyRing: RingInfo = {
+            orderA:
+              {
+                stateID,
+                walletID: 0,
+                orderID: 0,
+                accountID: 0,
+                dualAuthAccountID: 0,
+
+                tokenIdS: 0,
+                tokenIdB: 0,
+                tokenIdF: 0,
+
+                allOrNone: false,
+                validSince: 0,
+                validUntil: 0,
+                walletSplitPercentage: 0,
+                waiveFeePercentage: 0,
+
+                amountS: new BN(1),
+                amountB: new BN(1),
+                amountF: new BN(1),
+              },
+            orderB:
+              {
+                stateID,
+                walletID: 0,
+                orderID: 0,
+                accountID: 0,
+                dualAuthAccountID: 0,
+
+                tokenIdS: 0,
+                tokenIdB: 0,
+                tokenIdF: 0,
+
+                allOrNone: false,
+                validSince: 0,
+                validUntil: 0,
+                walletSplitPercentage: 0,
+                waiveFeePercentage: 0,
+
+                amountS: new BN(1),
+                amountB: new BN(1),
+                amountF: new BN(1),
+              },
+            minerID: 0,
+            minerAccountID: 0,
+            fee: 0,
+          };
+          rings.push(dummyRing);
+        }
+      }
+      assert(rings.length === numRingsPerBlock);
+
+      const ringBlock: RingBlock = {
+        rings,
+        timestamp,
+        stateID,
+        operatorAccountID,
+      };
+
+      // Create the block
+      const blockFilename = await this.createBlock(stateID, 0, JSON.stringify(ringBlock, replacer, 4));
+
+      // Read in the block
+      const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+
+      const bs = new pjs.Bitstream();
+      bs.addNumber(stateID, 2);
+      bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
+      bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+      bs.addBigNumber(new BigNumber(block.burnRateMerkleRoot, 10), 32);
+      bs.addNumber(ringBlock.timestamp, 4);
+      for (const ringSettlement of block.ringSettlements) {
+        const ring = ringSettlement.ring;
+        const orderA = ringSettlement.ring.orderA;
+        const orderB = ringSettlement.ring.orderB;
+
+        // bs.addNumber(orderA.walletID, 2);
+        bs.addNumber(orderA.accountID, 3);
+        bs.addNumber(orderA.orderID, 2);
+        bs.addNumber(ring.fillS_A, 12);
+        bs.addNumber(ring.fillF_A, 12);
+
+        // bs.addNumber(orderB.walletID, 2);
+        bs.addNumber(orderB.accountID, 3);
+        bs.addNumber(orderB.orderID, 2);
+        bs.addNumber(ring.fillS_B, 12);
+        bs.addNumber(ring.fillF_B, 12);
+      }
+
+      // Commit the block
+      await this.commitBlock(0, bs.getData(), blockFilename);
+    }
+
+    this.pendingRings[stateID] = [];
   }
 
   public async commitCancels(stateID: number) {
-    let pendingCancels = this.pendingCancels[stateID];
+    const pendingCancels = this.pendingCancels[stateID];
     if (pendingCancels.length === 0) {
       return;
     }
 
-    // Create the block
-    const blockFilename = await this.createBlock(stateID, 4, JSON.stringify(pendingCancels, replacer, 4));
+    const numCancelsPerBlock = 8;
+    const numBlocks = Math.floor((pendingCancels.length + numCancelsPerBlock - 1) / numCancelsPerBlock);
+    for (let i = 0; i < numBlocks; i++) {
+      // Get all cancels for the block
+      const cancels: Cancel[] = [];
+      for (let b = i * numCancelsPerBlock; b < (i + 1) * numCancelsPerBlock; b++) {
+        if (b < pendingCancels.length) {
+          cancels.push(pendingCancels[b]);
+        } else {
+          const dummyCancel: Cancel = {
+            accountID: 0,
+            tokenID: 0,
+            orderID: 0,
+          };
+          cancels.push(dummyCancel);
+        }
+      }
+      assert(cancels.length === numCancelsPerBlock);
 
-    // Read in the block
-    const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+      // Create the block
+      const blockFilename = await this.createBlock(stateID, 4, JSON.stringify(cancels, replacer, 4));
 
-    const bs = new pjs.Bitstream();
-    bs.addNumber(block.stateID, 2);
-    bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
-    bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
-    for (const cancel of pendingCancels) {
-      bs.addNumber(cancel.accountID, 3);
-      bs.addNumber(cancel.tokenID, 2);
-      bs.addNumber(cancel.orderID, 2);
+      // Read in the block
+      const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+
+      const bs = new pjs.Bitstream();
+      bs.addNumber(block.stateID, 2);
+      bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
+      bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+      for (const cancel of cancels) {
+        bs.addNumber(cancel.accountID, 3);
+        bs.addNumber(cancel.tokenID, 2);
+        bs.addNumber(cancel.orderID, 2);
+      }
+
+      // Commit the block
+      await this.commitBlock(4, bs.getData(), blockFilename);
     }
 
-    // Commit the block
-    await this.commitBlock(4, bs.getData(), blockFilename);
-
-    pendingCancels = [];
+    this.pendingCancels[stateID] = [];
   }
 
   public async registerTokens() {

@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import { Artifacts } from "../util/Artifacts";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { OrderInfo, RingInfo, RingsInfo } from "./types";
+import { OrderInfo, RingInfo } from "./types";
 
 const {
   TESTToken,
@@ -22,541 +22,435 @@ contract("Exchange_Submit", (accounts: string[]) => {
     this.timeout(0);
 
     it("Perfect match", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("110", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("1000", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("900", "ether")),
-              },
+            stateID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("1000", "ether")),
           },
-        ],
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("900", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
       await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Matchable", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("110", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("100", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("90", "ether")),
-              },
+            stateID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("100", "ether")),
           },
-        ],
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("90", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
 
       await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Cancel", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("110", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("100", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("90", "ether")),
-              },
+            stateID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("100", "ether")),
           },
-        ],
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("90", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
 
-      await exchangeTestUtil.cancelOrder(ringsInfo.stateID, ringsInfo.rings[0].orderA);
-      await exchangeTestUtil.commitCancels(ringsInfo.stateID);
-      await exchangeTestUtil.commitRings(ringsInfo);
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
 
       await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Onchain withdrawal", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("110", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("100", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("90", "ether")),
-              },
+            stateID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("100", "ether")),
           },
-        ],
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("90", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
 
-      const orderA = ringsInfo.rings[0].orderA;
-      const orderB = ringsInfo.rings[0].orderB;
-      await exchangeTestUtil.requestWithdrawalOnchain(ringsInfo.stateID, orderA.accountID,
-                                                      orderA.tokenIdB, orderA.amountB.mul(new BN(2)), orderA.owner);
-      await exchangeTestUtil.requestWithdrawalOnchain(ringsInfo.stateID, orderB.accountID,
-                                                      orderB.tokenIdB, orderB.amountB.mul(new BN(2)), orderB.owner);
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(ringsInfo.stateID);
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      await exchangeTestUtil.requestWithdrawalOnchain(stateID, ring.orderA.accountID,
+                                                      ring.orderA.tokenIdB, ring.orderA.amountB.mul(new BN(2)),
+                                                      ring.orderA.owner);
+      await exchangeTestUtil.requestWithdrawalOnchain(stateID, ring.orderB.accountID,
+                                                      ring.orderB.tokenIdB, ring.orderB.amountB.mul(new BN(2)),
+                                                      ring.orderB.owner);
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(stateID);
       await exchangeTestUtil.verifyAllPendingBlocks();
-      await exchangeTestUtil.submitPendingWithdrawals(ringsInfo);
+      await exchangeTestUtil.submitPendingWithdrawals(ring);
     });
 
     it.only("Offchain withdrawal", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("110", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("100", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("90", "ether")),
-              },
+            stateID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("100", "ether")),
           },
-        ],
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("90", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
 
-      const orderA = ringsInfo.rings[0].orderA;
-      const orderB = ringsInfo.rings[0].orderB;
-      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderA.accountID,
-                                                 orderA.tokenIdB, orderA.amountB.mul(new BN(2)));
-      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderB.accountID,
-                                                 orderB.tokenIdB, orderB.amountB.mul(new BN(2)));
-      await exchangeTestUtil.commitOffchainWithdrawalRequests(ringsInfo.stateID);
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      exchangeTestUtil.requestWithdrawalOffchain(stateID, ring.orderA.accountID,
+                                                 ring.orderA.tokenIdB, ring.orderA.amountB.mul(new BN(2)));
+      exchangeTestUtil.requestWithdrawalOffchain(stateID, ring.orderB.accountID,
+                                                 ring.orderB.tokenIdB, ring.orderB.amountB.mul(new BN(2)));
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
       await exchangeTestUtil.verifyAllPendingBlocks();
-      await exchangeTestUtil.submitPendingWithdrawals(ringsInfo);
+      await exchangeTestUtil.submitPendingWithdrawals(ring);
     });
 
     it("Separate state", async () => {
-      // Create a new state
       const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.miner);
-
-      const ringsInfo: RingsInfo = {
-        stateID,
-        rings : [
+      const operatorAccountID = await exchangeTestUtil.createOperator(stateID);
+      const minerAccountID = await exchangeTestUtil.createRingMatcher(stateID);
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                stateID,
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("110", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("100", "ether")),
-              },
-            orderB:
-              {
-                stateID,
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("90", "ether")),
-              },
+            stateID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("100", "ether")),
           },
-        ],
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("90", "ether")),
+          },
+          minerAccountID,
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID, operatorAccountID);
+
+      await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Unmatchable", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("90", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("1000", "ether")),
-                allOrNone: true,
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("100", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("1000", "ether")),
-              },
+            index: 0,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("90", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("1000", "ether")),
+            allOrNone: true,
           },
-        ],
+        orderB:
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("1000", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Invalid validSince/validUntil", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("100", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("1000", "ether")),
-                validSince: 1,
-                validUntil: 2,
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("900", "ether")),
-              },
+            index: 0,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("1000", "ether")),
+            validSince: 1,
+            validUntil: 2,
           },
-        ],
+        orderB:
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("900", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Valid allOrNone", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("100", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("1000", "ether")),
-                allOrNone: true,
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("400", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("900", "ether")),
-              },
+            index: 0,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("1000", "ether")),
+            allOrNone: true,
           },
-        ],
+        orderB:
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("400", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("900", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Invalid allOrNone", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("400", "ether")),
-                amountF: new BN(web3.utils.toWei("1000", "ether")),
-                allOrNone: true,
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("900", "ether")),
-              },
+            index: 0,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("400", "ether")),
+            amountF: new BN(web3.utils.toWei("1000", "ether")),
+            allOrNone: true,
           },
-        ],
+        orderB:
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("900", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("ETH", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "ETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("3", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("90", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "ETH",
-                amountS: new BN(web3.utils.toWei("100", "ether")),
-                amountB: new BN(web3.utils.toWei("2", "ether")),
-                amountF: new BN(web3.utils.toWei("20", "ether")),
-              },
+            index: 0,
+            tokenS: "ETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("3", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("90", "ether")),
           },
-        ],
+        orderB:
+          {
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "ETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("2", "ether")),
+            amountF: new BN(web3.utils.toWei("20", "ether")),
+          },
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
 
-      // Withdraw the tokens that were bought
-      const orderA = ringsInfo.rings[0].orderA;
-      const orderB = ringsInfo.rings[0].orderB;
-      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderA.accountID,
-                                                 orderA.tokenIdB, orderA.amountB);
-      exchangeTestUtil.requestWithdrawalOffchain(ringsInfo.stateID, orderB.accountID,
-                                                 orderB.tokenIdB, orderB.amountB);
-      await exchangeTestUtil.commitOffchainWithdrawalRequests(ringsInfo.stateID);
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      exchangeTestUtil.requestWithdrawalOffchain(stateID, ring.orderA.accountID,
+                                                 ring.orderA.tokenIdB, ring.orderA.amountB);
+      exchangeTestUtil.requestWithdrawalOffchain(stateID, ring.orderB.accountID,
+                                                 ring.orderB.tokenIdB, ring.orderB.amountB);
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
       await exchangeTestUtil.verifyAllPendingBlocks();
-      await exchangeTestUtil.submitPendingWithdrawals(ringsInfo);
+      await exchangeTestUtil.submitPendingWithdrawals(ring);
     });
 
     it("Multiple rings", async () => {
-      const ringsInfo: RingsInfo = {
-        rings : [
+      const stateID = 0;
+      const ringA: RingInfo = {
+        orderA:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("110", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("100", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("90", "ether")),
-              },
+            index: 0,
+            tokenS: "ETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("3", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("90", "ether")),
           },
+        orderB:
           {
-            orderA:
-              {
-                index: 0,
-                tokenS: "REP",
-                tokenB: "RDN",
-                amountS: new BN(web3.utils.toWei("50", "ether")),
-                amountB: new BN(web3.utils.toWei("10", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "RDN",
-                tokenB: "REP",
-                amountS: new BN(web3.utils.toWei("10", "ether")),
-                amountB: new BN(web3.utils.toWei("50", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
+            index: 1,
+            tokenS: "GTO",
+            tokenB: "ETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("2", "ether")),
+            amountF: new BN(web3.utils.toWei("20", "ether")),
           },
-          {
-            orderA:
-              {
-                index: 0,
-                tokenS: "REP",
-                tokenB: "RDN",
-                amountS: new BN(web3.utils.toWei("50", "ether")),
-                amountB: new BN(web3.utils.toWei("10", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "RDN",
-                tokenB: "REP",
-                amountS: new BN(web3.utils.toWei("10", "ether")),
-                amountB: new BN(web3.utils.toWei("50", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-          },
-          {
-            orderA:
-              {
-                index: 0,
-                tokenS: "REP",
-                tokenB: "RDN",
-                amountS: new BN(web3.utils.toWei("50", "ether")),
-                amountB: new BN(web3.utils.toWei("10", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "RDN",
-                tokenB: "REP",
-                amountS: new BN(web3.utils.toWei("10", "ether")),
-                amountB: new BN(web3.utils.toWei("50", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-          },
-          {
-            orderA:
-              {
-                index: 0,
-                tokenS: "WETH",
-                tokenB: "GTO",
-                amountS: new BN(web3.utils.toWei("110", "ether")),
-                amountB: new BN(web3.utils.toWei("200", "ether")),
-                amountF: new BN(web3.utils.toWei("100", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "GTO",
-                tokenB: "WETH",
-                amountS: new BN(web3.utils.toWei("200", "ether")),
-                amountB: new BN(web3.utils.toWei("100", "ether")),
-                amountF: new BN(web3.utils.toWei("90", "ether")),
-              },
-          },
-          {
-            orderA:
-              {
-                index: 0,
-                tokenS: "REP",
-                tokenB: "RDN",
-                amountS: new BN(web3.utils.toWei("50", "ether")),
-                amountB: new BN(web3.utils.toWei("10", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "RDN",
-                tokenB: "REP",
-                amountS: new BN(web3.utils.toWei("10", "ether")),
-                amountB: new BN(web3.utils.toWei("50", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-          },
-          {
-            orderA:
-              {
-                index: 0,
-                tokenS: "REP",
-                tokenB: "RDN",
-                amountS: new BN(web3.utils.toWei("50", "ether")),
-                amountB: new BN(web3.utils.toWei("10", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "RDN",
-                tokenB: "REP",
-                amountS: new BN(web3.utils.toWei("10", "ether")),
-                amountB: new BN(web3.utils.toWei("50", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-          },
-          {
-            orderA:
-              {
-                index: 0,
-                tokenS: "REP",
-                tokenB: "RDN",
-                amountS: new BN(web3.utils.toWei("50", "ether")),
-                amountB: new BN(web3.utils.toWei("10", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-            orderB:
-              {
-                index: 1,
-                tokenS: "RDN",
-                tokenB: "REP",
-                amountS: new BN(web3.utils.toWei("10", "ether")),
-                amountB: new BN(web3.utils.toWei("50", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
-              },
-          },
-        ],
       };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.commitRings(ringsInfo);
+      const ringB: RingInfo = {
+        orderA:
+          {
+            stateID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("100", "ether")),
+          },
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("90", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ringA);
+      await exchangeTestUtil.setupRing(ringB);
+      await exchangeTestUtil.sendRing(stateID, ringA);
+      await exchangeTestUtil.sendRing(stateID, ringB);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
 
       await exchangeTestUtil.verifyAllPendingBlocks();
     });

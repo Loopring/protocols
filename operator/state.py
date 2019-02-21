@@ -619,7 +619,6 @@ class GlobalState(object):
         if address >= len(self._tokens):
             print("Token doesn't exist: " + str(address))
 
-        print("burn address: " + str(address))
         burnRateData = copy.deepcopy(self._tokens[address])
         proof = self._tokensTree.proof(address).path
 
