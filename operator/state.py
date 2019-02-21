@@ -490,6 +490,8 @@ class RingSettlement(object):
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                  balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, accountUpdate_A,
                  balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, accountUpdate_B,
+                 accountUpdate_WA,
+                 accountUpdate_WB,
                  balanceUpdate_M, accountUpdate_M,
                  feeBalanceUpdateF_WA, feeBalanceUpdateF_MA, feeTokenUpdate_FA,
                  feeBalanceUpdateF_WB, feeBalanceUpdateF_MB, feeTokenUpdate_FB,
@@ -513,6 +515,9 @@ class RingSettlement(object):
         self.balanceUpdateB_B = balanceUpdateB_B
         self.balanceUpdateF_B = balanceUpdateF_B
         self.accountUpdate_B = accountUpdate_B
+
+        self.accountUpdate_WA = accountUpdate_WA
+        self.accountUpdate_WB = accountUpdate_WB
 
         self.balanceUpdate_M = balanceUpdate_M
         self.accountUpdate_M = accountUpdate_M
@@ -846,7 +851,35 @@ class State(object):
         ###
 
 
-        # Operator payment
+        # Update wallet A
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(ring.orderA.dualAuthAccountID))
+        proof = self._accountsTree.createProof(ring.orderA.dualAuthAccountID)
+
+        #balanceUpdateF_WA = accountB.updateBalance(ring.orderB.tokenF, -(walletFee_B + matchingFee_B + burnFee_B))
+
+        self.updateAccountTree(ring.orderA.dualAuthAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(ring.orderA.dualAuthAccountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate_WA = AccountUpdateData(ring.orderA.dualAuthAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        ###
+
+
+        # Update wallet B
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(ring.orderB.dualAuthAccountID))
+        proof = self._accountsTree.createProof(ring.orderB.dualAuthAccountID)
+
+        #balanceUpdateF_WA = accountB.updateBalance(ring.orderB.tokenF, -(walletFee_B + matchingFee_B + burnFee_B))
+
+        self.updateAccountTree(ring.orderB.dualAuthAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(ring.orderB.dualAuthAccountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate_WB = AccountUpdateData(ring.orderB.dualAuthAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        ###
+
+
+        # Operator rignmatcher
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(ring.minerAccountID))
         proof = self._accountsTree.createProof(ring.minerAccountID)
@@ -907,6 +940,8 @@ class State(object):
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                               balanceUpdateS_A, balanceUpdateB_A, balanceUpdateF_A, accountUpdate_A,
                               balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, accountUpdate_B,
+                              accountUpdate_WA,
+                              accountUpdate_WB,
                               balanceUpdate_M, accountUpdate_M,
                               feeBalanceUpdateF_WA, feeBalanceUpdateF_MA, feeTokenUpdate_FA,
                               feeBalanceUpdateF_WB, feeBalanceUpdateF_MB, feeTokenUpdate_FB,

@@ -87,6 +87,17 @@ export class ExchangeTestUtil {
       new BN(0),
     );
 
+    await this.deposit(
+      0,
+      this.zeroAddress,
+      (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
+      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
+      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
+      1024 + 0,
+      this.zeroAddress,
+      new BN(0),
+    );
+
     this.operatorAccountID = await this.createOperator(0);
     this.minerAccountID = await this.createRingMatcher(0);
   }
@@ -239,7 +250,7 @@ export class ExchangeTestUtil {
     const keyPairW = this.getKeyPairEDDSA();
     order.dualAuthAccountID = await this.deposit(order.stateID, order.wallet,
                                                  keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY,
-                                                 order.walletID, order.tokenF, new BN(0));
+                                                 1024 + order.walletID, order.tokenF, new BN(0));
   }
 
   public getAddressBook(ring: RingInfo) {
@@ -709,7 +720,7 @@ export class ExchangeTestUtil {
                 walletID: 0,
                 orderID: 0,
                 accountID: 0,
-                dualAuthAccountID: 0,
+                dualAuthAccountID: 1,
 
                 tokenIdS: 0,
                 tokenIdB: 0,
@@ -731,7 +742,7 @@ export class ExchangeTestUtil {
                 walletID: 0,
                 orderID: 0,
                 accountID: 0,
-                dualAuthAccountID: 0,
+                dualAuthAccountID: 1,
 
                 tokenIdS: 0,
                 tokenIdB: 0,

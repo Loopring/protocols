@@ -45,6 +45,8 @@ public:
     VariableT cancelled;
     VariableT nonce;
 
+    VariableT dualAuthorWalletID;
+
     VariableT balanceS;
     VariableT balanceB;
     VariableT balanceF;
@@ -94,6 +96,8 @@ public:
         filledBefore(make_variable(pb, FMT(prefix, ".filledBefore"))),
         cancelled(make_variable(pb, FMT(prefix, ".cancelled"))),
         nonce(make_variable(pb, FMT(prefix, ".nonce"))),
+
+        dualAuthorWalletID(make_variable(pb, FMT(prefix, ".dualAuthorWalletID"))),
 
         balanceS(make_variable(pb, FMT(prefix, ".balanceS"))),
         balanceB(make_variable(pb, FMT(prefix, ".balanceB"))),
@@ -169,7 +173,8 @@ public:
         pb.val(filledBefore) = order.filledBefore;
         pb.val(cancelled) = order.cancelled;
         pb.val(nonce) = order.nonce;
-        print("Cancelled: ", order.cancelled);
+
+        pb.val(dualAuthorWalletID) = order.walletID + MAX_NUM_WALLETS;
 
         pb.val(balanceS) = order.balanceS;
         pb.val(balanceB) = order.balanceB;
@@ -221,6 +226,9 @@ public:
 
         pb.add_r1cs_constraint(ConstraintT(validSince_leq_timestamp.leq(), timestamp_leq_validUntil.leq(), valid),
                                FMT(annotation_prefix, ".validSince_leq_timestamp && timestamp_leq_validUntil = valid"));
+
+        pb.add_r1cs_constraint(ConstraintT(walletID.packed + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
+                               FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));
     }
 };
 

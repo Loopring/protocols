@@ -390,6 +390,9 @@ public:
     BalanceUpdate balanceUpdateF_B;
     AccountUpdate accountUpdate_B;
 
+    AccountUpdate accountUpdate_WA;
+    AccountUpdate accountUpdate_WB;
+
     BalanceUpdate balanceUpdate_M;
     AccountUpdate accountUpdate_M;
 
@@ -430,6 +433,9 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.balanceUpdateB_B = j.at("balanceUpdateB_B").get<BalanceUpdate>();
     ringSettlement.balanceUpdateF_B = j.at("balanceUpdateF_B").get<BalanceUpdate>();
     ringSettlement.accountUpdate_B = j.at("accountUpdate_B").get<AccountUpdate>();
+
+    ringSettlement.accountUpdate_WA = j.at("accountUpdate_WA").get<AccountUpdate>();
+    ringSettlement.accountUpdate_WB = j.at("accountUpdate_WB").get<AccountUpdate>();
 
     ringSettlement.balanceUpdate_M = j.at("balanceUpdate_M").get<BalanceUpdate>();
     ringSettlement.accountUpdate_M = j.at("accountUpdate_M").get<AccountUpdate>();

@@ -66,8 +66,6 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint public constant MAX_NUM_WALLETS                         = 1024;
     uint public constant MAX_NUM_RINGMATCHERS                    = 1024;
 
-    uint public constant ACCOUNTS_START_INDEX                    = MAX_NUM_TOKENS;
-
     // Default account
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X =  2760979366321990647384327991146539505488430080750363450053902718557853404165;
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
@@ -223,7 +221,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         State memory memoryState = State(
             owner,
-            ACCOUNTS_START_INDEX,
+            0,
             0,
             1,
             1,
@@ -463,6 +461,14 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(stateID < states.length, "INVALID_STATEID");
         State storage state = states[stateID];
 
+        // Check if msg.sender wants to create a dual author address for a wallet
+        if (walletID > MAX_NUM_WALLETS) {
+            uint normalWalletID = walletID - MAX_NUM_WALLETS;
+            if (normalWalletID > 0) {
+                require(wallets[normalWalletID].owner == msg.sender, "CANNOT_CREATE_DUAL_AUTHOR_ACCOUNT_FOR WALLET");
+            }
+        }
+
         // Check expected ETH value sent
         if (token != address(0x0)) {
             require(msg.value == DEPOSIT_FEE_IN_ETH, "WRONG_ETH_VALUE");
@@ -552,11 +558,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(stateID < states.length, "INVALID_STATEID");
         State storage state = states[stateID];
 
-        // Don't check account owner for burn accounts
-        if (accountID >= MAX_NUM_TOKENS) {
-            Account storage account = state.accounts[accountID];
-            require(account.owner == msg.sender, "UNAUTHORIZED");
-        }
+        Account storage account = state.accounts[accountID];
+        require(account.owner == msg.sender, "UNAUTHORIZED");
 
         // Get the withdraw block
         WithdrawBlock storage withdrawBlock = state.withdrawBlocks[state.numWithdrawBlocks - 1];
@@ -611,16 +614,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
         uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
 
-        // Burn information
-        address payable owner = address(0x0);
-
-        // Get the account information if this isn't a burn account
-        if (accountID >= MAX_NUM_TOKENS)
-        {
-            assert(accountID < state.numAccounts);
-            Account storage account = state.accounts[accountID];
-            owner = address(uint160(account.owner));
-        }
+        assert(accountID < state.numAccounts);
+        Account storage account = state.accounts[accountID];
+        address payable owner = address(uint160(account.owner));
 
         if (amount > 0) {
             // Transfer the tokens from the contract to the owner
