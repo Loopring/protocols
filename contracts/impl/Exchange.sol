@@ -92,6 +92,8 @@ contract Exchange is IExchange, NoDefaultFunc {
     event BlockCommitted(uint blockIdx, bytes32 publicDataHash);
     event BlockFinalized(uint blockIdx);
 
+    event BlockFeeWithdraw(uint16 stateID, uint32 blockIdx, address operator, uint amount);
+
     enum BlockType {
         TRADE,
         DEPOSIT,
@@ -159,6 +161,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint16 operatorID;
         uint32 numDepositBlocksCommitted;
         uint32 numWithdrawBlocksCommitted;
+        uint8 feeWithdrawn;
         bytes withdrawals;
     }
 
@@ -237,6 +240,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             0xFFFF,
             0,
             0,
+            0,
             new bytes(0)
         );
         State storage state = states[states.length - 1];
@@ -275,8 +279,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // Check operator
         require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
-        uint16 operatorIdx = getActiveOperatorIdx(stateID);
-        Operator storage operator = state.operators[state.activeOperators[operatorIdx]];
+        Operator storage operator = state.operators[state.activeOperators[getActiveOperatorIdx(stateID)]];
         require(operator.owner == msg.sender, "SENDER_NOT_ACTIVE_OPERATOR");
 
         Block storage currentBlock = state.blocks[state.numBlocks - 1];
@@ -362,8 +365,9 @@ contract Exchange is IExchange, NoDefaultFunc {
             operator.ID,
             numDepositBlocksCommitted,
             numWithdrawBlocksCommitted,
-            /*(blockType == uint(BlockType.WITHDRAW)) ? data : new bytes(0)*/
-            data
+            0,
+            (blockType == uint(BlockType.ONCHAIN_WITHDRAW) ||
+             blockType == uint(BlockType.OFFCHAIN_WITHDRAW)) ? data : new bytes(0)
         );
         state.blocks[state.numBlocks] = newBlock;
         state.numBlocks++;
@@ -458,7 +462,6 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         require(stateID < states.length, "INVALID_STATEID");
         State storage state = states[stateID];
-        // require(msg.sender == owner, UNAUTHORIZED);
 
         // Check expected ETH value sent
         if (token != address(0x0)) {
@@ -783,7 +786,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
     }
 
-    function withdrawFeeEarnedInBlock(
+    function withdrawBlockFee(
         uint16 stateID,
         uint32 blockIdx
         )
@@ -798,16 +801,24 @@ contract Exchange is IExchange, NoDefaultFunc {
         Block storage requestedBlock = state.blocks[blockIdx];
         Block storage previousBlock = state.blocks[blockIdx - 1];
 
-        require(requestedBlock.numDepositBlocksCommitted > previousBlock.numDepositBlocksCommitted, "NO_FEE_AVAILABLE");
         require(requestedBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        require(requestedBlock.feeWithdrawn == 0, "FEE_ALREADY_WITHDRAWN");
 
         address payable operator = states[stateID].operators[requestedBlock.operatorID].owner;
-        uint32 depositBlockIdx = previousBlock.numDepositBlocksCommitted;
 
-        DepositBlock storage depositBlock = state.depositBlocks[depositBlockIdx];
-        uint fee = depositBlock.numDeposits * DEPOSIT_FEE_IN_ETH;
+        uint fee = 0;
+        if(requestedBlock.numDepositBlocksCommitted > previousBlock.numDepositBlocksCommitted) {
+            fee = state.depositBlocks[previousBlock.numDepositBlocksCommitted].numDeposits * DEPOSIT_FEE_IN_ETH;
+        } else if (requestedBlock.numWithdrawBlocksCommitted > previousBlock.numWithdrawBlocksCommitted) {
+            fee = state.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].numWithdrawals * WITHDRAW_FEE_IN_ETH;
+        } else {
+            revert("BLOCK_HAS_NO_OPERATOR_FEE");
+        }
 
+        requestedBlock.feeWithdrawn = uint8(1);
         operator.transfer(fee);
+
+        emit BlockFeeWithdraw(stateID, blockIdx, operator, fee);
     }
 
     function burn(

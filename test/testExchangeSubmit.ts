@@ -117,7 +117,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
-    it("Onchain withdrawal", async () => {
+    it.only("Onchain withdrawal", async () => {
       const stateID = 0;
       const ring: RingInfo = {
         orderA:
@@ -155,9 +155,11 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.commitOnchainWithdrawalRequests(stateID);
       await exchangeTestUtil.verifyAllPendingBlocks();
       await exchangeTestUtil.submitPendingWithdrawals(ring);
+
+      await exchangeTestUtil.exchange.withdrawBlockFee(stateID, 4);
     });
 
-    it.only("Offchain withdrawal", async () => {
+    it("Offchain withdrawal", async () => {
       const stateID = 0;
       const ring: RingInfo = {
         orderA:
