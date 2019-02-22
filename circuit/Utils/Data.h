@@ -393,7 +393,10 @@ public:
     AccountUpdate accountUpdate_WA;
     AccountUpdate accountUpdate_WB;
 
-    BalanceUpdate balanceUpdate_M;
+    BalanceUpdate balanceUpdateA_M;
+    BalanceUpdate balanceUpdateB_M;
+    BalanceUpdate balanceUpdateM_M;
+    BalanceUpdate balanceUpdateO_M;
     AccountUpdate accountUpdate_M;
 
     FeeBalanceUpdate feeBalanceUpdateF_WA;
@@ -403,9 +406,6 @@ public:
     FeeBalanceUpdate feeBalanceUpdateF_WB;
     FeeBalanceUpdate feeBalanceUpdateF_MB;
     FeeTokenUpdate feeTokenUpdate_FB;
-
-    FeeBalanceUpdate feeBalanceUpdateS_MA;
-    FeeTokenUpdate feeTokenUpdate_SA;
 
     BurnRateCheck burnRateCheckF_A;
     BurnRateCheck burnRateCheckF_B;
@@ -437,21 +437,18 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.accountUpdate_WA = j.at("accountUpdate_WA").get<AccountUpdate>();
     ringSettlement.accountUpdate_WB = j.at("accountUpdate_WB").get<AccountUpdate>();
 
-    ringSettlement.balanceUpdate_M = j.at("balanceUpdate_M").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateA_M = j.at("balanceUpdateA_M").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateB_M = j.at("balanceUpdateB_M").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateM_M = j.at("balanceUpdateM_M").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateO_M = j.at("balanceUpdateO_M").get<BalanceUpdate>();
     ringSettlement.accountUpdate_M = j.at("accountUpdate_M").get<AccountUpdate>();
 
 
     ringSettlement.feeBalanceUpdateF_WA = j.at("feeBalanceUpdateF_WA").get<FeeBalanceUpdate>();
-    ringSettlement.feeBalanceUpdateF_MA = j.at("feeBalanceUpdateF_MA").get<FeeBalanceUpdate>();
     ringSettlement.feeTokenUpdate_FA = j.at("feeTokenUpdate_FA").get<FeeTokenUpdate>();
 
     ringSettlement.feeBalanceUpdateF_WB = j.at("feeBalanceUpdateF_WB").get<FeeBalanceUpdate>();
-    ringSettlement.feeBalanceUpdateF_MB = j.at("feeBalanceUpdateF_MB").get<FeeBalanceUpdate>();
     ringSettlement.feeTokenUpdate_FB = j.at("feeTokenUpdate_FB").get<FeeTokenUpdate>();
-
-    ringSettlement.feeBalanceUpdateS_MA = j.at("feeBalanceUpdateS_MA").get<FeeBalanceUpdate>();
-    ringSettlement.feeTokenUpdate_SA = j.at("feeTokenUpdate_SA").get<FeeTokenUpdate>();
-
 
     ringSettlement.burnRateCheckF_A = j.at("burnRateCheckF_A").get<BurnRateCheck>();
     ringSettlement.burnRateCheckF_B = j.at("burnRateCheckF_B").get<BurnRateCheck>();

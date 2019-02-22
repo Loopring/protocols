@@ -492,10 +492,9 @@ class RingSettlement(object):
                  balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, accountUpdate_B,
                  accountUpdate_WA,
                  accountUpdate_WB,
-                 balanceUpdate_M, accountUpdate_M,
-                 feeBalanceUpdateF_WA, feeBalanceUpdateF_MA, feeTokenUpdate_FA,
-                 feeBalanceUpdateF_WB, feeBalanceUpdateF_MB, feeTokenUpdate_FB,
-                 feeBalanceUpdateS_MA, feeTokenUpdate_SA,
+                 balanceUpdateA_M, balanceUpdateB_M, balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
+                 feeBalanceUpdateF_WA, feeTokenUpdate_FA,
+                 feeBalanceUpdateF_WB, feeTokenUpdate_FB,
                  burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
                  burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B):
         self.ring = ring
@@ -519,19 +518,17 @@ class RingSettlement(object):
         self.accountUpdate_WA = accountUpdate_WA
         self.accountUpdate_WB = accountUpdate_WB
 
-        self.balanceUpdate_M = balanceUpdate_M
+        self.balanceUpdateA_M = balanceUpdateA_M
+        self.balanceUpdateB_M = balanceUpdateB_M
+        self.balanceUpdateM_M = balanceUpdateM_M
+        self.balanceUpdateO_M = balanceUpdateO_M
         self.accountUpdate_M = accountUpdate_M
 
         self.feeBalanceUpdateF_WA = feeBalanceUpdateF_WA
-        self.feeBalanceUpdateF_MA = feeBalanceUpdateF_MA
         self.feeTokenUpdate_FA = feeTokenUpdate_FA
 
         self.feeBalanceUpdateF_WB = feeBalanceUpdateF_WB
-        self.feeBalanceUpdateF_MB = feeBalanceUpdateF_MB
         self.feeTokenUpdate_FB = feeTokenUpdate_FB
-
-        self.feeBalanceUpdateS_MA = feeBalanceUpdateS_MA
-        self.feeTokenUpdate_SA = feeTokenUpdate_SA
 
         self.burnRateCheckF_A = burnRateCheckF_A
         self.walletFee_A = walletFee_A
@@ -879,12 +876,15 @@ class State(object):
         ###
 
 
-        # Operator rignmatcher
+        # Update ringmatcher
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(ring.minerAccountID))
         proof = self._accountsTree.createProof(ring.minerAccountID)
 
-        balanceUpdate_M = accountM.updateBalance(1, -int(ring.fee))
+        balanceUpdateA_M = accountM.updateBalance(ring.orderA.tokenF, int(matchingFee_A))
+        balanceUpdateB_M = accountM.updateBalance(ring.orderB.tokenF, int(matchingFee_B))
+        balanceUpdateM_M = accountM.updateBalance(ring.orderA.tokenS, int(ring.margin))
+        balanceUpdateO_M = accountM.updateBalance(1, -int(ring.fee))
         accountM.nonce += 1
 
         self.updateAccountTree(ring.minerAccountID)
@@ -900,7 +900,7 @@ class State(object):
         proof = self._feeTokensTree.createProof(ring.orderA.tokenF)
 
         feeBalanceUpdateF_WA = self.getFeeToken(ring.orderA.tokenF).updateWalletBalance(ring.orderA.walletID, walletFee_A)
-        feeBalanceUpdateF_MA = self.getFeeToken(ring.orderA.tokenF).updateMinerBalance(ring.minerID, matchingFee_A)
+        #feeBalanceUpdateF_MA = self.getFeeToken(ring.orderA.tokenF).updateMinerBalance(ring.minerID, matchingFee_A)
         self.updateBurnBalance(ring.orderA.tokenF, burnFee_A)
 
         self.updateFeeTokensTree(ring.orderA.tokenF)
@@ -914,7 +914,7 @@ class State(object):
         proof = self._feeTokensTree.createProof(ring.orderB.tokenF)
 
         feeBalanceUpdateF_WB = self.getFeeToken(ring.orderB.tokenF).updateWalletBalance(ring.orderB.walletID, walletFee_B)
-        feeBalanceUpdateF_MB = self.getFeeToken(ring.orderB.tokenF).updateMinerBalance(ring.minerID, matchingFee_B)
+        #feeBalanceUpdateF_MB = self.getFeeToken(ring.orderB.tokenF).updateMinerBalance(ring.minerID, matchingFee_B)
         self.updateBurnBalance(ring.orderB.tokenF, burnFee_B)
 
         self.updateFeeTokensTree(ring.orderB.tokenF)
@@ -923,16 +923,16 @@ class State(object):
         feeTokenUpdate_FB = FeeTokenUpdateData(ring.orderB.tokenF, proof, rootBefore, rootAfter, feeTokenBefore, feeTokenAfter)
 
         # Margin
-        rootBefore = self._feeTokensTree._root
-        feeTokenBefore = copyFeeTokenInfo(self.getFeeToken(ring.orderA.tokenS))
-        proof = self._feeTokensTree.createProof(ring.orderA.tokenS)
-
-        feeBalanceUpdateS_MA = self.getFeeToken(ring.orderA.tokenS).updateMinerBalance(ring.minerID, int(ring.margin))
-
-        self.updateFeeTokensTree(ring.orderA.tokenS)
-        feeTokenAfter = copyFeeTokenInfo(self.getFeeToken(ring.orderA.tokenS))
-        rootAfter = self._feeTokensTree._root
-        feeTokenUpdate_SA = FeeTokenUpdateData(ring.orderA.tokenS, proof, rootBefore, rootAfter, feeTokenBefore, feeTokenAfter)
+        #rootBefore = self._feeTokensTree._root
+        #feeTokenBefore = copyFeeTokenInfo(self.getFeeToken(ring.orderA.tokenS))
+        #proof = self._feeTokensTree.createProof(ring.orderA.tokenS)
+#
+        #feeBalanceUpdateS_MA = self.getFeeToken(ring.orderA.tokenS).updateMinerBalance(ring.minerID, int(ring.margin))
+#
+        #self.updateFeeTokensTree(ring.orderA.tokenS)
+        #feeTokenAfter = copyFeeTokenInfo(self.getFeeToken(ring.orderA.tokenS))
+        #rootAfter = self._feeTokensTree._root
+        #feeTokenUpdate_SA = FeeTokenUpdateData(ring.orderA.tokenS, proof, rootBefore, rootAfter, feeTokenBefore, feeTokenAfter)
 
 
         return RingSettlement(ring,
@@ -942,10 +942,9 @@ class State(object):
                               balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, accountUpdate_B,
                               accountUpdate_WA,
                               accountUpdate_WB,
-                              balanceUpdate_M, accountUpdate_M,
-                              feeBalanceUpdateF_WA, feeBalanceUpdateF_MA, feeTokenUpdate_FA,
-                              feeBalanceUpdateF_WB, feeBalanceUpdateF_MB, feeTokenUpdate_FB,
-                              feeBalanceUpdateS_MA, feeTokenUpdate_SA,
+                              balanceUpdateA_M, balanceUpdateB_M, balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
+                              feeBalanceUpdateF_WA, feeTokenUpdate_FA,
+                              feeBalanceUpdateF_WB, feeTokenUpdate_FB,
                               burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
                               burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B)
 
