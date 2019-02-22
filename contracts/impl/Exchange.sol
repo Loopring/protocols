@@ -57,14 +57,10 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint public constant DEPOSIT_FEE_IN_ETH                      = 0.001 ether;
     uint public constant WITHDRAW_FEE_IN_ETH                     = 0.001 ether;
 
-    uint public constant WALLET_REGISTRATION_FEE_IN_LRC          = 100000 ether;
-    uint public constant RINGMATCHER_REGISTRATION_FEE_IN_LRC     = 100000 ether;
-
     uint public constant NEW_STATE_CREATION_FEE_IN_LRC           = 100000 ether;
 
-    uint public constant MAX_NUM_TOKENS                          = 1024;
-    uint public constant MAX_NUM_WALLETS                         = 1024;
-    uint public constant MAX_NUM_RINGMATCHERS                    = 1024;
+    uint public constant MAX_NUM_TOKENS                          = 2 ** 12;
+    uint public constant MAX_NUM_WALLETS                         = 2 ** 24;
 
     // Default account
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X =  2760979366321990647384327991146539505488430080750363450053902718557853404165;
@@ -81,7 +77,6 @@ contract Exchange is IExchange, NoDefaultFunc {
     event OperatorRegistered(address operator, uint16 operatorID);
 
     event WalletRegistered(address walletOwner, uint16 walletID);
-    event RingMatcherRegistered(address ringMatcherOwner, uint16 ringMatcherID);
 
     event Deposit(uint16 stateID, uint32 depositBlockIdx, uint24 accountID, uint16 tokenID, uint16 walletID, uint96 amount);
     event Withdraw(uint16 stateID, uint24 accountID, uint16 tokenID, address to, uint96 amount);
@@ -107,10 +102,6 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     struct Wallet {
-        address owner;
-    }
-
-    struct RingMatcher {
         address owner;
     }
 
@@ -184,9 +175,10 @@ contract Exchange is IExchange, NoDefaultFunc {
     }
 
     Wallet[] public wallets;
-    RingMatcher[] public ringMatchers;
 
     State[] private states;
+
+    mapping (uint16 => uint) burnBalances;
 
     constructor(
         address _tokenRegistryAddress,
@@ -231,7 +223,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         states.push(memoryState);
 
         Block memory genesisBlock = Block(
-            0x29aee3aa7302ca632563403683928f1479f5b077c665bea1c447e0bb253431f8,
+            0x0b8b8f16f8442ddc83dddbeb0bde4ecbc23cef4436f72035e7f0f188d2843330,
             0x0,
             BlockState.FINALIZED,
             uint32(now),
@@ -604,35 +596,39 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // TODO: optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 2 + 32 + 32 + 32 + (3 + 2 + 12) * (withdrawalIdx + 1);
+        uint offset = 2 + 32 + 32 + 32 + (3 + 2 + 12 + 1) * (withdrawalIdx + 1);
         require(offset < withdrawals.length + 32, "INVALID_WITHDRAWALIDX");
         uint data;
         assembly {
             data := mload(add(withdrawals, offset))
         }
-        uint24 accountID = uint24((data / 0x10000000000000000000000000000) & 0xFFFFFF);
-        uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
-        uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
+        uint24 accountID = uint24((data / 0x1000000000000000000000000000000) & 0xFFFFFF);
+        uint16 tokenID = uint16((data / 0x100000000000000000000000000) & 0xFFFF);
+        uint amount = (data / 0x100) & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
+        uint burnPercentage = data & 0xFF;
 
         assert(accountID < state.numAccounts);
         Account storage account = state.accounts[accountID];
         address payable owner = address(uint160(account.owner));
 
         if (amount > 0) {
+
+            uint amountToBurn = amount.mul(burnPercentage) / 100;
+            uint amountToOwner = amount - amountToBurn;
+
             // Transfer the tokens from the contract to the owner
             address token = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
             if (token == address(0x0)) {
                 // ETH
-                owner.transfer(amount);
+                owner.transfer(amountToOwner);
             } else {
                 // ERC20 token
-                require(
-                    token.safeTransfer(
-                        owner,
-                        amount
-                    ),
-                    TRANSFER_FAILURE
-                );
+                require(token.safeTransfer(owner,amount), TRANSFER_FAILURE);
+            }
+
+            // Increase the burn balance
+            if (amountToBurn > 0) {
+                burnBalances[tokenID] = burnBalances[tokenID].add(amountToBurn);
             }
 
             // Set the amount to 0 so it cannot be withdrawn anymore
@@ -649,8 +645,6 @@ contract Exchange is IExchange, NoDefaultFunc {
     function registerWallet()
         external
     {
-        burn(msg.sender, WALLET_REGISTRATION_FEE_IN_LRC);
-
         Wallet memory wallet = Wallet(
             msg.sender
         );
@@ -659,18 +653,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         emit WalletRegistered(wallet.owner, uint16(wallets.length - 1));
     }
 
-    function registerRingMatcher()
-        external
-    {
-        burn(msg.sender, RINGMATCHER_REGISTRATION_FEE_IN_LRC);
-
-        RingMatcher memory ringMatcher = RingMatcher(
-            msg.sender
-        );
-        ringMatchers.push(ringMatcher);
-
-        emit RingMatcherRegistered(ringMatcher.owner, uint16(ringMatchers.length - 1));
-    }
 
     function registerOperator(
         uint16 stateID,

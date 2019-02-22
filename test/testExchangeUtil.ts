@@ -633,6 +633,7 @@ export class ExchangeTestUtil {
         bs.addNumber(withdrawal.accountID, 3);
         bs.addNumber(withdrawal.tokenID, 2);
         bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
+        bs.addNumber(withdrawal.burnPercentage, 1);
       }
 
       // Commit the block

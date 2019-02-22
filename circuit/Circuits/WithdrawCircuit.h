@@ -25,6 +25,7 @@ class WithdrawalGadget : public GadgetT
 {
 public:
 
+    VariableT constant0;
     VariableArrayT uint16_padding;
 
     bool onchain;
@@ -35,8 +36,10 @@ public:
     libsnark::dual_variable_gadget<FieldT> amountRequested;
     libsnark::dual_variable_gadget<FieldT> amountWithdrawn;
     libsnark::dual_variable_gadget<FieldT> padding;
+    libsnark::dual_variable_gadget<FieldT> burnPercentage;
 
     VariableT walletID;
+    VariableT burnBalance;
     VariableT balance_before;
     VariableT balance_after;
     libsnark::dual_variable_gadget<FieldT> nonce_before;
@@ -63,6 +66,7 @@ public:
 
         onchain(_onchain),
 
+        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         uint16_padding(make_var_array(pb, 16 - NUM_BITS_TOKENID, FMT(prefix, ".uint16_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
@@ -71,8 +75,10 @@ public:
         tokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".tokenID"))),
         amountRequested(pb, 96, FMT(prefix, ".amountRequested")),
         padding(pb, 2, FMT(prefix, ".padding")),
+        burnPercentage(pb, 8, FMT(prefix, ".burnPercentage")),
 
         walletID(make_variable(pb, FMT(prefix, ".walletID"))),
+        burnBalance(make_variable(pb, FMT(prefix, ".burnBalance"))),
         balance_before(make_variable(pb, FMT(prefix, ".balance_before"))),
         balance_after(make_variable(pb, FMT(prefix, ".balance_after"))),
         nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
@@ -85,8 +91,8 @@ public:
         amountWithdrawn(pb, 96, FMT(prefix, ".amount")),
 
         updateBalance(pb, balancesRoot_before, tokenID,
-                      {balance_before, tradingHistoryRoot},
-                      {balance_after, tradingHistoryRoot},
+                      {balance_before, burnBalance, tradingHistoryRoot},
+                      {balance_after, constant0, tradingHistoryRoot},
                       FMT(prefix, ".updateBalance")),
 
         updateAccount(pb, root, accountID,
@@ -108,7 +114,7 @@ public:
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {accountID, uint16_padding, tokenID, amountWithdrawn.bits};
+        return {accountID, uint16_padding, tokenID, amountWithdrawn.bits, burnPercentage.bits};
     }
 
     const std::vector<VariableArrayT> getOnchainData() const
@@ -132,7 +138,11 @@ public:
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
+        burnPercentage.bits.fill_with_bits_of_field_element(pb, withdrawal.burnPercentage);
+        burnPercentage.generate_r1cs_witness_from_bits();
+
         pb.val(walletID) = withdrawal.accountUpdate.before.walletID;
+        pb.val(burnBalance) = withdrawal.balanceUpdate.before.burnBalance;
         pb.val(balance_before) = withdrawal.balanceUpdate.before.balance;
         pb.val(balance_after) = withdrawal.balanceUpdate.after.balance;
         nonce_before.bits.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate.before.nonce);
@@ -144,7 +154,7 @@ public:
 
         amountToWithdraw.generate_r1cs_witness();
 
-        amountWithdrawn.bits.fill_with_bits_of_field_element(pb, pb.val(balance_before) - pb.val(balance_after));
+        amountWithdrawn.bits.fill_with_bits_of_field_element(pb, (pb.val(balance_before) - pb.val(balance_after)) + pb.val(burnBalance));
         amountWithdrawn.generate_r1cs_witness_from_bits();
 
         updateBalance.generate_r1cs_witness(withdrawal.balanceUpdate.proof);
@@ -163,8 +173,11 @@ public:
         padding.generate_r1cs_constraints(true);
 
         amountToWithdraw.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(amountToWithdraw.result(), 1, amountWithdrawn.packed), "amountToWithdraw == amountWithdrawn");
-        pb.add_r1cs_constraint(ConstraintT(balance_before - amountWithdrawn.packed, 1, balance_after), "balance_before - amount == balance_after");
+        pb.add_r1cs_constraint(ConstraintT(amountToWithdraw.result() + burnBalance, 1, amountWithdrawn.packed), "amountToWithdraw + burnBalance == amountWithdrawn");
+        pb.add_r1cs_constraint(ConstraintT(balance_before, 1, balance_after + amountToWithdraw.result()), "balance_before == balance_after + amountToWithdraw");
+
+        pb.add_r1cs_constraint(ConstraintT(amountToWithdraw.result() + burnBalance, 1, amountWithdrawn.packed), "amountToWithdraw + burnBalance == amountWithdrawn");
+        pb.add_r1cs_constraint(ConstraintT(amountWithdrawn.packed, burnPercentage.packed, burnBalance * 100), "amountWithdrawn * burnPercentage == burnBalance * 100");
 
         updateBalance.generate_r1cs_constraints();
         updateAccount.generate_r1cs_constraints();
@@ -201,11 +214,6 @@ public:
     std::vector<VariableArrayT> withdrawalDataBits;
     std::vector<sha256_many> hashers;
 
-    const VariableT accountsRootBefore;
-    const VariableT feesRoot;
-
-    MerkleRootGadget merkleRootGadget;
-
     WithdrawalsCircuitGadget(ProtoboardT& pb, bool _onchain, const std::string& prefix) :
         GadgetT(pb, prefix),
 
@@ -218,14 +226,7 @@ public:
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
-        withdrawalBlockHashStart(pb, 256, FMT(prefix, ".withdrawalBlockHashStart")),
-
-        accountsRootBefore(make_variable(pb, FMT(prefix, ".accountsRootBefore"))),
-        feesRoot(make_variable(pb, FMT(prefix, ".feesRoot"))),
-
-        merkleRootGadget(pb, merkleRootBefore.packed, merkleRootAfter.packed,
-                         accountsRootBefore, feesRoot,
-                         FMT(prefix, ".merkleRootGadget"))
+        withdrawalBlockHashStart(pb, 256, FMT(prefix, ".withdrawalBlockHashStart"))
     {
 
     }
@@ -250,8 +251,8 @@ public:
         publicData.add(merkleRootAfter.bits);
         for (size_t j = 0; j < numAccounts; j++)
         {
-            VariableT withdrawalAccountsRoot = (j == 0) ? accountsRootBefore : withdrawals.back().getNewAccountsRoot();
-            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, std::string("withdrawals") + std::to_string(j));
+            VariableT withdrawalAccountsRoot = (j == 0) ? merkleRootBefore.packed : withdrawals.back().getNewAccountsRoot();
+            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, std::string("withdrawals_") + std::to_string(j));
             withdrawals.back().generate_r1cs_constraints();
 
             if (onchain)
@@ -289,8 +290,8 @@ public:
         publicDataHash.generate_r1cs_constraints(true);
         publicData.generate_r1cs_constraints();
 
-        // Check the merkle roots
-        merkleRootGadget.generate_r1cs_constraints(withdrawals.back().getNewAccountsRoot(), feesRoot);
+        // Check the new merkle root
+        forceEqual(pb, withdrawals.back().getNewAccountsRoot(), merkleRootAfter.packed, "newMerkleRoot");
     }
 
     void printInfo()
@@ -307,9 +308,6 @@ public:
         merkleRootBefore.generate_r1cs_witness_from_bits();
         merkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.merkleRootAfter);
         merkleRootAfter.generate_r1cs_witness_from_bits();
-
-        pb.val(accountsRootBefore) = context.accountsRootBefore;
-        pb.val(feesRoot) = context.feesRoot;
 
         withdrawalBlockHashStart.bits.fill_with_bits_of_field_element(pb, 0);
         withdrawalBlockHashStart.generate_r1cs_witness_from_bits();
@@ -329,8 +327,6 @@ public:
         }
 
         publicData.generate_r1cs_witness();
-
-        merkleRootGadget.generate_r1cs_witness();
 
         return true;
     }

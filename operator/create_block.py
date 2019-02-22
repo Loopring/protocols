@@ -109,8 +109,6 @@ def deposit(state, data):
     export = DepositExport()
     export.stateID = state.stateID
     export.merkleRootBefore = str(state.getRoot())
-    export.feesRootBefore = str(state.getFeesRoot())
-    export.accountsRootBefore = str(state.getAccountsRoot())
 
     for depositInfo in data:
         accountID = int(depositInfo["accountID"])
@@ -126,8 +124,6 @@ def deposit(state, data):
         export.deposits.append(deposit)
 
     export.merkleRootAfter = str(state.getRoot())
-    export.feesRootAfter = str(state.getFeesRoot())
-    export.accountsRootAfter = str(state.getAccountsRoot())
     return export
 
 
@@ -135,16 +131,12 @@ def withdraw(onchain, state, data):
     export = WithdrawalExport(onchain)
     export.stateID = state.stateID
     export.merkleRootBefore = str(state.getRoot())
-    export.feesRootBefore = str(state.getFeesRoot())
-    export.accountsRootBefore = str(state.getAccountsRoot())
 
     for withdrawalInfo in data:
         withdrawal = state.withdraw(onchain, int(withdrawalInfo["accountID"]), int(withdrawalInfo["tokenID"]), int(withdrawalInfo["amount"]))
         export.withdrawals.append(withdrawal)
 
     export.merkleRootAfter = str(state.getRoot())
-    export.feesRootAfter = str(state.getFeesRoot())
-    export.accountsRootAfter = str(state.getAccountsRoot())
     return export
 
 
@@ -152,8 +144,6 @@ def cancel(state, data):
     export = CancelExport()
     export.stateID = state.stateID
     export.merkleRootBefore = str(state.getRoot())
-    export.feesRootBefore = str(state.getFeesRoot())
-    export.accountsRootBefore = str(state.getAccountsRoot())
 
     for cancelInfo in data:
         accountID = int(cancelInfo["accountID"])
@@ -163,8 +153,6 @@ def cancel(state, data):
         export.cancels.append(state.cancelOrder(accountID, tokenID, orderID))
 
     export.merkleRootAfter = str(state.getRoot())
-    export.feesRootAfter = str(state.getFeesRoot())
-    export.accountsRootAfter = str(state.getAccountsRoot())
     return export
 
 
@@ -178,8 +166,6 @@ def trade(state, data):
     export = TradeExport()
     export.stateID = state.stateID
     export.merkleRootBefore = str(state.getRoot())
-    export.feesRootBefore = str(state.getFeesRoot())
-    export.accountsRootBefore = str(state.getAccountsRoot())
     export.burnRateMerkleRoot = str(global_state._tokensTree.root)
     export.timestamp = int(data["timestamp"])
     export.operatorAccountID = int(data["operatorAccountID"])
@@ -207,8 +193,6 @@ def trade(state, data):
     ###
 
     export.merkleRootAfter = str(state.getRoot())
-    export.feesRootAfter = str(state.getFeesRoot())
-    export.accountsRootAfter = str(state.getAccountsRoot())
     return export
 
 

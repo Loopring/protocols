@@ -23,6 +23,7 @@ class CancelGadget : public GadgetT
 public:
     const VariableT accountsMerkleRoot;
 
+    VariableT constant0;
     libsnark::dual_variable_gadget<FieldT> padding;
     VariableArrayT uint16_padding;
 
@@ -54,7 +55,6 @@ public:
     CancelGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
-        const VariableT& _tradingHistoryMerkleRoot,
         const VariableT& _accountsMerkleRoot,
         const std::string& prefix
     ) :
@@ -62,6 +62,7 @@ public:
 
         accountsMerkleRoot(_accountsMerkleRoot),
 
+        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         padding(pb, 2, FMT(prefix, ".padding")),
         uint16_padding(make_var_array(pb, 16 - NUM_BITS_WALLETID, FMT(prefix, ".uint16_padding"))),
 
@@ -87,8 +88,8 @@ public:
                            filled, cancelled_before, filled, cancelled_after, FMT(prefix, ".updateTradeHistory")),
 
         updateBalance(pb, balancesRoot_before, tokenID,
-                      {balance, tradingHistoryRoot_before},
-                      {balance, updateTradeHistory.getNewRoot()},
+                      {balance, constant0, tradingHistoryRoot_before},
+                      {balance, constant0, updateTradeHistory.getNewRoot()},
                       FMT(prefix, ".updateBalance")),
 
         updateAccount(pb, accountsMerkleRoot, accountID,
@@ -179,11 +180,6 @@ public:
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
-    const VariableT accountsRootBefore;
-    const VariableT feesRoot;
-
-    MerkleRootGadget merkleRootGadget;
-
     CancelsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
 
@@ -192,14 +188,7 @@ public:
 
         stateID(pb, 16, FMT(prefix, ".stateID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
-        merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
-
-        accountsRootBefore(make_variable(pb, FMT(prefix, ".accountsRootBefore"))),
-        feesRoot(make_variable(pb, FMT(prefix, ".feesRoot"))),
-
-        merkleRootGadget(pb, merkleRootBefore.packed, merkleRootAfter.packed,
-                         accountsRootBefore, feesRoot,
-                         FMT(prefix, ".merkleRootGadget"))
+        merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter"))
     {
 
     }
@@ -220,8 +209,8 @@ public:
         publicData.add(merkleRootAfter.bits);
         for (size_t j = 0; j < numCancels; j++)
         {
-            VariableT cancelAccountsRoot = (j == 0) ? accountsRootBefore : cancels.back().getNewAccountsRoot();
-            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelAccountsRoot, std::string("cancels_") + std::to_string(j));
+            VariableT cancelAccountsRoot = (j == 0) ? merkleRootBefore.packed : cancels.back().getNewAccountsRoot();
+            cancels.emplace_back(pb, params, cancelAccountsRoot, std::string("cancels_") + std::to_string(j));
             cancels.back().generate_r1cs_constraints();
 
             // Store data from withdrawal
@@ -233,8 +222,8 @@ public:
         publicDataHash.generate_r1cs_constraints(true);
         publicData.generate_r1cs_constraints();
 
-        // Check the merkle roots
-        merkleRootGadget.generate_r1cs_constraints(cancels.back().getNewAccountsRoot(), feesRoot);
+        // Check the new merkle root
+        forceEqual(pb, cancels.back().getNewAccountsRoot(), merkleRootAfter.packed, "newMerkleRoot");
     }
 
     void printInfo()
@@ -252,17 +241,12 @@ public:
         merkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.merkleRootAfter);
         merkleRootAfter.generate_r1cs_witness_from_bits();
 
-        pb.val(accountsRootBefore) = context.accountsRootBefore;
-        pb.val(feesRoot) = context.feesRoot;
-
         for(unsigned int i = 0; i < context.cancels.size(); i++)
         {
             cancels[i].generate_r1cs_witness(context.cancels[i]);
         }
 
         publicData.generate_r1cs_witness();
-
-        merkleRootGadget.generate_r1cs_witness();
 
         return true;
     }

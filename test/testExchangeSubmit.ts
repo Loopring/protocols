@@ -85,7 +85,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
-    it("Cancel", async () => {
+    it.only("Cancel", async () => {
       const stateID = 0;
       const ring: RingInfo = {
         orderA:
@@ -117,7 +117,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
-    it.only("Onchain withdrawal", async () => {
+    it("Onchain withdrawal", async () => {
       const stateID = 0;
       const ring: RingInfo = {
         orderA:
@@ -192,6 +192,44 @@ contract("Exchange_Submit", (accounts: string[]) => {
                                                  ring.orderA.tokenIdB, ring.orderA.amountB.mul(new BN(2)));
       exchangeTestUtil.requestWithdrawalOffchain(stateID, ring.orderB.accountID,
                                                  ring.orderB.tokenIdB, ring.orderB.amountB.mul(new BN(2)));
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
+      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.submitPendingWithdrawals(ring);
+    });
+
+    it("Offchain wallet fee withdrawal (with burn)", async () => {
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
+          {
+            stateID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountF: new BN(web3.utils.toWei("100", "ether")),
+          },
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("90", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      exchangeTestUtil.requestWithdrawalOffchain(stateID, ring.orderA.dualAuthAccountID,
+                                                 ring.orderA.tokenIdF, ring.orderA.amountF.mul(new BN(2)));
+      exchangeTestUtil.requestWithdrawalOffchain(stateID, ring.orderB.dualAuthAccountID,
+                                                 ring.orderB.tokenIdF, ring.orderB.amountF.mul(new BN(2)));
       await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
       await exchangeTestUtil.verifyAllPendingBlocks();
       await exchangeTestUtil.submitPendingWithdrawals(ring);

@@ -32,7 +32,8 @@ public:
     const VariableT publicKeyX_before;
     const VariableT publicKeyY_before;
     const VariableT walletID_before;
-    const VariableT nonce_before;
+    const VariableT nonce;
+    const VariableT burnBalance;
 
     const VariableT tradingHistoryRoot_before;
     const VariableT balancesRoot_before;
@@ -40,7 +41,6 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicKeyX_after;
     libsnark::dual_variable_gadget<FieldT> publicKeyY_after;
     libsnark::dual_variable_gadget<FieldT> walletID_after;
-    const VariableT nonce_after;
 
     const VariableT tradingHistoryRoot_after;
     const VariableT balancesRoot_after;
@@ -58,11 +58,13 @@ public:
         GadgetT(pb, prefix),
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
+        uint16_padding(make_var_array(pb, 16 - NUM_BITS_WALLETID, FMT(prefix, ".uint16_padding"))),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".tokenID"))),
 
-        uint16_padding(make_var_array(pb, 16 - NUM_BITS_WALLETID, FMT(prefix, ".uint16_padding"))),
+        nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
+        burnBalance(make_variable(pb, 0, FMT(prefix, ".burnBalance"))),
 
         balance_before(make_variable(pb, 0, FMT(prefix, ".balance_before"))),
         balance_after(make_variable(pb, 0, FMT(prefix, ".balance_after"))),
@@ -70,14 +72,13 @@ public:
         publicKeyX_before(make_variable(pb, 0, FMT(prefix, ".publicKeyX_before"))),
         publicKeyY_before(make_variable(pb, 0, FMT(prefix, ".publicKeyY_before"))),
         walletID_before(make_variable(pb, 0, FMT(prefix, ".walletID_before"))),
-        nonce_before(make_variable(pb, 0, FMT(prefix, ".nonce_before"))),
+
         tradingHistoryRoot_before(make_variable(pb, 0, FMT(prefix, ".tradingHistoryRoot_before"))),
         balancesRoot_before(make_variable(pb, 0, FMT(prefix, ".balancesRoot_before"))),
 
         publicKeyX_after(pb, 256, FMT(prefix, ".publicKeyX_after")),
         publicKeyY_after(pb, 256, FMT(prefix, ".publicKeyY_after")),
         walletID_after(pb, NUM_BITS_WALLETID, FMT(prefix, ".walletID_after")),
-        nonce_after(make_variable(pb, 0, FMT(prefix, ".nonce_after"))),
 
         tradingHistoryRoot_after(make_variable(pb, 0, FMT(prefix, ".tradingHistoryRoot_after"))),
         balancesRoot_after(make_variable(pb, 0, FMT(prefix, ".balancesRoot_after"))),
@@ -85,13 +86,13 @@ public:
         amount(pb, 96, FMT(prefix, ".amount")),
 
         updateBalance(pb, balancesRoot_before, tokenID,
-                      {balance_before, tradingHistoryRoot_before},
-                      {balance_after, tradingHistoryRoot_after},
+                      {balance_before, burnBalance, tradingHistoryRoot_before},
+                      {balance_after, burnBalance, tradingHistoryRoot_after},
                       FMT(prefix, ".updateBalance")),
 
         updateAccount(pb, root, accountID,
-                      {publicKeyX_before, publicKeyY_before, walletID_before, nonce_before, balancesRoot_before},
-                      {publicKeyX_after.packed, publicKeyY_after.packed, walletID_after.packed, nonce_after, updateBalance.getNewRoot()},
+                      {publicKeyX_before, publicKeyY_before, walletID_before, nonce, balancesRoot_before},
+                      {publicKeyX_after.packed, publicKeyY_after.packed, walletID_after.packed, nonce, updateBalance.getNewRoot()},
                       FMT(prefix, ".updateAccount"))
     {
 
@@ -116,6 +117,9 @@ public:
 
         accountID.fill_with_bits_of_field_element(pb, deposit.accountUpdate.accountID);
         tokenID.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.tokenID);
+
+        pb.val(nonce) = deposit.accountUpdate.before.nonce;
+        pb.val(burnBalance) = deposit.balanceUpdate.before.burnBalance;
 
         pb.val(balance_before) = deposit.balanceUpdate.before.balance;
         pb.val(tradingHistoryRoot_before) = deposit.balanceUpdate.before.tradingHistoryRoot;
@@ -175,11 +179,6 @@ public:
     std::vector<VariableArrayT> depositDataBits;
     std::vector<sha256_many> hashers;
 
-    const VariableT accountsRootBefore;
-    const VariableT feesRoot;
-
-    MerkleRootGadget merkleRootGadget;
-
     DepositsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
 
@@ -190,14 +189,7 @@ public:
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
-        depositBlockHashStart(pb, 256, FMT(prefix, ".depositBlockHashStart")),
-
-        accountsRootBefore(make_variable(pb, FMT(prefix, ".accountsRootBefore"))),
-        feesRoot(make_variable(pb, FMT(prefix, ".feesRoot"))),
-
-        merkleRootGadget(pb, merkleRootBefore.packed, merkleRootAfter.packed,
-                         accountsRootBefore, feesRoot,
-                         FMT(prefix, ".merkleRootGadget"))
+        depositBlockHashStart(pb, 256, FMT(prefix, ".depositBlockHashStart"))
     {
 
     }
@@ -222,7 +214,7 @@ public:
         publicData.add(merkleRootAfter.bits);
         for (size_t j = 0; j < numAccounts; j++)
         {
-            VariableT depositAccountsRoot = (j == 0) ? accountsRootBefore : deposits.back().getNewAccountsRoot();
+            VariableT depositAccountsRoot = (j == 0) ? merkleRootBefore.packed : deposits.back().getNewAccountsRoot();
             deposits.emplace_back(pb, depositAccountsRoot, std::string("deposit_") + std::to_string(j));
             deposits.back().generate_r1cs_constraints();
 
@@ -245,8 +237,8 @@ public:
         publicDataHash.generate_r1cs_constraints(true);
         publicData.generate_r1cs_constraints();
 
-        // Check the merkle roots
-        merkleRootGadget.generate_r1cs_constraints(deposits.back().getNewAccountsRoot(), feesRoot);
+        // Check the new merkle root
+        forceEqual(pb, deposits.back().getNewAccountsRoot(), merkleRootAfter.packed, "newMerkleRoot");
     }
 
     void printInfo()
@@ -264,9 +256,6 @@ public:
         merkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.merkleRootAfter);
         merkleRootAfter.generate_r1cs_witness_from_bits();
 
-        pb.val(accountsRootBefore) = context.accountsRootBefore;
-        pb.val(feesRoot) = context.feesRoot;
-
         depositBlockHashStart.bits.fill_with_bits_of_field_element(pb, 0);
         depositBlockHashStart.generate_r1cs_witness_from_bits();
 
@@ -282,8 +271,6 @@ public:
         printBits("DepositBlockHash: 0x", flattenReverse({hashers.back().result().bits}).get_bits(pb), true);
 
         publicData.generate_r1cs_witness();
-
-        merkleRootGadget.generate_r1cs_witness();
 
         return true;
     }
