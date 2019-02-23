@@ -47,6 +47,7 @@ export class ExchangeTestUtil {
 
   private zeroAddress = "0x" + "00".repeat(20);
 
+  private MAX_MUM_WALLETS: number;
   private MAX_NUM_STATES: number = 16;
 
   private orderIDGenerator: number = 0;
@@ -58,6 +59,8 @@ export class ExchangeTestUtil {
     this.testContext = await this.createExchangeTestContext(accounts);
     await this.cleanTradeHistory();
     await this.registerTokens();
+
+    this.MAX_MUM_WALLETS = (await this.exchange.MAX_NUM_WALLETS()).toNumber();
 
     for (let i = 0; i < this.MAX_NUM_STATES; i++) {
       const rings: RingInfo[] = [];
@@ -93,7 +96,7 @@ export class ExchangeTestUtil {
       (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
       (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
       (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
-      1024 + 0,
+      this.MAX_MUM_WALLETS + 0,
       this.zeroAddress,
       new BN(0),
     );
@@ -166,7 +169,6 @@ export class ExchangeTestUtil {
   }
 
   public async setupRing(ring: RingInfo) {
-    ring.minerID = ring.minerID ? ring.minerID : 0;
     ring.minerAccountID = this.minerAccountID;
     ring.fee = ring.fee ? ring.fee : 1;
     await this.setupOrder(ring.orderA, this.orderIDGenerator++);
@@ -250,7 +252,7 @@ export class ExchangeTestUtil {
     const keyPairW = this.getKeyPairEDDSA();
     order.dualAuthAccountID = await this.deposit(order.stateID, order.wallet,
                                                  keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY,
-                                                 1024 + order.walletID, order.tokenF, new BN(0));
+                                                 this.MAX_MUM_WALLETS + order.walletID, order.tokenF, new BN(0));
   }
 
   public getAddressBook(ring: RingInfo) {
@@ -759,7 +761,6 @@ export class ExchangeTestUtil {
                 amountB: new BN(1),
                 amountF: new BN(1),
               },
-            minerID: 0,
             minerAccountID: 0,
             fee: 0,
           };

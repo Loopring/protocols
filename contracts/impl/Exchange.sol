@@ -60,7 +60,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     uint public constant NEW_STATE_CREATION_FEE_IN_LRC           = 100000 ether;
 
     uint public constant MAX_NUM_TOKENS                          = 2 ** 12;
-    uint public constant MAX_NUM_WALLETS                         = 2 ** 24;
+    uint public constant MAX_NUM_WALLETS                         = 2 ** 23;
 
     // Default account
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X =  2760979366321990647384327991146539505488430080750363450053902718557853404165;
@@ -76,9 +76,9 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     event OperatorRegistered(address operator, uint16 operatorID);
 
-    event WalletRegistered(address walletOwner, uint16 walletID);
+    event WalletRegistered(address walletOwner, uint24 walletID);
 
-    event Deposit(uint16 stateID, uint32 depositBlockIdx, uint24 accountID, uint16 tokenID, uint16 walletID, uint96 amount);
+    event Deposit(uint16 stateID, uint32 depositBlockIdx, uint24 accountID, uint16 tokenID, uint24 walletID, uint96 amount);
     event Withdraw(uint16 stateID, uint24 accountID, uint16 tokenID, address to, uint96 amount);
     event WithdrawRequest(uint16 stateID, uint32 withdrawBlockIdx, uint24 accountID, uint16 tokenID, uint96 amount);
 
@@ -308,7 +308,7 @@ contract Exchange is IExchange, NoDefaultFunc {
                         uint24(0),
                         DEFAULT_ACCOUNT_PUBLICKEY_X,
                         DEFAULT_ACCOUNT_PUBLICKEY_Y,
-                        uint16(0),
+                        uint24(0),
                         uint16(0),
                         uint96(0)
                     )
@@ -442,7 +442,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         address owner,
         uint brokerPublicKeyX,
         uint brokerPublicKeyY,
-        uint16 walletID,
+        uint24 walletID,
         address token,
         uint96 amount
         )
@@ -454,7 +454,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         State storage state = states[stateID];
 
         // Check if msg.sender wants to create a dual author address for a wallet
-        if (walletID > MAX_NUM_WALLETS) {
+        if (walletID >= MAX_NUM_WALLETS) {
             uint normalWalletID = walletID - MAX_NUM_WALLETS;
             if (normalWalletID > 0) {
                 require(wallets[normalWalletID].owner == msg.sender, "CANNOT_CREATE_DUAL_AUTHOR_ACCOUNT_FOR WALLET");

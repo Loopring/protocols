@@ -64,7 +64,7 @@ public:
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         padding(pb, 2, FMT(prefix, ".padding")),
-        uint16_padding(make_var_array(pb, 16 - NUM_BITS_WALLETID, FMT(prefix, ".uint16_padding"))),
+        uint16_padding(make_var_array(pb, 16 - NUM_BITS_TOKENID, FMT(prefix, ".uint16_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
 

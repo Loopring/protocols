@@ -309,7 +309,7 @@ class Order(object):
 
     def message(self):
         msg_parts = [
-                        FQ(int(self.stateID), 1<<16), FQ(int(self.walletID), 1<<12), FQ(int(self.orderID), 1<<16),
+                        FQ(int(self.stateID), 1<<16), FQ(int(self.orderID), 1<<16),
                         FQ(int(self.accountID), 1<<24), FQ(int(self.dualAuthAccountID), 1<<24),
                         FQ(int(self.tokenS), 1<<12), FQ(int(self.tokenB), 1<<12), FQ(int(self.tokenF), 1<<12),
                         FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96),
@@ -339,12 +339,11 @@ class Order(object):
 
 
 class Ring(object):
-    def __init__(self, orderA, orderB, publicKey, minerID, minerAccountID, fee, nonce):
+    def __init__(self, orderA, orderB, publicKey, minerAccountID, fee, nonce):
         self.orderA = orderA
         self.orderB = orderB
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.minerID = minerID
         self.minerAccountID = minerAccountID
         self.fee = fee
         self.nonce = nonce
@@ -353,9 +352,7 @@ class Ring(object):
         msg_parts = [
                         FQ(int(self.orderA.hash), 1<<254), FQ(int(self.orderB.hash), 1<<254),
                         FQ(int(self.orderA.waiveFeePercentage), 1<<7), FQ(int(self.orderB.waiveFeePercentage), 1<<7),
-                        FQ(int(self.minerID), 1<<12), FQ(int(self.minerAccountID), 1<<24),
-                        FQ(int(self.fee), 1<<96),
-                        FQ(int(self.nonce), 1<<32)
+                        FQ(int(self.minerAccountID), 1<<24), FQ(int(self.fee), 1<<96), FQ(int(self.nonce), 1<<32)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 

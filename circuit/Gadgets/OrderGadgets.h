@@ -21,7 +21,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> padding;
 
     libsnark::dual_variable_gadget<FieldT> stateID;
-    libsnark::dual_variable_gadget<FieldT> walletID;
+    VariableT walletID;
     libsnark::dual_variable_gadget<FieldT> orderID;
     libsnark::dual_variable_gadget<FieldT> accountID;
     libsnark::dual_variable_gadget<FieldT> dualAuthAccountID;
@@ -73,7 +73,7 @@ public:
         padding(pb, 1, FMT(prefix, ".padding")),
 
         stateID(pb, 16, FMT(prefix, ".stateID")),
-        walletID(pb, 12, FMT(prefix, ".walletID")),
+        walletID(make_variable(pb, FMT(prefix, ".walletID"))),
         orderID(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".orderID")),
         accountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID")),
         dualAuthAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID")),
@@ -104,7 +104,7 @@ public:
         balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
         signatureVerifier(pb, params, publicKey,
-                          flatten({stateID.bits, walletID.bits, orderID.bits, accountID.bits, dualAuthAccountID.bits,
+                          flatten({stateID.bits, orderID.bits, accountID.bits, dualAuthAccountID.bits,
                           tokenS.bits, tokenB.bits, tokenF.bits,
                           amountS.bits, amountB.bits, amountF.bits,
                           allOrNone.bits, validSince.bits, validUntil.bits,
@@ -136,8 +136,7 @@ public:
 
         stateID.bits.fill_with_bits_of_field_element(pb, order.stateID);
         stateID.generate_r1cs_witness_from_bits();
-        walletID.bits.fill_with_bits_of_field_element(pb, order.walletID);
-        walletID.generate_r1cs_witness_from_bits();
+        pb.val(walletID) = order.walletID;
         orderID.bits.fill_with_bits_of_field_element(pb, order.orderID);
         orderID.generate_r1cs_witness_from_bits();
         accountID.bits.fill_with_bits_of_field_element(pb, order.accountID);
@@ -201,7 +200,6 @@ public:
         padding.generate_r1cs_constraints(true);
 
         stateID.generate_r1cs_constraints(true);
-        walletID.generate_r1cs_constraints(true);
         orderID.generate_r1cs_constraints(true);
         accountID.generate_r1cs_constraints(true);
         dualAuthAccountID.generate_r1cs_constraints(true);
@@ -227,7 +225,7 @@ public:
         pb.add_r1cs_constraint(ConstraintT(validSince_leq_timestamp.leq(), timestamp_leq_validUntil.leq(), valid),
                                FMT(annotation_prefix, ".validSince_leq_timestamp && timestamp_leq_validUntil = valid"));
 
-        pb.add_r1cs_constraint(ConstraintT(walletID.packed + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
+        pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
                                FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));
     }
 };

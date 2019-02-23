@@ -58,7 +58,7 @@ public:
         GadgetT(pb, prefix),
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        uint16_padding(make_var_array(pb, 16 - NUM_BITS_WALLETID, FMT(prefix, ".uint16_padding"))),
+        uint16_padding(make_var_array(pb, 16 - NUM_BITS_TOKENID, FMT(prefix, ".uint16_padding"))),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".tokenID"))),
@@ -106,8 +106,7 @@ public:
     const std::vector<VariableArrayT> getOnchainData() const
     {
         return {accountID, publicKeyX_after.bits, publicKeyY_after.bits,
-                uint16_padding, walletID_after.bits,
-                uint16_padding, tokenID,
+                walletID_after.bits, uint16_padding, tokenID,
                 amount.bits};
     }
 

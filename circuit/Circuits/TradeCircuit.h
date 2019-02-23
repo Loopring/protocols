@@ -46,7 +46,6 @@ public:
     VariableT blockStateID;
 
     const jubjub::VariablePointT publicKey;
-    libsnark::dual_variable_gadget<FieldT> minerID;
     libsnark::dual_variable_gadget<FieldT> minerAccountID;
     libsnark::dual_variable_gadget<FieldT> fee;
     libsnark::dual_variable_gadget<FieldT> nonce_before;
@@ -164,7 +163,6 @@ public:
         lrcTokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".lrcTokenID"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
-        minerID(pb, 12, FMT(prefix, ".minerID")),
         minerAccountID(pb, 24, FMT(prefix, ".minerAccountID")),
         fee(pb, 96, FMT(prefix, ".fee")),
         nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
@@ -270,8 +268,8 @@ public:
                          {balanceF_BA.X, constant0, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
         updateAccount_A(pb, _accountsRoot, orderA.accountID.bits,
-                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID.packed, orderA.nonce, balancesRootA},
-                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID.packed, orderA.nonce, updateBalanceF_A.getNewRoot()},
+                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID, orderA.nonce, balancesRootA},
+                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID, orderA.nonce, updateBalanceF_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
 
         updateBalanceS_B(pb, balancesRootB, orderB.tokenS.bits,
@@ -287,8 +285,8 @@ public:
                          {balanceF_BB.X, constant0, tradingHistoryRootF_B},
                          FMT(prefix, ".updateBalanceF_B")),
         updateAccount_B(pb, updateAccount_A.result(), orderB.accountID.bits,
-                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID.packed, orderB.nonce, balancesRootB},
-                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID.packed, orderB.nonce, updateBalanceF_B.getNewRoot()},
+                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID, orderB.nonce, balancesRootB},
+                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID, orderB.nonce, updateBalanceF_B.getNewRoot()},
                         FMT(prefix, ".updateAccount_B")),
 
 
@@ -337,9 +335,7 @@ public:
 
         ringMessage(flatten({orderA.getHash(), orderB.getHash(),
                              orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
-                             minerID.bits, minerAccountID.bits,
-                             fee.bits,
-                             nonce_before.bits})),
+                             minerAccountID.bits, fee.bits, nonce_before.bits})),
         minerSignatureVerifier(pb, params, publicKey, ringMessage, FMT(prefix, ".minerSignatureVerifier")),
         walletASignatureVerifier(pb, params, orderA.walletPublicKey, ringMessage, FMT(prefix, ".walletASignatureVerifier")),
         walletBSignatureVerifier(pb, params, orderB.walletPublicKey, ringMessage, FMT(prefix, ".walletBSignatureVerifier"))
@@ -375,8 +371,6 @@ public:
         pb.val(publicKey.x) = ringSettlement.ring.publicKey.x;
         pb.val(publicKey.y) = ringSettlement.ring.publicKey.y;
 
-        minerID.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.minerID);
-        minerID.generate_r1cs_witness_from_bits();
         minerAccountID.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.minerAccountID);
         minerAccountID.generate_r1cs_witness_from_bits();
         fee.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fee);
@@ -507,7 +501,6 @@ public:
 
     void generate_r1cs_constraints()
     {
-        minerID.generate_r1cs_constraints(true);
         minerAccountID.generate_r1cs_constraints(true);
         fee.generate_r1cs_constraints(true);
         nonce_before.generate_r1cs_constraints(true);

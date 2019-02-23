@@ -39,7 +39,6 @@ export interface RingInfo {
   orderA: OrderInfo;
   orderB: OrderInfo;
 
-  minerID?: number;
   minerAccountID?: number;
   fee?: number;
 }

@@ -336,7 +336,6 @@ public:
     ethsnarks::FieldT margin;
 
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::FieldT minerID;
     ethsnarks::FieldT minerAccountID;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT nonce;
@@ -363,7 +362,6 @@ void from_json(const json& j, Ring& ring)
 
     ring.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     ring.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    ring.minerID = ethsnarks::FieldT(j.at("minerID"));
     ring.minerAccountID = ethsnarks::FieldT(j.at("minerAccountID"));
     ring.fee = ethsnarks::FieldT(j.at("fee"));
     ring.nonce = ethsnarks::FieldT(j.at("nonce"));
