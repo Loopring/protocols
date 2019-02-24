@@ -141,13 +141,27 @@ def cancel(state, data):
     export = CancelExport()
     export.stateID = state.stateID
     export.merkleRootBefore = str(state.getRoot())
+    export.operatorAccountID = int(data["operatorAccountID"])
 
-    for cancelInfo in data:
+    # Operator payment
+    rootBefore = state._accountsTree._root
+    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+
+
+    for cancelInfo in data["cancels"]:
         accountID = int(cancelInfo["accountID"])
-        tokenID = int(cancelInfo["tokenID"])
+        orderTokenID = int(cancelInfo["orderTokenID"])
         orderID = int(cancelInfo["orderID"])
+        feeTokenID = int(cancelInfo["feeTokenID"])
+        fee = int(cancelInfo["fee"])
 
-        export.cancels.append(state.cancelOrder(accountID, tokenID, orderID))
+        export.cancels.append(state.cancelOrder(accountID, orderTokenID, orderID, export.operatorAccountID, feeTokenID, fee))
+
+    proof = state._accountsTree.createProof(export.operatorAccountID)
+    state.updateAccountTree(export.operatorAccountID)
+    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    rootAfter = state._accountsTree._root
+    export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
 
     export.merkleRootAfter = str(state.getRoot())
     return export

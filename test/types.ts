@@ -78,8 +78,16 @@ export interface Withdrawal {
 
 export interface Cancel {
   accountID: number;
-  tokenID: number;
+  orderTokenID: number;
   orderID: number;
+  feeTokenID: number;
+  fee: BN;
+}
+
+export interface CancelBlock {
+  cancels: Cancel[];
+
+  operatorAccountID?: number;
 }
 
 export interface Block {

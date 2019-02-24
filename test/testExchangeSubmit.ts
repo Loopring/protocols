@@ -112,6 +112,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(stateID, ring);
 
       await exchangeTestUtil.commitDeposits(stateID);
+
+      await exchangeTestUtil.cancelOrder(ring.orderA, "WETH", new BN(web3.utils.toWei("1", "ether")));
+      await exchangeTestUtil.commitCancels(stateID);
+
       await exchangeTestUtil.commitRings(stateID);
 
       await exchangeTestUtil.verifyAllPendingBlocks();

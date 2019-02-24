@@ -585,9 +585,12 @@ class Cancellation
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    TradeHistoryUpdate tradeHistoryUpdate;
-    BalanceUpdate balanceUpdate;
-    AccountUpdate accountUpdate;
+    ethsnarks::FieldT fee;
+    TradeHistoryUpdate tradeHistoryUpdate_A;
+    BalanceUpdate balanceUpdateT_A;
+    BalanceUpdate balanceUpdateF_A;
+    AccountUpdate accountUpdate_A;
+    BalanceUpdate balanceUpdateF_O;
     Signature signature;
 };
 
@@ -595,20 +598,25 @@ void from_json(const json& j, Cancellation& cancellation)
 {
     cancellation.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     cancellation.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    cancellation.tradeHistoryUpdate = j.at("tradeHistoryUpdate").get<TradeHistoryUpdate>();
-    cancellation.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
-    cancellation.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
+    cancellation.fee = ethsnarks::FieldT(j.at("fee"));
+    cancellation.tradeHistoryUpdate_A = j.at("tradeHistoryUpdate_A").get<TradeHistoryUpdate>();
+    cancellation.balanceUpdateT_A = j.at("balanceUpdateT_A").get<BalanceUpdate>();
+    cancellation.balanceUpdateF_A = j.at("balanceUpdateF_A").get<BalanceUpdate>();
+    cancellation.accountUpdate_A = j.at("accountUpdate_A").get<AccountUpdate>();
+    cancellation.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
     cancellation.signature = j.at("signature").get<Signature>();
 }
 
 class CancelContext
 {
 public:
-
     ethsnarks::FieldT stateID;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
+
+    ethsnarks::FieldT operatorAccountID;
+    AccountUpdate accountUpdate_O;
 
     std::vector<Loopring::Cancellation> cancels;
 };
@@ -619,6 +627,9 @@ void from_json(const json& j, CancelContext& context)
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+
+    context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
+    context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read cancels
     json jCancels = j["cancels"];

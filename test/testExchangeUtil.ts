@@ -9,11 +9,13 @@ import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Block, Cancel, Deposit, OrderInfo, RingBlock, RingInfo, Withdrawal, WithdrawalRequest } from "./types";
+import { Block, Cancel, CancelBlock, Deposit, OrderInfo,
+         RingBlock, RingInfo, Withdrawal, WithdrawalRequest } from "./types";
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
-  if (name === "balance" || name === "amountS" || name === "amountB" || name === "amountF" || name === "amount" ) {
+  if (name === "balance" || name === "amountS" || name === "amountB" || name === "amountF" ||
+      name === "amount" || name === "fee") {
     return new BN(val, 16).toString(10);
   } else {
     return val;
@@ -403,16 +405,23 @@ export class ExchangeTestUtil {
     deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID, tokenID, amount});
   }
 
-  public addCancel(cancels: Cancel[], accountID: number, tokenID: number, orderID: number) {
-    cancels.push({accountID, tokenID, orderID});
+  public addCancel(cancels: Cancel[], accountID: number, orderTokenID: number, orderID: number,
+                   feeTokenID: number, fee: BN) {
+    cancels.push({accountID, orderTokenID, orderID, feeTokenID, fee});
   }
 
-  public cancelOrderID(stateID: number, accountID: number, tokenID: number, orderID: number) {
-    this.addCancel(this.pendingCancels[stateID], accountID, tokenID, orderID);
+  public cancelOrderID(stateID: number, accountID: number,
+                       orderTokenID: number, orderID: number,
+                       feeTokenID: number, fee: BN) {
+    this.addCancel(this.pendingCancels[stateID], accountID, orderTokenID, orderID, feeTokenID, fee);
   }
 
-  public cancelOrder(order: OrderInfo) {
-    this.cancelOrderID(order.stateID, order.accountID, order.tokenIdS, order.orderID);
+  public cancelOrder(order: OrderInfo, feeToken: string, fee: BN) {
+    if (!feeToken.startsWith("0x")) {
+      feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
+    }
+    const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+    this.cancelOrderID(order.stateID, order.accountID, order.tokenIdS, order.orderID, feeTokenID, fee);
   }
 
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
@@ -761,7 +770,7 @@ export class ExchangeTestUtil {
                 amountB: new BN(1),
                 amountF: new BN(1),
               },
-            minerAccountID: 0,
+            minerAccountID: this.minerAccountID,
             fee: 0,
           };
           rings.push(dummyRing);
@@ -830,16 +839,24 @@ export class ExchangeTestUtil {
         } else {
           const dummyCancel: Cancel = {
             accountID: 0,
-            tokenID: 0,
+            orderTokenID: 0,
             orderID: 0,
+            feeTokenID: 0,
+            fee: new BN(0),
           };
           cancels.push(dummyCancel);
         }
       }
       assert(cancels.length === numCancelsPerBlock);
 
+      const operatorAccountID = this.operatorAccountID;
+      const cancelBlock: CancelBlock = {
+        cancels,
+        operatorAccountID,
+      };
+
       // Create the block
-      const blockFilename = await this.createBlock(stateID, 4, JSON.stringify(cancels, replacer, 4));
+      const blockFilename = await this.createBlock(stateID, 4, JSON.stringify(cancelBlock, replacer, 4));
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
@@ -850,8 +867,10 @@ export class ExchangeTestUtil {
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
       for (const cancel of cancels) {
         bs.addNumber(cancel.accountID, 3);
-        bs.addNumber(cancel.tokenID, 2);
+        bs.addNumber(cancel.orderTokenID, 2);
         bs.addNumber(cancel.orderID, 2);
+        bs.addNumber(cancel.feeTokenID, 2);
+        bs.addBN(cancel.fee, 12);
       }
 
       // Commit the block

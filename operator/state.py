@@ -452,21 +452,32 @@ class Withdrawal(object):
 class Cancellation(object):
     def __init__(self,
                  publicKey,
-                 accountID, tokenID, orderID,
+                 accountID, orderTokenID, orderID,
+                 operatorAccountID, feeTokenID, fee,
                  nonce,
-                 tradeHistoryUpdate, balanceUpdate, accountUpdate):
+                 tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
+                 balanceUpdateF_O):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.accountID = accountID
-        self.tokenID = tokenID
+        self.orderTokenID = orderTokenID
         self.orderID = orderID
+        self.operatorAccountID = operatorAccountID
+        self.feeTokenID = feeTokenID
+        self.fee = fee
         self.nonce = nonce
-        self.tradeHistoryUpdate = tradeHistoryUpdate
-        self.balanceUpdate = balanceUpdate
-        self.accountUpdate = accountUpdate
+
+        self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
+        self.balanceUpdateT_A = balanceUpdateT_A
+        self.balanceUpdateF_A = balanceUpdateF_A
+        self.accountUpdate_A = accountUpdate_A
+
+        self.balanceUpdateF_O = balanceUpdateF_O
+
 
     def message(self):
-        msg_parts = [FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.orderID), 1<<16),
+        msg_parts = [FQ(int(self.accountID), 1<<24), FQ(int(self.orderTokenID), 1<<12), FQ(int(self.orderID), 1<<16),
+                     FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96),
                      FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<2)]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -835,23 +846,33 @@ class State(object):
         withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal
 
-    def cancelOrder(self, accountID, tokenID, orderID):
+    def cancelOrder(self,
+                    accountID, orderTokenID, orderID,
+                    operatorAccountID, feeTokenID, fee):
+        # Cancel
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(accountID))
         proof = self._accountsTree.createProof(accountID)
 
-        (balanceUpdate, tradeHistoryUpdate) = self.getAccount(accountID).cancelOrder(tokenID, orderID)
+        (balanceUpdateT_A, tradeHistoryUpdate_A) = self.getAccount(accountID).cancelOrder(orderTokenID, orderID)
+        balanceUpdateF_A = self.getAccount(accountID).updateBalance(feeTokenID, -fee)
         self.getAccount(accountID).nonce += 1
 
         self.updateAccountTree(accountID)
         accountAfter = copyAccountInfo(self.getAccount(accountID))
         rootAfter = self._accountsTree._root
-        accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdate_A = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+
+        # Operator payment
+        balanceUpdateF_O = self.getAccount(operatorAccountID).updateBalance(feeTokenID, fee)
 
         account = self.getAccount(accountID)
         cancellation = Cancellation(Point(int(account.publicKeyX), int(account.publicKeyY)),
-                                    accountID, tokenID, orderID, accountBefore.nonce,
-                                    tradeHistoryUpdate, balanceUpdate, accountUpdate)
+                                    accountID, orderTokenID, orderID,
+                                    operatorAccountID, feeTokenID, fee,
+                                    accountBefore.nonce,
+                                    tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
+                                    balanceUpdateF_O)
         cancellation.sign(FQ(int(account.secretKey)))
         return cancellation
 

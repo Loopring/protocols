@@ -622,7 +622,7 @@ public:
     const jubjub::VariablePointT publicKey;
     libsnark::dual_variable_gadget<FieldT> operatorAccountID;
     const VariableT balancesRoot_before;
-    const VariableT tradeHistory_before;
+    const VariableT tradeHistory;
     VariableT balance_O_before;
 
     UpdateBalanceGadget* updateBalance_O;
@@ -645,10 +645,10 @@ public:
         constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
-        operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operator")),
+        operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountID")),
         balance_O_before(make_variable(pb, FMT(prefix, ".balance_O_before"))),
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
-        tradeHistory_before(make_variable(pb, FMT(prefix, ".tradeHistoryBefore"))),
+        tradeHistory(make_variable(pb, FMT(prefix, ".tradeHistory"))),
         timestamp(pb, 32, FMT(prefix, ".timestamp"))
     {
         this->updateAccount_O = nullptr;
@@ -711,8 +711,8 @@ public:
 
         // Pay the operator
         updateBalance_O = new UpdateBalanceGadget(pb, balancesRoot_before, lrcTokenID,
-                      {balance_O_before, constant0, tradeHistory_before},
-                      {ringSettlements.back()->getOperatorBalance(), constant0, tradeHistory_before},
+                      {balance_O_before, constant0, tradeHistory},
+                      {ringSettlements.back()->getOperatorBalance(), constant0, tradeHistory},
                       FMT(annotation_prefix, ".updateBalance_O"));
         updateBalance_O->generate_r1cs_constraints();
 
@@ -773,7 +773,7 @@ public:
         }
 
         pb.val(balancesRoot_before) = context.accountUpdate_O.before.balancesRoot;
-        pb.val(tradeHistory_before) = context.balanceUpdate_O.before.tradingHistoryRoot;
+        pb.val(tradeHistory) = context.balanceUpdate_O.before.tradingHistoryRoot;
 
         updateBalance_O->generate_r1cs_witness(context.balanceUpdate_O.proof);
         updateAccount_O->generate_r1cs_witness(context.accountUpdate_O.proof);
