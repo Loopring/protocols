@@ -10,7 +10,7 @@ import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Block, Cancel, CancelBlock, Deposit, OrderInfo,
-         RingBlock, RingInfo, Withdrawal, WithdrawalRequest } from "./types";
+         RingBlock, RingInfo, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -360,8 +360,14 @@ export class ExchangeTestUtil {
     return eventAccountID;
   }
 
-  public async requestWithdrawalOffchain(stateID: number, accountID: number, tokenID: number, amount: BN) {
-    this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[stateID], accountID, tokenID, amount);
+  public async requestWithdrawalOffchain(stateID: number, accountID: number, tokenID: number, amount: BN,
+                                         feeToken: string, fee: BN) {
+    if (!feeToken.startsWith("0x")) {
+      feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
+    }
+    const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+    this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[stateID], accountID, tokenID, amount,
+                              feeTokenID, fee);
   }
 
   public async requestWithdrawalOnchain(stateID: number, accountID: number, tokenID: number,
@@ -396,7 +402,7 @@ export class ExchangeTestUtil {
     const withdrawBlockIdx = items[0][0].toNumber();
 
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[stateID],
-                              accountID, tokenID, amount, withdrawBlockIdx);
+                              accountID, tokenID, amount, tokenID, new BN(0), withdrawBlockIdx);
   }
 
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
@@ -425,8 +431,10 @@ export class ExchangeTestUtil {
   }
 
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
-                              accountID: number, tokenID: number, amount: BN, withdrawBlockIdx?: number) {
-    withdrawalRequests.push({accountID, tokenID, amount, withdrawBlockIdx});
+                              accountID: number, tokenID: number, amount: BN,
+                              feeTokenID: number, fee: BN,
+                              withdrawBlockIdx?: number) {
+    withdrawalRequests.push({accountID, tokenID, amount, feeTokenID, fee, withdrawBlockIdx});
   }
 
   public sendRing(stateID: number, ring: RingInfo) {
@@ -618,6 +626,8 @@ export class ExchangeTestUtil {
             accountID: 0,
             tokenID: 0,
             amount: new BN(0),
+            feeTokenID: 0,
+            fee: new BN(0),
           };
           withdrawalRequests.push(dummyWithdrawalRequest);
           isFull = false;
@@ -625,13 +635,21 @@ export class ExchangeTestUtil {
       }
       assert(withdrawalRequests.length === numWithdrawsPerBlock);
 
-      let timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
-      if (!isFull) {
-        timeToWait += (await this.exchange.MAX_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
-      }
-      await this.advanceBlockTimestamp(timeToWait);
+      const operatorAccountID = this.operatorAccountID;
+      const withdrawalBlock: WithdrawBlock = {
+        withdrawals: withdrawalRequests,
+        operatorAccountID,
+      };
 
-      const jWithdrawalsInfo = JSON.stringify(withdrawalRequests, replacer, 4);
+      if (onchain) {
+        let timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
+        if (!isFull) {
+          timeToWait += (await this.exchange.MAX_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
+        }
+        await this.advanceBlockTimestamp(timeToWait);
+      }
+
+      const jWithdrawalsInfo = JSON.stringify(withdrawalBlock, replacer, 4);
       const blockFilename = await this.createBlock(stateID, blockType, jWithdrawalsInfo);
       const jWithdrawals = fs.readFileSync(blockFilename, "ascii");
       const jwithdrawals = JSON.parse(jWithdrawals);
@@ -645,6 +663,12 @@ export class ExchangeTestUtil {
         bs.addNumber(withdrawal.tokenID, 2);
         bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
         bs.addNumber(withdrawal.burnPercentage, 1);
+      }
+      if (!onchain) {
+        for (const withdrawal of jwithdrawals.withdrawals) {
+          bs.addNumber(withdrawal.feeTokenID, 2);
+          bs.addBN(web3.utils.toBN(withdrawal.fee), 12);
+        }
       }
 
       // Commit the block

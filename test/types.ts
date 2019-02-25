@@ -66,6 +66,8 @@ export interface WithdrawalRequest {
   accountID: number;
   tokenID: number;
   amount: BN;
+  feeTokenID: number;
+  fee: BN;
 
   withdrawBlockIdx?: number;
 }
@@ -74,6 +76,12 @@ export interface Withdrawal {
   stateID: number;
   blockIdx: number;
   withdrawalIdx: number;
+}
+
+export interface WithdrawBlock {
+  withdrawals: WithdrawalRequest[];
+
+  operatorAccountID?: number;
 }
 
 export interface Cancel {

@@ -527,30 +527,31 @@ void from_json(const json& j, DepositContext& context)
 class Withdrawal
 {
 public:
-    ethsnarks::FieldT accountsMerkleRoot;
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::FieldT accountID;
-    ethsnarks::FieldT tokenID;
     ethsnarks::FieldT amount;
     ethsnarks::FieldT burnPercentage;
+    ethsnarks::FieldT fee;
     Signature signature;
 
-    AccountUpdate accountUpdate;
-    BalanceUpdate balanceUpdate;
+    BalanceUpdate balanceUpdateF_A;
+    BalanceUpdate balanceUpdateW_A;
+    AccountUpdate accountUpdate_A;
+    BalanceUpdate balanceUpdateF_O;
 };
 
 void from_json(const json& j, Withdrawal& withdrawal)
 {
     withdrawal.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     withdrawal.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    withdrawal.accountID = ethsnarks::FieldT(j.at("accountID"));
-    withdrawal.tokenID = ethsnarks::FieldT(j.at("tokenID"));
     withdrawal.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
     withdrawal.burnPercentage = ethsnarks::FieldT(j.at("burnPercentage"));
+    withdrawal.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     withdrawal.signature = j.at("signature").get<Signature>();
 
-    withdrawal.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
-    withdrawal.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
+    withdrawal.balanceUpdateF_A = j.at("balanceUpdateF_A").get<BalanceUpdate>();
+    withdrawal.balanceUpdateW_A = j.at("balanceUpdateW_A").get<BalanceUpdate>();
+    withdrawal.accountUpdate_A = j.at("accountUpdate_A").get<AccountUpdate>();
+    withdrawal.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
 }
 
 class WithdrawContext
@@ -562,6 +563,9 @@ public:
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
 
+    ethsnarks::FieldT operatorAccountID;
+    AccountUpdate accountUpdate_O;
+
     std::vector<Loopring::Withdrawal> withdrawals;
 };
 
@@ -571,6 +575,9 @@ void from_json(const json& j, WithdrawContext& context)
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+
+    context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
+    context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read withdrawals
     json jWithdrawals = j["withdrawals"];

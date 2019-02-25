@@ -128,10 +128,27 @@ def withdraw(onchain, state, data):
     export = WithdrawalExport(onchain)
     export.stateID = state.stateID
     export.merkleRootBefore = str(state.getRoot())
+    export.operatorAccountID = int(data["operatorAccountID"])
 
-    for withdrawalInfo in data:
-        withdrawal = state.withdraw(onchain, int(withdrawalInfo["accountID"]), int(withdrawalInfo["tokenID"]), int(withdrawalInfo["amount"]))
+    # Operator payment
+    rootBefore = state._accountsTree._root
+    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+
+    for withdrawalInfo in data["withdrawals"]:
+        accountID = int(withdrawalInfo["accountID"])
+        tokenID = int(withdrawalInfo["tokenID"])
+        amount = int(withdrawalInfo["amount"])
+        feeTokenID = int(withdrawalInfo["feeTokenID"])
+        fee = int(withdrawalInfo["fee"])
+
+        withdrawal = state.withdraw(onchain, accountID, tokenID, amount, export.operatorAccountID, feeTokenID, fee)
         export.withdrawals.append(withdrawal)
+
+    proof = state._accountsTree.createProof(export.operatorAccountID)
+    state.updateAccountTree(export.operatorAccountID)
+    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    rootAfter = state._accountsTree._root
+    export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
 
     export.merkleRootAfter = str(state.getRoot())
     return export
@@ -146,7 +163,6 @@ def cancel(state, data):
     # Operator payment
     rootBefore = state._accountsTree._root
     accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
-
 
     for cancelInfo in data["cancels"]:
         accountID = int(cancelInfo["accountID"])

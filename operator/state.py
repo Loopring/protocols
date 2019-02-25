@@ -424,22 +424,33 @@ class Withdrawal(object):
     def __init__(self,
                  publicKey,
                  accountID, tokenID, amount,
+                 operatorAccountID, feeTokenID, fee,
                  nonce,
-                 amountWithdrawn, balanceUpdate, accountUpdate,
+                 amountWithdrawn,
+                 balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
+                 balanceUpdateF_O,
                  burnPercentage):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.accountID = accountID
         self.tokenID = tokenID
         self.amount = str(amount)
+        self.operatorAccountID = operatorAccountID
+        self.feeTokenID = feeTokenID
+        self.fee = str(fee)
         self.nonce = int(nonce)
         self.amountWithdrawn = str(amountWithdrawn)
-        self.balanceUpdate = balanceUpdate
-        self.accountUpdate = accountUpdate
+
+        self.balanceUpdateF_A = balanceUpdateF_A
+        self.balanceUpdateW_A = balanceUpdateW_A
+        self.accountUpdate_A = accountUpdate_A
+        self.balanceUpdateF_O = balanceUpdateF_O
+
         self.burnPercentage = burnPercentage
 
     def message(self):
         msg_parts = [FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.amount), 1<<96),
+                     FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96),
                      FQ(int(self.nonce), 1<<32)]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -464,7 +475,7 @@ class Cancellation(object):
         self.orderID = orderID
         self.operatorAccountID = operatorAccountID
         self.feeTokenID = feeTokenID
-        self.fee = fee
+        self.fee = str(fee)
         self.nonce = nonce
 
         self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
@@ -811,10 +822,15 @@ class State(object):
             print("Account doesn't exist: " + str(accountID))
         return self._accounts[str(accountID)]
 
-    def withdraw(self, onchain, accountID, tokenID, amount):
+    def withdraw(self,
+                 onchain,
+                 accountID, tokenID, amount,
+                 operatorAccountID, feeTokenID, fee):
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(accountID))
         proof = self._accountsTree.createProof(accountID)
+
+        balanceUpdateF_A = self.getAccount(accountID).updateBalance(feeTokenID, -fee)
 
         balance = int(self.getAccount(accountID).getBalance(tokenID))
         burnBalance = int(self.getAccount(accountID).getBurnBalance(tokenID))
@@ -828,20 +844,26 @@ class State(object):
         burnPercentage = (burnBalance * 100) // totalAmountWithdrawn if totalAmountWithdrawn > 0 else 0
         print("burnPercentage: " + str(burnPercentage))
 
-        balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn, -burnBalance)
+        balanceUpdateW_A = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn, -burnBalance)
         if not onchain:
             self.getAccount(accountID).nonce += 1
 
         self.updateAccountTree(accountID)
         accountAfter = copyAccountInfo(self.getAccount(accountID))
         rootAfter = self._accountsTree._root
-        accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdate_A = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+
+        # Operator payment
+        balanceUpdateF_O = self.getAccount(operatorAccountID).updateBalance(feeTokenID, fee)
 
         account = self.getAccount(accountID)
         withdrawal = Withdrawal(Point(int(account.publicKeyX), int(account.publicKeyY)),
                                 accountID, tokenID, amount,
+                                operatorAccountID, feeTokenID, fee,
                                 accountBefore.nonce,
-                                totalAmountWithdrawn, balanceUpdate, accountUpdate,
+                                totalAmountWithdrawn,
+                                balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
+                                balanceUpdateF_O,
                                 burnPercentage)
         withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal

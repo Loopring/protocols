@@ -21,7 +21,6 @@ namespace Loopring
 class CancelGadget : public GadgetT
 {
 public:
-    const VariableT accountsMerkleRoot;
 
     VariableT constant0;
     libsnark::dual_variable_gadget<FieldT> padding;
@@ -74,8 +73,6 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        accountsMerkleRoot(_accountsMerkleRoot),
-
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         padding(pb, 2, FMT(prefix, ".padding")),
         uint16_padding(make_var_array(pb, 16 - NUM_BITS_TOKENID, FMT(prefix, ".uint16_padding"))),
@@ -121,7 +118,7 @@ public:
                          {feePayment.X, constant0, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
 
-        updateAccount_A(pb, accountsMerkleRoot, accountID,
+        updateAccount_A(pb, _accountsMerkleRoot, accountID,
                         {publicKey.x, publicKey.y, walletID, nonce_before.packed, balancesRoot_before},
                         {publicKey.x, publicKey.y, walletID, nonce_after, updateBalanceF_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
@@ -245,7 +242,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> operatorAccountID;
     VariableT balancesRoot_before;
 
-    UpdateAccountGadget* updateAccount_O;
+    UpdateAccountGadget* updateAccount_O = nullptr;
 
     CancelsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
@@ -268,7 +265,10 @@ public:
 
     ~CancelsCircuitGadget()
     {
-
+        if (updateAccount_O)
+        {
+            delete updateAccount_O;
+        }
     }
 
     void generate_r1cs_constraints(int numCancels)

@@ -140,7 +140,7 @@ bool deposit(Mode mode, unsigned int numDeposits, const json& input, ethsnarks::
 bool withdraw(Mode mode, bool onchain, unsigned int numWithdrawals, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    Loopring::WithdrawalsCircuitGadget circuit(outPb, onchain, "circuit");
+    Loopring::WithdrawCircuitGadget circuit(outPb, onchain, "circuit");
     circuit.generate_r1cs_constraints(numWithdrawals);
     circuit.printInfo();
 
