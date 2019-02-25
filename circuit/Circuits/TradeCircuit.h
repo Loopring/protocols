@@ -25,6 +25,9 @@ class RingSettlementGadget : public GadgetT
 public:
     const VariableT accountsRoot;
 
+    VariableArrayT uint16_padding;
+    VariableArrayT percentage_padding;
+
     const VariableT tradingHistoryRootS_A;
     const VariableT tradingHistoryRootB_A;
     const VariableT tradingHistoryRootF_A;
@@ -156,6 +159,9 @@ public:
     ) :
         GadgetT(pb, prefix),
 
+        uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
+        percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
+
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
         emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("6534726031924637156958436868622484975370199861911592821911265735257245326584"), FMT(prefix, ".emptyTradeHistory"))),
@@ -190,8 +196,8 @@ public:
         burnRateF_A(make_variable(pb, FMT(prefix, ".burnRateF_A"))),
         burnRateF_B(make_variable(pb, FMT(prefix, ".burnRateF_B"))),
 
-        checkBurnRateF_A(pb, _burnRateRoot, orderA.tokenF.bits, burnRateF_A, FMT(prefix, ".checkBurnRateF_A")),
-        checkBurnRateF_B(pb, _burnRateRoot, orderB.tokenF.bits, burnRateF_B, FMT(prefix, ".checkBurnRateF_B")),
+        checkBurnRateF_A(pb, _burnRateRoot, orderA.tokenF, burnRateF_A, FMT(prefix, ".checkBurnRateF_A")),
+        checkBurnRateF_B(pb, _burnRateRoot, orderB.tokenF, burnRateF_B, FMT(prefix, ".checkBurnRateF_B")),
 
         feePaymentA(pb, fillF_A.packed, burnRateF_A, orderA.walletSplitPercentage.packed, orderA.waiveFeePercentage.packed, FMT(prefix, "feePaymentA")),
         feePaymentB(pb, fillF_B.packed, burnRateF_B, orderB.walletSplitPercentage.packed, orderB.waiveFeePercentage.packed, FMT(prefix, "feePaymentB")),
@@ -248,43 +254,43 @@ public:
         balancesRootM(make_variable(pb, FMT(prefix, ".balancesRootM"))),
 
 
-        updateTradeHistoryA(pb, tradingHistoryRootS_A, orderA.orderID.bits,
+        updateTradeHistoryA(pb, tradingHistoryRootS_A, orderA.orderID,
                             orderA.filledBefore, orderA.cancelled, filledAfterA, orderA.cancelled, FMT(prefix, ".updateTradeHistoryA")),
-        updateTradeHistoryB(pb, tradingHistoryRootS_B, orderB.orderID.bits,
+        updateTradeHistoryB(pb, tradingHistoryRootS_B, orderB.orderID,
                             orderB.filledBefore, orderB.cancelled, filledAfterB, orderB.cancelled, FMT(prefix, ".updateTradeHistoryB")),
 
         accountsRoot(_accountsRoot),
 
-        updateBalanceS_A(pb, balancesRootA, orderA.tokenS.bits,
+        updateBalanceS_A(pb, balancesRootA, orderA.tokenS,
                          {balanceS_A_before, constant0, tradingHistoryRootS_A},
                          {balanceS_MA.X, constant0, updateTradeHistoryA.getNewRoot()},
                          FMT(prefix, ".updateBalanceS_A")),
-        updateBalanceB_A(pb, updateBalanceS_A.getNewRoot(), orderA.tokenB.bits,
+        updateBalanceB_A(pb, updateBalanceS_A.getNewRoot(), orderA.tokenB,
                          {balanceB_A_before, constant0, tradingHistoryRootB_A},
                          {balanceSB_B.Y, constant0, tradingHistoryRootB_A},
                          FMT(prefix, ".updateBalanceB_A")),
-        updateBalanceF_A(pb, updateBalanceB_A.getNewRoot(), orderA.tokenF.bits,
+        updateBalanceF_A(pb, updateBalanceB_A.getNewRoot(), orderA.tokenF,
                          {balanceF_A_before, constant0, tradingHistoryRootF_A},
                          {balanceF_BA.X, constant0, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
-        updateAccount_A(pb, _accountsRoot, orderA.accountID.bits,
+        updateAccount_A(pb, _accountsRoot, orderA.accountID,
                         {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID, orderA.nonce, balancesRootA},
                         {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID, orderA.nonce, updateBalanceF_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
 
-        updateBalanceS_B(pb, balancesRootB, orderB.tokenS.bits,
+        updateBalanceS_B(pb, balancesRootB, orderB.tokenS,
                          {balanceS_B_before, constant0, tradingHistoryRootS_B},
                          {balanceSB_B.X, constant0, updateTradeHistoryB.getNewRoot()},
                          FMT(prefix, ".updateBalanceS_B")),
-        updateBalanceB_B(pb, updateBalanceS_B.getNewRoot(), orderB.tokenB.bits,
+        updateBalanceB_B(pb, updateBalanceS_B.getNewRoot(), orderB.tokenB,
                          {balanceB_B_before, constant0, tradingHistoryRootB_B},
                          {balanceSB_A.Y, constant0, tradingHistoryRootB_B},
                          FMT(prefix, ".updateBalanceB_B")),
-        updateBalanceF_B(pb, updateBalanceB_B.getNewRoot(), orderB.tokenF.bits,
+        updateBalanceF_B(pb, updateBalanceB_B.getNewRoot(), orderB.tokenF,
                          {balanceF_B_before, constant0, tradingHistoryRootF_B},
                          {balanceF_BB.X, constant0, tradingHistoryRootF_B},
                          FMT(prefix, ".updateBalanceF_B")),
-        updateAccount_B(pb, updateAccount_A.result(), orderB.accountID.bits,
+        updateAccount_B(pb, updateAccount_A.result(), orderB.accountID,
                         {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID, orderB.nonce, balancesRootB},
                         {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID, orderB.nonce, updateBalanceF_B.getNewRoot()},
                         FMT(prefix, ".updateAccount_B")),
@@ -292,35 +298,35 @@ public:
 
         nonce_WA(make_variable(pb, FMT(prefix, ".nonce_WA"))),
         balancesRoot_WA(make_variable(pb, FMT(prefix, ".balancesRoot_WA"))),
-        updateBalanceA_W(pb, balancesRootAW, orderA.tokenF.bits,
+        updateBalanceA_W(pb, balancesRootAW, orderA.tokenF,
                         {balanceA_W_before, burnBalanceA_W_before, emptyTradeHistory},
                         {balanceF_WA.Y, balanceF_BA.Y, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceA_W")),
-        updateAccountA_W(pb, updateAccount_B.result(), orderA.dualAuthAccountID.bits,
+        updateAccountA_W(pb, updateAccount_B.result(), orderA.dualAuthAccountID,
                          {orderA.walletPublicKey.x, orderA.walletPublicKey.y, orderA.dualAuthorWalletID, nonce_WA, balancesRoot_WA},
                          {orderA.walletPublicKey.x, orderA.walletPublicKey.y, orderA.dualAuthorWalletID, nonce_WA, updateBalanceA_W.getNewRoot()},
                          FMT(prefix, ".updateAccountA_W")),
 
         nonce_WB(make_variable(pb, FMT(prefix, ".nonce_WB"))),
         balancesRoot_WB(make_variable(pb, FMT(prefix, ".balancesRoot_WB"))),
-        updateBalanceB_W(pb, balancesRootBW, orderB.tokenF.bits,
+        updateBalanceB_W(pb, balancesRootBW, orderB.tokenF,
                         {balanceB_W_before, burnBalanceB_W_before, emptyTradeHistory},
                         {balanceF_WB.Y, balanceF_BB.Y, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceB_W")),
-        updateAccountB_W(pb, updateAccountA_W.result(), orderB.dualAuthAccountID.bits,
+        updateAccountB_W(pb, updateAccountA_W.result(), orderB.dualAuthAccountID,
                          {orderB.walletPublicKey.x, orderB.walletPublicKey.y, orderB.dualAuthorWalletID, nonce_WB, balancesRoot_WB},
                          {orderB.walletPublicKey.x, orderB.walletPublicKey.y, orderB.dualAuthorWalletID, nonce_WB, updateBalanceB_W.getNewRoot()},
                          FMT(prefix, ".updateAccountB_W")),
 
-        updateBalanceA_M(pb, balancesRootM, orderA.tokenF.bits,
+        updateBalanceA_M(pb, balancesRootM, orderA.tokenF,
                         {balanceA_M_before, constant0, emptyTradeHistory},
                         {balanceF_MA.Y, constant0, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceA_M")),
-        updateBalanceB_M(pb, updateBalanceA_M.getNewRoot(), orderB.tokenF.bits,
+        updateBalanceB_M(pb, updateBalanceA_M.getNewRoot(), orderB.tokenF,
                         {balanceB_M_before, constant0, emptyTradeHistory},
                         {balanceF_MB.Y, constant0, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceB_M")),
-        updateBalanceM_M(pb, updateBalanceB_M.getNewRoot(), orderA.tokenS.bits,
+        updateBalanceM_M(pb, updateBalanceB_M.getNewRoot(), orderA.tokenS,
                         {balanceM_M_before, constant0, emptyTradeHistory},
                         {balanceS_MA.Y, constant0, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceF_M")),
@@ -355,13 +361,31 @@ public:
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {
-                orderA.accountID.bits, orderA.orderID.bits,
-                fillS_A.bits, fillF_A.bits,
+        return
+        {
+            minerAccountID.bits,
+            margin.bits,
 
-                orderB.accountID.bits, orderB.orderID.bits,
-                fillS_B.bits, fillF_B.bits
-               };
+            orderA.accountID,
+            orderA.dualAuthAccountID,
+            uint16_padding, orderA.tokenS,
+            uint16_padding, orderA.tokenF,
+            orderA.orderID,
+            fillS_A.bits,
+            fillF_A.bits,
+            percentage_padding, orderA.walletSplitPercentage.bits,
+            percentage_padding, orderA.waiveFeePercentage.bits,
+
+            orderB.accountID,
+            orderB.dualAuthAccountID,
+            uint16_padding, orderB.tokenS,
+            uint16_padding, orderB.tokenF,
+            orderB.orderID,
+            fillS_B.bits,
+            fillF_B.bits,
+            percentage_padding, orderB.walletSplitPercentage.bits,
+            percentage_padding, orderB.waiveFeePercentage.bits
+        };
     }
 
     void generate_r1cs_witness (const RingSettlement& ringSettlement)

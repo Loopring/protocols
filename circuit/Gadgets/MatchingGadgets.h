@@ -369,8 +369,11 @@ public:
     void generate_r1cs_constraints()
     {
         // Check if tokenS/tokenB match
-        pb.add_r1cs_constraint(ConstraintT(orderA.tokenS.packed, 1, orderB.tokenB.packed), "orderA.tokenS == orderB.tokenB");
-        pb.add_r1cs_constraint(ConstraintT(orderA.tokenB.packed, 1, orderB.tokenS.packed), "orderA.tokenB == orderB.tokenS");
+        for (unsigned int i = 0; i < TREE_DEPTH_TOKENS; i++)
+        {
+            pb.add_r1cs_constraint(ConstraintT(orderA.tokenS[i], 1, orderB.tokenB[i]), "orderA.tokenS == orderB.tokenB");
+            pb.add_r1cs_constraint(ConstraintT(orderA.tokenB[i], 1, orderB.tokenS[i]), "orderA.tokenB == orderB.tokenS");
+        }
 
         maxFillAmountA.generate_r1cs_constraints();
         maxFillAmountB.generate_r1cs_constraints();

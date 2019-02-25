@@ -826,17 +826,21 @@ export class ExchangeTestUtil {
         const orderA = ringSettlement.ring.orderA;
         const orderB = ringSettlement.ring.orderB;
 
-        // bs.addNumber(orderA.walletID, 2);
-        bs.addNumber(orderA.accountID, 3);
-        bs.addNumber(orderA.orderID, 2);
-        bs.addNumber(ring.fillS_A, 12);
-        bs.addNumber(ring.fillF_A, 12);
-
-        // bs.addNumber(orderB.walletID, 2);
-        bs.addNumber(orderB.accountID, 3);
-        bs.addNumber(orderB.orderID, 2);
-        bs.addNumber(ring.fillS_B, 12);
-        bs.addNumber(ring.fillF_B, 12);
+        bs.addNumber(ring.minerAccountID, 3);
+        bs.addBN(new BN(ring.margin, 10), 12);
+        let index = 0;
+        for (const order of [orderA, orderB]) {
+          bs.addNumber(order.accountID, 3);
+          bs.addNumber(order.dualAuthAccountID, 3);
+          bs.addNumber(order.tokenS, 2);
+          bs.addNumber(order.tokenF, 2);
+          bs.addNumber(order.orderID, 2);
+          bs.addBN(new BN(index === 0 ? ring.fillS_A : ring.fillS_B, 10), 12);
+          bs.addBN(new BN(index === 0 ? ring.fillF_A : ring.fillF_B, 10), 12);
+          bs.addNumber(order.walletSplitPercentage, 1);
+          bs.addNumber(order.waiveFeePercentage, 1);
+          index++;
+        }
       }
 
       // Commit the block
