@@ -185,7 +185,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
             amountF: new BN(web3.utils.toWei("90", "ether")),
           },
       };
-
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(stateID, ring);
 
@@ -234,10 +233,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
 
       exchangeTestUtil.requestWithdrawalOffchain(stateID, ring.orderA.dualAuthAccountID,
                                                  ring.orderA.tokenIdF, ring.orderA.amountF.mul(new BN(2)),
-                                                 "GTO", new BN(web3.utils.toWei("1", "ether")));
+                                                 "LRC", new BN(web3.utils.toWei("1", "ether")));
       exchangeTestUtil.requestWithdrawalOffchain(stateID, ring.orderB.dualAuthAccountID,
                                                  ring.orderB.tokenIdF, ring.orderB.amountF.mul(new BN(2)),
-                                                 "WETH", new BN(web3.utils.toWei("1", "ether")));
+                                                 "LRC", new BN(web3.utils.toWei("1", "ether")));
       await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
       await exchangeTestUtil.verifyAllPendingBlocks();
       await exchangeTestUtil.submitPendingWithdrawals(ring);

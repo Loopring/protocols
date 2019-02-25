@@ -120,6 +120,164 @@ public:
     }
 };
 
+
+class AndGadget : public GadgetT
+{
+public:
+    VariableT A;
+    VariableT B;
+    VariableT _and;
+
+    AndGadget(
+        ProtoboardT& pb,
+        const VariableT& _A,
+        const VariableT& _B,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        A(_A),
+        B(_B),
+
+        _and(make_variable(pb, FMT(prefix, "._and")))
+    {
+
+    }
+
+    const VariableT& And() const
+    {
+        return _and;
+    }
+
+    void generate_r1cs_witness()
+    {
+        pb.val(_and) = pb.val(A) * pb.val(B);
+    }
+
+    void generate_r1cs_constraints()
+    {
+        pb.add_r1cs_constraint(ConstraintT(A, B, _and), FMT(annotation_prefix, ".A && B == _and"));
+    }
+};
+
+class OrGadget : public GadgetT
+{
+public:
+    VariableT A;
+    VariableT B;
+    VariableT _or;
+
+    OrGadget(
+        ProtoboardT& pb,
+        const VariableT& _A,
+        const VariableT& _B,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        A(_A),
+        B(_B),
+
+        _or(make_variable(pb, FMT(prefix, "._or")))
+    {
+
+    }
+
+    const VariableT& Or() const
+    {
+        return _or;
+    }
+
+    void generate_r1cs_witness()
+    {
+        pb.val(_or) = FieldT::one() - (FieldT::one() - pb.val(A)) * (FieldT::one() - pb.val(B));
+    }
+
+    void generate_r1cs_constraints()
+    {
+        pb.add_r1cs_constraint(ConstraintT(FieldT::one() - A, FieldT::one() - B, FieldT::one() - _or), FMT(annotation_prefix, ".A || B == _or"));
+    }
+};
+
+class NotGadget : public GadgetT
+{
+public:
+    VariableT A;
+    VariableT _not;
+
+    NotGadget(
+        ProtoboardT& pb,
+        const VariableT& _A,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        A(_A),
+        _not(make_variable(pb, FMT(prefix, "._not")))
+    {
+
+    }
+
+    const VariableT& Not() const
+    {
+        return _not;
+    }
+
+    void generate_r1cs_witness()
+    {
+        pb.val(_not) = FieldT::one() - pb.val(A);
+    }
+
+    void generate_r1cs_constraints()
+    {
+        pb.add_r1cs_constraint(ConstraintT(FieldT::one() - A, FieldT::one(), _not), FMT(annotation_prefix, ".!A == _not"));
+    }
+};
+
+
+class EqualGadget : public GadgetT
+{
+public:
+    LeqGadget leq;
+    NotGadget NOTLt;
+    AndGadget NOTltANDleq;
+
+    EqualGadget(
+        ProtoboardT& pb,
+        const VariableT& A,
+        const VariableT& B,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        leq(pb, A, B, FMT(prefix, ".A <(=) B")),
+        NOTLt(pb, leq.lt(), FMT(prefix, ".!(A<B)")),
+        NOTltANDleq(pb, NOTLt.Not(), leq.leq(), FMT(prefix, ".!(A<B) && (A<=B)"))
+    {
+
+    }
+
+    const VariableT& eq() const
+    {
+        return NOTltANDleq.And();
+    }
+
+    void generate_r1cs_witness()
+    {
+        leq.generate_r1cs_witness();
+        NOTLt.generate_r1cs_witness();
+        NOTltANDleq.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        leq.generate_r1cs_constraints();
+        NOTLt.generate_r1cs_constraints();
+        NOTltANDleq.generate_r1cs_constraints();
+    }
+};
+
+
 class MinGadget : public GadgetT
 {
 public:
@@ -191,6 +349,8 @@ public:
 class MulDivGadget : public GadgetT
 {
 public:
+    const VariableT const0;
+
     const VariableT A;
     const VariableT B;
     const VariableT C;
@@ -200,9 +360,9 @@ public:
     const VariableT Y;
     const VariableT rest;
 
-    const VariableT lt;
-    const VariableT leq;
-    libsnark::comparison_gadget<ethsnarks::FieldT> comparison;
+    LeqGadget rest_lt_C;
+    EqualGadget rest_eq_0;
+    OrGadget rest_lt_C_OR_rest_eq_0;
 
     // (A * B) / C = D
     MulDivGadget(
@@ -214,6 +374,8 @@ public:
     ) :
         GadgetT(pb, prefix),
 
+        const0(make_variable(pb, 0, FMT(prefix, ".const0"))),
+
         A(_A),
         B(_B),
         C(_C),
@@ -224,9 +386,9 @@ public:
         Y(make_variable(pb, FMT(prefix, ".Y"))),
         rest(make_variable(pb, FMT(prefix, ".rest"))),
 
-        lt(make_variable(pb, FMT(prefix, ".lt"))),
-        leq(make_variable(pb, FMT(prefix, ".leq"))),
-        comparison(pb, 2*96, rest, C, lt, leq, FMT(prefix, ".rest < C"))
+        rest_lt_C(pb, rest, C, FMT(prefix, ".rest <(=) C")),
+        rest_eq_0(pb, rest, const0, FMT(prefix, ".rest == 0")),
+        rest_lt_C_OR_rest_eq_0(pb, rest_lt_C.lt(), rest_eq_0.eq(), FMT(prefix, ".(rest < C) || (rest == 0)"))
     {
 
     }
@@ -238,12 +400,16 @@ public:
 
     void generate_r1cs_witness()
     {
-        pb.val(D) = (pb.val(A) * pb.val(B)) * pb.val(C).inverse();
+        pb.val(D) = (pb.val(C) == FieldT::zero()) ? FieldT::zero() :
+                    ethsnarks::FieldT(((toBigInt(pb.val(A)) * toBigInt(pb.val(B))) /  toBigInt(pb.val(C))).to_string().c_str());
+
         pb.val(X) = pb.val(A) * pb.val(B);
         pb.val(Y) = pb.val(C) * pb.val(D);
         pb.val(rest) = pb.val(X) - pb.val(Y);
 
-        comparison.generate_r1cs_witness();
+        rest_lt_C.generate_r1cs_witness();
+        rest_eq_0.generate_r1cs_witness();
+        rest_lt_C_OR_rest_eq_0.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
@@ -252,8 +418,11 @@ public:
         pb.add_r1cs_constraint(ConstraintT(C, D, Y), FMT(annotation_prefix, ".C * D == Y"));
         pb.add_r1cs_constraint(ConstraintT(Y + rest, FieldT::one(), X), FMT(annotation_prefix, ".Y + rest == X"));
 
-        comparison.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(lt, FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".(rest < C) == 1"));
+        rest_lt_C.generate_r1cs_constraints();
+        rest_eq_0.generate_r1cs_constraints();
+        rest_lt_C_OR_rest_eq_0.generate_r1cs_constraints();
+
+        pb.add_r1cs_constraint(ConstraintT(rest_lt_C_OR_rest_eq_0.Or(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".rest_lt_C_OR_rest_eq_0 == 1"));
     }
 };
 

@@ -26,6 +26,7 @@ class WithdrawGadget : public GadgetT
 public:
 
     VariableT constant0;
+    VariableT constant100;
     VariableArrayT uint16_padding;
 
     bool onchain;
@@ -63,6 +64,8 @@ public:
 
     MinGadget amountToWithdraw;
 
+    MulDivGadget burnPercentageCalc;
+
     UpdateBalanceGadget updateBalanceF_A;
     UpdateBalanceGadget updateBalanceW_A;
     UpdateAccountGadget updateAccount_A;
@@ -84,6 +87,7 @@ public:
         onchain(_onchain),
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
+        constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
         uint16_padding(make_var_array(pb, 16 - NUM_BITS_TOKENID, FMT(prefix, ".uint16_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
@@ -118,7 +122,9 @@ public:
         feePayment(pb, 96, balanceF_A_before, balanceF_O_before, fee.packed, FMT(prefix, ".feePayment")),
 
         amountToWithdraw(pb, amountRequested.packed, balanceW_A_before, FMT(prefix, ".min(amountRequested, balance)")),
-        amountWithdrawn(pb, 96, FMT(prefix, ".amount")),
+        amountWithdrawn(pb, 96, FMT(prefix, ".amountWithdrawn")),
+
+        burnPercentageCalc(pb, burnBalanceW_A_before, constant100, amountWithdrawn.packed, FMT(prefix, "(burnBalance * 100) / amountWithdrawn == burnPercentage")),
 
         updateBalanceF_A(pb, balancesRoot_before, tokenID,
                          {balanceF_A_before, burnBalanceF_A, tradingHistoryRootF_A},
@@ -221,6 +227,8 @@ public:
         amountWithdrawn.bits.fill_with_bits_of_field_element(pb, (pb.val(balanceW_A_before) - pb.val(balanceW_A_after)) + pb.val(burnBalanceW_A_before));
         amountWithdrawn.generate_r1cs_witness_from_bits();
 
+        burnPercentageCalc.generate_r1cs_witness();
+
         updateBalanceF_A.generate_r1cs_witness(withdrawal.balanceUpdateF_A.proof);
         updateBalanceW_A.generate_r1cs_witness(withdrawal.balanceUpdateW_A.proof);
         updateAccount_A.generate_r1cs_witness(withdrawal.accountUpdate_A.proof);
@@ -243,11 +251,14 @@ public:
         amountWithdrawn.generate_r1cs_constraints(true);
 
         amountToWithdraw.generate_r1cs_constraints();
+
+        burnPercentageCalc.generate_r1cs_constraints();
+
         pb.add_r1cs_constraint(ConstraintT(amountToWithdraw.result() + burnBalanceW_A_before, 1, amountWithdrawn.packed), "amountToWithdraw + burnBalance == amountWithdrawn");
         pb.add_r1cs_constraint(ConstraintT(balanceW_A_before, 1, balanceW_A_after + amountToWithdraw.result()), "balance_before == balance_after + amountToWithdraw");
 
         pb.add_r1cs_constraint(ConstraintT(amountToWithdraw.result() + burnBalanceW_A_before, 1, amountWithdrawn.packed), "amountToWithdraw + burnBalance == amountWithdrawn");
-        pb.add_r1cs_constraint(ConstraintT(amountWithdrawn.packed, burnPercentage.packed, burnBalanceW_A_before * 100), "amountWithdrawn * burnPercentage == burnBalance * 100");
+        forceEqual(pb, burnPercentageCalc.result(), burnPercentage.packed, FMT(annotation_prefix, "burnPercentageCalc == burnPercentage"));
 
         updateBalanceF_A.generate_r1cs_constraints();
         updateBalanceW_A.generate_r1cs_constraints();

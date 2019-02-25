@@ -830,6 +830,9 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(accountID))
         proof = self._accountsTree.createProof(accountID)
 
+        feeBalance = int(self.getAccount(accountID).getBalance(feeTokenID))
+        print("feeBalance: " + str(feeBalance))
+        print("fee: " + str(fee))
         balanceUpdateF_A = self.getAccount(accountID).updateBalance(feeTokenID, -fee)
 
         balance = int(self.getAccount(accountID).getBalance(tokenID))
