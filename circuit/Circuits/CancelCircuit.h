@@ -75,14 +75,14 @@ public:
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         padding(pb, 2, FMT(prefix, ".padding")),
-        uint16_padding(make_var_array(pb, 16 - NUM_BITS_TOKENID, FMT(prefix, ".uint16_padding"))),
+        uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
-        orderTokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".orderTokenID"))),
+        orderTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".orderTokenID"))),
         orderID(make_var_array(pb, 16, FMT(prefix, ".orderID"))),
-        feeTokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".feeTokenID"))),
+        feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
         fee(pb, 96, FMT(prefix, ".fee")),
 
         filled(make_variable(pb, 0, FMT(prefix, ".filled"))),

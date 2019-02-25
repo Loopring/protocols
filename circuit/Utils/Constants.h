@@ -5,10 +5,8 @@ namespace Loopring
 {
     static const unsigned int TREE_DEPTH_TRADING_HISTORY = 16;
     static const unsigned int TREE_DEPTH_ACCOUNTS = 24;
-    static const unsigned int TREE_DEPTH_TOKENS = 16;
-    static const unsigned int TREE_DEPTH_BALANCES = 12;
+    static const unsigned int TREE_DEPTH_TOKENS = 12;
 
-    static const unsigned int NUM_BITS_TOKENID = 12;
     static const unsigned int NUM_BITS_WALLETID = 24;
 
     static const unsigned int MAX_NUM_WALLETS = 8388608;

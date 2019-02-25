@@ -58,10 +58,10 @@ public:
         GadgetT(pb, prefix),
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        uint16_padding(make_var_array(pb, 16 - NUM_BITS_TOKENID, FMT(prefix, ".uint16_padding"))),
+        uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
-        tokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".tokenID"))),
+        tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
 
         nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
         burnBalance(make_variable(pb, 0, FMT(prefix, ".burnBalance"))),

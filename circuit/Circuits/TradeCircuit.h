@@ -73,8 +73,8 @@ public:
     VariableT burnRateF_A;
     VariableT burnRateF_B;
 
-    //CheckBurnRateGadget checkBurnRateF_A;
-    //CheckBurnRateGadget checkBurnRateF_B;
+    CheckBurnRateGadget checkBurnRateF_A;
+    CheckBurnRateGadget checkBurnRateF_B;
 
     FeePaymentCalculator feePaymentA;
     FeePaymentCalculator feePaymentB;
@@ -160,7 +160,7 @@ public:
         constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
         emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("6534726031924637156958436868622484975370199861911592821911265735257245326584"), FMT(prefix, ".emptyTradeHistory"))),
 
-        lrcTokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".lrcTokenID"))),
+        lrcTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".lrcTokenID"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
         minerAccountID(pb, 24, FMT(prefix, ".minerAccountID")),
@@ -190,8 +190,8 @@ public:
         burnRateF_A(make_variable(pb, FMT(prefix, ".burnRateF_A"))),
         burnRateF_B(make_variable(pb, FMT(prefix, ".burnRateF_B"))),
 
-        //checkBurnRateF_A(pb, _burnRateMerkleRoot, orderA.tokenF.bits, burnRateF_A, FMT(prefix, ".checkBurnRateF_A")),
-        //checkBurnRateF_B(pb, _burnRateMerkleRoot, orderB.tokenF.bits, burnRateF_B, FMT(prefix, ".checkBurnRateF_B")),
+        checkBurnRateF_A(pb, _burnRateRoot, orderA.tokenF.bits, burnRateF_A, FMT(prefix, ".checkBurnRateF_A")),
+        checkBurnRateF_B(pb, _burnRateRoot, orderB.tokenF.bits, burnRateF_B, FMT(prefix, ".checkBurnRateF_B")),
 
         feePaymentA(pb, fillF_A.packed, burnRateF_A, orderA.walletSplitPercentage.packed, orderA.waiveFeePercentage.packed, FMT(prefix, "feePaymentA")),
         feePaymentB(pb, fillF_B.packed, burnRateF_B, orderB.walletSplitPercentage.packed, orderB.waiveFeePercentage.packed, FMT(prefix, "feePaymentB")),
@@ -407,8 +407,8 @@ public:
 
         pb.val(burnRateF_A) = ringSettlement.burnRateCheckF_A.burnRateData.burnRate;
         pb.val(burnRateF_B) = ringSettlement.burnRateCheckF_B.burnRateData.burnRate;
-        //checkBurnRateF_A.generate_r1cs_witness(ringSettlement.burnRateCheckF_A.proof);
-        //checkBurnRateF_B.generate_r1cs_witness(ringSettlement.burnRateCheckF_B.proof);
+        checkBurnRateF_A.generate_r1cs_witness(ringSettlement.burnRateCheckF_A.proof);
+        checkBurnRateF_B.generate_r1cs_witness(ringSettlement.burnRateCheckF_B.proof);
 
         feePaymentA.generate_r1cs_witness();
         feePaymentB.generate_r1cs_witness();
@@ -532,8 +532,8 @@ public:
         pb.add_r1cs_constraint(ConstraintT(orderA.filledBefore + fillS_A.packed, 1, filledAfterA), "filledBeforeA + fillA = filledAfterA");
         pb.add_r1cs_constraint(ConstraintT(orderB.filledBefore + fillS_B.packed, 1, filledAfterB), "filledBeforeB + fillB = filledAfterB");
 
-        //checkBurnRateF_A.generate_r1cs_constraints();
-        //checkBurnRateF_B.generate_r1cs_constraints();
+        checkBurnRateF_A.generate_r1cs_constraints();
+        checkBurnRateF_B.generate_r1cs_constraints();
 
         balanceSB_A.generate_r1cs_constraints();
         balanceSB_B.generate_r1cs_constraints();
@@ -612,7 +612,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> stateID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
-    libsnark::dual_variable_gadget<FieldT> burnRateMerkleRoot;
+    libsnark::dual_variable_gadget<FieldT> burnRateRoot;
     libsnark::dual_variable_gadget<FieldT> timestamp;
 
     VariableArrayT lrcTokenID;
@@ -638,9 +638,9 @@ public:
 
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
-        burnRateMerkleRoot(pb, 256, FMT(prefix, ".burnRateMerkleRoot")),
+        burnRateRoot(pb, 256, FMT(prefix, ".burnRateRoot")),
 
-        lrcTokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".lrcTokenID"))),
+        lrcTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".lrcTokenID"))),
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
 
@@ -681,13 +681,13 @@ public:
         stateID.generate_r1cs_constraints(true);
         merkleRootBefore.generate_r1cs_constraints(true);
         merkleRootAfter.generate_r1cs_constraints(true);
-        burnRateMerkleRoot.generate_r1cs_constraints(true);
+        burnRateRoot.generate_r1cs_constraints(true);
         timestamp.generate_r1cs_constraints(true);
 
         publicData.add(stateID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
-        publicData.add(burnRateMerkleRoot.bits);
+        publicData.add(burnRateRoot.bits);
         publicData.add(timestamp.bits);
         for (size_t j = 0; j < numRings; j++)
         {
@@ -698,7 +698,7 @@ public:
                 params,
                 stateID.packed,
                 ringAccountsRoot,
-                burnRateMerkleRoot.packed,
+                burnRateRoot.packed,
                 timestamp.packed,
                 ringOperatorBalance,
                 std::string("trade_") + std::to_string(j)
@@ -753,8 +753,8 @@ public:
         merkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.merkleRootAfter);
         merkleRootAfter.generate_r1cs_witness_from_bits();
 
-        burnRateMerkleRoot.bits.fill_with_bits_of_field_element(pb, context.burnRateMerkleRoot);
-        burnRateMerkleRoot.generate_r1cs_witness_from_bits();
+        burnRateRoot.bits.fill_with_bits_of_field_element(pb, context.burnRateMerkleRoot);
+        burnRateRoot.generate_r1cs_witness_from_bits();
 
         timestamp.bits.fill_with_bits_of_field_element(pb, context.timestamp);
         timestamp.generate_r1cs_witness_from_bits();

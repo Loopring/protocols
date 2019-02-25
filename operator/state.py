@@ -13,8 +13,8 @@ from ethsnarks.merkletree import MerkleTree
 
 TREE_DEPTH_TRADING_HISTORY = 16
 TREE_DEPTH_ACCOUNTS = 24
-TREE_DEPTH_TOKENS = 16
-TREE_DEPTH_BALANCES = 12
+TREE_DEPTH_TOKENS = 12
+
 
 def copyBalanceInfo(leaf):
     c = copy.deepcopy(leaf)
@@ -114,7 +114,7 @@ class Account(object):
         self.walletID = walletID
         self.nonce = 0
         # Balances
-        self._balancesTree = SparseMerkleTree(TREE_DEPTH_BALANCES)
+        self._balancesTree = SparseMerkleTree(TREE_DEPTH_TOKENS)
         self._balancesTree.newTree(BalanceLeaf().hash())
         self._balancesLeafs = {}
         #print("Empty balances tree: " + str(self._balancesTree._root))
@@ -500,7 +500,7 @@ class Cancellation(object):
 
 class GlobalState(object):
     def __init__(self):
-        self._tokensTree = MerkleTree(1 << 16)
+        self._tokensTree = MerkleTree(1 << 12)
         self._tokens = []
 
     def load(self, filename):

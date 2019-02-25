@@ -114,9 +114,9 @@ public:
         leafBefore(pb, libsnark::ONE, {before.balance, before.burnBalance, before.tradingHistory}, FMT(prefix, ".leafBefore")),
         leafAfter(pb, libsnark::ONE, {after.balance, after.burnBalance, after.tradingHistory}, FMT(prefix, ".leafAfter")),
 
-        proof(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".proof"))),
-        proofVerifierBefore(pb, TREE_DEPTH_BALANCES, tokenID, merkle_tree_IVs(pb), leafBefore.result(), root, proof, FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_BALANCES, tokenID, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
+        proof(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".proof"))),
+        proofVerifierBefore(pb, TREE_DEPTH_TOKENS, tokenID, merkle_tree_IVs(pb), leafBefore.result(), root, proof, FMT(prefix, ".pathBefore")),
+        rootCalculatorAfter(pb, TREE_DEPTH_TOKENS, tokenID, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
     {
 
     }

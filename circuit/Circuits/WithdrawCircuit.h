@@ -88,16 +88,16 @@ public:
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
-        uint16_padding(make_var_array(pb, 16 - NUM_BITS_TOKENID, FMT(prefix, ".uint16_padding"))),
+        uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
-        tokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".tokenID"))),
+        tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
         amountRequested(pb, 96, FMT(prefix, ".amountRequested")),
         padding(pb, 2, FMT(prefix, ".padding")),
         burnPercentage(pb, 8, FMT(prefix, ".burnPercentage")),
-        feeTokenID(make_var_array(pb, TREE_DEPTH_BALANCES, FMT(prefix, ".feeTokenID"))),
+        feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
         fee(pb, 96, FMT(prefix, ".fee")),
 
         walletID(make_variable(pb, FMT(prefix, ".walletID"))),
