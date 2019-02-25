@@ -287,14 +287,16 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint32 numDepositBlocksCommitted = currentBlock.numDepositBlocksCommitted;
         uint32 numWithdrawBlocksCommitted = currentBlock.numWithdrawBlocksCommitted;
         if (blockType == uint(BlockType.TRADE)) {
-            bytes32 burnRateMerkleRootContract = ITokenRegistry(tokenRegistryAddress).getBurnRateMerkleRoot(burnRateBlockIdx);
-            bytes32 burnRateMerkleRoot;
+            (bytes32 burnRateRootContract, uint32 burnRateRootValidUntil) =
+                ITokenRegistry(tokenRegistryAddress).getBurnRateMerkleRoot(burnRateBlockIdx);
+            bytes32 burnRateRoot;
             uint32 inputTimestamp;
             assembly {
-                burnRateMerkleRoot := mload(add(data, 98))
+                burnRateRoot := mload(add(data, 98))
                 inputTimestamp := and(mload(add(data, 102)), 0xFFFFFFFF)
             }
-            require(burnRateMerkleRoot == burnRateMerkleRootContract, "INVALID_BURNRATE_ROOT");
+            require(burnRateRoot == burnRateRootContract, "INVALID_BURNRATE_ROOT");
+            require(now <= burnRateRootValidUntil, "BURNRATE_ROOT_TOO_OLD");
             require(inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
                     inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS, "INVALID_TIMESTAMP");
         } else if (blockType == uint(BlockType.DEPOSIT)) {

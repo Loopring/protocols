@@ -30,6 +30,9 @@ contract ITokenRegistry {
     // Fees
     uint public constant TOKEN_REGISTRATION_FEE_IN_LRC           = 100000 ether;
 
+    // General
+    uint32 public constant OLD_BURNRATE_ROOT_VALID_IN_SECONDS         = 1 hours;
+
     function getTokenID(
         address tokenAddress
         )
@@ -49,6 +52,6 @@ contract ITokenRegistry {
         )
         external
         view
-        returns (bytes32);
+        returns (bytes32, uint32);
 
 }

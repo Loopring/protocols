@@ -158,7 +158,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         }
 
         // Allow the use of older blocks for 1 hour
-        currentBlock.validUntil = uint32(now + 3600);
+        currentBlock.validUntil = uint32(now + OLD_BURNRATE_ROOT_VALID_IN_SECONDS);
 
         // Create the new block
         BurnRateBlock memory newBlock = BurnRateBlock(
@@ -197,9 +197,10 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         )
         external
         view
-        returns (bytes32)
+        returns (bytes32, uint32)
     {
-        return burnRateBlocks[burnRateBlockIdx].merkleRoot;
+        BurnRateBlock storage specifiedBlock = burnRateBlocks[burnRateBlockIdx];
+        return (specifiedBlock.merkleRoot, specifiedBlock.validUntil);
     }
 
     function getBurnRateRoot()
