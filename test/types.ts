@@ -10,12 +10,10 @@ export interface OrderInfo {
   amountB: BN;
   amountF?: BN;
 
-  wallet?: string;
-
   stateID?: number;
-  walletID?: number;
-  orderID?: number;
   accountID?: number;
+  orderID?: number;
+  walletID?: number;
   dualAuthAccountID?: number;
 
   tokenIdS?: number;
@@ -101,4 +99,9 @@ export interface CancelBlock {
 export interface Block {
   blockIdx: number;
   filename: string;
+}
+
+export interface Wallet {
+  walletID: number;
+  walletAccountID: number;
 }

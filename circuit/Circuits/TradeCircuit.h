@@ -449,7 +449,7 @@ public:
         pb.val(burnBalanceA_W_before) = ringSettlement.balanceUpdateA_W.before.burnBalance;
 
         pb.val(balanceB_W_before) = ringSettlement.balanceUpdateB_W.before.balance;
-        pb.val(burnBalanceB_W_before) = ringSettlement.balanceUpdateA_W.before.burnBalance;
+        pb.val(burnBalanceB_W_before) = ringSettlement.balanceUpdateB_W.before.burnBalance;
 
         pb.val(balanceA_M_before) = ringSettlement.balanceUpdateA_M.before.balance;
         pb.val(balanceB_M_before) = ringSettlement.balanceUpdateB_M.before.balance;

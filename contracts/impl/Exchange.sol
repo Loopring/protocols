@@ -37,7 +37,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     uint32 public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS                 = 1 hours;
 
-    uint public constant MIN_STAKE_AMOUNT_IN_LRC                                = 100000 ether;
+    uint public constant STAKE_AMOUNT_IN_LRC                                    = 100000 ether;
     uint32 public constant MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAWAL               = 1 days;
 
     uint32 public constant MAX_INACTIVE_UNTIL_DISABLED_IN_SECONDS               = 1 days;
@@ -75,7 +75,6 @@ contract Exchange is IExchange, NoDefaultFunc {
     event NewState(uint16 stateID, address owner);
 
     event OperatorRegistered(address operator, uint16 operatorID);
-
     event WalletRegistered(address walletOwner, uint24 walletID);
 
     event Deposit(uint16 stateID, uint32 depositBlockIdx, uint24 accountID, uint16 tokenID, uint24 walletID, uint96 amount);
@@ -115,6 +114,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     struct Account {
         address owner;
+        uint24 walletID;
     }
 
     struct PendingDeposit {
@@ -168,13 +168,14 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint numWithdrawBlocks;
         mapping (uint => WithdrawBlock) withdrawBlocks;
 
+        uint numWallets;
+        mapping (uint => Wallet) wallets;
+
         uint16 numActiveOperators;
         uint16 totalNumOperators;
         mapping (uint => Operator) operators;
         mapping (uint16 => uint16) activeOperators;          // list idx -> operatorID
     }
-
-    Wallet[] public wallets;
 
     State[] private states;
 
@@ -215,6 +216,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             owner,
             0,
             0,
+            1,
             1,
             1,
             0,
@@ -426,11 +428,12 @@ contract Exchange is IExchange, NoDefaultFunc {
 
          // Burn the LRC staked
         Operator storage operator = state.operators[specifiedBlock.operatorID];
-        operator.amountStaked = operator.amountStaked.sub(MIN_STAKE_AMOUNT_IN_LRC);
-        burn(address(this), MIN_STAKE_AMOUNT_IN_LRC);
+        assert(operator.amountStaked == STAKE_AMOUNT_IN_LRC);
+        operator.amountStaked = 0;
+        burn(address(this), STAKE_AMOUNT_IN_LRC);
 
-        // Check if this operator can still be an operator, if not unregister the operator (if still registered)
-        if (operator.amountStaked < MIN_STAKE_AMOUNT_IN_LRC && operator.unregisterTimestamp == 0) {
+        // Unregister the operator (if still registered)
+        if (operator.unregisterTimestamp == 0) {
             unregisterOperator(stateID, specifiedBlock.operatorID);
         }
 
@@ -457,9 +460,12 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // Check if msg.sender wants to create a dual author address for a wallet
         if (walletID >= MAX_NUM_WALLETS) {
-            uint normalWalletID = walletID - MAX_NUM_WALLETS;
-            if (normalWalletID > 0) {
-                require(wallets[normalWalletID].owner == msg.sender, "CANNOT_CREATE_DUAL_AUTHOR_ACCOUNT_FOR WALLET");
+            // Don't allow depositing to addresses like this
+            require(amount == 0, "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS");
+
+            uint targetWalletID = walletID - MAX_NUM_WALLETS;
+            if (targetWalletID > 0) {
+                require(state.wallets[targetWalletID].owner == msg.sender, "CANNOT_CREATE_DUAL_AUTHOR_ACCOUNT_FOR_WALLET");
             }
         }
 
@@ -497,7 +503,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         if (accountID == INVALID_ACCOUNTID) {
             Account memory account = Account(
-                owner
+                owner,
+                walletID
             );
             uint24 newAccountID = uint24(state.numAccounts);
             state.accounts[newAccountID] = account;
@@ -553,7 +560,10 @@ contract Exchange is IExchange, NoDefaultFunc {
         State storage state = states[stateID];
 
         Account storage account = state.accounts[accountID];
-        require(account.owner == msg.sender, "UNAUTHORIZED");
+        // Allow anyone to withdraw wallet fees
+        if (account.walletID < MAX_NUM_WALLETS) {
+            require(account.owner == msg.sender, "UNAUTHORIZED");
+        }
 
         // Get the withdraw block
         WithdrawBlock storage withdrawBlock = state.withdrawBlocks[state.numWithdrawBlocks - 1];
@@ -644,35 +654,37 @@ contract Exchange is IExchange, NoDefaultFunc {
         emit Withdraw(stateID, accountID, tokenID, owner, uint96(amount));
     }
 
-    function registerWallet()
+    function registerWallet(uint16 stateID)
         external
     {
+        require(stateID < states.length, "INVALID_STATEID");
+        State storage state = states[stateID];
+
         Wallet memory wallet = Wallet(
             msg.sender
         );
-        wallets.push(wallet);
+        state.wallets[state.numWallets] = wallet;
+        state.numWallets++;
+        require(state.numWallets <= MAX_NUM_WALLETS, "TOO_MANY_WALLETS");
 
-        emit WalletRegistered(wallet.owner, uint16(wallets.length - 1));
+        emit WalletRegistered(wallet.owner, uint24(state.numWallets - 1));
     }
 
 
     function registerOperator(
-        uint16 stateID,
-        uint amountLRC
+        uint16 stateID
         )
         external
     {
         require(stateID < states.length, "INVALID_STATEID");
         State storage state = states[stateID];
 
-        require(amountLRC >= MIN_STAKE_AMOUNT_IN_LRC, "INSUFFICIENT_STAKE_AMOUNT");
-
         // Move the LRC to this contract
         require(
             lrcAddress.safeTransferFrom(
                 msg.sender,
                 address(this),
-                amountLRC
+                STAKE_AMOUNT_IN_LRC
             ),
             TRANSFER_FAILURE
         );
@@ -682,7 +694,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             msg.sender,
             state.totalNumOperators++,
             state.numActiveOperators++,
-            amountLRC,
+            STAKE_AMOUNT_IN_LRC,
             0
         );
         state.operators[operator.ID] = operator;

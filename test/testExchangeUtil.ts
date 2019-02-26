@@ -10,7 +10,7 @@ import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Block, Cancel, CancelBlock, Deposit, OrderInfo,
-         RingBlock, RingInfo, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
+         RingBlock, RingInfo, Wallet, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -31,6 +31,8 @@ export class ExchangeTestUtil {
 
   public operatorAccountID: number;
   public minerAccountID: number;
+
+  public wallets: Wallet[][] = [];
 
   private contracts = new Artifacts(artifacts);
 
@@ -79,6 +81,9 @@ export class ExchangeTestUtil {
 
       const cancels: Cancel[] = [];
       this.pendingCancels.push(cancels);
+
+      const wallets: Wallet[] = [];
+      this.wallets.push(wallets);
     }
 
     await this.deposit(
@@ -103,21 +108,41 @@ export class ExchangeTestUtil {
       new BN(0),
     );
 
-    this.operatorAccountID = await this.createOperator(0);
+    this.operatorAccountID = await this.createOperator(0, this.testContext.miner);
     this.minerAccountID = await this.createRingMatcher(0);
+
+    for (const walletAddress of this.testContext.wallets) {
+      const wallet = await this.createWallet(0, walletAddress);
+      this.wallets[0].push(wallet);
+    }
   }
 
-  public async createOperator(stateID: number) {
+  public async createOperator(stateID: number, owner: string) {
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
 
     // Make an account for the operator
-    const keyPairO = this.getKeyPairEDDSA();
-    const operatorAccountID = await this.deposit(stateID, this.testContext.miner,
-                                                 keyPairO.secretKey, keyPairO.publicKeyX, keyPairO.publicKeyY,
+    const keyPair = this.getKeyPairEDDSA();
+    const operatorAccountID = await this.deposit(stateID, owner,
+                                                 keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                  0, lrcAddress, new BN(0));
 
-    await this.registerOperator(stateID, this.testContext.miner);
+    await this.registerOperator(stateID, owner);
     return operatorAccountID;
+  }
+
+  public async createWallet(stateID: number, owner: string) {
+    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
+    const walletID = await this.registerWallet(stateID, owner);
+
+    // Make a dual author account for the wallet
+    const keyPair = this.getKeyPairEDDSA();
+    const walletAccountID = await this.deposit(stateID, owner,
+                                                 keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                 this.MAX_MUM_WALLETS + walletID, lrcAddress, new BN(0));
+    return {
+      walletID,
+      walletAccountID,
+    };
   }
 
   public async createRingMatcher(stateID: number) {
@@ -206,8 +231,6 @@ export class ExchangeTestUtil {
       order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 25000;
     }
 
-    order.wallet = order.wallet ? order.wallet : this.testContext.wallets[0];
-
     // Fill in defaults (default, so these will not get serialized)
     order.version = 0;
     order.validUntil = order.validUntil ? order.validUntil : 0;
@@ -219,7 +242,11 @@ export class ExchangeTestUtil {
 
     order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 50;
 
-    order.walletID = order.walletID ? order.walletID : 0;
+    const walletIndex = index % this.testContext.wallets.length;
+    order.walletID = order.walletID ? order.walletID : this.wallets[order.stateID][walletIndex].walletID;
+    order.dualAuthAccountID = order.dualAuthAccountID ?
+                              order.dualAuthAccountID : this.wallets[order.stateID][walletIndex].walletAccountID;
+
     order.orderID = order.orderID ? order.orderID : index;
 
     order.stateID = order.stateID ? order.stateID : 0;
@@ -241,20 +268,14 @@ export class ExchangeTestUtil {
                                          order.walletID, order.tokenS, balanceS);
 
     const balanceF = (order.balanceF !== undefined) ? order.balanceF : order.amountF;
-    order.accountID = await this.deposit(order.stateID, order.owner,
-                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                         order.walletID, order.tokenF, balanceF, order.accountID);
+    await this.deposit(order.stateID, order.owner,
+                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                       order.walletID, order.tokenF, balanceF, order.accountID);
 
     const balanceB = (order.balanceB !== undefined) ? order.balanceB : new BN(0);
-    order.accountID = await this.deposit(order.stateID, order.owner,
-                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                         order.walletID, order.tokenB, balanceB, order.accountID);
-
-    // Make a dual author account
-    const keyPairW = this.getKeyPairEDDSA();
-    order.dualAuthAccountID = await this.deposit(order.stateID, order.wallet,
-                                                 keyPairW.secretKey, keyPairW.publicKeyX, keyPairW.publicKeyY,
-                                                 this.MAX_MUM_WALLETS + order.walletID, order.tokenF, new BN(0));
+    await this.deposit(order.stateID, order.owner,
+                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                       order.walletID, order.tokenB, balanceB, order.accountID);
   }
 
   public getAddressBook(ring: RingInfo) {
@@ -265,7 +286,7 @@ export class ExchangeTestUtil {
     const orders = [ring.orderA, ring.orderB];
     for (const [i, order] of orders.entries()) {
       addAddress(this.addressBook, order.owner, "Owner[" + i + "]");
-      addAddress(this.addressBook, order.walletAddr, "Wallet[" + i + "]");
+      // addAddress(this.addressBook, order.walletID, "Wallet[" + i + "]");
       // addAddress(addressBook, order.hash.toString("hex"), "Hash[" + i + "]");
     }
     return this.addressBook;
@@ -360,8 +381,12 @@ export class ExchangeTestUtil {
     return eventAccountID;
   }
 
-  public async requestWithdrawalOffchain(stateID: number, accountID: number, tokenID: number, amount: BN,
+  public async requestWithdrawalOffchain(stateID: number, accountID: number, token: string, amount: BN,
                                          feeToken: string, fee: BN) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    const tokenID = this.tokenAddressToIDMap.get(token);
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
@@ -370,8 +395,13 @@ export class ExchangeTestUtil {
                               feeTokenID, fee);
   }
 
-  public async requestWithdrawalOnchain(stateID: number, accountID: number, tokenID: number,
+  public async requestWithdrawalOnchain(stateID: number, accountID: number, token: string,
                                         amount: BN, owner: string) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    const tokenID = this.tokenAddressToIDMap.get(token);
+
     let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawSlots(web3.utils.toBN(stateID))).toNumber();
     console.log("numAvailableSlots: " + numAvailableSlots);
     if (numAvailableSlots === 0) {
@@ -973,13 +1003,27 @@ export class ExchangeTestUtil {
     return stateID;
   }
 
-  public async registerOperator(stateID: number, owner: string) {
-    const fee = await this.exchange.NEW_STATE_CREATION_FEE_IN_LRC();
-    await this.setBalanceAndApproveLRC(owner, fee);
+  public async registerWallet(stateID: number, owner: string) {
+    // Register a wallet
+    const tx = await this.exchange.registerWallet(web3.utils.toBN(stateID), {from: owner});
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[RegisterWallet] Gas used: " + tx.receipt.gasUsed);
 
-    // Create the new state
-    const tx = await this.exchange.registerOperator(web3.utils.toBN(stateID), fee, {from: owner});
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[NewState] Gas used: " + tx.receipt.gasUsed);
+    const eventArr: any = await this.getEventsFromContract(this.exchange, "WalletRegistered", web3.eth.blockNumber);
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.walletID];
+    });
+    const walletID = items[0][0].toNumber();
+
+    return walletID;
+  }
+
+  public async registerOperator(stateID: number, owner: string) {
+    const stakeAmount = await this.exchange.STAKE_AMOUNT_IN_LRC();
+    await this.setBalanceAndApproveLRC(owner, stakeAmount);
+
+    // Register an operator
+    const tx = await this.exchange.registerOperator(web3.utils.toBN(stateID), {from: owner});
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[RegisterOperator] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "OperatorRegistered", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
