@@ -38,7 +38,8 @@ export interface RingInfo {
   orderB: OrderInfo;
 
   minerAccountID?: number;
-  fee?: number;
+  tokenID?: number;
+  fee?: BN;
 }
 
 export interface RingBlock {

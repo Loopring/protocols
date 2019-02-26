@@ -87,6 +87,7 @@ def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
     minerAccountID = int(jRing["minerAccountID"])
+    tokenID = int(jRing["tokenID"])
     fee = int(jRing["fee"])
 
     minerAccount = state.getAccount(minerAccountID)
@@ -95,7 +96,7 @@ def ringFromJSON(jRing, state):
 
     ring = Ring(orderA, orderB,
                 Point(minerAccount.publicKeyX, minerAccount.publicKeyY),
-                minerAccountID, fee, minerAccount.nonce)
+                minerAccountID, tokenID, fee, minerAccount.nonce)
 
     ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(dualAuthA.secretKey)), FQ(int(dualAuthB.secretKey)))
 
@@ -144,6 +145,7 @@ def withdraw(onchain, state, data):
         withdrawal = state.withdraw(onchain, accountID, tokenID, amount, export.operatorAccountID, feeTokenID, fee)
         export.withdrawals.append(withdrawal)
 
+    # Operator payment
     proof = state._accountsTree.createProof(export.operatorAccountID)
     state.updateAccountTree(export.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
@@ -173,6 +175,7 @@ def cancel(state, data):
 
         export.cancels.append(state.cancelOrder(accountID, orderTokenID, orderID, export.operatorAccountID, feeTokenID, fee))
 
+    # Operator payment
     proof = state._accountsTree.createProof(export.operatorAccountID)
     state.updateAccountTree(export.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
@@ -199,25 +202,21 @@ def trade(state, data):
 
     context = Context(global_state, export.operatorAccountID, export.timestamp)
 
-    totalFee = 0
+    # Operator payment
+    rootBefore = state._accountsTree._root
+    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, state)
         ringSettlement = state.settleRing(context, ring)
-        totalFee += ring.fee
         export.ringSettlements.append(ringSettlement)
 
-    # Total payment to operator
-    rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    # Operator payment
     proof = state._accountsTree.createProof(export.operatorAccountID)
-
-    export.balanceUpdate_O = state.getAccount(export.operatorAccountID).updateBalance(1, totalFee)
-
     state.updateAccountTree(export.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
     rootAfter = state._accountsTree._root
     export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-    ###
 
     export.merkleRootAfter = str(state.getRoot())
     return export

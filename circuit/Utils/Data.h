@@ -337,6 +337,7 @@ public:
 
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::FieldT minerAccountID;
+    ethsnarks::FieldT tokenID;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT nonce;
 
@@ -363,7 +364,8 @@ void from_json(const json& j, Ring& ring)
     ring.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     ring.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     ring.minerAccountID = ethsnarks::FieldT(j.at("minerAccountID"));
-    ring.fee = ethsnarks::FieldT(j.at("fee"));
+    ring.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    ring.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     ring.nonce = ethsnarks::FieldT(j.at("nonce"));
 
     ring.minerSignature = j.at("minerSignature").get<Signature>();
@@ -401,6 +403,8 @@ public:
     BalanceUpdate balanceUpdateM_M;
     BalanceUpdate balanceUpdateO_M;
     AccountUpdate accountUpdate_M;
+
+    BalanceUpdate balanceUpdateF_O;
 
     BurnRateCheck burnRateCheckF_A;
     BurnRateCheck burnRateCheckF_B;
@@ -440,6 +444,8 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.balanceUpdateO_M = j.at("balanceUpdateO_M").get<BalanceUpdate>();
     ringSettlement.accountUpdate_M = j.at("accountUpdate_M").get<AccountUpdate>();
 
+    ringSettlement.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
+
     ringSettlement.burnRateCheckF_A = j.at("burnRateCheckF_A").get<BurnRateCheck>();
     ringSettlement.burnRateCheckF_B = j.at("burnRateCheckF_B").get<BurnRateCheck>();
 }
@@ -457,7 +463,6 @@ public:
     ethsnarks::FieldT timestamp;
 
     ethsnarks::FieldT operatorAccountID;
-    BalanceUpdate balanceUpdate_O;
     AccountUpdate accountUpdate_O;
 
     std::vector<Loopring::RingSettlement> ringSettlements;
@@ -474,7 +479,6 @@ void from_json(const json& j, TradeContext& context)
     context.timestamp = ethsnarks::FieldT(j["timestamp"].get<unsigned int>());
 
     context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
-    context.balanceUpdate_O = j.at("balanceUpdate_O").get<BalanceUpdate>();
     context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read settlements

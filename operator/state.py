@@ -339,20 +339,22 @@ class Order(object):
 
 
 class Ring(object):
-    def __init__(self, orderA, orderB, publicKey, minerAccountID, fee, nonce):
+    def __init__(self, orderA, orderB, publicKey, minerAccountID, tokenID, fee, nonce):
         self.orderA = orderA
         self.orderB = orderB
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.minerAccountID = minerAccountID
-        self.fee = fee
-        self.nonce = nonce
+        self.minerAccountID = int(minerAccountID)
+        self.tokenID = int(tokenID)
+        self.fee = str(fee)
+        self.nonce = int(nonce)
 
     def message(self):
         msg_parts = [
                         FQ(int(self.orderA.hash), 1<<254), FQ(int(self.orderB.hash), 1<<254),
                         FQ(int(self.orderA.waiveFeePercentage), 1<<7), FQ(int(self.orderB.waiveFeePercentage), 1<<7),
-                        FQ(int(self.minerAccountID), 1<<24), FQ(int(self.fee), 1<<96), FQ(int(self.nonce), 1<<32)
+                        FQ(int(self.minerAccountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.fee), 1<<96),
+                        FQ(int(self.nonce), 1<<32)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -378,6 +380,7 @@ class RingSettlement(object):
                  balanceUpdateA_W, accountUpdateA_W,
                  balanceUpdateB_W, accountUpdateB_W,
                  balanceUpdateA_M, balanceUpdateB_M, balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
+                 balanceUpdateF_O,
                  burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
                  burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B):
         self.ring = ring
@@ -408,6 +411,8 @@ class RingSettlement(object):
         self.balanceUpdateM_M = balanceUpdateM_M
         self.balanceUpdateO_M = balanceUpdateO_M
         self.accountUpdate_M = accountUpdate_M
+
+        self.balanceUpdateF_O = balanceUpdateF_O
 
         self.burnRateCheckF_A = burnRateCheckF_A
         self.walletFee_A = walletFee_A
@@ -769,13 +774,18 @@ class State(object):
         balanceUpdateA_M = accountM.updateBalance(ring.orderA.tokenF, int(matchingFee_A))
         balanceUpdateB_M = accountM.updateBalance(ring.orderB.tokenF, int(matchingFee_B))
         balanceUpdateM_M = accountM.updateBalance(ring.orderA.tokenS, int(ring.margin))
-        balanceUpdateO_M = accountM.updateBalance(1, -int(ring.fee))
+        balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -int(ring.fee))
         accountM.nonce += 1
 
         self.updateAccountTree(ring.minerAccountID)
         accountAfter = copyAccountInfo(self.getAccount(ring.minerAccountID))
         rootAfter = self._accountsTree._root
         accountUpdate_M = AccountUpdateData(ring.minerAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        ###
+
+
+        # Operator payment
+        balanceUpdateF_O = self.getAccount(context.operatorAccountID).updateBalance(ring.tokenID, int(ring.fee))
         ###
 
         return RingSettlement(ring,
@@ -786,6 +796,7 @@ class State(object):
                               balanceUpdateA_W, accountUpdateA_W,
                               balanceUpdateB_W, accountUpdateB_W,
                               balanceUpdateA_M, balanceUpdateB_M, balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
+                              balanceUpdateF_O,
                               burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
                               burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B)
 

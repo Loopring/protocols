@@ -197,7 +197,8 @@ export class ExchangeTestUtil {
 
   public async setupRing(ring: RingInfo) {
     ring.minerAccountID = this.minerAccountID;
-    ring.fee = ring.fee ? ring.fee : 1;
+    ring.tokenID = ring.tokenID ? ring.tokenID : 1;
+    ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
     await this.setupOrder(ring.orderA, this.orderIDGenerator++);
     await this.setupOrder(ring.orderB, this.orderIDGenerator++);
   }
@@ -825,7 +826,8 @@ export class ExchangeTestUtil {
                 amountF: new BN(1),
               },
             minerAccountID: this.minerAccountID,
-            fee: 0,
+            tokenID: 0,
+            fee: new BN(0),
           };
           rings.push(dummyRing);
         }
@@ -857,6 +859,8 @@ export class ExchangeTestUtil {
         const orderB = ringSettlement.ring.orderB;
 
         bs.addNumber(ring.minerAccountID, 3);
+        bs.addNumber(ring.tokenID, 2);
+        bs.addBN(new BN(ring.fee, 10), 12);
         bs.addBN(new BN(ring.margin, 10), 12);
         let index = 0;
         for (const order of [orderA, orderB]) {
