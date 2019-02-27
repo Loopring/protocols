@@ -146,7 +146,7 @@ public:
 
     UpdateBalanceGadget updateBalanceF_O;
 
-    const VariableArrayT ringMessage;
+    const VariableArrayT message;
     SignatureVerifier minerSignatureVerifier;
     SignatureVerifier walletASignatureVerifier;
     SignatureVerifier walletBSignatureVerifier;
@@ -349,12 +349,12 @@ public:
                          {balance_M.Y, constant0, emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_O")),
 
-        ringMessage(flatten({orderA.getHash(), orderB.getHash(),
-                             orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
-                             minerAccountID.bits, tokenID, fee.bits, nonce_before.bits})),
-        minerSignatureVerifier(pb, params, publicKey, ringMessage, FMT(prefix, ".minerSignatureVerifier")),
-        walletASignatureVerifier(pb, params, orderA.walletPublicKey, ringMessage, FMT(prefix, ".walletASignatureVerifier")),
-        walletBSignatureVerifier(pb, params, orderB.walletPublicKey, ringMessage, FMT(prefix, ".walletBSignatureVerifier"))
+        message(flatten({orderA.getHash(), orderB.getHash(),
+                         orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
+                         minerAccountID.bits, tokenID, fee.bits, nonce_before.bits})),
+        minerSignatureVerifier(pb, params, publicKey, message, FMT(prefix, ".minerSignatureVerifier")),
+        walletASignatureVerifier(pb, params, orderA.walletPublicKey, message, FMT(prefix, ".walletASignatureVerifier")),
+        walletBSignatureVerifier(pb, params, orderB.walletPublicKey, message, FMT(prefix, ".walletBSignatureVerifier"))
     {
 
     }

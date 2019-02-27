@@ -532,14 +532,19 @@ class Withdrawal
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
+    ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::FieldT amount;
     ethsnarks::FieldT burnPercentage;
     ethsnarks::FieldT fee;
+    ethsnarks::FieldT walletSplitPercentage;
     Signature signature;
+    Signature walletSignature;
 
     BalanceUpdate balanceUpdateF_A;
     BalanceUpdate balanceUpdateW_A;
     AccountUpdate accountUpdate_A;
+    BalanceUpdate balanceUpdateF_W;
+    AccountUpdate accountUpdate_W;
     BalanceUpdate balanceUpdateF_O;
 };
 
@@ -547,15 +552,21 @@ void from_json(const json& j, Withdrawal& withdrawal)
 {
     withdrawal.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     withdrawal.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
+    withdrawal.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
+    withdrawal.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
     withdrawal.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
     withdrawal.burnPercentage = ethsnarks::FieldT(j.at("burnPercentage"));
     withdrawal.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
+    withdrawal.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     withdrawal.signature = j.at("signature").get<Signature>();
 
     withdrawal.balanceUpdateF_A = j.at("balanceUpdateF_A").get<BalanceUpdate>();
     withdrawal.balanceUpdateW_A = j.at("balanceUpdateW_A").get<BalanceUpdate>();
     withdrawal.accountUpdate_A = j.at("accountUpdate_A").get<AccountUpdate>();
+    withdrawal.balanceUpdateF_W = j.at("balanceUpdateF_W").get<BalanceUpdate>();
+    withdrawal.accountUpdate_W = j.at("accountUpdate_W").get<AccountUpdate>();
     withdrawal.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
+    withdrawal.walletSignature = j.at("walletSignature").get<Signature>();
 }
 
 class WithdrawContext
@@ -596,26 +607,37 @@ class Cancellation
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
+    ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::FieldT fee;
+    ethsnarks::FieldT walletSplitPercentage;
     TradeHistoryUpdate tradeHistoryUpdate_A;
     BalanceUpdate balanceUpdateT_A;
     BalanceUpdate balanceUpdateF_A;
     AccountUpdate accountUpdate_A;
+    BalanceUpdate balanceUpdateF_W;
+    AccountUpdate accountUpdate_W;
     BalanceUpdate balanceUpdateF_O;
     Signature signature;
+    Signature walletSignature;
 };
 
 void from_json(const json& j, Cancellation& cancellation)
 {
     cancellation.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     cancellation.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    cancellation.fee = ethsnarks::FieldT(j.at("fee"));
+    cancellation.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
+    cancellation.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
+    cancellation.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
+    cancellation.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     cancellation.tradeHistoryUpdate_A = j.at("tradeHistoryUpdate_A").get<TradeHistoryUpdate>();
     cancellation.balanceUpdateT_A = j.at("balanceUpdateT_A").get<BalanceUpdate>();
     cancellation.balanceUpdateF_A = j.at("balanceUpdateF_A").get<BalanceUpdate>();
     cancellation.accountUpdate_A = j.at("accountUpdate_A").get<AccountUpdate>();
+    cancellation.balanceUpdateF_W = j.at("balanceUpdateF_W").get<BalanceUpdate>();
+    cancellation.accountUpdate_W = j.at("accountUpdate_W").get<AccountUpdate>();
     cancellation.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
     cancellation.signature = j.at("signature").get<Signature>();
+    cancellation.walletSignature = j.at("walletSignature").get<Signature>();
 }
 
 class CancelContext

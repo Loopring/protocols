@@ -149,12 +149,14 @@ export class ExchangeTestUtil {
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
 
+    const balance = new BN(web3.utils.toWei("1000000", "ether"));
+
     // Make an account for the ringmatcher
     const keyPairM = this.getKeyPairEDDSA();
-    await LRC.addBalance(this.testContext.miner, web3.utils.toBN(new BigNumber(10000)));
+    await LRC.addBalance(this.testContext.miner, balance);
     const minerAccountID = await this.deposit(stateID, this.testContext.miner,
                                               keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                              0, lrcAddress, new BN(10000));
+                                              0, lrcAddress, balance);
     return minerAccountID;
   }
 
@@ -383,7 +385,8 @@ export class ExchangeTestUtil {
   }
 
   public async requestWithdrawalOffchain(stateID: number, accountID: number, token: string, amount: BN,
-                                         feeToken: string, fee: BN) {
+                                         feeToken: string, fee: BN, walletSplitPercentage: number,
+                                         dualAuthAccountID: number) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
@@ -393,7 +396,7 @@ export class ExchangeTestUtil {
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
     this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[stateID], accountID, tokenID, amount,
-                              feeTokenID, fee);
+                              dualAuthAccountID, feeTokenID, fee, walletSplitPercentage);
   }
 
   public async requestWithdrawalOnchain(stateID: number, accountID: number, token: string,
@@ -433,7 +436,7 @@ export class ExchangeTestUtil {
     const withdrawBlockIdx = items[0][0].toNumber();
 
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[stateID],
-                              accountID, tokenID, amount, tokenID, new BN(0), withdrawBlockIdx);
+                              accountID, tokenID, amount, 0, tokenID, new BN(0), 0, withdrawBlockIdx);
   }
 
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
@@ -443,14 +446,16 @@ export class ExchangeTestUtil {
   }
 
   public addCancel(cancels: Cancel[], accountID: number, orderTokenID: number, orderID: number,
-                   feeTokenID: number, fee: BN) {
-    cancels.push({accountID, orderTokenID, orderID, feeTokenID, fee});
+                   dualAuthAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number) {
+    cancels.push({accountID, orderTokenID, orderID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage});
   }
 
   public cancelOrderID(stateID: number, accountID: number,
                        orderTokenID: number, orderID: number,
-                       feeTokenID: number, fee: BN) {
-    this.addCancel(this.pendingCancels[stateID], accountID, orderTokenID, orderID, feeTokenID, fee);
+                       dualAuthAccountID: number,
+                       feeTokenID: number, fee: BN, walletSplitPercentage: number) {
+    this.addCancel(this.pendingCancels[stateID], accountID, orderTokenID, orderID, dualAuthAccountID,
+                                                 feeTokenID, fee, walletSplitPercentage);
   }
 
   public cancelOrder(order: OrderInfo, feeToken: string, fee: BN) {
@@ -458,14 +463,17 @@ export class ExchangeTestUtil {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.cancelOrderID(order.stateID, order.accountID, order.tokenIdS, order.orderID, feeTokenID, fee);
+    const wallet = this.wallets[order.stateID][0];
+    this.cancelOrderID(order.stateID, order.accountID, order.tokenIdS, order.orderID, wallet.walletAccountID,
+                       feeTokenID, fee, 50);
   }
 
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
                               accountID: number, tokenID: number, amount: BN,
-                              feeTokenID: number, fee: BN,
+                              dualAuthAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number,
                               withdrawBlockIdx?: number) {
-    withdrawalRequests.push({accountID, tokenID, amount, feeTokenID, fee, withdrawBlockIdx});
+    withdrawalRequests.push({accountID, tokenID, amount, dualAuthAccountID,
+                             feeTokenID, fee, walletSplitPercentage, withdrawBlockIdx});
   }
 
   public sendRing(stateID: number, ring: RingInfo) {
@@ -657,8 +665,10 @@ export class ExchangeTestUtil {
             accountID: 0,
             tokenID: 0,
             amount: new BN(0),
+            dualAuthAccountID: 1,
             feeTokenID: 0,
             fee: new BN(0),
+            walletSplitPercentage: 0,
           };
           withdrawalRequests.push(dummyWithdrawalRequest);
           isFull = false;
@@ -697,8 +707,10 @@ export class ExchangeTestUtil {
       }
       if (!onchain) {
         for (const withdrawal of jwithdrawals.withdrawals) {
+          bs.addNumber(withdrawal.dualAuthAccountID, 3);
           bs.addNumber(withdrawal.feeTokenID, 2);
           bs.addBN(web3.utils.toBN(withdrawal.fee), 12);
+          bs.addNumber(withdrawal.walletSplitPercentage, 1);
         }
       }
 
@@ -903,8 +915,10 @@ export class ExchangeTestUtil {
             accountID: 0,
             orderTokenID: 0,
             orderID: 0,
+            dualAuthAccountID: 1,
             feeTokenID: 0,
             fee: new BN(0),
+            walletSplitPercentage: 0,
           };
           cancels.push(dummyCancel);
         }
@@ -931,8 +945,10 @@ export class ExchangeTestUtil {
         bs.addNumber(cancel.accountID, 3);
         bs.addNumber(cancel.orderTokenID, 2);
         bs.addNumber(cancel.orderID, 2);
+        bs.addNumber(cancel.dualAuthAccountID, 3);
         bs.addNumber(cancel.feeTokenID, 2);
         bs.addBN(cancel.fee, 12);
+        bs.addNumber(cancel.walletSplitPercentage, 1);
       }
 
       // Commit the block

@@ -139,10 +139,12 @@ def withdraw(onchain, state, data):
         accountID = int(withdrawalInfo["accountID"])
         tokenID = int(withdrawalInfo["tokenID"])
         amount = int(withdrawalInfo["amount"])
+        dualAuthAccountID = int(withdrawalInfo["dualAuthAccountID"])
         feeTokenID = int(withdrawalInfo["feeTokenID"])
         fee = int(withdrawalInfo["fee"])
+        walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
 
-        withdrawal = state.withdraw(onchain, accountID, tokenID, amount, export.operatorAccountID, feeTokenID, fee)
+        withdrawal = state.withdraw(onchain, accountID, tokenID, amount, export.operatorAccountID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage)
         export.withdrawals.append(withdrawal)
 
     # Operator payment
@@ -170,10 +172,12 @@ def cancel(state, data):
         accountID = int(cancelInfo["accountID"])
         orderTokenID = int(cancelInfo["orderTokenID"])
         orderID = int(cancelInfo["orderID"])
+        dualAuthAccountID = int(cancelInfo["dualAuthAccountID"])
         feeTokenID = int(cancelInfo["feeTokenID"])
         fee = int(cancelInfo["fee"])
+        walletSplitPercentage = int(cancelInfo["walletSplitPercentage"])
 
-        export.cancels.append(state.cancelOrder(accountID, orderTokenID, orderID, export.operatorAccountID, feeTokenID, fee))
+        export.cancels.append(state.cancelOrder(accountID, orderTokenID, orderID, dualAuthAccountID, export.operatorAccountID, feeTokenID, fee, walletSplitPercentage))
 
     # Operator payment
     proof = state._accountsTree.createProof(export.operatorAccountID)

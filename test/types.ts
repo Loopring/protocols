@@ -65,8 +65,11 @@ export interface WithdrawalRequest {
   accountID: number;
   tokenID: number;
   amount: BN;
+
+  dualAuthAccountID: number;
   feeTokenID: number;
   fee: BN;
+  walletSplitPercentage: number;
 
   withdrawBlockIdx?: number;
 }
@@ -87,8 +90,10 @@ export interface Cancel {
   accountID: number;
   orderTokenID: number;
   orderID: number;
+  dualAuthAccountID: number;
   feeTokenID: number;
   fee: BN;
+  walletSplitPercentage: number;
 }
 
 export interface CancelBlock {
