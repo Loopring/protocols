@@ -2,6 +2,7 @@ var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var TokenRegistry = artifacts.require("./impl/TokenRegistry.sol");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var Exchange = artifacts.require("./impl/Exchange");
+var BurnManager = artifacts.require("./impl/BurnManager");
 
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {
@@ -25,6 +26,14 @@ module.exports = function(deployer, network, accounts) {
           Exchange,
           TokenRegistry.address,
           BlockVerifier.address,
+          LRCToken.address,
+        ),
+      ]);
+    }).then(() => {
+      return Promise.all([
+        deployer.deploy(
+          BurnManager,
+          Exchange.address,
           LRCToken.address,
         ),
       ]);

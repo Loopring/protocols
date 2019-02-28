@@ -25,9 +25,9 @@ public:
     VariableArrayT orderID;
     VariableArrayT accountID;
     VariableArrayT dualAuthAccountID;
-    VariableArrayT tokenS;
-    VariableArrayT tokenB;
-    VariableArrayT tokenF;
+    libsnark::dual_variable_gadget<FieldT> tokenS;
+    libsnark::dual_variable_gadget<FieldT> tokenB;
+    libsnark::dual_variable_gadget<FieldT> tokenF;
     libsnark::dual_variable_gadget<FieldT> amountS;
     libsnark::dual_variable_gadget<FieldT> amountB;
     libsnark::dual_variable_gadget<FieldT> amountF;
@@ -77,9 +77,9 @@ public:
         orderID(make_var_array(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".orderID"))),
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         dualAuthAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID"))),
-        tokenS(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenS"))),
-        tokenB(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenB"))),
-        tokenF(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenF"))),
+        tokenS(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenS")),
+        tokenB(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenB")),
+        tokenF(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenF")),
         amountS(pb, 96, FMT(prefix, ".amountS")),
         amountB(pb, 96, FMT(prefix, ".amountB")),
         amountF(pb, 96, FMT(prefix, ".amountF")),
@@ -105,7 +105,7 @@ public:
 
         signatureVerifier(pb, params, publicKey,
                           flatten({stateID.bits, orderID, accountID, dualAuthAccountID,
-                          tokenS, tokenB, tokenF,
+                          tokenS.bits, tokenB.bits, tokenF.bits,
                           amountS.bits, amountB.bits, amountF.bits,
                           allOrNone.bits, validSince.bits, validUntil.bits,
                           walletSplitPercentage.bits}),
@@ -140,9 +140,12 @@ public:
         orderID.fill_with_bits_of_field_element(pb, order.orderID);
         accountID.fill_with_bits_of_field_element(pb, order.accountID);
         dualAuthAccountID.fill_with_bits_of_field_element(pb, order.dualAuthAccountID);
-        tokenS.fill_with_bits_of_field_element(pb, order.tokenS);
-        tokenB.fill_with_bits_of_field_element(pb, order.tokenB);
-        tokenF.fill_with_bits_of_field_element(pb, order.tokenF);
+        tokenS.bits.fill_with_bits_of_field_element(pb, order.tokenS);
+        tokenS.generate_r1cs_witness_from_bits();
+        tokenB.bits.fill_with_bits_of_field_element(pb, order.tokenB);
+        tokenB.generate_r1cs_witness_from_bits();
+        tokenF.bits.fill_with_bits_of_field_element(pb, order.tokenF);
+        tokenF.generate_r1cs_witness_from_bits();
 
         amountS.bits.fill_with_bits_of_field_element(pb, order.amountS);
         amountS.generate_r1cs_witness_from_bits();
@@ -193,6 +196,10 @@ public:
         padding.generate_r1cs_constraints(true);
 
         stateID.generate_r1cs_constraints(true);
+
+        tokenS.generate_r1cs_constraints(true);
+        tokenB.generate_r1cs_constraints(true);
+        tokenF.generate_r1cs_constraints(true);
 
         amountS.generate_r1cs_constraints(true);
         amountB.generate_r1cs_constraints(true);

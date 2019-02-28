@@ -21,11 +21,12 @@ pragma solidity 0.5.2;
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IExchange {
 
-    /// @dev   Submit order-rings for settlement.
-    /// @param data Packed data.
-    /*function submitRings(
-        bytes memory data,
-        uint256[8] memory proof
+    mapping (address => uint) public burnBalances;
+
+    /*function withdrawBurned(
+        address token,
+        uint amount
         )
-        public;*/
+        external
+        returns (bool success);*/
 }

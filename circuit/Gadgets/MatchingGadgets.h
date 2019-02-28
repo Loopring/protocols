@@ -154,7 +154,29 @@ public:
 
     VariableT remainingSBeforeCancelled;
     VariableT remainingS;
-    MinGadget fillAmountS;
+    MinGadget fillAmountS_1;
+    MulDivGadget fillAmountF;
+    VariableT fillAmountS_plus_fillAmountF;
+    VariableT amountS_plus_amountF;
+    EqualGadget tokenS_eq_tokenF;
+    LeqGadget balanceS_LT_fillAmountS_plus_fillAmountF;
+    AndGadget tokenS_eq_tokenF_AND_balanceS_lt_fillAmountS_plus_fillAmountF;
+
+    LeqGadget balanceF_lt_fillAmountF;
+    NotGadget tokenS_neq_tokenF;
+    AndGadget tokenS_neq_tokenF_AND_balanceF_lt_fillAmountF;
+
+    EqualGadget tokenB_eq_tokenF;
+    LeqGadget amountF_leq_amountB;
+    AndGadget tokenB_eq_tokenF_AND_amountF_leq_amountB;
+
+    MulDivGadget fillAmountS_eq;
+    MulDivGadget fillAmountS_neq;
+
+    TernaryGadget fillAmountS_2;
+    TernaryGadget fillAmountS_3;
+    TernaryGadget fillAmountS;
+
     MulDivGadget fillAmountB;
 
     MaxFillAmountsGadget(
@@ -168,8 +190,41 @@ public:
 
         remainingSBeforeCancelled(make_variable(pb, FMT(prefix, ".remainingSBeforeCancelled"))),
         remainingS(make_variable(pb, FMT(prefix, ".remainingS"))),
-        fillAmountS(pb, order.balanceS, remainingS, FMT(prefix, ".min(balanceS, remainingS)")),
-        fillAmountB(pb, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(prefix, "(fillAmountS * amountB) / amountS"))
+        fillAmountS_1(pb, order.balanceS, remainingS, FMT(prefix, ".min(balanceS, remainingS)")),
+
+        fillAmountF(pb, order.amountF.packed, fillAmountS_1.result(), order.amountS.packed,
+                    FMT(prefix, ".(amountF * fillAmountS) / amountS")),
+        fillAmountS_plus_fillAmountF(make_variable(pb, FMT(prefix, ".fillAmountS_plus_fillAmountF"))),
+
+        amountS_plus_amountF(make_variable(pb, FMT(prefix, ".amountS_plus_amountF"))),
+        tokenS_eq_tokenF(pb, order.tokenS.packed, order.tokenF.packed, FMT(prefix, ".tokenS == tokenF")),
+        balanceS_LT_fillAmountS_plus_fillAmountF(pb, order.balanceS, fillAmountS_plus_fillAmountF, FMT(prefix, ".balanceS < totalAmount")),
+        tokenS_eq_tokenF_AND_balanceS_lt_fillAmountS_plus_fillAmountF(pb, tokenS_eq_tokenF.eq(), balanceS_LT_fillAmountS_plus_fillAmountF.lt(),
+                                                                      FMT(prefix, ".fillAmountS_plus_fillAmountF")),
+        fillAmountS_eq(pb, order.balanceS, order.amountS.packed, amountS_plus_amountF,
+                       FMT(prefix, ".balanceS * amountS / (amountS + amountF)")),
+
+        tokenS_neq_tokenF(pb, tokenS_eq_tokenF.eq(), FMT(prefix, ".tokenS != tokenF")),
+        balanceF_lt_fillAmountF(pb, order.balanceF, fillAmountF.result(), FMT(prefix, ".balanceF < fillAmountF")),
+        tokenS_neq_tokenF_AND_balanceF_lt_fillAmountF(pb, tokenS_neq_tokenF.Not(), balanceF_lt_fillAmountF.lt(),
+                                                      FMT(prefix, ".tokenS_neq_tokenF AND balanceF_lt_fillAmountF")),
+        fillAmountS_neq(pb, order.balanceF, order.amountS.packed, order.amountF.packed,
+                        FMT(prefix, ".balanceF * amountS / amountF")),
+
+        tokenB_eq_tokenF(pb, order.tokenB.packed, order.tokenF.packed, FMT(prefix, ".tokenB == tokenF")),
+        amountF_leq_amountB(pb, order.amountF.packed, order.amountB.packed, FMT(prefix, ".amountF <= amountB")),
+        tokenB_eq_tokenF_AND_amountF_leq_amountB(pb, tokenB_eq_tokenF.eq(), amountF_leq_amountB.leq(),
+                                                      FMT(prefix, ".tokenB_eq_tokenF AND amountF_leq_amountB")),
+
+        fillAmountS_2(pb, tokenS_eq_tokenF_AND_balanceS_lt_fillAmountS_plus_fillAmountF.And(),
+                      fillAmountS_eq.result(), fillAmountS_1.result(), FMT(prefix, ".fillAmountS_2")),
+        fillAmountS_3(pb, tokenS_neq_tokenF_AND_balanceF_lt_fillAmountF.And(),
+                    fillAmountS_neq.result(), fillAmountS_2.result(), FMT(prefix, ".fillAmountS_3")),
+        fillAmountS(pb, tokenB_eq_tokenF_AND_amountF_leq_amountB.And(),
+                      fillAmountS_1.result(), fillAmountS_3.result(), FMT(prefix, ".fillAmountS")),
+
+
+        fillAmountB(pb, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(prefix, ".(fillAmountS * amountB) / amountS"))
     {
 
     }
@@ -188,8 +243,32 @@ public:
     {
         pb.val(remainingSBeforeCancelled) = pb.val(order.amountS.packed) - pb.val(order.filledBefore);
         pb.val(remainingS) = (FieldT::one() - pb.val(order.cancelled)) * pb.val(remainingSBeforeCancelled);
+        fillAmountS_1.generate_r1cs_witness();
+
+        fillAmountF.generate_r1cs_witness();
+        pb.val(fillAmountS_plus_fillAmountF) = pb.val(fillAmountS_1.result()) + pb.val(fillAmountF.result());
+
+        pb.val(amountS_plus_amountF) = pb.val(order.amountS.packed) + pb.val(order.amountF.packed);
+        tokenS_eq_tokenF.generate_r1cs_witness();
+        balanceS_LT_fillAmountS_plus_fillAmountF.generate_r1cs_witness();
+        tokenS_eq_tokenF_AND_balanceS_lt_fillAmountS_plus_fillAmountF.generate_r1cs_witness();
+        fillAmountS_eq.generate_r1cs_witness();
+
+        tokenS_neq_tokenF.generate_r1cs_witness();
+        balanceF_lt_fillAmountF.generate_r1cs_witness();
+        tokenS_neq_tokenF_AND_balanceF_lt_fillAmountF.generate_r1cs_witness();
+        fillAmountS_neq.generate_r1cs_witness();
+
+        tokenB_eq_tokenF.generate_r1cs_witness();
+        amountF_leq_amountB.generate_r1cs_witness();
+        tokenB_eq_tokenF_AND_amountF_leq_amountB.generate_r1cs_witness();
+
+        fillAmountS_2.generate_r1cs_witness();
+        fillAmountS_3.generate_r1cs_witness();
         fillAmountS.generate_r1cs_witness();
+
         fillAmountB.generate_r1cs_witness();
+
         print(pb, "amountS", order.amountS.packed);
         print(pb, "remainingSBeforeCancelled", remainingSBeforeCancelled);
         print(pb, "remainingS", remainingS);
@@ -201,9 +280,37 @@ public:
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(order.filledBefore + remainingSBeforeCancelled, 1, order.amountS.packed), "filledBeforeA + remainingSBeforeCancelled = amountS");
-        pb.add_r1cs_constraint(ConstraintT(remainingSBeforeCancelled, 1 - order.cancelled, remainingS), "remainingSBeforeCancelled * cancelled = remainingS");
+        pb.add_r1cs_constraint(ConstraintT(order.filledBefore + remainingSBeforeCancelled, 1, order.amountS.packed),
+                               "filledBefore + remainingSBeforeCancelled = amountS");
+        pb.add_r1cs_constraint(ConstraintT(remainingSBeforeCancelled, 1 - order.cancelled, remainingS),
+                               "remainingSBeforeCancelled * cancelled = remainingS");
+
+        fillAmountS_1.generate_r1cs_constraints();
+
+        fillAmountF.generate_r1cs_constraints();
+        pb.add_r1cs_constraint(ConstraintT(fillAmountS_1.result() + fillAmountF.result(), 1, fillAmountS_plus_fillAmountF),
+                               "fillAmountS + fillAmountF = fillAmountS_plus_fillAmountF");
+
+        pb.add_r1cs_constraint(ConstraintT(order.amountS.packed + order.amountF.packed, 1, amountS_plus_amountF),
+                               "amountS + amountF = amountS + amountF");
+        tokenS_eq_tokenF.generate_r1cs_constraints();
+        balanceS_LT_fillAmountS_plus_fillAmountF.generate_r1cs_constraints();
+        tokenS_eq_tokenF_AND_balanceS_lt_fillAmountS_plus_fillAmountF.generate_r1cs_constraints();
+        fillAmountS_eq.generate_r1cs_constraints();
+
+        tokenS_neq_tokenF.generate_r1cs_constraints();
+        balanceF_lt_fillAmountF.generate_r1cs_constraints();
+        tokenS_neq_tokenF_AND_balanceF_lt_fillAmountF.generate_r1cs_constraints();
+        fillAmountS_neq.generate_r1cs_constraints();
+
+        tokenB_eq_tokenF.generate_r1cs_constraints();
+        amountF_leq_amountB.generate_r1cs_constraints();
+        tokenB_eq_tokenF_AND_amountF_leq_amountB.generate_r1cs_constraints();
+
+        fillAmountS_2.generate_r1cs_constraints();
+        fillAmountS_3.generate_r1cs_constraints();
         fillAmountS.generate_r1cs_constraints();
+
         fillAmountB.generate_r1cs_constraints();
     }
 };
@@ -369,11 +476,8 @@ public:
     void generate_r1cs_constraints()
     {
         // Check if tokenS/tokenB match
-        for (unsigned int i = 0; i < TREE_DEPTH_TOKENS; i++)
-        {
-            pb.add_r1cs_constraint(ConstraintT(orderA.tokenS[i], 1, orderB.tokenB[i]), "orderA.tokenS == orderB.tokenB");
-            pb.add_r1cs_constraint(ConstraintT(orderA.tokenB[i], 1, orderB.tokenS[i]), "orderA.tokenB == orderB.tokenS");
-        }
+        pb.add_r1cs_constraint(ConstraintT(orderA.tokenS.packed, 1, orderB.tokenB.packed), "orderA.tokenS == orderB.tokenB");
+        pb.add_r1cs_constraint(ConstraintT(orderA.tokenB.packed, 1, orderB.tokenS.packed), "orderA.tokenB == orderB.tokenS");
 
         maxFillAmountA.generate_r1cs_constraints();
         maxFillAmountB.generate_r1cs_constraints();

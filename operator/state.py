@@ -630,10 +630,28 @@ class State(object):
         order.balanceF = str(account.getBalance(order.tokenF))
 
         balanceS = int(account.getBalance(order.tokenS))
+        balanceF = int(account.getBalance(order.tokenF))
         remainingS = int(order.amountS) - int(order.filledBefore)
         if order.cancelled == 1:
             remainingS = 0
         fillAmountS = balanceS if (balanceS < remainingS) else remainingS
+
+        # Check how much fee needs to be paid. We limit fillAmountS to how much
+        # fee the order owner can pay.
+        fillAmountF = int(order.amountF) * fillAmountS // int(order.amountS)
+
+        if order.tokenF == order.tokenS and balanceS < fillAmountS + fillAmountF:
+            # Equally divide the available tokens between fillAmountS and fillAmountF
+            fillAmountS = balanceS * int(order.amountS) // (int(order.amountS) + int(order.amountF))
+
+        if order.tokenF != order.tokenS and balanceF < fillAmountF:
+            # Scale down fillAmountS so the available fillAmountF is sufficient
+            fillAmountS = balanceF * int(order.amountS) // int(order.amountF)
+
+        if order.tokenF == order.tokenB and int(order.amountF) <= int(order.amountB):
+            # No rebalancing (because of insufficient balanceF) is ever necessary when amountF <= amountB
+            fillAmountS = balanceS if (balanceS < remainingS) else remainingS
+
         fillAmountB = (fillAmountS * int(order.amountB)) // int(order.amountS)
         return (fillAmountS, fillAmountB)
 

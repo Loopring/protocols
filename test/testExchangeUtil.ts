@@ -29,8 +29,8 @@ export class ExchangeTestUtil {
   public tokenRegistry: any;
   public blockVerifier: any;
 
-  public operatorAccountID: number;
-  public minerAccountID: number;
+  public operatorAccountID: number[] = [];
+  public minerAccountID: number[] = [];
 
   public wallets: Wallet[][] = [];
 
@@ -55,8 +55,6 @@ export class ExchangeTestUtil {
   private MAX_NUM_STATES: number = 16;
 
   private orderIDGenerator: number = 0;
-
-  private addressBook: { [id: string]: string; } = {};
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -86,8 +84,12 @@ export class ExchangeTestUtil {
       this.wallets.push(wallets);
     }
 
+    await this.setupTestState(0);
+  }
+
+  public async setupTestState(stateID: number) {
     await this.deposit(
-      0,
+      stateID,
       this.zeroAddress,
       (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
       (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
@@ -98,7 +100,7 @@ export class ExchangeTestUtil {
     );
 
     await this.deposit(
-      0,
+      stateID,
       this.zeroAddress,
       (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
       (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
@@ -108,12 +110,12 @@ export class ExchangeTestUtil {
       new BN(0),
     );
 
-    this.operatorAccountID = await this.createOperator(0, this.testContext.miner);
-    this.minerAccountID = await this.createRingMatcher(0);
+    this.operatorAccountID[stateID] = await this.createOperator(stateID, this.testContext.miner);
+    this.minerAccountID[stateID] = await this.createRingMatcher(stateID);
 
     for (const walletAddress of this.testContext.wallets) {
-      const wallet = await this.createWallet(0, walletAddress);
-      this.wallets[0].push(wallet);
+      const wallet = await this.createWallet(stateID, walletAddress);
+      this.wallets[stateID].push(wallet);
     }
   }
 
@@ -131,14 +133,13 @@ export class ExchangeTestUtil {
   }
 
   public async createWallet(stateID: number, owner: string) {
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const walletID = await this.registerWallet(stateID, owner);
 
     // Make a dual author account for the wallet
     const keyPair = this.getKeyPairEDDSA();
     const walletAccountID = await this.deposit(stateID, owner,
                                                  keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                 this.MAX_MUM_WALLETS + walletID, lrcAddress, new BN(0));
+                                                 this.MAX_MUM_WALLETS + walletID, this.zeroAddress, new BN(0));
     return {
       walletID,
       walletAccountID,
@@ -198,7 +199,7 @@ export class ExchangeTestUtil {
   }
 
   public async setupRing(ring: RingInfo) {
-    ring.minerAccountID = this.minerAccountID;
+    ring.minerAccountID = this.minerAccountID[ring.orderA.stateID];
     ring.tokenID = ring.tokenID ? ring.tokenID : 1;
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
     await this.setupOrder(ring.orderA, this.orderIDGenerator++);
@@ -234,11 +235,9 @@ export class ExchangeTestUtil {
       order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 25000;
     }
 
-    // Fill in defaults (default, so these will not get serialized)
-    order.version = 0;
-    order.validUntil = order.validUntil ? order.validUntil : 0;
+    // Fill in defaults
     order.tokenF = order.tokenF ? order.tokenF : this.context.lrcAddress;
-    order.amountF = order.amountF ? order.amountF : new BN(0);
+    order.amountF = order.amountF ? order.amountF : new BN(web3.utils.toWei("1.5", "ether"));
 
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
     order.walletSplitPercentage = order.walletSplitPercentage ? order.walletSplitPercentage : 50;
@@ -286,13 +285,14 @@ export class ExchangeTestUtil {
       addrBook[address] = (addrBook[address] ? addrBook[address] + "=" : "") + name;
     };
 
+    const addressBook: { [id: string]: string; } = {};
     const orders = [ring.orderA, ring.orderB];
     for (const [i, order] of orders.entries()) {
-      addAddress(this.addressBook, order.owner, "Owner[" + i + "]");
+      addAddress(addressBook, order.owner, "Owner[" + i + "]");
       // addAddress(this.addressBook, order.walletID, "Wallet[" + i + "]");
       // addAddress(addressBook, order.hash.toString("hex"), "Hash[" + i + "]");
     }
-    return this.addressBook;
+    return addressBook;
   }
 
   public getKeyPairEDDSA() {
@@ -328,6 +328,10 @@ export class ExchangeTestUtil {
 
   public async deposit(stateID: number, owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
                        walletID: number, token: string, amount: BN, accountID: number = 0xFFFFFF) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+
     let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots(web3.utils.toBN(stateID))).toNumber();
     if (numAvailableSlots === 0) {
         const timeToWait = (await this.exchange.MIN_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
@@ -463,8 +467,7 @@ export class ExchangeTestUtil {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    const wallet = this.wallets[order.stateID][0];
-    this.cancelOrderID(order.stateID, order.accountID, order.tokenIdS, order.orderID, wallet.walletAccountID,
+    this.cancelOrderID(order.stateID, order.accountID, order.tokenIdS, order.orderID, order.dualAuthAccountID,
                        feeTokenID, fee, 50);
   }
 
@@ -679,7 +682,7 @@ export class ExchangeTestUtil {
       const operatorAccountID = this.operatorAccountID;
       const withdrawalBlock: WithdrawBlock = {
         withdrawals: withdrawalRequests,
-        operatorAccountID,
+        operatorAccountID: operatorAccountID[stateID],
       };
 
       if (onchain) {
@@ -746,9 +749,7 @@ export class ExchangeTestUtil {
     return this.commitWithdrawalRequests(true, stateID);
   }
 
-  public async submitPendingWithdrawals(ring: RingInfo) {
-    const addressBook = this.getAddressBook(ring);
-
+  public async submitPendingWithdrawals(addressBook?: { [id: string]: string; }) {
     for (const withdrawal of this.pendingWithdrawals) {
       const txw = await this.exchange.withdraw(
         web3.utils.toBN(withdrawal.stateID),
@@ -762,7 +763,7 @@ export class ExchangeTestUtil {
       });
       const tokenID = items[0][1].toNumber();
       const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
-      const to = addressBook[items[0][0]];
+      const to = addressBook ? addressBook[items[0][0]] : items[0][0];
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
       const amount = items[0][2].div(web3.utils.toBN(10 ** decimals)).toString(10);
@@ -779,7 +780,7 @@ export class ExchangeTestUtil {
     }
 
     // Generate the token transfers for the ring
-    operatorAccountID = operatorAccountID ? operatorAccountID : this.operatorAccountID;
+    operatorAccountID = operatorAccountID ? operatorAccountID : this.operatorAccountID[stateID];
     const blockNumber = await web3.eth.getBlockNumber();
     const timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
 
@@ -837,7 +838,7 @@ export class ExchangeTestUtil {
                 amountB: new BN(1),
                 amountF: new BN(1),
               },
-            minerAccountID: this.minerAccountID,
+            minerAccountID: this.minerAccountID[stateID],
             tokenID: 0,
             fee: new BN(0),
           };
@@ -928,7 +929,7 @@ export class ExchangeTestUtil {
       const operatorAccountID = this.operatorAccountID;
       const cancelBlock: CancelBlock = {
         cancels,
-        operatorAccountID,
+        operatorAccountID: operatorAccountID[stateID],
       };
 
       // Create the block
@@ -1008,17 +1009,7 @@ export class ExchangeTestUtil {
     });
     const stateID = items[0][0].toNumber();
 
-    // Add default user (TODO: move onchain)
-    await this.deposit(
-      stateID,
-      this.zeroAddress,
-      (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
-      0,
-      this.zeroAddress,
-      new BN(0),
-    );
+    await this.setupTestState(stateID);
 
     return stateID;
   }

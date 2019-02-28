@@ -86,6 +86,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     event BlockFeeWithdraw(uint16 stateID, uint32 blockIdx, address operator, uint amount);
 
+    event WithdrawBurned(address token, uint amount);
+
     enum BlockType {
         TRADE,
         DEPOSIT,
@@ -179,8 +181,6 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     State[] private states;
 
-    mapping (uint16 => uint) burnBalances;
-
     constructor(
         address _tokenRegistryAddress,
         address _blockVerifierAddress,
@@ -195,6 +195,12 @@ contract Exchange is IExchange, NoDefaultFunc {
         blockVerifierAddress = _blockVerifierAddress;
         lrcAddress = _lrcAddress;
 
+        initialize();
+    }
+
+    function initialize()
+        internal
+    {
         // Create the default state
         createNewStateInternal(address(0x0));
     }
@@ -640,7 +646,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
             // Increase the burn balance
             if (amountToBurn > 0) {
-                burnBalances[tokenID] = burnBalances[tokenID].add(amountToBurn);
+                burnBalances[token] = burnBalances[token].add(amountToBurn);
             }
 
             // Set the amount to 0 so it cannot be withdrawn anymore
@@ -827,6 +833,25 @@ contract Exchange is IExchange, NoDefaultFunc {
             BURN_FAILURE
         );
     }
+
+    /*function withdrawBurned(
+        address token,
+        uint amount
+        )
+        external
+        returns (bool success)
+    {
+        require(burnBalances[token] >= amount, INVALID_VALUE);
+        burnBalances[token] = burnBalances[token].sub(amount);
+
+        // Token transfer needs to be done after the state changes to prevent a reentrancy attack
+        success = token.safeTransfer(msg.sender, amount);
+        require(success, TRANSFER_FAILURE);
+
+        emit WithdrawBurned(token, amount);
+
+        return success;
+    }*/
 
     function getBlockIdx(
         uint16 stateID

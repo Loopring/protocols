@@ -56,19 +56,4 @@ library MathUint {
         c = a + b;
         require(c >= a, "INVALID_VALUE");
     }
-
-    function hasRoundingError(
-        uint value,
-        uint numerator,
-        uint denominator
-        )
-        internal
-        pure
-        returns (bool)
-    {
-        uint multiplied = mul(value, numerator);
-        uint remainder = multiplied % denominator;
-        // Return true if the rounding error is larger than 1%
-        return mul(remainder, 100) > multiplied;
-    }
 }
