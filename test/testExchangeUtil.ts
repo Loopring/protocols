@@ -84,7 +84,13 @@ export class ExchangeTestUtil {
       this.wallets.push(wallets);
     }
 
-    await this.setupTestState(0);
+    await this.createNewState(
+      this.testContext.deployer,
+      new BN(web3.utils.toWei("0.001", "ether")),
+      new BN(web3.utils.toWei("0.001", "ether")),
+      new BN(web3.utils.toWei("0.01", "ether")),
+      false,
+    );
   }
 
   public async setupTestState(stateID: number) {
@@ -341,7 +347,7 @@ export class ExchangeTestUtil {
     }
 
     const txOrigin = (owner === this.zeroAddress) ? this.testContext.orderOwners[0] : owner;
-    const depositFee = await this.exchange.DEPOSIT_FEE_IN_ETH();
+    const depositFee = await this.exchange.getDepositFee(stateID);
 
     let ethToSend = depositFee;
     if (amount.gt(0)) {
@@ -421,7 +427,7 @@ export class ExchangeTestUtil {
     }
 
     const txOrigin = (owner === this.zeroAddress) ? this.testContext.orderOwners[0] : owner;
-    const withdrawFee = await this.exchange.WITHDRAW_FEE_IN_ETH();
+    const withdrawFee = await this.exchange.getWithdrawFee(stateID);
 
     // Submit the withdraw request
     const tx = await this.exchange.requestWithdraw(
@@ -629,7 +635,7 @@ export class ExchangeTestUtil {
       const jDeposits = fs.readFileSync(blockFilename, "ascii");
       const jdeposits = JSON.parse(jDeposits);
       const bs = new pjs.Bitstream();
-      bs.addNumber(jdeposits.stateID, 2);
+      bs.addNumber(jdeposits.stateID, 4);
       bs.addBigNumber(new BigNumber(jdeposits.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(jdeposits.merkleRootAfter, 10), 32);
       bs.addNumber(0, 32);
@@ -695,21 +701,21 @@ export class ExchangeTestUtil {
 
       const jWithdrawalsInfo = JSON.stringify(withdrawalBlock, replacer, 4);
       const blockFilename = await this.createBlock(stateID, blockType, jWithdrawalsInfo);
-      const jWithdrawals = fs.readFileSync(blockFilename, "ascii");
-      const jwithdrawals = JSON.parse(jWithdrawals);
+      const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
-      bs.addNumber(jwithdrawals.stateID, 2);
-      bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootBefore, 10), 32);
-      bs.addBigNumber(new BigNumber(jwithdrawals.merkleRootAfter, 10), 32);
+      bs.addNumber(block.stateID, 4);
+      bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
+      bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+      bs.addNumber(block.operatorAccountID, 3);
       bs.addNumber(0, 32);
-      for (const withdrawal of jwithdrawals.withdrawals) {
+      for (const withdrawal of block.withdrawals) {
         bs.addNumber(withdrawal.accountID, 3);
         bs.addNumber(withdrawal.tokenID, 2);
         bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
         bs.addNumber(withdrawal.burnPercentage, 1);
       }
       if (!onchain) {
-        for (const withdrawal of jwithdrawals.withdrawals) {
+        for (const withdrawal of block.withdrawals) {
           bs.addNumber(withdrawal.dualAuthAccountID, 3);
           bs.addNumber(withdrawal.feeTokenID, 2);
           bs.addBN(web3.utils.toBN(withdrawal.fee), 12);
@@ -723,7 +729,7 @@ export class ExchangeTestUtil {
 
       // Add as a pending withdrawal
       let withdrawalIdx = 0;
-      for (const withdrawalRequest of jwithdrawals.withdrawals) {
+      for (const withdrawalRequest of block.withdrawals) {
         const withdrawal: Withdrawal = {
           stateID,
           blockIdx,
@@ -861,9 +867,10 @@ export class ExchangeTestUtil {
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
       const bs = new pjs.Bitstream();
-      bs.addNumber(stateID, 2);
+      bs.addNumber(stateID, 4);
       bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+      bs.addNumber(block.operatorAccountID, 3);
       bs.addBigNumber(new BigNumber(block.burnRateMerkleRoot, 10), 32);
       bs.addNumber(ringBlock.timestamp, 4);
       for (const ringSettlement of block.ringSettlements) {
@@ -939,9 +946,10 @@ export class ExchangeTestUtil {
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
       const bs = new pjs.Bitstream();
-      bs.addNumber(block.stateID, 2);
+      bs.addNumber(block.stateID, 4);
       bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+      bs.addNumber(block.operatorAccountID, 3);
       for (const cancel of cancels) {
         bs.addNumber(cancel.accountID, 3);
         bs.addNumber(cancel.orderTokenID, 2);
@@ -960,26 +968,27 @@ export class ExchangeTestUtil {
   }
 
   public async registerTokens() {
-    const tokenRegistrationFee = await this.tokenRegistry.TOKEN_REGISTRATION_FEE_IN_LRC();
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
 
     for (const token of this.testContext.allTokens) {
-      await LRC.addBalance(this.testContext.orderOwners[0], tokenRegistrationFee);
-      await LRC.approve(
-        this.tokenRegistry.address,
-        tokenRegistrationFee,
-        {from: this.testContext.orderOwners[0]},
-      );
-
       const tokenAddress = (token === null) ? this.zeroAddress : token.address;
-      console.log(tokenAddress);
+      const symbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
+      console.log(symbol + ": " + tokenAddress);
 
-      const tx = await this.tokenRegistry.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
-      pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
+      if (symbol !== "ETH" && symbol !== "WETH" && symbol !== "LRC") {
+        const tokenRegistrationFee = await this.tokenRegistry.getTokenRegistrationFee();
+        await LRC.addBalance(this.testContext.orderOwners[0], tokenRegistrationFee);
+        await LRC.approve(
+          this.tokenRegistry.address,
+          tokenRegistrationFee,
+          {from: this.testContext.orderOwners[0]},
+        );
 
-      const tokensRoot = await this.tokenRegistry.getBurnRateRoot();
-      // console.log(tokensRoot);
+        const tx = await this.tokenRegistry.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
+        pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
+      }
+
       const result = childProcess.spawnSync("python3", ["operator/add_token.py"], {stdio: "inherit"});
       assert(result.status === 0, "add_token failed: " + tokenAddress);
 
@@ -995,12 +1004,15 @@ export class ExchangeTestUtil {
     return tokenID;
   }
 
-  public async createNewState(owner: string) {
-    const fee = await this.exchange.NEW_STATE_CREATION_FEE_IN_LRC();
-    await this.setBalanceAndApproveLRC(owner, fee);
-
+  public async createNewState(owner: string, depositFeeInETH: BN, withdrawFeeInETH: BN,
+                              maxWithdrawFeeInETH: BN, closedOperatorRegistering: boolean) {
     // Create the new state
-    const tx = await this.exchange.createNewState({from: owner});
+    const tx = await this.exchange.createNewState(
+      owner,
+      depositFeeInETH,
+      withdrawFeeInETH,
+      maxWithdrawFeeInETH,
+      closedOperatorRegistering);
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[NewState] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "NewState", web3.eth.blockNumber);
@@ -1129,26 +1141,26 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [eth, lrc, gto, rdn, rep, weth, inda, indb, test] = await Promise.all([
+    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all([
       null,
+      this.contracts.WETHToken.deployed(),
       this.contracts.LRCToken.deployed(),
       this.contracts.GTOToken.deployed(),
       this.contracts.RDNToken.deployed(),
       this.contracts.REPToken.deployed(),
-      this.contracts.WETHToken.deployed(),
       this.contracts.INDAToken.deployed(),
       this.contracts.INDBToken.deployed(),
       this.contracts.TESTToken.deployed(),
     ]);
 
-    const allTokens = [eth, lrc, gto, rdn, rep, weth, inda, indb, test];
+    const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 
     tokenSymbolAddrMap.set("ETH", this.zeroAddress);
+    tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
     tokenSymbolAddrMap.set("LRC", this.contracts.LRCToken.address);
     tokenSymbolAddrMap.set("GTO", this.contracts.GTOToken.address);
     tokenSymbolAddrMap.set("RDN", this.contracts.RDNToken.address);
     tokenSymbolAddrMap.set("REP", this.contracts.REPToken.address);
-    tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
     tokenSymbolAddrMap.set("INDA", this.contracts.INDAToken.address);
     tokenSymbolAddrMap.set("INDB", this.contracts.INDBToken.address);
     tokenSymbolAddrMap.set("TEST", this.contracts.TESTToken.address);
@@ -1162,21 +1174,21 @@ export class ExchangeTestUtil {
     }
 
     tokenAddrSymbolMap.set(this.zeroAddress, "ETH");
+    tokenAddrSymbolMap.set(this.contracts.WETHToken.address, "WETH");
     tokenAddrSymbolMap.set(this.contracts.LRCToken.address, "LRC");
     tokenAddrSymbolMap.set(this.contracts.GTOToken.address, "GTO");
     tokenAddrSymbolMap.set(this.contracts.RDNToken.address, "RDN");
     tokenAddrSymbolMap.set(this.contracts.REPToken.address, "REP");
-    tokenAddrSymbolMap.set(this.contracts.WETHToken.address, "WETH");
     tokenAddrSymbolMap.set(this.contracts.INDAToken.address, "INDA");
     tokenAddrSymbolMap.set(this.contracts.INDBToken.address, "INDB");
     tokenAddrSymbolMap.set(this.contracts.TESTToken.address, "TEST");
 
     tokenAddrInstanceMap.set(this.zeroAddress, null);
+    tokenAddrInstanceMap.set(this.contracts.WETHToken.address, weth);
     tokenAddrInstanceMap.set(this.contracts.LRCToken.address, lrc);
     tokenAddrInstanceMap.set(this.contracts.GTOToken.address, gto);
     tokenAddrInstanceMap.set(this.contracts.RDNToken.address, rdn);
     tokenAddrInstanceMap.set(this.contracts.REPToken.address, rep);
-    tokenAddrInstanceMap.set(this.contracts.WETHToken.address, weth);
     tokenAddrInstanceMap.set(this.contracts.INDAToken.address, inda);
     tokenAddrInstanceMap.set(this.contracts.INDBToken.address, indb);
     tokenAddrInstanceMap.set(this.contracts.TESTToken.address, test);

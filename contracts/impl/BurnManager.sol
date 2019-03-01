@@ -52,8 +52,8 @@ contract BurnManager is NoDefaultFunc {
 
         // Withdraw the complete token balance
         uint balance = exchange.burnBalances(token);
-        bool success = /*exchange.withdrawBurned(token, balance)*/true;
-        require(success, WITHDRAWAL_FAILURE);
+        bool success = exchange.withdrawBurned(token, balance);
+        require(success, "WITHDRAWAL_FAILURE");
 
         // We currently only support burning LRC directly
         if (token != lrcAddress) {

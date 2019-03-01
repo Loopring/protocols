@@ -30,7 +30,7 @@ library MathUint {
         returns (uint c)
     {
         c = a * b;
-        require(a == 0 || c / a == b, "INVALID_VALUE");
+        require(a == 0 || c / a == b, "MUL_OVERFLOW");
     }
 
     function sub(
@@ -41,7 +41,7 @@ library MathUint {
         pure
         returns (uint)
     {
-        require(b <= a, "INVALID_VALUE");
+        require(b <= a, "SUB_UNDERFLOW");
         return a - b;
     }
 
@@ -54,6 +54,6 @@ library MathUint {
         returns (uint c)
     {
         c = a + b;
-        require(c >= a, "INVALID_VALUE");
+        require(c >= a, "ADD_OVERFLOW");
     }
 }

@@ -89,6 +89,7 @@ public:
         const jubjub::Params& params,
         const VariableT& _accountsMerkleRoot,
         const VariableT& _operatorBalancesRoot,
+        const VariableArrayT& _stateID,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
@@ -96,7 +97,7 @@ public:
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
         emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("6534726031924637156958436868622484975370199861911592821911265735257245326584"), FMT(prefix, ".emptyTradeHistory"))),
-        padding(pb, 1, FMT(prefix, ".padding")),
+        padding(pb, 2, FMT(prefix, ".padding")),
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
         percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
 
@@ -176,9 +177,9 @@ public:
                          {feePaymentOperator.Y, constant0, tradingHistoryRootF_O},
                          FMT(prefix, ".updateBalanceF_O")),
 
-        message(flatten({accountID, orderTokenID, orderID, dualAuthAccountID,
-                                   feeTokenID, fee.bits, walletSplitPercentage.bits,
-                                   nonce_before.bits, padding.bits})),
+        message(flatten({_stateID, accountID, orderTokenID, orderID, dualAuthAccountID,
+                         feeTokenID, fee.bits, walletSplitPercentage.bits,
+                         nonce_before.bits, padding.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
         walletSignatureVerifier(pb, params, walletPublicKey, message, FMT(prefix, ".walletSignatureVerifier"))
     {
@@ -331,7 +332,7 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
-        stateID(pb, 16, FMT(prefix, ".stateID")),
+        stateID(pb, 32, FMT(prefix, ".stateID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
@@ -361,11 +362,12 @@ public:
         publicData.add(stateID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
+        publicData.add(operatorAccountID.bits);
         for (size_t j = 0; j < numCancels; j++)
         {
             VariableT cancelAccountsRoot = (j == 0) ? merkleRootBefore.packed : cancels.back().getNewAccountsRoot();
             VariableT cancelOperatorBalancesRoot = (j == 0) ? balancesRoot_before : cancels.back().getNewOperatorBalancesRoot();
-            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelOperatorBalancesRoot, std::string("cancels_") + std::to_string(j));
+            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelOperatorBalancesRoot, stateID.bits, std::string("cancels_") + std::to_string(j));
             cancels.back().generate_r1cs_constraints();
 
             // Store data from withdrawal

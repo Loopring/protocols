@@ -53,7 +53,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
-    it("Matchable", async () => {
+    it.only("Matchable", async () => {
       const stateID = 0;
       const ring: RingInfo = {
         orderA:
@@ -509,7 +509,13 @@ contract("Exchange_Submit", (accounts: string[]) => {
     });
 
     it("Separate state", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.miner);
+      const stateID = await exchangeTestUtil.createNewState(
+        exchangeTestUtil.testContext.miner,
+        new BN(web3.utils.toWei("0.0001", "ether")),
+        new BN(web3.utils.toWei("0.0001", "ether")),
+        new BN(web3.utils.toWei("0.001", "ether")),
+        false,
+      );
       const operatorAccountID = await exchangeTestUtil.createOperator(stateID, exchangeTestUtil.testContext.miner);
       const minerAccountID = await exchangeTestUtil.createRingMatcher(stateID);
       const ring: RingInfo = {

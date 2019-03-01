@@ -309,12 +309,12 @@ class Order(object):
 
     def message(self):
         msg_parts = [
-                        FQ(int(self.stateID), 1<<16), FQ(int(self.orderID), 1<<16),
+                        FQ(int(self.stateID), 1<<32), FQ(int(self.orderID), 1<<16),
                         FQ(int(self.accountID), 1<<24), FQ(int(self.dualAuthAccountID), 1<<24),
                         FQ(int(self.tokenS), 1<<12), FQ(int(self.tokenB), 1<<12), FQ(int(self.tokenF), 1<<12),
                         FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96),
                         FQ(int(self.allOrNone), 1<<1), FQ(int(self.validSince), 1<<32), FQ(int(self.validUntil), 1<<32),
-                        FQ(int(self.walletSplitPercentage), 1<<7)
+                        FQ(int(self.walletSplitPercentage), 1<<7), FQ(int(0), 1<<2)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -429,6 +429,7 @@ class Withdrawal(object):
     def __init__(self,
                  publicKey,
                  walletPublicKey,
+                 stateID,
                  accountID, tokenID, amount,
                  walletID, dualAuthAccountID,
                  operatorAccountID, feeTokenID, fee, walletSplitPercentage,
@@ -442,6 +443,7 @@ class Withdrawal(object):
         self.publicKeyY = str(publicKey.y)
         self.walletPublicKeyX = str(walletPublicKey.x)
         self.walletPublicKeyY = str(walletPublicKey.y)
+        self.stateID = stateID
         self.accountID = accountID
         self.tokenID = tokenID
         self.amount = str(amount)
@@ -466,9 +468,10 @@ class Withdrawal(object):
         self.burnPercentage = burnPercentage
 
     def message(self):
-        msg_parts = [FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.amount), 1<<96),
+        msg_parts = [FQ(int(self.stateID), 1<<32),
+                     FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.amount), 1<<96),
                      FQ(int(self.dualAuthAccountID), 1<<24), FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<2)]
+                     FQ(int(self.nonce), 1<<32)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k, wallet_k):
@@ -485,6 +488,7 @@ class Cancellation(object):
     def __init__(self,
                  publicKey,
                  walletPublicKey,
+                 stateID,
                  accountID, orderTokenID, orderID, walletID, dualAuthorAccountID,
                  operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                  nonce,
@@ -495,6 +499,7 @@ class Cancellation(object):
         self.publicKeyY = str(publicKey.y)
         self.walletPublicKeyX = str(walletPublicKey.x)
         self.walletPublicKeyY = str(walletPublicKey.y)
+        self.stateID = stateID
         self.accountID = accountID
         self.orderTokenID = orderTokenID
         self.orderID = orderID
@@ -518,9 +523,10 @@ class Cancellation(object):
 
 
     def message(self):
-        msg_parts = [FQ(int(self.accountID), 1<<24), FQ(int(self.orderTokenID), 1<<12), FQ(int(self.orderID), 1<<16), FQ(int(self.dualAuthorAccountID), 1<<24),
+        msg_parts = [FQ(int(self.stateID), 1<<32),
+                     FQ(int(self.accountID), 1<<24), FQ(int(self.orderTokenID), 1<<12), FQ(int(self.orderID), 1<<16), FQ(int(self.dualAuthorAccountID), 1<<24),
                      FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<1)]
+                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<2)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k, wallet_k):
@@ -883,7 +889,7 @@ class State(object):
 
     def withdraw(self,
                  onchain,
-                 accountID, tokenID, amount,
+                 stateID, accountID, tokenID, amount,
                  operatorAccountID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage):
 
         feeToWallet = int(fee) * walletSplitPercentage // 100
@@ -942,6 +948,7 @@ class State(object):
         walletAccount = self.getAccount(dualAuthAccountID)
         withdrawal = Withdrawal(Point(int(account.publicKeyX), int(account.publicKeyY)),
                                 Point(int(walletAccount.publicKeyX), int(walletAccount.publicKeyY)),
+                                stateID,
                                 accountID, tokenID, amount,
                                 walletAccount.walletID, dualAuthAccountID,
                                 operatorAccountID, feeTokenID, fee, walletSplitPercentage,
@@ -955,7 +962,7 @@ class State(object):
         return withdrawal
 
     def cancelOrder(self,
-                    accountID, orderTokenID, orderID, dualAuthAccountID,
+                    stateID, accountID, orderTokenID, orderID, dualAuthAccountID,
                     operatorAccountID, feeTokenID, fee, walletSplitPercentage):
 
         feeToWallet = int(fee) * walletSplitPercentage // 100
@@ -997,6 +1004,7 @@ class State(object):
         walletAccount = self.getAccount(dualAuthAccountID)
         cancellation = Cancellation(Point(int(account.publicKeyX), int(account.publicKeyY)),
                                     Point(int(walletAccount.publicKeyX), int(walletAccount.publicKeyY)),
+                                    stateID,
                                     accountID, orderTokenID, orderID, walletAccount.walletID, dualAuthAccountID,
                                     operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                                     nonce,

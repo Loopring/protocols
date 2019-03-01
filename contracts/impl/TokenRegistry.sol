@@ -39,8 +39,8 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
 
     struct Token {
         address tokenAddress;
-        uint8 tier;
-        uint32 tierValidUntil;
+        uint tier;
+        uint tierValidUntil;
     }
 
     struct BurnRateBlock {
@@ -49,6 +49,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
     }
 
     address public lrcAddress = address(0x0);
+    address public wethAddress = address(0x0);
 
     MerkleTree.Data burnRateMerkleTree;
 
@@ -58,47 +59,99 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
     mapping (address => uint16) public tokenToTokenID;
 
     constructor(
-        address _lrcAddress
+        address _lrcAddress,
+        address _wethAddress
         )
         public
     {
         require(_lrcAddress != address(0x0), ZERO_ADDRESS);
+        require(_wethAddress != address(0x0), ZERO_ADDRESS);
         lrcAddress = _lrcAddress;
+        wethAddress = _wethAddress;
 
-        BurnRateBlock memory noTokensBlock = BurnRateBlock(
+        BurnRateBlock memory genesisBlock = BurnRateBlock(
             0x0,
             0xFFFFFFFF
         );
-        burnRateBlocks.push(noTokensBlock);
+        burnRateBlocks.push(genesisBlock);
 
         // Register ETH
-        // registerTokenInternal(address(0x0));
+        uint16 ethTokenID = registerTokenInternal(address(0x0));
+        setFixedTokenTier(ethTokenID, 3);
+        // updateBurnRate(ethTokenID);
+
+        // Register WETH
+        uint16 wethTokenID = registerTokenInternal(wethAddress);
+        setFixedTokenTier(wethTokenID, 3);
+        // updateBurnRate(wethTokenID);
+
+        // Register LRC
+        uint16 lrcTokenID = registerTokenInternal(lrcAddress);
+        setFixedTokenTier(lrcTokenID, 1);
+        // updateBurnRate(lrcTokenID);
+    }
+
+    function setFixedTokenTier(
+        uint16 tokenID,
+        uint tier
+        )
+        internal
+    {
+        Token storage token = tokens[tokenID];
+        token.tier = tier;
+        token.tierValidUntil = 0xFFFFFFFF;
     }
 
     function registerToken(
         address tokenAddress
         )
         external
+        returns (uint16)
+    {
+        // Pay the fee
+        uint fee = getTokenRegistrationFee();
+        burn(msg.sender, fee);
+
+        // Register the token
+        return registerTokenInternal(tokenAddress);
+    }
+
+    function registerTokenInternal(
+        address tokenAddress
+        )
+        internal
+        returns (uint16)
     {
         require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
+        require(tokens.length < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
-        // Pay the fee
-        burn(msg.sender, TOKEN_REGISTRATION_FEE_IN_LRC);
-
+        // Add the token to the list
+        uint16 tokenID = uint16(tokens.length);
         Token memory token = Token(
             tokenAddress,
             4,
             0
         );
         tokens.push(token);
-        uint16 tokenID = uint16(tokens.length);
-        tokenToTokenID[tokenAddress] = tokenID;
-        emit TokenRegistered(tokenAddress, tokenID - 1);
+        tokenToTokenID[tokenAddress] = tokenID + 1;
+        emit TokenRegistered(tokenAddress, tokenID);
 
-        uint16 burnRate = getBurnRate(tokenID - 1);
+        // Update the merkle tree
+        uint16 burnRate = getBurnRate(tokenID);
         (, uint offset) = burnRateMerkleTree.Insert(burnRate);
-        assert(offset == tokenID - 1);
+        assert(offset == tokenID);
         createNewBurnRateBlock();
+
+        return tokenID;
+    }
+
+    function getTokenRegistrationFee()
+        public
+        view
+        returns (uint)
+    {
+        // Increase the fee the more tokens are registered
+        return TOKEN_REGISTRATION_FEE_IN_LRC_BASE.add(TOKEN_REGISTRATION_FEE_IN_LRC_DELTA.mul(tokens.length));
     }
 
     function getTokenTier(
@@ -106,7 +159,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         )
         public
         view
-        returns (uint8 tier)
+        returns (uint tier)
     {
         Token storage token = tokens[tokenID];
         // Fall back to lowest tier
@@ -132,10 +185,45 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         }
     }
 
+    function upgradeTokenTier(
+        address tokenAddress
+        )
+        external
+        returns (bool)
+    {
+        require(tokenAddress != address(0x0), BURN_RATE_FROZEN);
+        require(tokenAddress != lrcAddress, BURN_RATE_FROZEN);
+        require(tokenAddress != wethAddress, BURN_RATE_FROZEN);
+
+        uint16 tokenID = getTokenID(tokenAddress);
+        uint currentTier = getTokenTier(tokenID);
+
+        // Can't upgrade to a higher level than tier 1
+        require(currentTier > 1, BURN_RATE_MINIMIZED);
+
+        // Burn TIER_UPGRADE_COST_PERCENTAGE of total LRC supply
+        BurnableERC20 LRC = BurnableERC20(lrcAddress);
+        uint totalSupply = LRC.totalSupply();
+        uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / BURN_BASE_PERCENTAGE;
+        bool success = LRC.burnFrom(msg.sender, amount);
+        require(success, BURN_FAILURE);
+
+        // Upgrade tier
+        Token storage token = tokens[tokenID];
+        token.tier = currentTier.sub(1);
+        token.tierValidUntil = now.add(TIER_UPGRADE_DURATION);
+
+
+        emit TokenTierUpgraded(tokenAddress, token.tier);
+
+        return true;
+    }
+
+
     function updateBurnRate(
         uint24 tokenID
         )
-        external
+        public
     {
         require(tokenID < tokens.length, "INVALID_TOKENID");
 
@@ -173,7 +261,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
     function getTokenID(
         address tokenAddress
         )
-        external
+        public
         view
         returns (uint16)
     {

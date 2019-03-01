@@ -1,4 +1,5 @@
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
+var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var TokenRegistry = artifacts.require("./impl/TokenRegistry.sol");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var Exchange = artifacts.require("./impl/Exchange");
@@ -11,12 +12,14 @@ module.exports = function(deployer, network, accounts) {
     deployer.then(() => {
       return Promise.all([
         LRCToken.deployed(),
+        WETHToken.deployed(),
       ]);
     }).then(() => {
       return Promise.all([
         deployer.deploy(
           TokenRegistry,
           LRCToken.address,
+          WETHToken.address,
         ),
         deployer.deploy(BlockVerifier),
       ]);

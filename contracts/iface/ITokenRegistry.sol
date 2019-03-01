@@ -27,16 +27,28 @@ contract ITokenRegistry {
     uint16 public constant BURNRATE_TIER3            =                  30 * 10; //  30%
     uint16 public constant BURNRATE_TIER4            =                  50 * 10; //  50%
 
-    // Fees
-    uint public constant TOKEN_REGISTRATION_FEE_IN_LRC           = 100000 ether;
+    // Fee
+    uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_BASE           = 100 ether;
+    uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_DELTA          = 10 ether;
+
+    uint16 public constant BURN_BASE_PERCENTAGE           =                 100 * 10; // 100%
+    // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
+    uint16 public constant TIER_UPGRADE_COST_PERCENTAGE  =                         1; // 0.1%
 
     // General
-    uint32 public constant OLD_BURNRATE_ROOT_VALID_IN_SECONDS         = 1 hours;
+    uint public constant MAX_NUM_TOKENS                               = 2 ** 12;
+    uint public constant TIER_UPGRADE_DURATION                        = 365 days;
+    uint32 public constant OLD_BURNRATE_ROOT_VALID_IN_SECONDS         = 5 minutes;
+
+    event TokenTierUpgraded(
+        address indexed addr,
+        uint            tier
+    );
 
     function getTokenID(
         address tokenAddress
         )
-        external
+        public
         view
         returns (uint16);
 

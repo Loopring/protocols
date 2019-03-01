@@ -23,10 +23,10 @@ contract IExchange {
 
     mapping (address => uint) public burnBalances;
 
-    /*function withdrawBurned(
+    function withdrawBurned(
         address token,
         uint amount
         )
         external
-        returns (bool success);*/
+        returns (bool success);
 }

@@ -70,9 +70,9 @@ public:
 
         blockStateID(_blockStateID),
 
-        padding(pb, 1, FMT(prefix, ".padding")),
+        padding(pb, 2, FMT(prefix, ".padding")),
 
-        stateID(pb, 16, FMT(prefix, ".stateID")),
+        stateID(pb, 32, FMT(prefix, ".stateID")),
         walletID(make_variable(pb, FMT(prefix, ".walletID"))),
         orderID(make_var_array(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".orderID"))),
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
@@ -108,7 +108,7 @@ public:
                           tokenS.bits, tokenB.bits, tokenF.bits,
                           amountS.bits, amountB.bits, amountF.bits,
                           allOrNone.bits, validSince.bits, validUntil.bits,
-                          walletSplitPercentage.bits}),
+                          walletSplitPercentage.bits, padding.bits}),
                           FMT(prefix, ".signatureVerifier")),
 
         validSince_leq_timestamp(pb, validSince.packed, timestamp, FMT(prefix, "validSince <= timestamp")),

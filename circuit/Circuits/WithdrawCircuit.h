@@ -106,6 +106,7 @@ public:
         bool _onchain,
         const VariableT& _accountsMerkleRoot,
         const VariableT& _operatorBalancesRoot,
+        const VariableArrayT& _stateID,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
@@ -115,7 +116,7 @@ public:
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
         emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("6534726031924637156958436868622484975370199861911592821911265735257245326584"), FMT(prefix, ".emptyTradeHistory"))),
-        padding(pb, 2, FMT(prefix, ".padding")),
+        padding(pb, 1, FMT(prefix, ".padding")),
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
         percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
 
@@ -205,8 +206,8 @@ public:
                          FMT(prefix, ".updateBalanceF_O")),
 
 
-        message(flatten({accountID, tokenID, amountRequested.bits, dualAuthAccountID,
-                         feeTokenID, fee.bits, walletSplitPercentage.bits, nonce_before.bits, padding.bits})),
+        message(flatten({_stateID, accountID, tokenID, amountRequested.bits, dualAuthAccountID,
+                         feeTokenID, fee.bits, walletSplitPercentage.bits, nonce_before.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
         walletSignatureVerifier(pb, params, walletPublicKey, message, FMT(prefix, ".walletSignatureVerifier"))
     {
@@ -414,7 +415,7 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
-        stateID(pb, 16, FMT(prefix, ".stateID")),
+        stateID(pb, 32, FMT(prefix, ".stateID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
@@ -450,11 +451,12 @@ public:
         publicData.add(stateID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
+        publicData.add(operatorAccountID.bits);
         for (size_t j = 0; j < numAccounts; j++)
         {
             VariableT withdrawalAccountsRoot = (j == 0) ? merkleRootBefore.packed : withdrawals.back().getNewAccountsRoot();
             VariableT withdrawalOperatorBalancesRoot = (j == 0) ? balancesRoot_before : withdrawals.back().getNewOperatorBalancesRoot();
-            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, withdrawalOperatorBalancesRoot, std::string("withdrawals_") + std::to_string(j));
+            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, withdrawalOperatorBalancesRoot, stateID.bits, std::string("withdrawals_") + std::to_string(j));
             withdrawals.back().generate_r1cs_constraints();
 
             if (onchain)
@@ -472,6 +474,8 @@ public:
             }
         }
 
+        operatorAccountID.generate_r1cs_constraints(true);
+
         if (onchain)
         {
              // Add the block hash
@@ -481,7 +485,6 @@ public:
         {
             publicData.add(withdrawalBlockHashStart.bits);
 
-            operatorAccountID.generate_r1cs_constraints(true);
             updateAccount_O = new UpdateAccountGadget(pb, withdrawals.back().getNewAccountsRoot(), operatorAccountID.bits,
                 {publicKey.x, publicKey.y, constant0, nonce, balancesRoot_before},
                 {publicKey.x, publicKey.y, constant0, nonce, withdrawals.back().getNewOperatorBalancesRoot()},
@@ -543,6 +546,9 @@ public:
             withdrawals[i].generate_r1cs_witness(context.withdrawals[i]);
         }
 
+        operatorAccountID.bits.fill_with_bits_of_field_element(pb, context.operatorAccountID);
+        operatorAccountID.generate_r1cs_witness_from_bits();
+
         if (onchain)
         {
             for (auto& hasher : hashers)
@@ -553,9 +559,6 @@ public:
         }
         else
         {
-            operatorAccountID.bits.fill_with_bits_of_field_element(pb, context.operatorAccountID);
-            operatorAccountID.generate_r1cs_witness_from_bits();
-
             pb.val(publicKey.x) = context.accountUpdate_O.before.publicKey.x;
             pb.val(publicKey.y) = context.accountUpdate_O.before.publicKey.y;
 
