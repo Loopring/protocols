@@ -111,3 +111,16 @@ export interface Wallet {
   walletID: number;
   walletAccountID: number;
 }
+
+export interface Balance {
+  balance: BN;
+  burnBalance: BN;
+}
+
+export interface Account {
+  accountID: number;
+  walletID: number;
+  publicKeyX: BN;
+  publicKeyY: BN;
+  balances: {[key: number]: Balance};
+}

@@ -53,7 +53,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
-    it.only("Matchable", async () => {
+    it("Matchable", async () => {
       const stateID = 0;
       const ring: RingInfo = {
         orderA:
@@ -82,7 +82,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(stateID);
       await exchangeTestUtil.commitRings(stateID);
 
-      // await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("No funds available", async () => {
@@ -500,6 +500,46 @@ contract("Exchange_Submit", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      // await exchangeTestUtil.verifyAllPendingBlocks();
+    });
+
+    it.only("Self-trading", async () => {
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
+          {
+            stateID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("10", "ether")),
+            amountF: new BN(web3.utils.toWei("1", "ether")),
+            balanceS: new BN(web3.utils.toWei("100", "ether")),
+            balanceB: new BN(web3.utils.toWei("10", "ether")),
+            balanceF: new BN(web3.utils.toWei("2", "ether")),
+          },
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("10", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            amountF: new BN(web3.utils.toWei("1", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+
+      ring.orderB.accountID = ring.orderA.accountID;
+      ring.orderB.walletID = ring.orderA.walletID;
+      ring.orderB.dualAuthAccountID = ring.orderA.dualAuthAccountID;
+
       await exchangeTestUtil.sendRing(stateID, ring);
 
       await exchangeTestUtil.commitDeposits(stateID);

@@ -109,6 +109,8 @@ contract Exchange is IExchange, NoDefaultFunc {
     struct Account {
         address owner;
         uint24 walletID;
+        uint publicKeyX;
+        uint publicKeyY;
     }
 
     struct PendingDeposit {
@@ -466,14 +468,12 @@ contract Exchange is IExchange, NoDefaultFunc {
         state.numBlocks = blockIdx;
     }
 
-    function deposit(
+    function createAccountAndDeposit(
         uint32 stateID,
-        uint24 accountID,
-        address owner,
-        uint brokerPublicKeyX,
-        uint brokerPublicKeyY,
+        uint publicKeyX,
+        uint publicKeyY,
         uint24 walletID,
-        address token,
+        uint16 tokenID,
         uint96 amount
         )
         public
@@ -481,6 +481,60 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (uint24)
     {
         State storage state = getState(stateID);
+        Account memory account = Account(
+            msg.sender,
+            walletID,
+            publicKeyX,
+            publicKeyY
+        );
+        uint24 accountID = uint24(state.numAccounts);
+        state.accounts[accountID] = account;
+        state.numAccounts++;
+        require(state.numAccounts <= 2 ** 24, "TOO_MANY_ACCOUNTS");
+
+        deposit(stateID, accountID, publicKeyX, publicKeyY, walletID, tokenID, amount);
+
+        return accountID;
+    }
+
+    function depositToken(
+        uint32 stateID,
+        uint24 accountID,
+        uint16 tokenID,
+        uint96 amount
+        )
+        public
+        payable
+    {
+        State storage state = getState(stateID);
+        Account storage account = state.accounts[accountID];
+        deposit(stateID, accountID, account.publicKeyX, account.publicKeyY, account.walletID, tokenID, amount);
+    }
+
+    function deposit(
+        uint32 stateID,
+        uint24 accountID,
+        uint publicKeyX,
+        uint publicKeyY,
+        uint24 walletID,
+        uint16 tokenID,
+        uint96 amount
+        )
+        public
+        payable
+    {
+        State storage state = getState(stateID);
+
+        Account storage account = state.accounts[accountID];
+        // Dual author addresses are not allowed to be changed to normal addresses
+        // (otherwise the burned fees cannot be forcibly withdrawn)
+        if (account.walletID >=  MAX_NUM_WALLETS) {
+            require(walletID >= MAX_NUM_WALLETS, "INVALID_WALLETID");
+        }
+        // Update account info
+        account.walletID = walletID;
+        account.publicKeyX = publicKeyX;
+        account.publicKeyY = publicKeyY;
 
         // Check if msg.sender wants to create a dual author address for a wallet
         if (walletID >= MAX_NUM_WALLETS) {
@@ -491,16 +545,16 @@ contract Exchange is IExchange, NoDefaultFunc {
             if (targetWalletID > 0) {
                 require(state.wallets[targetWalletID].owner == msg.sender, "CANNOT_CREATE_DUAL_AUTHOR_ACCOUNT_FOR_WALLET");
             }
+        } else {
+            require(account.owner == msg.sender, "UNAUTHORIZED");
         }
 
         // Check expected ETH value sent
-        if (token != address(0x0)) {
+        if (tokenID != 0) {
             require(msg.value == state.depositFeeInETH, "WRONG_ETH_VALUE");
         } else {
             require(msg.value == (state.depositFeeInETH + amount), "WRONG_ETH_VALUE");
         }
-
-        uint16 tokenID = ITokenRegistry(tokenRegistryAddress).getTokenID(token);
 
         // Get the deposit block
         DepositBlock storage depositBlock = state.depositBlocks[state.numDepositBlocks - 1];
@@ -513,11 +567,12 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
         require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, "DEPOSIT_BLOCK_FULL");
 
-        if (amount > 0 && token != address(0x0)) {
+        address tokenAddress = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
+        if (amount > 0 && tokenID != 0) {
             // Transfer the tokens from the owner into this contract
             require(
-                token.safeTransferFrom(
-                    owner,
+                tokenAddress.safeTransferFrom(
+                    account.owner,
                     address(this),
                     amount
                 ),
@@ -525,32 +580,12 @@ contract Exchange is IExchange, NoDefaultFunc {
             );
         }
 
-        if (accountID == 0xFFFFFF) {
-            Account memory account = Account(
-                owner,
-                walletID
-            );
-            uint24 newAccountID = uint24(state.numAccounts);
-            state.accounts[newAccountID] = account;
-            state.numAccounts++;
-
-            accountID = newAccountID;
-        } else {
-            Account storage account = state.accounts[accountID];
-            require(account.owner == owner, "INVALID_OWNER");
-            // Dual author addresses are not allowed to be changed to normal addresses
-            if (account.walletID >=  MAX_NUM_WALLETS) {
-                require(walletID >= MAX_NUM_WALLETS, "INVALID_WALLETID");
-            }
-            account.walletID = walletID;
-        }
-
         depositBlock.hash = sha256(
             abi.encodePacked(
                 depositBlock.hash,
                 accountID,
-                brokerPublicKeyX,
-                brokerPublicKeyY,
+                publicKeyX,
+                publicKeyY,
                 walletID,
                 tokenID,
                 amount
@@ -567,8 +602,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         );
         depositBlock.pendingDeposits.push(pendingDeposit);
         emit Deposit(stateID, uint32(state.numDepositBlocks - 1), accountID, tokenID, walletID, amount);
-
-        return accountID;
     }
 
     function requestWithdraw(

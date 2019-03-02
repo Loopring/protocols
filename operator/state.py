@@ -706,6 +706,15 @@ class State(object):
         fillAmountF_A = (int(ring.orderA.amountF) * fillAmountS_A) // int(ring.orderA.amountS)
         fillAmountF_B = (int(ring.orderB.amountF) * fillAmountS_B) // int(ring.orderB.amountS)
 
+        # self-trading
+        # balanceF = int(ring.orderA.balanceF)
+        # bSelfTrading = ring.orderA.accountID == ring.orderB.accountID
+        # if bSelfTrading:
+        #     if ring.orderA.tokenF == ring.orderB.tokenF and balanceF < totalFee:
+        #         totalFee = fillAmountF_A + fillAmountF_B
+        #         fillAmountF_A = fillAmountF_A * balanceF // totalFee
+        #         fillAmountF_B = fillAmountF_B * balanceF // totalFee
+
         ring.fillS_A = str(fillAmountS_A)
         ring.fillB_A = str(fillAmountB_A)
         ring.fillF_A = str(fillAmountF_A)
@@ -728,11 +737,6 @@ class State(object):
 
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
-
-        # Accounts
-        accountA = self.getAccount(ring.orderA.accountID)
-        accountB = self.getAccount(ring.orderB.accountID)
-        accountM = self.getAccount(ring.minerAccountID)
 
         # Check burn rates
         burnRateCheckF_A = context.globalState.checkBurnRate(ring.orderA.tokenF)
@@ -761,6 +765,8 @@ class State(object):
         print("burnFee_B: " + str(burnFee_B))
 
         # Update balances A
+        accountA = self.getAccount(ring.orderA.accountID)
+
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(ring.orderA.accountID))
         proof = self._accountsTree.createProof(ring.orderA.accountID)
@@ -775,8 +781,14 @@ class State(object):
         accountUpdate_A = AccountUpdateData(ring.orderA.accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-
         # Update balances B
+        accountB = self.getAccount(ring.orderB.accountID)
+
+        # if bSelfTrading:
+        ring.orderB.balanceS = str(accountB.getBalance(ring.orderB.tokenS))
+        ring.orderB.balanceB = str(accountB.getBalance(ring.orderB.tokenB))
+        ring.orderB.balanceF = str(accountB.getBalance(ring.orderB.tokenF))
+
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(ring.orderB.accountID))
         proof = self._accountsTree.createProof(ring.orderB.accountID)
@@ -821,6 +833,8 @@ class State(object):
 
 
         # Update ringmatcher
+        accountM = self.getAccount(ring.minerAccountID)
+
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(ring.minerAccountID))
         proof = self._accountsTree.createProof(ring.minerAccountID)
