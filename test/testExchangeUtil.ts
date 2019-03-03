@@ -345,7 +345,7 @@ export class ExchangeTestUtil {
 
     let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots(web3.utils.toBN(stateID))).toNumber();
     if (numAvailableSlots === 0) {
-        const timeToWait = (await this.exchange.MIN_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
+        const timeToWait = (await this.exchange.MIN_TIME_BLOCK_OPEN()).toNumber();
         await this.advanceBlockTimestamp(timeToWait);
         numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots(web3.utils.toBN(stateID))).toNumber();
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
@@ -640,9 +640,9 @@ export class ExchangeTestUtil {
       }
       assert(deposits.length === numDepositsPerBlock);
 
-      let timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
+      let timeToWait = (await this.exchange.MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE()).toNumber();
       if (!isFull) {
-        timeToWait += (await this.exchange.MAX_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
+        timeToWait += (await this.exchange.MAX_TIME_BLOCK_OPEN()).toNumber();
       }
       await this.advanceBlockTimestamp(timeToWait);
 
@@ -738,9 +738,9 @@ export class ExchangeTestUtil {
       };
 
       if (onchain) {
-        let timeToWait = (await this.exchange.MIN_TIME_CLOSED_DEPOSIT_BLOCK_UNTIL_COMMITTABLE()).toNumber();
+        let timeToWait = (await this.exchange.MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE()).toNumber();
         if (!isFull) {
-          timeToWait += (await this.exchange.MAX_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
+          timeToWait += (await this.exchange.MAX_TIME_BLOCK_OPEN()).toNumber();
         }
         await this.advanceBlockTimestamp(timeToWait);
       }
