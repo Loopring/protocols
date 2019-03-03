@@ -19,7 +19,7 @@ Data availability for all merkle trees is ensured. Anyone can recreate the merkl
 
 Things change quickly.
 
-One of the main drawbacks of SNARKS compared to STARKS is the trusted setup that is needed. This seems to be largely solved. ([Sonic: nearly trustelless setup](https://www.benthamsgaze.org/2019/02/07/introducing-sonic-a-practical-zk-snark-with-a-nearly-trustless-setup/)). It remains to be seen if the better proving times of STARKs will be important in the future or not (proving times for SNARKs may be a non-issue or could be improved as well).
+One of the main drawbacks of SNARKS compared to STARKS is the trusted setup that is needed. This seems to be largely solved. ([Sonic: Nearly Trustless Setup](https://www.benthamsgaze.org/2019/02/07/introducing-sonic-a-practical-zk-snark-with-a-nearly-trustless-setup/)). It remains to be seen if the better proving times of STARKs will be important in the future or not (proving times for SNARKs may be a non-issue or could be improved as well).
 
 Bellman is also being used more and more instead of libsnark for creating the circuits. They work mostly the same (manually programming the constraints). We should use the library/framework with the best support and best features. Currently I feel this is still libsnark.
 
@@ -112,7 +112,7 @@ Note that we can **directly support ETH** for trading, no need to wrap it in WET
 
 We also store the deposit information onchain so users can withdraw these deposited balances in withdrawal mode when they are were not yet added in the Accounts merkle tree.
 
-See [here](#Deposit/Withdraw-block-handling) how blocks are handled.
+See [here](#depositwithdraw-block-handling) how blocks are handled.
 
 ## Account info updating
 
@@ -134,7 +134,7 @@ The nonce of the account is increased after the cancel is processed.
 
 #### Onchain withdrawal
 
-The request is added to a withdraw block. See [here](#Deposit/Withdraw-block-handling) how blocks are handled.
+The request is added to a withdraw block. See [here](#depositwithdraw-block-handling) how blocks are handled.
 
 ## Ring settlement
 
@@ -322,7 +322,7 @@ Every account has a trading history tree with 2^16 leafs for every token. Which 
 
 For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderID.
 
-This especially a problem because the operator can set the timestamp that is tested onchain within a certain window (see [here](#validSince/validUntil)). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders.
+This especially a problem because the operator can set the timestamp that is tested onchain within a certain window (see [here](#validSince--validUntil)). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders.
 
 The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants.
 
@@ -434,8 +434,9 @@ So in a block we are currently limited by the number of constraints used in the 
 
 ### Proof generation
 
-Haven't done much testing for this. But from [thematter](https://medium.com/matter-labs/introducing-matter-testnet-502fab5a6f17):
+Haven't done much testing for this. From [thematter](https://medium.com/matter-labs/introducing-matter-testnet-502fab5a6f17):
 > [about circuits with 256 million constraints] "the computation took 20 minutes on a 72-core AWS server".
+
 > At the target latency of 5 min at 100 TPS we estimate the offchain part to be approximately 0.001 USD. This estimate is very conservative.
 
 Ring settlements are about ~5x more expensive than the simple token transfers they are talking about, but this will still be pretty cheap.
