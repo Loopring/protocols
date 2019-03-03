@@ -123,6 +123,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         PendingDeposit[] pendingDeposits;
 
         uint16 numDeposits;
+        uint fee;
         uint32 timestampOpened;
         uint32 timestampFilled;
     }
@@ -131,6 +132,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes32 hash;
 
         uint numWithdrawals;
+        uint fee;
         uint32 timestampOpened;
         uint32 timestampFilled;
     }
@@ -146,7 +148,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint32 operatorID;
         uint32 numDepositBlocksCommitted;
         uint32 numWithdrawBlocksCommitted;
-        uint8 feeWithdrawn;
         bytes withdrawals;
     }
 
@@ -225,7 +226,6 @@ contract Exchange is IExchange, NoDefaultFunc {
             BlockState.FINALIZED,
             uint32(now),
             0xFFFFFFFF,
-            0,
             0,
             0,
             new bytes(0)
@@ -388,7 +388,6 @@ contract Exchange is IExchange, NoDefaultFunc {
             operator.ID,
             numDepositBlocksCommitted,
             numWithdrawBlocksCommitted,
-            0,
             (blockType == uint(BlockType.ONCHAIN_WITHDRAW) ||
              blockType == uint(BlockType.OFFCHAIN_WITHDRAW)) ? data : new bytes(0)
         );
@@ -567,6 +566,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
         require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, "DEPOSIT_BLOCK_FULL");
 
+        depositBlock.fee = depositBlock.fee.add(state.depositFeeInETH);
+
         address tokenAddress = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
         if (amount > 0 && tokenID != 0) {
             // Transfer the tokens from the owner into this contract
@@ -636,6 +637,8 @@ contract Exchange is IExchange, NoDefaultFunc {
             withdrawBlock.timestampOpened = uint32(now);
         }
         require(withdrawBlock.numWithdrawals < NUM_WITHDRAWALS_IN_BLOCK, "WITHDRAW_BLOCK_FULL");
+
+        withdrawBlock.fee = withdrawBlock.fee.add(state.withdrawFeeInETH);
 
         withdrawBlock.hash = sha256(
             abi.encodePacked(
@@ -777,7 +780,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         require(operatorID < state.totalNumOperators, "INVALID_OPERATORIDX");
         Operator storage operator = state.operators[operatorID];
-        require(msg.sender == operator.owner, UNAUTHORIZED);
+        require(msg.sender == operator.owner, "UNAUTHORIZED");
 
         unregisterOperatorInternal(stateID, operatorID);
     }
@@ -870,20 +873,22 @@ contract Exchange is IExchange, NoDefaultFunc {
         Block storage previousBlock = state.blocks[blockIdx - 1];
 
         require(requestedBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
-        require(requestedBlock.feeWithdrawn == 0, "FEE_ALREADY_WITHDRAWN");
+
 
         address payable operator = state.operators[requestedBlock.operatorID].owner;
 
         uint fee = 0;
         if(requestedBlock.numDepositBlocksCommitted > previousBlock.numDepositBlocksCommitted) {
-            fee = state.depositBlocks[previousBlock.numDepositBlocksCommitted].numDeposits * state.depositFeeInETH;
+            fee = state.depositBlocks[previousBlock.numDepositBlocksCommitted].fee;
+            state.depositBlocks[previousBlock.numDepositBlocksCommitted].fee = 0;
         } else if (requestedBlock.numWithdrawBlocksCommitted > previousBlock.numWithdrawBlocksCommitted) {
-            fee = state.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].numWithdrawals * state.withdrawFeeInETH;
+            fee = state.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee;
+            state.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee = 0;
         } else {
             revert("BLOCK_HAS_NO_OPERATOR_FEE");
         }
+        require(fee == 0, "FEE_ALREADY_WITHDRAWN");
 
-        requestedBlock.feeWithdrawn = uint8(1);
         operator.transfer(fee);
 
         emit BlockFeeWithdraw(stateID, blockIdx, operator, fee);
@@ -911,6 +916,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         external
         returns (bool success)
     {
+        // TODO: should only be callable by BurnManager
         require(burnBalances[token] >= amount, "AMOUNT_TOO_HIGH");
         burnBalances[token] = burnBalances[token].sub(amount);
 
