@@ -77,7 +77,7 @@ I went through a lot of iterations for the merkle tree structure, currently the 
 - No special handling for anything. Every actor in the loopring ecosystem has an account in the same tree.
 - While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances merkle root is stored inside the account leaf). The same is useful for wallets, ringmatchers and operators because these also pay/receive fees in different tokens.
 - The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this actually is the most efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this quite small sub-tree. The trading-history is not part of the account because this way we have 2^16 leafs for every token instead of 2^16 leafs for all tokens together.
-- The burned fees are stored directly in the balance of the wallet accounts. This way we don't have to update a seprate sub-tree just for these balances.
+- The burned fees are stored directly in the balance of the wallet accounts. This way we don't have to update a separate sub-tree just for these balances.
 - No need for multiple account trees to lock accounts to a single wallet. The walletID stored in the account is used for this together with dual-authoring accounts that only the owner of the wallet can create.
 
 ## Account creation
@@ -120,9 +120,9 @@ The depositing circuit also allows updating some information that is stored in t
 
 ## Withdrawing
 
-The user lets the operator know either onchain or offchain that he wants to withdraw. The tokens can be withdrawn by anyone from the contract after the block has been finalized (the tokens will be send to the account owner).
+The user lets the operator know either onchain or offchain that he wants to withdraw. The tokens can be withdrawn by anyone from the contract by calling `withdraw` after the block containing the request has been finalized (the tokens will be send to the account owner).
 
-A maximum withdrawal fee for a state is specified when the state is created. The state owner is allowed to change the withdrawal fee in the [0, state.maxWithdrawFeeInETH] range. This is to make sure the state owner cannot change the fee to something unreasonable.
+Burned fees are stored in the accounts of the wallet. When withdrawing the complete balance of the burned fees is also automatically withdrawn.
 
 #### Offchain withdrawal
 
@@ -134,7 +134,9 @@ The nonce of the account is increased after the cancel is processed.
 
 #### Onchain withdrawal
 
-The request is added to a withdraw block. See [here](#depositwithdraw-block-handling) how blocks are handled.
+A user calls `requestWithdraw` and the request is added to a withdraw block. See [here](#depositwithdraw-block-handling) how blocks are handled.
+
+A maximum withdrawal fee for a state is specified when the state is created. The state owner is allowed to change the withdrawal fee in the [0, state.maxWithdrawFeeInETH] range. This is to make sure the state owner cannot change the fee to something unreasonable.
 
 ## Ring settlement
 
@@ -198,7 +200,7 @@ require(block.timestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
 
 Burned fees are stored in the `burnBalance` field of the account of the wallet. Wallet accounts are special as anyone can request a withdrawal onchain for these accounts. (This is why these balance are stored in the accounts of the wallets and not in the accounts of the ringmatcher, because the ringmatcher needs to pay fees to the operator so depends on his balances to be available for payments).
 
-Once withdrawn from the merkle tree the balances are stored onchain in the Exchange contract so the BurnManager can withdraw them.
+Once withdrawn from the merkle tree the balances are stored onchain in the Exchange contract so the BurnManager can withdraw them using `withdrawBurned`.
 
 ## Brokers
 
@@ -206,11 +208,11 @@ Allows a broker to sign orders for someone else.
 
 The account system is used for this. Users can create a special account for a broker and deposit funds the broker is able to use. This is done by setting `account.publicKey` to the public key of the broker instead of the order owner. To stop the broker from being able to fill orders the balance can be withdrawn or the public key stored in the account can be changed.
 
-# States
+## States
 
 Proof submission needs to be done sequentially so merkle trees can be updated correctly. To allow concurrent settling of orders by different independent parties we allow separate states for the merkle trees that can give contention.
 
-Anyone can register a new state. The owner of the state can set the deposit / offchain withdrawal fees.
+Anyone can register a new state. The owner of the state can set the deposit / offchain withdrawal fees by calling `setStateFees`.
 The owner of the state can also close the state at any time. The state will immediately enter withdrawal mode.
 
 We make sure every operation signed by a user can only be used in a single state.
@@ -221,17 +223,21 @@ Wallets can register themselves so they can get a dedicated walletID so they can
 
 The steps needed by a wallet to achieve this:
 - Call `registerWallet` to get a unique walletID and bind the walletID to msg.sender, which will be the owner of the wallet
-- Call `createAccountAndDeposit` and specify as walletID the walletID given above + set the most significant bit of this 3 byte value to 1. Only the msg.sender that created registered the wallet can be used to create an account like this.
+- Call `createAccountAndDeposit` and specify as walletID the walletID given above + set the most significant bit of this 3 byte value to 1. Only the msg.sender that registered the wallet can be used to create an account like this.
 - Let users create accounts with the walletID
 - Let users create orders using these accounts and specify as dual-author address the special dual-author account created by the owner of the wallet
+- The circuit will check that the walletID in the account of the user matches the walletID of the wallet/dual-author account.
 
-Note that without the special dual-author account anyone would be able to use any account, no matter the walletID specified in the account.
+Without the special dual-author account anyone would be able to use any account, no matter the walletID specified in the account.
+If the wallet doesn't need to lock the account of the user in than he can create a wallet account for walletID 0. Anyone is allowed to create dual-author/wallet accounts for walletID 0.
 
-Note that the wallet/dual-author account is used for multiple things:
+The wallet/dual-author account is used for multiple things:
 - To make sure the ring cannot be stolen by the operator
 - To make sure the order cannot be used by ringmatchers that are not allowed to use the order
 - This account receives the wallet fees (and the burned fees)
-- Can be used as an 'authentication' account created specifically for a wallet that is used to 'unlock' the account of a user so it can be used in offchain operations (trading, offchain withdrawals, cancels).
+- Can be used as a 'wallet authentication' account created specifically for a wallet that is used to 'unlock' the account of a user so it can be used in offchain operations (trading, offchain withdrawals, cancels).
+
+Note that this reusing of this special account is done for efficiency reasons. The wallet account doesn't need to sign the complete ring, just the order would work just as well. But by using the account also as the dual-author account the circuit is more efficient. This does have the drawback that creating an account for dual-authoring is needed, which costs a bit of gas. If we need unlimited dual-author addresses we should decouple both so that dual-authoring doesn't need an account (by storing the public key directly in the order).
 
 ## Ringmatchers
 
@@ -243,7 +249,7 @@ Operators are responsible for creating blocks. Blocks need to be submitted oncha
 
 At creation time, a state specifies if anyone can become an operator for the state or not. If not, only the owner can add operators.
 
-All operators are staked. LRC is used for this. If the operator fails to prove a block he submitted the amount staked is burned and the state is reverted to the last block that was proven. The operator is removed from the list of active operators.
+All operators are staked. LRC is used for this. If the operator fails to prove a block he submitted the amount staked is burned and the state is reverted to the last block that was proven. The operator is removed from the list of active operators. Anyone can call `notifyBlockVerificationTooLate` when it takes the operator longer than `MAX_PROOF_GENERATION_TIME_IN_SECONDS` (currently 1 hour) to verify a block he submitted.
 
 Multiple operators can be active at the same time. The operator is chosen at random like this:
 ```
@@ -263,9 +269,9 @@ function getActiveOperatorIdx(uint32 stateID) public view returns (uint32)
 }
 ```
 
-Every operator stakes the same amount of LRC to make the onchain logic as cheap as possible (otherwise we'd have to use weights to give operators with a larger stake more chance to be selected). An operator can register itself multiple times to increase its chances to be chosen as the active operator.
+Every operator stakes the same amount of LRC to make the onchain logic as cheap as possible (otherwise we'd have to use weights to give operators with a larger stake more chance to be selected). An operator can register itself (by calling `registerOperator`) multiple times to increase its chances to be chosen as the active operator. The active operator can be queried by calling `getActiveOperatorIdx`.
 
-An operator can choose to unregister itself at any time. To make sure the operator doesn't have any unproven blocks left an operator can only withdraw the amount he staked after a safe period of time (currently 1 day).
+An operator can choose to unregister itself at any time by calling `unregisterOperator`. To make sure the operator doesn't have any unproven blocks left an operator can only withdraw the amount he staked after a safe period of time (currently 1 day) by calling `withdrawOperatorStake`.
 
 ## Restrictions
 
@@ -328,9 +334,9 @@ The order owner also doesn't know how much the first order is going to be filled
 
 ### The possibility for some simple filling logic between orders
 
-A user could create an order selling X tokenZ for either N tokenA or M tokenB (or even more tokens) while using the same orderID. The user is guaranteed never to spend more than X tokenZ, but will have bought [0, N] tokenA and [0, M] tokenA.
+A user could create an order selling X tokenZ for either N tokenA or M tokenB (or even more tokens) while using the same orderID. The user is guaranteed never to spend more than X tokenZ, but will have bought [0, N] tokenA and/or [0, M] tokenA.
 
-A realistic use case would be for example selling LRC for either ETH and/or WETH.
+A realistic use case would be for selling some token for one of the available stable coins. Or selling a token for either ETH and/or WETH.
 
 
 ## Deposit/Withdraw block handling
@@ -351,6 +357,8 @@ uint32 public constant MAX_TIME_BLOCK_OPEN                          = 15 minutes
 uint32 public constant MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE      = 2 minutes;
 uint32 public constant MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED           = 15 minutes;
 ```
+
+Once the block the deposit/withdraw block was committed in is finalized anyone can call `withdrawBlockFee` to send the fee earned to the operator that committed the block.
 
 ## Onchain data
 
