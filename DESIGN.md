@@ -76,9 +76,9 @@ I went through a lot of iterations for the merkle tree structure, currently the 
 - Only a single account needed for all tokens that are or will be registered
 - No special handling for anything. Every actor in the loopring ecosystem has an account in the same tree.
 - While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances merkle root is stored inside the account leaf). The same is useful for wallets, ringmatchers and operators because these also pay/receive fees in different tokens.
-- The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this actually is the most efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this quite small sub-tree. The trading-history is not part of the account because this way we have 2^16 leafs for every token instead of 2^16 leafs for all tokens together.
+- The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this quite small sub-tree. The trading-history is not part of the account because that way we'd only have 2^16 leafs for all tokens together.
 - The burned fees are stored directly in the balance of the wallet accounts. This way we don't have to update a separate sub-tree just for these balances.
-- No need for multiple account trees to lock accounts to a single wallet. The walletID stored in the account is used for this together with dual-authoring accounts that only the owner of the wallet can create.
+- No need for multiple account trees to lock accounts to a single wallet. The walletID stored in the account is used for this together with dual-authoring accounts that only the owner of the wallet can create see [Wallets](#wallets) for more info).
 
 ## Account creation
 
@@ -102,7 +102,7 @@ function createAccountAndDeposit(
 
 A walletID (3 bytes) is given that can lock the account to a specific wallet. This is done by creating a special kind of account that can only be created by the owner of the wallet. Depending on the context we refer to this account as the dual author account or the wallet account (see [here](#wallets) for more info). These kind of accounts have the walletID set to the walletID and additionaly the most significant bit of the walletID is set to 1. The public key given in this account is used just like with dual-authoring: The ring needs to be signed using the corresponding private key of the public key given in the authentication account. This way only the wallet can sign off on the use of the account.
 
-When the walletID is set to 0 anyone can use the account (when the user allows of course).
+When the walletID is set to 0 anyone can use the account to create orders.
 
 ## Depositing
 
@@ -152,7 +152,7 @@ There are many ways an order can be cancelled.
 
 ### validSince/validUntil
 
-Orders can be short-lived and the order owner can safely keep recreating orders using [Order Aliasing](#Order-Aliasing) as long as they need to be kept alive.
+Orders can be short-lived and the order owner can safely keep recreating orders with new validSince/validUntil times using [Order Aliasing](#Order-Aliasing) as long as they need to be kept alive.
 
 ### Offchain cancel request
 
@@ -176,7 +176,7 @@ If the order never left the DEX and the user trusts the DEX than the order can s
 
 ## Withdrawal mode
 
-The operator may stop submitting new blocks at any time. When some conditions are met (TBD), all functionality for the state is halted and only withdrawing funds is possible. Any user is able to withdraw his funds from the contract by submitting an inclusion proof in the Accounts merkle tree.
+The operator may stop submitting new blocks at any time. When some conditions are met (TBD), all functionality for the state is halted and only withdrawing funds is possible. Anyone is able to withdraw funds from the contract by submitting an inclusion proof in the Accounts merkle tree (the funds will be send to the account owner like usually).
 
 ## Signature types
 
@@ -186,7 +186,7 @@ Currently this is EDDSA (7,000 constraints), which is a bit cheaper than ECDSA s
 
 ## ValidSince / ValidUntil
 
-A block and its proof is always made for a fixed input. The operator cannot accurately know on what timestamp the block will be processed on the ethereum blockchain, but he needs a fixed timestamp to create a block and its proof.
+A block and its proof is always made for a fixed input. The operator cannot accurately know on what timestamp the block will be processed on the ethereum blockchain, but he needs a fixed timestamp to create a block and its proof (the chosen timestamp impacts which orders are valid and invalid).
 
 We do however know the approximate time the block will be processed on the ethereum blockchain. Next to the data for the block the operator also includes the timestamp the block was generated for. This timestamp is checked against the timestamp onchain and if it's close enough the block is accepted:
 
@@ -243,7 +243,7 @@ Note that this reusing of this special account is done for efficiency reasons. T
 
 There's nothing really special for ringmatchers. They need to create an account like normal users and should have some funds available to pay the operator.
 
-# Operators
+## Operators
 
 Operators are responsible for creating blocks. Blocks need to be submitted onchain and the correctness of the work in a block needs to be proven. This is done by creating a proof.
 
@@ -273,31 +273,31 @@ Every operator stakes the same amount of LRC to make the onchain logic as cheap 
 
 An operator can choose to unregister itself at any time by calling `unregisterOperator`. To make sure the operator doesn't have any unproven blocks left an operator can only withdraw the amount he staked after a safe period of time (currently 1 day) by calling `withdrawOperatorStake`.
 
-## Restrictions
+### Restrictions
 
-The operator needs all the order data to generate the proof. To allow orders to be matched by any criteria by a DEX we need an extra mechanism so operators cannot freely match orders and/or rings if needed.
+The operator needs all the order data to generate the proof. To allow orders to be matched by any criteria by a ringmatcher we need an extra mechanism so operators cannot freely match orders and/or rings if needed.
 
-### Restrict order matching
+#### Restrict order matching
 
 We use **dual-authoring** here. Orders can only be matched in rings signed by the wallet (or anyone having the necessary keys).
 
-### Restrict sequence of ring settlements
+#### Restrict sequence of ring settlements
 
 We need a way to limit how an operator can insert rings in a proof otherwise an operator can settle rings in any order messing up the real sequence the settlements happened in the DEX. We also need to ensure that the ring can only be used a single time by the operator.
 
-We use a **nonce** here. The nonce of the ringmatcher account paying the operator is used. The ring signed by the ringmatcher contains a nonce. The nonce in the next ring that is settled needs to be the nonce of the previous ring that was settled incremented by 1.  A ringmatcher can have multiple accounts (e.g. an account per trading pair) to have more control how rings can be processed by the operator.
+We use a **nonce** here. The nonce of the ringmatcher account paying the operator is used. The ring signed by the ringmatcher contains a nonce. The nonce in the next ring that is settled for this ringmatcher needs to be the nonce of the previous ring that was settled incremented by 1.  A ringmatcher can have multiple accounts to have more control how rings can be processed by the operator (e.g. an account per trading pair).
 
 Note that doing an offchain withdraw also increments the nonce value. A ringmatcher thus may want to limit himself to onchain withdrawals so the nonce value of the account remains the same.
 
-### Only allow cancels/offchain withdrawal requests to be used once by an operator
+#### Only allow cancels/offchain withdrawal requests to be used once by an operator
 
 The **nonce** of the account is increased by 1 for these operations.
 
-## Fee
+### Fee
 
 The fee paid to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ringmatchers pays a fee in ETH to the ethereum miners, the ringmatcher now pays a fee to the operator. **Any token can be used to pay the fee.**
 
-# Circuit permutations
+## Circuit permutations
 
 A circuit always does the same. There's no way to do dynamic loops. Let's take the rings settlement circuit as an example:
 - The circuit always settles a fixed number of rings
@@ -310,7 +310,7 @@ Currently there are 5 circuits:
 - Onchain withdraw
 - Cancel
 
-# Delayed proof submission
+## Delayed proof submission
 
 Creating a proof can take a long time. If the proof needs to be available at the same time the state is updated onchain we limit the maximum throughput of the system by the proof generation time. But we don't need the proof immediately. This allows different operators to work together much more efficiently:
 - The selected operator that is allowed to commit work can change quickly. If the operator wants to do work than he can quickly commit that work onchain without needing the time to also generate the proof immediately.
@@ -341,7 +341,7 @@ A realistic use case would be for selling some token for one of the available st
 
 Onchain deposit/withdrawal requests are queued in blocks onchain.
 - The amount of blocks that can be created in a certain timespan is limited. This is to make sure the operator isn't overwhelmed by these requests and can actually process them. A block can be created every `MIN_TIME_OPEN_BLOCK`.
-- A block can only remain open for only a limited time, this is to ensure users don't have to wait an unreasonable amount of time until their request is processed. A block is open when there is at least one request in a block. A block is automatically closed after `MAX_TIME_OPEN_BLOCK` when not full. (Of course, for an operator full blocks are preferred because the circuit is created for a fixed number of requests so the price to process a block is approximately the same, no matter the number of requests that are actually done in the block.)
+- A block can only remain open for only a limited time, this is to ensure users don't have to wait an unreasonable amount of time until their request is processed. A block is open when there is at least one request in a block. A block is automatically closed after `MAX_TIME_OPEN_BLOCK` when not full. (Of course, for an operator full blocks are preferred because the circuit is created for a fixed number of requests so the cost to process a block is approximately the same, no matter the number of requests that are actually done in the block.)
 - A block is committable after `MIN_TIME_CLOSED_BLOCK_UNTIL_COMMITTABLE`. This is a short time after the block is closed so that all parties know how the state will be changed.
 - A block needs to be processed after `MAX_TIME_CLOSED_BLOCK_UNTIL_FORCED`. No other work can be committed until the forced block is committed by the operator.
 
@@ -417,8 +417,10 @@ if (!onchain) {
 }
 ```
 - => Onchain: **18 bytes/withdrawal**
+- => Onchain withdrawal calldata cost: 18 * 68 = **1224 gas/onchain withdrawal**
 - => offchain: **36 bytes/withdrawal**
-- => Calldata cost: 5 * 68 = **340 gas/withdrawal**
+- => Offchain withdrawal calldata cost: 36 * 68 = **2448 gas/onchain withdrawal**
+
 
 The onchain withdrawal calldata also needs to be stored onchain so the data can be used when actually withdrawing the tokens when allowed (storing 32 bytes of data costs 20,000 gas):
 - => Data storage cost: (18 / 32) * 20,000 = **11250 gas/withdrawal**
