@@ -100,9 +100,7 @@ function createAccountAndDeposit(
     returns (uint24);
 ```
 
-A walletID (3 bytes) is given that can lock the account to a specific wallet. This is done by creating a special kind of account that can only be created by the owner of the wallet. Depending on the context we refer to this account as the dual author account or the wallet account (see [here](#wallets) for more info). These kind of accounts have the walletID set to the walletID and additionaly the most significant bit of the walletID is set to 1. The public key given in this account is used just like with dual-authoring: The ring needs to be signed using the corresponding private key of the public key given in the authentication account. This way only the wallet can sign off on the use of the account.
-
-When the walletID is set to 0 anyone can use the account to create orders.
+A walletID (3 bytes) is given that can lock the account to a specific wallet (see [here](#wallets) for more info).
 
 ## Depositing
 
@@ -419,7 +417,7 @@ if (!onchain) {
 - => Onchain: **18 bytes/withdrawal**
 - => Onchain withdrawal calldata cost: 18 * 68 = **1224 gas/onchain withdrawal**
 - => offchain: **36 bytes/withdrawal**
-- => Offchain withdrawal calldata cost: 36 * 68 = **2448 gas/onchain withdrawal**
+- => Offchain withdrawal calldata cost: 36 * 68 = **2448 gas/offchain withdrawal**
 
 
 The onchain withdrawal calldata also needs to be stored onchain so the data can be used when actually withdrawing the tokens when allowed (storing 32 bytes of data costs 20,000 gas):
