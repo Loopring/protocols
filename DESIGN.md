@@ -326,17 +326,15 @@ Every account has a trading history tree with 2^16 leafs for every token. Which 
 
 ### Safely updating the validUntil time of an order
 
-For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderID.
+For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely by creating a new order with a new validUntil value, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderID.
 
-This especially a problem because the operator can set the timestamp that is tested onchain within a certain window (see [here](#validSince--validUntil)). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders.
-
-The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants.
+This especially a problem because the operator can set the timestamp that is tested onchain within a certain window (see [here](#validSince--validUntil)). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders. The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants. Order Aliasing fixes this problem.
 
 ### The possibility for some simple filling logic between orders
 
 A user could create an order selling X tokenZ for either N tokenA or M tokenB (or even more tokens) while using the same orderID. The user is guaranteed never to spend more than X tokenZ, but will have bought [0, N] tokenA and/or [0, M] tokenA.
 
-A realistic use case would be for selling some token for one of the available stable coins. Or selling a token for either ETH and/or WETH.
+A realistic use case would be for selling some token for one of the available stable coins. Or selling some token for ETH and WETH. In these casse the user doesn't really care which token specifically he buys, but increases his chance of finding a matching order.
 
 
 ## Deposit/Withdraw block handling
