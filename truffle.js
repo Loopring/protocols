@@ -1,5 +1,6 @@
 var fs = require("fs");
 var HDWalletProvider = require("truffle-hdwallet-provider");
+var PrivateKeyProvider = require("truffle-privatekey-provider");
 var mnemonic = "your mnemonic phases here.";
 // or you may read your mnemonic phases from a file:
 // var mnemonic = fs.readFileSync(process.env.HOME + "/priv/mnemonic.txt", "utf8");
@@ -46,6 +47,12 @@ module.exports = {
         return new HDWalletProvider(mnemonic, "https://rinkeby.infura.io/hM4sFGiBdqbnGTxk5YT2", 1);
       },
       gasPrice: 1000000000,
+      gas: 6700000
+    },
+    kovan: {
+      provider: () => new PrivateKeyProvider("7c71142c72a019568cf848ac7b805d21f2e0fd8bc341e8314580de11c6a397bf", "https://kovan.infura.io/hM4sFGiBdqbnGTxk5YT2"),
+      network_id: "*",
+      gasPrice: 5000000000, // 50 gwei,
       gas: 6700000
     },
     priv: {
