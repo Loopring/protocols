@@ -1,9 +1,9 @@
 # Deployment on Kovan Testnet:
 
 ## v2.1-release:
-### Source code: https://github.com/Loopring/protocol2/releases/tag/v2.1-st20
-### creater: [0xE20cF871f1646d8651ee9dC95AAB1d93160b3467](https://etherscan.io/address/0xE20cF871f1646d8651ee9dC95AAB1d93160b3467)
-### contract address list:
+#### Source code: https://github.com/Loopring/protocol2/releases/tag/v2.1-st20
+#### creater: [0xE20cF871f1646d8651ee9dC95AAB1d93160b3467](https://kovan.etherscan.io/address/0xe20cf871f1646d8651ee9dc95aab1d93160b3467)
+#### contract address list:
 *   BrokerRegistry: 0xd0ef9379c783e5783ba499ceba78734794b67e72
 *   OrderRegistry: 0x4ff214811f164dab1889c83b1fe2c8c27d3db615
 *   OrderBook: 0x7f9d7c8d69c13215fe9d460342996be35ca6f9aa
