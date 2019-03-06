@@ -67,7 +67,7 @@
     "install": "^0.12.2",
     "js-sha3": "^0.8.0",
     "lodash": "^4.17.5",
-    "protocol2-js": "../protocol2-js",
+    "protocol2-js": "0.2.26",
     "sha3": "^2.0.0",
     "truffle": "5.0.0",
     "truffle-hdwallet-provider": "web3-one",
