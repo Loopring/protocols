@@ -5,3 +5,4 @@ transpiled/
 .node-*
 *.log
 ganache_account_keys.txt
+deployedAddresses.json
