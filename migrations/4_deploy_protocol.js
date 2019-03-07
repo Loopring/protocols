@@ -1,3 +1,4 @@
+var fs = require("fs");
 var TradeDelegate = artifacts.require("./impl/TradeDelegate");
 var TradeHistory = artifacts.require("./impl/TradeHistory");
 var BrokerRegistry = artifacts.require("./impl/BrokerRegistry");
@@ -10,6 +11,7 @@ var BurnRateTable = artifacts.require("./impl/BurnRateTable");
 var BurnManager = artifacts.require("./impl/BurnManager");
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
+var GTOToken = artifacts.require("./test/tokens/GTO.sol");
 
 module.exports = function(deployer, network, accounts) {
 
@@ -47,7 +49,23 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(BurnManager, FeeHolder.address, LRCToken.address),
       ]);
     }).then(() => {
-      // do nothing
+      const allAddresses = {
+        Delegate: TradeDelegate.address,
+        TradeHistory: TradeHistory.address,
+        BrokerRegistry: BrokerRegistry.address,
+        OrderRegistry: OrderRegistry.address,
+        RingSubmitter: RingSubmitter.address,
+        OrderCanceller: OrderCanceller.address,
+        FeeHolder: FeeHolder.address,
+        OrderBook: OrderBook.address,
+        BurnRateTable: BurnRateTable.address,
+        BurnManager: BurnManager.address,
+        LRCToken: LRCToken.address,
+        WETHToken: WETHToken.address,
+        GTOToken: GTOToken.address,
+      };
+
+      fs.writeFileSync("./deployedAddresses.json", JSON.stringify(allAddresses, "", 4), "utf8");
     });
   }
 };
