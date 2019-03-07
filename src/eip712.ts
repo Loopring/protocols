@@ -28,6 +28,7 @@ const TYPED_MESSAGE_SCHEMA = {
 
 export function getEIP712Message(typedData: any) {
   const sanitizedData = sanitizeData(typedData);
+
   const parts = [Buffer.from("1901", "hex")];
   parts.push(hashStruct("EIP712Domain", sanitizedData.domain, sanitizedData.types));
   parts.push(hashStruct(sanitizedData.primaryType, sanitizedData.message, sanitizedData.types));
@@ -46,7 +47,7 @@ function sanitizeData(data: any) {
 
 function hashStruct(primaryType: any, data: any, types: any) {
   const encodedData = encodeData(primaryType, data, types);
-  return ethUtil.sha3(encodeData(primaryType, data, types));
+  return ethUtil.sha3(encodedData);
 }
 
 function encodeData(primaryType: any, data: any, types: any) {

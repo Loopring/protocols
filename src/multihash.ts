@@ -1,6 +1,5 @@
 import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
-import promisify = require("es6-promisify");
 import ABI = require("ethereumjs-abi");
 import ethUtil = require("ethereumjs-util");
 import Web3 = require("web3");
@@ -93,7 +92,7 @@ export class MultiHashUtil {
   }
 
   private async signEthereumAsync(sig: Bitstream, hash: Buffer, address: string) {
-    const signature = await promisify(this.web3Instance.eth.sign)(ethUtil.bufferToHex(hash), address);
+    const signature = await this.web3Instance.eth.sign(ethUtil.bufferToHex(hash), address);
     const { v, r, s } = ethUtil.fromRpcSig(signature);
 
     sig.addNumber(1 + 32 + 32, 1);

@@ -1,8 +1,9 @@
 {
   "name": "protocol2-js",
-  "version": "0.2.26",
+  "version": "0.4.5",
   "description": "loopring protocol simulator core lib",
-  "main": "index.ts",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/Loopring/protocol2-js"
@@ -10,10 +11,11 @@
   "scripts": {
     "start": "tsc -p .; node build/src/main.js",
     "test": "mocha -r ts-node/register test/**/*.ts",
-    "compile": "tsc -p .",
+    "compile": "tsc -p .; copyfiles ABI/**/* build",
     "fix": "gts fix",
     "prepare": "npm run compile",
-    "pretest": "npm run compile"
+    "pretest": "npm run compile",
+    "prepublish": "npm run compile"
   },
   "keywords": [],
   "author": "loopring",
@@ -27,6 +29,7 @@
     "ts-node": "^6.0.5",
     "types-bn": "0.0.1",
     "typescript": "^2.8.3",
+    "copyfiles": "^2.1.0",
     "web3-typescript-typings": "^0.10.2"
   },
   "dependencies": {
@@ -43,6 +46,6 @@
     "ethereumjs-util": "^5.2.0",
     "express": "^4.16.3",
     "lodash": "^4.17.10",
-    "web3": "^0.20.6"
+    "web3": "^1.0.0-beta.48"
   }
 }
