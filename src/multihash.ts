@@ -36,7 +36,7 @@ export class MultiHashUtil {
     sig.addNumber(algorithm, 1);
     switch (+algorithm) {
       case SignAlgorithm.Ethereum:
-        await this.signEthereumAsync(sig, hash, address);
+        await this.signEIP712Async(sig, hash, privateKey);
         return sig.getData();
       case SignAlgorithm.EIP712:
         await this.signEIP712Async(sig, hash, privateKey);

@@ -229,8 +229,16 @@ export class RingsGenerator {
     this.insertOffset(param, param.data.addNumber(order.amountS, 32, false));
     this.insertOffset(param, param.data.addNumber(order.amountB, 32, false));
     this.insertOffset(param, param.data.addNumber(order.validSince, 4, false));
-    param.tables.addNumber(order.tokenSpendableS.index, 2);
-    param.tables.addNumber(order.tokenSpendableFee.index, 2);
+    if (order.tokenSpendableS.index) {
+      param.tables.addNumber(order.tokenSpendableS.index, 2);
+    }  else {
+      param.tables.addNumber(0, 2);
+    }
+    if (order.tokenSpendableFee.index) {
+      param.tables.addNumber(order.tokenSpendableFee.index, 2);
+    } else {
+      param.tables.addNumber(0, 2);
+    }
 
     if (order.dualAuthAddr) {
       this.insertOffset(param, param.data.addAddress(order.dualAuthAddr, 20, false));
