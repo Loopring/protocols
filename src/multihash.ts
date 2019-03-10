@@ -36,7 +36,7 @@ export class MultiHashUtil {
     sig.addNumber(algorithm, 1);
     switch (+algorithm) {
       case SignAlgorithm.Ethereum:
-        await this.signEIP712Async(sig, hash, privateKey);
+        await this.signEthereumAsync(sig, hash, privateKey);
         return sig.getData();
       case SignAlgorithm.EIP712:
         await this.signEIP712Async(sig, hash, privateKey);
@@ -91,14 +91,15 @@ export class MultiHashUtil {
     }
   }
 
-  private async signEthereumAsync(sig: Bitstream, hash: Buffer, address: string) {
-    const signature = await this.web3Instance.eth.sign(ethUtil.bufferToHex(hash), address);
-    const { v, r, s } = ethUtil.fromRpcSig(signature);
+  private async signEthereumAsync(sig: Bitstream, hash: Buffer, privateKey: string) {
+    const parts = [Buffer.from("\x19Ethereum Signed Message:\n32", "utf8"), hash];
+    const totalHash = ethUtil.sha3(Buffer.concat(parts));
 
+    const signature = ethUtil.ecsign(totalHash, new Buffer(privateKey, "hex"));
     sig.addNumber(1 + 32 + 32, 1);
-    sig.addNumber(v, 1);
-    sig.addHex(ethUtil.bufferToHex(r));
-    sig.addHex(ethUtil.bufferToHex(s));
+    sig.addNumber(signature.v, 1);
+    sig.addHex(ethUtil.bufferToHex(signature.r));
+    sig.addHex(ethUtil.bufferToHex(signature.s));
   }
 
   private async signEIP712Async(sig: Bitstream, hash: Buffer, privateKey: string) {
