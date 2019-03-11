@@ -74,13 +74,11 @@ contract IOedax {
         uint    targetPrice,
         uint    scaleFactor,
         uint    durationSeconds,
-        bool    isWithdrawalAllowed)
+        bool    isWithdrawalAllowed,
+        uint    initialAmountA, // The initial amount of tokenA from the initiator's account.
+        uint    initialAmountB) // The initial amount of tokenB from the initiator's account.
         external
         returns (address auction, uint id);
-
-    function triggerSettlement(uint id)
-        external
-        returns (bool successful);
 
     function getAuctionInfo(uint id)
         view
@@ -95,5 +93,5 @@ contract IOedax {
     )
         view
         external
-        returns (Auctions[] memory auctions, unit total);
+        returns (Auctions[] memory auctions);
 }

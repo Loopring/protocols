@@ -26,14 +26,14 @@ contract IAuction {
         address token,
         uint    amount)
         public
-        returns (bool);
+        returns (bool successful);
 
     function withdraw(
         address user,
         address token,
         uint    amount)
         public
-        returns (bool);
+        returns (bool successful);
 
     function simulatePariticipation(
         address user,
@@ -42,15 +42,26 @@ contract IAuction {
         public
         returns (bool successful, AcctionState memory state);
 
-    function triggerSettlement()
+    // Try to settle the auction.
+    function settle()
         external
-        returns (bool);
+        returns (bool successful);
+
+    // Start a new aucton with the same parameters except the P and the delaySeconds parameter.
+    // The new P parameter would be the settlement price of this auction.
+    function clone(
+        uint delaySeconds,
+        uint initialAmountA, // The initial amount of tokenA from the initiator's account.
+        uint initialAmountB) // The initial amount of tokenB from the initiator's account.
+        external
+        returns (address auction, uint id);
 
     function getAuctionInfo()
         view
         external
         returns (AuctionInfo memory);
 
+    // If this function is too hard/costy to do, we can remove it.
     function getParticipations(
         uint skip,
         uint count
@@ -59,6 +70,7 @@ contract IAuction {
         external
         returns (Participation[] memory participations, uint total);
 
+    // If this function is too hard/costy to do, we can remove it.
     function getParticipants(
         uint skip,
         uint count
