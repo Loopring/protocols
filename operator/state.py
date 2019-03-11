@@ -677,11 +677,20 @@ class State(object):
             fillAmountB_A = fillAmountS_B
             fillAmountS_A = (fillAmountB_A * int(ring.orderA.amountS)) // int(ring.orderA.amountB)
 
+        fillAmountF_A = (int(ring.orderA.amountF) * fillAmountS_A) // int(ring.orderA.amountS)
+        fillAmountF_B = (int(ring.orderB.amountF) * fillAmountS_B) // int(ring.orderB.amountS)
+
         margin = fillAmountS_A - fillAmountB_B
 
+        # matchable
         ring.valid = True
         if fillAmountS_A < fillAmountB_B:
             print("fills false: ")
+            ring.valid = False
+
+        # self-trading
+        totalFee = fillAmountF_A + fillAmountF_B
+        if ring.orderA.accountID == ring.orderB.accountID and ring.orderA.tokenF == ring.orderB.tokenF and int(ring.orderA.balanceF) < totalFee:
             ring.valid = False
 
         ring.orderA.checkValid(context)
@@ -699,21 +708,11 @@ class State(object):
             print("ring.valid false: ")
             fillAmountS_A = 0
             fillAmountB_A = 0
+            fillAmountF_A = 0
             fillAmountS_B = 0
             fillAmountB_B = 0
+            fillAmountF_B = 0
             margin = 0
-
-        fillAmountF_A = (int(ring.orderA.amountF) * fillAmountS_A) // int(ring.orderA.amountS)
-        fillAmountF_B = (int(ring.orderB.amountF) * fillAmountS_B) // int(ring.orderB.amountS)
-
-        # self-trading
-        # balanceF = int(ring.orderA.balanceF)
-        # bSelfTrading = ring.orderA.accountID == ring.orderB.accountID
-        # if bSelfTrading:
-        #     if ring.orderA.tokenF == ring.orderB.tokenF and balanceF < totalFee:
-        #         totalFee = fillAmountF_A + fillAmountF_B
-        #         fillAmountF_A = fillAmountF_A * balanceF // totalFee
-        #         fillAmountF_B = fillAmountF_B * balanceF // totalFee
 
         ring.fillS_A = str(fillAmountS_A)
         ring.fillB_A = str(fillAmountB_A)
@@ -784,7 +783,6 @@ class State(object):
         # Update balances B
         accountB = self.getAccount(ring.orderB.accountID)
 
-        # if bSelfTrading:
         ring.orderB.balanceS = str(accountB.getBalance(ring.orderB.tokenS))
         ring.orderB.balanceB = str(accountB.getBalance(ring.orderB.tokenB))
         ring.orderB.balanceF = str(accountB.getBalance(ring.orderB.tokenF))

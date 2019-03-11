@@ -345,12 +345,20 @@ public:
     MulDivGadget fillAmountF_A;
     MulDivGadget fillAmountF_B;
 
+    VariableT totalFee;
+    EqualGadget accountsEqual;
+    EqualGadget feeTokensEqual;
+    LeqGadget balanceF_lt_totalFee;
+    AndGadget accounts_and_feeTokensEqual;
+    AndGadget selfTradingCheckValid;
+
     LeqGadget fillAmountS_A_lt_fillAmountB_B;
 
     CheckFillsGadget checkFillsA;
     CheckFillsGadget checkFillsB;
 
-    VariableT fillsValid;
+    VariableT valid_1;
+    VariableT valid_2;
     VariableT valid;
 
     OrderMatchingGadget(
@@ -390,13 +398,24 @@ public:
         fillAmountF_B(pb, orderB.amountF.packed, fillAmountS_B.result(), orderB.amountS.packed,
                       FMT(prefix, "fillAmountF_B = (orderB.amountF * fillAmountS_B) // orderB.amountS")),
 
+        totalFee(make_variable(pb, FMT(prefix, ".totalFee"))),
+        accountsEqual(pb, orderA.accountID.packed, orderB.accountID.packed,
+                      FMT(prefix, "orderA.accountID == orderB.accountID")),
+        feeTokensEqual(pb, orderA.tokenF.packed, orderB.tokenF.packed,
+                      FMT(prefix, "orderA.tokenF == orderB.tokenF")),
+        balanceF_lt_totalFee(pb, orderA.balanceF, totalFee,
+                             FMT(prefix, ".balanceF < totalFee")),
+        accounts_and_feeTokensEqual(pb, accountsEqual.eq(), feeTokensEqual.eq(), FMT(prefix, ".accountsEqual && feeTokensEqual")),
+        selfTradingCheckValid(pb, accounts_and_feeTokensEqual.And(), balanceF_lt_totalFee.lt(), FMT(prefix, ".accountsEqual && feeTokensEqual")),
+
         fillAmountS_A_lt_fillAmountB_B(pb, fillAmountS_A.result(), fillAmountB_B.result(),
                                        FMT(prefix, "fillAmountS_A < fillAmountB_B")),
 
         checkFillsA(pb, orderA, fillAmountS_A.result(), fillAmountB_A.result(), FMT(prefix, ".checkFillA")),
         checkFillsB(pb, orderB, fillAmountS_B.result(), fillAmountB_B.result(), FMT(prefix, ".checkFillB")),
 
-        fillsValid(make_variable(pb, FMT(prefix, ".fillsValid"))),
+        valid_1(make_variable(pb, FMT(prefix, ".valid_1"))),
+        valid_2(make_variable(pb, FMT(prefix, ".valid_2"))),
         valid(make_variable(pb, FMT(prefix, ".valid")))
     {
 
@@ -462,13 +481,21 @@ public:
         fillAmountF_A.generate_r1cs_witness();
         fillAmountF_B.generate_r1cs_witness();
 
+        pb.val(totalFee) = pb.val(fillAmountF_A.result()) + pb.val(fillAmountF_B.result());
+        accountsEqual.generate_r1cs_witness();
+        feeTokensEqual.generate_r1cs_witness();
+        balanceF_lt_totalFee.generate_r1cs_witness();
+        accounts_and_feeTokensEqual.generate_r1cs_witness();
+        selfTradingCheckValid.generate_r1cs_witness();
+
         fillAmountS_A_lt_fillAmountB_B.generate_r1cs_witness();
 
         checkFillsA.generate_r1cs_witness();
         checkFillsB.generate_r1cs_witness();
 
-        pb.val(fillsValid) = pb.val(checkFillsA.isValid()) * pb.val(checkFillsB.isValid());
-        pb.val(valid) = pb.val(fillsValid) * (FieldT::one() - pb.val(fillAmountS_A_lt_fillAmountB_B.lt()));
+        pb.val(valid_1) = pb.val(checkFillsA.isValid()) * pb.val(checkFillsB.isValid());
+        pb.val(valid_2) = pb.val(valid_1) * (FieldT::one() - pb.val(selfTradingCheckValid.And()));
+        pb.val(valid) = pb.val(valid_2) * (FieldT::one() - pb.val(fillAmountS_A_lt_fillAmountB_B.lt()));
 
         print(pb, "margin", margin);
     }
@@ -497,13 +524,21 @@ public:
         fillAmountF_A.generate_r1cs_constraints();
         fillAmountF_B.generate_r1cs_constraints();
 
+        pb.add_r1cs_constraint(ConstraintT(fillAmountF_A.result() + fillAmountF_B.result(), 1, totalFee), "fillAmountF_A + fillAmountF_B = totalFee");
+        accountsEqual.generate_r1cs_constraints();
+        feeTokensEqual.generate_r1cs_constraints();
+        balanceF_lt_totalFee.generate_r1cs_constraints();
+        accounts_and_feeTokensEqual.generate_r1cs_constraints();
+        selfTradingCheckValid.generate_r1cs_constraints();
+
         fillAmountS_A_lt_fillAmountB_B.generate_r1cs_constraints();
 
         checkFillsA.generate_r1cs_constraints();
         checkFillsB.generate_r1cs_constraints();
 
-        pb.add_r1cs_constraint(ConstraintT(checkFillsA.isValid(), checkFillsB.isValid(), fillsValid), "checkFillsA.isValid() * checkFillsB.isValid() = fillsValid");
-        pb.add_r1cs_constraint(ConstraintT(1 - fillAmountS_A_lt_fillAmountB_B.lt(), fillsValid, valid), "fillAmountS_A_lt_fillAmountB_B * fillsValid = valid");
+        pb.add_r1cs_constraint(ConstraintT(checkFillsA.isValid(), checkFillsB.isValid(), valid_1), "checkFillsA.isValid() * checkFillsB.isValid() = valid_1");
+        pb.add_r1cs_constraint(ConstraintT(valid_1, FieldT::one() - selfTradingCheckValid.And(), valid_2), "valid_1 * selfTradingCheckValid = valid");
+        pb.add_r1cs_constraint(ConstraintT(FieldT::one() - fillAmountS_A_lt_fillAmountB_B.lt(), valid_2, valid), "fillAmountS_A_lt_fillAmountB_B * fillsValid = valid");
     }
 };
 

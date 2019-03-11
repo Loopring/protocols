@@ -278,7 +278,7 @@ public:
                          {balanceF_A_before, constant0, tradingHistoryRootF_A},
                          {balanceF_BA.X, constant0, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
-        updateAccount_A(pb, _accountsRoot, orderA.accountID,
+        updateAccount_A(pb, _accountsRoot, orderA.accountID.bits,
                         {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID, orderA.nonce, balancesRootA},
                         {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID, orderA.nonce, updateBalanceF_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
@@ -295,7 +295,7 @@ public:
                          {balanceF_B_before, constant0, tradingHistoryRootF_B},
                          {balanceF_BB.X, constant0, tradingHistoryRootF_B},
                          FMT(prefix, ".updateBalanceF_B")),
-        updateAccount_B(pb, updateAccount_A.result(), orderB.accountID,
+        updateAccount_B(pb, updateAccount_A.result(), orderB.accountID.bits,
                         {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID, orderB.nonce, balancesRootB},
                         {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID, orderB.nonce, updateBalanceF_B.getNewRoot()},
                         FMT(prefix, ".updateAccount_B")),
@@ -379,7 +379,7 @@ public:
 
             margin.bits,
 
-            orderA.accountID,
+            orderA.accountID.bits,
             orderA.dualAuthAccountID,
             uint16_padding, orderA.tokenS.bits,
             uint16_padding, orderA.tokenF.bits,
@@ -389,7 +389,7 @@ public:
             percentage_padding, orderA.walletSplitPercentage.bits,
             percentage_padding, orderA.waiveFeePercentage.bits,
 
-            orderB.accountID,
+            orderB.accountID.bits,
             orderB.dualAuthAccountID,
             uint16_padding, orderB.tokenS.bits,
             uint16_padding, orderB.tokenF.bits,
