@@ -51,8 +51,8 @@ contract IAuction {
     // The new P parameter would be the settlement price of this auction.
     function clone(
         uint delaySeconds,
-        uint initialAmountA, // The initial amount of tokenA from the initiator's account.
-        uint initialAmountB) // The initial amount of tokenB from the initiator's account.
+        uint initialAmountA, // The initial amount of tokenA from the creator's account.
+        uint initialAmountB) // The initial amount of tokenB from the creator's account.
         external
         returns (address auction, uint id);
 

@@ -49,7 +49,7 @@ contract IOedax {
         int64   id;                // 0-based ever increasing id
         uint    startedTimestamp;  // Timestamp when this auction is started.
         uint    delaySeconds;      // The delay for open participation.
-        address initiator;         // The one crated this auction.
+        address creator;           // The one crated this auction.
         address tokenA;            // The ask (sell) token
         address tokenB;            // The bid (buy) token
         uint    decimalsA;         // Decimals of tokenA, should be read from their smart contract, not supplied manually.
@@ -64,7 +64,7 @@ contract IOedax {
     }
 
     // Initiate an auction
-    function initAuction(
+    function createAuction(
         uint    delaySeconds,
         address tokenA,
         address tokenB,
@@ -75,8 +75,8 @@ contract IOedax {
         uint    scaleFactor,
         uint    durationSeconds,
         bool    isWithdrawalAllowed,
-        uint    initialAmountA, // The initial amount of tokenA from the initiator's account.
-        uint    initialAmountB) // The initial amount of tokenB from the initiator's account.
+        uint    initialAmountA, // The initial amount of tokenA from the creator's account.
+        uint    initialAmountB) // The initial amount of tokenB from the creator's account.
         external
         returns (address auction, uint id);
 
@@ -88,7 +88,7 @@ contract IOedax {
     function getAuctions(
         uint   skip,
         uint   count,
-        string initiator,
+        string creator,
         Status status
     )
         view
