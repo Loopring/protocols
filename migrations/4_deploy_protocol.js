@@ -49,23 +49,23 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(BurnManager, FeeHolder.address, LRCToken.address),
       ]);
     }).then(() => {
-      const allAddresses = {
-        Delegate: TradeDelegate.address,
-        TradeHistory: TradeHistory.address,
-        BrokerRegistry: BrokerRegistry.address,
-        OrderRegistry: OrderRegistry.address,
-        RingSubmitter: RingSubmitter.address,
-        OrderCanceller: OrderCanceller.address,
-        FeeHolder: FeeHolder.address,
-        OrderBook: OrderBook.address,
-        BurnRateTable: BurnRateTable.address,
-        BurnManager: BurnManager.address,
-        LRCToken: LRCToken.address,
-        WETHToken: WETHToken.address,
-        GTOToken: GTOToken.address,
-      };
+      // const allAddresses = {
+      //   Delegate: TradeDelegate.address,
+      //   TradeHistory: TradeHistory.address,
+      //   BrokerRegistry: BrokerRegistry.address,
+      //   OrderRegistry: OrderRegistry.address,
+      //   RingSubmitter: RingSubmitter.address,
+      //   OrderCanceller: OrderCanceller.address,
+      //   FeeHolder: FeeHolder.address,
+      //   OrderBook: OrderBook.address,
+      //   BurnRateTable: BurnRateTable.address,
+      //   BurnManager: BurnManager.address,
+      //   LRCToken: LRCToken.address,
+      //   WETHToken: WETHToken.address,
+      //   GTOToken: GTOToken.address,
+      // };
 
-      fs.writeFileSync("./deployedAddresses.json", JSON.stringify(allAddresses, "", 4), "utf8");
+      // fs.writeFileSync("./deployedAddresses.json", JSON.stringify(allAddresses, "", 4), "utf8");
     });
   }
 };
