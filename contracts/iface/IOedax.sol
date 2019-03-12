@@ -95,13 +95,13 @@ contract IOedax {
         external
         returns (Auctions[] memory auctions);
 
-    function setFeeSturcture(
+    function setFeeSettings(
         address recepient,
         uint    bips  // One basis point is equivalent to 0.01%
     )
         external;
 
-    function getFeeSturcture(
+    function getFeeSettings(
     )
         view
         external
