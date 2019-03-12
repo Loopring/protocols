@@ -61,13 +61,14 @@ contract IAuction is IData {
     function clone(
         uint delaySeconds,
         uint initialAmountA, // The initial amount of tokenA from the creator's account.
-        uint initialAmountB) // The initial amount of tokenB from the creator's account.
+        uint initialAmountB
+    ) // The initial amount of tokenB from the creator's account.
         external
         returns (address auction, uint id);
 
     function getAuctionInfo()
-        view
         external
+        view
         returns (AuctionInfo memory);
 
     // If this function is too hard/costy to do, we can remove it.
@@ -75,8 +76,8 @@ contract IAuction is IData {
         uint skip,
         uint count
     )
-        view
         external
+        view
         returns (Participation[] memory participations, uint total);
 
     // If this function is too hard/costy to do, we can remove it.
@@ -84,7 +85,7 @@ contract IAuction is IData {
         uint skip,
         uint count
     )
-        view
         external
+        view
         returns (Participant[] memory participants, uint total);
 }
