@@ -37,26 +37,34 @@ contract IOedax is IData {
         uint    initialAmountA, // The initial amount of tokenA from the creator's account.
         uint    initialAmountB) // The initial amount of tokenB from the creator's account.
         external
-        returns (address auction, uint id);
+        returns (
+            address auction,
+            uint    id
+        );
 
     function getAuctionInfo(uint id)
         external
         view
-        returns (AuctionInfo memory info);
+        returns (
+            AuctionInfo memory info
+        );
 
     function getAuctions(
-        uint   skip,
-        uint   count,
+        uint    skip,
+        uint    count,
         address creator,
-        Status status
+        Status  status
     )
         external
         view
-        returns (uint[] memory auctions);
+        returns (
+            uint[] memory auctions
+        );
 
     function setFeeSettings(
         address recepient,
-        uint    bips  // One basis point is equivalent to 0.01%
+        uint    platformBips,  // One basis point is equivalent to 0.01%
+        uint    makerTakerBips
     )
         external;
 
@@ -64,6 +72,10 @@ contract IOedax is IData {
     )
         external
         view
-        returns (address recepient, uint bips);
+        returns (
+            address recepient,
+            uint    platformBips,
+            uint    makerTakerBips
+        );
 
 }
