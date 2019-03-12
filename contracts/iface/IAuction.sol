@@ -14,11 +14,9 @@ contract IAuction {
     struct Participant {
         address  user;
         uint     amountA;
-        uint     numParticipationsA;
-        int      avgFeePointsA;    // < 0 means rebate.
+        int      avgTokenAFeeBips;    // < 0 means rebate.
         uint     amountB;
-        uint     numParticipationsB;
-        int      avgFeePointsB;    // < 0 means rebate.
+        int      avgTokenBFeeBips;    // < 0 means rebate.
     }
 
     function deposit(
