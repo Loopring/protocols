@@ -23,7 +23,9 @@ contract ITreasury {
         uint    amount  // must be greater than 0.
     )
         external
-        returns(bool);
+        returns (
+            bool successful
+        );
 
     function withdraw(
         address user,
@@ -31,7 +33,9 @@ contract ITreasury {
         uint    amount  // specify 0 to withdrawl as much as possible.
     )
         external
-        returns (bool);
+        returns (
+            bool successful
+        );
 
     function getBalance(
         address user,
@@ -39,14 +43,20 @@ contract ITreasury {
     )
         external
         view
-        returns (uint total, uint available, uint locked);
+        returns (
+            uint total,
+            uint available,
+            uint locked
+        );
 
     function registerAuction(
         address auction,
         uint    id
     )
         external
-        returns (bool successful);
+        returns (
+            bool successful
+        );
 
 
     // In case of an high-risk bug, the admin can return all tokens, including those locked in
@@ -56,5 +66,9 @@ contract ITreasury {
     // This method can only be called once.
     function terminate() external;
 
-    function isTerminated() external returns (bool terminated);
+    function isTerminated()
+        external
+        returns (
+            bool terminated
+        );
 }

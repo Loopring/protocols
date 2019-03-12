@@ -26,14 +26,18 @@ contract IAuction is IData {
         address token,
         uint    amount)
         public
-        returns (bool successful);
+        returns (
+            bool successful
+        );
 
     function withdraw(
         address user,
         address token,
         uint    amount)
         public
-        returns (bool successful);
+        returns (
+            bool successful
+        );
 
     function simulateDeposit(
         address user,
@@ -41,7 +45,10 @@ contract IAuction is IData {
         uint    amount)
         public
         view
-        returns (bool successful, AuctionState memory state);
+        returns (
+            bool successful,
+            AuctionState memory state
+        );
 
     function simulateWithdrawal(
         address user,
@@ -49,12 +56,17 @@ contract IAuction is IData {
         uint    amount)
         public
         view
-        returns (bool successful, AuctionState memory state);
+        returns (
+            bool successful,
+            AuctionState memory state
+        );
 
     // Try to settle the auction.
     function settle()
         external
-        returns (bool successful);
+        returns (
+            bool successful
+        );
 
     // Start a new aucton with the same parameters except the P and the delaySeconds parameter.
     // The new P parameter would be the settlement price of this auction.
@@ -64,12 +76,17 @@ contract IAuction is IData {
         uint initialAmountB
     ) // The initial amount of tokenB from the creator's account.
         external
-        returns (address auction, uint id);
+        returns (
+            address auction,
+            uint id
+        );
 
     function getAuctionInfo()
         external
         view
-        returns (AuctionInfo memory);
+        returns (
+            AuctionInfo memory
+        );
 
     // If this function is too hard/costy to do, we can remove it.
     function getParticipations(
@@ -78,7 +95,10 @@ contract IAuction is IData {
     )
         external
         view
-        returns (Participation[] memory participations, uint total);
+        returns (
+            Participation[] memory participations,
+            uint total
+        );
 
     // If this function is too hard/costy to do, we can remove it.
     function getParticipants(
@@ -87,5 +107,8 @@ contract IAuction is IData {
     )
         external
         view
-        returns (Participant[] memory participants, uint total);
+        returns (
+            Participant[] memory participants,
+            uint total
+        );
 }
