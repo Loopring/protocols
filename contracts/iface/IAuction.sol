@@ -35,11 +35,20 @@ contract IAuction {
         public
         returns (bool successful);
 
-    function simulatePariticipation(
+    function simulateDeposit(
         address user,
         address token,
-        int    amount) // allow amount < 0 for withdrawal
+        uint    amount)
         public
+        view
+        returns (bool successful, AcctionState memory state);
+
+    function simulateWithdrawal(
+        address user,
+        address token,
+        uint    amount)
+        public
+        view
         returns (bool successful, AcctionState memory state);
 
     // Try to settle the auction.

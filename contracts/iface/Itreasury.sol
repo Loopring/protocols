@@ -56,5 +56,5 @@ contract ITreasury {
     // This method can only be called once.
     function terminate() external;
 
-    function isTerminated() exxternal returns (bool terminated);
+    function isTerminated() external returns (bool terminated);
 }
