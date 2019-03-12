@@ -2,7 +2,7 @@ pragma solidity 0.5.5;
 pragma experimental ABIEncoderV2;
 
 
-contract Itreasury {
+contract ITreasury {
 
     // user => (token => amount)
     mapping (address => mapping (address => uint)) userTotalBalances;
@@ -20,7 +20,7 @@ contract Itreasury {
     function deposit(
         address user,
         address token,
-        uint    amount
+        uint    amount  // must be greater than 0.
     )
     external
     returns (bool);
@@ -28,7 +28,7 @@ contract Itreasury {
     function withdraw(
         address user,
         address token,
-        uint    amount
+        uint    amount  // specify 0 to withdrawl as much as possible.
     )
     external
     returns (bool);
@@ -39,7 +39,7 @@ contract Itreasury {
     )
         view
         external
-        returns (uint totalBalance, uint avaialbeBalance, uint lockedBalance);
+        returns (uint total, uint available, uint locked);
 
     function registerAuction(
         address auction,
@@ -47,4 +47,14 @@ contract Itreasury {
     )
         external
         returns (bool successful);
+
+
+    // In case of an high-risk bug, the admin can return all tokens, including those locked in
+    // active auctions, to their original owners.
+    // If this function is called, all invocation from any on-going auctions will fail, but all
+    // users' asset will be safe.
+    // This method can only be called once.
+    function terminate() external;
+
+    function isTerminated() exxternal returns (bool terminated);
 }
