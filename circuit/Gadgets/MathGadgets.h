@@ -358,11 +358,11 @@ public:
 
     const VariableT X;
     const VariableT Y;
-    const VariableT rest;
+    const VariableT remainder;
 
-    LeqGadget rest_lt_C;
-    EqualGadget rest_eq_0;
-    OrGadget rest_lt_C_OR_rest_eq_0;
+    LeqGadget remainder_lt_C;
+    EqualGadget remainder_eq_0;
+    OrGadget remainder_lt_C_OR_remainder_eq_0;
 
     // (A * B) / C = D
     MulDivGadget(
@@ -384,11 +384,11 @@ public:
 
         X(make_variable(pb, FMT(prefix, ".X"))),
         Y(make_variable(pb, FMT(prefix, ".Y"))),
-        rest(make_variable(pb, FMT(prefix, ".rest"))),
+        remainder(make_variable(pb, FMT(prefix, ".remainder"))),
 
-        rest_lt_C(pb, rest, C, FMT(prefix, ".rest <(=) C")),
-        rest_eq_0(pb, rest, const0, FMT(prefix, ".rest == 0")),
-        rest_lt_C_OR_rest_eq_0(pb, rest_lt_C.lt(), rest_eq_0.eq(), FMT(prefix, ".(rest < C) || (rest == 0)"))
+        remainder_lt_C(pb, remainder, C, FMT(prefix, ".remainder <(=) C")),
+        remainder_eq_0(pb, remainder, const0, FMT(prefix, ".remainder == 0")),
+        remainder_lt_C_OR_remainder_eq_0(pb, remainder_lt_C.lt(), remainder_eq_0.eq(), FMT(prefix, ".(remainder < C) || (remainder == 0)"))
     {
 
     }
@@ -398,6 +398,16 @@ public:
         return D;
     }
 
+    const VariableT& getRemainder() const
+    {
+        return remainder;
+    }
+
+    const VariableT& multiplied() const
+    {
+        return X;
+    }
+
     void generate_r1cs_witness()
     {
         pb.val(D) = (pb.val(C) == FieldT::zero()) ? FieldT::zero() :
@@ -405,24 +415,71 @@ public:
 
         pb.val(X) = pb.val(A) * pb.val(B);
         pb.val(Y) = pb.val(C) * pb.val(D);
-        pb.val(rest) = pb.val(X) - pb.val(Y);
+        pb.val(remainder) = pb.val(X) - pb.val(Y);
 
-        rest_lt_C.generate_r1cs_witness();
-        rest_eq_0.generate_r1cs_witness();
-        rest_lt_C_OR_rest_eq_0.generate_r1cs_witness();
+        remainder_lt_C.generate_r1cs_witness();
+        remainder_eq_0.generate_r1cs_witness();
+        remainder_lt_C_OR_remainder_eq_0.generate_r1cs_witness();
     }
 
     void generate_r1cs_constraints()
     {
         pb.add_r1cs_constraint(ConstraintT(A, B, X), FMT(annotation_prefix, ".A * B == X"));
         pb.add_r1cs_constraint(ConstraintT(C, D, Y), FMT(annotation_prefix, ".C * D == Y"));
-        pb.add_r1cs_constraint(ConstraintT(Y + rest, FieldT::one(), X), FMT(annotation_prefix, ".Y + rest == X"));
+        pb.add_r1cs_constraint(ConstraintT(Y + remainder, FieldT::one(), X), FMT(annotation_prefix, ".Y + remainder == X"));
 
-        rest_lt_C.generate_r1cs_constraints();
-        rest_eq_0.generate_r1cs_constraints();
-        rest_lt_C_OR_rest_eq_0.generate_r1cs_constraints();
+        remainder_lt_C.generate_r1cs_constraints();
+        remainder_eq_0.generate_r1cs_constraints();
+        remainder_lt_C_OR_remainder_eq_0.generate_r1cs_constraints();
 
-        pb.add_r1cs_constraint(ConstraintT(rest_lt_C_OR_rest_eq_0.Or(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".rest_lt_C_OR_rest_eq_0 == 1"));
+        pb.add_r1cs_constraint(ConstraintT(remainder_lt_C_OR_remainder_eq_0.Or(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".remainder_lt_C_OR_remainder_eq_0 == 1"));
+    }
+};
+
+class RoundingErrorGadget : public GadgetT
+{
+public:
+    MulDivGadget mulDiv;
+    VariableT remainderx100;
+    LeqGadget multiplied_lt_remainderx100;
+    VariableT valid;
+
+    RoundingErrorGadget(
+        ProtoboardT& pb,
+        const VariableT& _value,
+        const VariableT& _numerator,
+        const VariableT& _denominator,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        mulDiv(pb, _value, _numerator, _denominator, FMT(prefix, ".multiplied")),
+        remainderx100(make_variable(pb, FMT(prefix, ".remainderx100"))),
+        multiplied_lt_remainderx100(pb, mulDiv.multiplied(), remainderx100, FMT(prefix, ".multiplied_lt_remainderx100")),
+        valid(make_variable(pb, FMT(prefix, ".valid")))
+    {
+
+    }
+
+    const VariableT& isValid()
+    {
+        return valid;
+    }
+
+    void generate_r1cs_witness()
+    {
+        mulDiv.generate_r1cs_witness();
+        pb.val(remainderx100) = pb.val(mulDiv.getRemainder()) * 100;
+        multiplied_lt_remainderx100.generate_r1cs_witness();
+        pb.val(valid) = FieldT::one() - pb.val(multiplied_lt_remainderx100.lt());
+    }
+
+    void generate_r1cs_constraints()
+    {
+        mulDiv.generate_r1cs_constraints();
+        pb.add_r1cs_constraint(ConstraintT(mulDiv.getRemainder() * 100, FieldT::one(), remainderx100), FMT(annotation_prefix, ".remainder * 100 == remainderx100"));
+        multiplied_lt_remainderx100.generate_r1cs_constraints();
+        pb.add_r1cs_constraint(ConstraintT(FieldT::one() - multiplied_lt_remainderx100.lt(), FieldT::one(), valid), FMT(annotation_prefix, ".valid"));
     }
 };
 

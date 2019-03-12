@@ -330,11 +330,18 @@ class Order(object):
         valid = valid and (context.timestamp <= self.validUntil)
         self.valid = valid
 
+    def hasRoundingError(self, value, numerator, denominator):
+        multiplied = value * numerator
+        remainder = multiplied % denominator
+        # Return true if the rounding error is larger than 1%
+        return multiplied < remainder * 100
+
     def checkFills(self, fillAmountS, fillAmountB):
+        valid = True
+        if self.hasRoundingError(fillAmountS, int(self.amountB), int(self.amountS)):
+            valid = False
         if self.allOrNone and fillAmountS != int(self.amountS):
             valid = False
-        else:
-            valid = True
         return valid
 
 

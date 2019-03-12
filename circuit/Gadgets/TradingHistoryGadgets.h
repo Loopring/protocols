@@ -94,7 +94,10 @@ public:
     VariableT fillAmountS;
     VariableT fillAmountB;
 
+    RoundingErrorGadget checkRoundingError;
+
     LeqGadget fillAmountS_leq_amountS;
+    VariableT valid_1;
     VariableT valid;
 
     CheckFillsGadget(
@@ -110,7 +113,10 @@ public:
         fillAmountS(_fillAmountS),
         fillAmountB(_fillAmountB),
 
+        checkRoundingError(pb, _fillAmountS, _order.amountB.packed, _order.amountS.packed, FMT(prefix, ".checkRoundingError")),
+
         fillAmountS_leq_amountS(pb, fillAmountS, order.amountS.packed, FMT(prefix, ".fillAmountS_eq_amountS")),
+        valid_1(make_variable(pb, FMT(prefix, ".valid_1"))),
         valid(make_variable(pb, FMT(prefix, ".valid")))
     {
 
@@ -123,15 +129,20 @@ public:
 
     void generate_r1cs_witness ()
     {
+        checkRoundingError.generate_r1cs_witness();
         fillAmountS_leq_amountS.generate_r1cs_witness();
-        pb.val(valid) = FieldT::one() - (pb.val(order.allOrNone.packed) * (pb.val(fillAmountS_leq_amountS.lt())));
+        pb.val(valid_1) = FieldT::one() - (pb.val(order.allOrNone.packed) * (pb.val(fillAmountS_leq_amountS.lt())));
+        pb.val(valid) = pb.val(valid_1) * pb.val(checkRoundingError.isValid());
     }
 
     void generate_r1cs_constraints()
     {
+        checkRoundingError.generate_r1cs_constraints();
         fillAmountS_leq_amountS.generate_r1cs_constraints();
-        pb.add_r1cs_constraint(ConstraintT(order.allOrNone.packed, fillAmountS_leq_amountS.lt(), FieldT::one() - valid),
-                               "allOrNone * (fillAmountS < amountS) = !valid");
+        pb.add_r1cs_constraint(ConstraintT(order.allOrNone.packed, fillAmountS_leq_amountS.lt(), FieldT::one() - valid_1),
+                               "allOrNone * (fillAmountS < amountS) = !valid_1");
+        pb.add_r1cs_constraint(ConstraintT(valid_1, checkRoundingError.isValid(), valid),
+                               "valid_1 && checkRoundingError = valid");
     }
 };
 
