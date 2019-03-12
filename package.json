@@ -1,14 +1,14 @@
 {
   "name": "oedax",
   "version": "0.0.1",
-  "description": "smart contracts of loopring oedex",
+  "description": "Loopring Oedex Protocol",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
     "test": "truffle test",
-    "compile": "truffle compile"
+    "compile": "truffle compile; solium -d contracts/ --fix; solhint 'contracts/**/*.sol'"
   },
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "loopring",
     "oedex"
   ],
-  "author": "loopring",
+  "author": "Loopring Foundation",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Loopring/oedax/issues"

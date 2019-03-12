@@ -23,6 +23,7 @@ contract IAuction is IData {
 
     function deposit(
         address user,
+        address wallet, // set this to 0x0 will avoid paying wallet fees. Note only deposit has fee.
         address token,
         uint    amount)
         public

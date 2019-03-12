@@ -61,10 +61,28 @@ contract IOedax is IData {
             uint[] memory auctions
         );
 
+    // All fee settings will only apply to future auctions, but not exxisting auctions.
+    // One basis point is equivalent to 0.01%.
+    // We suggest the followign values:
+    // creationFeeEth           = 0 ETH
+    // protocolBips             = 5   (0.05%)
+    // walletBips               = 5   (0.05%)
+    // takerBips                = 25  (0.25%)
+    // withdrawalPenaltyBips    = 250 (2.50%)
+    // The earliest maker will earn 25-5-5=15 bips (0.15%) rebate, the latest taker will pay
+    // 25+5+5=35 bips (0.35) fee. All user combinedly pay 5+5=10 bips (0.1%) fee out of their
+    // purchased tokens.
+
     function setFeeSettings(
         address recepient,
-        uint    platformBips,  // One basis point is equivalent to 0.01%
-        uint    makerTakerBips
+        uint    creationFeeEth,     // the required Ether fee from auction creators. We may need to
+                                    // increase this if there are too many small auctions.
+        uint    protocolBips,       // the fee paid to Oedax protocol
+        uint    walletBipts,        // the fee paid to wallet or tools that help create the deposit
+                                    // transactions, note that withdrawal doen't imply a fee.
+        uint    takerBips,          // the max bips takers pays makers.
+        uint    withdrawalPenaltyBips  // the percentage of withdrawal amount to pay the protocol.
+                                       // Note that wallet and makers won't get part of the penalty.
     )
         external;
 
@@ -74,8 +92,11 @@ contract IOedax is IData {
         view
         returns (
             address recepient,
-            uint    platformBips,
-            uint    makerTakerBips
+            uint    creationFeeEth,
+            uint    protocolBips,
+            uint    walletBipts,
+            uint    takerBips,
+            uint    withdrawalPenaltyBips
         );
 
 }
