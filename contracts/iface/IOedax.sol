@@ -40,8 +40,8 @@ contract IOedax is IData {
         returns (address auction, uint id);
 
     function getAuctionInfo(uint id)
-        view
         external
+        view
         returns (AuctionInfo memory info);
 
     function getAuctions(
@@ -50,8 +50,8 @@ contract IOedax is IData {
         address creator,
         Status status
     )
-        view
         external
+        view
         returns (uint[] memory auctions);
 
     function setFeeSettings(
@@ -62,8 +62,8 @@ contract IOedax is IData {
 
     function getFeeSettings(
     )
-        view
         external
+        view
         returns (address recepient, uint bips);
 
 }

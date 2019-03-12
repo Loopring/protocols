@@ -22,23 +22,23 @@ contract ITreasury {
         address token,
         uint    amount  // must be greater than 0.
     )
-    external
-    returns (bool);
+        external
+        returns(bool);
 
     function withdraw(
         address user,
         address token,
         uint    amount  // specify 0 to withdrawl as much as possible.
     )
-    external
-    returns (bool);
+        external
+        returns (bool);
 
     function getBalance(
         address user,
         address token
     )
-        view
         external
+        view
         returns (uint total, uint available, uint locked);
 
     function registerAuction(
