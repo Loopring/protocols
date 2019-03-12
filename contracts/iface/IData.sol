@@ -1,6 +1,8 @@
 pragma solidity 0.5.5;
 pragma experimental ABIEncoderV2;
 
+import "./ICurve.sol";
+
 contract IData {
     struct AuctionState {
         // The following are state information that changes while the auction is still active.
@@ -24,6 +26,9 @@ contract IData {
         uint    bidsDepositLimit;
         uint    asksWithdrawalLimit;
         uint    bidsWithdrawalLimit;
+
+        // selected curve
+        address curve;
     }
 
     struct AuctionInfo {

@@ -1,8 +1,8 @@
 pragma solidity 0.5.5;
 pragma experimental ABIEncoderV2;
 
+import "./ICurve.sol";
 import "./IData.sol";
-
 
 contract IOedax is IData {
     // Two possible paths:
@@ -25,6 +25,7 @@ contract IOedax is IData {
     // Initiate an auction
     function createAuction(
         uint    delaySeconds,
+        uint    curveId,
         address tokenA,
         address tokenB,
         uint    decimalsA,
@@ -103,4 +104,30 @@ contract IOedax is IData {
             uint    withdrawalPenaltyBips
         );
 
+    // register a curve sub-contract.
+    // The first curve should have id 1, not 0.
+    function registerCurve(
+        address ICurve
+    )
+        external
+        returns (
+            uint curveId
+        );
+
+    // unregister a curve sub-contract
+    function unregisterCurve(
+        uint curveId
+    )
+        external
+        returns (
+            address curve
+        );
+
+    function getCurves(
+        )
+        external
+        view
+        returns (
+            address[] memory curves
+        );
 }
