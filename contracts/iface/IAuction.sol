@@ -1,8 +1,10 @@
 pragma solidity 0.5.5;
 pragma experimental ABIEncoderV2;
 
+import "./IData.sol";
 
-contract IAuction {
+
+contract IAuction is IData {
     struct Participation {
         uint    index;             // start from 0
         address user;
@@ -39,7 +41,7 @@ contract IAuction {
         uint    amount)
         public
         view
-        returns (bool successful, AcctionState memory state);
+        returns (bool successful, AuctionState memory state);
 
     function simulateWithdrawal(
         address user,
@@ -47,7 +49,7 @@ contract IAuction {
         uint    amount)
         public
         view
-        returns (bool successful, AcctionState memory state);
+        returns (bool successful, AuctionState memory state);
 
     // Try to settle the auction.
     function settle()
@@ -84,5 +86,5 @@ contract IAuction {
     )
         view
         external
-        returns (Participant[] memory participants, unit total);
+        returns (Participant[] memory participants, uint total);
 }

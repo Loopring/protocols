@@ -15,7 +15,7 @@ contract ITreasury {
 
 
     mapping (uint => address) auctionIdMap;
-    mapping (address => unit) auctionAddressMap;
+    mapping (address => uint) auctionAddressMap;
 
     function deposit(
         address user,
