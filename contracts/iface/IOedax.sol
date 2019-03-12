@@ -7,9 +7,9 @@ import "./IData.sol";
 contract IOedax is IData {
     // Two possible paths:
     // 1):STARTED -> CONSTRAINED -> CLOSED
-    // 2):STARTED -> CONSTRAINED -> SETTLED
+    // 2):STARTED -> CONSTRAINED -> CLOSED -> SETTLED
     // 3):SCHEDULED -> STARTED -> CONSTRAINED -> CLOSED
-    // 4):SCHEDULED -> STARTED -> CONSTRAINED -> SETTLED
+    // 4):SCHEDULED -> STARTED -> CONSTRAINED -> CLOSED -> SETTLED
     // It is also possible for the auction to jump right into the CONSTRAINED status from
     // STARTED.
     // When we say an auction is active or ongoing, it means the auction's status
@@ -34,8 +34,12 @@ contract IOedax is IData {
         uint    scaleFactor,
         uint    durationSeconds,
         bool    isWithdrawalAllowed,
-        uint    initialAmountA, // The initial amount of tokenA from the creator's account.
-        uint    initialAmountB) // The initial amount of tokenB from the creator's account.
+        uint    initialAmountA,         // The initial amount of tokenA from the creator's account.
+        uint    initialAmountB,         // The initial amount of tokenB from the creator's account.
+        uint    maxAmountAPerAddr,      // The max amount of tokenA per address, 0 for unlimited.
+        uint    maxAmountBPerAddr,      // The max amount of tokenB per address, 0 for unlimited.
+        bool    isTakerFeeDisabled      // Disable using takerBips
+    )
         external
         returns (
             address auction,

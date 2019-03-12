@@ -20,10 +20,10 @@ contract IData {
 
         // Deposit & Withdrawal limits. Withdrawal limit should be 0 if withdrawal is disabled;
         // deposit limit should put waiting list in consideration.
-        uint   asksDepositLimit;
-        uint   bidsDepositLimit;
-        uint   asksWithdrawalLimit;
-        uint   bidsWithdrawalLimit;
+        uint    asksDepositLimit;
+        uint    bidsDepositLimit;
+        uint    asksWithdrawalLimit;
+        uint    bidsWithdrawalLimit;
     }
 
     struct AuctionInfo {
@@ -44,7 +44,12 @@ contract IData {
                                     // whitepapaer
         uint    scaleFactor;        // The 'M' parameter in the whitepapaer
         uint    durationSeconds;    // The 'T' parameter in the whitepapaer
+
         bool    isWithdrawalAllowed;
+        bool    isTakerFeeDisabled;
+
+        uint    maxAmountAPerAddr;
+        uint    maxAmountBPerAddr;
 
         AuctionState state;
     }
