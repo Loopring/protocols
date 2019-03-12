@@ -1,78 +1,90 @@
 pragma solidity 0.5.5;
 pragma experimental ABIEncoderV2;
 
-/**
- * All Auction contracts extend this interface.
- */
-contract IAuction {
+import "./IData.sol";
 
-    enum Phase {
-        ONE,
-        TWO,
-        THREE
-    }
 
-    struct AuctionInfo {
-        address tokenS;
-        address tokenB;
-        uint initPrice;   // P
-        uint scaleFactor; // M
-        bool withdrawalAllowed;
-    }
-
-    struct Status {
-        Phase p;
-        uint priceS;
-        uint priceB;
-        bool isAlive;
-    }
-
-    struct BidRecord {
-        uint index;
+contract IAuction is IData {
+    struct Participation {
+        uint    index;             // start from 0
         address user;
         address token;
-        int amount; // > 0: deposit, < 0: withdraw
-        uint timestamp;
+        int     amount;            // >= 0: deposit, < 0: withdraw
+        uint    timestamp;
     }
 
-    function start()
-        external
-        returns (bool);
+    struct Participant {
+        address  user;
+        uint     amountA;
+        int      avgTokenAFeeBips;    // < 0 means rebate.
+        uint     amountB;
+        int      avgTokenBFeeBips;    // < 0 means rebate.
+    }
 
-    function bid(address user, address token, int amount)
+    function deposit(
+        address user,
+        address token,
+        uint    amount)
         public
-        returns (bool);
+        returns (bool successful);
 
-    function end()
+    function withdraw(
+        address user,
+        address token,
+        uint    amount)
+        public
+        returns (bool successful);
+
+    function simulateDeposit(
+        address user,
+        address token,
+        uint    amount)
+        public
+        view
+        returns (bool successful, AuctionState memory state);
+
+    function simulateWithdrawal(
+        address user,
+        address token,
+        uint    amount)
+        public
+        view
+        returns (bool successful, AuctionState memory state);
+
+    // Try to settle the auction.
+    function settle()
         external
-        returns (bool);
+        returns (bool successful);
 
-    function getInfo()
+    // Start a new aucton with the same parameters except the P and the delaySeconds parameter.
+    // The new P parameter would be the settlement price of this auction.
+    function clone(
+        uint delaySeconds,
+        uint initialAmountA, // The initial amount of tokenA from the creator's account.
+        uint initialAmountB) // The initial amount of tokenB from the creator's account.
+        external
+        returns (address auction, uint id);
+
+    function getAuctionInfo()
         view
         external
         returns (AuctionInfo memory);
 
-    // current auction status
-    function status()
-        view
-        external
-        returns (Status memory);
-
-    // calculate auction status if make some bid
-    function statusAfterBid(
-        address token,  // must be tokenS or tokenB
-        int amount  // > 0, deposit, < 0, withdraw
-    )
-        view
-        external
-        returns (Status memory);
-
-    function getBidHistory(
+    // If this function is too hard/costy to do, we can remove it.
+    function getParticipations(
         uint skip,
         uint count
     )
         view
         external
-        returns (BidRecord[] memory);
+        returns (Participation[] memory participations, uint total);
 
+    // If this function is too hard/costy to do, we can remove it.
+    function getParticipants(
+        uint skip,
+        uint count
+    )
+        view
+        external
+        returns (Participant[] memory participants, uint total);
 }
