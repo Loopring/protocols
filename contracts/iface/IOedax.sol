@@ -94,4 +94,17 @@ contract IOedax {
         view
         external
         returns (Auctions[] memory auctions);
+
+    function setFeeSturcture(
+        address recepient,
+        uint    bips  // One basis point is equivalent to 0.01%
+    )
+        external;
+
+    function getFeeSturcture(
+    )
+        view
+        external
+        return (address recepient, uint bips)
+
 }
