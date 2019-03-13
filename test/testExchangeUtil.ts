@@ -8,9 +8,11 @@ import * as pjs from "protocol2-js";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
+import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Account, Balance, Block, Cancel, CancelBlock, Deposit, OrderInfo,
-         RingBlock, RingInfo, Wallet, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
+import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DetailedTokenTransfer, OrderInfo,
+         RingBlock, RingInfo, RingState, TradeHistory, Wallet, Withdrawal,
+         WithdrawalRequest, WithdrawBlock } from "./types";
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -674,12 +676,23 @@ export class ExchangeTestUtil {
     const jAccount = state.accounts_values["" + accountID];
 
     const balances: {[key: number]: Balance} = {};
-    const keys: string[] = Object.keys(jAccount._balancesLeafs);
-    for (const key of keys) {
-      const v = jAccount._balancesLeafs[key];
-      balances[Number(key)] = {
-        balance: new BN(v.balance, 10),
-        burnBalance: new BN(v.burnBalance),
+    const balancesKeys: string[] = Object.keys(jAccount._balancesLeafs);
+    for (const balanceKey of balancesKeys) {
+      const balanceValue = jAccount._balancesLeafs[balanceKey];
+
+      const tradeHistory: {[key: number]: TradeHistory} = {};
+      const tradeHistoryKeys: string[] = Object.keys(balanceValue._tradeHistoryLeafs);
+      for (const tradeHistoryKey of tradeHistoryKeys) {
+        const tradeHistoryValue = balanceValue._tradeHistoryLeafs[tradeHistoryKey];
+        tradeHistory[Number(tradeHistoryKey)] = {
+          filled: new BN(tradeHistoryValue.filled, 10),
+          cancelled: balanceValue.burnBalance === 0,
+        };
+      }
+      balances[Number(balanceKey)] = {
+        balance: new BN(balanceValue.balance, 10),
+        burnBalance: new BN(balanceValue.burnBalance),
+        tradeHistory,
       };
     }
     const account: Account = {
@@ -689,7 +702,7 @@ export class ExchangeTestUtil {
       publicKeyY: new BN(jAccount.publicKeyY, 10),
       balances,
     };
-    console.log(account);
+    // console.log(account);
     return account;
   }
 
@@ -906,8 +919,22 @@ export class ExchangeTestUtil {
         operatorAccountID,
       };
 
+      // Store state before
+      const ringStateBefore = this.getRingState(ringBlock.rings[0]);
+
       // Create the block
       const blockFilename = await this.createBlock(stateID, 0, JSON.stringify(ringBlock, replacer, 4));
+
+      // Store state after
+      const ringStateAfter = this.getRingState(ringBlock.rings[0]);
+
+      const detailedTransfers = this.validateRingSettlement(ringBlock.rings[0], ringStateBefore,
+                                                            ringStateAfter, ringBlock.timestamp,
+                                                            ringBlock.operatorAccountID);
+
+      for (const detailedTransfer of detailedTransfers) {
+        this.logDetailedTokenTransfer(detailedTransfer, 0);
+      }
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
@@ -1160,22 +1187,67 @@ export class ExchangeTestUtil {
     return account.balances[tokenID].balance;
   }
 
-  public validateRingSettlement(ring: RingInfo) {
+  public validateRingSettlement(ring: RingInfo, stateBefore: RingState, stateAfter: RingState,
+                                timestamp: number, operatorAccountID: number) {
     const orderA = ring.orderA;
     const orderB = ring.orderB;
 
-    const accountA = this.getAccount(orderA.stateID, orderA.accountID);
-    const accountB = this.getAccount(orderB.stateID, orderB.accountID);
+    const simulator = new Simulator();
+    const detailedTokenTransfers = simulator.settleRing(ring, stateBefore, timestamp, operatorAccountID);
+    return detailedTokenTransfers;
 
-    this.prettyPrintBalance(orderA.stateID, orderA.accountID, accountA.balances[orderA.tokenIdS].balance);
-    this.prettyPrintBalance(orderA.stateID, orderA.accountID, accountA.balances[orderA.tokenIdB].balance);
-    this.prettyPrintBalance(orderA.stateID, orderA.accountID, accountA.balances[orderA.tokenIdF].balance);
+    /*console.log("***RingSettlement***");
+    // OrderA
+    this.prettyPrintBalanceChange(
+      orderA.accountID,
+      orderA.tokenIdS,
+      stateBefore.accountA.balances[orderA.tokenIdS].balance,
+      stateAfter.accountA.balances[orderA.tokenIdS].balance,
+    );
+    this.prettyPrintBalanceChange(
+      orderA.accountID,
+      orderA.tokenIdB,
+      stateBefore.accountA.balances[orderA.tokenIdB].balance,
+      stateAfter.accountA.balances[orderA.tokenIdB].balance,
+    );
+    this.prettyPrintBalanceChange(
+      orderA.accountID,
+      orderA.tokenIdF,
+      stateBefore.accountA.balances[orderA.tokenIdF].balance,
+      stateAfter.accountA.balances[orderA.tokenIdF].balance,
+    );
+    // OrderB
+    this.prettyPrintBalanceChange(
+      orderB.accountID,
+      orderB.tokenIdS,
+      stateBefore.accountB.balances[orderB.tokenIdS].balance,
+      stateAfter.accountB.balances[orderB.tokenIdS].balance,
+    );
+    this.prettyPrintBalanceChange(
+      orderB.accountID,
+      orderB.tokenIdB,
+      stateBefore.accountB.balances[orderB.tokenIdB].balance,
+      stateAfter.accountB.balances[orderB.tokenIdB].balance,
+    );
+    this.prettyPrintBalanceChange(
+      orderB.accountID,
+      orderB.tokenIdF,
+      stateBefore.accountB.balances[orderB.tokenIdF].balance,
+      stateAfter.accountB.balances[orderB.tokenIdF].balance,
+    );
+    console.log("--------------------");*/
+  }
 
-    this.prettyPrintBalance(orderB.stateID, orderB.accountID, accountA.balances[orderB.tokenIdS].balance);
-    this.prettyPrintBalance(orderB.stateID, orderB.accountID, accountA.balances[orderB.tokenIdB].balance);
-    this.prettyPrintBalance(orderB.stateID, orderB.accountID, accountA.balances[orderB.tokenIdF].balance);
+  public getRingState(ring: RingInfo) {
+    const accountA = this.getAccount(ring.orderA.stateID, ring.orderA.accountID);
+    const accountB = this.getAccount(ring.orderB.stateID, ring.orderB.accountID);
 
-    return {accountA, accountB};
+    const ringState: RingState = {
+      accountA,
+      accountB,
+    };
+
+    return ringState;
   }
 
   public prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
@@ -1184,6 +1256,17 @@ export class ExchangeTestUtil {
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
     const prettyBalance = balance.div(web3.utils.toBN(10 ** decimals)).toString(10);
     console.log(accountID + ": " + prettyBalance + " " + tokenSymbol);
+  }
+
+  public prettyPrintBalanceChange(accountID: number, tokenID: number, balanceBefore: BN, balanceAfter: BN) {
+    const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
+    const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
+    const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
+    const prettyBalanceBefore = balanceBefore.div(web3.utils.toBN(10 ** decimals)).toString(10);
+    const prettyBalanceAfter = balanceAfter.div(web3.utils.toBN(10 ** decimals)).toString(10);
+    console.log(accountID + ": " +
+                prettyBalanceBefore + " " + tokenSymbol + " -> " +
+                prettyBalanceAfter + " " + tokenSymbol);
   }
 
   private getPrivateKey(address: string) {
@@ -1295,5 +1378,27 @@ export class ExchangeTestUtil {
                                    tokenAddrInstanceMap,
                                    allTokens);
   }
+
+  private logDetailedTokenTransfer(payment: DetailedTokenTransfer,
+                                   depth: number = 0) {
+    if (payment.amount.eq(new BN(0)) && payment.subPayments.length === 0) {
+      return;
+    }
+    const tokenAddress = this.tokenIDToAddressMap.get(payment.token);
+    const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
+    const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
+    const whiteSpace = " ".repeat(depth);
+    const description = payment.description ? payment.description : "";
+    const amount = Number(payment.amount.toString(10)) / (10 ** decimals);
+    if (payment.subPayments.length === 0) {
+      const toName =  payment.to;
+      pjs.logDebug(whiteSpace + "- " + " [" + description + "] " + amount + " " + tokenSymbol + " -> " + toName);
+    } else {
+      pjs.logDebug(whiteSpace + "+ " + " [" + description + "] " + amount + " " + tokenSymbol);
+      for (const subPayment of payment.subPayments) {
+        this.logDetailedTokenTransfer(subPayment, depth + 1);
+      }
+    }
+}
 
 }

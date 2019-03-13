@@ -112,9 +112,15 @@ export interface Wallet {
   walletAccountID: number;
 }
 
+export interface TradeHistory {
+  filled: BN;
+  cancelled: boolean;
+}
+
 export interface Balance {
   balance: BN;
   burnBalance: BN;
+  tradeHistory: {[key: number]: TradeHistory};
 }
 
 export interface Account {
@@ -123,4 +129,18 @@ export interface Account {
   publicKeyX: BN;
   publicKeyY: BN;
   balances: {[key: number]: Balance};
+}
+
+export interface RingState {
+  accountA: any;
+  accountB: any;
+}
+
+export interface DetailedTokenTransfer {
+  description: string;
+  token: number;
+  from: number;
+  to: number;
+  amount: BN;
+  subPayments: DetailedTokenTransfer[];
 }
