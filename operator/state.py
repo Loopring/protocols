@@ -342,6 +342,10 @@ class Order(object):
             valid = False
         if self.allOrNone and fillAmountS != int(self.amountS):
             valid = False
+        if fillAmountS == 0:
+            valid = False
+        if fillAmountB == 0:
+            valid = False
         return valid
 
 

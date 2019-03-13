@@ -82,7 +82,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(stateID);
       await exchangeTestUtil.commitRings(stateID);
 
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("No funds available", async () => {
@@ -586,6 +586,104 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.commitRings(stateID);
 
       await exchangeTestUtil.verifyAllPendingBlocks();
+    });
+
+    it("selling token with decimals == 0", async () => {
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
+          {
+            stateID,
+            tokenS: "INDA",
+            tokenB: "WETH",
+            amountS: new BN(60),
+            amountB: new BN(web3.utils.toWei("5", "ether")),
+            amountF: new BN(web3.utils.toWei("1", "ether")),
+          },
+        orderB:
+          {
+            stateID,
+            tokenS: "WETH",
+            tokenB: "INDA",
+            amountS: new BN(web3.utils.toWei("2.5", "ether")),
+            amountB: new BN(25),
+            amountF: new BN(web3.utils.toWei("3", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      // await exchangeTestUtil.verifyAllPendingBlocks();
+    });
+
+    it("fillAmountB rounding error > 1%", async () => {
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
+          {
+            stateID,
+            tokenS: "INDA",
+            tokenB: "INDB",
+            amountS: new BN(20),
+            amountB: new BN(200),
+            amountF: new BN(web3.utils.toWei("1", "ether")),
+          },
+        orderB:
+          {
+            stateID,
+            tokenS: "INDB",
+            tokenB: "INDA",
+            amountS: new BN(200),
+            amountB: new BN(20),
+            amountF: new BN(web3.utils.toWei("3", "ether")),
+            balanceS: new BN(199),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      // await exchangeTestUtil.verifyAllPendingBlocks();
+    });
+
+    it.only("fillAmountB is 0 because of rounding error", async () => {
+      const stateID = 0;
+      const ring: RingInfo = {
+        orderA:
+          {
+            stateID,
+            tokenS: "INDA",
+            tokenB: "INDB",
+            amountS: new BN(1),
+            amountB: new BN(10),
+            amountF: new BN(web3.utils.toWei("1", "ether")),
+          },
+        orderB:
+          {
+            stateID,
+            tokenS: "INDB",
+            tokenB: "INDA",
+            amountS: new BN(10),
+            amountB: new BN(1),
+            amountF: new BN(web3.utils.toWei("3", "ether")),
+            balanceS: new BN(5),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(stateID, ring);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Separate state", async () => {
