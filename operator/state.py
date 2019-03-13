@@ -324,10 +324,17 @@ class Order(object):
         self.hash = PureEdDSA().hash_public(signedMessage.sig.R, signedMessage.A, signedMessage.msg)
         self.signature = Signature(signedMessage.sig)
 
-    def checkValid(self, context):
+    def checkValid(self, context, fillAmountS, fillAmountB):
         valid = True
+
         valid = valid and (self.validSince <= context.timestamp)
         valid = valid and (context.timestamp <= self.validUntil)
+
+        valid = valid and not self.hasRoundingError(fillAmountS, int(self.amountB), int(self.amountS))
+        valid = valid and not (self.allOrNone and fillAmountS != int(self.amountS))
+        valid = valid and fillAmountS != 0
+        valid = valid and fillAmountB != 0
+
         self.valid = valid
 
     def hasRoundingError(self, value, numerator, denominator):
@@ -335,18 +342,6 @@ class Order(object):
         remainder = multiplied % denominator
         # Return true if the rounding error is larger than 1%
         return multiplied < remainder * 100
-
-    def checkFills(self, fillAmountS, fillAmountB):
-        valid = True
-        if self.hasRoundingError(fillAmountS, int(self.amountB), int(self.amountS)):
-            valid = False
-        if self.allOrNone and fillAmountS != int(self.amountS):
-            valid = False
-        if fillAmountS == 0:
-            valid = False
-        if fillAmountB == 0:
-            valid = False
-        return valid
 
 
 class Ring(object):
@@ -676,11 +671,6 @@ class State(object):
         (fillAmountS_A, fillAmountB_A) = self.getMaxFillAmounts(ring.orderA)
         (fillAmountS_B, fillAmountB_B) = self.getMaxFillAmounts(ring.orderB)
 
-        print("mfillAmountS_A: " + str(fillAmountS_A))
-        print("mfillAmountB_A: " + str(fillAmountB_A))
-        print("mfillAmountS_B: " + str(fillAmountS_B))
-        print("mfillAmountB_B: " + str(fillAmountB_B))
-
         if fillAmountB_A < fillAmountS_B:
             fillAmountB_B = fillAmountS_A
             fillAmountS_B = (fillAmountB_B * int(ring.orderB.amountS)) // int(ring.orderB.amountB)
@@ -696,7 +686,6 @@ class State(object):
         # matchable
         ring.valid = True
         if fillAmountS_A < fillAmountB_B:
-            print("fills false: ")
             ring.valid = False
 
         # self-trading
@@ -704,19 +693,15 @@ class State(object):
         if ring.orderA.accountID == ring.orderB.accountID and ring.orderA.tokenF == ring.orderB.tokenF and int(ring.orderA.balanceF) < totalFee:
             ring.valid = False
 
-        ring.orderA.checkValid(context)
-        ring.orderB.checkValid(context)
-        fillsValidA = ring.orderA.checkFills(fillAmountS_A, fillAmountB_A)
-        fillsValidB = ring.orderB.checkFills(fillAmountS_B, fillAmountB_B)
-        ring.valid = ring.valid and ring.orderA.valid and ring.orderB.valid and fillsValidA and fillsValidB
+        ring.orderA.checkValid(context, fillAmountS_A, fillAmountB_A)
+        ring.orderB.checkValid(context, fillAmountS_B, fillAmountB_B)
+        ring.valid = ring.valid and ring.orderA.valid and ring.orderB.valid
 
-        print("ring.orderA.valid " + str(ring.orderA.valid))
-        print("ring.orderB.valid " + str(ring.orderB.valid))
-        print("fillsValidA " + str(fillsValidA))
-        print("fillsValidB " + str(fillsValidB))
+        #print("ring.orderA.valid " + str(ring.orderA.valid))
+        #print("ring.orderB.valid " + str(ring.orderB.valid))
 
         if ring.valid == False:
-            print("ring.valid false: ")
+            #print("ring.valid false: ")
             fillAmountS_A = 0
             fillAmountB_A = 0
             fillAmountF_A = 0
@@ -735,15 +720,15 @@ class State(object):
 
         ring.margin = str(margin)
 
-        print("fillAmountS_A: " + str(fillAmountS_A))
-        print("fillAmountB_A: " + str(fillAmountB_A))
-        print("fillAmountF_A: " + str(fillAmountF_A))
+        #print("fillAmountS_A: " + str(fillAmountS_A))
+        #print("fillAmountB_A: " + str(fillAmountB_A))
+        #print("fillAmountF_A: " + str(fillAmountF_A))
 
-        print("fillAmountS_B: " + str(fillAmountS_B))
-        print("fillAmountB_B: " + str(fillAmountB_B))
-        print("fillAmountF_B: " + str(fillAmountF_B))
+        #print("fillAmountS_B: " + str(fillAmountS_B))
+        #print("fillAmountB_B: " + str(fillAmountB_B))
+        #print("fillAmountF_B: " + str(fillAmountF_B))
 
-        print("margin: " + str(margin))
+        #print("margin: " + str(margin))
 
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
@@ -766,13 +751,13 @@ class State(object):
             ring.orderB.waiveFeePercentage
         )
 
-        print("walletFee_A: " + str(walletFee_A))
-        print("matchingFee_A: " + str(matchingFee_A))
-        print("burnFee_A: " + str(burnFee_A))
+        #print("walletFee_A: " + str(walletFee_A))
+        #print("matchingFee_A: " + str(matchingFee_A))
+        #print("burnFee_A: " + str(burnFee_A))
 
-        print("walletFee_B: " + str(walletFee_B))
-        print("matchingFee_B: " + str(matchingFee_B))
-        print("burnFee_B: " + str(burnFee_B))
+        #print("walletFee_B: " + str(walletFee_B))
+        #print("matchingFee_B: " + str(matchingFee_B))
+        #print("burnFee_B: " + str(burnFee_B))
 
         # Update balances A
         accountA = self.getAccount(ring.orderA.accountID)

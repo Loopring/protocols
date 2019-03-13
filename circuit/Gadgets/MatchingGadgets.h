@@ -147,6 +147,138 @@ public:
     }
 };
 
+class CheckValidGadget : public GadgetT
+{
+public:
+    VariableT constant0;
+
+    const OrderGadget& order;
+
+    VariableT fillAmountS;
+    VariableT fillAmountB;
+
+    LeqGadget fillAmountS_leq_amountS;
+
+    LeqGadget validSince_leq_timestamp;
+    LeqGadget timestamp_leq_validUntil;
+
+    RoundingErrorGadget checkRoundingError;
+    VariableT validAllOrNone;
+    LeqGadget zero_lt_fillAmountS;
+    LeqGadget zero_lt_fillAmountB;
+
+    VariableT valid_T;
+    VariableT valid_1;
+    VariableT valid_2;
+    VariableT valid_3;
+    VariableT valid_4;
+    VariableT valid_5;
+    VariableT valid_6;
+    VariableT valid;
+
+    CheckValidGadget(
+        ProtoboardT& pb,
+        const VariableT& timestamp,
+        const OrderGadget& _order,
+        const VariableT& _fillAmountS,
+        const VariableT& _fillAmountB,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
+
+        order(_order),
+        fillAmountS(_fillAmountS),
+        fillAmountB(_fillAmountB),
+
+        fillAmountS_leq_amountS(pb, fillAmountS, order.amountS.packed, FMT(prefix, ".fillAmountS_eq_amountS")),
+
+        validSince_leq_timestamp(pb, order.validSince.packed, timestamp, FMT(prefix, "validSince <= timestamp")),
+        timestamp_leq_validUntil(pb, timestamp, order.validUntil.packed, FMT(prefix, "timestamp <= validUntil")),
+
+        checkRoundingError(pb, _fillAmountS, _order.amountB.packed, _order.amountS.packed, FMT(prefix, ".checkRoundingError")),
+        validAllOrNone(make_variable(pb, FMT(prefix, ".validAllOrNone"))),
+        zero_lt_fillAmountS(pb, constant0, _fillAmountS, FMT(prefix, "0 < _fillAmountS")),
+        zero_lt_fillAmountB(pb, constant0, _fillAmountB, FMT(prefix, "0 < _fillAmountB")),
+
+        valid_T(make_variable(pb, FMT(prefix, ".valid_T"))),
+        valid_1(make_variable(pb, FMT(prefix, ".valid_1"))),
+        valid_2(make_variable(pb, FMT(prefix, ".valid_2"))),
+        valid_3(make_variable(pb, FMT(prefix, ".valid_3"))),
+        valid_4(make_variable(pb, FMT(prefix, ".valid_4"))),
+        valid_5(make_variable(pb, FMT(prefix, ".valid_5"))),
+        valid_6(make_variable(pb, FMT(prefix, ".valid_6"))),
+        valid(make_variable(pb, FMT(prefix, ".valid")))
+    {
+
+    }
+
+    const VariableT& isValid()
+    {
+        return valid;
+    }
+
+    void generate_r1cs_witness ()
+    {
+        validSince_leq_timestamp.generate_r1cs_witness();
+        timestamp_leq_validUntil.generate_r1cs_witness();
+
+        fillAmountS_leq_amountS.generate_r1cs_witness();
+
+        checkRoundingError.generate_r1cs_witness();
+        pb.val(validAllOrNone) = FieldT::one() - (pb.val(order.allOrNone.packed) * (pb.val(fillAmountS_leq_amountS.lt())));
+        zero_lt_fillAmountS.generate_r1cs_witness();
+        zero_lt_fillAmountB.generate_r1cs_witness();
+
+        pb.val(valid_T) = FieldT::one();
+
+        pb.val(valid_1) = pb.val(valid_T) * pb.val(validSince_leq_timestamp.leq());
+        pb.val(valid_2) = pb.val(valid_1) * pb.val(timestamp_leq_validUntil.leq());
+
+        pb.val(valid_3) = pb.val(valid_2) * pb.val(checkRoundingError.isValid());
+        pb.val(valid_4) = pb.val(valid_3) * pb.val(validAllOrNone);
+        pb.val(valid_5) = pb.val(valid_4) * pb.val(zero_lt_fillAmountS.lt());
+        pb.val(valid_6) = pb.val(valid_5) * pb.val(zero_lt_fillAmountB.lt());
+
+        pb.val(valid) = pb.val(valid_6);
+    }
+
+    void generate_r1cs_constraints()
+    {
+        validSince_leq_timestamp.generate_r1cs_constraints();
+        timestamp_leq_validUntil.generate_r1cs_constraints();
+
+        fillAmountS_leq_amountS.generate_r1cs_constraints();
+
+        checkRoundingError.generate_r1cs_constraints();
+
+        fillAmountS_leq_amountS.generate_r1cs_constraints();
+
+        pb.add_r1cs_constraint(ConstraintT(order.allOrNone.packed, fillAmountS_leq_amountS.lt(), FieldT::one() - validAllOrNone),
+                               "allOrNone * (fillAmountS < amountS) = !validAllOrNone");
+
+        pb.add_r1cs_constraint(ConstraintT(valid_T, FieldT::one(), FieldT::one()), "valid_T == true");
+
+        pb.add_r1cs_constraint(ConstraintT(valid_T, validSince_leq_timestamp.leq(), valid_1),
+                               "valid_T && validSince_leq_timestamp = valid_1");
+        pb.add_r1cs_constraint(ConstraintT(valid_1, timestamp_leq_validUntil.leq(), valid_2),
+                               "valid_1 && timestamp_leq_validUntil = valid_1");
+
+        pb.add_r1cs_constraint(ConstraintT(valid_2, checkRoundingError.isValid(), valid_3),
+                               "valid_2 && checkRoundingError = valid_3");
+        pb.add_r1cs_constraint(ConstraintT(valid_3, validAllOrNone, valid_4),
+                               "valid_3 && validAllOrNone = valid_4");
+        pb.add_r1cs_constraint(ConstraintT(valid_4, zero_lt_fillAmountS.lt(), valid_5),
+                               "valid_4 && zero_lt_fillAmountS = valid_5");
+        pb.add_r1cs_constraint(ConstraintT(valid_5, zero_lt_fillAmountB.lt(), valid_6),
+                               "valid_5 && zero_lt_fillAmountB = valid_6");
+
+        pb.add_r1cs_constraint(ConstraintT(valid_6, FieldT::one(), valid),
+                               "valid_6 = valid");
+    }
+};
+
 class MaxFillAmountsGadget : public GadgetT
 {
 public:
@@ -269,13 +401,13 @@ public:
 
         fillAmountB.generate_r1cs_witness();
 
-        print(pb, "amountS", order.amountS.packed);
-        print(pb, "remainingSBeforeCancelled", remainingSBeforeCancelled);
-        print(pb, "remainingS", remainingS);
-        print(pb, "filledBefore", order.filledBefore);
-        print(pb, "order.balanceS", order.balanceS);
-        print(pb, "fillAmountS", fillAmountS.result());
-        print(pb, "fillAmountB", fillAmountB.result());
+        // print(pb, "amountS", order.amountS.packed);
+        // print(pb, "remainingSBeforeCancelled", remainingSBeforeCancelled);
+        // print(pb, "remainingS", remainingS);
+        // print(pb, "filledBefore", order.filledBefore);
+        // print(pb, "order.balanceS", order.balanceS);
+        // print(pb, "fillAmountS", fillAmountS.result());
+        // print(pb, "fillAmountB", fillAmountB.result());
     }
 
     void generate_r1cs_constraints()
@@ -316,8 +448,6 @@ public:
 };
 
 
-
-
 class OrderMatchingGadget : public GadgetT
 {
 public:
@@ -354,8 +484,8 @@ public:
 
     LeqGadget fillAmountS_A_lt_fillAmountB_B;
 
-    CheckFillsGadget checkFillsA;
-    CheckFillsGadget checkFillsB;
+    CheckValidGadget checkValidA;
+    CheckValidGadget checkValidB;
 
     VariableT valid_1;
     VariableT valid_2;
@@ -363,6 +493,7 @@ public:
 
     OrderMatchingGadget(
         ProtoboardT& pb,
+        const VariableT& timestamp,
         const OrderGadget& _orderA,
         const OrderGadget& _orderB,
         const std::string& prefix
@@ -411,8 +542,8 @@ public:
         fillAmountS_A_lt_fillAmountB_B(pb, fillAmountS_A.result(), fillAmountB_B.result(),
                                        FMT(prefix, "fillAmountS_A < fillAmountB_B")),
 
-        checkFillsA(pb, orderA, fillAmountS_A.result(), fillAmountB_A.result(), FMT(prefix, ".checkFillA")),
-        checkFillsB(pb, orderB, fillAmountS_B.result(), fillAmountB_B.result(), FMT(prefix, ".checkFillB")),
+        checkValidA(pb, timestamp, orderA, fillAmountS_A.result(), fillAmountB_A.result(), FMT(prefix, ".checkValidA")),
+        checkValidB(pb, timestamp, orderB, fillAmountS_B.result(), fillAmountB_B.result(), FMT(prefix, ".checkValidB")),
 
         valid_1(make_variable(pb, FMT(prefix, ".valid_1"))),
         valid_2(make_variable(pb, FMT(prefix, ".valid_2"))),
@@ -490,14 +621,14 @@ public:
 
         fillAmountS_A_lt_fillAmountB_B.generate_r1cs_witness();
 
-        checkFillsA.generate_r1cs_witness();
-        checkFillsB.generate_r1cs_witness();
+        checkValidA.generate_r1cs_witness();
+        checkValidB.generate_r1cs_witness();
 
-        pb.val(valid_1) = pb.val(checkFillsA.isValid()) * pb.val(checkFillsB.isValid());
+        pb.val(valid_1) = pb.val(checkValidA.isValid()) * pb.val(checkValidB.isValid());
         pb.val(valid_2) = pb.val(valid_1) * (FieldT::one() - pb.val(selfTradingCheckValid.And()));
         pb.val(valid) = pb.val(valid_2) * (FieldT::one() - pb.val(fillAmountS_A_lt_fillAmountB_B.lt()));
 
-        print(pb, "margin", margin);
+        // print(pb, "margin", margin);
     }
 
     void generate_r1cs_constraints()
@@ -533,10 +664,10 @@ public:
 
         fillAmountS_A_lt_fillAmountB_B.generate_r1cs_constraints();
 
-        checkFillsA.generate_r1cs_constraints();
-        checkFillsB.generate_r1cs_constraints();
+        checkValidA.generate_r1cs_constraints();
+        checkValidB.generate_r1cs_constraints();
 
-        pb.add_r1cs_constraint(ConstraintT(checkFillsA.isValid(), checkFillsB.isValid(), valid_1), "checkFillsA.isValid() * checkFillsB.isValid() = valid_1");
+        pb.add_r1cs_constraint(ConstraintT(checkValidA.isValid(), checkValidB.isValid(), valid_1), "checkValidA.isValid() * checkValidB.isValid() = valid_1");
         pb.add_r1cs_constraint(ConstraintT(valid_1, FieldT::one() - selfTradingCheckValid.And(), valid_2), "valid_1 * selfTradingCheckValid = valid");
         pb.add_r1cs_constraint(ConstraintT(FieldT::one() - fillAmountS_A_lt_fillAmountB_B.lt(), valid_2, valid), "fillAmountS_A_lt_fillAmountB_B * fillsValid = valid");
     }

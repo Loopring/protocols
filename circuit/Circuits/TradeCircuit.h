@@ -59,9 +59,6 @@ public:
 
     OrderMatchingGadget orderMatching;
 
-    VariableT ordersValid;
-    VariableT valid;
-
     libsnark::dual_variable_gadget<FieldT> fillS_A;
     libsnark::dual_variable_gadget<FieldT> fillB_A;
     libsnark::dual_variable_gadget<FieldT> fillF_A;
@@ -177,13 +174,10 @@ public:
         nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, 1, FMT(prefix, ".nonce_after"))),
 
-        orderA(pb, params, _stateID, _timestamp, FMT(prefix, ".orderA")),
-        orderB(pb, params, _stateID, _timestamp, FMT(prefix, ".orderB")),
+        orderA(pb, params, _stateID, FMT(prefix, ".orderA")),
+        orderB(pb, params, _stateID, FMT(prefix, ".orderB")),
 
-        orderMatching(pb, orderA, orderB, FMT(prefix, ".orderMatching")),
-
-        ordersValid(make_variable(pb, FMT(prefix, ".ordersValid"))),
-        valid(make_variable(pb, FMT(prefix, ".valid"))),
+        orderMatching(pb, _timestamp, orderA, orderB, FMT(prefix, ".orderMatching")),
 
         fillS_A(pb, 96, FMT(prefix, ".fillS_A")),
         fillB_A(pb, 96, FMT(prefix, ".fillB_A")),
@@ -420,9 +414,6 @@ public:
 
         orderMatching.generate_r1cs_witness();
 
-        pb.val(ordersValid) = pb.val(orderA.isValid()) * pb.val(orderB.isValid());
-        pb.val(valid) = ringSettlement.ring.valid;
-
         fillS_A.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillS_A);
         fillS_A.generate_r1cs_witness_from_bits();
         fillB_A.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fillB_A);
@@ -549,16 +540,13 @@ public:
 
         orderMatching.generate_r1cs_constraints();
 
-        pb.add_r1cs_constraint(ConstraintT(orderA.isValid(), orderB.isValid(), ordersValid), "orderA.isValid() && orderA.isValid() == ordersValid");
-        pb.add_r1cs_constraint(ConstraintT(ordersValid, orderMatching.isValid(), valid), "ordersValid && orderMatching.isValid() == valid");
-
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_A(), valid, fillS_A.packed), "FillAmountS_A == fillS_A");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_A(), valid, fillB_A.packed), "FillAmountB_A == fillB_A");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_A(), valid, fillF_A.packed), "FillAmountF_A == fillF_A");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_B(), valid, fillS_B.packed), "FillAmountS_B == fillS_B");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_B(), valid, fillB_B.packed), "FillAmountB_B == fillB_B");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_B(), valid, fillF_B.packed), "FillAmountF_B == fillF_B");
-        pb.add_r1cs_constraint(ConstraintT(orderMatching.getMargin(), valid, margin.packed), "Margin == margin");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_A(), orderMatching.isValid(), fillS_A.packed), "FillAmountS_A == fillS_A");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_A(), orderMatching.isValid(), fillB_A.packed), "FillAmountB_A == fillB_A");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_A(), orderMatching.isValid(), fillF_A.packed), "FillAmountF_A == fillF_A");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountS_B(), orderMatching.isValid(), fillS_B.packed), "FillAmountS_B == fillS_B");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountB_B(), orderMatching.isValid(), fillB_B.packed), "FillAmountB_B == fillB_B");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getFillAmountF_B(), orderMatching.isValid(), fillF_B.packed), "FillAmountF_B == fillF_B");
+        pb.add_r1cs_constraint(ConstraintT(orderMatching.getMargin(), orderMatching.isValid(), margin.packed), "Margin == margin");
 
         fillS_A.generate_r1cs_constraints(true);
         fillB_A.generate_r1cs_constraints(true);

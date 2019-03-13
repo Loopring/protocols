@@ -53,17 +53,10 @@ public:
 
     SignatureVerifier signatureVerifier;
 
-    // Validity checking
-    LeqGadget validSince_leq_timestamp;
-    LeqGadget timestamp_leq_validUntil;
-
-    VariableT valid;
-
     OrderGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
         const VariableT& _blockStateID,
-        const VariableT& timestamp,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
@@ -109,12 +102,7 @@ public:
                           amountS.bits, amountB.bits, amountF.bits,
                           allOrNone.bits, validSince.bits, validUntil.bits,
                           walletSplitPercentage.bits, padding.bits}),
-                          FMT(prefix, ".signatureVerifier")),
-
-        validSince_leq_timestamp(pb, validSince.packed, timestamp, FMT(prefix, "validSince <= timestamp")),
-        timestamp_leq_validUntil(pb, timestamp, validUntil.packed, FMT(prefix, "timestamp <= validUntil")),
-
-        valid(make_variable(pb, FMT(prefix, ".valid")))
+                          FMT(prefix, ".signatureVerifier"))
     {
 
     }
@@ -124,10 +112,6 @@ public:
         return signatureVerifier.getHash();
     }
 
-    const VariableT& isValid() const
-    {
-        return valid;
-    }
 
     void generate_r1cs_witness(const Order& order)
     {
@@ -183,11 +167,6 @@ public:
         pb.val(walletPublicKey.y) = order.walletPublicKey.y;
 
         signatureVerifier.generate_r1cs_witness(order.signature);
-
-        validSince_leq_timestamp.generate_r1cs_witness();
-        timestamp_leq_validUntil.generate_r1cs_witness();
-
-        pb.val(valid) = order.valid;
     }
 
     void generate_r1cs_constraints()
@@ -215,12 +194,6 @@ public:
         waiveFeePercentage.generate_r1cs_constraints(true);
 
         signatureVerifier.generate_r1cs_constraints();
-
-        validSince_leq_timestamp.generate_r1cs_constraints();
-        timestamp_leq_validUntil.generate_r1cs_constraints();
-
-        pb.add_r1cs_constraint(ConstraintT(validSince_leq_timestamp.leq(), timestamp_leq_validUntil.leq(), valid),
-                               FMT(annotation_prefix, ".validSince_leq_timestamp && timestamp_leq_validUntil = valid"));
 
         pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
                                FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));
