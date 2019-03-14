@@ -1,4 +1,5 @@
 #!/bin/bash
+brew install nvm
 
 cd ethsnarks
 make mac-dependencies
