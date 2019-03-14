@@ -20,6 +20,7 @@
     "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
     "ganache": "./ganache.sh",
+    "coverage": "./node_modules/.bin/solidity-coverage",
     "truffle": "truffle",
     "clean": "rm -rf build/contracts",
     "v": "node -v"
