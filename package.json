@@ -39,9 +39,9 @@
     "ganache-cli": "6.2.4",
     "mocha": "^5.2.0",
     "node": "8.11.3",
-    "npm": "5.6.0",
+    "npm": "^6.9.0",
     "solidity-coverage": "^0.5.8",
-    "solium": "^1.1.8",
+    "solium": "^1.2.3",
     "tslint": "5.11.0",
     "types-bn": "0.0.1",
     "typescript": "3.1.6",
@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.30",
+    "any-promise": "1.3.0",
     "bignumber.js": "^4.1.0",
     "bitwise-xor": "0.0.0",
     "bluebird": "^3.5.1",
@@ -65,11 +66,10 @@
     "event-emitter": "^0.3.5",
     "events": "^3.0.0",
     "js-sha3": "^0.8.0",
-    "lodash": "^4.17.5",
+    "lodash": "^4.17.11",
     "protocol2-js": "0.2.26",
     "sha3": "^2.0.0",
     "truffle": "5.0.0",
-    "truffle-hdwallet-provider": "web3-one",
-    "any-promise": "1.3.0"
+    "truffle-hdwallet-provider": "web3-one"
   }
 }
