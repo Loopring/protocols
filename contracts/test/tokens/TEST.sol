@@ -80,6 +80,7 @@ contract TEST is DummyToken {
 
     function doTestCase()
         internal
+        view
         returns (bool)
     {
         if (testCase == TEST_NOTHING) {

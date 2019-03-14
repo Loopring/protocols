@@ -1,11 +1,14 @@
 node_modules/
 build/
 transpiled/
+ethsnarks/
 keys/
 blocks/
 .DS_Store
 .node-*
 *.log
+state_*.json
+EDDSA_KeyPair.json
 ganache_account_keys.txt
 __pycache__
 *.pyc
