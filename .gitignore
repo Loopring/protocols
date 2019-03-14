@@ -1,6 +1,7 @@
 node_modules/
 build/
 transpiled/
+ethsnarks/
 keys/
 blocks/
 .DS_Store
