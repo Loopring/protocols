@@ -11,7 +11,7 @@ import { Context } from "./context";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DetailedTokenTransfer, OrderInfo,
-         RingBlock, RingInfo, RingState, TradeHistory, Wallet, Withdrawal,
+         RingBlock, RingInfo, RingState, SimulatorReport, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
 // JSON replacer function for BN values
@@ -686,7 +686,7 @@ export class ExchangeTestUtil {
         const tradeHistoryValue = balanceValue._tradeHistoryLeafs[tradeHistoryKey];
         tradeHistory[Number(tradeHistoryKey)] = {
           filled: new BN(tradeHistoryValue.filled, 10),
-          cancelled: balanceValue.burnBalance === 0,
+          cancelled: tradeHistoryValue.cancelled === 1,
         };
       }
       balances[Number(balanceKey)] = {
@@ -694,6 +694,17 @@ export class ExchangeTestUtil {
         burnBalance: new BN(balanceValue.burnBalance),
         tradeHistory,
       };
+
+      // Make sure all tokens exist
+      for (let i = 0; i < 2 ** 12; i++) {
+        if (!balances[i]) {
+          balances[i] = {
+            balance: new BN(0),
+            burnBalance: new BN(0),
+            tradeHistory: {},
+          };
+        }
+      }
     }
     const account: Account = {
       accountID,
@@ -920,13 +931,13 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const ringStateBefore = this.getRingState(ringBlock.rings[0]);
+      const ringStateBefore = this.getRingState(ringBlock.rings[0], operatorAccountID);
 
       // Create the block
       const blockFilename = await this.createBlock(stateID, 0, JSON.stringify(ringBlock, replacer, 4));
 
       // Store state after
-      const ringStateAfter = this.getRingState(ringBlock.rings[0]);
+      const ringStateAfter = this.getRingState(ringBlock.rings[0], operatorAccountID);
 
       const detailedTransfers = this.validateRingSettlement(ringBlock.rings[0], ringStateBefore,
                                                             ringStateAfter, ringBlock.timestamp,
@@ -1193,8 +1204,40 @@ export class ExchangeTestUtil {
     const orderB = ring.orderB;
 
     const simulator = new Simulator();
-    const detailedTokenTransfers = simulator.settleRing(ring, stateBefore, timestamp, operatorAccountID);
-    return detailedTokenTransfers;
+    const simulatorReport = simulator.settleRing(ring, stateBefore, timestamp, operatorAccountID);
+
+    // Verify resulting state
+    const accountsAfter = [stateAfter.accountA, stateAfter.accountB,
+                           stateAfter.walletA, stateAfter.walletB,
+                           stateAfter.ringMatcher, stateAfter.operator];
+    const accountsSimulatorAfter = [simulatorReport.stateAfter.accountA, simulatorReport.stateAfter.accountB,
+                                    simulatorReport.stateAfter.walletA, simulatorReport.stateAfter.walletB,
+                                    simulatorReport.stateAfter.ringMatcher, simulatorReport.stateAfter.operator];
+    for (let i = 0; i < accountsAfter.length; i++) {
+      const account = accountsAfter[i];
+      const accountSimulator = accountsSimulatorAfter[i];
+
+      for (const tokenID of Object.keys(account.balances)) {
+        const balanceValue = account.balances[Number(tokenID)];
+        const balanceValueSimulator = accountSimulator.balances[Number(tokenID)];
+
+        for (const orderID of Object.keys(balanceValue.tradeHistory)) {
+          const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
+          const tradeHistoryValueSimulator = balanceValue.tradeHistory[Number(orderID)];
+
+          assert(tradeHistoryValue.filled.eq(tradeHistoryValueSimulator.filled));
+          assert(tradeHistoryValue.cancelled === tradeHistoryValueSimulator.cancelled);
+        }
+        assert(balanceValue.balance.eq(balanceValueSimulator.balance));
+        assert(balanceValue.burnBalance.eq(balanceValueSimulator.burnBalance));
+      }
+      assert(account.accountID === accountSimulator.accountID);
+      assert(account.walletID === accountSimulator.walletID);
+      assert(account.publicKeyX.eq(accountSimulator.publicKeyX));
+      assert(account.publicKeyY.eq(accountSimulator.publicKeyY));
+    }
+
+    return simulatorReport.detailedTransfers;
 
     /*console.log("***RingSettlement***");
     // OrderA
@@ -1238,15 +1281,16 @@ export class ExchangeTestUtil {
     console.log("--------------------");*/
   }
 
-  public getRingState(ring: RingInfo) {
-    const accountA = this.getAccount(ring.orderA.stateID, ring.orderA.accountID);
-    const accountB = this.getAccount(ring.orderB.stateID, ring.orderB.accountID);
-
+  public getRingState(ring: RingInfo, operatorAcountID: number) {
+    const stateID = ring.orderA.stateID;
     const ringState: RingState = {
-      accountA,
-      accountB,
+      accountA: this.getAccount(stateID, ring.orderA.accountID),
+      accountB: this.getAccount(stateID, ring.orderB.accountID),
+      walletA: this.getAccount(stateID, ring.orderA.dualAuthAccountID),
+      walletB: this.getAccount(stateID, ring.orderB.dualAuthAccountID),
+      ringMatcher: this.getAccount(stateID, ring.minerAccountID),
+      operator: this.getAccount(stateID, operatorAcountID),
     };
-
     return ringState;
   }
 

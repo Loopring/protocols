@@ -155,14 +155,17 @@ contract("Exchange_Submit", (accounts: string[]) => {
             stateID,
             tokenS: "ETH",
             tokenB: "GTO",
+            tokenF: "LRC",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
+            amountF: new BN(web3.utils.toWei("1", "ether")),
           },
         orderB:
           {
             stateID,
             tokenS: "GTO",
             tokenB: "ETH",
+            tokenF: "LRC",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
             amountF: new BN(web3.utils.toWei("10", "ether")),
@@ -332,7 +335,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
-            balanceS: new BN(0),
             walletID: wallet.walletID,
             dualAuthAccountID: wallet.walletAccountID,
           },
@@ -366,7 +368,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
-            balanceS: new BN(0),
             walletSplitPercentage: 0,
           },
       };
@@ -399,7 +400,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
-            balanceS: new BN(0),
             walletSplitPercentage: 100,
           },
       };
@@ -545,7 +545,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(stateID);
       await exchangeTestUtil.commitRings(stateID);
 
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("Self-trading (same tokenF, insufficient balance)", async () => {
@@ -585,7 +585,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(stateID);
       await exchangeTestUtil.commitRings(stateID);
 
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
     it("selling token with decimals == 0", async () => {
@@ -653,7 +653,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
-    it.only("fillAmountB is 0 because of rounding error", async () => {
+    it("fillAmountB is 0 because of rounding error", async () => {
       const stateID = 0;
       const ring: RingInfo = {
         orderA:

@@ -6,7 +6,8 @@ import path = require("path");
 import * as pjs from "protocol2-js";
 import util = require("util");
 import { Account, Balance, Block, Cancel, CancelBlock, DetailedTokenTransfer, OrderInfo,
-         RingBlock, RingInfo, RingState, Wallet, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
+         RingBlock, RingInfo, RingState, SimulatorReport, TradeHistory, Wallet, Withdrawal,
+         WithdrawalRequest, WithdrawBlock } from "./types";
 
 export class Simulator {
 
@@ -33,15 +34,15 @@ export class Simulator {
     let valid = true;
 
     // matchable
-    valid = valid && !fillAmountSA.lt(fillAmountBB);
+    valid = valid && this.ensure(!fillAmountSA.lt(fillAmountBB), "Not matchable");
 
     // self-trading
-    const balanceF = new BN(state.accountA.balances[ring.orderA.tokenIdF].balance);
+    const balanceF = state.accountA.balances[ring.orderA.tokenIdF].balance;
     const totalFee = fillAmountFA.add(fillAmountFB);
     if (ring.orderA.accountID === ring.orderB.accountID &&
         ring.orderA.tokenIdF === ring.orderB.tokenIdF &&
         balanceF.lt(totalFee)) {
-      valid = false;
+      valid = this.ensure(false, "Self-trading impossible");
     }
 
     valid = valid && this.checkValid(ring.orderA, fillAmountSA, fillAmountBA, timestamp);
@@ -56,6 +57,16 @@ export class Simulator {
       fillAmountFB = new BN(0);
       margin = new BN(0);
     }
+
+    console.log("Simulator: ");
+
+    console.log("fillAmountSA: " + fillAmountSA.toString(10));
+    console.log("fillAmountBA: " + fillAmountBA.toString(10));
+    console.log("fillAmountFA: " + fillAmountFA.toString(10));
+
+    console.log("fillAmountSB: " + fillAmountSB.toString(10));
+    console.log("fillAmountBB: " + fillAmountBB.toString(10));
+    console.log("fillAmountFB: " + fillAmountFB.toString(10));
 
     const burnRateA = 500;
     const burnRateB = 500;
@@ -75,6 +86,92 @@ export class Simulator {
       ring.orderB.walletSplitPercentage,
       ring.orderB.waiveFeePercentage,
     );
+
+    const newState: RingState = {
+      accountA: this.copyAccount(state.accountA),
+      accountB: this.copyAccount(state.accountB),
+      walletA: this.copyAccount(state.walletA),
+      walletB: this.copyAccount(state.walletB),
+      ringMatcher: this.copyAccount(state.ringMatcher),
+      operator: this.copyAccount(state.operator),
+    };
+
+    // Check if the order owners are the same
+    if (ring.orderA.accountID === ring.orderB.accountID) {
+      newState.accountB = newState.accountA;
+    }
+
+    // Check if the wallets are the same
+    if (ring.orderA.dualAuthAccountID === ring.orderB.dualAuthAccountID) {
+      newState.walletB = newState.walletA;
+    }
+
+    if (!newState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID]) {
+      newState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID] = {
+        filled: new BN(0),
+        cancelled: false,
+      };
+    }
+
+    if (!newState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID]) {
+      newState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID] = {
+        filled: new BN(0),
+        cancelled: false,
+      };
+    }
+
+    // Update accountA
+    newState.accountA.balances[ring.orderA.tokenIdS].balance =
+      newState.accountA.balances[ring.orderA.tokenIdS].balance.sub(fillAmountSA);
+    newState.accountA.balances[ring.orderA.tokenIdB].balance =
+      newState.accountA.balances[ring.orderA.tokenIdB].balance.add(fillAmountBA);
+    newState.accountA.balances[ring.orderA.tokenIdF].balance =
+      newState.accountA.balances[ring.orderA.tokenIdF].balance.sub(walletFeeA.add(matchingFeeA).add(burnFeeA));
+
+    // Update accountB
+    newState.accountB.balances[ring.orderB.tokenIdS].balance =
+      newState.accountB.balances[ring.orderB.tokenIdS].balance.sub(fillAmountSB);
+    newState.accountB.balances[ring.orderB.tokenIdB].balance =
+      newState.accountB.balances[ring.orderB.tokenIdB].balance.add(fillAmountBB);
+    newState.accountB.balances[ring.orderB.tokenIdF].balance =
+      newState.accountB.balances[ring.orderB.tokenIdF].balance.sub(walletFeeB.add(matchingFeeB).add(burnFeeB));
+
+    // Update trade history A
+    newState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID].filled =
+      newState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID].filled.add(fillAmountSA);
+    // Update trade history B
+    newState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID].filled =
+      newState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID].filled.add(fillAmountSB);
+
+    // Update walletA
+    newState.walletA.balances[ring.orderA.tokenIdF].balance =
+      newState.walletA.balances[ring.orderA.tokenIdF].balance.add(walletFeeA);
+    newState.walletA.balances[ring.orderA.tokenIdF].burnBalance =
+      newState.walletA.balances[ring.orderA.tokenIdF].burnBalance.add(burnFeeA);
+
+    // Update walletB
+    newState.walletB.balances[ring.orderB.tokenIdF].balance =
+      newState.walletB.balances[ring.orderB.tokenIdF].balance.add(walletFeeB);
+    newState.walletB.balances[ring.orderB.tokenIdF].burnBalance =
+      newState.walletB.balances[ring.orderB.tokenIdF].burnBalance.add(burnFeeB);
+
+    // Update ringMatcher
+    // - Matching fee A
+    newState.ringMatcher.balances[ring.orderA.tokenIdF].balance =
+      newState.ringMatcher.balances[ring.orderA.tokenIdF].balance.add(matchingFeeA);
+    // - Matching fee B
+    newState.ringMatcher.balances[ring.orderB.tokenIdF].balance =
+     newState.ringMatcher.balances[ring.orderB.tokenIdF].balance.add(matchingFeeB);
+    // - Margin
+    newState.ringMatcher.balances[ring.orderA.tokenIdS].balance =
+     newState.ringMatcher.balances[ring.orderA.tokenIdS].balance.add(margin);
+    // - Operator fee
+    newState.ringMatcher.balances[ring.tokenID].balance =
+     newState.ringMatcher.balances[ring.tokenID].balance.sub(ring.fee);
+
+    // Update operator
+    newState.operator.balances[ring.tokenID].balance =
+     newState.operator.balances[ring.tokenID].balance.add(ring.fee);
 
     const detailedTransfersA = this.getDetailedTransfers(
       ring, ring.orderA, ring.orderB,
@@ -105,7 +202,13 @@ export class Simulator {
     detailedTransfers.push(...detailedTransfersA);
     detailedTransfers.push(...detailedTransfersB);
     detailedTransfers.push(operatorFee);
-    return detailedTransfers;
+
+    const simulatorReport: SimulatorReport = {
+      stateBefore: state,
+      stateAfter: newState,
+      detailedTransfers,
+    };
+    return simulatorReport;
   }
 
   private getDetailedTransfers(ring: RingInfo, order: OrderInfo, orderTo: OrderInfo,
@@ -126,7 +229,7 @@ export class Simulator {
       token: order.tokenIdS,
       from: order.accountID,
       to: orderTo.accountID,
-      amount: fillAmountB,
+      amount: fillAmountS.sub(margin),
       subPayments: [],
     };
     const marginP: DetailedTokenTransfer = {
@@ -184,7 +287,6 @@ export class Simulator {
   }
 
   private getMaxFillAmounts(order: OrderInfo, accountData: any) {
-    // console.log(accountData);
     let tradeHistory = accountData.balances[order.tokenIdS].tradeHistory[order.orderID];
     if (!tradeHistory) {
       tradeHistory = {
@@ -192,7 +294,6 @@ export class Simulator {
         cancelled: false,
       };
     }
-
     const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
     const balanceF = new BN(accountData.balances[order.tokenIdF].balance);
 
@@ -209,7 +310,7 @@ export class Simulator {
     }
     if (order.tokenIdF !== order.tokenIdS && balanceF.lt(fillAmountF)) {
       // Scale down fillAmountS so the available fillAmountF is sufficient
-      fillAmountS = balanceF.mul(order.amountS.div(order.amountF));
+      fillAmountS = balanceF.mul(order.amountS).div(order.amountF);
     }
     if (order.tokenIdF === order.tokenIdB && order.amountF.lte(order.amountB)) {
       // No rebalancing (because of insufficient balanceF) is ever necessary when amountF <= amountB
@@ -247,14 +348,50 @@ export class Simulator {
   private checkValid(order: OrderInfo, fillAmountS: BN, fillAmountB: BN, timestamp: number) {
     let valid = true;
 
-    valid = valid && (order.validSince <= timestamp);
-    valid = valid && (timestamp <= order.validUntil);
+    valid = valid && this.ensure(order.validSince <= timestamp, "order too early");
+    valid = valid && this.ensure(timestamp <= order.validUntil, "order too late");
 
-    valid = valid && !(order.allOrNone && (fillAmountS !== order.amountS));
-    valid = valid && !this.hasRoundingError(fillAmountS, order.amountB, order.amountS);
-    valid = valid && !fillAmountS.eq(0);
-    valid = valid && !fillAmountB.eq(0);
+    valid = valid && this.ensure(!(order.allOrNone && (!fillAmountS.eq(order.amountS))), "allOrNone invalid");
+    valid = valid && this.ensure(!this.hasRoundingError(fillAmountS, order.amountB, order.amountS), "rounding error");
+    valid = valid && this.ensure(!fillAmountS.eq(0), "no tokens sold");
+    valid = valid && this.ensure(!fillAmountB.eq(0), "no tokens bought");
 
+    return valid;
+  }
+
+  private copyAccount(account: Account) {
+    const balances: {[key: number]: Balance} = {};
+    for (const tokenID of Object.keys(account.balances)) {
+      const balanceValue = account.balances[Number(tokenID)];
+
+      const tradeHistory: {[key: number]: TradeHistory} = {};
+      for (const orderID of Object.keys(balanceValue.tradeHistory)) {
+        const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
+        tradeHistory[Number(orderID)] = {
+          filled: tradeHistoryValue.filled,
+          cancelled: tradeHistoryValue.cancelled,
+        };
+      }
+      balances[Number(tokenID)] = {
+        balance: balanceValue.balance,
+        burnBalance: balanceValue.burnBalance,
+        tradeHistory,
+      };
+    }
+    const accountCopy: Account = {
+      accountID: account.accountID,
+      walletID: account.walletID,
+      publicKeyX: account.publicKeyX,
+      publicKeyY: account.publicKeyY,
+      balances,
+    };
+    return accountCopy;
+  }
+
+  private ensure(valid: boolean, description: string) {
+    if (!valid) {
+      console.log(description);
+    }
     return valid;
   }
 

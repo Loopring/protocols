@@ -132,8 +132,12 @@ export interface Account {
 }
 
 export interface RingState {
-  accountA: any;
-  accountB: any;
+  accountA: Account;
+  accountB: Account;
+  walletA: Account;
+  walletB: Account;
+  ringMatcher: Account;
+  operator: Account;
 }
 
 export interface DetailedTokenTransfer {
@@ -143,4 +147,10 @@ export interface DetailedTokenTransfer {
   to: number;
   amount: BN;
   subPayments: DetailedTokenTransfer[];
+}
+
+export interface SimulatorReport {
+  stateBefore: RingState;
+  stateAfter: RingState;
+  detailedTransfers: DetailedTokenTransfer[];
 }

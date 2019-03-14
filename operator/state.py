@@ -668,6 +668,8 @@ class State(object):
         return (fillAmountS, fillAmountB)
 
     def settleRing(self, context, ring):
+        print("State update ring: ")
+
         (fillAmountS_A, fillAmountB_A) = self.getMaxFillAmounts(ring.orderA)
         (fillAmountS_B, fillAmountB_B) = self.getMaxFillAmounts(ring.orderB)
 
@@ -720,15 +722,15 @@ class State(object):
 
         ring.margin = str(margin)
 
-        #print("fillAmountS_A: " + str(fillAmountS_A))
-        #print("fillAmountB_A: " + str(fillAmountB_A))
-        #print("fillAmountF_A: " + str(fillAmountF_A))
+        print("fillAmountS_A: " + str(fillAmountS_A))
+        print("fillAmountB_A: " + str(fillAmountB_A))
+        print("fillAmountF_A: " + str(fillAmountF_A))
 
-        #print("fillAmountS_B: " + str(fillAmountS_B))
-        #print("fillAmountB_B: " + str(fillAmountB_B))
-        #print("fillAmountF_B: " + str(fillAmountF_B))
+        print("fillAmountS_B: " + str(fillAmountS_B))
+        print("fillAmountB_B: " + str(fillAmountB_B))
+        print("fillAmountF_B: " + str(fillAmountF_B))
 
-        #print("margin: " + str(margin))
+        print("margin: " + str(margin))
 
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
