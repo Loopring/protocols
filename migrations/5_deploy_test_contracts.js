@@ -1,4 +1,4 @@
-var TestableExchange = artifacts.require("./test/TestableExchange");
+// var TestableExchange = artifacts.require("./test/TestableExchange");
 
 module.exports = function(deployer, network, accounts) {
   if (network === "live" || network === "ropsten" || network === "rinkeby") {
