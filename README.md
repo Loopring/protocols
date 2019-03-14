@@ -1,24 +1,9 @@
-# Loopring protocol using zk-SNARKs
+# Loopring Protocol (V3) using zkSNARKs
 
-## Building
-
-Before building (not just the first time, also after a git pull) retrieve the source code for the dependencies:
-
-    git submodule update --init --remote --merge --recursive
-
-If you are using Linux:
-
-    ./install_dependencies_linux.sh
-
-If you are using Mac:
-
-    ./install_dependencies_mac.sh
-
-Run the following commands from the project's root directory:
+## Build
 
 ```
-make
-npm install
+./install
 npm run compile
 ```
 
