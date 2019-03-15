@@ -535,14 +535,11 @@ export class ExchangeTestUtil {
   }
 
   public async commitBlock(blockType: number, data: string, filename: string) {
-    const tokensBlockIdx = (await this.tokenRegistry.getBurnRateBlockIdx()).toNumber();
-
     const bitstream = new pjs.Bitstream(data);
     const stateID = bitstream.extractUint16(0);
 
     const tx = await this.exchange.commitBlock(
       web3.utils.toBN(blockType),
-      web3.utils.toBN(tokensBlockIdx),
       web3.utils.hexToBytes(data),
       {from: this.testContext.miner},
     );
@@ -691,7 +688,6 @@ export class ExchangeTestUtil {
       }
       balances[Number(balanceKey)] = {
         balance: new BN(balanceValue.balance, 10),
-        burnBalance: new BN(balanceValue.burnBalance),
         tradeHistory,
       };
 
@@ -700,7 +696,6 @@ export class ExchangeTestUtil {
         if (!balances[i]) {
           balances[i] = {
             balance: new BN(0),
-            burnBalance: new BN(0),
             tradeHistory: {},
           };
         }
@@ -782,7 +777,6 @@ export class ExchangeTestUtil {
         bs.addNumber(withdrawal.accountID, 3);
         bs.addNumber(withdrawal.tokenID, 2);
         bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
-        bs.addNumber(withdrawal.burnPercentage, 1);
       }
       if (!onchain) {
         for (const withdrawal of block.withdrawals) {
@@ -955,7 +949,6 @@ export class ExchangeTestUtil {
       bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
       bs.addNumber(block.operatorAccountID, 3);
-      bs.addBigNumber(new BigNumber(block.burnRateMerkleRoot, 10), 32);
       bs.addNumber(ringBlock.timestamp, 4);
       for (const ringSettlement of block.ringSettlements) {
         const ring = ringSettlement.ring;
@@ -1072,9 +1065,6 @@ export class ExchangeTestUtil {
         const tx = await this.tokenRegistry.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
         pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
       }
-
-      const result = childProcess.spawnSync("python3", ["operator/add_token.py"], {stdio: "inherit"});
-      assert(result.status === 0, "add_token failed: " + tokenAddress);
 
       const tokenID = (await this.getTokenID(tokenAddress)).toNumber();
       this.tokenAddressToIDMap.set(tokenAddress, tokenID);
@@ -1229,7 +1219,6 @@ export class ExchangeTestUtil {
           assert(tradeHistoryValue.cancelled === tradeHistoryValueSimulator.cancelled);
         }
         assert(balanceValue.balance.eq(balanceValueSimulator.balance));
-        assert(balanceValue.burnBalance.eq(balanceValueSimulator.burnBalance));
       }
       assert(account.accountID === accountSimulator.accountID);
       assert(account.walletID === accountSimulator.walletID);

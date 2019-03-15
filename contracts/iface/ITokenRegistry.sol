@@ -38,7 +38,6 @@ contract ITokenRegistry {
     // General
     uint public constant MAX_NUM_TOKENS                               = 2 ** 12;
     uint public constant TIER_UPGRADE_DURATION                        = 365 days;
-    uint32 public constant OLD_BURNRATE_ROOT_VALID_IN_SECONDS         = 5 minutes;
 
     event TokenTierUpgraded(
         address indexed addr,
@@ -59,11 +58,11 @@ contract ITokenRegistry {
         view
         returns (address);
 
-    function getBurnRateMerkleRoot(
-        uint burnRateBlockIdx
+    function getBurnRate(
+        uint24 tokenID
         )
-        external
+        public
         view
-        returns (bytes32, uint32);
+        returns (uint16 burnRate);
 
 }

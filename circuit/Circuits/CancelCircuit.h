@@ -52,7 +52,6 @@ public:
 
     VariableT balancesRoot_W_before;
     VariableT balanceF_W_before;
-    VariableT burnBalanceF_W;
     VariableT nonce_W;
     VariableT dualAuthorWalletID;
 
@@ -124,7 +123,6 @@ public:
 
         balancesRoot_W_before(make_variable(pb, FMT(prefix, ".balancesRoot_W_before"))),
         balanceF_W_before(make_variable(pb, FMT(prefix, ".balanceF_W_before"))),
-        burnBalanceF_W(make_variable(pb, FMT(prefix, ".burnBalanceF_W"))),
         nonce_W(make_variable(pb, FMT(prefix, ".nonce_W"))),
         dualAuthorWalletID(make_variable(pb, FMT(prefix, ".dualAuthorWalletID"))),
 
@@ -146,13 +144,13 @@ public:
                              filled, cancelled_before, filled, cancelled_after, FMT(prefix, ".updateTradeHistory_A")),
 
         updateBalanceT_A(pb, balancesRoot_before, orderTokenID,
-                         {balanceT_A, constant0, tradingHistoryRootT_A_before},
-                         {balanceT_A, constant0, updateTradeHistory_A.getNewRoot()},
+                         {balanceT_A, tradingHistoryRootT_A_before},
+                         {balanceT_A, updateTradeHistory_A.getNewRoot()},
                          FMT(prefix, ".updateBalanceT_A")),
 
         updateBalanceF_A(pb, updateBalanceT_A.getNewRoot(), feeTokenID,
-                         {balanceF_A_before, constant0, tradingHistoryRootF_A},
-                         {feePaymentOperator.X, constant0, tradingHistoryRootF_A},
+                         {balanceF_A_before, tradingHistoryRootF_A},
+                         {feePaymentOperator.X, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
 
         updateAccount_A(pb, _accountsMerkleRoot, accountID,
@@ -162,8 +160,8 @@ public:
 
 
         updateBalanceF_W(pb, balancesRoot_W_before, feeTokenID,
-                         {balanceF_W_before, burnBalanceF_W, emptyTradeHistory},
-                         {feePaymentWallet.Y, burnBalanceF_W, emptyTradeHistory},
+                         {balanceF_W_before, emptyTradeHistory},
+                         {feePaymentWallet.Y, emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_W")),
 
         updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountID,
@@ -173,8 +171,8 @@ public:
 
 
         updateBalanceF_O(pb, _operatorBalancesRoot, feeTokenID,
-                         {balanceF_O_before, constant0, tradingHistoryRootF_O},
-                         {feePaymentOperator.Y, constant0, tradingHistoryRootF_O},
+                         {balanceF_O_before, tradingHistoryRootF_O},
+                         {feePaymentOperator.Y, tradingHistoryRootF_O},
                          FMT(prefix, ".updateBalanceF_O")),
 
         message(flatten({_stateID, accountID, orderTokenID, orderID, dualAuthAccountID,
@@ -237,7 +235,6 @@ public:
 
         pb.val(balancesRoot_W_before) = cancellation.accountUpdate_W.before.balancesRoot;
         pb.val(balanceF_W_before) = cancellation.balanceUpdateF_W.before.balance;
-        pb.val(burnBalanceF_W) = cancellation.balanceUpdateF_W.before.burnBalance;
         pb.val(nonce_W) = cancellation.accountUpdate_W.before.nonce;
         pb.val(dualAuthorWalletID) = cancellation.accountUpdate_W.before.walletID;
 

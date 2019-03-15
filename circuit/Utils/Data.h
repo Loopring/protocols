@@ -45,14 +45,12 @@ class BalanceLeaf
 {
 public:
     ethsnarks::FieldT balance;
-    ethsnarks::FieldT burnBalance;
     ethsnarks::FieldT tradingHistoryRoot;
 };
 
 void from_json(const json& j, BalanceLeaf& leaf)
 {
     leaf.balance = ethsnarks::FieldT(j.at("balance").get<std::string>().c_str());
-    leaf.burnBalance = ethsnarks::FieldT(j.at("burnBalance").get<std::string>().c_str());
     leaf.tradingHistoryRoot = ethsnarks::FieldT(j.at("tradingHistoryRoot").get<std::string>().c_str());
 }
 
@@ -72,17 +70,6 @@ void from_json(const json& j, Account& account)
     account.walletID = ethsnarks::FieldT(j.at("walletID"));
     account.nonce = ethsnarks::FieldT(j.at("nonce"));
     account.balancesRoot = ethsnarks::FieldT(j.at("balancesRoot").get<std::string>().c_str());
-}
-
-class BurnRateData
-{
-public:
-    ethsnarks::FieldT burnRate;
-};
-
-void from_json(const json& j, BurnRateData& token)
-{
-    token.burnRate = ethsnarks::FieldT(j.at("burnRate"));
 }
 
 class BalanceUpdate
@@ -146,19 +133,6 @@ void from_json(const json& j, AccountUpdate& accountUpdate)
     accountUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
     accountUpdate.before = j.at("before").get<Account>();
     accountUpdate.after = j.at("after").get<Account>();
-}
-
-class BurnRateCheck
-{
-public:
-    BurnRateData burnRateData;
-    Proof proof;
-};
-
-void from_json(const json& j, BurnRateCheck& burnRateCheck)
-{
-    burnRateCheck.burnRateData = j.at("burnRateData").get<BurnRateData>();
-    burnRateCheck.proof = j.at("proof").get<Proof>();
 }
 
 class FeeBalanceLeaf
@@ -405,12 +379,6 @@ public:
     AccountUpdate accountUpdate_M;
 
     BalanceUpdate balanceUpdateF_O;
-
-    BurnRateCheck burnRateCheckF_A;
-    BurnRateCheck burnRateCheckF_B;
-
-    ethsnarks::FieldT burnRateF_A;
-    ethsnarks::FieldT burnRateF_B;
 };
 
 void from_json(const json& j, RingSettlement& ringSettlement)
@@ -445,9 +413,6 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.accountUpdate_M = j.at("accountUpdate_M").get<AccountUpdate>();
 
     ringSettlement.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
-
-    ringSettlement.burnRateCheckF_A = j.at("burnRateCheckF_A").get<BurnRateCheck>();
-    ringSettlement.burnRateCheckF_B = j.at("burnRateCheckF_B").get<BurnRateCheck>();
 }
 
 class TradeContext
@@ -458,7 +423,6 @@ public:
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
-    ethsnarks::FieldT burnRateMerkleRoot;
 
     ethsnarks::FieldT timestamp;
 
@@ -474,7 +438,6 @@ void from_json(const json& j, TradeContext& context)
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
-    context.burnRateMerkleRoot = ethsnarks::FieldT(j["burnRateMerkleRoot"].get<std::string>().c_str());
 
     context.timestamp = ethsnarks::FieldT(j["timestamp"].get<unsigned int>());
 
@@ -534,7 +497,6 @@ public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::FieldT amount;
-    ethsnarks::FieldT burnPercentage;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT walletSplitPercentage;
     Signature signature;
@@ -555,7 +517,6 @@ void from_json(const json& j, Withdrawal& withdrawal)
     withdrawal.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
     withdrawal.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
     withdrawal.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
-    withdrawal.burnPercentage = ethsnarks::FieldT(j.at("burnPercentage"));
     withdrawal.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     withdrawal.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     withdrawal.signature = j.at("signature").get<Signature>();

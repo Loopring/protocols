@@ -226,7 +226,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         states.push(memoryState);
 
         Block memory genesisBlock = Block(
-            0x0b8b8f16f8442ddc83dddbeb0bde4ecbc23cef4436f72035e7f0f188d2843330,
+            0x29c496a5d270dec45f84b17ac910e27e342b7feaff48ba1d717e7d3dd622d9ed,
             0x0,
             BlockState.FINALIZED,
             uint32(now),
@@ -291,7 +291,6 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     function commitBlock(
         uint blockType,
-        uint burnRateBlockIdx,
         bytes memory data
         )
         public
@@ -326,16 +325,10 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint32 numDepositBlocksCommitted = currentBlock.numDepositBlocksCommitted;
         uint32 numWithdrawBlocksCommitted = currentBlock.numWithdrawBlocksCommitted;
         if (blockType == uint(BlockType.TRADE)) {
-            (bytes32 burnRateRootContract, uint32 burnRateRootValidUntil) =
-                ITokenRegistry(tokenRegistryAddress).getBurnRateMerkleRoot(burnRateBlockIdx);
-            bytes32 burnRateRoot;
             uint32 inputTimestamp;
             assembly {
-                burnRateRoot := mload(add(data, 103))
-                inputTimestamp := and(mload(add(data, 107)), 0xFFFFFFFF)
+                inputTimestamp := and(mload(add(data, 75)), 0xFFFFFFFF)
             }
-            require(burnRateRoot == burnRateRootContract, "INVALID_BURNRATE_ROOT");
-            require(now <= burnRateRootValidUntil, "BURNRATE_ROOT_TOO_OLD");
             require(inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
                     inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS, "INVALID_TIMESTAMP");
         } else if (blockType == uint(BlockType.DEPOSIT)) {
@@ -681,22 +674,29 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // TODO: optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 4 + 32 + 32 + 3 + 32 + (3 + 2 + 12 + 1) * (withdrawalIdx + 1);
+        uint offset = 4 + 32 + 32 + 3 + 32 + (3 + 2 + 12) * (withdrawalIdx + 1);
         require(offset < withdrawals.length + 32, "INVALID_WITHDRAWALIDX");
         uint data;
         assembly {
             data := mload(add(withdrawals, offset))
         }
-        uint24 accountID = uint24((data / 0x1000000000000000000000000000000) & 0xFFFFFF);
-        uint16 tokenID = uint16((data / 0x100000000000000000000000000) & 0xFFFF);
-        uint amount = (data / 0x100) & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
-        uint burnPercentage = data & 0xFF;
+        uint24 accountID = uint24((data / 0x10000000000000000000000000000) & 0xFFFFFF);
+        uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
+        uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
 
         assert(accountID < state.numAccounts);
         Account storage account = state.accounts[accountID];
 
-        uint amountToBurn = amount.mul(burnPercentage) / 100;
-        uint amountToOwner = amount - amountToBurn;
+        uint amountToBurn = 0;
+        uint amountToOwner = 0;
+        if (account.walletID >= MAX_NUM_WALLETS) {
+            uint burnRate = ITokenRegistry(tokenRegistryAddress).getBurnRate(tokenID);
+            amountToBurn = amount.mul(burnRate) / 1000;
+            amountToOwner = amount - amountToBurn;
+        } else {
+            amountToBurn = 0;
+            amountToOwner = amount;
+        }
 
         if (amount > 0) {
             // Set the amount to 0 so it cannot be withdrawn anymore

@@ -68,21 +68,14 @@ export class Simulator {
     console.log("fillAmountBB: " + fillAmountBB.toString(10));
     console.log("fillAmountFB: " + fillAmountFB.toString(10));
 
-    const burnRateA = 500;
-    const burnRateB = 500;
-
-    const [walletFeeA, matchingFeeA, burnFeeA] = this.calculateFees(
-      ring.orderA,
+    const [walletFeeA, matchingFeeA] = this.calculateFees(
       fillAmountFA,
-      burnRateA,
       ring.orderA.walletSplitPercentage,
       ring.orderA.waiveFeePercentage,
     );
 
-    const [walletFeeB, matchingFeeB, burnFeeB] = this.calculateFees(
-      ring.orderB,
+    const [walletFeeB, matchingFeeB] = this.calculateFees(
       fillAmountFB,
-      burnRateB,
       ring.orderB.walletSplitPercentage,
       ring.orderB.waiveFeePercentage,
     );
@@ -126,7 +119,7 @@ export class Simulator {
     newState.accountA.balances[ring.orderA.tokenIdB].balance =
       newState.accountA.balances[ring.orderA.tokenIdB].balance.add(fillAmountBA);
     newState.accountA.balances[ring.orderA.tokenIdF].balance =
-      newState.accountA.balances[ring.orderA.tokenIdF].balance.sub(walletFeeA.add(matchingFeeA).add(burnFeeA));
+      newState.accountA.balances[ring.orderA.tokenIdF].balance.sub(walletFeeA.add(matchingFeeA));
 
     // Update accountB
     newState.accountB.balances[ring.orderB.tokenIdS].balance =
@@ -134,7 +127,7 @@ export class Simulator {
     newState.accountB.balances[ring.orderB.tokenIdB].balance =
       newState.accountB.balances[ring.orderB.tokenIdB].balance.add(fillAmountBB);
     newState.accountB.balances[ring.orderB.tokenIdF].balance =
-      newState.accountB.balances[ring.orderB.tokenIdF].balance.sub(walletFeeB.add(matchingFeeB).add(burnFeeB));
+      newState.accountB.balances[ring.orderB.tokenIdF].balance.sub(walletFeeB.add(matchingFeeB));
 
     // Update trade history A
     newState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID].filled =
@@ -146,14 +139,10 @@ export class Simulator {
     // Update walletA
     newState.walletA.balances[ring.orderA.tokenIdF].balance =
       newState.walletA.balances[ring.orderA.tokenIdF].balance.add(walletFeeA);
-    newState.walletA.balances[ring.orderA.tokenIdF].burnBalance =
-      newState.walletA.balances[ring.orderA.tokenIdF].burnBalance.add(burnFeeA);
 
     // Update walletB
     newState.walletB.balances[ring.orderB.tokenIdF].balance =
       newState.walletB.balances[ring.orderB.tokenIdF].balance.add(walletFeeB);
-    newState.walletB.balances[ring.orderB.tokenIdF].burnBalance =
-      newState.walletB.balances[ring.orderB.tokenIdF].burnBalance.add(burnFeeB);
 
     // Update ringMatcher
     // - Matching fee A
@@ -177,16 +166,14 @@ export class Simulator {
       ring, ring.orderA, ring.orderB,
       fillAmountSA, fillAmountBA, fillAmountFA,
       margin,
-      walletFeeA, matchingFeeA, burnFeeA,
-      burnRateA,
+      walletFeeA, matchingFeeA,
     );
 
     const detailedTransfersB = this.getDetailedTransfers(
       ring, ring.orderB, ring.orderA,
       fillAmountSB, fillAmountBB, fillAmountFB,
       new BN(0),
-      walletFeeB, matchingFeeB, burnFeeB,
-      burnRateB,
+      walletFeeB, matchingFeeB,
     );
 
     const operatorFee: DetailedTokenTransfer = {
@@ -214,8 +201,7 @@ export class Simulator {
   private getDetailedTransfers(ring: RingInfo, order: OrderInfo, orderTo: OrderInfo,
                                fillAmountS: BN, fillAmountB: BN, fillAmountF: BN,
                                margin: BN,
-                               walletFee: BN, matchingFee: BN, burnFee: BN,
-                               burnRate: number) {
+                               walletFee: BN, matchingFee: BN) {
     const sell: DetailedTokenTransfer = {
       description: "Sell",
       token: order.tokenIdS,
@@ -267,17 +253,8 @@ export class Simulator {
       amount: matchingFee,
       subPayments: [],
     };
-    const feeBurn: DetailedTokenTransfer = {
-      description: "Burn@" + burnRate / 10,
-      token: order.tokenIdF,
-      from: order.accountID,
-      to: 0,
-      amount: burnFee,
-      subPayments: [],
-    };
     fee.subPayments.push(feeWallet);
     fee.subPayments.push(feeMatching);
-    fee.subPayments.push(feeBurn);
 
     const detailedTransfers: DetailedTokenTransfer[] = [];
     detailedTransfers.push(sell);
@@ -321,21 +298,12 @@ export class Simulator {
     return [fillAmountS, fillAmountB];
   }
 
-  private calculateFees(order: OrderInfo, fee: BN, burnRate: number,
-                        walletSplitPercentage: number, waiveFeePercentage: number) {
+  private calculateFees(fee: BN, walletSplitPercentage: number, waiveFeePercentage: number) {
     const walletFee = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
     const matchingFee = fee.sub(walletFee);
-
-    const walletFeeToBurn = walletFee.mul(new BN(burnRate)).div(new BN(1000));
-    const walletFeeToPay = walletFee.sub(walletFeeToBurn);
-
     const matchingFeeAfterWaiving = matchingFee.mul(new BN(waiveFeePercentage)).div(new BN(100));
-    const matchingFeeToBurn = matchingFeeAfterWaiving.mul(new BN(burnRate)).div(new BN(1000));
-    const matchingFeeToPay = matchingFeeAfterWaiving.sub(matchingFeeToBurn);
 
-    const feeToBurn = walletFeeToBurn.add(matchingFeeToBurn);
-
-    return [walletFeeToPay, matchingFeeToPay, feeToBurn];
+    return [walletFee, matchingFeeAfterWaiving];
   }
 
   private hasRoundingError(value: BN, numerator: BN, denominator: BN) {
@@ -374,7 +342,6 @@ export class Simulator {
       }
       balances[Number(tokenID)] = {
         balance: balanceValue.balance,
-        burnBalance: balanceValue.burnBalance,
         tradeHistory,
       };
     }

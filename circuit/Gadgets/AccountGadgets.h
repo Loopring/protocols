@@ -84,7 +84,6 @@ public:
 struct BalanceState
 {
     const VariableT balance;
-    const VariableT burnBalance;
     const VariableT tradingHistory;
 };
 
@@ -111,8 +110,8 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        leafBefore(pb, libsnark::ONE, {before.balance, before.burnBalance, before.tradingHistory}, FMT(prefix, ".leafBefore")),
-        leafAfter(pb, libsnark::ONE, {after.balance, after.burnBalance, after.tradingHistory}, FMT(prefix, ".leafAfter")),
+        leafBefore(pb, libsnark::ONE, {before.balance, before.tradingHistory}, FMT(prefix, ".leafBefore")),
+        leafAfter(pb, libsnark::ONE, {after.balance, after.tradingHistory}, FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".proof"))),
         proofVerifierBefore(pb, TREE_DEPTH_TOKENS, tokenID, merkle_tree_IVs(pb), leafBefore.result(), root, proof, FMT(prefix, ".pathBefore")),

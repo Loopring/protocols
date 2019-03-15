@@ -41,7 +41,6 @@ public:
     VariableArrayT tokenID;
     libsnark::dual_variable_gadget<FieldT> amountRequested;
     libsnark::dual_variable_gadget<FieldT> amountWithdrawn;
-    libsnark::dual_variable_gadget<FieldT> burnPercentage;
     VariableArrayT dualAuthAccountID;
     VariableArrayT feeTokenID;
     libsnark::dual_variable_gadget<FieldT> fee;
@@ -56,16 +55,13 @@ public:
 
     VariableT tradingHistoryRootF_A;
     VariableT balanceF_A_before;
-    VariableT burnBalanceF_A;
 
     VariableT tradingHistoryRootW_A;
     VariableT balanceW_A_before;
     VariableT balanceW_A_after;
-    VariableT burnBalanceW_A_before;
 
     VariableT balancesRoot_W_before;
     VariableT balanceF_W_before;
-    VariableT burnBalanceF_W;
     VariableT nonce_W;
     VariableT dualAuthorWalletID;
 
@@ -84,8 +80,6 @@ public:
     subadd_gadget feePaymentOperator;
 
     MinGadget amountToWithdraw;
-
-    MulDivGadget burnPercentageCalc;
 
     UpdateBalanceGadget updateBalanceF_A;
     UpdateBalanceGadget updateBalanceW_A;
@@ -126,7 +120,6 @@ public:
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
         amountRequested(pb, 96, FMT(prefix, ".amountRequested")),
-        burnPercentage(pb, 8, FMT(prefix, ".burnPercentage")),
         dualAuthAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
         fee(pb, 96, FMT(prefix, ".fee")),
@@ -141,16 +134,13 @@ public:
 
         tradingHistoryRootF_A(make_variable(pb, FMT(prefix, ".tradingHistoryRootF_A"))),
         balanceF_A_before(make_variable(pb, FMT(prefix, ".balanceF_A_before"))),
-        burnBalanceF_A(make_variable(pb, FMT(prefix, ".burnBalanceF_A"))),
 
         tradingHistoryRootW_A(make_variable(pb, FMT(prefix, ".tradingHistoryRootW_A"))),
         balanceW_A_before(make_variable(pb, FMT(prefix, ".balanceW_A_before"))),
         balanceW_A_after(make_variable(pb, FMT(prefix, ".balanceW_A_after"))),
-        burnBalanceW_A_before(make_variable(pb, FMT(prefix, ".burnBalanceW_A_before"))),
 
         balancesRoot_W_before(make_variable(pb, FMT(prefix, ".balancesRoot_W_before"))),
         balanceF_W_before(make_variable(pb, FMT(prefix, ".balanceF_W_before"))),
-        burnBalanceF_W(make_variable(pb, FMT(prefix, ".burnBalanceF_W"))),
         nonce_W(make_variable(pb, FMT(prefix, ".nonce_W"))),
 
         dualAuthorWalletID(make_variable(pb, FMT(prefix, ".dualAuthorWalletID"))),
@@ -171,16 +161,14 @@ public:
         amountToWithdraw(pb, amountRequested.packed, balanceW_A_before, FMT(prefix, ".min(amountRequested, balance)")),
         amountWithdrawn(pb, 96, FMT(prefix, ".amountWithdrawn")),
 
-        burnPercentageCalc(pb, burnBalanceW_A_before, constant100, amountWithdrawn.packed, FMT(prefix, "(burnBalance * 100) / amountWithdrawn == burnPercentage")),
-
         updateBalanceF_A(pb, balancesRoot_before, tokenID,
-                         {balanceF_A_before, burnBalanceF_A, tradingHistoryRootF_A},
-                         {feePaymentOperator.X, burnBalanceF_A, tradingHistoryRootF_A},
+                         {balanceF_A_before, tradingHistoryRootF_A},
+                         {feePaymentOperator.X, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
 
         updateBalanceW_A(pb, updateBalanceF_A.getNewRoot(), feeTokenID,
-                         {balanceW_A_before, burnBalanceW_A_before, tradingHistoryRootW_A},
-                         {balanceW_A_after, constant0, tradingHistoryRootW_A},
+                         {balanceW_A_before, tradingHistoryRootW_A},
+                         {balanceW_A_after, tradingHistoryRootW_A},
                          FMT(prefix, ".updateBalanceW_A")),
 
         updateAccount_A(pb, _accountsMerkleRoot, accountID,
@@ -190,8 +178,8 @@ public:
 
 
         updateBalanceF_W(pb, balancesRoot_W_before, feeTokenID,
-                         {balanceF_W_before, burnBalanceF_W, emptyTradeHistory},
-                         {feePaymentWallet.Y, burnBalanceF_W, emptyTradeHistory},
+                         {balanceF_W_before, emptyTradeHistory},
+                         {feePaymentWallet.Y, emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_W")),
 
         updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountID,
@@ -201,8 +189,8 @@ public:
 
 
         updateBalanceF_O(pb, _operatorBalancesRoot, feeTokenID,
-                         {balanceF_O_before, constant0, tradingHistoryRootF_O},
-                         {feePaymentOperator.Y, constant0, tradingHistoryRootF_O},
+                         {balanceF_O_before, tradingHistoryRootF_O},
+                         {feePaymentOperator.Y, tradingHistoryRootF_O},
                          FMT(prefix, ".updateBalanceF_O")),
 
 
@@ -226,7 +214,7 @@ public:
 
     const std::vector<VariableArrayT> getPublicDataGeneral() const
     {
-        return {accountID, uint16_padding, tokenID, amountWithdrawn.bits, burnPercentage.bits};
+        return {accountID, uint16_padding, tokenID, amountWithdrawn.bits};
     }
 
     const std::vector<VariableArrayT> getPublicDataOffchain() const
@@ -264,9 +252,6 @@ public:
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        burnPercentage.bits.fill_with_bits_of_field_element(pb, withdrawal.burnPercentage);
-        burnPercentage.generate_r1cs_witness_from_bits();
-
         pb.val(walletID) = withdrawal.accountUpdate_A.before.walletID;
 
         nonce_before.bits.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_A.before.nonce);
@@ -277,16 +262,13 @@ public:
 
         pb.val(tradingHistoryRootF_A) = withdrawal.balanceUpdateF_A.before.tradingHistoryRoot;
         pb.val(balanceF_A_before) = withdrawal.balanceUpdateF_A.before.balance;
-        pb.val(burnBalanceF_A) = withdrawal.balanceUpdateF_A.before.burnBalance;
 
         pb.val(tradingHistoryRootW_A) = withdrawal.balanceUpdateW_A.before.tradingHistoryRoot;
         pb.val(balanceW_A_before) = withdrawal.balanceUpdateW_A.before.balance;
         pb.val(balanceW_A_after) = withdrawal.balanceUpdateW_A.after.balance;
-        pb.val(burnBalanceW_A_before) = withdrawal.balanceUpdateW_A.before.burnBalance;
 
         pb.val(balancesRoot_W_before) = withdrawal.accountUpdate_W.before.balancesRoot;
         pb.val(balanceF_W_before) = withdrawal.balanceUpdateF_W.before.balance;
-        pb.val(burnBalanceF_W) = withdrawal.balanceUpdateF_W.before.burnBalance;
         pb.val(nonce_W) = withdrawal.accountUpdate_W.before.nonce;
 
         pb.val(dualAuthorWalletID) = withdrawal.accountUpdate_W.before.walletID;
@@ -305,10 +287,8 @@ public:
 
         amountToWithdraw.generate_r1cs_witness();
 
-        amountWithdrawn.bits.fill_with_bits_of_field_element(pb, (pb.val(balanceW_A_before) - pb.val(balanceW_A_after)) + pb.val(burnBalanceW_A_before));
+        amountWithdrawn.bits.fill_with_bits_of_field_element(pb, (pb.val(balanceW_A_before) - pb.val(balanceW_A_after)));
         amountWithdrawn.generate_r1cs_witness_from_bits();
-
-        burnPercentageCalc.generate_r1cs_witness();
 
         updateBalanceF_A.generate_r1cs_witness(withdrawal.balanceUpdateF_A.proof);
         updateBalanceW_A.generate_r1cs_witness(withdrawal.balanceUpdateW_A.proof);
@@ -344,13 +324,7 @@ public:
 
         amountToWithdraw.generate_r1cs_constraints();
 
-        burnPercentageCalc.generate_r1cs_constraints();
-
-        pb.add_r1cs_constraint(ConstraintT(amountToWithdraw.result() + burnBalanceW_A_before, 1, amountWithdrawn.packed), "amountToWithdraw + burnBalance == amountWithdrawn");
         pb.add_r1cs_constraint(ConstraintT(balanceW_A_before, 1, balanceW_A_after + amountToWithdraw.result()), "balance_before == balance_after + amountToWithdraw");
-
-        pb.add_r1cs_constraint(ConstraintT(amountToWithdraw.result() + burnBalanceW_A_before, 1, amountWithdrawn.packed), "amountToWithdraw + burnBalance == amountWithdrawn");
-        forceEqual(pb, burnPercentageCalc.result(), burnPercentage.packed, FMT(annotation_prefix, "burnPercentageCalc == burnPercentage"));
 
         updateBalanceW_A.generate_r1cs_constraints();
         updateAccount_A.generate_r1cs_constraints();

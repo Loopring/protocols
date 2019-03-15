@@ -24,24 +24,17 @@ public:
     VariableT constant100;
 
     VariableT fee;
-    VariableT burnRate;
     VariableT walletSplitPercentage;
     VariableT waiveFeePercentage;
 
     VariableT matchingFee;
-    VariableT walletFeeToPay;
-    VariableT matchingFeeToPay;
-    VariableT feeToBurn;
 
     MulDivGadget walletFee;
-    MulDivGadget walletFeeToBurn;
     MulDivGadget matchingFeeAfterWaiving;
-    MulDivGadget matchingFeeToBurn;
 
     FeePaymentCalculator(
         ProtoboardT& pb,
         const VariableT& _fee,
-        const VariableT& _burnRate,
         const VariableT& _walletSplitPercentage,
         const VariableT& _waiveFeePercentage,
         const std::string& prefix
@@ -52,98 +45,39 @@ public:
         constant1000(make_variable(pb, 1000, FMT(prefix, ".constant1000"))),
 
         fee(_fee),
-        burnRate(_burnRate),
         walletSplitPercentage(_walletSplitPercentage),
         waiveFeePercentage(_waiveFeePercentage),
 
         matchingFee(make_variable(pb, FMT(prefix, ".matchingFee"))),
-        walletFeeToPay(make_variable(pb, FMT(prefix, ".walletFeeToPay"))),
-        matchingFeeToPay(make_variable(pb, FMT(prefix, ".matchingFeeToPay"))),
-        feeToBurn(make_variable(pb, FMT(prefix, ".feeToBurn"))),
 
         walletFee(pb, fee, walletSplitPercentage, constant100, FMT(prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
-        walletFeeToBurn(pb, walletFee.result(), burnRate, constant1000, FMT(prefix, "(walletFee * burnRate) / 1000 == walletFeeToBurn")),
-        matchingFeeAfterWaiving(pb, matchingFee, waiveFeePercentage, constant100, FMT(prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving")),
-        matchingFeeToBurn(pb, matchingFeeAfterWaiving.result(), burnRate, constant1000, FMT(prefix, "(matchingFeeAfterWaiving * burnRate) / 1000 == matchingFeeToBurn"))
+        matchingFeeAfterWaiving(pb, matchingFee, waiveFeePercentage, constant100, FMT(prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving"))
     {
 
     }
 
     const VariableT getWalletFee() const
     {
-        return walletFeeToPay;
+        return walletFee.result();
     }
 
     const VariableT getMatchingFee() const
     {
-        return matchingFeeToPay;
-    }
-
-    const VariableT getBurnFee() const
-    {
-        return feeToBurn;
+        return matchingFeeAfterWaiving.result();
     }
 
     void generate_r1cs_witness()
     {
         walletFee.generate_r1cs_witness();
-        walletFeeToBurn.generate_r1cs_witness();
-        pb.val(walletFeeToPay) = pb.val(walletFee.result()) - pb.val(walletFeeToBurn.result());
-
         pb.val(matchingFee) = pb.val(fee) - pb.val(walletFee.result());
         matchingFeeAfterWaiving.generate_r1cs_witness();
-        matchingFeeToBurn.generate_r1cs_witness();
-        pb.val(matchingFeeToPay) = pb.val(matchingFeeAfterWaiving.result()) - pb.val(matchingFeeToBurn.result());
-
-        pb.val(feeToBurn) = pb.val(walletFeeToBurn.result()) + pb.val(matchingFeeToBurn.result());
     }
 
     void generate_r1cs_constraints()
     {
         walletFee.generate_r1cs_constraints();
-        walletFeeToBurn.generate_r1cs_constraints();
-        matchingFeeAfterWaiving.generate_r1cs_constraints();
-        matchingFeeToBurn.generate_r1cs_constraints();
-
-        pb.add_r1cs_constraint(ConstraintT(walletFeeToPay + walletFeeToBurn.result(), FieldT::one(), walletFee.result()), "walletFeeToPay + walletFeeToBurn == walletFee");
         pb.add_r1cs_constraint(ConstraintT(walletFee.result() + matchingFee, FieldT::one(), fee), "walletFee + matchingFee == fee");
-        pb.add_r1cs_constraint(ConstraintT(matchingFeeToPay + matchingFeeToBurn.result(), FieldT::one(), matchingFeeAfterWaiving.result()), "matchingFeeToPay + matchingFeeToBurn == matchingFeeAfterWaiving");
-        pb.add_r1cs_constraint(ConstraintT(walletFeeToBurn.result() + matchingFeeToBurn.result(), FieldT::one(), feeToBurn), "walletFeeToBurn + matchingFeeToBurn == feeToBurn");
-    }
-};
-
-class CheckBurnRateGadget : public GadgetT
-{
-public:
-    typedef merkle_path_authenticator<MiMC_hash_gadget> MerklePathCheckT;
-
-    const VariableArrayT proof;
-    MerklePathCheckT proofVerifier;
-
-    CheckBurnRateGadget(
-        ProtoboardT& pb,
-        const VariableT& merkleRoot,
-        const VariableArrayT& address,
-        const VariableT& burnRate,
-        const std::string& prefix
-    ) :
-        GadgetT(pb, prefix),
-
-        proof(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".proof"))),
-        proofVerifier(pb, TREE_DEPTH_TOKENS, address, merkle_tree_IVs(pb), burnRate, merkleRoot, proof, FMT(prefix, ".path"))
-    {
-
-    }
-
-    void generate_r1cs_witness(const Proof& _proof)
-    {
-        proof.fill_with_field_elements(pb, _proof.data);
-        proofVerifier.generate_r1cs_witness();
-    }
-
-    void generate_r1cs_constraints()
-    {
-        proofVerifier.generate_r1cs_constraints();
+        matchingFeeAfterWaiving.generate_r1cs_constraints();
     }
 };
 

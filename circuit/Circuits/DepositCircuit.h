@@ -33,7 +33,6 @@ public:
     const VariableT publicKeyY_before;
     const VariableT walletID_before;
     const VariableT nonce;
-    const VariableT burnBalance;
 
     const VariableT tradingHistoryRoot_before;
     const VariableT balancesRoot_before;
@@ -64,7 +63,6 @@ public:
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
 
         nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
-        burnBalance(make_variable(pb, 0, FMT(prefix, ".burnBalance"))),
 
         balance_before(make_variable(pb, 0, FMT(prefix, ".balance_before"))),
         balance_after(make_variable(pb, 0, FMT(prefix, ".balance_after"))),
@@ -86,8 +84,8 @@ public:
         amount(pb, 96, FMT(prefix, ".amount")),
 
         updateBalance(pb, balancesRoot_before, tokenID,
-                      {balance_before, burnBalance, tradingHistoryRoot_before},
-                      {balance_after, burnBalance, tradingHistoryRoot_after},
+                      {balance_before, tradingHistoryRoot_before},
+                      {balance_after, tradingHistoryRoot_after},
                       FMT(prefix, ".updateBalance")),
 
         updateAccount(pb, root, accountID,
@@ -118,7 +116,6 @@ public:
         tokenID.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.tokenID);
 
         pb.val(nonce) = deposit.accountUpdate.before.nonce;
-        pb.val(burnBalance) = deposit.balanceUpdate.before.burnBalance;
 
         pb.val(balance_before) = deposit.balanceUpdate.before.balance;
         pb.val(tradingHistoryRoot_before) = deposit.balanceUpdate.before.tradingHistoryRoot;

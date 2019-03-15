@@ -1018,7 +1018,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.verifyAllPendingBlocks();
       await exchangeTestUtil.submitPendingWithdrawals(exchangeTestUtil.getAddressBook(ring));
 
-      await exchangeTestUtil.exchange.withdrawBlockFee(stateID, 4);
+      // await exchangeTestUtil.exchange.withdrawBlockFee(stateID, 4);
     });
 
     it("Offchain withdrawal", async () => {

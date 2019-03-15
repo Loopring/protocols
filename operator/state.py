@@ -31,8 +31,7 @@ def copyAccountInfo(account):
     return c
 
 class Context(object):
-    def __init__(self, globalState, operatorAccountID, timestamp):
-        self.globalState = globalState
+    def __init__(self, operatorAccountID, timestamp):
         self.operatorAccountID = int(operatorAccountID)
         self.timestamp = int(timestamp)
 
@@ -45,7 +44,6 @@ class Signature(object):
 class BalanceLeaf(object):
     def __init__(self, balance = 0):
         self.balance = str(balance)
-        self.burnBalance = str(int(0))
         # Trading history
         self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
@@ -53,11 +51,10 @@ class BalanceLeaf(object):
         #print("Empty trading tree: " + str(self._tradingHistoryTree._root))
 
     def hash(self):
-        return mimc_hash([int(self.balance), int(self.burnBalance), int(self._tradingHistoryTree._root)], 1)
+        return mimc_hash([int(self.balance), int(self._tradingHistoryTree._root)], 1)
 
     def fromJSON(self, jBalance):
         self.balance = jBalance["balance"]
-        self.burnBalance = jBalance["burnBalance"]
         # Trading history
         tradeHistoryLeafsDict = jBalance["_tradeHistoryLeafs"]
         for key, val in tradeHistoryLeafsDict.items():
@@ -144,14 +141,7 @@ class Account(object):
         else:
             return self._balancesLeafs[str(address)].balance
 
-    def getBurnBalance(self, address):
-        # Make sure the leaf exist in our map
-        if not(str(address) in self._balancesLeafs):
-            return int(0)
-        else:
-            return self._balancesLeafs[str(address)].burnBalance
-
-    def updateBalance(self, tokenID, amount, burnAmount = 0):
+    def updateBalance(self, tokenID, amount):
         # Make sure the leaf exist in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -160,7 +150,6 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
-        self._balancesLeafs[str(tokenID)].burnBalance = str(int(self._balancesLeafs[str(tokenID)].burnBalance) + burnAmount)
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)
@@ -216,16 +205,6 @@ class Account(object):
                 tradeHistoryUpdate)
 
 
-class BurnRateLeaf(object):
-    def __init__(self, burnRate):
-        self.burnRate = burnRate
-
-    def hash(self):
-        return self.burnRate
-
-    def fromJSON(self, jBurnRateLeaf):
-        self.burnRate = int(jBurnRateLeaf["burnRate"])
-
 class TradeHistoryUpdateData(object):
     def __init__(self,
                  orderID, proof,
@@ -261,11 +240,6 @@ class AccountUpdateData(object):
         self.rootAfter = str(rootAfter)
         self.before = before
         self.after = after
-
-class BurnRateCheckData(object):
-    def __init__(self, burnRateData, proof):
-        self.burnRateData = burnRateData
-        self.proof = [str(_) for _ in proof]
 
 
 class Deposit(object):
@@ -387,8 +361,8 @@ class RingSettlement(object):
                  balanceUpdateB_W, accountUpdateB_W,
                  balanceUpdateA_M, balanceUpdateB_M, balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
                  balanceUpdateF_O,
-                 burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
-                 burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B):
+                 walletFee_A, matchingFee_A,
+                 walletFee_B, matchingFee_B):
         self.ring = ring
 
         self.accountsMerkleRoot = str(accountsMerkleRoot)
@@ -420,15 +394,11 @@ class RingSettlement(object):
 
         self.balanceUpdateF_O = balanceUpdateF_O
 
-        self.burnRateCheckF_A = burnRateCheckF_A
         self.walletFee_A = walletFee_A
         self.matchingFee_A = matchingFee_A
-        self.burnFee_A = burnFee_A
 
-        self.burnRateCheckF_B = burnRateCheckF_B
         self.walletFee_B = walletFee_B
         self.matchingFee_B = matchingFee_B
-        self.burnFee_B = burnFee_B
 
 
 class Withdrawal(object):
@@ -443,8 +413,7 @@ class Withdrawal(object):
                  amountWithdrawn,
                  balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                  balanceUpdateF_W, accountUpdate_W,
-                 balanceUpdateF_O,
-                 burnPercentage):
+                 balanceUpdateF_O):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.walletPublicKeyX = str(walletPublicKey.x)
@@ -470,8 +439,6 @@ class Withdrawal(object):
         self.accountUpdate_W = accountUpdate_W
 
         self.balanceUpdateF_O = balanceUpdateF_O
-
-        self.burnPercentage = burnPercentage
 
     def message(self):
         msg_parts = [FQ(int(self.stateID), 1<<32),
@@ -545,45 +512,6 @@ class Cancellation(object):
         self.walletSignature = Signature(signedMessage.sig)
 
 
-class GlobalState(object):
-    def __init__(self):
-        self._tokensTree = MerkleTree(1 << 12)
-        self._tokens = []
-
-    def load(self, filename):
-        with open(filename) as f:
-            data = json.load(f)
-            for jBurnRateLeaf in data["tokens_values"]:
-                token = BurnRateLeaf(0)
-                token.fromJSON(jBurnRateLeaf)
-                self._tokens.append(token)
-                self._tokensTree.append(token.hash())
-
-    def save(self, filename):
-        with open(filename, "w") as file:
-            file.write(json.dumps(
-                {
-                    "tokens_values": self._tokens,
-                }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
-
-    def checkBurnRate(self, address):
-        # Make sure the token exist in the array
-        if address >= len(self._tokens):
-            print("Token doesn't exist: " + str(address))
-
-        burnRateData = copy.deepcopy(self._tokens[address])
-        proof = self._tokensTree.proof(address).path
-
-        return BurnRateCheckData(burnRateData, proof)
-
-    def addToken(self, burnRate):
-        token = BurnRateLeaf(burnRate)
-        # address = self._tokensTree.append(token.hash())
-        self._tokens.append(token)
-
-        # print("Tokens tree root: " + str(hex(self._tokensTree.root)))
-
-
 class State(object):
     def __init__(self, stateID):
         self.stateID = int(stateID)
@@ -616,20 +544,13 @@ class State(object):
                     "accounts_tree": self._accountsTree._db.kv,
                 }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
-    def calculateFees(self, fee, burnRate, walletSplitPercentage, waiveFeePercentage):
+    def calculateFees(self, fee, walletSplitPercentage, waiveFeePercentage):
         walletFee = (fee * walletSplitPercentage) // 100
         matchingFee = fee - walletFee
 
-        walletFeeToBurn = (walletFee * burnRate) // 1000
-        walletFeeToPay = walletFee - walletFeeToBurn
-
         matchingFeeAfterWaiving = (matchingFee * waiveFeePercentage) // 100
-        matchingFeeToBurn = (matchingFeeAfterWaiving * burnRate) // 1000
-        matchingFeeToPay = matchingFeeAfterWaiving - matchingFeeToBurn
 
-        feeToBurn = walletFeeToBurn + matchingFeeToBurn
-
-        return (walletFeeToPay, matchingFeeToPay, feeToBurn)
+        return (walletFee, matchingFeeAfterWaiving)
 
     def getMaxFillAmounts(self, order):
         account = self.getAccount(order.accountID)
@@ -735,20 +656,14 @@ class State(object):
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
 
-        # Check burn rates
-        burnRateCheckF_A = context.globalState.checkBurnRate(ring.orderA.tokenF)
-        burnRateCheckF_B = context.globalState.checkBurnRate(ring.orderB.tokenF)
-
-        (walletFee_A, matchingFee_A, burnFee_A) = self.calculateFees(
+        (walletFee_A, matchingFee_A) = self.calculateFees(
             int(ring.fillF_A),
-            burnRateCheckF_A.burnRateData.burnRate,
             ring.orderA.walletSplitPercentage,
             ring.orderA.waiveFeePercentage
         )
 
-        (walletFee_B, matchingFee_B, burnFee_B) = self.calculateFees(
+        (walletFee_B, matchingFee_B) = self.calculateFees(
             int(ring.fillF_B),
-            burnRateCheckF_B.burnRateData.burnRate,
             ring.orderB.walletSplitPercentage,
             ring.orderB.waiveFeePercentage
         )
@@ -770,7 +685,7 @@ class State(object):
 
         (balanceUpdateS_A, tradeHistoryUpdate_A) = accountA.updateBalanceAndTradeHistory(ring.orderA.tokenS, ring.orderA.orderID, -int(ring.fillS_A))
         balanceUpdateB_A = accountA.updateBalance(ring.orderA.tokenB, int(ring.fillB_A))
-        balanceUpdateF_A = accountA.updateBalance(ring.orderA.tokenF, -(walletFee_A + matchingFee_A + burnFee_A))
+        balanceUpdateF_A = accountA.updateBalance(ring.orderA.tokenF, -(walletFee_A + matchingFee_A))
 
         self.updateAccountTree(ring.orderA.accountID)
         accountAfter = copyAccountInfo(self.getAccount(ring.orderA.accountID))
@@ -791,7 +706,7 @@ class State(object):
 
         (balanceUpdateS_B, tradeHistoryUpdate_B) = accountB.updateBalanceAndTradeHistory(ring.orderB.tokenS, ring.orderB.orderID, -int(ring.fillS_B))
         balanceUpdateB_B = accountB.updateBalance(ring.orderB.tokenB, int(ring.fillB_B))
-        balanceUpdateF_B = accountB.updateBalance(ring.orderB.tokenF, -(walletFee_B + matchingFee_B + burnFee_B))
+        balanceUpdateF_B = accountB.updateBalance(ring.orderB.tokenF, -(walletFee_B + matchingFee_B))
 
         self.updateAccountTree(ring.orderB.accountID)
         accountAfter = copyAccountInfo(self.getAccount(ring.orderB.accountID))
@@ -805,7 +720,7 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(ring.orderA.dualAuthAccountID))
         proof = self._accountsTree.createProof(ring.orderA.dualAuthAccountID)
 
-        balanceUpdateA_W = self.getAccount(ring.orderA.dualAuthAccountID).updateBalance(ring.orderA.tokenF, walletFee_A, burnFee_A)
+        balanceUpdateA_W = self.getAccount(ring.orderA.dualAuthAccountID).updateBalance(ring.orderA.tokenF, walletFee_A)
 
         self.updateAccountTree(ring.orderA.dualAuthAccountID)
         accountAfter = copyAccountInfo(self.getAccount(ring.orderA.dualAuthAccountID))
@@ -819,7 +734,7 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(ring.orderB.dualAuthAccountID))
         proof = self._accountsTree.createProof(ring.orderB.dualAuthAccountID)
 
-        balanceUpdateB_W = self.getAccount(ring.orderB.dualAuthAccountID).updateBalance(ring.orderB.tokenF, walletFee_B, burnFee_B)
+        balanceUpdateB_W = self.getAccount(ring.orderB.dualAuthAccountID).updateBalance(ring.orderB.tokenF, walletFee_B)
 
         self.updateAccountTree(ring.orderB.dualAuthAccountID)
         accountAfter = copyAccountInfo(self.getAccount(ring.orderB.dualAuthAccountID))
@@ -861,8 +776,8 @@ class State(object):
                               balanceUpdateB_W, accountUpdateB_W,
                               balanceUpdateA_M, balanceUpdateB_M, balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
                               balanceUpdateF_O,
-                              burnRateCheckF_A, walletFee_A, matchingFee_A, burnFee_A,
-                              burnRateCheckF_B, walletFee_B, matchingFee_B, burnFee_B)
+                              walletFee_A, matchingFee_A,
+                              walletFee_B, matchingFee_B)
 
 
     def deposit(self, accountID, secretKey, publicKeyX, publicKeyY, walletID, token, amount):
@@ -917,18 +832,14 @@ class State(object):
         balanceUpdateF_A = self.getAccount(accountID).updateBalance(feeTokenID, -fee)
 
         balance = int(self.getAccount(accountID).getBalance(tokenID))
-        burnBalance = int(self.getAccount(accountID).getBurnBalance(tokenID))
         print("balance: " + str(balance))
-        print("burnBalance: " + str(burnBalance))
         amountWithdrawn = int(amount) if (int(amount) < balance) else balance
         print("Withdraw: " + str(amountWithdrawn) + " (requested: " + str(amount) + ")")
 
-        totalAmountWithdrawn = amountWithdrawn + burnBalance
+        totalAmountWithdrawn = amountWithdrawn
         print("totalAmountWithdrawn: " + str(totalAmountWithdrawn))
-        burnPercentage = (burnBalance * 100) // totalAmountWithdrawn if totalAmountWithdrawn > 0 else 0
-        print("burnPercentage: " + str(burnPercentage))
 
-        balanceUpdateW_A = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn, -burnBalance)
+        balanceUpdateW_A = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn)
         if not onchain:
             self.getAccount(accountID).nonce += 1
 
@@ -966,8 +877,7 @@ class State(object):
                                 totalAmountWithdrawn,
                                 balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                 balanceUpdateF_W, accountUpdate_W,
-                                balanceUpdateF_O,
-                                burnPercentage)
+                                balanceUpdateF_O)
         withdrawal.sign(FQ(int(account.secretKey)), FQ(int(walletAccount.secretKey)))
         return withdrawal
 

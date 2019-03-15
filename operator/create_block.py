@@ -4,7 +4,7 @@ sys.path.insert(0, 'operator')
 import os.path
 import subprocess
 import json
-from state import Account, Context, GlobalState, State, Order, Ring, copyAccountInfo, AccountUpdateData
+from state import Account, Context, State, Order, Ring, copyAccountInfo, AccountUpdateData
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
 
@@ -193,20 +193,13 @@ def cancel(state, data):
 
 
 def trade(state, data):
-
-    global_state_filename = "state_global.json"
-    global_state = GlobalState()
-    if os.path.exists(global_state_filename):
-        global_state.load(global_state_filename)
-
     export = TradeExport()
     export.stateID = state.stateID
     export.merkleRootBefore = str(state.getRoot())
-    export.burnRateMerkleRoot = str(global_state._tokensTree.root)
     export.timestamp = int(data["timestamp"])
     export.operatorAccountID = int(data["operatorAccountID"])
 
-    context = Context(global_state, export.operatorAccountID, export.timestamp)
+    context = Context(export.operatorAccountID, export.timestamp)
 
     # Operator payment
     rootBefore = state._accountsTree._root

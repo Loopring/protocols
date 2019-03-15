@@ -119,7 +119,6 @@ export interface TradeHistory {
 
 export interface Balance {
   balance: BN;
-  burnBalance: BN;
   tradeHistory: {[key: number]: TradeHistory};
 }
 
