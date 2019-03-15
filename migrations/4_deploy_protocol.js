@@ -3,6 +3,7 @@ var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var TokenRegistry = artifacts.require("./impl/TokenRegistry.sol");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var Exchange = artifacts.require("./impl/Exchange");
+var ExchangeHelper = artifacts.require("./impl/ExchangeHelper");
 var BurnManager = artifacts.require("./impl/BurnManager");
 
 module.exports = function(deployer, network, accounts) {
@@ -16,6 +17,7 @@ module.exports = function(deployer, network, accounts) {
       ]);
     }).then(() => {
       return Promise.all([
+        deployer.deploy(ExchangeHelper),
         deployer.deploy(
           TokenRegistry,
           LRCToken.address,
@@ -27,6 +29,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         deployer.deploy(
           Exchange,
+          ExchangeHelper.address,
           TokenRegistry.address,
           BlockVerifier.address,
           LRCToken.address,

@@ -17,6 +17,7 @@
 pragma solidity 0.5.2;
 
 import "../iface/IExchange.sol";
+import "../iface/IExchangeHelper.sol";
 import "../iface/ITokenRegistry.sol";
 import "../iface/IBlockVerifier.sol";
 
@@ -64,6 +65,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
 
     address public lrcAddress                = address(0x0);
+    address public exchangeHelperAddress     = address(0x0);
     address public tokenRegistryAddress      = address(0x0);
     address public blockVerifierAddress      = address(0x0);
 
@@ -186,15 +188,18 @@ contract Exchange is IExchange, NoDefaultFunc {
     State[] private states;
 
     constructor(
+        address _exchangeHelperAddress,
         address _tokenRegistryAddress,
         address _blockVerifierAddress,
         address _lrcAddress
         )
         public
     {
+        require(_exchangeHelperAddress != address(0x0), "ZERO_ADDRESS");
         require(_tokenRegistryAddress != address(0x0), "ZERO_ADDRESS");
         require(_blockVerifierAddress != address(0x0), "ZERO_ADDRESS");
         require(_lrcAddress != address(0x0), "ZERO_ADDRESS");
+        exchangeHelperAddress = _exchangeHelperAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         blockVerifierAddress = _blockVerifierAddress;
         lrcAddress = _lrcAddress;
@@ -407,7 +412,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         State storage state = getState(stateID);
 
-        require(blockIdx < state.numBlocks, INVALID_VALUE);
+        require(blockIdx < state.numBlocks, "INVALID_VALUE");
         Block storage specifiedBlock = state.blocks[blockIdx];
         require(specifiedBlock.state == BlockState.COMMITTED, "BLOCK_ALREADY_VERIFIED");
 
@@ -544,7 +549,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
             uint targetWalletID = walletID - MAX_NUM_WALLETS;
             if (targetWalletID > 0) {
-                require(state.wallets[targetWalletID].owner == msg.sender, "CANNOT_CREATE_DUAL_AUTHOR_ACCOUNT_FOR_WALLET");
+                require(state.wallets[targetWalletID].owner == msg.sender, "NOT_AUTHORIZED_TO_CREATE_DUAL_AUTHOR_ACCOUNT_FOR_WALLET");
             }
         } else {
             require(account.owner == msg.sender, "UNAUTHORIZED");
@@ -687,17 +692,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         assert(accountID < state.numAccounts);
         Account storage account = state.accounts[accountID];
 
-        uint amountToBurn = 0;
-        uint amountToOwner = 0;
-        if (account.walletID >= MAX_NUM_WALLETS) {
-            uint burnRate = ITokenRegistry(tokenRegistryAddress).getBurnRate(tokenID);
-            amountToBurn = amount.mul(burnRate) / 1000;
-            amountToOwner = amount - amountToBurn;
-        } else {
-            amountToBurn = 0;
-            amountToOwner = amount;
-        }
-
         if (amount > 0) {
             // Set the amount to 0 so it cannot be withdrawn anymore
             data = data & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000;
@@ -707,7 +701,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             withdrawBlock.withdrawals = withdrawals;
 
             // Transfer the tokens
-            withdrawAndBurn(account.owner, tokenID, amountToOwner, amountToBurn);
+            withdrawAndBurn(account.owner, tokenID, account.walletID, amount);
         }
 
         emit Withdraw(stateID, accountID, tokenID, account.owner, uint96(amount));
@@ -716,26 +710,40 @@ contract Exchange is IExchange, NoDefaultFunc {
     function withdrawAndBurn(
         address accountOwner,
         uint16 tokenID,
-        uint amountToOwner,
-        uint amountToBurn
+        uint24 walletID,
+        uint amount
         )
         internal
     {
-        address payable owner = address(uint160(accountOwner));
-
-        // Transfer the tokens from the contract to the owner
-        address token = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
-        if (token == address(0x0)) {
-            // ETH
-            owner.transfer(amountToOwner);
+        // Calculate how much needs to get burned
+        uint amountToBurn = 0;
+        uint amountToOwner = 0;
+        if (walletID >= MAX_NUM_WALLETS) {
+            uint burnRate = ITokenRegistry(tokenRegistryAddress).getBurnRate(tokenID);
+            amountToBurn = amount.mul(burnRate) / 1000;
+            amountToOwner = amount - amountToBurn;
         } else {
-            // ERC20 token
-            require(token.safeTransfer(owner, amountToOwner), TRANSFER_FAILURE);
+            amountToBurn = 0;
+            amountToOwner = amount;
         }
+
+        address payable owner = address(uint160(accountOwner));
+        address token = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
 
         // Increase the burn balance
         if (amountToBurn > 0) {
             burnBalances[token] = burnBalances[token].add(amountToBurn);
+        }
+
+        // Transfer the tokens from the contract to the owner
+        if (amountToOwner > 0) {
+            if (token == address(0x0)) {
+                // ETH
+                owner.transfer(amountToOwner);
+            } else {
+                // ERC20 token
+                require(token.safeTransfer(owner, amountToOwner), "TRANSFER_FAILURE");
+            }
         }
     }
 
@@ -773,7 +781,7 @@ contract Exchange is IExchange, NoDefaultFunc {
                 address(this),
                 STAKE_AMOUNT_IN_LRC
             ),
-            TRANSFER_FAILURE
+            "TRANSFER_FAILURE"
         );
 
         // Add the operator
@@ -862,7 +870,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         State storage state = getState(stateID);
 
-        //require(operatorID < state.totalNumOperators, "INVALID_OPERATORIDX");
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATORIDX");
         Operator storage operator = state.operators[operatorID];
 
         require(operator.unregisterTimestamp > 0, "OPERATOR_NOT_UNREGISTERED");
@@ -876,7 +884,7 @@ contract Exchange is IExchange, NoDefaultFunc {
                 operator.owner,
                 amount
             ),
-            TRANSFER_FAILURE
+            "TRANSFER_FAILURE"
         );
     }
 
@@ -1138,119 +1146,78 @@ contract Exchange is IExchange, NoDefaultFunc {
         Block storage currentBlock = state.blocks[state.numBlocks - 1];
         WithdrawBlock storage withdrawBlock = state.withdrawBlocks[currentBlock.numWithdrawBlocksCommitted];
         DepositBlock storage depositBlock = state.depositBlocks[currentBlock.numDepositBlocksCommitted];
-        return (withdrawBlock.timestampOpened > now + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE ||
-                depositBlock.timestampOpened > now + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE);
+        return ((withdrawBlock.timestampOpened != 0 && withdrawBlock.timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now) ||
+                (depositBlock.timestampOpened != 0 && depositBlock.timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now));
     }
-/*
+
     function withdrawFromMerkleTree(
         uint32 stateID,
         uint24 accountID,
         uint16 tokenID,
         uint256[24] calldata accountPath,
-        uint256[16] calldata tokenPath,
+        uint256[12] calldata balancePath,
         uint32 nonce,
         uint96 balance,
-        uint96 burnBalance,
         uint256 tradeHistoryRoot
         )
         external
         returns (bool)
     {
-        // This state cannot be in withdrawal mode
-        require(isInWithdrawalMode(stateID), "WITHDRAWAL_MODE_NOT_ACTIVE");
+        require(isInWithdrawalMode(stateID), "NOT_IN_WITHDRAWAL_MODE");
 
         State storage state = getState(stateID);
         Account storage account = state.accounts[accountID];
         require(account.withdrawn == false, "BALANCE_ALREADY_WITHDRAWN");
 
-        // Verify data
-        uint256 balancesRoot = getBalancesRoot(
-            tokenID,
-            balance,
-            burnBalance,
-            tradeHistoryRoot,
-            tokenPath
-        );
-        uint256 accountsRoot = getAccountsRoot(
+        Block storage lastBlock = state.blocks[state.numBlocks - 1];
+        require(lastBlock.state == BlockState.FINALIZED, "LAST_BLOCK_NOT_FINALIZED");
+        verifyAccountBalance(
+            lastBlock.merkleRoot,
             accountID,
+            tokenID,
+            accountPath,
+            balancePath,
             account,
             nonce,
-            balancesRoot,
-            accountPath
+            balance,
+            tradeHistoryRoot
         );
-        Block storage currentBlock = state.blocks[state.numBlocks - 1];
-        require(accountsRoot == uint256(currentBlock.merkleRoot), "INVALID_MERKLE_TREE_DATA");
 
         // Make sure the balance can only be withdrawn once
         account.withdrawn = true;
 
         // Transfer the tokens
-        withdrawAndBurn(account.owner, tokenID, balance, burnBalance);
+        withdrawAndBurn(account.owner, tokenID, account.walletID, balance);
+
+        return true;
     }
 
-    function getBalancesRoot(
-        uint16 tokenID,
-        uint balance,
-        uint burnBalance,
-        uint tradeHistoryRoot,
-        uint256[16] memory tokenPath
-        )
-        internal
-        returns (uint256)
-    {
-        uint256[29] memory IVs;
-        FillLevelIVs(IVs);
-
-        uint256[] memory balanceLeafElements = new uint256[](3);
-        balanceLeafElements[0] = balance;
-        balanceLeafElements[1] = burnBalance;
-        balanceLeafElements[2] = tradeHistoryRoot;
-        uint256 balanceItem = MiMC.Hash(balanceLeafElements);
-
-        // Calculate merkle root of balances tree
-        uint tokenAddress = tokenID;
-        for (uint depth = 0; depth < 16; depth++) {
-            if (tokenAddress & 1 == 1) {
-                balanceItem = HashImpl(tokenPath[depth], balanceItem, IVs[depth]);
-            } else {
-                balanceItem = HashImpl(balanceItem, tokenPath[depth], IVs[depth]);
-            }
-            tokenAddress = tokenAddress / 2;
-        }
-        return balanceItem;
-    }
-
-    function getAccountsRoot(
+    function verifyAccountBalance(
+        bytes32 merkleRoot,
         uint24 accountID,
+        uint16 tokenID,
+        uint256[24] memory accountPath,
+        uint256[12] memory balancePath,
         Account storage account,
-        uint nonce,
-        uint balancesRoot,
-        uint256[24] memory accountPath
+        uint32 nonce,
+        uint96 balance,
+        uint256 tradeHistoryRoot
         )
         internal
-        returns (uint256)
     {
-        uint256[29] memory IVs;
-        FillLevelIVs(IVs);
-
-        uint256[] memory accountLeafElements = new uint256[](5);
-        accountLeafElements[0] = account.publicKeyX;
-        accountLeafElements[1] = account.publicKeyY;
-        accountLeafElements[2] = account.walletID;
-        accountLeafElements[3] = nonce;
-        accountLeafElements[4] = balancesRoot;
-        uint256 accountItem = MiMC.Hash(accountLeafElements);
-
-        uint accountAddress = accountID;
-        for (uint depth = 0; depth < 24; depth++) {
-            if (accountAddress & 1 == 1) {
-                accountItem = HashImpl(accountPath[depth], accountItem, IVs[depth]);
-            } else {
-                accountItem = HashImpl(accountItem, accountPath[depth], IVs[depth]);
-            }
-            accountAddress = accountAddress / 2;
-        }
-        return accountItem;
+        IExchangeHelper(exchangeHelperAddress).verifyAccountBalance(
+            uint256(merkleRoot),
+            accountID,
+            tokenID,
+            accountPath,
+            balancePath,
+            account.publicKeyX,
+            account.publicKeyY,
+            account.walletID,
+            nonce,
+            balance,
+            tradeHistoryRoot
+        );
     }
 
     function withdrawFromPendingDeposit(
@@ -1261,12 +1228,13 @@ contract Exchange is IExchange, NoDefaultFunc {
         external
         returns (bool)
     {
-        // This state cannot be in withdrawal mode
-        require(isInWithdrawalMode(stateID), "WITHDRAWAL_MODE_NOT_ACTIVE");
+        require(isInWithdrawalMode(stateID), "NOT_IN_WITHDRAWAL_MODE");
 
         State storage state = getState(stateID);
-        Block storage latestBlock = state.blocks[state.numBlocks - 1];
-        require (depositBlockIdx >= latestBlock.numDepositBlocksCommitted, "DEPOSIT_BLOCK_CANNOT_BE_COMMITTED");
+        Block storage lastBlock = state.blocks[state.numBlocks - 1];
+        require(lastBlock.state == BlockState.FINALIZED, "LAST_BLOCK_NOT_FINALIZED");
+
+        require (depositBlockIdx >= lastBlock.numDepositBlocksCommitted, "DEPOSIT_BLOCK_CANNOT_BE_COMMITTED");
 
         PendingDeposit storage pendingDeposit = state.depositBlocks[depositBlockIdx].pendingDeposits[slotIdx];
         uint amount = pendingDeposit.amount;
@@ -1276,60 +1244,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // Transfer the tokens
         Account storage account = state.accounts[pendingDeposit.accountID];
-        withdrawAndBurn(account.owner, pendingDeposit.tokenID, amount, 0);
+        withdrawAndBurn(account.owner, pendingDeposit.tokenID, account.walletID, amount);
     }
 
-    function HashImpl (
-        uint256 left,
-        uint256 right,
-        uint256 IV
-        )
-        internal
-        pure
-        returns (uint256)
-    {
-        uint256[] memory x = new uint256[](2);
-        x[0] = left;
-        x[1] = right;
-
-        return MiMC.Hash(x, IV);
-    }
-
-    function FillLevelIVs (
-        uint256[29] memory IVs
-        )
-        internal
-        pure
-    {
-        IVs[0] = 149674538925118052205057075966660054952481571156186698930522557832224430770;
-        IVs[1] = 9670701465464311903249220692483401938888498641874948577387207195814981706974;
-        IVs[2] = 18318710344500308168304415114839554107298291987930233567781901093928276468271;
-        IVs[3] = 6597209388525824933845812104623007130464197923269180086306970975123437805179;
-        IVs[4] = 21720956803147356712695575768577036859892220417043839172295094119877855004262;
-        IVs[5] = 10330261616520855230513677034606076056972336573153777401182178891807369896722;
-        IVs[6] = 17466547730316258748333298168566143799241073466140136663575045164199607937939;
-        IVs[7] = 18881017304615283094648494495339883533502299318365959655029893746755475886610;
-        IVs[8] = 21580915712563378725413940003372103925756594604076607277692074507345076595494;
-        IVs[9] = 12316305934357579015754723412431647910012873427291630993042374701002287130550;
-        IVs[10] = 18905410889238873726515380969411495891004493295170115920825550288019118582494;
-        IVs[11] = 12819107342879320352602391015489840916114959026915005817918724958237245903353;
-        IVs[12] = 8245796392944118634696709403074300923517437202166861682117022548371601758802;
-        IVs[13] = 16953062784314687781686527153155644849196472783922227794465158787843281909585;
-        IVs[14] = 19346880451250915556764413197424554385509847473349107460608536657852472800734;
-        IVs[15] = 14486794857958402714787584825989957493343996287314210390323617462452254101347;
-        IVs[16] = 11127491343750635061768291849689189917973916562037173191089384809465548650641;
-        IVs[17] = 12217916643258751952878742936579902345100885664187835381214622522318889050675;
-        IVs[18] = 722025110834410790007814375535296040832778338853544117497481480537806506496;
-        IVs[19] = 15115624438829798766134408951193645901537753720219896384705782209102859383951;
-        IVs[20] = 11495230981884427516908372448237146604382590904456048258839160861769955046544;
-        IVs[21] = 16867999085723044773810250829569850875786210932876177117428755424200948460050;
-        IVs[22] = 1884116508014449609846749684134533293456072152192763829918284704109129550542;
-        IVs[23] = 14643335163846663204197941112945447472862168442334003800621296569318670799451;
-        IVs[24] = 1933387276732345916104540506251808516402995586485132246682941535467305930334;
-        IVs[25] = 7286414555941977227951257572976885370489143210539802284740420664558593616067;
-        IVs[26] = 16932161189449419608528042274282099409408565503929504242784173714823499212410;
-        IVs[27] = 16562533130736679030886586765487416082772837813468081467237161865787494093536;
-        IVs[28] = 6037428193077828806710267464232314380014232668931818917272972397574634037180;
-    }
-*/
 }

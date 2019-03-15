@@ -1142,6 +1142,33 @@ export class ExchangeTestUtil {
     return operatorID;
   }
 
+  public async withdrawFromMerkleTree(stateID: number, accountID: number, token: string) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    const tokenID = this.tokenAddressToIDMap.get(token);
+
+    const filename = "withdraw_proof.json";
+    const result = childProcess.spawnSync("python3",
+    ["operator/create_withdraw_proof.py", "" + stateID, "" + accountID, "" + tokenID, filename], {stdio: "inherit"});
+    assert(result.status === 0, "create_withdraw_proof failed!");
+
+    // Read in the proof
+    const data = JSON.parse(fs.readFileSync(filename, "ascii"));
+    // console.log(data);
+
+    await this.exchange.withdrawFromMerkleTree(
+      web3.utils.toBN(stateID),
+      web3.utils.toBN(accountID),
+      web3.utils.toBN(tokenID),
+      data.proof.accountProof,
+      data.proof.balanceProof,
+      web3.utils.toBN(data.proof.account.nonce),
+      web3.utils.toBN(data.proof.balance.balance),
+      web3.utils.toBN(data.proof.balance.tradingHistoryRoot),
+    );
+  }
+
   public async setBalanceAndApproveLRC(owner: string, amount: BN) {
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);

@@ -247,6 +247,21 @@ class Deposit(object):
         self.balanceUpdate = balanceUpdate
         self.accountUpdate = accountUpdate
 
+
+class WithdrawProof(object):
+    def __init__(self,
+                 stateID, accountID, tokenID,
+                 account, balance,
+                 root,
+                 accountProof, balanceProof):
+        self.accountID = int(accountID)
+        self.tokenID = int(tokenID)
+        self.account = account
+        self.balance = balance
+        self.root = str(root)
+        self.accountProof = [str(_) for _ in accountProof]
+        self.balanceProof = [str(_) for _ in balanceProof]
+
 class Order(object):
     def __init__(self,
                  publicKey, walletPublicKey,
@@ -949,6 +964,17 @@ class State(object):
                                     balanceUpdateF_O)
         cancellation.sign(FQ(int(account.secretKey)), FQ(int(walletAccount.secretKey)))
         return cancellation
+
+    def createWithdrawProof(self, stateID, accountID, tokenID):
+        account = copyAccountInfo(self.getAccount(accountID))
+        balance = copyBalanceInfo(self.getAccount(accountID)._balancesLeafs[str(tokenID)])
+        accountProof = self._accountsTree.createProof(accountID)
+        balanceProof = self.getAccount(accountID)._balancesTree.createProof(tokenID)
+
+        return WithdrawProof(stateID, accountID, tokenID,
+                             account, balance,
+                             self.getRoot(),
+                             accountProof, balanceProof)
 
     def updateAccountTree(self, accountID):
         self._accountsTree.update(accountID, self.getAccount(accountID).hash())

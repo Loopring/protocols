@@ -1,6 +1,7 @@
 
 export class Artifacts {
   public Exchange: any;
+  public ExchangeHelper: any;
   public TokenRegistry: any;
   public BlockVerifier: any;
   public DummyToken: any;
@@ -14,6 +15,7 @@ export class Artifacts {
   public TESTToken: any;
   constructor(artifacts: any) {
     this.Exchange = artifacts.require("impl/Exchange");
+    this.ExchangeHelper = artifacts.require("impl/ExchangeHelper");
     this.TokenRegistry = artifacts.require("impl/TokenRegistry");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
     this.DummyToken = artifacts.require("test/DummyToken");

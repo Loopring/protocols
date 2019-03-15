@@ -9,6 +9,7 @@ blocks/
 *.log
 state_*.json
 EDDSA_KeyPair.json
+withdraw_proof.json
 ganache_account_keys.txt
 __pycache__
 *.pyc
