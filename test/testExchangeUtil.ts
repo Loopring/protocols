@@ -33,6 +33,7 @@ export class ExchangeTestUtil {
 
   public operatorAccountID: number[] = [];
   public minerAccountID: number[] = [];
+  public feeRecipientAccountID: number[] = [];
 
   public wallets: Wallet[][] = [];
 
@@ -119,7 +120,7 @@ export class ExchangeTestUtil {
     );
 
     this.operatorAccountID[stateID] = await this.createOperator(stateID, this.testContext.miner);
-    this.minerAccountID[stateID] = await this.createRingMatcher(stateID);
+    [this.minerAccountID[stateID], this.feeRecipientAccountID[stateID]] = await this.createRingMatcher(stateID);
 
     for (const walletAddress of this.testContext.wallets) {
       const wallet = await this.createWallet(stateID, walletAddress);
@@ -166,7 +167,14 @@ export class ExchangeTestUtil {
     const minerAccountID = await this.deposit(stateID, this.testContext.miner,
                                               keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
                                               0, lrcAddress, balance);
-    return minerAccountID;
+
+    // Make an account to receive fees
+    const keyPairF = this.getKeyPairEDDSA();
+    const feeRecipientAccountID = await this.deposit(stateID, this.testContext.miner,
+                                                     keyPairF.secretKey, keyPairF.publicKeyX, keyPairF.publicKeyY,
+                                                     this.MAX_MUM_WALLETS, lrcAddress, new BN(0));
+
+    return [minerAccountID, feeRecipientAccountID];
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -208,6 +216,7 @@ export class ExchangeTestUtil {
 
   public async setupRing(ring: RingInfo) {
     ring.minerAccountID = this.minerAccountID[ring.orderA.stateID];
+    ring.feeRecipientAccountID = this.feeRecipientAccountID[ring.orderA.stateID];
     ring.tokenID = ring.tokenID ? ring.tokenID : 2;
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
     await this.setupOrder(ring.orderA, this.orderIDGenerator++);
@@ -909,6 +918,7 @@ export class ExchangeTestUtil {
                 amountF: new BN(1),
               },
             minerAccountID: this.minerAccountID[stateID],
+            feeRecipientAccountID: this.feeRecipientAccountID[stateID],
             tokenID: 0,
             fee: new BN(0),
           };
@@ -956,6 +966,7 @@ export class ExchangeTestUtil {
         const orderB = ringSettlement.ring.orderB;
 
         bs.addNumber(ring.minerAccountID, 3);
+        bs.addNumber(ring.feeRecipientAccountID, 3);
         bs.addNumber(ring.tokenID, 2);
         bs.addBN(new BN(ring.fee, 10), 12);
         bs.addBN(new BN(ring.margin, 10), 12);
@@ -1190,19 +1201,18 @@ export class ExchangeTestUtil {
 
   public validateRingSettlement(ring: RingInfo, stateBefore: RingState, stateAfter: RingState,
                                 timestamp: number, operatorAccountID: number) {
-    const orderA = ring.orderA;
-    const orderB = ring.orderB;
-
     const simulator = new Simulator();
     const simulatorReport = simulator.settleRing(ring, stateBefore, timestamp, operatorAccountID);
 
     // Verify resulting state
     const accountsAfter = [stateAfter.accountA, stateAfter.accountB,
                            stateAfter.walletA, stateAfter.walletB,
-                           stateAfter.ringMatcher, stateAfter.operator];
+                           stateAfter.feeRecipient, stateAfter.ringMatcher,
+                           stateAfter.operator];
     const accountsSimulatorAfter = [simulatorReport.stateAfter.accountA, simulatorReport.stateAfter.accountB,
                                     simulatorReport.stateAfter.walletA, simulatorReport.stateAfter.walletB,
-                                    simulatorReport.stateAfter.ringMatcher, simulatorReport.stateAfter.operator];
+                                    simulatorReport.stateAfter.feeRecipient, simulatorReport.stateAfter.ringMatcher,
+                                    simulatorReport.stateAfter.operator];
     for (let i = 0; i < accountsAfter.length; i++) {
       const account = accountsAfter[i];
       const accountSimulator = accountsSimulatorAfter[i];
@@ -1277,6 +1287,7 @@ export class ExchangeTestUtil {
       accountB: this.getAccount(stateID, ring.orderB.accountID),
       walletA: this.getAccount(stateID, ring.orderA.dualAuthAccountID),
       walletB: this.getAccount(stateID, ring.orderB.dualAuthAccountID),
+      feeRecipient: this.getAccount(stateID, ring.feeRecipientAccountID),
       ringMatcher: this.getAccount(stateID, ring.minerAccountID),
       operator: this.getAccount(stateID, operatorAcountID),
     };

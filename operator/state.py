@@ -319,12 +319,11 @@ class Order(object):
 
 
 class Ring(object):
-    def __init__(self, orderA, orderB, publicKey, minerAccountID, tokenID, fee, nonce):
+    def __init__(self, orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fee, nonce):
         self.orderA = orderA
         self.orderB = orderB
-        self.publicKeyX = str(publicKey.x)
-        self.publicKeyY = str(publicKey.y)
         self.minerAccountID = int(minerAccountID)
+        self.feeRecipientAccountID = int(feeRecipientAccountID)
         self.tokenID = int(tokenID)
         self.fee = str(fee)
         self.nonce = int(nonce)
@@ -334,6 +333,7 @@ class Ring(object):
                         FQ(int(self.orderA.hash), 1<<254), FQ(int(self.orderB.hash), 1<<254),
                         FQ(int(self.orderA.waiveFeePercentage), 1<<7), FQ(int(self.orderB.waiveFeePercentage), 1<<7),
                         FQ(int(self.minerAccountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.fee), 1<<96),
+                        FQ(int(self.feeRecipientAccountID), 1<<24),
                         FQ(int(self.nonce), 1<<32)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
@@ -359,7 +359,8 @@ class RingSettlement(object):
                  balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, accountUpdate_B,
                  balanceUpdateA_W, accountUpdateA_W,
                  balanceUpdateB_W, accountUpdateB_W,
-                 balanceUpdateA_M, balanceUpdateB_M, balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
+                 balanceUpdateA_F, balanceUpdateB_F, accountUpdate_F,
+                 balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
                  balanceUpdateF_O,
                  walletFee_A, matchingFee_A,
                  walletFee_B, matchingFee_B):
@@ -386,8 +387,10 @@ class RingSettlement(object):
         self.balanceUpdateB_W = balanceUpdateB_W
         self.accountUpdateB_W = accountUpdateB_W
 
-        self.balanceUpdateA_M = balanceUpdateA_M
-        self.balanceUpdateB_M = balanceUpdateB_M
+        self.balanceUpdateA_F = balanceUpdateA_F
+        self.balanceUpdateB_F = balanceUpdateB_F
+        self.accountUpdate_F = accountUpdate_F
+
         self.balanceUpdateM_M = balanceUpdateM_M
         self.balanceUpdateO_M = balanceUpdateO_M
         self.accountUpdate_M = accountUpdate_M
@@ -743,6 +746,20 @@ class State(object):
         ###
 
 
+        # Update feeRecipient
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(ring.feeRecipientAccountID))
+        proof = self._accountsTree.createProof(ring.feeRecipientAccountID)
+
+        balanceUpdateA_F = self.getAccount(ring.feeRecipientAccountID).updateBalance(ring.orderA.tokenF, matchingFee_A)
+        balanceUpdateB_F = self.getAccount(ring.feeRecipientAccountID).updateBalance(ring.orderB.tokenF, matchingFee_B)
+
+        self.updateAccountTree(ring.feeRecipientAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(ring.feeRecipientAccountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate_F = AccountUpdateData(ring.feeRecipientAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+
+
         # Update ringmatcher
         accountM = self.getAccount(ring.minerAccountID)
 
@@ -750,8 +767,6 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(ring.minerAccountID))
         proof = self._accountsTree.createProof(ring.minerAccountID)
 
-        balanceUpdateA_M = accountM.updateBalance(ring.orderA.tokenF, int(matchingFee_A))
-        balanceUpdateB_M = accountM.updateBalance(ring.orderB.tokenF, int(matchingFee_B))
         balanceUpdateM_M = accountM.updateBalance(ring.orderA.tokenS, int(ring.margin))
         balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -int(ring.fee))
         accountM.nonce += 1
@@ -774,7 +789,8 @@ class State(object):
                               balanceUpdateS_B, balanceUpdateB_B, balanceUpdateF_B, accountUpdate_B,
                               balanceUpdateA_W, accountUpdateA_W,
                               balanceUpdateB_W, accountUpdateB_W,
-                              balanceUpdateA_M, balanceUpdateB_M, balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
+                              balanceUpdateA_F, balanceUpdateB_F, accountUpdate_F,
+                              balanceUpdateM_M, balanceUpdateO_M, accountUpdate_M,
                               balanceUpdateF_O,
                               walletFee_A, matchingFee_A,
                               walletFee_B, matchingFee_B)

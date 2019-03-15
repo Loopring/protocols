@@ -309,8 +309,8 @@ public:
     ethsnarks::FieldT fillF_B;
     ethsnarks::FieldT margin;
 
-    ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::FieldT minerAccountID;
+    ethsnarks::FieldT feeRecipientAccountID;
     ethsnarks::FieldT tokenID;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT nonce;
@@ -335,9 +335,8 @@ void from_json(const json& j, Ring& ring)
     ring.fillF_B = ethsnarks::FieldT(j.at("fillF_B").get<std::string>().c_str());
     ring.margin = ethsnarks::FieldT(j.at("margin").get<std::string>().c_str());
 
-    ring.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
-    ring.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     ring.minerAccountID = ethsnarks::FieldT(j.at("minerAccountID"));
+    ring.feeRecipientAccountID = ethsnarks::FieldT(j.at("feeRecipientAccountID"));
     ring.tokenID = ethsnarks::FieldT(j.at("tokenID"));
     ring.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     ring.nonce = ethsnarks::FieldT(j.at("nonce"));
@@ -372,8 +371,10 @@ public:
     BalanceUpdate balanceUpdateB_W;
     AccountUpdate accountUpdateB_W;
 
-    BalanceUpdate balanceUpdateA_M;
-    BalanceUpdate balanceUpdateB_M;
+    BalanceUpdate balanceUpdateA_F;
+    BalanceUpdate balanceUpdateB_F;
+    AccountUpdate accountUpdate_F;
+
     BalanceUpdate balanceUpdateM_M;
     BalanceUpdate balanceUpdateO_M;
     AccountUpdate accountUpdate_M;
@@ -406,8 +407,10 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.balanceUpdateB_W = j.at("balanceUpdateB_W").get<BalanceUpdate>();
     ringSettlement.accountUpdateB_W = j.at("accountUpdateB_W").get<AccountUpdate>();
 
-    ringSettlement.balanceUpdateA_M = j.at("balanceUpdateA_M").get<BalanceUpdate>();
-    ringSettlement.balanceUpdateB_M = j.at("balanceUpdateB_M").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateA_F = j.at("balanceUpdateA_F").get<BalanceUpdate>();
+    ringSettlement.balanceUpdateB_F = j.at("balanceUpdateB_F").get<BalanceUpdate>();
+    ringSettlement.accountUpdate_F = j.at("accountUpdate_F").get<AccountUpdate>();
+
     ringSettlement.balanceUpdateM_M = j.at("balanceUpdateM_M").get<BalanceUpdate>();
     ringSettlement.balanceUpdateO_M = j.at("balanceUpdateO_M").get<BalanceUpdate>();
     ringSettlement.accountUpdate_M = j.at("accountUpdate_M").get<AccountUpdate>();

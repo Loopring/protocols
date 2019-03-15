@@ -85,6 +85,7 @@ export class Simulator {
       accountB: this.copyAccount(state.accountB),
       walletA: this.copyAccount(state.walletA),
       walletB: this.copyAccount(state.walletB),
+      feeRecipient: this.copyAccount(state.feeRecipient),
       ringMatcher: this.copyAccount(state.ringMatcher),
       operator: this.copyAccount(state.operator),
     };
@@ -144,13 +145,15 @@ export class Simulator {
     newState.walletB.balances[ring.orderB.tokenIdF].balance =
       newState.walletB.balances[ring.orderB.tokenIdF].balance.add(walletFeeB);
 
-    // Update ringMatcher
+    // Update feeRecipient
     // - Matching fee A
-    newState.ringMatcher.balances[ring.orderA.tokenIdF].balance =
-      newState.ringMatcher.balances[ring.orderA.tokenIdF].balance.add(matchingFeeA);
+    newState.feeRecipient.balances[ring.orderA.tokenIdF].balance =
+      newState.feeRecipient.balances[ring.orderA.tokenIdF].balance.add(matchingFeeA);
     // - Matching fee B
-    newState.ringMatcher.balances[ring.orderB.tokenIdF].balance =
-     newState.ringMatcher.balances[ring.orderB.tokenIdF].balance.add(matchingFeeB);
+    newState.feeRecipient.balances[ring.orderB.tokenIdF].balance =
+     newState.feeRecipient.balances[ring.orderB.tokenIdF].balance.add(matchingFeeB);
+
+    // Update ringMatcher
     // - Margin
     newState.ringMatcher.balances[ring.orderA.tokenIdS].balance =
      newState.ringMatcher.balances[ring.orderA.tokenIdS].balance.add(margin);

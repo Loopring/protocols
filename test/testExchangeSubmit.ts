@@ -695,7 +695,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
         false,
       );
       const operatorAccountID = await exchangeTestUtil.createOperator(stateID, exchangeTestUtil.testContext.miner);
-      const minerAccountID = await exchangeTestUtil.createRingMatcher(stateID);
+      const [minerAccountID, feeRecipientAccountID] = await exchangeTestUtil.createRingMatcher(stateID);
       const ring: RingInfo = {
         orderA:
           {
@@ -716,6 +716,7 @@ contract("Exchange_Submit", (accounts: string[]) => {
             amountF: new BN(web3.utils.toWei("90", "ether")),
           },
           minerAccountID,
+          feeRecipientAccountID,
       };
 
       await exchangeTestUtil.setupRing(ring);

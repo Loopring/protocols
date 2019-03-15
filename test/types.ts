@@ -38,6 +38,7 @@ export interface RingInfo {
   orderB: OrderInfo;
 
   minerAccountID?: number;
+  feeRecipientAccountID?: number;
   tokenID?: number;
   fee?: BN;
 }
@@ -135,6 +136,7 @@ export interface RingState {
   accountB: Account;
   walletA: Account;
   walletB: Account;
+  feeRecipient: Account;
   ringMatcher: Account;
   operator: Account;
 }

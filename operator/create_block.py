@@ -87,6 +87,7 @@ def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
     minerAccountID = int(jRing["minerAccountID"])
+    feeRecipientAccountID = int(jRing["feeRecipientAccountID"])
     tokenID = int(jRing["tokenID"])
     fee = int(jRing["fee"])
 
@@ -94,9 +95,7 @@ def ringFromJSON(jRing, state):
     dualAuthA = state.getAccount(orderA.dualAuthAccountID)
     dualAuthB = state.getAccount(orderB.dualAuthAccountID)
 
-    ring = Ring(orderA, orderB,
-                Point(minerAccount.publicKeyX, minerAccount.publicKeyY),
-                minerAccountID, tokenID, fee, minerAccount.nonce)
+    ring = Ring(orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fee, minerAccount.nonce)
 
     ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(dualAuthA.secretKey)), FQ(int(dualAuthB.secretKey)))
 
