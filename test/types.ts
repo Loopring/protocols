@@ -155,3 +155,9 @@ export interface SimulatorReport {
   stateAfter: RingState;
   detailedTransfers: DetailedTokenTransfer[];
 }
+
+export interface DepositInfo {
+  accountID: number;
+  depositBlockIdx: number;
+  slotIdx: number;
+}

@@ -92,7 +92,7 @@ contract BasicToken is ERC20Basic {
      */
     function transfer(address _to, uint256 _value) public returns (bool) {
         // require(_to != address(0x0), "ZERO_ADDRESS");
-        require(_value <= balances[msg.sender], "INVALID_VALUE");
+        require(_value <= balances[msg.sender], "TRANSFER_INSUFFICIENT_BALANCE");
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
         balances[_to] = balances[_to].add(_value);
@@ -135,8 +135,8 @@ contract StandardToken is ERC20, BasicToken {
      */
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
         // require(_to != address(0x0), "ZERO_ADDRESS");
-        require(_value <= balances[_from], "INVALID_VALUE");
-        require(_value <= allowed[_from][msg.sender], "INVALID_VALUE");
+        require(_value <= balances[_from], "TRANSFERFROM_INSUFFICIENT_BALANCE");
+        require(_value <= allowed[_from][msg.sender], "TRANSFERFROM_INSUFFICIENT_ALLOWANCE");
         balances[_from] = balances[_from].sub(_value);
         balances[_to] = balances[_to].add(_value);
         allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
@@ -214,7 +214,7 @@ contract LRCToken is StandardToken, Errors {
     event Burn(address indexed burner, uint256 value);
 
     function burn(uint256 _value) public returns (bool) {
-        require(_value <= balances[msg.sender], "INVALID_VALUE");
+        require(_value <= balances[msg.sender], "BURN_INSUFFICIENT_BALANCE");
 
         address burner = msg.sender;
         balances[burner] = balances[burner].sub(_value);
@@ -226,8 +226,8 @@ contract LRCToken is StandardToken, Errors {
 
     function burnFrom(address _owner, uint256 _value) public returns (bool) {
         require(_owner != address(0x0), "ZERO_ADDRESS");
-        require(_value <= balances[_owner], "INVALID_VALUE");
-        require(_value <= allowed[_owner][msg.sender], "INVALID_VALUE");
+        require(_value <= balances[_owner], "BURNFROM_INSUFFICIENT_BALANCE");
+        require(_value <= allowed[_owner][msg.sender], "BURNFROM_INSUFFICIENT_ALLOWANCE");
 
         balances[_owner] = balances[_owner].sub(_value);
         allowed[_owner][msg.sender] = allowed[_owner][msg.sender].sub(_value);

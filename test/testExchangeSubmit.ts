@@ -907,9 +907,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const balance = new BN(web3.utils.toWei("7", "ether"));
       const token = "LRC";
 
-      const accountID = await exchangeTestUtil.deposit(stateID, owner,
-                                                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                       wallet.walletID, token, balance);
+      const depositInfo = await exchangeTestUtil.deposit(stateID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         wallet.walletID, token, balance);
+      const accountID = depositInfo.accountID;
       await exchangeTestUtil.commitDeposits(stateID);
 
       await exchangeTestUtil.requestWithdrawalOnchain(stateID, accountID, token, balance.mul(new BN(2)), owner);
@@ -928,9 +929,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const feeToken = "LRC";
       const fee = new BN(web3.utils.toWei("1", "ether"));
 
-      const accountID = await exchangeTestUtil.deposit(stateID, owner,
-                                                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                       wallet.walletID, token, balance);
+      const depositInfo = await exchangeTestUtil.deposit(stateID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         wallet.walletID, token, balance);
+      const accountID = depositInfo.accountID;
       await exchangeTestUtil.commitDeposits(stateID);
 
       await exchangeTestUtil.requestWithdrawalOffchain(stateID, accountID, token, balance.mul(new BN(2)),
@@ -948,9 +950,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const balance = new BN(web3.utils.toWei("7", "ether"));
       const token = zeroAddress;
 
-      const accountID = await exchangeTestUtil.deposit(stateID, owner,
-                                                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                       wallet.walletID, token, balance);
+      const depositInfo = await exchangeTestUtil.deposit(stateID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         wallet.walletID, token, balance);
+      const accountID = depositInfo.accountID;
       await exchangeTestUtil.commitDeposits(stateID);
 
       await exchangeTestUtil.requestWithdrawalOnchain(stateID, accountID, token, balance.mul(new BN(2)), owner);
@@ -969,9 +972,10 @@ contract("Exchange_Submit", (accounts: string[]) => {
       const feeToken = zeroAddress;
       const fee = new BN(web3.utils.toWei("1", "ether"));
 
-      const accountID = await exchangeTestUtil.deposit(stateID, owner,
-                                                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                       wallet.walletID, token, balance);
+      const depositInfo = await exchangeTestUtil.deposit(stateID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         wallet.walletID, token, balance);
+      const accountID = depositInfo.accountID;
       await exchangeTestUtil.commitDeposits(stateID);
 
       await exchangeTestUtil.requestWithdrawalOffchain(stateID, accountID, token, balance.mul(new BN(2)),
@@ -979,35 +983,6 @@ contract("Exchange_Submit", (accounts: string[]) => {
       await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
       await exchangeTestUtil.verifyAllPendingBlocks();
       await exchangeTestUtil.submitPendingWithdrawals();
-    });
-
-    it.only("[WithdrawalMode] ERC20: deposit + withdraw from merkle tree", async () => {
-      const stateID = 0;
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-      const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const wallet = exchangeTestUtil.wallets[stateID][0];
-      const balance = new BN(web3.utils.toWei("7", "ether"));
-      const token = "LRC";
-
-      const accountID = await exchangeTestUtil.deposit(stateID, owner,
-                                                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                       wallet.walletID, token, balance);
-      await exchangeTestUtil.commitDeposits(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
-
-      await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(stateID, accountID, token),
-        "NOT_IN_WITHDRAWAL_MODE",
-      );
-
-      // Request withdrawal onchain
-      await exchangeTestUtil.requestWithdrawalOnchain(stateID, accountID, token, balance, owner);
-
-      // Operator doesn't do anything for a long time
-      await exchangeTestUtil.advanceBlockTimestamp(2 * 24 * 3600);
-
-      // We should be in withdrawal mode and able to withdraw directly from the merkle tree
-      await exchangeTestUtil.withdrawFromMerkleTree(stateID, accountID, token);
     });
 
     it("Onchain withdrawal", async () => {
