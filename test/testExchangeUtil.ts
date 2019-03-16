@@ -958,6 +958,7 @@ export class ExchangeTestUtil {
       for (const detailedTransfer of detailedTransfers) {
         this.logDetailedTokenTransfer(detailedTransfer, 0);
       }
+      this.logFilledAmountsRing(ringBlock.rings[0], ringStateBefore, ringStateAfter);
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
@@ -1364,6 +1365,19 @@ export class ExchangeTestUtil {
       ringMatcher: this.getAccount(stateID, ring.minerAccountID),
       operator: this.getAccount(stateID, operatorAcountID),
     };
+    // Make sure the trading history for the orders exists
+    if (!ringState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID]) {
+      ringState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID] = {
+        filled: new BN(0),
+        cancelled: false,
+      };
+    }
+    if (!ringState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID]) {
+      ringState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID] = {
+        filled: new BN(0),
+        cancelled: false,
+      };
+    }
     return ringState;
   }
 
@@ -1501,21 +1515,49 @@ export class ExchangeTestUtil {
     if (payment.amount.eq(new BN(0)) && payment.subPayments.length === 0) {
       return;
     }
-    const tokenAddress = this.tokenIDToAddressMap.get(payment.token);
-    const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
-    const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
     const whiteSpace = " ".repeat(depth);
     const description = payment.description ? payment.description : "";
-    const amount = Number(payment.amount.toString(10)) / (10 ** decimals);
+    const prettyAmount = this.getPrettyAmount(payment.token, payment.amount);
     if (payment.subPayments.length === 0) {
       const toName =  payment.to;
-      pjs.logDebug(whiteSpace + "- " + " [" + description + "] " + amount + " " + tokenSymbol + " -> " + toName);
+      pjs.logDebug(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
     } else {
-      pjs.logDebug(whiteSpace + "+ " + " [" + description + "] " + amount + " " + tokenSymbol);
+      pjs.logDebug(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
       for (const subPayment of payment.subPayments) {
         this.logDetailedTokenTransfer(subPayment, depth + 1);
       }
     }
-}
+  }
+
+  private getPrettyAmount(tokenID: number, amount: BN) {
+    const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
+    const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
+    const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
+    const amountDec = Number(amount.toString(10)) / (10 ** decimals);
+    return amountDec + " " + tokenSymbol;
+  }
+
+  private getPrettyCancelled(cancelled: boolean) {
+    return cancelled ? "Cancelled" : "NotCancelled";
+  }
+
+  private logFilledAmountsRing(ring: RingInfo, ringStateBefore: RingState, ringStateAfter: RingState) {
+    this.logFilledAmountOrder("[Filled] OrderA", ringStateBefore.accountA, ringStateAfter.accountA, ring.orderA);
+    this.logFilledAmountOrder("[Filled] OrderB", ringStateBefore.accountB, ringStateAfter.accountB, ring.orderB);
+  }
+
+  private logFilledAmountOrder(description: string, accountBefore: Account, accountAfter: Account, order: OrderInfo) {
+    const before = accountBefore.balances[order.tokenIdS].tradeHistory[order.orderID];
+    const after = accountAfter.balances[order.tokenIdS].tradeHistory[order.orderID];
+    const filledBeforePercentage = before.filled.mul(new BN(100)).div(order.amountS);
+    const filledAfterPercentage = after.filled.mul(new BN(100)).div(order.amountS);
+    const filledBeforePretty = this.getPrettyAmount(order.tokenIdS, before.filled);
+    const filledAfterPretty = this.getPrettyAmount(order.tokenIdS, after.filled);
+    console.log(
+      description + ": " + filledBeforePretty + " -> " + filledAfterPretty +
+      " (" + filledBeforePercentage.toString(10) + "% -> " + filledAfterPercentage.toString(10) + "%)" +
+      " (" + this.getPrettyCancelled(before.cancelled) + " -> " + this.getPrettyCancelled(after.cancelled) + ")",
+    );
+  }
 
 }

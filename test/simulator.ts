@@ -100,20 +100,6 @@ export class Simulator {
       newState.walletB = newState.walletA;
     }
 
-    if (!newState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID]) {
-      newState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID] = {
-        filled: new BN(0),
-        cancelled: false,
-      };
-    }
-
-    if (!newState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID]) {
-      newState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID] = {
-        filled: new BN(0),
-        cancelled: false,
-      };
-    }
-
     // Update accountA
     newState.accountA.balances[ring.orderA.tokenIdS].balance =
       newState.accountA.balances[ring.orderA.tokenIdS].balance.sub(fillAmountSA);
@@ -241,7 +227,7 @@ export class Simulator {
       subPayments: [],
     };
     const feeWallet: DetailedTokenTransfer = {
-      description: "Wallet@" + order.walletSplitPercentage,
+      description: "Wallet@" + order.walletSplitPercentage + "%",
       token: order.tokenIdF,
       from: order.accountID,
       to: order.dualAuthAccountID,
@@ -249,7 +235,7 @@ export class Simulator {
       subPayments: [],
     };
     const feeMatching: DetailedTokenTransfer = {
-      description: "Matching@" + order.waiveFeePercentage,
+      description: "Matching@" + order.waiveFeePercentage + "%",
       token: order.tokenIdF,
       from: order.accountID,
       to: ring.minerAccountID,
