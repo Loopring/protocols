@@ -307,8 +307,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         State storage state = getState(stateID);
 
-        // This state cannot be in withdrawal mode
-        require(!isInWithdrawMode(stateID), "WITHDRAWAL_MODE_ACTIVE");
+        // State cannot be in withdraw mode
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
 
         // Check operator
         require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
@@ -316,8 +316,6 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(operator.owner == msg.sender, "SENDER_NOT_ACTIVE_OPERATOR");
 
         Block storage currentBlock = state.blocks[state.numBlocks - 1];
-
-        // TODO: don't send before merkle tree roots to save on calldata
 
         bytes32 merkleRootBefore;
         bytes32 merkleRootAfter;
@@ -410,6 +408,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         public
     {
+        // State cannot be in withdraw mode
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
+
         State storage state = getState(stateID);
 
         require(blockIdx < state.numBlocks, "INVALID_BLOCKIDX");
@@ -529,6 +530,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         public
         payable
     {
+        // State cannot be in withdraw mode
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
+
         State storage state = getState(stateID);
 
         Account storage account = state.accounts[accountID];
@@ -625,6 +629,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         external
         payable
     {
+        // State cannot be in withdraw mode
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
+
         require(amount > 0, "CANNOT_WITHDRAW_NOTHING");
 
         State storage state = getState(stateID);
@@ -753,6 +760,9 @@ contract Exchange is IExchange, NoDefaultFunc {
     function registerWallet(uint32 stateID)
         external
     {
+        // State cannot be in withdraw mode
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
+
         State storage state = getState(stateID);
 
         Wallet memory wallet = Wallet(
@@ -771,6 +781,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         )
         external
     {
+        // State cannot be in withdraw mode
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
+
         State storage state = getState(stateID);
 
         if(state.closedOperatorRegistering) {
@@ -1000,7 +1013,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (bool)
     {
         State storage state = getState(stateID);
-        //require(depositBlockIdx < state.numDepositBlocks, "INVALID_DEPOSITBLOCK_IDX_COMMIT");
+        assert(depositBlockIdx < state.numDepositBlocks);
         DepositBlock storage depositBlock = state.depositBlocks[depositBlockIdx];
         if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK && now > depositBlock.timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
             (depositBlock.numDeposits > 0 && now > depositBlock.timestampOpened + MAX_TIME_BLOCK_OPEN + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
@@ -1019,7 +1032,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (bool)
     {
         State storage state = getState(stateID);
-        //require(depositBlockIdx <= state.numDepositBlocks, "INVALID_DEPOSITBLOCK_IDX_FORCED");
+        assert(depositBlockIdx <= state.numDepositBlocks);
         DepositBlock storage depositBlock = state.depositBlocks[depositBlockIdx];
         if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK && now > depositBlock.timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
             (depositBlock.numDeposits > 0 && now > depositBlock.timestampOpened + MAX_TIME_BLOCK_OPEN + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
@@ -1078,7 +1091,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (bool)
     {
         State storage state = getState(stateID);
-        //require(withdrawBlockIdx < state.numWithdrawBlocks, "INVALID_WITHDRAWBLOCK_IDX_COMMIT");
+        assert(withdrawBlockIdx < state.numWithdrawBlocks);
         WithdrawBlock storage withdrawBlock = state.withdrawBlocks[withdrawBlockIdx];
         if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK && now > withdrawBlock.timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
             (withdrawBlock.numWithdrawals > 0 && now > withdrawBlock.timestampOpened + MAX_TIME_BLOCK_OPEN + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
@@ -1097,7 +1110,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (bool)
     {
         State storage state = getState(stateID);
-        //require(withdrawBlockIdx <= state.numWithdrawBlocks, "INVALID_WITHDRAWBLOCK_IDX_FORCED");
+        assert(withdrawBlockIdx <= state.numWithdrawBlocks);
         WithdrawBlock storage withdrawBlock = state.withdrawBlocks[withdrawBlockIdx];
         if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK && now > withdrawBlock.timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
             (withdrawBlock.numWithdrawals > 0 && now > withdrawBlock.timestampOpened + MAX_TIME_BLOCK_OPEN + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
