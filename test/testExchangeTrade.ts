@@ -917,5 +917,52 @@ contract("Exchange", (accounts: string[]) => {
       // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
+    it("Order filled in multiple rings", async () => {
+      const stateID = 0;
+
+      const order: OrderInfo = {
+        stateID,
+        tokenS: "ETH",
+        tokenB: "GTO",
+        amountS: new BN(web3.utils.toWei("10", "ether")),
+        amountB: new BN(web3.utils.toWei("100", "ether")),
+        amountF: new BN(web3.utils.toWei("50", "ether")),
+      };
+      await exchangeTestUtil.setupOrder(order, 0);
+
+      const ringA: RingInfo = {
+        orderA: order,
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "ETH",
+            amountS: new BN(web3.utils.toWei("60", "ether")),
+            amountB: new BN(web3.utils.toWei("6", "ether")),
+          },
+      };
+      const ringB: RingInfo = {
+        orderA: order,
+        orderB:
+          {
+            stateID,
+            tokenS: "GTO",
+            tokenB: "ETH",
+            amountS: new BN(web3.utils.toWei("120", "ether")),
+            amountB: new BN(web3.utils.toWei("12", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ringA, false, true);
+      await exchangeTestUtil.setupRing(ringB, false, true);
+      await exchangeTestUtil.sendRing(stateID, ringA);
+      await exchangeTestUtil.sendRing(stateID, ringB);
+
+      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitRings(stateID);
+
+      // await exchangeTestUtil.verifyAllPendingBlocks();
+    });
+
   });
 });

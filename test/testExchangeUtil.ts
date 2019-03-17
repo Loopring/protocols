@@ -217,13 +217,17 @@ export class ExchangeTestUtil {
     });
   }
 
-  public async setupRing(ring: RingInfo) {
+  public async setupRing(ring: RingInfo, bSetupOrderA: boolean = true, bSetupOrderB: boolean = true) {
     ring.minerAccountID = this.minerAccountID[ring.orderA.stateID];
     ring.feeRecipientAccountID = this.feeRecipientAccountID[ring.orderA.stateID];
     ring.tokenID = ring.tokenID ? ring.tokenID : 2;
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
-    await this.setupOrder(ring.orderA, this.orderIDGenerator++);
-    await this.setupOrder(ring.orderB, this.orderIDGenerator++);
+    if (bSetupOrderA) {
+      await this.setupOrder(ring.orderA, this.orderIDGenerator++);
+    }
+    if (bSetupOrderB) {
+      await this.setupOrder(ring.orderB, this.orderIDGenerator++);
+    }
   }
 
   public async setupOrder(order: OrderInfo, index: number) {
@@ -305,18 +309,31 @@ export class ExchangeTestUtil {
     }
   }
 
-  public getAddressBook(ring: RingInfo) {
-    const addAddress = (addrBook: { [id: string]: any; }, address: string, name: string) => {
-      addrBook[address] = (addrBook[address] ? addrBook[address] + "=" : "") + name;
+  public getAddressBook(ring: RingInfo, index?: number, addressBook: { [id: number]: string; } = {}) {
+    const addAccount = (addrBook: { [id: string]: any; }, accountID: number, name: string) => {
+      addrBook[accountID] = (addrBook[accountID] ? addrBook[accountID] + "=" : "") + name;
+    };
+    const bIndex = index !== undefined;
+    addAccount(addressBook, ring.orderA.accountID, "OwnerA" + (bIndex ? "[" + index + "]" : ""));
+    addAccount(addressBook, ring.orderA.dualAuthAccountID, "WalletA" + (bIndex ? "[" + index + "]" : ""));
+    addAccount(addressBook, ring.orderB.accountID, "OwnerB" + (bIndex ? "[" + index + "]" : ""));
+    addAccount(addressBook, ring.orderB.dualAuthAccountID, "WalletB" + (bIndex ? "[" + index + "]" : ""));
+    addAccount(addressBook, ring.minerAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
+    addAccount(addressBook, ring.feeRecipientAccountID, "FeeRecipient" + (bIndex ? "[" + index + "]" : ""));
+    return addressBook;
+  }
+
+  public getAddressBookBlock(ringBlock: RingBlock) {
+    const addAccount = (addrBook: { [id: string]: any; }, accountID: number, name: string) => {
+      addrBook[accountID] = (addrBook[accountID] ? addrBook[accountID] + "=" : "") + name;
     };
 
-    const addressBook: { [id: string]: string; } = {};
-    const orders = [ring.orderA, ring.orderB];
-    for (const [i, order] of orders.entries()) {
-      addAddress(addressBook, order.owner, "Owner[" + i + "]");
-      // addAddress(this.addressBook, order.walletID, "Wallet[" + i + "]");
-      // addAddress(addressBook, order.hash.toString("hex"), "Hash[" + i + "]");
+    let addressBook: { [id: number]: string; } = {};
+    let index = 0;
+    for (const ring of ringBlock.rings) {
+      addressBook = this.getAddressBook(ring, index++, addressBook);
     }
+    addAccount(addressBook, ringBlock.operatorAccountID, "Operator");
     return addressBook;
   }
 
@@ -1279,15 +1296,16 @@ export class ExchangeTestUtil {
     const operatorAccountID = ringBlock.operatorAccountID;
     const timestamp = ringBlock.timestamp;
     let latestState = stateBefore;
+    const addressBook = this.getAddressBookBlock(ringBlock);
     for (const ring of ringBlock.rings) {
       console.log("----------------------------------------------------");
       const simulator = new Simulator();
       const simulatorReport = simulator.settleRing(ring, latestState, timestamp, operatorAccountID);
 
       for (const detailedTransfer of simulatorReport.detailedTransfers) {
-        this.logDetailedTokenTransfer(detailedTransfer);
+        this.logDetailedTokenTransfer(detailedTransfer, addressBook);
       }
-      this.logFilledAmountsRing(ring, stateBefore, stateAfter);
+      this.logFilledAmountsRing(ring, latestState, simulatorReport.stateAfter);
       latestState = simulatorReport.stateAfter;
       console.log("----------------------------------------------------");
     }
@@ -1467,6 +1485,7 @@ export class ExchangeTestUtil {
   }
 
   private logDetailedTokenTransfer(payment: DetailedTokenTransfer,
+                                   addressBook: { [id: number]: string; } = {},
                                    depth: number = 0) {
     if (payment.amount.eq(new BN(0)) && payment.subPayments.length === 0) {
       return;
@@ -1475,12 +1494,12 @@ export class ExchangeTestUtil {
     const description = payment.description ? payment.description : "";
     const prettyAmount = this.getPrettyAmount(payment.token, payment.amount);
     if (payment.subPayments.length === 0) {
-      const toName =  payment.to;
+      const toName = addressBook[payment.to] !== undefined ? addressBook[payment.to] : payment.to;
       pjs.logDebug(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
     } else {
       pjs.logDebug(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
       for (const subPayment of payment.subPayments) {
-        this.logDetailedTokenTransfer(subPayment, depth + 1);
+        this.logDetailedTokenTransfer(subPayment, addressBook, depth + 1);
       }
     }
   }
