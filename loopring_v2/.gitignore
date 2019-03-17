@@ -1,6 +1,6 @@
 node_modules/
 build/
-transpiled/    
+transpiled/
 .DS_Store
 .node-*
 *.log
