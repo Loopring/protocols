@@ -1,0 +1,31 @@
+{
+  "name": "oedax",
+  "version": "0.0.1",
+  "description": "Loopring Oedex Protocol",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "truffle test",
+    "compile": "truffle compile; solium -d contracts/ --fix; solhint 'contracts/**/*.sol'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Loopring/oedax.git"
+  },
+  "keywords": [
+    "loopring",
+    "oedex"
+  ],
+  "author": "Loopring Foundation",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Loopring/oedax/issues"
+  },
+  "homepage": "https://github.com/Loopring/oedax#readme",
+  "devDependencies": {
+    "solc": "^0.5.5",
+    "truffle": "^5.0.7"
+  }
+}
