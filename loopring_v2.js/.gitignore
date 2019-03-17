@@ -1,0 +1,6 @@
+node_modules/
+build/
+transpiled/    
+.DS_Store
+.node-*
+*.log
