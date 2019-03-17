@@ -28,7 +28,7 @@
     "ethereumjs-wallet": "0.6.0",
     "hdkey": "0.7.1",
     "ledgerco": "1.2.1",
-    "lodash": "4.17.5",
+    "lodash": ">=4.17.11",
     "socket.io-client": "2.0.4",
     "isomorphic-fetch": "2.2.1"
   },
