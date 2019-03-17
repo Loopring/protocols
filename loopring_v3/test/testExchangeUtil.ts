@@ -1020,6 +1020,10 @@ export class ExchangeTestUtil {
     this.pendingRings[stateID] = [];
   }
 
+  public cancelPendingRings(stateID: number) {
+    this.pendingRings[stateID] = [];
+  }
+
   public async commitCancels(stateID: number) {
     const pendingCancels = this.pendingCancels[stateID];
     if (pendingCancels.length === 0) {

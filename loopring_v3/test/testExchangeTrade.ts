@@ -760,7 +760,7 @@ contract("Exchange", (accounts: string[]) => {
         await exchangeTestUtil.commitRings(stateID);
         assert(false);
       } catch {
-        // empty
+        exchangeTestUtil.cancelPendingRings(stateID);
       }
     });
 
