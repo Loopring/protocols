@@ -11,7 +11,7 @@ import { Context } from "./context";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DepositInfo, DetailedTokenTransfer, OrderInfo,
-         RingBlock, RingInfo, RingState, SimulatorReport, TradeHistory, Wallet, Withdrawal,
+         RingBlock, RingInfo, State, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
 // JSON replacer function for BN values
@@ -398,7 +398,7 @@ export class ExchangeTestUtil {
         web3.utils.toBN(amount),
         {from: owner, value: ethToSend},
       );
-      pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
+      // pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
     } else {
       const tx = await this.exchange.createAccountAndDeposit(
         web3.utils.toBN(stateID),
@@ -409,7 +409,7 @@ export class ExchangeTestUtil {
         web3.utils.toBN(amount),
         {from: owner, value: ethToSend},
       );
-      pjs.logInfo("\x1b[46m%s\x1b[0m", "[DepositAndCreate] Gas used: " + tx.receipt.gasUsed);
+      // pjs.logInfo("\x1b[46m%s\x1b[0m", "[DepositAndCreate] Gas used: " + tx.receipt.gasUsed);
     }
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "Deposit", web3.eth.blockNumber);
@@ -560,7 +560,7 @@ export class ExchangeTestUtil {
       web3.utils.hexToBytes(data),
       {from: this.testContext.miner},
     );
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
+    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
     const blockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
     const block: Block = {
@@ -612,7 +612,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(blockIdx),
       proofFlattened,
     );
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
+    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
 
     return proofFilename;
   }
@@ -676,57 +676,65 @@ export class ExchangeTestUtil {
 
       for (const deposit of deposits) {
         const balance = this.getOffchainBalance(stateID, deposit.accountID, deposit.tokenID);
-        this.prettyPrintBalance(deposit.accountID, deposit.tokenID, balance);
+        // this.prettyPrintBalance(deposit.accountID, deposit.tokenID, balance);
       }
     }
 
     this.pendingDeposits[stateID] = [];
   }
 
-  public getAccount(stateID: number, accountID: number) {
+  public loadState(stateID: number) {
     // Read in the state
     const stateFile = "state_" + stateID + ".json";
-    const state = JSON.parse(fs.readFileSync(stateFile, "ascii"));
-    const jAccount = state.accounts_values["" + accountID];
+    const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
 
-    const balances: {[key: number]: Balance} = {};
-    const balancesKeys: string[] = Object.keys(jAccount._balancesLeafs);
-    for (const balanceKey of balancesKeys) {
-      const balanceValue = jAccount._balancesLeafs[balanceKey];
+    const accounts: {[key: number]: Account} = {};
+    const accountsKeys: string[] = Object.keys(jState.accounts_values);
+    for (const accountKey of accountsKeys) {
+      const jAccount = jState.accounts_values[accountKey];
 
-      const tradeHistory: {[key: number]: TradeHistory} = {};
-      const tradeHistoryKeys: string[] = Object.keys(balanceValue._tradeHistoryLeafs);
-      for (const tradeHistoryKey of tradeHistoryKeys) {
-        const tradeHistoryValue = balanceValue._tradeHistoryLeafs[tradeHistoryKey];
-        tradeHistory[Number(tradeHistoryKey)] = {
-          filled: new BN(tradeHistoryValue.filled, 10),
-          cancelled: tradeHistoryValue.cancelled === 1,
-        };
-      }
-      balances[Number(balanceKey)] = {
-        balance: new BN(balanceValue.balance, 10),
-        tradeHistory,
-      };
+      const balances: {[key: number]: Balance} = {};
+      const balancesKeys: string[] = Object.keys(jAccount._balancesLeafs);
+      for (const balanceKey of balancesKeys) {
+        const jBalance = jAccount._balancesLeafs[balanceKey];
 
-      // Make sure all tokens exist
-      for (let i = 0; i < 2 ** 12; i++) {
-        if (!balances[i]) {
-          balances[i] = {
-            balance: new BN(0),
-            tradeHistory: {},
+        const tradeHistory: {[key: number]: TradeHistory} = {};
+        const tradeHistoryKeys: string[] = Object.keys(jBalance._tradeHistoryLeafs);
+        for (const tradeHistoryKey of tradeHistoryKeys) {
+          const jTradeHistory = jBalance._tradeHistoryLeafs[tradeHistoryKey];
+          tradeHistory[Number(tradeHistoryKey)] = {
+            filled: new BN(jTradeHistory.filled, 10),
+            cancelled: jTradeHistory.cancelled === 1,
           };
         }
+        balances[Number(balanceKey)] = {
+          balance: new BN(jBalance.balance, 10),
+          tradeHistory,
+        };
+
+        // Make sure all tokens exist
+        for (let i = 0; i < 2 ** 12; i++) {
+          if (!balances[i]) {
+            balances[i] = {
+              balance: new BN(0),
+              tradeHistory: {},
+            };
+          }
+        }
       }
+      const account: Account = {
+        accountID: Number(accountKey),
+        walletID: jAccount.walletID,
+        publicKeyX: new BN(jAccount.publicKeyX, 10),
+        publicKeyY: new BN(jAccount.publicKeyY, 10),
+        balances,
+      };
+      accounts[Number(accountKey)] = account;
     }
-    const account: Account = {
-      accountID,
-      walletID: jAccount.walletID,
-      publicKeyX: new BN(jAccount.publicKeyX, 10),
-      publicKeyY: new BN(jAccount.publicKeyY, 10),
-      balances,
+    const state: State = {
+      accounts,
     };
-    // console.log(account);
-    return account;
+    return state;
   }
 
   public async commitWithdrawalRequests(onchain: boolean, stateID: number) {
@@ -943,22 +951,16 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const ringStateBefore = this.getRingState(ringBlock.rings[0], operatorAccountID);
+      const stateBefore = this.loadStateForRingBlock(stateID, ringBlock);
 
       // Create the block
       const blockFilename = await this.createBlock(stateID, 0, JSON.stringify(ringBlock, replacer, 4));
 
       // Store state after
-      const ringStateAfter = this.getRingState(ringBlock.rings[0], operatorAccountID);
+      const stateAfter = this.loadStateForRingBlock(stateID, ringBlock);
 
-      const detailedTransfers = this.validateRingSettlement(ringBlock.rings[0], ringStateBefore,
-                                                            ringStateAfter, ringBlock.timestamp,
-                                                            ringBlock.operatorAccountID);
-
-      for (const detailedTransfer of detailedTransfers) {
-        this.logDetailedTokenTransfer(detailedTransfer, 0);
-      }
-      this.logFilledAmountsRing(ringBlock.rings[0], ringStateBefore, ringStateAfter);
+      // Validate state change
+      this.validateRingSettlements(ringBlock, stateBefore, stateAfter);
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
@@ -1071,7 +1073,7 @@ export class ExchangeTestUtil {
     for (const token of this.testContext.allTokens) {
       const tokenAddress = (token === null) ? this.zeroAddress : token.address;
       const symbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
-      console.log(symbol + ": " + tokenAddress);
+      // console.log(symbol + ": " + tokenAddress);
 
       if (symbol !== "ETH" && symbol !== "WETH" && symbol !== "LRC") {
         const tokenRegistrationFee = await this.tokenRegistry.getTokenRegistrationFee();
@@ -1083,7 +1085,7 @@ export class ExchangeTestUtil {
         );
 
         const tx = await this.tokenRegistry.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
-        pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
+        // pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
       }
 
       const tokenID = (await this.getTokenID(tokenAddress)).toNumber();
@@ -1112,7 +1114,7 @@ export class ExchangeTestUtil {
       withdrawFeeInETH,
       maxWithdrawFeeInETH,
       closedOperatorRegistering);
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[NewState] Gas used: " + tx.receipt.gasUsed);
+    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[NewState] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "NewState", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -1128,7 +1130,7 @@ export class ExchangeTestUtil {
   public async registerWallet(stateID: number, owner: string) {
     // Register a wallet
     const tx = await this.exchange.registerWallet(web3.utils.toBN(stateID), {from: owner});
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[RegisterWallet] Gas used: " + tx.receipt.gasUsed);
+    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[RegisterWallet] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "WalletRegistered", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -1145,7 +1147,7 @@ export class ExchangeTestUtil {
 
     // Register an operator
     const tx = await this.exchange.registerOperator(web3.utils.toBN(stateID), {from: owner});
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[RegisterOperator] Gas used: " + tx.receipt.gasUsed);
+    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[RegisterOperator] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "OperatorRegistered", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -1256,8 +1258,8 @@ export class ExchangeTestUtil {
   }
 
   public getOffchainBalance(stateID: number, accountID: number, tokenID: number) {
-    const account = this.getAccount(stateID, accountID);
-    return account.balances[tokenID].balance;
+    const state = this.loadState(stateID);
+    return state.accounts[accountID].balances[tokenID].balance;
   }
 
   public async getOnchainBalance(owner: string, token: string) {
@@ -1273,23 +1275,28 @@ export class ExchangeTestUtil {
     }
   }
 
-  public validateRingSettlement(ring: RingInfo, stateBefore: RingState, stateAfter: RingState,
-                                timestamp: number, operatorAccountID: number) {
-    const simulator = new Simulator();
-    const simulatorReport = simulator.settleRing(ring, stateBefore, timestamp, operatorAccountID);
+  public validateRingSettlements(ringBlock: RingBlock, stateBefore: State, stateAfter: State) {
+    const operatorAccountID = ringBlock.operatorAccountID;
+    const timestamp = ringBlock.timestamp;
+    let latestState = stateBefore;
+    for (const ring of ringBlock.rings) {
+      console.log("----------------------------------------------------");
+      const simulator = new Simulator();
+      const simulatorReport = simulator.settleRing(ring, latestState, timestamp, operatorAccountID);
 
-    // Verify resulting state
-    const accountsAfter = [stateAfter.accountA, stateAfter.accountB,
-                           stateAfter.walletA, stateAfter.walletB,
-                           stateAfter.feeRecipient, stateAfter.ringMatcher,
-                           stateAfter.operator];
-    const accountsSimulatorAfter = [simulatorReport.stateAfter.accountA, simulatorReport.stateAfter.accountB,
-                                    simulatorReport.stateAfter.walletA, simulatorReport.stateAfter.walletB,
-                                    simulatorReport.stateAfter.feeRecipient, simulatorReport.stateAfter.ringMatcher,
-                                    simulatorReport.stateAfter.operator];
-    for (let i = 0; i < accountsAfter.length; i++) {
-      const account = accountsAfter[i];
-      const accountSimulator = accountsSimulatorAfter[i];
+      for (const detailedTransfer of simulatorReport.detailedTransfers) {
+        this.logDetailedTokenTransfer(detailedTransfer);
+      }
+      this.logFilledAmountsRing(ring, stateBefore, stateAfter);
+      latestState = simulatorReport.stateAfter;
+      console.log("----------------------------------------------------");
+    }
+
+     // Verify resulting state
+    const accountsKeys: string[] = Object.keys(stateBefore.accounts);
+    for (const accountKey of accountsKeys) {
+      const account = stateAfter.accounts[Number(accountKey)];
+      const accountSimulator = latestState.accounts[Number(accountKey)];
 
       for (const tokenID of Object.keys(account.balances)) {
         const balanceValue = account.balances[Number(tokenID)];
@@ -1309,76 +1316,25 @@ export class ExchangeTestUtil {
       assert(account.publicKeyX.eq(accountSimulator.publicKeyX));
       assert(account.publicKeyY.eq(accountSimulator.publicKeyY));
     }
-
-    return simulatorReport.detailedTransfers;
-
-    /*console.log("***RingSettlement***");
-    // OrderA
-    this.prettyPrintBalanceChange(
-      orderA.accountID,
-      orderA.tokenIdS,
-      stateBefore.accountA.balances[orderA.tokenIdS].balance,
-      stateAfter.accountA.balances[orderA.tokenIdS].balance,
-    );
-    this.prettyPrintBalanceChange(
-      orderA.accountID,
-      orderA.tokenIdB,
-      stateBefore.accountA.balances[orderA.tokenIdB].balance,
-      stateAfter.accountA.balances[orderA.tokenIdB].balance,
-    );
-    this.prettyPrintBalanceChange(
-      orderA.accountID,
-      orderA.tokenIdF,
-      stateBefore.accountA.balances[orderA.tokenIdF].balance,
-      stateAfter.accountA.balances[orderA.tokenIdF].balance,
-    );
-    // OrderB
-    this.prettyPrintBalanceChange(
-      orderB.accountID,
-      orderB.tokenIdS,
-      stateBefore.accountB.balances[orderB.tokenIdS].balance,
-      stateAfter.accountB.balances[orderB.tokenIdS].balance,
-    );
-    this.prettyPrintBalanceChange(
-      orderB.accountID,
-      orderB.tokenIdB,
-      stateBefore.accountB.balances[orderB.tokenIdB].balance,
-      stateAfter.accountB.balances[orderB.tokenIdB].balance,
-    );
-    this.prettyPrintBalanceChange(
-      orderB.accountID,
-      orderB.tokenIdF,
-      stateBefore.accountB.balances[orderB.tokenIdF].balance,
-      stateAfter.accountB.balances[orderB.tokenIdF].balance,
-    );
-    console.log("--------------------");*/
   }
 
-  public getRingState(ring: RingInfo, operatorAcountID: number) {
-    const stateID = ring.orderA.stateID;
-    const ringState: RingState = {
-      accountA: this.getAccount(stateID, ring.orderA.accountID),
-      accountB: this.getAccount(stateID, ring.orderB.accountID),
-      walletA: this.getAccount(stateID, ring.orderA.dualAuthAccountID),
-      walletB: this.getAccount(stateID, ring.orderB.dualAuthAccountID),
-      feeRecipient: this.getAccount(stateID, ring.feeRecipientAccountID),
-      ringMatcher: this.getAccount(stateID, ring.minerAccountID),
-      operator: this.getAccount(stateID, operatorAcountID),
-    };
-    // Make sure the trading history for the orders exists
-    if (!ringState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID]) {
-      ringState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID] = {
-        filled: new BN(0),
-        cancelled: false,
-      };
+  public loadStateForRingBlock(stateID: number, ringBlock: RingBlock) {
+    const state = this.loadState(stateID);
+    const orders: OrderInfo[] = [];
+    for (const ring of ringBlock.rings) {
+      orders.push(ring.orderA);
+      orders.push(ring.orderB);
     }
-    if (!ringState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID]) {
-      ringState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID] = {
-        filled: new BN(0),
-        cancelled: false,
-      };
+    for (const order of orders) {
+      // Make sure the trading history for the orders exists
+      if (!state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[order.orderID]) {
+        state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[order.orderID] = {
+          filled: new BN(0),
+          cancelled: false,
+        };
+      }
     }
-    return ringState;
+    return state;
   }
 
   public prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
@@ -1541,9 +1497,19 @@ export class ExchangeTestUtil {
     return cancelled ? "Cancelled" : "NotCancelled";
   }
 
-  private logFilledAmountsRing(ring: RingInfo, ringStateBefore: RingState, ringStateAfter: RingState) {
-    this.logFilledAmountOrder("[Filled] OrderA", ringStateBefore.accountA, ringStateAfter.accountA, ring.orderA);
-    this.logFilledAmountOrder("[Filled] OrderB", ringStateBefore.accountB, ringStateAfter.accountB, ring.orderB);
+  private logFilledAmountsRing(ring: RingInfo, stateBefore: State, stateAfter: State) {
+    this.logFilledAmountOrder(
+      "[Filled] OrderA",
+      stateBefore.accounts[ring.orderA.accountID],
+      stateAfter.accounts[ring.orderA.accountID],
+      ring.orderA,
+    );
+    this.logFilledAmountOrder(
+      "[Filled] OrderB",
+      stateBefore.accounts[ring.orderB.accountID],
+      stateAfter.accounts[ring.orderB.accountID],
+      ring.orderB,
+    );
   }
 
   private logFilledAmountOrder(description: string, accountBefore: Account, accountAfter: Account, order: OrderInfo) {

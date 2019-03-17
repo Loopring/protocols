@@ -54,7 +54,7 @@ contract("Exchange", (accounts: string[]) => {
       // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
-    it.only("Matchable", async () => {
+    it("Matchable", async () => {
       const stateID = 0;
       const ring: RingInfo = {
         orderA:
@@ -868,7 +868,7 @@ contract("Exchange", (accounts: string[]) => {
       const ringA: RingInfo = {
         orderA:
           {
-            index: 0,
+            stateID,
             tokenS: "ETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("3", "ether")),
@@ -877,7 +877,7 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            index: 1,
+            stateID,
             tokenS: "GTO",
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -914,7 +914,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(stateID);
       await exchangeTestUtil.commitRings(stateID);
 
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      // await exchangeTestUtil.verifyAllPendingBlocks();
     });
 
   });

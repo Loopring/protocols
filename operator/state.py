@@ -537,7 +537,7 @@ class State(object):
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
         self._accountsTree.newTree(Account(0, Point(0, 0), 0).hash())
         self._accounts = {}
-        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        # print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
         with open(filename) as f:
@@ -607,7 +607,7 @@ class State(object):
         return (fillAmountS, fillAmountB)
 
     def settleRing(self, context, ring):
-        print("State update ring: ")
+        #print("State update ring: ")
 
         (fillAmountS_A, fillAmountB_A) = self.getMaxFillAmounts(ring.orderA)
         (fillAmountS_B, fillAmountB_B) = self.getMaxFillAmounts(ring.orderB)
@@ -661,15 +661,15 @@ class State(object):
 
         ring.margin = str(margin)
 
-        print("fillAmountS_A: " + str(fillAmountS_A))
-        print("fillAmountB_A: " + str(fillAmountB_A))
-        print("fillAmountF_A: " + str(fillAmountF_A))
+        #print("fillAmountS_A: " + str(fillAmountS_A))
+        #print("fillAmountB_A: " + str(fillAmountB_A))
+        #print("fillAmountF_A: " + str(fillAmountF_A))
 
-        print("fillAmountS_B: " + str(fillAmountS_B))
-        print("fillAmountB_B: " + str(fillAmountB_B))
-        print("fillAmountF_B: " + str(fillAmountF_B))
+        #print("fillAmountS_B: " + str(fillAmountS_B))
+        #print("fillAmountB_B: " + str(fillAmountB_B))
+        #print("fillAmountF_B: " + str(fillAmountF_B))
 
-        print("margin: " + str(margin))
+        #print("margin: " + str(margin))
 
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
@@ -685,14 +685,6 @@ class State(object):
             ring.orderB.walletSplitPercentage,
             ring.orderB.waiveFeePercentage
         )
-
-        #print("walletFee_A: " + str(walletFee_A))
-        #print("matchingFee_A: " + str(matchingFee_A))
-        #print("burnFee_A: " + str(burnFee_A))
-
-        #print("walletFee_B: " + str(walletFee_B))
-        #print("matchingFee_B: " + str(matchingFee_B))
-        #print("burnFee_B: " + str(burnFee_B))
 
         # Update balances A
         accountA = self.getAccount(ring.orderA.accountID)

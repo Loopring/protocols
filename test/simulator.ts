@@ -6,17 +6,14 @@ import path = require("path");
 import * as pjs from "protocol2-js";
 import util = require("util");
 import { Account, Balance, Block, Cancel, CancelBlock, DetailedTokenTransfer, OrderInfo,
-         RingBlock, RingInfo, RingState, SimulatorReport, TradeHistory, Wallet, Withdrawal,
+         RingBlock, RingInfo, SimulatorReport, State, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
 export class Simulator {
 
-  private state: RingState;
-
-  public settleRing(ring: RingInfo, state: RingState, timestamp: number, operatorAccountID: number) {
-    this.state = state;
-    let [fillAmountSA, fillAmountBA] = this.getMaxFillAmounts(ring.orderA, state.accountA);
-    let [fillAmountSB, fillAmountBB] = this.getMaxFillAmounts(ring.orderB, state.accountB);
+  public settleRing(ring: RingInfo, state: State, timestamp: number, operatorAccountID: number) {
+    let [fillAmountSA, fillAmountBA] = this.getMaxFillAmounts(ring.orderA, state.accounts[ring.orderA.accountID]);
+    let [fillAmountSB, fillAmountBB] = this.getMaxFillAmounts(ring.orderB, state.accounts[ring.orderB.accountID]);
 
     if (fillAmountBA.lt(fillAmountSB)) {
       fillAmountBB = fillAmountSA;
@@ -37,7 +34,7 @@ export class Simulator {
     valid = valid && this.ensure(!fillAmountSA.lt(fillAmountBB), "Not matchable");
 
     // self-trading
-    const balanceF = state.accountA.balances[ring.orderA.tokenIdF].balance;
+    const balanceF = state.accounts[ring.orderA.accountID].balances[ring.orderA.tokenIdF].balance;
     const totalFee = fillAmountFA.add(fillAmountFB);
     if (ring.orderA.accountID === ring.orderB.accountID &&
         ring.orderA.tokenIdF === ring.orderB.tokenIdF &&
@@ -58,7 +55,7 @@ export class Simulator {
       margin = new BN(0);
     }
 
-    console.log("Simulator: ");
+    /*console.log("Simulator: ");
 
     console.log("fillAmountSA: " + fillAmountSA.toString(10));
     console.log("fillAmountBA: " + fillAmountBA.toString(10));
@@ -66,7 +63,7 @@ export class Simulator {
 
     console.log("fillAmountSB: " + fillAmountSB.toString(10));
     console.log("fillAmountBB: " + fillAmountBB.toString(10));
-    console.log("fillAmountFB: " + fillAmountFB.toString(10));
+    console.log("fillAmountFB: " + fillAmountFB.toString(10));*/
 
     const [walletFeeA, matchingFeeA] = this.calculateFees(
       fillAmountFA,
@@ -80,76 +77,65 @@ export class Simulator {
       ring.orderB.waiveFeePercentage,
     );
 
-    const newState: RingState = {
-      accountA: this.copyAccount(state.accountA),
-      accountB: this.copyAccount(state.accountB),
-      walletA: this.copyAccount(state.walletA),
-      walletB: this.copyAccount(state.walletB),
-      feeRecipient: this.copyAccount(state.feeRecipient),
-      ringMatcher: this.copyAccount(state.ringMatcher),
-      operator: this.copyAccount(state.operator),
-    };
-
-    // Check if the order owners are the same
-    if (ring.orderA.accountID === ring.orderB.accountID) {
-      newState.accountB = newState.accountA;
-    }
-
-    // Check if the wallets are the same
-    if (ring.orderA.dualAuthAccountID === ring.orderB.dualAuthAccountID) {
-      newState.walletB = newState.walletA;
-    }
+    const newState = this.copyState(state);
 
     // Update accountA
-    newState.accountA.balances[ring.orderA.tokenIdS].balance =
-      newState.accountA.balances[ring.orderA.tokenIdS].balance.sub(fillAmountSA);
-    newState.accountA.balances[ring.orderA.tokenIdB].balance =
-      newState.accountA.balances[ring.orderA.tokenIdB].balance.add(fillAmountBA);
-    newState.accountA.balances[ring.orderA.tokenIdF].balance =
-      newState.accountA.balances[ring.orderA.tokenIdF].balance.sub(walletFeeA.add(matchingFeeA));
+    const accountA = newState.accounts[ring.orderA.accountID];
+    accountA.balances[ring.orderA.tokenIdS].balance =
+      accountA.balances[ring.orderA.tokenIdS].balance.sub(fillAmountSA);
+    accountA.balances[ring.orderA.tokenIdB].balance =
+      accountA.balances[ring.orderA.tokenIdB].balance.add(fillAmountBA);
+    accountA.balances[ring.orderA.tokenIdF].balance =
+      accountA.balances[ring.orderA.tokenIdF].balance.sub(walletFeeA.add(matchingFeeA));
 
     // Update accountB
-    newState.accountB.balances[ring.orderB.tokenIdS].balance =
-      newState.accountB.balances[ring.orderB.tokenIdS].balance.sub(fillAmountSB);
-    newState.accountB.balances[ring.orderB.tokenIdB].balance =
-      newState.accountB.balances[ring.orderB.tokenIdB].balance.add(fillAmountBB);
-    newState.accountB.balances[ring.orderB.tokenIdF].balance =
-      newState.accountB.balances[ring.orderB.tokenIdF].balance.sub(walletFeeB.add(matchingFeeB));
+    const accountB = newState.accounts[ring.orderB.accountID];
+    accountB.balances[ring.orderB.tokenIdS].balance =
+      accountB.balances[ring.orderB.tokenIdS].balance.sub(fillAmountSB);
+    accountB.balances[ring.orderB.tokenIdB].balance =
+      accountB.balances[ring.orderB.tokenIdB].balance.add(fillAmountBB);
+    accountB.balances[ring.orderB.tokenIdF].balance =
+      accountB.balances[ring.orderB.tokenIdF].balance.sub(walletFeeB.add(matchingFeeB));
 
     // Update trade history A
-    newState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID].filled =
-      newState.accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID].filled.add(fillAmountSA);
+    accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID].filled =
+      accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID].filled.add(fillAmountSA);
     // Update trade history B
-    newState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID].filled =
-      newState.accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID].filled.add(fillAmountSB);
+    accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID].filled =
+      accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID].filled.add(fillAmountSB);
 
     // Update walletA
-    newState.walletA.balances[ring.orderA.tokenIdF].balance =
-      newState.walletA.balances[ring.orderA.tokenIdF].balance.add(walletFeeA);
+    const walletA = newState.accounts[ring.orderA.dualAuthAccountID];
+    walletA.balances[ring.orderA.tokenIdF].balance =
+      walletA.balances[ring.orderA.tokenIdF].balance.add(walletFeeA);
 
     // Update walletB
-    newState.walletB.balances[ring.orderB.tokenIdF].balance =
-      newState.walletB.balances[ring.orderB.tokenIdF].balance.add(walletFeeB);
+    const walletB = newState.accounts[ring.orderB.dualAuthAccountID];
+    walletB.balances[ring.orderB.tokenIdF].balance =
+      walletB.balances[ring.orderB.tokenIdF].balance.add(walletFeeB);
 
     // Update feeRecipient
+    const feeRecipient = newState.accounts[ring.feeRecipientAccountID];
     // - Matching fee A
-    newState.feeRecipient.balances[ring.orderA.tokenIdF].balance =
-      newState.feeRecipient.balances[ring.orderA.tokenIdF].balance.add(matchingFeeA);
+    feeRecipient.balances[ring.orderA.tokenIdF].balance =
+      feeRecipient.balances[ring.orderA.tokenIdF].balance.add(matchingFeeA);
     // - Matching fee B
-    newState.feeRecipient.balances[ring.orderB.tokenIdF].balance =
-     newState.feeRecipient.balances[ring.orderB.tokenIdF].balance.add(matchingFeeB);
+    feeRecipient.balances[ring.orderB.tokenIdF].balance =
+     feeRecipient.balances[ring.orderB.tokenIdF].balance.add(matchingFeeB);
 
     // Update ringMatcher
+    const ringMatcher = newState.accounts[ring.minerAccountID];
     // - Margin
-    newState.ringMatcher.balances[ring.orderA.tokenIdS].balance =
-     newState.ringMatcher.balances[ring.orderA.tokenIdS].balance.add(margin);
+    ringMatcher.balances[ring.orderA.tokenIdS].balance =
+     ringMatcher.balances[ring.orderA.tokenIdS].balance.add(margin);
     // - Operator fee
-    newState.ringMatcher.balances[ring.tokenID].balance =
-     newState.ringMatcher.balances[ring.tokenID].balance.sub(ring.fee);
+    ringMatcher.balances[ring.tokenID].balance =
+     ringMatcher.balances[ring.tokenID].balance.sub(ring.fee);
 
     // Update operator
-    newState.operator.balances[ring.tokenID].balance =
-     newState.operator.balances[ring.tokenID].balance.add(ring.fee);
+    const operator = newState.accounts[operatorAccountID];
+    operator.balances[ring.tokenID].balance =
+     operator.balances[ring.tokenID].balance.add(ring.fee);
 
     const detailedTransfersA = this.getDetailedTransfers(
       ring, ring.orderA, ring.orderB,
@@ -342,6 +328,18 @@ export class Simulator {
       balances,
     };
     return accountCopy;
+  }
+
+  private copyState(state: State) {
+    const accounts: {[key: number]: Account} = {};
+    for (const accountID of Object.keys(state.accounts)) {
+      const accountValue = state.accounts[Number(accountID)];
+      accounts[Number(accountID)] = this.copyAccount(accountValue);
+    }
+    const stateCopy: State = {
+      accounts,
+    };
+    return stateCopy;
   }
 
   private ensure(valid: boolean, description: string) {
