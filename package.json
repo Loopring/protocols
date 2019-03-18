@@ -1,0 +1,16 @@
+{
+  "name": "protocols",
+  "version": "1.0.0",
+  "description": "loopring monorepo",
+  "main": "index.js",
+  "repository": "https://github.com/Loopring/protocols.git",
+  "author": "Loopring Fundation",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "lerna": "^3.13.1"
+  }
+}
