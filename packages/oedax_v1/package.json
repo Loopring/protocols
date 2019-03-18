@@ -1,5 +1,5 @@
 {
-  "name": "oedax",
+  "name": "oedax_v1",
   "version": "0.0.1",
   "description": "Loopring Oedex Protocol",
   "main": "truffle-config.js",

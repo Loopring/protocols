@@ -1,5 +1,5 @@
 {
-  "name": "LRN",
+  "name": "lrc_v2",
   "version": "1.0.0",
   "description": "loopring network token",
   "main": "truffle.js",
