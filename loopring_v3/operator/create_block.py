@@ -4,6 +4,7 @@ sys.path.insert(0, 'operator')
 import os.path
 import subprocess
 import json
+import pathlib
 from state import Account, Context, State, Order, Ring, copyAccountInfo, AccountUpdateData
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
@@ -220,12 +221,13 @@ def trade(state, data):
     return export
 
 
-def main(stateID, blockType, inputFilename, outputFilename):
-    state_filename = "state_" + str(stateID) + ".json"
+def main(stateID, blockIdx, blockType, inputFilename, outputFilename):
+    previousBlockIdx = int(blockIdx) - 1
+    previous_state_filename = "./states/state_" + str(stateID) + "_" + str(previousBlockIdx) + ".json"
 
     state = State(stateID)
-    if os.path.exists(state_filename):
-        state.load(state_filename)
+    if os.path.exists(previous_state_filename):
+        state.load(previous_state_filename)
 
     with open(inputFilename) as f:
         data = json.load(f)
@@ -250,6 +252,8 @@ def main(stateID, blockType, inputFilename, outputFilename):
     # Validate the block
     subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
 
+    pathlib.Path("./states").mkdir(parents=True, exist_ok=True)
+    state_filename = "./states/state_" + str(stateID) + "_" + str(blockIdx) + ".json"
     state.save(state_filename)
 
 

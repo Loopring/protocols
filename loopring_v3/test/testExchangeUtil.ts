@@ -63,7 +63,6 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-    await this.cleanTradeHistory();
     await this.registerTokens();
 
     this.MAX_MUM_WALLETS = (await this.exchange.MAX_NUM_WALLETS()).toNumber();
@@ -560,7 +559,7 @@ export class ExchangeTestUtil {
 
     const result = childProcess.spawnSync(
       "python3",
-      ["operator/create_block.py", "" + stateID, "" + blockType, inputFilename, outputFilename],
+      ["operator/create_block.py", "" + stateID, "" + nextBlockIdx, "" + blockType, inputFilename, outputFilename],
       {stdio: "inherit"},
     );
     assert(result.status === 0, "create_block failed: " + blockType);
@@ -700,9 +699,12 @@ export class ExchangeTestUtil {
     this.pendingDeposits[stateID] = [];
   }
 
-  public loadState(stateID: number) {
+  public async loadState(stateID: number, blockIdx?: number) {
     // Read in the state
-    const stateFile = "state_" + stateID + ".json";
+    if (blockIdx === undefined) {
+      blockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
+    }
+    const stateFile = "states/state_" + stateID + "_" + blockIdx + ".json";
     const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
 
     const accounts: {[key: number]: Account} = {};
@@ -968,13 +970,14 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const stateBefore = this.loadStateForRingBlock(stateID, ringBlock);
+      const currentBlockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
+      const stateBefore = await this.loadStateForRingBlock(stateID, currentBlockIdx, ringBlock);
 
       // Create the block
       const blockFilename = await this.createBlock(stateID, 0, JSON.stringify(ringBlock, replacer, 4));
 
       // Store state after
-      const stateAfter = this.loadStateForRingBlock(stateID, ringBlock);
+      const stateAfter = await this.loadStateForRingBlock(stateID, currentBlockIdx + 1, ringBlock);
 
       // Validate state change
       this.validateRingSettlements(ringBlock, stateBefore, stateAfter);
@@ -1233,18 +1236,6 @@ export class ExchangeTestUtil {
     await LRC.approve(this.exchange.address, amount, {from: owner});
   }
 
-  public async cleanTradeHistory() {
-    if (fs.existsSync("state_global.json")) {
-      fs.unlinkSync("state_global.json");
-    }
-    for (let i = 0; i < this.MAX_NUM_STATES; i++) {
-      const stateFile = "state_" + i + ".json";
-      if (fs.existsSync(stateFile)) {
-        fs.unlinkSync(stateFile);
-      }
-    }
-  }
-
   public evmIncreaseTime(seconds: number) {
     return new Promise((resolve, reject) => {
       web3.currentProvider.send({
@@ -1278,8 +1269,8 @@ export class ExchangeTestUtil {
            "Timestamp should have been increased by roughly the expected value");
   }
 
-  public getOffchainBalance(stateID: number, accountID: number, tokenID: number) {
-    const state = this.loadState(stateID);
+  public async getOffchainBalance(stateID: number, accountID: number, tokenID: number) {
+    const state = await this.loadState(stateID);
     return state.accounts[accountID].balances[tokenID].balance;
   }
 
@@ -1340,8 +1331,8 @@ export class ExchangeTestUtil {
     }
   }
 
-  public loadStateForRingBlock(stateID: number, ringBlock: RingBlock) {
-    const state = this.loadState(stateID);
+  public async loadStateForRingBlock(stateID: number, blockIdx: number, ringBlock: RingBlock) {
+    const state = await this.loadState(stateID, blockIdx);
     const orders: OrderInfo[] = [];
     for (const ring of ringBlock.rings) {
       orders.push(ring.orderA);
