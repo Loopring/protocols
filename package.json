@@ -1,5 +1,5 @@
 {
-  "name": "protocols",
+  "name": "loopring_protocols",
   "version": "1.0.0",
   "description": "loopring monorepo",
   "main": "index.js",

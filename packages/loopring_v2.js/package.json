@@ -1,19 +1,17 @@
 {
   "name": "loopring_v2.js",
   "version": "1.0.0",
+  "description": "Javascript Library for accessing Loopring Protocol v2",
   "main": "index.js",
-  "author": "Loopring Fundation",
+  "repository": "https://github.com/Loopring//protocols",
+  "author": "Daniel Wang",
   "license": "MIT",
-  "workspaces": [
-    "connect",
-    "contract-addresses",
-    "contract-artifacts",
-    "contract-wrapper",
-    "json-schemas",
-    "loopring.js",
-    "order-utils",
-    "starter",
-    "types"
-  ],
-  "private": true
+  "private": false,
+  "devDependencies": {
+    "rollup": "^1.6.0"
+  },
+  "dependencies": {
+    "babel": "^6.23.0",
+    "rollup": "^1.6.0"
+  }
 }
