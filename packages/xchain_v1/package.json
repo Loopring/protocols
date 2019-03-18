@@ -21,7 +21,6 @@
   "dependencies": {
     "ganache-cli": "^6.1.8",
     "truffle": "4.1.14",
-    "zeppelin-solidity": "^1.8.0",
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^5.1.5",
     "protocol2-js": "0.2.18"
