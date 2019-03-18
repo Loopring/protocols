@@ -10,7 +10,12 @@
   "workspaces": [
     "packages/*"
   ],
+  "scripts": {
+    "lerna": "lerna",
+    "wsrun": "wsrun"
+  },
   "devDependencies": {
-    "lerna": "^3.13.1"
+    "lerna": "^3.13.1",
+    "wsrun": "^3.6.4"
   }
 }
