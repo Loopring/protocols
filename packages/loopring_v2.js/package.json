@@ -1,0 +1,19 @@
+{
+  "name": "loopring_v2.js",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Loopring Fundation",
+  "license": "MIT",
+  "workspaces": [
+    "connect",
+    "contract-addresses",
+    "contract-artifacts",
+    "contract-wrapper",
+    "json-schemas",
+    "loopring.js",
+    "order-utils",
+    "starter",
+    "types"
+  ],
+  "private": true
+}
