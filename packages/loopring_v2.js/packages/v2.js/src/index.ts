@@ -37,4 +37,6 @@ export {
     Web3JsV3Provider,
 } from 'ethereum-types';
 
-export import Web3ProviderEngine = require('web3-provider-engine');
+// export {
+//     Web3ProviderEngine
+// } from 'web3-provider-engine';

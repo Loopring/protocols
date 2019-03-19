@@ -11,8 +11,6 @@ export interface LoopringAddresses {
     tradeDelegate: string;
 }
 
-
-
 const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const networkToAddresses: { [networkId: number]: LoopringAddresses } = {

@@ -1,20 +1,16 @@
 {
   "compilerOptions":
   {
-    "module": "commonjs",
+    "moduleResolution": "node",
     "target": "es5",
-    "lib": ["es2017", "dom"],
+    "module": "es2015",
+    "lib": ["es2015", "es2016", "es2017", "dom"],
     "strict": true,
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
     "sourceMap": true,
+    "declaration": true,
+    "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
-    "downlevelIteration": true,
-    "noImplicitReturns": true,
-    "pretty": true,
-    "skipLibCheck": true,
-    "typeRoots": ["node_modules/@types"]
+    "emitDecoratorMetadata": true
   },
   "include": [],
   "references": [
@@ -22,12 +18,24 @@
     "path": "./packages/contract-artifacts"
   },
   {
-    "path": "./packages/v2.js",
-    "path": "./packages/types",
-    "path": "./packages/json-schemas",
-    "path": "./packages/order-utils",
-    "path": "./packages/contract-addresses",
-    "path": "./packages/contract-artifacts",
+    "path": "./packages/v2.js"
+  },
+  {
+    "path": "./packages/types"
+  },
+  {
+    "path": "./packages/json-schemas"
+  },
+  {
+    "path": "./packages/order-utils"
+  },
+  {
+    "path": "./packages/contract-addresses"
+  },
+  {
+    "path": "./packages/contract-artifacts"
+  },
+  {
     "path": "./packages/contract-wrapper"
   }]
 }
