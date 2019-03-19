@@ -1,0 +1,18 @@
+version: '3'
+services:
+  testrpc:
+    container_name: testrpc
+    build:
+      context: .
+      dockerfile: Dockerfile.testrpc
+    expose:
+      - "8545"
+    ports:
+      - "8545:8545"
+  test:
+    container_name: test
+    depends_on:
+      - testrpc
+    build: 
+      context: .
+      dockerfile: Dockerfile.test
