@@ -22,8 +22,12 @@
     "path": "./packages/contract-artifacts"
   },
   {
+    "path": "./packages/v2.js",
+    "path": "./packages/types",
     "path": "./packages/json-schemas",
+    "path": "./packages/order-utils",
     "path": "./packages/contract-addresses",
-    "path": "./packages/contract-artifacts"
+    "path": "./packages/contract-artifacts",
+    "path": "./packages/contract-wrapper"
   }]
 }
