@@ -1,5 +1,5 @@
 {
-  "name": "loopring_v2@starter.js",
+  "name": "@loopring_v2/starter.js",
   "version": "1.0.0",
   "description": "Javascript Library for accessing Loopring Protocol v2",
   "main": "lib/index.js",
