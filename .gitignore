@@ -8,6 +8,8 @@
 
 packages/loopring_v2.js/packages/*/lib/
 packages/loopring_v2.js/packages/*/es/
+packages/loopring_v2.js/packages/*/docs/
+packages/loopring_v2.js/packages/*/dist/
 
 **/.node-*
 **/*.log
