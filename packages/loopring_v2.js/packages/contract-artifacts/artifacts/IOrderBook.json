@@ -1,0 +1,558 @@
+{
+  "contractName": "IOrderBook",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "orderSubmitted",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "orderHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "name": "orderData",
+          "type": "bytes"
+        }
+      ],
+      "name": "OrderSubmitted",
+      "type": "event"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "orderData",
+          "type": "bytes"
+        }
+      ],
+      "name": "submitOrder",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "/*\n\n  Copyright 2017 Loopring Project Ltd (Loopring Foundation).\n\n  Licensed under the Apache License, Version 2.0 (the \"License\");\n  you may not use this file except in compliance with the License.\n  You may obtain a copy of the License at\n\n  http://www.apache.org/licenses/LICENSE-2.0\n\n  Unless required by applicable law or agreed to in writing, software\n  distributed under the License is distributed on an \"AS IS\" BASIS,\n  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n  See the License for the specific language governing permissions and\n  limitations under the License.\n*/\npragma solidity 0.5.2;\n\n\n/// @title IOrderBook\n/// @author Daniel Wang - <daniel@loopring.org>.\n/// @author Kongliang Zhong - <kongliang@loopring.org>.\ncontract IOrderBook {\n    // The map of registered order hashes\n    mapping(bytes32 => bool) public orderSubmitted;\n\n    /// @dev  Event emitted when an order was successfully submitted\n    ///        orderHash      The hash of the order\n    ///        orderData      The data of the order as passed to submitOrder()\n    event OrderSubmitted(\n        bytes32 orderHash,\n        bytes   orderData\n    );\n\n    /// @dev   Submits an order to the on-chain order book.\n    ///        No signature is needed. The order can only be sumbitted by its\n    ///        owner or its broker (the owner can be the address of a contract).\n    /// @param orderData The data of the order. Contains all fields that are used\n    ///        for the order hash calculation.\n    ///        See OrderHelper.updateHash() for detailed information.\n    function submitOrder(\n        bytes calldata orderData\n        )\n        external\n        returns (bytes32);\n}\n",
+  "sourcePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IOrderBook.sol",
+  "ast": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IOrderBook.sol",
+    "exportedSymbols": {
+      "IOrderBook": [
+        3306
+      ]
+    },
+    "id": 3307,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3288,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:9"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title IOrderBook\n @author Daniel Wang - <daniel@loopring.org>.\n @author Kongliang Zhong - <kongliang@loopring.org>.",
+        "fullyImplemented": false,
+        "id": 3306,
+        "linearizedBaseContracts": [
+          3306
+        ],
+        "name": "IOrderBook",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 3292,
+            "name": "orderSubmitted",
+            "nodeType": "VariableDeclaration",
+            "scope": 3306,
+            "src": "827:46:9",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+              "typeString": "mapping(bytes32 => bool)"
+            },
+            "typeName": {
+              "id": 3291,
+              "keyType": {
+                "id": 3289,
+                "name": "bytes32",
+                "nodeType": "ElementaryTypeName",
+                "src": "835:7:9",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bytes32",
+                  "typeString": "bytes32"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "827:24:9",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                "typeString": "mapping(bytes32 => bool)"
+              },
+              "valueType": {
+                "id": 3290,
+                "name": "bool",
+                "nodeType": "ElementaryTypeName",
+                "src": "846:4:9",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "anonymous": false,
+            "documentation": "@dev  Event emitted when an order was successfully submitted\n        orderHash      The hash of the order\n        orderData      The data of the order as passed to submitOrder()",
+            "id": 3298,
+            "name": "OrderSubmitted",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3297,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3294,
+                  "indexed": false,
+                  "name": "orderHash",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3298,
+                  "src": "1110:17:9",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 3293,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1110:7:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3296,
+                  "indexed": false,
+                  "name": "orderData",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3298,
+                  "src": "1137:17:9",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 3295,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1137:5:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1100:60:9"
+            },
+            "src": "1080:81:9"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Submits an order to the on-chain order book.\n        No signature is needed. The order can only be sumbitted by its\n        owner or its broker (the owner can be the address of a contract).\n @param orderData The data of the order. Contains all fields that are used\n        for the order hash calculation.\n        See OrderHelper.updateHash() for detailed information.",
+            "id": 3305,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "submitOrder",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3301,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3300,
+                  "name": "orderData",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3305,
+                  "src": "1615:24:9",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 3299,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1615:5:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1605:44:9"
+            },
+            "returnParameters": {
+              "id": 3304,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3303,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3305,
+                  "src": "1684:7:9",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 3302,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1684:7:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1683:9:9"
+            },
+            "scope": 3306,
+            "src": "1585:108:9",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3307,
+        "src": "759:936:9"
+      }
+    ],
+    "src": "607:1089:9"
+  },
+  "legacyAST": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IOrderBook.sol",
+    "exportedSymbols": {
+      "IOrderBook": [
+        3306
+      ]
+    },
+    "id": 3307,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3288,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:9"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title IOrderBook\n @author Daniel Wang - <daniel@loopring.org>.\n @author Kongliang Zhong - <kongliang@loopring.org>.",
+        "fullyImplemented": false,
+        "id": 3306,
+        "linearizedBaseContracts": [
+          3306
+        ],
+        "name": "IOrderBook",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 3292,
+            "name": "orderSubmitted",
+            "nodeType": "VariableDeclaration",
+            "scope": 3306,
+            "src": "827:46:9",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+              "typeString": "mapping(bytes32 => bool)"
+            },
+            "typeName": {
+              "id": 3291,
+              "keyType": {
+                "id": 3289,
+                "name": "bytes32",
+                "nodeType": "ElementaryTypeName",
+                "src": "835:7:9",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bytes32",
+                  "typeString": "bytes32"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "827:24:9",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                "typeString": "mapping(bytes32 => bool)"
+              },
+              "valueType": {
+                "id": 3290,
+                "name": "bool",
+                "nodeType": "ElementaryTypeName",
+                "src": "846:4:9",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "anonymous": false,
+            "documentation": "@dev  Event emitted when an order was successfully submitted\n        orderHash      The hash of the order\n        orderData      The data of the order as passed to submitOrder()",
+            "id": 3298,
+            "name": "OrderSubmitted",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3297,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3294,
+                  "indexed": false,
+                  "name": "orderHash",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3298,
+                  "src": "1110:17:9",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 3293,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1110:7:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3296,
+                  "indexed": false,
+                  "name": "orderData",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3298,
+                  "src": "1137:17:9",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 3295,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1137:5:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1100:60:9"
+            },
+            "src": "1080:81:9"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Submits an order to the on-chain order book.\n        No signature is needed. The order can only be sumbitted by its\n        owner or its broker (the owner can be the address of a contract).\n @param orderData The data of the order. Contains all fields that are used\n        for the order hash calculation.\n        See OrderHelper.updateHash() for detailed information.",
+            "id": 3305,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "submitOrder",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3301,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3300,
+                  "name": "orderData",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3305,
+                  "src": "1615:24:9",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 3299,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1615:5:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1605:44:9"
+            },
+            "returnParameters": {
+              "id": 3304,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3303,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3305,
+                  "src": "1684:7:9",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 3302,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1684:7:9",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1683:9:9"
+            },
+            "scope": 3306,
+            "src": "1585:108:9",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3307,
+        "src": "759:936:9"
+      }
+    ],
+    "src": "607:1089:9"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.2+commit.1df8f40c.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.0",
+  "updatedAt": "2019-03-19T09:16:27.471Z",
+  "devdoc": {
+    "author": "Daniel Wang - <daniel@loopring.org>.Kongliang Zhong - <kongliang@loopring.org>.",
+    "methods": {
+      "submitOrder(bytes)": {
+        "details": "Submits an order to the on-chain order book.        No signature is needed. The order can only be sumbitted by its        owner or its broker (the owner can be the address of a contract).",
+        "params": {
+          "orderData": "The data of the order. Contains all fields that are used        for the order hash calculation.        See OrderHelper.updateHash() for detailed information."
+        }
+      }
+    },
+    "title": "IOrderBook"
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

@@ -1,0 +1,1742 @@
+{
+  "contractName": "IBrokerRegistry",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "interceptor",
+          "type": "address"
+        }
+      ],
+      "name": "BrokerRegistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "interceptor",
+          "type": "address"
+        }
+      ],
+      "name": "BrokerUnregistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "AllBrokersUnregistered",
+      "type": "event"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "broker",
+          "type": "address"
+        }
+      ],
+      "name": "getBroker",
+      "outputs": [
+        {
+          "name": "registered",
+          "type": "bool"
+        },
+        {
+          "name": "interceptor",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "start",
+          "type": "uint256"
+        },
+        {
+          "name": "count",
+          "type": "uint256"
+        }
+      ],
+      "name": "getBrokers",
+      "outputs": [
+        {
+          "name": "brokers",
+          "type": "address[]"
+        },
+        {
+          "name": "interceptors",
+          "type": "address[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "name": "interceptor",
+          "type": "address"
+        }
+      ],
+      "name": "registerBroker",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "broker",
+          "type": "address"
+        }
+      ],
+      "name": "unregisterBroker",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "unregisterAllBrokers",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "/*\n\n  Copyright 2017 Loopring Project Ltd (Loopring Foundation).\n\n  Licensed under the Apache License, Version 2.0 (the \"License\");\n  you may not use this file except in compliance with the License.\n  You may obtain a copy of the License at\n\n  http://www.apache.org/licenses/LICENSE-2.0\n\n  Unless required by applicable law or agreed to in writing, software\n  distributed under the License is distributed on an \"AS IS\" BASIS,\n  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n  See the License for the specific language governing permissions and\n  limitations under the License.\n*/\npragma solidity 0.5.2;\n\n\n/// @title IBrokerRegistry\n/// @dev A broker is an account that can submit orders on behalf of other\n///      accounts. When registering a broker, the owner can also specify a\n///      pre-deployed BrokerInterceptor to hook into the exchange smart contracts.\n/// @author Daniel Wang - <daniel@loopring.org>.\ncontract IBrokerRegistry {\n    event BrokerRegistered(\n        address owner,\n        address broker,\n        address interceptor\n    );\n\n    event BrokerUnregistered(\n        address owner,\n        address broker,\n        address interceptor\n    );\n\n    event AllBrokersUnregistered(\n        address owner\n    );\n\n    /// @dev   Validates if the broker was registered for the order owner and\n    ///        returns the possible BrokerInterceptor to be used.\n    /// @param owner The owner of the order\n    /// @param broker The broker of the order\n    /// @return True if the broker was registered for the owner\n    ///         and the BrokerInterceptor to use.\n    function getBroker(\n        address owner,\n        address broker\n        )\n        external\n        view\n        returns(\n            bool registered,\n            address interceptor\n        );\n\n    /// @dev   Gets all registered brokers for an owner.\n    /// @param owner The owner\n    /// @param start The start index of the list of brokers\n    /// @param count The number of brokers to return\n    /// @return The list of requested brokers and corresponding BrokerInterceptors\n    function getBrokers(\n        address owner,\n        uint    start,\n        uint    count\n        )\n        external\n        view\n        returns (\n            address[] memory brokers,\n            address[] memory interceptors\n        );\n\n    /// @dev   Registers a broker for msg.sender and an optional\n    ///        corresponding BrokerInterceptor.\n    /// @param broker The broker to register\n    /// @param interceptor The optional BrokerInterceptor to use (0x0 allowed)\n    function registerBroker(\n        address broker,\n        address interceptor\n        )\n        external;\n\n    /// @dev   Unregisters a broker for msg.sender\n    /// @param broker The broker to unregister\n    function unregisterBroker(\n        address broker\n        )\n        external;\n\n    /// @dev   Unregisters all brokers for msg.sender\n    function unregisterAllBrokers(\n        )\n        external;\n}\n",
+  "sourcePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IBrokerRegistry.sol",
+  "ast": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IBrokerRegistry.sol",
+    "exportedSymbols": {
+      "IBrokerRegistry": [
+        3147
+      ]
+    },
+    "id": 3148,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3085,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:6"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title IBrokerRegistry\n @dev A broker is an account that can submit orders on behalf of other\n      accounts. When registering a broker, the owner can also specify a\n      pre-deployed BrokerInterceptor to hook into the exchange smart contracts.\n @author Daniel Wang - <daniel@loopring.org>.",
+        "fullyImplemented": false,
+        "id": 3147,
+        "linearizedBaseContracts": [
+          3147
+        ],
+        "name": "IBrokerRegistry",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3093,
+            "name": "BrokerRegistered",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3092,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3087,
+                  "indexed": false,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3093,
+                  "src": "1003:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3086,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1003:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3089,
+                  "indexed": false,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3093,
+                  "src": "1026:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3088,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1026:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3091,
+                  "indexed": false,
+                  "name": "interceptor",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3093,
+                  "src": "1050:19:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3090,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1050:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "993:82:6"
+            },
+            "src": "971:105:6"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3101,
+            "name": "BrokerUnregistered",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3100,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3095,
+                  "indexed": false,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3101,
+                  "src": "1116:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3094,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1116:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3097,
+                  "indexed": false,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3101,
+                  "src": "1139:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3096,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1139:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3099,
+                  "indexed": false,
+                  "name": "interceptor",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3101,
+                  "src": "1163:19:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3098,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1163:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1106:82:6"
+            },
+            "src": "1082:107:6"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3105,
+            "name": "AllBrokersUnregistered",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3104,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3103,
+                  "indexed": false,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3105,
+                  "src": "1233:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3102,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1233:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1223:29:6"
+            },
+            "src": "1195:58:6"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Validates if the broker was registered for the order owner and\n        returns the possible BrokerInterceptor to be used.\n @param owner The owner of the order\n @param broker The broker of the order\n @return True if the broker was registered for the owner\n         and the BrokerInterceptor to use.",
+            "id": 3116,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getBroker",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3110,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3107,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3116,
+                  "src": "1635:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3106,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1635:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3109,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3116,
+                  "src": "1658:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3108,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1658:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1625:57:6"
+            },
+            "returnParameters": {
+              "id": 3115,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3112,
+                  "name": "registered",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3116,
+                  "src": "1742:15:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3111,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1742:4:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3114,
+                  "name": "interceptor",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3116,
+                  "src": "1771:19:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3113,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1771:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1728:72:6"
+            },
+            "scope": 3147,
+            "src": "1607:194:6",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Gets all registered brokers for an owner.\n @param owner The owner\n @param start The start index of the list of brokers\n @param count The number of brokers to return\n @return The list of requested brokers and corresponding BrokerInterceptors",
+            "id": 3131,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getBrokers",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3123,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3118,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2120:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3117,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2120:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3120,
+                  "name": "start",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2143:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3119,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2143:4:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3122,
+                  "name": "count",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2166:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3121,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2166:4:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2110:79:6"
+            },
+            "returnParameters": {
+              "id": 3130,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3126,
+                  "name": "brokers",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2250:24:6",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_address_$dyn_memory_ptr",
+                    "typeString": "address[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3124,
+                      "name": "address",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "2250:7:6",
+                      "stateMutability": "nonpayable",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "id": 3125,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "2250:9:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
+                      "typeString": "address[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3129,
+                  "name": "interceptors",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2288:29:6",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_address_$dyn_memory_ptr",
+                    "typeString": "address[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3127,
+                      "name": "address",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "2288:7:6",
+                      "stateMutability": "nonpayable",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "id": 3128,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "2288:9:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
+                      "typeString": "address[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2236:91:6"
+            },
+            "scope": 3147,
+            "src": "2091:237:6",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Registers a broker for msg.sender and an optional\n        corresponding BrokerInterceptor.\n @param broker The broker to register\n @param interceptor The optional BrokerInterceptor to use (0x0 allowed)",
+            "id": 3138,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "registerBroker",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3136,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3133,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3138,
+                  "src": "2604:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3132,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2604:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3135,
+                  "name": "interceptor",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3138,
+                  "src": "2628:19:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3134,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2628:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2594:63:6"
+            },
+            "returnParameters": {
+              "id": 3137,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2674:0:6"
+            },
+            "scope": 3147,
+            "src": "2571:104:6",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Unregisters a broker for msg.sender\n @param broker The broker to unregister",
+            "id": 3143,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "unregisterBroker",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3141,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3140,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3143,
+                  "src": "2814:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3139,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2814:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2804:34:6"
+            },
+            "returnParameters": {
+              "id": 3142,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2855:0:6"
+            },
+            "scope": 3147,
+            "src": "2779:77:6",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Unregisters all brokers for msg.sender",
+            "id": 3146,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "unregisterAllBrokers",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3144,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2945:11:6"
+            },
+            "returnParameters": {
+              "id": 3145,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2973:0:6"
+            },
+            "scope": 3147,
+            "src": "2916:58:6",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3148,
+        "src": "940:2036:6"
+      }
+    ],
+    "src": "607:2370:6"
+  },
+  "legacyAST": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IBrokerRegistry.sol",
+    "exportedSymbols": {
+      "IBrokerRegistry": [
+        3147
+      ]
+    },
+    "id": 3148,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3085,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:6"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title IBrokerRegistry\n @dev A broker is an account that can submit orders on behalf of other\n      accounts. When registering a broker, the owner can also specify a\n      pre-deployed BrokerInterceptor to hook into the exchange smart contracts.\n @author Daniel Wang - <daniel@loopring.org>.",
+        "fullyImplemented": false,
+        "id": 3147,
+        "linearizedBaseContracts": [
+          3147
+        ],
+        "name": "IBrokerRegistry",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3093,
+            "name": "BrokerRegistered",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3092,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3087,
+                  "indexed": false,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3093,
+                  "src": "1003:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3086,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1003:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3089,
+                  "indexed": false,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3093,
+                  "src": "1026:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3088,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1026:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3091,
+                  "indexed": false,
+                  "name": "interceptor",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3093,
+                  "src": "1050:19:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3090,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1050:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "993:82:6"
+            },
+            "src": "971:105:6"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3101,
+            "name": "BrokerUnregistered",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3100,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3095,
+                  "indexed": false,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3101,
+                  "src": "1116:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3094,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1116:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3097,
+                  "indexed": false,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3101,
+                  "src": "1139:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3096,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1139:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3099,
+                  "indexed": false,
+                  "name": "interceptor",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3101,
+                  "src": "1163:19:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3098,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1163:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1106:82:6"
+            },
+            "src": "1082:107:6"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3105,
+            "name": "AllBrokersUnregistered",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3104,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3103,
+                  "indexed": false,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3105,
+                  "src": "1233:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3102,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1233:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1223:29:6"
+            },
+            "src": "1195:58:6"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Validates if the broker was registered for the order owner and\n        returns the possible BrokerInterceptor to be used.\n @param owner The owner of the order\n @param broker The broker of the order\n @return True if the broker was registered for the owner\n         and the BrokerInterceptor to use.",
+            "id": 3116,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getBroker",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3110,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3107,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3116,
+                  "src": "1635:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3106,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1635:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3109,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3116,
+                  "src": "1658:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3108,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1658:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1625:57:6"
+            },
+            "returnParameters": {
+              "id": 3115,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3112,
+                  "name": "registered",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3116,
+                  "src": "1742:15:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3111,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1742:4:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3114,
+                  "name": "interceptor",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3116,
+                  "src": "1771:19:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3113,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1771:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1728:72:6"
+            },
+            "scope": 3147,
+            "src": "1607:194:6",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Gets all registered brokers for an owner.\n @param owner The owner\n @param start The start index of the list of brokers\n @param count The number of brokers to return\n @return The list of requested brokers and corresponding BrokerInterceptors",
+            "id": 3131,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getBrokers",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3123,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3118,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2120:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3117,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2120:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3120,
+                  "name": "start",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2143:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3119,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2143:4:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3122,
+                  "name": "count",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2166:13:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3121,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2166:4:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2110:79:6"
+            },
+            "returnParameters": {
+              "id": 3130,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3126,
+                  "name": "brokers",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2250:24:6",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_address_$dyn_memory_ptr",
+                    "typeString": "address[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3124,
+                      "name": "address",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "2250:7:6",
+                      "stateMutability": "nonpayable",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "id": 3125,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "2250:9:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
+                      "typeString": "address[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3129,
+                  "name": "interceptors",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "2288:29:6",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_address_$dyn_memory_ptr",
+                    "typeString": "address[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3127,
+                      "name": "address",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "2288:7:6",
+                      "stateMutability": "nonpayable",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "id": 3128,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "2288:9:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
+                      "typeString": "address[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2236:91:6"
+            },
+            "scope": 3147,
+            "src": "2091:237:6",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Registers a broker for msg.sender and an optional\n        corresponding BrokerInterceptor.\n @param broker The broker to register\n @param interceptor The optional BrokerInterceptor to use (0x0 allowed)",
+            "id": 3138,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "registerBroker",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3136,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3133,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3138,
+                  "src": "2604:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3132,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2604:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3135,
+                  "name": "interceptor",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3138,
+                  "src": "2628:19:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3134,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2628:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2594:63:6"
+            },
+            "returnParameters": {
+              "id": 3137,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2674:0:6"
+            },
+            "scope": 3147,
+            "src": "2571:104:6",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Unregisters a broker for msg.sender\n @param broker The broker to unregister",
+            "id": 3143,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "unregisterBroker",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3141,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3140,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3143,
+                  "src": "2814:14:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3139,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2814:7:6",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2804:34:6"
+            },
+            "returnParameters": {
+              "id": 3142,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2855:0:6"
+            },
+            "scope": 3147,
+            "src": "2779:77:6",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Unregisters all brokers for msg.sender",
+            "id": 3146,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "unregisterAllBrokers",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3144,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2945:11:6"
+            },
+            "returnParameters": {
+              "id": 3145,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2973:0:6"
+            },
+            "scope": 3147,
+            "src": "2916:58:6",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3148,
+        "src": "940:2036:6"
+      }
+    ],
+    "src": "607:2370:6"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.2+commit.1df8f40c.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.0",
+  "updatedAt": "2019-03-19T09:16:27.470Z",
+  "devdoc": {
+    "author": "Daniel Wang - <daniel@loopring.org>.",
+    "details": "A broker is an account that can submit orders on behalf of other      accounts. When registering a broker, the owner can also specify a      pre-deployed BrokerInterceptor to hook into the exchange smart contracts.",
+    "methods": {
+      "getBroker(address,address)": {
+        "details": "Validates if the broker was registered for the order owner and        returns the possible BrokerInterceptor to be used.",
+        "params": {
+          "broker": "The broker of the order",
+          "owner": "The owner of the order"
+        },
+        "return": "True if the broker was registered for the owner         and the BrokerInterceptor to use."
+      },
+      "getBrokers(address,uint256,uint256)": {
+        "details": "Gets all registered brokers for an owner.",
+        "params": {
+          "count": "The number of brokers to return",
+          "owner": "The owner",
+          "start": "The start index of the list of brokers"
+        },
+        "return": "The list of requested brokers and corresponding BrokerInterceptors"
+      },
+      "registerBroker(address,address)": {
+        "details": "Registers a broker for msg.sender and an optional        corresponding BrokerInterceptor.",
+        "params": {
+          "broker": "The broker to register",
+          "interceptor": "The optional BrokerInterceptor to use (0x0 allowed)"
+        }
+      },
+      "unregisterAllBrokers()": {
+        "details": "Unregisters all brokers for msg.sender"
+      },
+      "unregisterBroker(address)": {
+        "details": "Unregisters a broker for msg.sender",
+        "params": {
+          "broker": "The broker to unregister"
+        }
+      }
+    },
+    "title": "IBrokerRegistry"
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

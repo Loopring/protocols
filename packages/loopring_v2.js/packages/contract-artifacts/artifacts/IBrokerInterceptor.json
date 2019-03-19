@@ -1,0 +1,779 @@
+{
+  "contractName": "IBrokerInterceptor",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "getAllowance",
+      "outputs": [
+        {
+          "name": "allowance",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "onTokenSpent",
+      "outputs": [
+        {
+          "name": "ok",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "/*\n\n  Copyright 2017 Loopring Project Ltd (Loopring Foundation).\n\n  Licensed under the Apache License, Version 2.0 (the \"License\");\n  you may not use this file except in compliance with the License.\n  You may obtain a copy of the License at\n\n  http://www.apache.org/licenses/LICENSE-2.0\n\n  Unless required by applicable law or agreed to in writing, software\n  distributed under the License is distributed on an \"AS IS\" BASIS,\n  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n  See the License for the specific language governing permissions and\n  limitations under the License.\n*/\npragma solidity 0.5.2;\n\n\n/// @title IBrokerInterceptor\ncontract IBrokerInterceptor {\n    /// @dev   Returns the maximum amount of tokens the broker can sell for the owner\n    /// @param owner The owner for which the broker can spend funds\n    /// @param broker The broker of the owner\n    /// @param token The token to spend\n    /// @return The allowance\n    function getAllowance(\n        address owner,\n        address broker,\n        address token\n        )\n        public\n        view\n        returns (uint allowance);\n\n    /// @dev Lets the interceptor know how much the broker has spent for an owner.\n    ///      This method will be called from RingSubmitter, so\n    ///      it must check `msg.sender` is the address of the Loopring Protocol.\n    ///      Check https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md\n    ///      for the current address of RingSubmitter deployment.\n    /// @param owner The owner for which the broker has spent funds\n    /// @param broker The broker of the owner\n    /// @param token The token spent\n    /// @param amount The amount spent\n    /// @return True if successful, false otherwise.\n    function onTokenSpent(\n        address owner,\n        address broker,\n        address token,\n        uint    amount\n        )\n        public\n        returns (bool ok);\n}\n",
+  "sourcePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IBrokerInterceptor.sol",
+  "ast": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IBrokerInterceptor.sol",
+    "exportedSymbols": {
+      "IBrokerInterceptor": [
+        3083
+      ]
+    },
+    "id": 3084,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3058,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:5"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title IBrokerInterceptor",
+        "fullyImplemented": false,
+        "id": 3083,
+        "linearizedBaseContracts": [
+          3083
+        ],
+        "name": "IBrokerInterceptor",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "body": null,
+            "documentation": "@dev   Returns the maximum amount of tokens the broker can sell for the owner\n @param owner The owner for which the broker can spend funds\n @param broker The broker of the owner\n @param token The token to spend\n @return The allowance",
+            "id": 3069,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getAllowance",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3065,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3060,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3069,
+                  "src": "997:13:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3059,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "997:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3062,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3069,
+                  "src": "1020:14:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3061,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1020:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3064,
+                  "name": "token",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3069,
+                  "src": "1044:13:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3063,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1044:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "987:80:5"
+            },
+            "returnParameters": {
+              "id": 3068,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3067,
+                  "name": "allowance",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3069,
+                  "src": "1113:14:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3066,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1113:4:5",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1112:16:5"
+            },
+            "scope": 3083,
+            "src": "966:163:5",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "public"
+          },
+          {
+            "body": null,
+            "documentation": "@dev Lets the interceptor know how much the broker has spent for an owner.\n      This method will be called from RingSubmitter, so\n      it must check `msg.sender` is the address of the Loopring Protocol.\n      Check https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md\n      for the current address of RingSubmitter deployment.\n @param owner The owner for which the broker has spent funds\n @param broker The broker of the owner\n @param token The token spent\n @param amount The amount spent\n @return True if successful, false otherwise.",
+            "id": 3082,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "onTokenSpent",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3078,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3071,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1798:13:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3070,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1798:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3073,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1821:14:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3072,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1821:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3075,
+                  "name": "token",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1845:13:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3074,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1845:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3077,
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1868:14:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3076,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1868:4:5",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1788:104:5"
+            },
+            "returnParameters": {
+              "id": 3081,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3080,
+                  "name": "ok",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1925:7:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3079,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1925:4:5",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1924:9:5"
+            },
+            "scope": 3083,
+            "src": "1767:167:5",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "public"
+          }
+        ],
+        "scope": 3084,
+        "src": "662:1274:5"
+      }
+    ],
+    "src": "607:1330:5"
+  },
+  "legacyAST": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IBrokerInterceptor.sol",
+    "exportedSymbols": {
+      "IBrokerInterceptor": [
+        3083
+      ]
+    },
+    "id": 3084,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3058,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:5"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title IBrokerInterceptor",
+        "fullyImplemented": false,
+        "id": 3083,
+        "linearizedBaseContracts": [
+          3083
+        ],
+        "name": "IBrokerInterceptor",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "body": null,
+            "documentation": "@dev   Returns the maximum amount of tokens the broker can sell for the owner\n @param owner The owner for which the broker can spend funds\n @param broker The broker of the owner\n @param token The token to spend\n @return The allowance",
+            "id": 3069,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getAllowance",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3065,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3060,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3069,
+                  "src": "997:13:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3059,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "997:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3062,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3069,
+                  "src": "1020:14:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3061,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1020:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3064,
+                  "name": "token",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3069,
+                  "src": "1044:13:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3063,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1044:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "987:80:5"
+            },
+            "returnParameters": {
+              "id": 3068,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3067,
+                  "name": "allowance",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3069,
+                  "src": "1113:14:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3066,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1113:4:5",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1112:16:5"
+            },
+            "scope": 3083,
+            "src": "966:163:5",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "public"
+          },
+          {
+            "body": null,
+            "documentation": "@dev Lets the interceptor know how much the broker has spent for an owner.\n      This method will be called from RingSubmitter, so\n      it must check `msg.sender` is the address of the Loopring Protocol.\n      Check https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md\n      for the current address of RingSubmitter deployment.\n @param owner The owner for which the broker has spent funds\n @param broker The broker of the owner\n @param token The token spent\n @param amount The amount spent\n @return True if successful, false otherwise.",
+            "id": 3082,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "onTokenSpent",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3078,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3071,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1798:13:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3070,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1798:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3073,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1821:14:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3072,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1821:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3075,
+                  "name": "token",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1845:13:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3074,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1845:7:5",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3077,
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1868:14:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3076,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1868:4:5",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1788:104:5"
+            },
+            "returnParameters": {
+              "id": 3081,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3080,
+                  "name": "ok",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3082,
+                  "src": "1925:7:5",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3079,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1925:4:5",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1924:9:5"
+            },
+            "scope": 3083,
+            "src": "1767:167:5",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "public"
+          }
+        ],
+        "scope": 3084,
+        "src": "662:1274:5"
+      }
+    ],
+    "src": "607:1330:5"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.2+commit.1df8f40c.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.0",
+  "updatedAt": "2019-03-19T09:16:27.470Z",
+  "devdoc": {
+    "methods": {
+      "getAllowance(address,address,address)": {
+        "details": "Returns the maximum amount of tokens the broker can sell for the owner",
+        "params": {
+          "broker": "The broker of the owner",
+          "owner": "The owner for which the broker can spend funds",
+          "token": "The token to spend"
+        },
+        "return": "The allowance"
+      },
+      "onTokenSpent(address,address,address,uint256)": {
+        "details": "Lets the interceptor know how much the broker has spent for an owner.      This method will be called from RingSubmitter, so      it must check `msg.sender` is the address of the Loopring Protocol.      Check https://github.com/Loopring/token-listing/blob/master/ethereum/deployment.md      for the current address of RingSubmitter deployment.",
+        "params": {
+          "amount": "The amount spent",
+          "broker": "The broker of the owner",
+          "owner": "The owner for which the broker has spent funds",
+          "token": "The token spent"
+        },
+        "return": "True if successful, false otherwise."
+      }
+    },
+    "title": "IBrokerInterceptor"
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

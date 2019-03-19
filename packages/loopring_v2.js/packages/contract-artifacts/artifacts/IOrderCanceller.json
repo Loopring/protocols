@@ -1,0 +1,2272 @@
+{
+  "contractName": "IOrderCanceller",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_broker",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_orderHashes",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "OrdersCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_broker",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_token1",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_token2",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "AllOrdersCancelledForTradingPair",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_broker",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "AllOrdersCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_broker",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "_owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_token1",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_token2",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "AllOrdersCancelledForTradingPairByBroker",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_broker",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "_owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "AllOrdersCancelledByBroker",
+      "type": "event"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "orderHashes",
+          "type": "bytes"
+        }
+      ],
+      "name": "cancelOrders",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "token1",
+          "type": "address"
+        },
+        {
+          "name": "token2",
+          "type": "address"
+        },
+        {
+          "name": "cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelAllOrdersForTradingPair",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelAllOrders",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "token1",
+          "type": "address"
+        },
+        {
+          "name": "token2",
+          "type": "address"
+        },
+        {
+          "name": "cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelAllOrdersForTradingPairOfOwner",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelAllOrdersOfOwner",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "/*\n\n  Copyright 2017 Loopring Project Ltd (Loopring Foundation).\n\n  Licensed under the Apache License, Version 2.0 (the \"License\");\n  you may not use this file except in compliance with the License.\n  You may obtain a copy of the License at\n\n  http://www.apache.org/licenses/LICENSE-2.0\n\n  Unless required by applicable law or agreed to in writing, software\n  distributed under the License is distributed on an \"AS IS\" BASIS,\n  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n  See the License for the specific language governing permissions and\n  limitations under the License.\n*/\npragma solidity 0.5.2;\n\n\n/// @title IOrderCanceller\n/// @author Daniel Wang - <daniel@loopring.org>\n/// @author Kongliang Zhong - <kongliang@loopring.org>\ncontract IOrderCanceller {\n\n    event OrdersCancelled(\n        address indexed _broker,\n        bytes32[]       _orderHashes\n    );\n\n    event AllOrdersCancelledForTradingPair(\n        address indexed _broker,\n        address         _token1,\n        address         _token2,\n        uint            _cutoff\n    );\n\n    event AllOrdersCancelled(\n        address indexed _broker,\n        uint            _cutoff\n    );\n\n    event AllOrdersCancelledForTradingPairByBroker(\n        address indexed _broker,\n        address indexed _owner,\n        address         _token1,\n        address         _token2,\n        uint            _cutoff\n    );\n\n    event AllOrdersCancelledByBroker(\n        address indexed _broker,\n        address indexed _owner,\n        uint            _cutoff\n    );\n\n    /// @dev Cancel multiple orders.\n    ///      msg.sender needs to be the broker of the orders you want to cancel.\n    /// @param orderHashes Hashes of the orders to be cancelled.\n    function cancelOrders(\n        bytes calldata orderHashes\n        )\n        external;\n\n    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n    ///        is smaller than or equal to the new value of the address's cutoff\n    ///        timestamp, for a specific trading pair.\n    ///        msg.sender needs to be the broker of the orders you want to cancel.\n    /// @param token1 The first token of the trading pair\n    /// @param token2 The second token of the trading pair\n    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`\n    ///        if it is 0.\n    function cancelAllOrdersForTradingPair(\n        address token1,\n        address token2,\n        uint    cutoff\n        )\n        external;\n\n    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n    ///        is smaller than or equal to the new value of the address's cutoff\n    ///        timestamp.\n    ///        msg.sender is the broker of the orders for which the cutoff is set.\n    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`\n    ///        if it is 0.\n    function cancelAllOrders(\n        uint    cutoff\n        )\n        external;\n\n    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n    ///        is smaller than or equal to the new value of the address's cutoff\n    ///        timestamp, for a specific trading pair.\n    ///        This function can be used by brokers to cancel orders of an owner.\n    ///        msg.sender needs to be the broker of the orders you want to cancel.\n    /// @param owner The owner of the orders the broker wants to cancel\n    /// @param token1 The first token of the trading pair\n    /// @param token2 The second token of the trading pair\n    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`\n    ///        if it is 0.\n    function cancelAllOrdersForTradingPairOfOwner(\n        address owner,\n        address token1,\n        address token2,\n        uint    cutoff\n        )\n        external;\n\n    /// @dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n    ///        is smaller than or equal to the new value of the address's cutoff\n    ///        timestamp.\n    ///        This function can be used by brokers to cancel orders of an owner.\n    ///        msg.sender needs to be the broker of the orders you want to cancel.\n    /// @param owner The owner of the orders the broker wants to cancel\n    /// @param cutoff The cutoff timestamp, will default to `block.timestamp`\n    ///        if it is 0.\n    function cancelAllOrdersOfOwner(\n        address owner,\n        uint    cutoff\n        )\n        external;\n}\n",
+  "sourcePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IOrderCanceller.sol",
+  "ast": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IOrderCanceller.sol",
+    "exportedSymbols": {
+      "IOrderCanceller": [
+        3389
+      ]
+    },
+    "id": 3390,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3308,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:10"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title IOrderCanceller\n @author Daniel Wang - <daniel@loopring.org>\n @author Kongliang Zhong - <kongliang@loopring.org>",
+        "fullyImplemented": false,
+        "id": 3389,
+        "linearizedBaseContracts": [
+          3389
+        ],
+        "name": "IOrderCanceller",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3315,
+            "name": "OrdersCancelled",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3314,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3310,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3315,
+                  "src": "825:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3309,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "825:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3313,
+                  "indexed": false,
+                  "name": "_orderHashes",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3315,
+                  "src": "858:28:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_memory_ptr",
+                    "typeString": "bytes32[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3311,
+                      "name": "bytes32",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "858:7:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "id": 3312,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "858:9:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                      "typeString": "bytes32[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "815:77:10"
+            },
+            "src": "794:99:10"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3325,
+            "name": "AllOrdersCancelledForTradingPair",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3324,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3317,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3325,
+                  "src": "947:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3316,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "947:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3319,
+                  "indexed": false,
+                  "name": "_token1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3325,
+                  "src": "980:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3318,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "980:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3321,
+                  "indexed": false,
+                  "name": "_token2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3325,
+                  "src": "1013:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3320,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1013:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3323,
+                  "indexed": false,
+                  "name": "_cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3325,
+                  "src": "1046:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3322,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1046:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "937:138:10"
+            },
+            "src": "899:177:10"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3331,
+            "name": "AllOrdersCancelled",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3330,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3327,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3331,
+                  "src": "1116:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3326,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1116:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3329,
+                  "indexed": false,
+                  "name": "_cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3331,
+                  "src": "1149:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3328,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1149:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1106:72:10"
+            },
+            "src": "1082:97:10"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3343,
+            "name": "AllOrdersCancelledForTradingPairByBroker",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3342,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3333,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1241:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3332,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1241:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3335,
+                  "indexed": true,
+                  "name": "_owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1274:22:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3334,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1274:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3337,
+                  "indexed": false,
+                  "name": "_token1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1306:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3336,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1306:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3339,
+                  "indexed": false,
+                  "name": "_token2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1339:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3338,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1339:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3341,
+                  "indexed": false,
+                  "name": "_cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1372:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3340,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1372:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1231:170:10"
+            },
+            "src": "1185:217:10"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3351,
+            "name": "AllOrdersCancelledByBroker",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3350,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3345,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3351,
+                  "src": "1450:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3344,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1450:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3347,
+                  "indexed": true,
+                  "name": "_owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3351,
+                  "src": "1483:22:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3346,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1483:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3349,
+                  "indexed": false,
+                  "name": "_cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3351,
+                  "src": "1515:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3348,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1515:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1440:104:10"
+            },
+            "src": "1408:137:10"
+          },
+          {
+            "body": null,
+            "documentation": "@dev Cancel multiple orders.\n      msg.sender needs to be the broker of the orders you want to cancel.\n @param orderHashes Hashes of the orders to be cancelled.",
+            "id": 3356,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelOrders",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3354,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3353,
+                  "name": "orderHashes",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3356,
+                  "src": "1765:26:10",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 3352,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1765:5:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1755:46:10"
+            },
+            "returnParameters": {
+              "id": 3355,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1818:0:10"
+            },
+            "scope": 3389,
+            "src": "1734:85:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n        is smaller than or equal to the new value of the address's cutoff\n        timestamp, for a specific trading pair.\n        msg.sender needs to be the broker of the orders you want to cancel.\n @param token1 The first token of the trading pair\n @param token2 The second token of the trading pair\n @param cutoff The cutoff timestamp, will default to `block.timestamp`\n        if it is 0.",
+            "id": 3365,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelAllOrdersForTradingPair",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3363,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3358,
+                  "name": "token1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3365,
+                  "src": "2393:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3357,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2393:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3360,
+                  "name": "token2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3365,
+                  "src": "2417:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3359,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2417:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3362,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3365,
+                  "src": "2441:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3361,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2441:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2383:82:10"
+            },
+            "returnParameters": {
+              "id": 3364,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2482:0:10"
+            },
+            "scope": 3389,
+            "src": "2345:138:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n        is smaller than or equal to the new value of the address's cutoff\n        timestamp.\n        msg.sender is the broker of the orders for which the cutoff is set.\n @param cutoff The cutoff timestamp, will default to `block.timestamp`\n        if it is 0.",
+            "id": 3370,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelAllOrders",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3368,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3367,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3370,
+                  "src": "2897:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3366,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2897:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2887:34:10"
+            },
+            "returnParameters": {
+              "id": 3369,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2938:0:10"
+            },
+            "scope": 3389,
+            "src": "2863:76:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n        is smaller than or equal to the new value of the address's cutoff\n        timestamp, for a specific trading pair.\n        This function can be used by brokers to cancel orders of an owner.\n        msg.sender needs to be the broker of the orders you want to cancel.\n @param owner The owner of the orders the broker wants to cancel\n @param token1 The first token of the trading pair\n @param token2 The second token of the trading pair\n @param cutoff The cutoff timestamp, will default to `block.timestamp`\n        if it is 0.",
+            "id": 3381,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelAllOrdersForTradingPairOfOwner",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3379,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3372,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3381,
+                  "src": "3674:13:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3371,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3674:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3374,
+                  "name": "token1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3381,
+                  "src": "3697:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3373,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3697:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3376,
+                  "name": "token2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3381,
+                  "src": "3721:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3375,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3721:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3378,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3381,
+                  "src": "3745:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3377,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3745:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3664:105:10"
+            },
+            "returnParameters": {
+              "id": 3380,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3786:0:10"
+            },
+            "scope": 3389,
+            "src": "3619:168:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n        is smaller than or equal to the new value of the address's cutoff\n        timestamp.\n        This function can be used by brokers to cancel orders of an owner.\n        msg.sender needs to be the broker of the orders you want to cancel.\n @param owner The owner of the orders the broker wants to cancel\n @param cutoff The cutoff timestamp, will default to `block.timestamp`\n        if it is 0.",
+            "id": 3388,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelAllOrdersOfOwner",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3386,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3383,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3388,
+                  "src": "4362:13:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3382,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4362:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3385,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3388,
+                  "src": "4385:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3384,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4385:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "4352:57:10"
+            },
+            "returnParameters": {
+              "id": 3387,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "4426:0:10"
+            },
+            "scope": 3389,
+            "src": "4321:106:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3390,
+        "src": "762:3667:10"
+      }
+    ],
+    "src": "607:3823:10"
+  },
+  "legacyAST": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IOrderCanceller.sol",
+    "exportedSymbols": {
+      "IOrderCanceller": [
+        3389
+      ]
+    },
+    "id": 3390,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3308,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:10"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title IOrderCanceller\n @author Daniel Wang - <daniel@loopring.org>\n @author Kongliang Zhong - <kongliang@loopring.org>",
+        "fullyImplemented": false,
+        "id": 3389,
+        "linearizedBaseContracts": [
+          3389
+        ],
+        "name": "IOrderCanceller",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3315,
+            "name": "OrdersCancelled",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3314,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3310,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3315,
+                  "src": "825:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3309,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "825:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3313,
+                  "indexed": false,
+                  "name": "_orderHashes",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3315,
+                  "src": "858:28:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_memory_ptr",
+                    "typeString": "bytes32[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3311,
+                      "name": "bytes32",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "858:7:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "id": 3312,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "858:9:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                      "typeString": "bytes32[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "815:77:10"
+            },
+            "src": "794:99:10"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3325,
+            "name": "AllOrdersCancelledForTradingPair",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3324,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3317,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3325,
+                  "src": "947:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3316,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "947:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3319,
+                  "indexed": false,
+                  "name": "_token1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3325,
+                  "src": "980:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3318,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "980:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3321,
+                  "indexed": false,
+                  "name": "_token2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3325,
+                  "src": "1013:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3320,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1013:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3323,
+                  "indexed": false,
+                  "name": "_cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3325,
+                  "src": "1046:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3322,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1046:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "937:138:10"
+            },
+            "src": "899:177:10"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3331,
+            "name": "AllOrdersCancelled",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3330,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3327,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3331,
+                  "src": "1116:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3326,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1116:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3329,
+                  "indexed": false,
+                  "name": "_cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3331,
+                  "src": "1149:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3328,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1149:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1106:72:10"
+            },
+            "src": "1082:97:10"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3343,
+            "name": "AllOrdersCancelledForTradingPairByBroker",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3342,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3333,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1241:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3332,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1241:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3335,
+                  "indexed": true,
+                  "name": "_owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1274:22:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3334,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1274:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3337,
+                  "indexed": false,
+                  "name": "_token1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1306:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3336,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1306:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3339,
+                  "indexed": false,
+                  "name": "_token2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1339:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3338,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1339:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3341,
+                  "indexed": false,
+                  "name": "_cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3343,
+                  "src": "1372:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3340,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1372:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1231:170:10"
+            },
+            "src": "1185:217:10"
+          },
+          {
+            "anonymous": false,
+            "documentation": null,
+            "id": 3351,
+            "name": "AllOrdersCancelledByBroker",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3350,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3345,
+                  "indexed": true,
+                  "name": "_broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3351,
+                  "src": "1450:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3344,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1450:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3347,
+                  "indexed": true,
+                  "name": "_owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3351,
+                  "src": "1483:22:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3346,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1483:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3349,
+                  "indexed": false,
+                  "name": "_cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3351,
+                  "src": "1515:23:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3348,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1515:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1440:104:10"
+            },
+            "src": "1408:137:10"
+          },
+          {
+            "body": null,
+            "documentation": "@dev Cancel multiple orders.\n      msg.sender needs to be the broker of the orders you want to cancel.\n @param orderHashes Hashes of the orders to be cancelled.",
+            "id": 3356,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelOrders",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3354,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3353,
+                  "name": "orderHashes",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3356,
+                  "src": "1765:26:10",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 3352,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1765:5:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1755:46:10"
+            },
+            "returnParameters": {
+              "id": 3355,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1818:0:10"
+            },
+            "scope": 3389,
+            "src": "1734:85:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n        is smaller than or equal to the new value of the address's cutoff\n        timestamp, for a specific trading pair.\n        msg.sender needs to be the broker of the orders you want to cancel.\n @param token1 The first token of the trading pair\n @param token2 The second token of the trading pair\n @param cutoff The cutoff timestamp, will default to `block.timestamp`\n        if it is 0.",
+            "id": 3365,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelAllOrdersForTradingPair",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3363,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3358,
+                  "name": "token1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3365,
+                  "src": "2393:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3357,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2393:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3360,
+                  "name": "token2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3365,
+                  "src": "2417:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3359,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2417:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3362,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3365,
+                  "src": "2441:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3361,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2441:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2383:82:10"
+            },
+            "returnParameters": {
+              "id": 3364,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2482:0:10"
+            },
+            "scope": 3389,
+            "src": "2345:138:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n        is smaller than or equal to the new value of the address's cutoff\n        timestamp.\n        msg.sender is the broker of the orders for which the cutoff is set.\n @param cutoff The cutoff timestamp, will default to `block.timestamp`\n        if it is 0.",
+            "id": 3370,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelAllOrders",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3368,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3367,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3370,
+                  "src": "2897:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3366,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2897:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2887:34:10"
+            },
+            "returnParameters": {
+              "id": 3369,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2938:0:10"
+            },
+            "scope": 3389,
+            "src": "2863:76:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n        is smaller than or equal to the new value of the address's cutoff\n        timestamp, for a specific trading pair.\n        This function can be used by brokers to cancel orders of an owner.\n        msg.sender needs to be the broker of the orders you want to cancel.\n @param owner The owner of the orders the broker wants to cancel\n @param token1 The first token of the trading pair\n @param token2 The second token of the trading pair\n @param cutoff The cutoff timestamp, will default to `block.timestamp`\n        if it is 0.",
+            "id": 3381,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelAllOrdersForTradingPairOfOwner",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3379,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3372,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3381,
+                  "src": "3674:13:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3371,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3674:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3374,
+                  "name": "token1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3381,
+                  "src": "3697:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3373,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3697:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3376,
+                  "name": "token2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3381,
+                  "src": "3721:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3375,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3721:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3378,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3381,
+                  "src": "3745:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3377,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3745:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3664:105:10"
+            },
+            "returnParameters": {
+              "id": 3380,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3786:0:10"
+            },
+            "scope": 3389,
+            "src": "3619:168:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev   Set a cutoff timestamp to invalidate all orders whose timestamp\n        is smaller than or equal to the new value of the address's cutoff\n        timestamp.\n        This function can be used by brokers to cancel orders of an owner.\n        msg.sender needs to be the broker of the orders you want to cancel.\n @param owner The owner of the orders the broker wants to cancel\n @param cutoff The cutoff timestamp, will default to `block.timestamp`\n        if it is 0.",
+            "id": 3388,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "cancelAllOrdersOfOwner",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3386,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3383,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3388,
+                  "src": "4362:13:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3382,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4362:7:10",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3385,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3388,
+                  "src": "4385:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3384,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4385:4:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "4352:57:10"
+            },
+            "returnParameters": {
+              "id": 3387,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "4426:0:10"
+            },
+            "scope": 3389,
+            "src": "4321:106:10",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3390,
+        "src": "762:3667:10"
+      }
+    ],
+    "src": "607:3823:10"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.2+commit.1df8f40c.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.0",
+  "updatedAt": "2019-03-19T09:16:27.471Z",
+  "devdoc": {
+    "author": "Daniel Wang - <daniel@loopring.org>Kongliang Zhong - <kongliang@loopring.org>",
+    "methods": {
+      "cancelAllOrders(uint256)": {
+        "details": "Set a cutoff timestamp to invalidate all orders whose timestamp        is smaller than or equal to the new value of the address's cutoff        timestamp.        msg.sender is the broker of the orders for which the cutoff is set.",
+        "params": {
+          "cutoff": "The cutoff timestamp, will default to `block.timestamp`        if it is 0."
+        }
+      },
+      "cancelAllOrdersForTradingPair(address,address,uint256)": {
+        "details": "Set a cutoff timestamp to invalidate all orders whose timestamp        is smaller than or equal to the new value of the address's cutoff        timestamp, for a specific trading pair.        msg.sender needs to be the broker of the orders you want to cancel.",
+        "params": {
+          "cutoff": "The cutoff timestamp, will default to `block.timestamp`        if it is 0.",
+          "token1": "The first token of the trading pair",
+          "token2": "The second token of the trading pair"
+        }
+      },
+      "cancelAllOrdersForTradingPairOfOwner(address,address,address,uint256)": {
+        "details": "Set a cutoff timestamp to invalidate all orders whose timestamp        is smaller than or equal to the new value of the address's cutoff        timestamp, for a specific trading pair.        This function can be used by brokers to cancel orders of an owner.        msg.sender needs to be the broker of the orders you want to cancel.",
+        "params": {
+          "cutoff": "The cutoff timestamp, will default to `block.timestamp`        if it is 0.",
+          "owner": "The owner of the orders the broker wants to cancel",
+          "token1": "The first token of the trading pair",
+          "token2": "The second token of the trading pair"
+        }
+      },
+      "cancelAllOrdersOfOwner(address,uint256)": {
+        "details": "Set a cutoff timestamp to invalidate all orders whose timestamp        is smaller than or equal to the new value of the address's cutoff        timestamp.        This function can be used by brokers to cancel orders of an owner.        msg.sender needs to be the broker of the orders you want to cancel.",
+        "params": {
+          "cutoff": "The cutoff timestamp, will default to `block.timestamp`        if it is 0.",
+          "owner": "The owner of the orders the broker wants to cancel"
+        }
+      },
+      "cancelOrders(bytes)": {
+        "details": "Cancel multiple orders.      msg.sender needs to be the broker of the orders you want to cancel.",
+        "params": {
+          "orderHashes": "Hashes of the orders to be cancelled."
+        }
+      }
+    },
+    "title": "IOrderCanceller"
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

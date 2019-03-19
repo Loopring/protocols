@@ -8,12 +8,13 @@
   "license": "MIT",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/loopring_v2.js/packages/*"
   ],
   "scripts": {
     "lerna": "lerna",
     "wsrun": "wsrun",
-    "build": "lerna link && wsrun build --fast-exit -r --stages --exclude-missing"
+    "build": "lerna link && wsrun build $PKG --fast-exit -r --stages --exclude-missing"
   },
   "devDependencies": {
     "lerna": "^3.13.1",

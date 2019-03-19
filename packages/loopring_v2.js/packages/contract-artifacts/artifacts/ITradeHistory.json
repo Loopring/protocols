@@ -1,0 +1,3095 @@
+{
+  "contractName": "ITradeHistory",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "filled",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "bytes20"
+        }
+      ],
+      "name": "tradingPairCutoffsOwner",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "bytes20"
+        }
+      ],
+      "name": "tradingPairCutoffs",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "cancelled",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "cutoffs",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "cutoffsOwner",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "filledInfo",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "batchUpdateFilled",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "name": "orderHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "setCancelled",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "name": "cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "setCutoffs",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "name": "tokenPair",
+          "type": "bytes20"
+        },
+        {
+          "name": "cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTradingPairCutoffs",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "setCutoffsOfOwner",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "broker",
+          "type": "address"
+        },
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "tokenPair",
+          "type": "bytes20"
+        },
+        {
+          "name": "cutoff",
+          "type": "uint256"
+        }
+      ],
+      "name": "setTradingPairCutoffsOfOwner",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "orderInfo",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "batchGetFilledAndCheckCancelled",
+      "outputs": [
+        {
+          "name": "fills",
+          "type": "uint256[]"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "addr",
+          "type": "address"
+        }
+      ],
+      "name": "authorizeAddress",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "addr",
+          "type": "address"
+        }
+      ],
+      "name": "deauthorizeAddress",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "addr",
+          "type": "address"
+        }
+      ],
+      "name": "isAddressAuthorized",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "suspend",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "resume",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "kill",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "/*\n\n  Copyright 2017 Loopring Project Ltd (Loopring Foundation).\n\n  Licensed under the Apache License, Version 2.0 (the \"License\");\n  you may not use this file except in compliance with the License.\n  You may obtain a copy of the License at\n\n  http://www.apache.org/licenses/LICENSE-2.0\n\n  Unless required by applicable law or agreed to in writing, software\n  distributed under the License is distributed on an \"AS IS\" BASIS,\n  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n  See the License for the specific language governing permissions and\n  limitations under the License.\n*/\npragma solidity 0.5.2;\n\n\n/// @title ITradeHistory\n/// @dev Stores the trade history and cancelled data of orders\n/// @author Brecht Devos - <brecht@loopring.org>.\ncontract ITradeHistory {\n\n    // The following map is used to keep trace of order fill and cancellation\n    // history.\n    mapping (bytes32 => uint) public filled;\n\n    // This map is used to keep trace of order's cancellation history.\n    mapping (address => mapping (bytes32 => bool)) public cancelled;\n\n    // A map from a broker to its cutoff timestamp.\n    mapping (address => uint) public cutoffs;\n\n    // A map from a broker to its trading-pair cutoff timestamp.\n    mapping (address => mapping (bytes20 => uint)) public tradingPairCutoffs;\n\n    // A map from a broker to an order owner to its cutoff timestamp.\n    mapping (address => mapping (address => uint)) public cutoffsOwner;\n\n    // A map from a broker to an order owner to its trading-pair cutoff timestamp.\n    mapping (address => mapping (address => mapping (bytes20 => uint))) public tradingPairCutoffsOwner;\n\n\n    function batchUpdateFilled(\n        bytes32[] calldata filledInfo\n        )\n        external;\n\n    function setCancelled(\n        address broker,\n        bytes32 orderHash\n        )\n        external;\n\n    function setCutoffs(\n        address broker,\n        uint cutoff\n        )\n        external;\n\n    function setTradingPairCutoffs(\n        address broker,\n        bytes20 tokenPair,\n        uint cutoff\n        )\n        external;\n\n    function setCutoffsOfOwner(\n        address broker,\n        address owner,\n        uint cutoff\n        )\n        external;\n\n    function setTradingPairCutoffsOfOwner(\n        address broker,\n        address owner,\n        bytes20 tokenPair,\n        uint cutoff\n        )\n        external;\n\n    function batchGetFilledAndCheckCancelled(\n        bytes32[] calldata orderInfo\n        )\n        external\n        view\n        returns (uint[] memory fills);\n\n\n    /// @dev Add a Loopring protocol address.\n    /// @param addr A loopring protocol address.\n    function authorizeAddress(\n        address addr\n        )\n        external;\n\n    /// @dev Remove a Loopring protocol address.\n    /// @param addr A loopring protocol address.\n    function deauthorizeAddress(\n        address addr\n        )\n        external;\n\n    function isAddressAuthorized(\n        address addr\n        )\n        public\n        view\n        returns (bool);\n\n\n    function suspend()\n        external;\n\n    function resume()\n        external;\n\n    function kill()\n        external;\n}\n",
+  "sourcePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/ITradeHistory.sol",
+  "ast": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/ITradeHistory.sol",
+    "exportedSymbols": {
+      "ITradeHistory": [
+        3587
+      ]
+    },
+    "id": 3588,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3468,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:14"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title ITradeHistory\n @dev Stores the trade history and cancelled data of orders\n @author Brecht Devos - <brecht@loopring.org>.",
+        "fullyImplemented": false,
+        "id": 3587,
+        "linearizedBaseContracts": [
+          3587
+        ],
+        "name": "ITradeHistory",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 3472,
+            "name": "filled",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "894:39:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+              "typeString": "mapping(bytes32 => uint256)"
+            },
+            "typeName": {
+              "id": 3471,
+              "keyType": {
+                "id": 3469,
+                "name": "bytes32",
+                "nodeType": "ElementaryTypeName",
+                "src": "903:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bytes32",
+                  "typeString": "bytes32"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "894:25:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                "typeString": "mapping(bytes32 => uint256)"
+              },
+              "valueType": {
+                "id": 3470,
+                "name": "uint",
+                "nodeType": "ElementaryTypeName",
+                "src": "914:4:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3478,
+            "name": "cancelled",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1011:63:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes32_$_t_bool_$_$",
+              "typeString": "mapping(address => mapping(bytes32 => bool))"
+            },
+            "typeName": {
+              "id": 3477,
+              "keyType": {
+                "id": 3473,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1020:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1011:46:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes32_$_t_bool_$_$",
+                "typeString": "mapping(address => mapping(bytes32 => bool))"
+              },
+              "valueType": {
+                "id": 3476,
+                "keyType": {
+                  "id": 3474,
+                  "name": "bytes32",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1040:7:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  }
+                },
+                "nodeType": "Mapping",
+                "src": "1031:25:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                  "typeString": "mapping(bytes32 => bool)"
+                },
+                "valueType": {
+                  "id": 3475,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1051:4:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3482,
+            "name": "cutoffs",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1133:40:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+              "typeString": "mapping(address => uint256)"
+            },
+            "typeName": {
+              "id": 3481,
+              "keyType": {
+                "id": 3479,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1142:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1133:25:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+                "typeString": "mapping(address => uint256)"
+              },
+              "valueType": {
+                "id": 3480,
+                "name": "uint",
+                "nodeType": "ElementaryTypeName",
+                "src": "1153:4:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3488,
+            "name": "tradingPairCutoffs",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1245:72:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$",
+              "typeString": "mapping(address => mapping(bytes20 => uint256))"
+            },
+            "typeName": {
+              "id": 3487,
+              "keyType": {
+                "id": 3483,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1254:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1245:46:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$",
+                "typeString": "mapping(address => mapping(bytes20 => uint256))"
+              },
+              "valueType": {
+                "id": 3486,
+                "keyType": {
+                  "id": 3484,
+                  "name": "bytes20",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1274:7:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes20",
+                    "typeString": "bytes20"
+                  }
+                },
+                "nodeType": "Mapping",
+                "src": "1265:25:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_bytes20_$_t_uint256_$",
+                  "typeString": "mapping(bytes20 => uint256)"
+                },
+                "valueType": {
+                  "id": 3485,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1285:4:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3494,
+            "name": "cutoffsOwner",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1394:66:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_uint256_$_$",
+              "typeString": "mapping(address => mapping(address => uint256))"
+            },
+            "typeName": {
+              "id": 3493,
+              "keyType": {
+                "id": 3489,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1403:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1394:46:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_uint256_$_$",
+                "typeString": "mapping(address => mapping(address => uint256))"
+              },
+              "valueType": {
+                "id": 3492,
+                "keyType": {
+                  "id": 3490,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1423:7:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "nodeType": "Mapping",
+                "src": "1414:25:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+                  "typeString": "mapping(address => uint256)"
+                },
+                "valueType": {
+                  "id": 3491,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1434:4:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3502,
+            "name": "tradingPairCutoffsOwner",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1550:98:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$_$",
+              "typeString": "mapping(address => mapping(address => mapping(bytes20 => uint256)))"
+            },
+            "typeName": {
+              "id": 3501,
+              "keyType": {
+                "id": 3495,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1559:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1550:67:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$_$",
+                "typeString": "mapping(address => mapping(address => mapping(bytes20 => uint256)))"
+              },
+              "valueType": {
+                "id": 3500,
+                "keyType": {
+                  "id": 3496,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1579:7:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "nodeType": "Mapping",
+                "src": "1570:46:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$",
+                  "typeString": "mapping(address => mapping(bytes20 => uint256))"
+                },
+                "valueType": {
+                  "id": 3499,
+                  "keyType": {
+                    "id": 3497,
+                    "name": "bytes20",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1599:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes20",
+                      "typeString": "bytes20"
+                    }
+                  },
+                  "nodeType": "Mapping",
+                  "src": "1590:25:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_mapping$_t_bytes20_$_t_uint256_$",
+                    "typeString": "mapping(bytes20 => uint256)"
+                  },
+                  "valueType": {
+                    "id": 3498,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1610:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  }
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3508,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "batchUpdateFilled",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3506,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3505,
+                  "name": "filledInfo",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3508,
+                  "src": "1692:29:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_calldata_ptr",
+                    "typeString": "bytes32[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3503,
+                      "name": "bytes32",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1692:7:14",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "id": 3504,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1692:9:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                      "typeString": "bytes32[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1682:49:14"
+            },
+            "returnParameters": {
+              "id": 3507,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1748:0:14"
+            },
+            "scope": 3587,
+            "src": "1656:93:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3515,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setCancelled",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3513,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3510,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3515,
+                  "src": "1786:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3509,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1786:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3512,
+                  "name": "orderHash",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3515,
+                  "src": "1810:17:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 3511,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1810:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1776:61:14"
+            },
+            "returnParameters": {
+              "id": 3514,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1854:0:14"
+            },
+            "scope": 3587,
+            "src": "1755:100:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3522,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setCutoffs",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3520,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3517,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3522,
+                  "src": "1890:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3516,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1890:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3519,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3522,
+                  "src": "1914:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3518,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1914:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1880:55:14"
+            },
+            "returnParameters": {
+              "id": 3521,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1952:0:14"
+            },
+            "scope": 3587,
+            "src": "1861:92:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3531,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setTradingPairCutoffs",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3529,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3524,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3531,
+                  "src": "1999:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3523,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1999:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3526,
+                  "name": "tokenPair",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3531,
+                  "src": "2023:17:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes20",
+                    "typeString": "bytes20"
+                  },
+                  "typeName": {
+                    "id": 3525,
+                    "name": "bytes20",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2023:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes20",
+                      "typeString": "bytes20"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3528,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3531,
+                  "src": "2050:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3527,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2050:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1989:82:14"
+            },
+            "returnParameters": {
+              "id": 3530,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2088:0:14"
+            },
+            "scope": 3587,
+            "src": "1959:130:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3540,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setCutoffsOfOwner",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3538,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3533,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3540,
+                  "src": "2131:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3532,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2131:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3535,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3540,
+                  "src": "2155:13:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3534,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2155:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3537,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3540,
+                  "src": "2178:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3536,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2178:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2121:78:14"
+            },
+            "returnParameters": {
+              "id": 3539,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2216:0:14"
+            },
+            "scope": 3587,
+            "src": "2095:122:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3551,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setTradingPairCutoffsOfOwner",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3549,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3542,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3551,
+                  "src": "2270:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3541,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2270:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3544,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3551,
+                  "src": "2294:13:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3543,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2294:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3546,
+                  "name": "tokenPair",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3551,
+                  "src": "2317:17:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes20",
+                    "typeString": "bytes20"
+                  },
+                  "typeName": {
+                    "id": 3545,
+                    "name": "bytes20",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2317:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes20",
+                      "typeString": "bytes20"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3548,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3551,
+                  "src": "2344:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3547,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2344:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2260:105:14"
+            },
+            "returnParameters": {
+              "id": 3550,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2382:0:14"
+            },
+            "scope": 3587,
+            "src": "2223:160:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3560,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "batchGetFilledAndCheckCancelled",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3555,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3554,
+                  "name": "orderInfo",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3560,
+                  "src": "2439:28:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_calldata_ptr",
+                    "typeString": "bytes32[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3552,
+                      "name": "bytes32",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "2439:7:14",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "id": 3553,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "2439:9:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                      "typeString": "bytes32[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2429:48:14"
+            },
+            "returnParameters": {
+              "id": 3559,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3558,
+                  "name": "fills",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3560,
+                  "src": "2525:19:14",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_uint256_$dyn_memory_ptr",
+                    "typeString": "uint256[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3556,
+                      "name": "uint",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "2525:4:14",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "id": 3557,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "2525:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                      "typeString": "uint256[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2524:21:14"
+            },
+            "scope": 3587,
+            "src": "2389:157:14",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev Add a Loopring protocol address.\n @param addr A loopring protocol address.",
+            "id": 3565,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "authorizeAddress",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3563,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3562,
+                  "name": "addr",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3565,
+                  "src": "2683:12:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3561,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2683:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2673:32:14"
+            },
+            "returnParameters": {
+              "id": 3564,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2722:0:14"
+            },
+            "scope": 3587,
+            "src": "2648:75:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev Remove a Loopring protocol address.\n @param addr A loopring protocol address.",
+            "id": 3570,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "deauthorizeAddress",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3568,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3567,
+                  "name": "addr",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3570,
+                  "src": "2864:12:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3566,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2864:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2854:32:14"
+            },
+            "returnParameters": {
+              "id": 3569,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2903:0:14"
+            },
+            "scope": 3587,
+            "src": "2827:77:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3577,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "isAddressAuthorized",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3573,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3572,
+                  "name": "addr",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3577,
+                  "src": "2948:12:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3571,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2948:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2938:32:14"
+            },
+            "returnParameters": {
+              "id": 3576,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3575,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3577,
+                  "src": "3016:4:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3574,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3016:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3015:6:14"
+            },
+            "scope": 3587,
+            "src": "2910:112:14",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "public"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3580,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "suspend",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3578,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3045:2:14"
+            },
+            "returnParameters": {
+              "id": 3579,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3064:0:14"
+            },
+            "scope": 3587,
+            "src": "3029:36:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3583,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "resume",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3581,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3086:2:14"
+            },
+            "returnParameters": {
+              "id": 3582,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3105:0:14"
+            },
+            "scope": 3587,
+            "src": "3071:35:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3586,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "kill",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3584,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3125:2:14"
+            },
+            "returnParameters": {
+              "id": 3585,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3144:0:14"
+            },
+            "scope": 3587,
+            "src": "3112:33:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3588,
+        "src": "770:2377:14"
+      }
+    ],
+    "src": "607:2541:14"
+  },
+  "legacyAST": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/ITradeHistory.sol",
+    "exportedSymbols": {
+      "ITradeHistory": [
+        3587
+      ]
+    },
+    "id": 3588,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3468,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:14"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@title ITradeHistory\n @dev Stores the trade history and cancelled data of orders\n @author Brecht Devos - <brecht@loopring.org>.",
+        "fullyImplemented": false,
+        "id": 3587,
+        "linearizedBaseContracts": [
+          3587
+        ],
+        "name": "ITradeHistory",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 3472,
+            "name": "filled",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "894:39:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+              "typeString": "mapping(bytes32 => uint256)"
+            },
+            "typeName": {
+              "id": 3471,
+              "keyType": {
+                "id": 3469,
+                "name": "bytes32",
+                "nodeType": "ElementaryTypeName",
+                "src": "903:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bytes32",
+                  "typeString": "bytes32"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "894:25:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_bytes32_$_t_uint256_$",
+                "typeString": "mapping(bytes32 => uint256)"
+              },
+              "valueType": {
+                "id": 3470,
+                "name": "uint",
+                "nodeType": "ElementaryTypeName",
+                "src": "914:4:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3478,
+            "name": "cancelled",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1011:63:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes32_$_t_bool_$_$",
+              "typeString": "mapping(address => mapping(bytes32 => bool))"
+            },
+            "typeName": {
+              "id": 3477,
+              "keyType": {
+                "id": 3473,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1020:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1011:46:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes32_$_t_bool_$_$",
+                "typeString": "mapping(address => mapping(bytes32 => bool))"
+              },
+              "valueType": {
+                "id": 3476,
+                "keyType": {
+                  "id": 3474,
+                  "name": "bytes32",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1040:7:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  }
+                },
+                "nodeType": "Mapping",
+                "src": "1031:25:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_bytes32_$_t_bool_$",
+                  "typeString": "mapping(bytes32 => bool)"
+                },
+                "valueType": {
+                  "id": 3475,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1051:4:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3482,
+            "name": "cutoffs",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1133:40:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+              "typeString": "mapping(address => uint256)"
+            },
+            "typeName": {
+              "id": 3481,
+              "keyType": {
+                "id": 3479,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1142:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1133:25:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+                "typeString": "mapping(address => uint256)"
+              },
+              "valueType": {
+                "id": 3480,
+                "name": "uint",
+                "nodeType": "ElementaryTypeName",
+                "src": "1153:4:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3488,
+            "name": "tradingPairCutoffs",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1245:72:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$",
+              "typeString": "mapping(address => mapping(bytes20 => uint256))"
+            },
+            "typeName": {
+              "id": 3487,
+              "keyType": {
+                "id": 3483,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1254:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1245:46:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$",
+                "typeString": "mapping(address => mapping(bytes20 => uint256))"
+              },
+              "valueType": {
+                "id": 3486,
+                "keyType": {
+                  "id": 3484,
+                  "name": "bytes20",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1274:7:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes20",
+                    "typeString": "bytes20"
+                  }
+                },
+                "nodeType": "Mapping",
+                "src": "1265:25:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_bytes20_$_t_uint256_$",
+                  "typeString": "mapping(bytes20 => uint256)"
+                },
+                "valueType": {
+                  "id": 3485,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1285:4:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3494,
+            "name": "cutoffsOwner",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1394:66:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_uint256_$_$",
+              "typeString": "mapping(address => mapping(address => uint256))"
+            },
+            "typeName": {
+              "id": 3493,
+              "keyType": {
+                "id": 3489,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1403:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1394:46:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_uint256_$_$",
+                "typeString": "mapping(address => mapping(address => uint256))"
+              },
+              "valueType": {
+                "id": 3492,
+                "keyType": {
+                  "id": 3490,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1423:7:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "nodeType": "Mapping",
+                "src": "1414:25:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+                  "typeString": "mapping(address => uint256)"
+                },
+                "valueType": {
+                  "id": 3491,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1434:4:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 3502,
+            "name": "tradingPairCutoffsOwner",
+            "nodeType": "VariableDeclaration",
+            "scope": 3587,
+            "src": "1550:98:14",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$_$",
+              "typeString": "mapping(address => mapping(address => mapping(bytes20 => uint256)))"
+            },
+            "typeName": {
+              "id": 3501,
+              "keyType": {
+                "id": 3495,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "1559:7:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1550:67:14",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$_$",
+                "typeString": "mapping(address => mapping(address => mapping(bytes20 => uint256)))"
+              },
+              "valueType": {
+                "id": 3500,
+                "keyType": {
+                  "id": 3496,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1579:7:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "nodeType": "Mapping",
+                "src": "1570:46:14",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_bytes20_$_t_uint256_$_$",
+                  "typeString": "mapping(address => mapping(bytes20 => uint256))"
+                },
+                "valueType": {
+                  "id": 3499,
+                  "keyType": {
+                    "id": 3497,
+                    "name": "bytes20",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1599:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes20",
+                      "typeString": "bytes20"
+                    }
+                  },
+                  "nodeType": "Mapping",
+                  "src": "1590:25:14",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_mapping$_t_bytes20_$_t_uint256_$",
+                    "typeString": "mapping(bytes20 => uint256)"
+                  },
+                  "valueType": {
+                    "id": 3498,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1610:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  }
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3508,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "batchUpdateFilled",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3506,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3505,
+                  "name": "filledInfo",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3508,
+                  "src": "1692:29:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_calldata_ptr",
+                    "typeString": "bytes32[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3503,
+                      "name": "bytes32",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1692:7:14",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "id": 3504,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1692:9:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                      "typeString": "bytes32[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1682:49:14"
+            },
+            "returnParameters": {
+              "id": 3507,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1748:0:14"
+            },
+            "scope": 3587,
+            "src": "1656:93:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3515,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setCancelled",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3513,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3510,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3515,
+                  "src": "1786:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3509,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1786:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3512,
+                  "name": "orderHash",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3515,
+                  "src": "1810:17:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 3511,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1810:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1776:61:14"
+            },
+            "returnParameters": {
+              "id": 3514,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1854:0:14"
+            },
+            "scope": 3587,
+            "src": "1755:100:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3522,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setCutoffs",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3520,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3517,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3522,
+                  "src": "1890:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3516,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1890:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3519,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3522,
+                  "src": "1914:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3518,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1914:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1880:55:14"
+            },
+            "returnParameters": {
+              "id": 3521,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1952:0:14"
+            },
+            "scope": 3587,
+            "src": "1861:92:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3531,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setTradingPairCutoffs",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3529,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3524,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3531,
+                  "src": "1999:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3523,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1999:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3526,
+                  "name": "tokenPair",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3531,
+                  "src": "2023:17:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes20",
+                    "typeString": "bytes20"
+                  },
+                  "typeName": {
+                    "id": 3525,
+                    "name": "bytes20",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2023:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes20",
+                      "typeString": "bytes20"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3528,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3531,
+                  "src": "2050:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3527,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2050:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1989:82:14"
+            },
+            "returnParameters": {
+              "id": 3530,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2088:0:14"
+            },
+            "scope": 3587,
+            "src": "1959:130:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3540,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setCutoffsOfOwner",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3538,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3533,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3540,
+                  "src": "2131:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3532,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2131:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3535,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3540,
+                  "src": "2155:13:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3534,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2155:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3537,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3540,
+                  "src": "2178:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3536,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2178:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2121:78:14"
+            },
+            "returnParameters": {
+              "id": 3539,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2216:0:14"
+            },
+            "scope": 3587,
+            "src": "2095:122:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3551,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setTradingPairCutoffsOfOwner",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3549,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3542,
+                  "name": "broker",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3551,
+                  "src": "2270:14:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3541,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2270:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3544,
+                  "name": "owner",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3551,
+                  "src": "2294:13:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3543,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2294:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3546,
+                  "name": "tokenPair",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3551,
+                  "src": "2317:17:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes20",
+                    "typeString": "bytes20"
+                  },
+                  "typeName": {
+                    "id": 3545,
+                    "name": "bytes20",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2317:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes20",
+                      "typeString": "bytes20"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3548,
+                  "name": "cutoff",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3551,
+                  "src": "2344:11:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3547,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2344:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2260:105:14"
+            },
+            "returnParameters": {
+              "id": 3550,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2382:0:14"
+            },
+            "scope": 3587,
+            "src": "2223:160:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3560,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "batchGetFilledAndCheckCancelled",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3555,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3554,
+                  "name": "orderInfo",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3560,
+                  "src": "2439:28:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_bytes32_$dyn_calldata_ptr",
+                    "typeString": "bytes32[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3552,
+                      "name": "bytes32",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "2439:7:14",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_bytes32",
+                        "typeString": "bytes32"
+                      }
+                    },
+                    "id": 3553,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "2439:9:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_bytes32_$dyn_storage_ptr",
+                      "typeString": "bytes32[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2429:48:14"
+            },
+            "returnParameters": {
+              "id": 3559,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3558,
+                  "name": "fills",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3560,
+                  "src": "2525:19:14",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_uint256_$dyn_memory_ptr",
+                    "typeString": "uint256[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3556,
+                      "name": "uint",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "2525:4:14",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "id": 3557,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "2525:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                      "typeString": "uint256[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2524:21:14"
+            },
+            "scope": 3587,
+            "src": "2389:157:14",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev Add a Loopring protocol address.\n @param addr A loopring protocol address.",
+            "id": 3565,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "authorizeAddress",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3563,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3562,
+                  "name": "addr",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3565,
+                  "src": "2683:12:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3561,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2683:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2673:32:14"
+            },
+            "returnParameters": {
+              "id": 3564,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2722:0:14"
+            },
+            "scope": 3587,
+            "src": "2648:75:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": "@dev Remove a Loopring protocol address.\n @param addr A loopring protocol address.",
+            "id": 3570,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "deauthorizeAddress",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3568,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3567,
+                  "name": "addr",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3570,
+                  "src": "2864:12:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3566,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2864:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2854:32:14"
+            },
+            "returnParameters": {
+              "id": 3569,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2903:0:14"
+            },
+            "scope": 3587,
+            "src": "2827:77:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3577,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "isAddressAuthorized",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3573,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3572,
+                  "name": "addr",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3577,
+                  "src": "2948:12:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3571,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2948:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2938:32:14"
+            },
+            "returnParameters": {
+              "id": 3576,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3575,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3577,
+                  "src": "3016:4:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3574,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3016:4:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3015:6:14"
+            },
+            "scope": 3587,
+            "src": "2910:112:14",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "public"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3580,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "suspend",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3578,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3045:2:14"
+            },
+            "returnParameters": {
+              "id": 3579,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3064:0:14"
+            },
+            "scope": 3587,
+            "src": "3029:36:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3583,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "resume",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3581,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3086:2:14"
+            },
+            "returnParameters": {
+              "id": 3582,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3105:0:14"
+            },
+            "scope": 3587,
+            "src": "3071:35:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          },
+          {
+            "body": null,
+            "documentation": null,
+            "id": 3586,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "kill",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3584,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3125:2:14"
+            },
+            "returnParameters": {
+              "id": 3585,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3144:0:14"
+            },
+            "scope": 3587,
+            "src": "3112:33:14",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3588,
+        "src": "770:2377:14"
+      }
+    ],
+    "src": "607:2541:14"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.2+commit.1df8f40c.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.0",
+  "updatedAt": "2019-03-19T09:16:27.472Z",
+  "devdoc": {
+    "author": "Brecht Devos - <brecht@loopring.org>.",
+    "details": "Stores the trade history and cancelled data of orders",
+    "methods": {
+      "authorizeAddress(address)": {
+        "details": "Add a Loopring protocol address.",
+        "params": {
+          "addr": "A loopring protocol address."
+        }
+      },
+      "deauthorizeAddress(address)": {
+        "details": "Remove a Loopring protocol address.",
+        "params": {
+          "addr": "A loopring protocol address."
+        }
+      }
+    },
+    "title": "ITradeHistory"
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "@loopring_v2/contract-artifacts.js",
+  "version": "1.0.2",
+  "description": "Javascript Library for accessing Loopring Protocol v2",
+  "main": "src/index.js",
+  "repository": "https://github.com/Loopring/protocols",
+  "author": "Daniel Wang",
+  "license": "MIT",
+  "private": false,
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^10.0.1",
+    "babel-jest": "^24.5.0",
+    "babel-preset-env": "^1.7.0",
+    "cross-env": "^5.2.0",
+    "eslint": "^5.15.3",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.16.0",
+    "jest": "^24.5.0",
+    "openzeppelin-solidity": "^2.2.0",
+    "pre-commit": "^1.2.2",
+    "rimraf": "^2.6.3",
+    "rollup": "^1.6.0",
+    "rollup-plugin-babel": "^4.3.2",
+    "rollup-plugin-commonjs": "^9.2.1",
+    "rollup-plugin-node-resolve": "^4.0.1",
+    "rollup-plugin-replace": "^2.1.1",
+    "rollup-plugin-uglify": "^6.0.2",
+    "rollup-watch": "^4.3.1"
+  },
+  "scripts": {
+    "jest": "cross-env NODE_ENV=commonjs ./node_modules/.bin/jest",
+    "jest:watch": "npm run jest -- --watch",
+    "lint": "./node_modules/.bin/eslint src",
+    "lint-fix": "./node_modules/.bin/eslint --fix src --ext .js",
+    "test": "npm run lint && npm run jest"
+  },
+
+  "jest": {
+    "testRegex": "(/tests/.*\\.spec.js)$"
+  },
+
+
+  "gitHead": "a9ed344df5a0a46da538d61a4ea7e11b260f744e"
+
+
+}

@@ -1,0 +1,876 @@
+{
+  "contractName": "PublicExchangeDeserializer",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "LRC_TOKEN_ADDRESS",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60c761002f600b82828239805160001a6073146000811461001f57610021565bfe5b5030600052607381538281f3fe7300000000000000000000000000000000000000003014608060405260043610604f577c010000000000000000000000000000000000000000000000000000000060003504632530211281146054575b600080fd5b605a6083565b6040805173ffffffffffffffffffffffffffffffffffffffff9092168252519081900360200190f35b73ef68e7c694f40c8202821edf525de3782458639f8156fea165627a7a72305820b4918e4aa85929806dd52e27dcd178d0343b96f4bc232dcbde504b56f38ff59c0029",
+  "deployedBytecode": "0x7300000000000000000000000000000000000000003014608060405260043610604f577c010000000000000000000000000000000000000000000000000000000060003504632530211281146054575b600080fd5b605a6083565b6040805173ffffffffffffffffffffffffffffffffffffffff9092168252519081900360200190f35b73ef68e7c694f40c8202821edf525de3782458639f8156fea165627a7a72305820b4918e4aa85929806dd52e27dcd178d0343b96f4bc232dcbde504b56f38ff59c0029",
+  "sourceMap": "794:519:26:-;;132:2:-1;166:7;155:9;146:7;137:37;252:7;246:14;243:1;238:23;232:4;229:33;270:1;265:20;;;;222:63;;265:20;274:9;222:63;;298:9;295:1;288:20;328:4;319:7;311:22;352:7;343;336:24",
+  "deployedSourceMap": "794:519:26:-;;;;;;;;;;;;;;;;;;;;;;;;836:86;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;880:42;836:86;:::o",
+  "source": "/*\n\n  Copyright 2017 Loopring Project Ltd (Loopring Foundation).\n\n  Licensed under the Apache License, Version 2.0 (the \"License\");\n  you may not use this file except in compliance with the License.\n  You may obtain a copy of the License at\n\n  http://www.apache.org/licenses/LICENSE-2.0\n\n  Unless required by applicable law or agreed to in writing, software\n  distributed under the License is distributed on an \"AS IS\" BASIS,\n  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n  See the License for the specific language governing permissions and\n  limitations under the License.\n*/\npragma solidity 0.5.2;\n\nimport \"./ExchangeDeserializer.sol\";\n\n\n/// @title A public library for deserializing loopring submitRings params.\n/// @author Daniel Wang - <daniel@loopring.org>,\nlibrary PublicExchangeDeserializer {\n\n    address public constant LRC_TOKEN_ADDRESS = 0xEF68e7C694F40c8202821eDF525dE3782458639f;\n\n    function deserialize(\n        bytes memory data\n        )\n        internal\n        view\n        returns (\n            Data.Mining memory mining,\n            Data.Order[] memory orders,\n            Data.Ring[] memory rings\n        )\n    {\n        (\n            mining,\n            orders,\n            rings\n        ) = ExchangeDeserializer.deserialize(LRC_TOKEN_ADDRESS, data);\n    }\n}\n",
+  "sourcePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/impl/PublicExchangeDeserializer.sol",
+  "ast": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/impl/PublicExchangeDeserializer.sol",
+    "exportedSymbols": {
+      "PublicExchangeDeserializer": [
+        6062
+      ]
+    },
+    "id": 6063,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 6032,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:26"
+      },
+      {
+        "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/impl/ExchangeDeserializer.sol",
+        "file": "./ExchangeDeserializer.sol",
+        "id": 6033,
+        "nodeType": "ImportDirective",
+        "scope": 6063,
+        "sourceUnit": 5048,
+        "src": "631:36:26",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "library",
+        "documentation": "@title A public library for deserializing loopring submitRings params.\n @author Daniel Wang - <daniel@loopring.org>,",
+        "fullyImplemented": true,
+        "id": 6062,
+        "linearizedBaseContracts": [
+          6062
+        ],
+        "name": "PublicExchangeDeserializer",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": true,
+            "id": 6036,
+            "name": "LRC_TOKEN_ADDRESS",
+            "nodeType": "VariableDeclaration",
+            "scope": 6062,
+            "src": "836:86:26",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_address",
+              "typeString": "address"
+            },
+            "typeName": {
+              "id": 6034,
+              "name": "address",
+              "nodeType": "ElementaryTypeName",
+              "src": "836:7:26",
+              "stateMutability": "nonpayable",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "hexValue": "307845463638653743363934463430633832303238323165444635323564453337383234353836333966",
+              "id": 6035,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "number",
+              "lValueRequested": false,
+              "nodeType": "Literal",
+              "src": "880:42:26",
+              "subdenomination": null,
+              "typeDescriptions": {
+                "typeIdentifier": "t_address_payable",
+                "typeString": "address payable"
+              },
+              "value": "0xEF68e7C694F40c8202821eDF525dE3782458639f"
+            },
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 6060,
+              "nodeType": "Block",
+              "src": "1165:146:26",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 6058,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "components": [
+                        {
+                          "argumentTypes": null,
+                          "id": 6049,
+                          "name": "mining",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6041,
+                          "src": "1189:6:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Mining_$4615_memory_ptr",
+                            "typeString": "struct Data.Mining memory"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "id": 6050,
+                          "name": "orders",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6044,
+                          "src": "1209:6:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr",
+                            "typeString": "struct Data.Order memory[] memory"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "id": 6051,
+                          "name": "rings",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6047,
+                          "src": "1229:5:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr",
+                            "typeString": "struct Data.Ring memory[] memory"
+                          }
+                        }
+                      ],
+                      "id": 6052,
+                      "isConstant": false,
+                      "isInlineArray": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "nodeType": "TupleExpression",
+                      "src": "1175:69:26",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_tuple$_t_struct$_Mining_$4615_memory_ptr_$_t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr_$_t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr_$",
+                        "typeString": "tuple(struct Data.Mining memory,struct Data.Order memory[] memory,struct Data.Ring memory[] memory)"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 6055,
+                          "name": "LRC_TOKEN_ADDRESS",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6036,
+                          "src": "1280:17:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "id": 6056,
+                          "name": "data",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6038,
+                          "src": "1299:4:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes_memory_ptr",
+                            "typeString": "bytes memory"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          },
+                          {
+                            "typeIdentifier": "t_bytes_memory_ptr",
+                            "typeString": "bytes memory"
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 6053,
+                          "name": "ExchangeDeserializer",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 5047,
+                          "src": "1247:20:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_type$_t_contract$_ExchangeDeserializer_$5047_$",
+                            "typeString": "type(library ExchangeDeserializer)"
+                          }
+                        },
+                        "id": 6054,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "deserialize",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 4935,
+                        "src": "1247:32:26",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_view$_t_address_$_t_bytes_memory_ptr_$returns$_t_struct$_Mining_$4615_memory_ptr_$_t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr_$_t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr_$",
+                          "typeString": "function (address,bytes memory) view returns (struct Data.Mining memory,struct Data.Order memory[] memory,struct Data.Ring memory[] memory)"
+                        }
+                      },
+                      "id": 6057,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "1247:57:26",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_tuple$_t_struct$_Mining_$4615_memory_ptr_$_t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr_$_t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr_$",
+                        "typeString": "tuple(struct Data.Mining memory,struct Data.Order memory[] memory,struct Data.Ring memory[] memory)"
+                      }
+                    },
+                    "src": "1175:129:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 6059,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1175:129:26"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 6061,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "deserialize",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 6039,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6038,
+                  "name": "data",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 6061,
+                  "src": "959:17:26",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 6037,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "959:5:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "949:37:26"
+            },
+            "returnParameters": {
+              "id": 6048,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6041,
+                  "name": "mining",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 6061,
+                  "src": "1047:25:26",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Mining_$4615_memory_ptr",
+                    "typeString": "struct Data.Mining"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 6040,
+                    "name": "Data.Mining",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4615,
+                    "src": "1047:11:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Mining_$4615_storage_ptr",
+                      "typeString": "struct Data.Mining"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6044,
+                  "name": "orders",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 6061,
+                  "src": "1086:26:26",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr",
+                    "typeString": "struct Data.Order[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "contractScope": null,
+                      "id": 6042,
+                      "name": "Data.Order",
+                      "nodeType": "UserDefinedTypeName",
+                      "referencedDeclaration": 4699,
+                      "src": "1086:10:26",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Order_$4699_storage_ptr",
+                        "typeString": "struct Data.Order"
+                      }
+                    },
+                    "id": 6043,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1086:12:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_struct$_Order_$4699_storage_$dyn_storage_ptr",
+                      "typeString": "struct Data.Order[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6047,
+                  "name": "rings",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 6061,
+                  "src": "1126:24:26",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr",
+                    "typeString": "struct Data.Ring[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "contractScope": null,
+                      "id": 6045,
+                      "name": "Data.Ring",
+                      "nodeType": "UserDefinedTypeName",
+                      "referencedDeclaration": 4732,
+                      "src": "1126:9:26",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Ring_$4732_storage_ptr",
+                        "typeString": "struct Data.Ring"
+                      }
+                    },
+                    "id": 6046,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1126:11:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_struct$_Ring_$4732_storage_$dyn_storage_ptr",
+                      "typeString": "struct Data.Ring[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1033:127:26"
+            },
+            "scope": 6062,
+            "src": "929:382:26",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "internal"
+          }
+        ],
+        "scope": 6063,
+        "src": "794:519:26"
+      }
+    ],
+    "src": "607:707:26"
+  },
+  "legacyAST": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/impl/PublicExchangeDeserializer.sol",
+    "exportedSymbols": {
+      "PublicExchangeDeserializer": [
+        6062
+      ]
+    },
+    "id": 6063,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 6032,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:26"
+      },
+      {
+        "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/impl/ExchangeDeserializer.sol",
+        "file": "./ExchangeDeserializer.sol",
+        "id": 6033,
+        "nodeType": "ImportDirective",
+        "scope": 6063,
+        "sourceUnit": 5048,
+        "src": "631:36:26",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "library",
+        "documentation": "@title A public library for deserializing loopring submitRings params.\n @author Daniel Wang - <daniel@loopring.org>,",
+        "fullyImplemented": true,
+        "id": 6062,
+        "linearizedBaseContracts": [
+          6062
+        ],
+        "name": "PublicExchangeDeserializer",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": true,
+            "id": 6036,
+            "name": "LRC_TOKEN_ADDRESS",
+            "nodeType": "VariableDeclaration",
+            "scope": 6062,
+            "src": "836:86:26",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_address",
+              "typeString": "address"
+            },
+            "typeName": {
+              "id": 6034,
+              "name": "address",
+              "nodeType": "ElementaryTypeName",
+              "src": "836:7:26",
+              "stateMutability": "nonpayable",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "hexValue": "307845463638653743363934463430633832303238323165444635323564453337383234353836333966",
+              "id": 6035,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "number",
+              "lValueRequested": false,
+              "nodeType": "Literal",
+              "src": "880:42:26",
+              "subdenomination": null,
+              "typeDescriptions": {
+                "typeIdentifier": "t_address_payable",
+                "typeString": "address payable"
+              },
+              "value": "0xEF68e7C694F40c8202821eDF525dE3782458639f"
+            },
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 6060,
+              "nodeType": "Block",
+              "src": "1165:146:26",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 6058,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "components": [
+                        {
+                          "argumentTypes": null,
+                          "id": 6049,
+                          "name": "mining",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6041,
+                          "src": "1189:6:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_struct$_Mining_$4615_memory_ptr",
+                            "typeString": "struct Data.Mining memory"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "id": 6050,
+                          "name": "orders",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6044,
+                          "src": "1209:6:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr",
+                            "typeString": "struct Data.Order memory[] memory"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "id": 6051,
+                          "name": "rings",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6047,
+                          "src": "1229:5:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr",
+                            "typeString": "struct Data.Ring memory[] memory"
+                          }
+                        }
+                      ],
+                      "id": 6052,
+                      "isConstant": false,
+                      "isInlineArray": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "nodeType": "TupleExpression",
+                      "src": "1175:69:26",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_tuple$_t_struct$_Mining_$4615_memory_ptr_$_t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr_$_t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr_$",
+                        "typeString": "tuple(struct Data.Mining memory,struct Data.Order memory[] memory,struct Data.Ring memory[] memory)"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 6055,
+                          "name": "LRC_TOKEN_ADDRESS",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6036,
+                          "src": "1280:17:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "id": 6056,
+                          "name": "data",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6038,
+                          "src": "1299:4:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes_memory_ptr",
+                            "typeString": "bytes memory"
+                          }
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          },
+                          {
+                            "typeIdentifier": "t_bytes_memory_ptr",
+                            "typeString": "bytes memory"
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 6053,
+                          "name": "ExchangeDeserializer",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 5047,
+                          "src": "1247:20:26",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_type$_t_contract$_ExchangeDeserializer_$5047_$",
+                            "typeString": "type(library ExchangeDeserializer)"
+                          }
+                        },
+                        "id": 6054,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "deserialize",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 4935,
+                        "src": "1247:32:26",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_internal_view$_t_address_$_t_bytes_memory_ptr_$returns$_t_struct$_Mining_$4615_memory_ptr_$_t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr_$_t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr_$",
+                          "typeString": "function (address,bytes memory) view returns (struct Data.Mining memory,struct Data.Order memory[] memory,struct Data.Ring memory[] memory)"
+                        }
+                      },
+                      "id": 6057,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "1247:57:26",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_tuple$_t_struct$_Mining_$4615_memory_ptr_$_t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr_$_t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr_$",
+                        "typeString": "tuple(struct Data.Mining memory,struct Data.Order memory[] memory,struct Data.Ring memory[] memory)"
+                      }
+                    },
+                    "src": "1175:129:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 6059,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1175:129:26"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 6061,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "deserialize",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 6039,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6038,
+                  "name": "data",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 6061,
+                  "src": "959:17:26",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 6037,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "959:5:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "949:37:26"
+            },
+            "returnParameters": {
+              "id": 6048,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6041,
+                  "name": "mining",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 6061,
+                  "src": "1047:25:26",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Mining_$4615_memory_ptr",
+                    "typeString": "struct Data.Mining"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 6040,
+                    "name": "Data.Mining",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 4615,
+                    "src": "1047:11:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Mining_$4615_storage_ptr",
+                      "typeString": "struct Data.Mining"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6044,
+                  "name": "orders",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 6061,
+                  "src": "1086:26:26",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_struct$_Order_$4699_memory_$dyn_memory_ptr",
+                    "typeString": "struct Data.Order[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "contractScope": null,
+                      "id": 6042,
+                      "name": "Data.Order",
+                      "nodeType": "UserDefinedTypeName",
+                      "referencedDeclaration": 4699,
+                      "src": "1086:10:26",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Order_$4699_storage_ptr",
+                        "typeString": "struct Data.Order"
+                      }
+                    },
+                    "id": 6043,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1086:12:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_struct$_Order_$4699_storage_$dyn_storage_ptr",
+                      "typeString": "struct Data.Order[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6047,
+                  "name": "rings",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 6061,
+                  "src": "1126:24:26",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_struct$_Ring_$4732_memory_$dyn_memory_ptr",
+                    "typeString": "struct Data.Ring[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "contractScope": null,
+                      "id": 6045,
+                      "name": "Data.Ring",
+                      "nodeType": "UserDefinedTypeName",
+                      "referencedDeclaration": 4732,
+                      "src": "1126:9:26",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_struct$_Ring_$4732_storage_ptr",
+                        "typeString": "struct Data.Ring"
+                      }
+                    },
+                    "id": 6046,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1126:11:26",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_struct$_Ring_$4732_storage_$dyn_storage_ptr",
+                      "typeString": "struct Data.Ring[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1033:127:26"
+            },
+            "scope": 6062,
+            "src": "929:382:26",
+            "stateMutability": "view",
+            "superFunction": null,
+            "visibility": "internal"
+          }
+        ],
+        "scope": 6063,
+        "src": "794:519:26"
+      }
+    ],
+    "src": "607:707:26"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.2+commit.1df8f40c.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.0",
+  "updatedAt": "2019-03-19T09:16:27.496Z",
+  "devdoc": {
+    "author": "Daniel Wang - <daniel@loopring.org>,",
+    "methods": {},
+    "title": "A public library for deserializing loopring submitRings params."
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}
