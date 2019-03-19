@@ -1,33 +1,44 @@
 {
-    "name": "@loopring_v2/contract-artifacts",
-    "version": "1.0.0",
-    "engines": {
-        "node": ">=6.12"
-    },
-    "description": "Loopring protocol v2 smart-contract artifacts",
-    "main": "lib/src/index.js",
-    "directories": {
-        "test": "test"
-    },
-    "scripts": {
-        "build": "yarn tsc -b",
-        "build:ci": "yarn build",
-        "clean": "shx rm -rf lib"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/Loopring/protocols.git"
-    },
-    "license": "Apache-2.0",
-    "bugs": {
-        "url": "https://github.com/Loopring/protocols/issues"
-    },
-    "homepage": "https://github.com/Loopring/protocols/packages/loopring_v2.js/packages/contract-artifacts/README.md",
-    "devDependencies": {
-        "shx": "^0.2.2",
-        "typescript": "3.0.1"
-    },
-    "publishConfig": {
-        "access": "public"
-    }
+  "name": "@loopring_v2/contract-artifacts",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=6.12"
+  },
+  "description": "Loopring protocol v2 smart-contract artifacts",
+  "main": "lib/src/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "yarn tsc -b",
+    "build:ci": "yarn build",
+    "clean": "shx rm -rf lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Loopring/protocols.git"
+  },
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Loopring/protocols/issues"
+  },
+  "homepage": "https://github.com/Loopring/protocols/packages/loopring_v2.js/packages/contract-artifacts/README.md",
+  "devDependencies": {
+    "shx": "^0.2.2",
+    "typescript": "3.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "lint-staged": "^8.1.5",
+    "prettier": "^1.16.4"
+  },
+  "lint-staged": {
+    "{src,test}/**/*.ts": [
+      "prettier --write --no-semi",
+      "git add"
+    ]
+  },
+  "precommit": "lint-staged"
 }
