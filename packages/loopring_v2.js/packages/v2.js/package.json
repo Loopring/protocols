@@ -4,7 +4,7 @@
   "engines": {
     "node": ">=6.12"
   },
-  "description": "Loopring protocol v2 smart-contract artifacts",
+  "description": "Loopring protocol v2 JS Library",
   "main": "lib/src/index.js",
   "directories": {
     "test": "test"
@@ -35,7 +35,10 @@
   "dependencies": {
     "@loopring_v2/contract-addresses": "^1.0.0",
     "@loopring_v2/contract-artifacts": "^1.0.0",
+    "@loopring_v2/contract-wrapper": "^1.0.0",
     "@loopring_v2/json-schemas": "^1.0.0",
+    "@loopring_v2/order-utils": "^1.0.0",
+    "@loopring_v2/types": "^1.0.0",
     "@types/web3-provider-engine": "^14.0.0",
     "ethereum-types": "^2.1.0",
     "lodash": "^4.17.11"
