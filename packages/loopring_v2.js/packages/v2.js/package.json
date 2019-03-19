@@ -24,15 +24,20 @@
   },
   "homepage": "https://github.com/Loopring/protocols/packages/loopring_v2.js/packages/v2.js/README.md",
   "devDependencies": {
-    "shx": "^0.2.2",
-    "typescript": "3.0.1",
     "lint-staged": "^8.1.5",
-    "prettier": "^1.16.4"
+    "prettier": "^1.16.4",
+    "shx": "^0.2.2",
+    "typescript": "3.0.1"
   },
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
+    "@loopring_v2/contract-addresses": "^1.0.0",
+    "@loopring_v2/contract-artifacts": "^1.0.0",
+    "@loopring_v2/json-schemas": "^1.0.0",
+    "@types/web3-provider-engine": "^14.0.0",
+    "ethereum-types": "^2.1.0",
     "lodash": "^4.17.11"
   },
   "lint-staged": {
