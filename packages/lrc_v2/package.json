@@ -10,6 +10,7 @@
     "test": "truffle test",
     "truffle": "truffle",
     "compile": "truffle compile",
+    "build": "truffle compile",
     "ganache": "ganache-cli"
   },
   "keywords": [

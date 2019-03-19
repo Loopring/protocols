@@ -17,6 +17,7 @@
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
     "compile": "truffle compile",
+    "build": "truffle compile",
     "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
     "ganache": "./ganache.sh",
