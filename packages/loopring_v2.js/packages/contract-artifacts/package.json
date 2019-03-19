@@ -1,17 +1,9 @@
 {
   "name": "@loopring_v2/contract-artifacts.js",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Javascript Library for accessing Loopring Protocol v2",
-  "main": "lib/index.js",
-  "module": "es/index.js",
-  "jsnext:main": "es/index.js",
-  "files": [
-    "dist",
-    "lib",
-    "es",
-    "src"
-  ],
-  "repository": "https://github.com/Loopring//protocols",
+  "main": "index.js",
+  "repository": "https://github.com/Loopring/protocols",
   "author": "Daniel Wang",
   "license": "MIT",
   "private": false,
@@ -42,23 +34,15 @@
     "jest:watch": "npm run jest -- --watch",
     "lint": "./node_modules/.bin/eslint src",
     "lint-fix": "./node_modules/.bin/eslint --fix src --ext .js",
-    "test": "npm run lint && npm run jest",
-    "clean": "rimraf lib dist es",
-    "prepare": "npm run clean && npm test && npm run build",
-    "build": "npm run build:commonjs && npm run build:umd && npm run build:umd:min && npm run build:es",
-    "build:watch": "echo 'build && watch the COMMONJS version of the package - for other version, run specific tasks' && npm run build:commonjs:watch",
-    "build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
-    "build:commonjs:watch": "npm run build:commonjs -- --watch",
-    "build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
-    "build:es:watch": "npm run build:es -- --watch",
-    "build:umd": "cross-env BABEL_ENV=es NODE_ENV=development node_modules/.bin/rollup src/index.js --config --sourcemap --output dist/lite-router.js",
-    "build:umd:watch": "npm run build:umd -- --watch",
-    "build:umd:min": "cross-env BABEL_ENV=es NODE_ENV=production rollup src/index.js --config --output dist/lite-router.min.js"
+    "test": "npm run lint && npm run jest"
   },
+
   "jest": {
     "testRegex": "(/tests/.*\\.spec.js)$"
   },
-  "pre-commit": [
-    "test"
-  ]
+
+
+  "gitHead": "a9ed344df5a0a46da538d61a4ea7e11b260f744e"
+
+
 }

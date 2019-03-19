@@ -1,0 +1,1029 @@
+{
+  "contractName": "DummyBurnManager",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "feeHolderAddress",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "name": "_feeHolderAddress",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawBurned",
+      "outputs": [
+        {
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405260008054600160a060020a031916905534801561002057600080fd5b5060405160208061023e8339810180604052602081101561004057600080fd5b505160008054600160a060020a03909216600160a060020a03199092169190911790556101cc806100726000396000f3fe608060405234801561001057600080fd5b5060043610610052577c01000000000000000000000000000000000000000000000000000000006000350463787748a78114610057578063fece7826146100a4575b600080fd5b6100906004803603604081101561006d57600080fd5b5073ffffffffffffffffffffffffffffffffffffffff81351690602001356100d5565b604080519115158252519081900360200190f35b6100ac610184565b6040805173ffffffffffffffffffffffffffffffffffffffff9092168252519081900360200190f35b60008054604080517f787748a700000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8681166004830152602482018690529151919092169163787748a791604480830192602092919082900301818787803b15801561015157600080fd5b505af1158015610165573d6000803e3d6000fd5b505050506040513d602081101561017b57600080fd5b50519392505050565b60005473ffffffffffffffffffffffffffffffffffffffff168156fea165627a7a723058206cf2dfac53cee91824c24e33c4f948173838e63c4e858be8fef280d89fdcfbc20029",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b5060043610610052577c01000000000000000000000000000000000000000000000000000000006000350463787748a78114610057578063fece7826146100a4575b600080fd5b6100906004803603604081101561006d57600080fd5b5073ffffffffffffffffffffffffffffffffffffffff81351690602001356100d5565b604080519115158252519081900360200190f35b6100ac610184565b6040805173ffffffffffffffffffffffffffffffffffffffff9092168252519081900360200190f35b60008054604080517f787748a700000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff8681166004830152602482018690529151919092169163787748a791604480830192602092919082900301818787803b15801561015157600080fd5b505af1158015610165573d6000803e3d6000fd5b505050506040513d602081101561017b57600080fd5b50519392505050565b60005473ffffffffffffffffffffffffffffffffffffffff168156fea165627a7a723058206cf2dfac53cee91824c24e33c4f948173838e63c4e858be8fef280d89fdcfbc20029",
+  "sourceMap": "715:407:50:-;;;790:3;748:46;;-1:-1:-1;;;;;;748:46:50;;;801:129;5:2:-1;;;;30:1;27;20:12;5:2;801:129:50;;;;;;;;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;-1:-1;801:129:50;887:16;:36;;-1:-1:-1;;;;;887:36:50;;;-1:-1:-1;;;;;;887:36:50;;;;;;;;;715:407;;;;;;",
+  "deployedSourceMap": "715:407:50:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;715:407:50;;;;;;;;;;;;;;;;;;;;;;;;936:184;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;-1:-1;936:184:50;;;;;;;;;:::i;:::-;;;;;;;;;;;;;;;;;;748:46;;;:::i;:::-;;;;;;;;;;;;;;;;;;;936:184;1021:12;1067:16;;1056:57;;;;;;1067:16;1056:57;;;;;;;;;;;;;;;1067:16;;;;;1056:43;;:57;;;;;;;;;;;;;;1021:12;1067:16;1056:57;;;5:2:-1;;;;30:1;27;20:12;5:2;1056:57:50;;;;8:9:-1;5:2;;;45:16;42:1;39;24:38;77:16;74:1;67:27;5:2;1056:57:50;;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;-1:-1;1056:57:50;;936:184;-1:-1:-1;;;936:184:50:o;748:46::-;;;;;;:::o",
+  "source": "/*\n\n  Copyright 2017 Loopring Project Ltd (Loopring Foundation).\n\n  Licensed under the Apache License, Version 2.0 (the \"License\");\n  you may not use this file except in compliance with the License.\n  You may obtain a copy of the License at\n\n  http://www.apache.org/licenses/LICENSE-2.0\n\n  Unless required by applicable law or agreed to in writing, software\n  distributed under the License is distributed on an \"AS IS\" BASIS,\n  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n  See the License for the specific language governing permissions and\n  limitations under the License.\n*/\npragma solidity 0.5.2;\n\nimport \"../iface/IFeeHolder.sol\";\n\n/// @author Brecht Devos - <brecht@loopring.org>\ncontract DummyBurnManager {\n\n    address public feeHolderAddress = address(0x0);\n\n    constructor(\n        address _feeHolderAddress\n        )\n        public\n    {\n        feeHolderAddress = _feeHolderAddress;\n    }\n\n    function withdrawBurned(address token, uint value)\n        external\n        returns (bool success)\n    {\n        return IFeeHolder(feeHolderAddress).withdrawBurned(token, value);\n    }\n}\n",
+  "sourcePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/test/DummyBurnManager.sol",
+  "ast": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/test/DummyBurnManager.sol",
+    "exportedSymbols": {
+      "DummyBurnManager": [
+        10428
+      ]
+    },
+    "id": 10429,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 10393,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:50"
+      },
+      {
+        "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IFeeHolder.sol",
+        "file": "../iface/IFeeHolder.sol",
+        "id": 10394,
+        "nodeType": "ImportDirective",
+        "scope": 10429,
+        "sourceUnit": 3287,
+        "src": "631:33:50",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@author Brecht Devos - <brecht@loopring.org>",
+        "fullyImplemented": true,
+        "id": 10428,
+        "linearizedBaseContracts": [
+          10428
+        ],
+        "name": "DummyBurnManager",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 10399,
+            "name": "feeHolderAddress",
+            "nodeType": "VariableDeclaration",
+            "scope": 10428,
+            "src": "748:46:50",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_address",
+              "typeString": "address"
+            },
+            "typeName": {
+              "id": 10395,
+              "name": "address",
+              "nodeType": "ElementaryTypeName",
+              "src": "748:7:50",
+              "stateMutability": "nonpayable",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "arguments": [
+                {
+                  "argumentTypes": null,
+                  "hexValue": "307830",
+                  "id": 10397,
+                  "isConstant": false,
+                  "isLValue": false,
+                  "isPure": true,
+                  "kind": "number",
+                  "lValueRequested": false,
+                  "nodeType": "Literal",
+                  "src": "790:3:50",
+                  "subdenomination": null,
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_rational_0_by_1",
+                    "typeString": "int_const 0"
+                  },
+                  "value": "0x0"
+                }
+              ],
+              "expression": {
+                "argumentTypes": [
+                  {
+                    "typeIdentifier": "t_rational_0_by_1",
+                    "typeString": "int_const 0"
+                  }
+                ],
+                "id": 10396,
+                "isConstant": false,
+                "isLValue": false,
+                "isPure": true,
+                "lValueRequested": false,
+                "nodeType": "ElementaryTypeNameExpression",
+                "src": "782:7:50",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_type$_t_address_$",
+                  "typeString": "type(address)"
+                },
+                "typeName": "address"
+              },
+              "id": 10398,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "typeConversion",
+              "lValueRequested": false,
+              "names": [],
+              "nodeType": "FunctionCall",
+              "src": "782:12:50",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address_payable",
+                "typeString": "address payable"
+              }
+            },
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 10408,
+              "nodeType": "Block",
+              "src": "877:53:50",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 10406,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "id": 10404,
+                      "name": "feeHolderAddress",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 10399,
+                      "src": "887:16:50",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "id": 10405,
+                      "name": "_feeHolderAddress",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 10401,
+                      "src": "906:17:50",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "src": "887:36:50",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "id": 10407,
+                  "nodeType": "ExpressionStatement",
+                  "src": "887:36:50"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 10409,
+            "implemented": true,
+            "kind": "constructor",
+            "modifiers": [],
+            "name": "",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 10402,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 10401,
+                  "name": "_feeHolderAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 10409,
+                  "src": "822:25:50",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 10400,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "822:7:50",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "812:45:50"
+            },
+            "returnParameters": {
+              "id": 10403,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "877:0:50"
+            },
+            "scope": 10428,
+            "src": "801:129:50",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 10426,
+              "nodeType": "Block",
+              "src": "1039:81:50",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "id": 10422,
+                        "name": "token",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 10411,
+                        "src": "1100:5:50",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "id": 10423,
+                        "name": "value",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 10413,
+                        "src": "1107:5:50",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "arguments": [
+                          {
+                            "argumentTypes": null,
+                            "id": 10419,
+                            "name": "feeHolderAddress",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 10399,
+                            "src": "1067:16:50",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_address",
+                              "typeString": "address"
+                            }
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": [
+                            {
+                              "typeIdentifier": "t_address",
+                              "typeString": "address"
+                            }
+                          ],
+                          "id": 10418,
+                          "name": "IFeeHolder",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3286,
+                          "src": "1056:10:50",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_type$_t_contract$_IFeeHolder_$3286_$",
+                            "typeString": "type(contract IFeeHolder)"
+                          }
+                        },
+                        "id": 10420,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "kind": "typeConversion",
+                        "lValueRequested": false,
+                        "names": [],
+                        "nodeType": "FunctionCall",
+                        "src": "1056:28:50",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_contract$_IFeeHolder_$3286",
+                          "typeString": "contract IFeeHolder"
+                        }
+                      },
+                      "id": 10421,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "withdrawBurned",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3270,
+                      "src": "1056:43:50",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_uint256_$returns$_t_bool_$",
+                        "typeString": "function (address,uint256) external returns (bool)"
+                      }
+                    },
+                    "id": 10424,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1056:57:50",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "functionReturnParameters": 10417,
+                  "id": 10425,
+                  "nodeType": "Return",
+                  "src": "1049:64:50"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 10427,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdrawBurned",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 10414,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 10411,
+                  "name": "token",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 10427,
+                  "src": "960:13:50",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 10410,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "960:7:50",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 10413,
+                  "name": "value",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 10427,
+                  "src": "975:10:50",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 10412,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "975:4:50",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "959:27:50"
+            },
+            "returnParameters": {
+              "id": 10417,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 10416,
+                  "name": "success",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 10427,
+                  "src": "1021:12:50",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 10415,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1021:4:50",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1020:14:50"
+            },
+            "scope": 10428,
+            "src": "936:184:50",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 10429,
+        "src": "715:407:50"
+      }
+    ],
+    "src": "607:516:50"
+  },
+  "legacyAST": {
+    "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/test/DummyBurnManager.sol",
+    "exportedSymbols": {
+      "DummyBurnManager": [
+        10428
+      ]
+    },
+    "id": 10429,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 10393,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".2"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "607:22:50"
+      },
+      {
+        "absolutePath": "/usr/local/klzhong/workspace/loopring/protocol2/contracts/iface/IFeeHolder.sol",
+        "file": "../iface/IFeeHolder.sol",
+        "id": 10394,
+        "nodeType": "ImportDirective",
+        "scope": 10429,
+        "sourceUnit": 3287,
+        "src": "631:33:50",
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": "@author Brecht Devos - <brecht@loopring.org>",
+        "fullyImplemented": true,
+        "id": 10428,
+        "linearizedBaseContracts": [
+          10428
+        ],
+        "name": "DummyBurnManager",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 10399,
+            "name": "feeHolderAddress",
+            "nodeType": "VariableDeclaration",
+            "scope": 10428,
+            "src": "748:46:50",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_address",
+              "typeString": "address"
+            },
+            "typeName": {
+              "id": 10395,
+              "name": "address",
+              "nodeType": "ElementaryTypeName",
+              "src": "748:7:50",
+              "stateMutability": "nonpayable",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "arguments": [
+                {
+                  "argumentTypes": null,
+                  "hexValue": "307830",
+                  "id": 10397,
+                  "isConstant": false,
+                  "isLValue": false,
+                  "isPure": true,
+                  "kind": "number",
+                  "lValueRequested": false,
+                  "nodeType": "Literal",
+                  "src": "790:3:50",
+                  "subdenomination": null,
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_rational_0_by_1",
+                    "typeString": "int_const 0"
+                  },
+                  "value": "0x0"
+                }
+              ],
+              "expression": {
+                "argumentTypes": [
+                  {
+                    "typeIdentifier": "t_rational_0_by_1",
+                    "typeString": "int_const 0"
+                  }
+                ],
+                "id": 10396,
+                "isConstant": false,
+                "isLValue": false,
+                "isPure": true,
+                "lValueRequested": false,
+                "nodeType": "ElementaryTypeNameExpression",
+                "src": "782:7:50",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_type$_t_address_$",
+                  "typeString": "type(address)"
+                },
+                "typeName": "address"
+              },
+              "id": 10398,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "typeConversion",
+              "lValueRequested": false,
+              "names": [],
+              "nodeType": "FunctionCall",
+              "src": "782:12:50",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address_payable",
+                "typeString": "address payable"
+              }
+            },
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 10408,
+              "nodeType": "Block",
+              "src": "877:53:50",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 10406,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "id": 10404,
+                      "name": "feeHolderAddress",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 10399,
+                      "src": "887:16:50",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "id": 10405,
+                      "name": "_feeHolderAddress",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 10401,
+                      "src": "906:17:50",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "src": "887:36:50",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "id": 10407,
+                  "nodeType": "ExpressionStatement",
+                  "src": "887:36:50"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 10409,
+            "implemented": true,
+            "kind": "constructor",
+            "modifiers": [],
+            "name": "",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 10402,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 10401,
+                  "name": "_feeHolderAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 10409,
+                  "src": "822:25:50",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 10400,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "822:7:50",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "812:45:50"
+            },
+            "returnParameters": {
+              "id": 10403,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "877:0:50"
+            },
+            "scope": 10428,
+            "src": "801:129:50",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 10426,
+              "nodeType": "Block",
+              "src": "1039:81:50",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "id": 10422,
+                        "name": "token",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 10411,
+                        "src": "1100:5:50",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "id": 10423,
+                        "name": "value",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 10413,
+                        "src": "1107:5:50",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "arguments": [
+                          {
+                            "argumentTypes": null,
+                            "id": 10419,
+                            "name": "feeHolderAddress",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 10399,
+                            "src": "1067:16:50",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_address",
+                              "typeString": "address"
+                            }
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": [
+                            {
+                              "typeIdentifier": "t_address",
+                              "typeString": "address"
+                            }
+                          ],
+                          "id": 10418,
+                          "name": "IFeeHolder",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 3286,
+                          "src": "1056:10:50",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_type$_t_contract$_IFeeHolder_$3286_$",
+                            "typeString": "type(contract IFeeHolder)"
+                          }
+                        },
+                        "id": 10420,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "kind": "typeConversion",
+                        "lValueRequested": false,
+                        "names": [],
+                        "nodeType": "FunctionCall",
+                        "src": "1056:28:50",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_contract$_IFeeHolder_$3286",
+                          "typeString": "contract IFeeHolder"
+                        }
+                      },
+                      "id": 10421,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "withdrawBurned",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 3270,
+                      "src": "1056:43:50",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_uint256_$returns$_t_bool_$",
+                        "typeString": "function (address,uint256) external returns (bool)"
+                      }
+                    },
+                    "id": 10424,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1056:57:50",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "functionReturnParameters": 10417,
+                  "id": 10425,
+                  "nodeType": "Return",
+                  "src": "1049:64:50"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 10427,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdrawBurned",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 10414,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 10411,
+                  "name": "token",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 10427,
+                  "src": "960:13:50",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 10410,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "960:7:50",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 10413,
+                  "name": "value",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 10427,
+                  "src": "975:10:50",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 10412,
+                    "name": "uint",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "975:4:50",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "959:27:50"
+            },
+            "returnParameters": {
+              "id": 10417,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 10416,
+                  "name": "success",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 10427,
+                  "src": "1021:12:50",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 10415,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1021:4:50",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1020:14:50"
+            },
+            "scope": 10428,
+            "src": "936:184:50",
+            "stateMutability": "nonpayable",
+            "superFunction": null,
+            "visibility": "external"
+          }
+        ],
+        "scope": 10429,
+        "src": "715:407:50"
+      }
+    ],
+    "src": "607:516:50"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.2+commit.1df8f40c.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.0",
+  "updatedAt": "2019-03-19T09:16:27.522Z",
+  "devdoc": {
+    "author": "Brecht Devos - <brecht@loopring.org>",
+    "methods": {}
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

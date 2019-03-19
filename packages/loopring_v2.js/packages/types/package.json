@@ -60,5 +60,6 @@
   },
   "pre-commit": [
     "test"
-  ]
+  ],
+  "gitHead": "a9ed344df5a0a46da538d61a4ea7e11b260f744e"
 }
