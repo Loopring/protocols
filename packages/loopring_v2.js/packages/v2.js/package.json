@@ -1,10 +1,10 @@
 {
-  "name": "@loopring_v2/json-schemas",
+  "name": "loopring_v2.js",
   "version": "1.0.0",
   "engines": {
     "node": ">=6.12"
   },
-  "description": "Loopring protocol v2 json schemas",
+  "description": "Loopring protocol v2 smart-contract artifacts",
   "main": "lib/src/index.js",
   "directories": {
     "test": "test"
@@ -22,7 +22,7 @@
   "bugs": {
     "url": "https://github.com/Loopring/protocols/issues"
   },
-  "homepage": "https://github.com/Loopring/protocols/packages/loopring_v2.js/packages/json-schemas/README.md",
+  "homepage": "https://github.com/Loopring/protocols/packages/loopring_v2.js/packages/v2.js/README.md",
   "devDependencies": {
     "shx": "^0.2.2",
     "typescript": "3.0.1",
@@ -33,10 +33,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@types/lodash.values": "^4.3.6",
-    "@types/node": "^11.11.3",
-    "jsonschema": "^1.2.4",
-    "lodash.values": "^4.3.0"
+    "lodash": "^4.17.11"
   },
   "lint-staged": {
     "{src,test}/**/*.ts": [

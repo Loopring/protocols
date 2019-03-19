@@ -25,15 +25,14 @@
   "homepage": "https://github.com/Loopring/protocols/packages/loopring_v2.js/packages/contract-artifacts/README.md",
   "devDependencies": {
     "shx": "^0.2.2",
-    "typescript": "3.0.1"
+    "typescript": "3.0.1",
+    "lint-staged": "^8.1.5",
+    "prettier": "^1.16.4"
   },
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "lint-staged": "^8.1.5",
-    "prettier": "^1.16.4"
-  },
+  "dependencies": {},
   "lint-staged": {
     "{src,test}/**/*.ts": [
       "prettier --write --no-semi",
