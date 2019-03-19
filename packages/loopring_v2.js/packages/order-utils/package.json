@@ -1,6 +1,6 @@
 {
   "name": "@loopring_v2/order-utils.js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Javascript Library for accessing Loopring Protocol v2",
   "main": "lib/index.js",
   "module": "es/index.js",
@@ -37,7 +37,6 @@
     "rollup-plugin-uglify": "^6.0.2",
     "rollup-watch": "^4.3.1"
   },
-  "dependencies": {},
   "scripts": {
     "jest": "cross-env NODE_ENV=commonjs ./node_modules/.bin/jest",
     "jest:watch": "npm run jest -- --watch",
