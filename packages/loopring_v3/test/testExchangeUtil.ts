@@ -10,8 +10,8 @@ import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DepositInfo, DetailedTokenTransfer, OrderInfo,
-         RingBlock, RingInfo, State, TradeHistory, Wallet, Withdrawal,
+import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DepositInfo, DetailedTokenTransfer,
+         Operator, OrderInfo, RingBlock, RingInfo, State, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
 // JSON replacer function for BN values
@@ -31,15 +31,18 @@ export class ExchangeTestUtil {
   public tokenRegistry: any;
   public blockVerifier: any;
 
-  public operatorAccountID: number[] = [];
   public minerAccountID: number[] = [];
   public feeRecipientAccountID: number[] = [];
 
+  public operators: Operator[][] = [];
   public wallets: Wallet[][] = [];
 
   public MAX_MUM_WALLETS: number;
+  public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
   public MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE: number;
-  public MAX_NUM_STATES: number = 16;
+  public STAKE_AMOUNT_IN_LRC: BN;
+
+  public MAX_NUM_STATES: number = 64;
 
   private contracts = new Artifacts(artifacts);
 
@@ -54,7 +57,7 @@ export class ExchangeTestUtil {
 
   private pendingWithdrawals: Withdrawal[] = [];
 
-  private pendingBlocks: Block[] = [];
+  private pendingBlocks: Block[][] = [];
 
   private zeroAddress = "0x" + "00".repeat(20);
 
@@ -66,7 +69,9 @@ export class ExchangeTestUtil {
     await this.registerTokens();
 
     this.MAX_MUM_WALLETS = (await this.exchange.MAX_NUM_WALLETS()).toNumber();
+    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
     this.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE = (await this.exchange.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE()).toNumber();
+    this.STAKE_AMOUNT_IN_LRC = await this.exchange.STAKE_AMOUNT_IN_LRC();
 
     for (let i = 0; i < this.MAX_NUM_STATES; i++) {
       const rings: RingInfo[] = [];
@@ -84,12 +89,19 @@ export class ExchangeTestUtil {
       const cancels: Cancel[] = [];
       this.pendingCancels.push(cancels);
 
+      const operators: Operator[] = [];
+      this.operators.push(operators);
+
       const wallets: Wallet[] = [];
       this.wallets.push(wallets);
+
+      const pendingBlocks: Block[] = [];
+      this.pendingBlocks.push(pendingBlocks);
     }
 
     await this.createNewState(
       this.testContext.deployer,
+      1,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.01", "ether")),
@@ -97,7 +109,7 @@ export class ExchangeTestUtil {
     );
   }
 
-  public async setupTestState(stateID: number) {
+  public async setupTestState(stateID: number, numOperators: number = 1) {
     await this.deposit(
       stateID,
       this.testContext.deployer,
@@ -120,7 +132,9 @@ export class ExchangeTestUtil {
       new BN(0),
     );
 
-    this.operatorAccountID[stateID] = await this.createOperator(stateID, this.testContext.miner);
+    for (let i = 0; i < numOperators; i++) {
+      this.operators[stateID].push(await this.createOperator(stateID, this.testContext.miner));
+    }
     [this.minerAccountID[stateID], this.feeRecipientAccountID[stateID]] = await this.createRingMatcher(stateID);
 
     for (const walletAddress of this.testContext.wallets) {
@@ -138,8 +152,14 @@ export class ExchangeTestUtil {
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                            0, lrcAddress, new BN(0));
 
-    await this.registerOperator(stateID, owner);
-    return depositInfo.accountID;
+    const operatorID = await this.registerOperator(stateID, owner);
+
+    const operator: Operator = {
+      owner,
+      accountID: depositInfo.accountID,
+      operatorID,
+    };
+    return operator;
   }
 
   public async createWallet(stateID: number, owner: string) {
@@ -564,17 +584,17 @@ export class ExchangeTestUtil {
     );
     assert(result.status === 0, "create_block failed: " + blockType);
 
-    return outputFilename;
+    return [nextBlockIdx, outputFilename];
   }
 
-  public async commitBlock(blockType: number, data: string, filename: string) {
+  public async commitBlock(operator: Operator, blockType: number, data: string, filename: string) {
     const bitstream = new pjs.Bitstream(data);
     const stateID = bitstream.extractUint32(0);
 
     const tx = await this.exchange.commitBlock(
       web3.utils.toBN(blockType),
       web3.utils.hexToBytes(data),
-      {from: this.testContext.miner},
+      {from: operator.owner},
     );
     // pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
@@ -582,8 +602,10 @@ export class ExchangeTestUtil {
     const block: Block = {
       blockIdx,
       filename,
+      operator,
     };
-    this.pendingBlocks.push(block);
+    this.pendingBlocks[stateID].push(block);
+    return block;
   }
 
   public async verifyBlock(blockIdx: number, blockFilename: string) {
@@ -633,15 +655,27 @@ export class ExchangeTestUtil {
     return proofFilename;
   }
 
-  public async verifyAllPendingBlocks() {
-    for (const block of this.pendingBlocks) {
+  public async verifyPendingBlocks(stateID: number) {
+    for (const block of this.pendingBlocks[stateID]) {
       await this.verifyBlock(block.blockIdx, block.filename);
     }
-    this.pendingBlocks = [];
+    this.pendingBlocks[stateID] = [];
   }
 
-  public async commitDeposits(stateID: number) {
-    const pendingDeposits = this.pendingDeposits[stateID];
+  public getPendingDeposits(stateID: number) {
+    const pendingDeposits: Deposit[] = [];
+    for (const pendingDeposit of this.pendingDeposits[stateID]) {
+      pendingDeposits.push(pendingDeposit);
+    }
+    return pendingDeposits;
+  }
+
+  public async commitDeposits(stateID: number, pendingDeposits?: Deposit[]) {
+    const blockInfos: Block[] = [];
+
+    if (pendingDeposits === undefined) {
+      pendingDeposits = this.pendingDeposits[stateID];
+    }
     if (pendingDeposits.length === 0) {
       return;
     }
@@ -679,7 +713,7 @@ export class ExchangeTestUtil {
       await this.advanceBlockTimestamp(timeToWait);
 
       const jDepositsInfo = JSON.stringify(deposits, replacer, 4);
-      const blockFilename = await this.createBlock(stateID, 1, jDepositsInfo);
+      const [blockIdx, blockFilename] = await this.createBlock(stateID, 1, jDepositsInfo);
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
       bs.addNumber(block.stateID, 4);
@@ -688,15 +722,20 @@ export class ExchangeTestUtil {
       bs.addNumber(0, 32);
 
       // Commit the block
-      await this.commitBlock(1, bs.getData(), blockFilename);
+      const operator = await this.getActiveOperator(stateID);
+      const blockInfo = await this.commitBlock(operator, 1, bs.getData(), blockFilename);
 
-      for (const deposit of deposits) {
-        const balance = this.getOffchainBalance(stateID, deposit.accountID, deposit.tokenID);
-        // this.prettyPrintBalance(deposit.accountID, deposit.tokenID, balance);
-      }
+      blockInfos.push(blockInfo);
+
+      /*for (const deposit of deposits) {
+        const balance = await this.getOffchainBalance(stateID, deposit.accountID, deposit.tokenID);
+        this.prettyPrintBalance(deposit.accountID, deposit.tokenID, balance);
+      }*/
     }
 
     this.pendingDeposits[stateID] = [];
+
+    return blockInfos;
   }
 
   public async loadState(stateID: number, blockIdx?: number) {
@@ -756,6 +795,11 @@ export class ExchangeTestUtil {
     return state;
   }
 
+  public async getActiveOperator(stateID: number) {
+    const activeOperatorIdx = (await this.exchange.getActiveOperatorIdx(web3.utils.toBN(stateID))).toNumber();
+    return this.operators[stateID][activeOperatorIdx];
+  }
+
   public async commitWithdrawalRequests(onchain: boolean, stateID: number) {
     let pendingWithdrawals: WithdrawalRequest[];
     if (onchain) {
@@ -794,10 +838,10 @@ export class ExchangeTestUtil {
       }
       assert(withdrawalRequests.length === numWithdrawsPerBlock);
 
-      const operatorAccountID = this.operatorAccountID;
+      const operator = await this.getActiveOperator(stateID);
       const withdrawalBlock: WithdrawBlock = {
         withdrawals: withdrawalRequests,
-        operatorAccountID: operatorAccountID[stateID],
+        operatorAccountID: operator.accountID,
       };
 
       if (onchain) {
@@ -809,7 +853,7 @@ export class ExchangeTestUtil {
       }
 
       const jWithdrawalsInfo = JSON.stringify(withdrawalBlock, replacer, 4);
-      const blockFilename = await this.createBlock(stateID, blockType, jWithdrawalsInfo);
+      const [blockIdx, blockFilename] = await this.createBlock(stateID, blockType, jWithdrawalsInfo);
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
       bs.addNumber(block.stateID, 4);
@@ -832,8 +876,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(blockType, bs.getData(), blockFilename);
-      const blockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
+      await this.commitBlock(operator, blockType, bs.getData(), blockFilename);
 
       // Add as a pending withdrawal
       let withdrawalIdx = 0;
@@ -887,14 +930,13 @@ export class ExchangeTestUtil {
     this.pendingWithdrawals = [];
   }
 
-  public async commitRings(stateID: number, operatorAccountID?: number) {
+  public async commitRings(stateID: number) {
     const pendingRings = this.pendingRings[stateID];
     if (pendingRings.length === 0) {
       return;
     }
 
     // Generate the token transfers for the ring
-    operatorAccountID = operatorAccountID ? operatorAccountID : this.operatorAccountID[stateID];
     const blockNumber = await web3.eth.getBlockNumber();
     const timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
 
@@ -962,11 +1004,12 @@ export class ExchangeTestUtil {
       }
       assert(rings.length === numRingsPerBlock);
 
+      const operator = await this.getActiveOperator(stateID);
       const ringBlock: RingBlock = {
         rings,
         timestamp,
         stateID,
-        operatorAccountID,
+        operatorAccountID: operator.accountID,
       };
 
       // Store state before
@@ -974,7 +1017,7 @@ export class ExchangeTestUtil {
       const stateBefore = await this.loadStateForRingBlock(stateID, currentBlockIdx, ringBlock);
 
       // Create the block
-      const blockFilename = await this.createBlock(stateID, 0, JSON.stringify(ringBlock, replacer, 4));
+      const [blockIdx, blockFilename] = await this.createBlock(stateID, 0, JSON.stringify(ringBlock, replacer, 4));
 
       // Store state after
       const stateAfter = await this.loadStateForRingBlock(stateID, currentBlockIdx + 1, ringBlock);
@@ -1017,7 +1060,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(0, bs.getData(), blockFilename);
+      await this.commitBlock(operator, 0, bs.getData(), blockFilename);
     }
 
     this.pendingRings[stateID] = [];
@@ -1056,14 +1099,14 @@ export class ExchangeTestUtil {
       }
       assert(cancels.length === numCancelsPerBlock);
 
-      const operatorAccountID = this.operatorAccountID;
+      const operator = await this.getActiveOperator(stateID);
       const cancelBlock: CancelBlock = {
         cancels,
-        operatorAccountID: operatorAccountID[stateID],
+        operatorAccountID: operator.accountID,
       };
 
       // Create the block
-      const blockFilename = await this.createBlock(stateID, 4, JSON.stringify(cancelBlock, replacer, 4));
+      const [blockIdx, blockFilename] = await this.createBlock(stateID, 4, JSON.stringify(cancelBlock, replacer, 4));
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
@@ -1084,7 +1127,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(4, bs.getData(), blockFilename);
+      await this.commitBlock(operator, 4, bs.getData(), blockFilename);
     }
 
     this.pendingCancels[stateID] = [];
@@ -1126,6 +1169,7 @@ export class ExchangeTestUtil {
 
   public async createNewState(
       owner: string,
+      numOperators: number = 1,
       depositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
       withdrawFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
       maxWithdrawFeeInETH: BN = new BN(web3.utils.toWei("0.001", "ether")),
@@ -1146,7 +1190,7 @@ export class ExchangeTestUtil {
     });
     const stateID = items[0][0].toNumber();
 
-    await this.setupTestState(stateID);
+    await this.setupTestState(stateID, numOperators);
 
     return stateID;
   }
@@ -1190,11 +1234,13 @@ export class ExchangeTestUtil {
     return tokenID;
   }
 
-  public async notifyBlockVerificationTooLate(stateID: number, blockIdx: number) {
-    await this.exchange.notifyBlockVerificationTooLate(
+  public async revertBlock(stateID: number, blockIdx: number) {
+    await this.exchange.revertBlock(
       web3.utils.toBN(stateID),
       web3.utils.toBN(blockIdx),
     );
+    console.log("[State " + stateID + "] Reverted to block " + (blockIdx - 1));
+    this.pendingBlocks[stateID] = [];
   }
 
   public async withdrawFromMerkleTree(stateID: number, accountID: number, token: string) {
@@ -1274,11 +1320,17 @@ export class ExchangeTestUtil {
     return state.accounts[accountID].balances[tokenID].balance;
   }
 
+  public async getTokenContract(token: string) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    return (await this.contracts.DummyToken.at(token));
+  }
+
   public async getOnchainBalance(owner: string, token: string) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
-
     if (token === this.zeroAddress) {
       return new BN(await web3.eth.getBalance(owner));
     } else {

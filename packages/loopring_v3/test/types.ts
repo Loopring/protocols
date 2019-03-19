@@ -33,6 +33,16 @@ export interface OrderInfo {
   [key: string]: any;
 }
 
+export interface OrderExpectation {
+  filledFraction: number;
+  margin?: BN;
+}
+
+export interface RingExpectation {
+  orderA?: OrderExpectation;
+  orderB?: OrderExpectation;
+}
+
 export interface RingInfo {
   orderA: OrderInfo;
   orderB: OrderInfo;
@@ -41,6 +51,8 @@ export interface RingInfo {
   feeRecipientAccountID?: number;
   tokenID?: number;
   fee?: BN;
+
+  expected?: RingExpectation;
 }
 
 export interface RingBlock {
@@ -106,6 +118,13 @@ export interface CancelBlock {
 export interface Block {
   blockIdx: number;
   filename: string;
+  operator: Operator;
+}
+
+export interface Operator {
+  owner: string;
+  operatorID: number;
+  accountID: number;
 }
 
 export interface Wallet {

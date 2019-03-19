@@ -46,7 +46,7 @@ contract("Exchange", (accounts: string[]) => {
       const accountID = depositInfo.accountID;
 
       await exchangeTestUtil.commitDeposits(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
 
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(stateID, accountID, token),
@@ -84,7 +84,7 @@ contract("Exchange", (accounts: string[]) => {
       const accountID = depositInfo.accountID;
 
       await exchangeTestUtil.commitDeposits(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
 
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(stateID, accountID, token),
@@ -128,7 +128,7 @@ contract("Exchange", (accounts: string[]) => {
                                                           wallet.walletID, tokenA, balanceA);
 
       await exchangeTestUtil.commitDeposits(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
 
       const finalizedBlockIdx = (await exchangeTestUtil.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
 
@@ -164,12 +164,12 @@ contract("Exchange", (accounts: string[]) => {
 
       // Cannot revert to a non-finalized block
       await expectThrow(
-        exchangeTestUtil.notifyBlockVerificationTooLate(stateID, finalizedBlockIdx + 2),
+        exchangeTestUtil.revertBlock(stateID, finalizedBlockIdx + 2),
         "PREVIOUS_BLOCK_NOT_FINALIZED",
       );
 
       // Revert back to finalized state
-      await exchangeTestUtil.notifyBlockVerificationTooLate(stateID, finalizedBlockIdx + 1);
+      await exchangeTestUtil.revertBlock(stateID, finalizedBlockIdx + 1);
 
       const blockIdxAfterRevert = (await exchangeTestUtil.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
       assert(blockIdxAfterRevert === finalizedBlockIdx, "Should have reverted to finalized block");

@@ -80,6 +80,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     event BlockCommitted(uint32 stateID, uint blockIdx, bytes32 publicDataHash);
     event BlockFinalized(uint32 stateID, uint blockIdx);
+    event Revert(uint32 stateID, uint blockIdx);
 
     event BlockFeeWithdraw(uint32 stateID, uint32 blockIdx, address operator, uint amount);
 
@@ -310,8 +311,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         // State cannot be in withdraw mode
         require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
 
-        // Check operator
-        require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
+        // Get active operator
         Operator storage operator = state.operators[state.activeOperators[getActiveOperatorIdx(stateID)]];
         require(operator.owner == msg.sender, "SENDER_NOT_ACTIVE_OPERATOR");
 
@@ -337,11 +337,12 @@ contract Exchange is IExchange, NoDefaultFunc {
         } else if (blockType == uint(BlockType.DEPOSIT)) {
             require(isDepositBlockCommittable(stateID, numDepositBlocksCommitted), "CANNOT_COMMIT_DEPOSIT_BLOCK_YET");
             DepositBlock storage depositBlock = state.depositBlocks[numDepositBlocksCommitted];
+            bytes32 depositBlockHash = depositBlock.hash;
             // Pad the block so it's full
             for (uint i = depositBlock.numDeposits; i < NUM_DEPOSITS_IN_BLOCK; i++) {
-                depositBlock.hash = sha256(
+                depositBlockHash = sha256(
                     abi.encodePacked(
-                        depositBlock.hash,
+                        depositBlockHash,
                         uint24(0),
                         DEFAULT_ACCOUNT_PUBLICKEY_X,
                         DEFAULT_ACCOUNT_PUBLICKEY_Y,
@@ -351,7 +352,6 @@ contract Exchange is IExchange, NoDefaultFunc {
                     )
                 );
             }
-            bytes32 depositBlockHash = depositBlock.hash;
             assembly {
                 mstore(add(data, 100), depositBlockHash)
             }
@@ -359,25 +359,25 @@ contract Exchange is IExchange, NoDefaultFunc {
         } else if (blockType == uint(BlockType.ONCHAIN_WITHDRAW)) {
             require(isWithdrawBlockCommittable(stateID, numWithdrawBlocksCommitted), "CANNOT_COMMIT_WITHDRAW_BLOCK_YET");
             WithdrawBlock storage withdrawBlock = state.withdrawBlocks[numWithdrawBlocksCommitted];
+            bytes32 withdrawBlockHash = withdrawBlock.hash;
             // Pad the block so it's full
             for (uint i = withdrawBlock.numWithdrawals; i < NUM_WITHDRAWALS_IN_BLOCK; i++) {
-                withdrawBlock.hash = sha256(
+                withdrawBlockHash = sha256(
                     abi.encodePacked(
-                        withdrawBlock.hash,
+                        withdrawBlockHash,
                         uint24(0),
                         uint16(0),
                         uint96(0)
                     )
                 );
             }
-            bytes32 withdrawBlockHash = withdrawBlock.hash;
             assembly {
                 mstore(add(data, 103), withdrawBlockHash)
             }
             numWithdrawBlocksCommitted++;
         }
 
-        // Check if we need to commit a deposit block
+        // Check if we need to commit a deposit or withdraw block
         require(!isWithdrawBlockForced(stateID, numWithdrawBlocksCommitted), "WITHDRAW_BLOCK_COMMIT_FORCED");
         require(!isDepositBlockForced(stateID, numDepositBlocksCommitted), "DEPOSIT_BLOCK_COMMIT_FORCED");
 
@@ -439,7 +439,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
     }
 
-    function notifyBlockVerificationTooLate(
+    function revertBlock(
         uint32 stateID,
         uint32 blockIdx
         )
@@ -472,6 +472,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // Remove all blocks after and including blockIdx;
         state.numBlocks = blockIdx;
+
+        emit Revert(stateID, blockIdx);
     }
 
     function createAccountAndDeposit(
@@ -811,7 +813,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         state.operators[operator.ID] = operator;
         uint maxNumOperators = 2 ** 32;
         require(state.totalNumOperators <= maxNumOperators, "TOO_MANY_OPERATORS");
-        require(state.numActiveOperators <= maxNumOperators, "TOO_MANY_OPERATORS");
+        require(state.numActiveOperators <= maxNumOperators, "TOO_MANY_ACTIVE_OPERATORS");
 
         emit OperatorRegistered(msg.sender, operator.ID);
     }
@@ -824,11 +826,25 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         State storage state = getState(stateID);
 
-        require(operatorID < state.totalNumOperators, "INVALID_OPERATORIDX");
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATORID");
         Operator storage operator = state.operators[operatorID];
         require(msg.sender == operator.owner, "UNAUTHORIZED");
 
         unregisterOperatorInternal(stateID, operatorID);
+    }
+
+    function isOperatorRegistered(
+        uint32 stateID,
+        uint32 operatorID
+        )
+        external
+        view
+        returns (bool)
+    {
+        State storage state = getState(stateID);
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATORID");
+        Operator storage operator = state.operators[operatorID];
+        return operator.unregisterTimestamp == 0;
     }
 
     function unregisterOperatorInternal(
@@ -839,8 +855,9 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         State storage state = getState(stateID);
 
-        require(operatorID < state.totalNumOperators, "INVALID_OPERATORIDX");
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATORID");
         Operator storage operator = state.operators[operatorID];
+        require(operator.unregisterTimestamp == 0, "OPERATOR_ALREADY_UNREGISTERED");
 
         // Set the timestamp so we know when the operator is allowed to withdraw his staked LRC
         // (the operator could still have unproven blocks)
@@ -865,10 +882,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         returns (uint32)
     {
         State storage state = getState(stateID);
-
-        if (state.numActiveOperators == 0) {
-            return 0;
-        }
+        require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
 
         // Use a previous blockhash as the source of randomness
         // Keep the operator the same for 4 blocks
@@ -886,7 +900,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         State storage state = getState(stateID);
 
-        require(operatorID < state.totalNumOperators, "INVALID_OPERATORIDX");
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATORID");
         Operator storage operator = state.operators[operatorID];
 
         require(operator.unregisterTimestamp > 0, "OPERATOR_NOT_UNREGISTERED");

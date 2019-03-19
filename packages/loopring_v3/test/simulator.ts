@@ -16,8 +16,8 @@ export class Simulator {
     let [fillAmountSB, fillAmountBB] = this.getMaxFillAmounts(ring.orderB, state.accounts[ring.orderB.accountID]);
 
     if (fillAmountBA.lt(fillAmountSB)) {
-      fillAmountBB = fillAmountSA;
-      fillAmountSB = fillAmountBB.mul(ring.orderB.amountS).div(ring.orderB.amountB);
+      fillAmountSB = fillAmountBA;
+      fillAmountBB = fillAmountSB.mul(ring.orderB.amountB).div(ring.orderB.amountS);
     } else {
       fillAmountBA = fillAmountSB;
       fillAmountSA = fillAmountBA.mul(ring.orderA.amountS).div(ring.orderA.amountB);
@@ -136,6 +136,22 @@ export class Simulator {
     const operator = newState.accounts[operatorAccountID];
     operator.balances[ring.tokenID].balance =
      operator.balances[ring.tokenID].balance.add(ring.fee);
+
+    // Check expected
+    if (ring.expected) {
+      if (ring.expected.orderA) {
+        const filledFraction = (fillAmountSA.mul(new BN(10000)).div(ring.orderA.amountS).toNumber() / 10000);
+        this.assertAlmostEqual(filledFraction, ring.expected.orderA.filledFraction, "OrderA filled", -3);
+        if (ring.expected.orderA.margin !== undefined) {
+          const nMargin = Number(ring.expected.orderA.margin.toString(10));
+          this.assertAlmostEqual(Number(margin.toString(10)), nMargin, "OrderA margin", 0);
+        }
+      }
+      if (ring.expected.orderB) {
+        const filledFraction = (fillAmountSB.mul(new BN(10000)).div(ring.orderB.amountS).toNumber() / 10000);
+        this.assertAlmostEqual(filledFraction, ring.expected.orderB.filledFraction, "OrderB filled", -3);
+      }
+    }
 
     const detailedTransfersA = this.getDetailedTransfers(
       ring, ring.orderA, ring.orderB,
@@ -347,6 +363,13 @@ export class Simulator {
       console.log(description);
     }
     return valid;
+  }
+
+  private assertAlmostEqual(n1: number, n2: number, description: string, precision: number) {
+    // console.log("n1: " + n1);
+    // console.log("n2: " + n2);
+    // console.log("precision: " + (10 ** precision));
+    return assert(Math.abs(n1 - n2) < (10 ** precision), description);
   }
 
 }

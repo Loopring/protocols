@@ -38,7 +38,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.requestWithdrawalOnchain(stateID, accountID, token, balance.mul(new BN(2)), owner);
       await exchangeTestUtil.commitOnchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
       await exchangeTestUtil.submitPendingWithdrawals();
     });
 
@@ -61,7 +61,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.requestWithdrawalOffchain(stateID, accountID, token, balance.mul(new BN(2)),
                                                        feeToken, fee, 0, wallet.walletAccountID);
       await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
       await exchangeTestUtil.submitPendingWithdrawals();
     });
 
@@ -81,7 +81,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.requestWithdrawalOnchain(stateID, accountID, token, balance.mul(new BN(2)), owner);
       await exchangeTestUtil.commitOnchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
       await exchangeTestUtil.submitPendingWithdrawals();
     });
 
@@ -104,7 +104,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.requestWithdrawalOffchain(stateID, accountID, token, balance.mul(new BN(2)),
                                                        feeToken, fee, 0, wallet.walletAccountID);
       await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
       await exchangeTestUtil.submitPendingWithdrawals();
     });
 
@@ -144,7 +144,7 @@ contract("Exchange", (accounts: string[]) => {
                                                       "WETH", ring.orderB.amountB.mul(new BN(2)),
                                                       ring.orderB.owner);
       await exchangeTestUtil.commitOnchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
       await exchangeTestUtil.submitPendingWithdrawals(exchangeTestUtil.getAddressBook(ring));
 
       // await exchangeTestUtil.exchange.withdrawBlockFee(stateID, 4);
@@ -187,7 +187,7 @@ contract("Exchange", (accounts: string[]) => {
                                                  "ETH", new BN(web3.utils.toWei("1", "ether")), 50,
                                                  ring.orderB.dualAuthAccountID);
       await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
       await exchangeTestUtil.submitPendingWithdrawals(exchangeTestUtil.getAddressBook(ring));
     });
 
@@ -229,7 +229,7 @@ contract("Exchange", (accounts: string[]) => {
                                                  "LRC", new BN(web3.utils.toWei("1", "ether")), 20,
                                                  ring.orderB.dualAuthAccountID);
       await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
       await exchangeTestUtil.submitPendingWithdrawals(exchangeTestUtil.getAddressBook(ring));
     });
 
@@ -269,7 +269,7 @@ contract("Exchange", (accounts: string[]) => {
                                                       "LRC", ring.orderB.amountF.mul(new BN(2)),
                                                       ring.orderB.owner);
       await exchangeTestUtil.commitOnchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyAllPendingBlocks();
+      await exchangeTestUtil.verifyPendingBlocks(stateID);
       await exchangeTestUtil.submitPendingWithdrawals(exchangeTestUtil.getAddressBook(ring));
     });
 
