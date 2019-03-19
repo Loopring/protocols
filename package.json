@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "lerna": "lerna",
-    "wsrun": "wsrun"
+    "wsrun": "wsrun",
+    "build": "lerna link && wsrun build --fast-exit -r --stages --exclude-missing"
   },
   "devDependencies": {
     "lerna": "^3.13.1",
