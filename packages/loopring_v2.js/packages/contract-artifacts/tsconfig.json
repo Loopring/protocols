@@ -1,0 +1,36 @@
+{
+    "extends": "../../tsconfig",
+     "compilerOptions": {
+        "outDir": "lib",
+        "rootDir": ".",
+        "resolveJsonModule": true
+    },
+
+    "include": ["./src/**/*"],
+    "files": [
+        "./artifacts/RingSubmitter.json",
+        "./artifacts/OrderCanceller.json",
+        "./artifacts/TradeDelegate.json",
+        "./artifacts/TradeHistory.json",
+        "./artifacts/BrokerRegistry.json",
+        "./artifacts/OrderRegistry.json",
+        "./artifacts/DummyBrokerInterceptor.json",
+        "./artifacts/DummyExchange.json",
+        "./artifacts/DummyBurnManager.json",
+        "./artifacts/FeeHolder.json",
+        "./artifacts/OrderBook.json",
+        "./artifacts/BurnRateTable.json",
+        "./artifacts/BurnManager.json",
+        "./artifacts/DummyToken.json",
+        "./artifacts/LRC.json",
+        "./artifacts/GTO.json",
+        "./artifacts/RDN.json",
+        "./artifacts/REP.json",
+        "./artifacts/WETH.json",
+        "./artifacts/INDA.json",
+        "./artifacts/INDB.json",
+        "./artifacts/TEST.json",
+        "./artifacts/DeserializerTest.json"
+    ]
+
+}
