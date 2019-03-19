@@ -612,9 +612,17 @@ class State(object):
         (fillAmountS_A, fillAmountB_A) = self.getMaxFillAmounts(ring.orderA)
         (fillAmountS_B, fillAmountB_B) = self.getMaxFillAmounts(ring.orderB)
 
+        '''
+        print("fillAmountS_A: " + str(fillAmountS_A))
+        print("fillAmountB_A: " + str(fillAmountB_A))
+        print("fillAmountS_B: " + str(fillAmountS_B))
+        print("fillAmountB_B: " + str(fillAmountB_B))
+        print("-------------")
+        '''
+
         if fillAmountB_A < fillAmountS_B:
-            fillAmountB_B = fillAmountS_A
-            fillAmountS_B = (fillAmountB_B * int(ring.orderB.amountS)) // int(ring.orderB.amountB)
+            fillAmountS_B = fillAmountB_A
+            fillAmountB_B = (fillAmountS_B * int(ring.orderB.amountB)) // int(ring.orderB.amountS)
         else:
             fillAmountB_A = fillAmountS_B
             fillAmountS_A = (fillAmountB_A * int(ring.orderA.amountS)) // int(ring.orderA.amountB)
@@ -661,15 +669,15 @@ class State(object):
 
         ring.margin = str(margin)
 
-        #print("fillAmountS_A: " + str(fillAmountS_A))
-        #print("fillAmountB_A: " + str(fillAmountB_A))
-        #print("fillAmountF_A: " + str(fillAmountF_A))
-
-        #print("fillAmountS_B: " + str(fillAmountS_B))
-        #print("fillAmountB_B: " + str(fillAmountB_B))
-        #print("fillAmountF_B: " + str(fillAmountF_B))
-
-        #print("margin: " + str(margin))
+        '''
+        print("fillAmountS_A: " + str(fillAmountS_A))
+        print("fillAmountB_A: " + str(fillAmountB_A))
+        print("fillAmountF_A: " + str(fillAmountF_A))
+        print("fillAmountS_B: " + str(fillAmountS_B))
+        print("fillAmountB_B: " + str(fillAmountB_B))
+        print("fillAmountF_B: " + str(fillAmountF_B))
+        print("margin: " + str(margin))
+        '''
 
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root

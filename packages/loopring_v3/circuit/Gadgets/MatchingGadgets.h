@@ -393,8 +393,8 @@ public:
 
     LeqGadget fillAmountB_A_lt_fillAmountS_B;
 
-    VariableT fillAmountB_B_T;
-    MulDivGadget fillAmountS_B_T;
+    VariableT fillAmountS_B_T;
+    MulDivGadget fillAmountB_B_T;
 
     VariableT fillAmountB_A_F;
     MulDivGadget fillAmountS_A_F;
@@ -443,9 +443,9 @@ public:
         fillAmountB_A_lt_fillAmountS_B(pb, maxFillAmountA.getAmountB(), maxFillAmountB.getAmountS(),
                                        FMT(prefix, "fillAmountB_A < fillAmountS_B")),
 
-        fillAmountB_B_T(maxFillAmountA.getAmountS()),
-        fillAmountS_B_T(pb, fillAmountB_B_T, orderB.amountS.packed, orderB.amountB.packed,
-                        FMT(prefix, "fillAmountS_B = (fillAmountB_B * orderB.amountS) // orderB.amountB")),
+        fillAmountS_B_T(maxFillAmountA.getAmountB()),
+        fillAmountB_B_T(pb, fillAmountS_B_T, orderB.amountB.packed, orderB.amountS.packed,
+                        FMT(prefix, "fillAmountB_B = (fillAmountS_B * orderB.amountB) // orderB.amountS")),
 
         fillAmountB_A_F(maxFillAmountB.getAmountS()),
         fillAmountS_A_F(pb, fillAmountB_A_F, orderA.amountS.packed, orderA.amountB.packed,
@@ -453,8 +453,8 @@ public:
 
         fillAmountS_A(pb, fillAmountB_A_lt_fillAmountS_B.lt(), maxFillAmountA.getAmountS(), fillAmountS_A_F.result(), FMT(prefix, "fillAmountS_A")),
         fillAmountB_A(pb, fillAmountB_A_lt_fillAmountS_B.lt(), maxFillAmountA.getAmountB(), fillAmountB_A_F, FMT(prefix, "fillAmountB_A")),
-        fillAmountS_B(pb, fillAmountB_A_lt_fillAmountS_B.lt(), fillAmountS_B_T.result(), maxFillAmountB.getAmountS(), FMT(prefix, "fillAmountS_B")),
-        fillAmountB_B(pb, fillAmountB_A_lt_fillAmountS_B.lt(), fillAmountB_B_T, maxFillAmountB.getAmountB(), FMT(prefix, "fillAmountB_B")),
+        fillAmountS_B(pb, fillAmountB_A_lt_fillAmountS_B.lt(), fillAmountS_B_T, maxFillAmountB.getAmountS(), FMT(prefix, "fillAmountS_B")),
+        fillAmountB_B(pb, fillAmountB_A_lt_fillAmountS_B.lt(), fillAmountB_B_T.result(), maxFillAmountB.getAmountB(), FMT(prefix, "fillAmountB_B")),
 
         margin(make_variable(pb, FMT(prefix, ".margin"))),
 
@@ -533,7 +533,7 @@ public:
 
         fillAmountB_A_lt_fillAmountS_B.generate_r1cs_witness();
 
-        fillAmountS_B_T.generate_r1cs_witness();
+        fillAmountB_B_T.generate_r1cs_witness();
         fillAmountS_A_F.generate_r1cs_witness();
 
         fillAmountS_A.generate_r1cs_witness();
@@ -576,7 +576,7 @@ public:
 
         fillAmountB_A_lt_fillAmountS_B.generate_r1cs_constraints();
 
-        fillAmountS_B_T.generate_r1cs_constraints();
+        fillAmountB_B_T.generate_r1cs_constraints();
         fillAmountS_A_F.generate_r1cs_constraints();
 
         fillAmountS_A.generate_r1cs_constraints();
