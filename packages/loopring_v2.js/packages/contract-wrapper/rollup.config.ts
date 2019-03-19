@@ -7,10 +7,10 @@ import json from 'rollup-plugin-json'
 
 const pkg = require('./package.json')
 
-const libraryName = 'loopring_v2.js'
+const libraryName = 'contract-wrapper'
 
 export default {
-  input: `src/index.ts`,
+  input: `src/${libraryName}.ts`,
   output: [
     { file: pkg.main, name: camelCase(libraryName), format: 'umd', sourcemap: true },
     { file: pkg.module, format: 'es', sourcemap: true },

@@ -1,11 +1,11 @@
 {
-  "name": "@loopring_v2/order-utils",
+  "name": "loopring_v2.js",
   "version": "1.0.0",
   "description": "",
   "keywords": [],
-  "main": "dist/order-utils.umd.js",
-  "module": "dist/order-utils.es5.js",
-  "typings": "dist/types/order-utils.d.ts",
+  "main": "dist/loopring_v2.umd.js",
+  "module": "dist/loopring_v2.es5.js",
+  "typings": "dist/types/loopring_v2.d.ts",
   "files": [
     "dist"
   ],
@@ -117,5 +117,13 @@
     "typedoc": "^0.12.0",
     "typescript": "^3.0.3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@loopring_v2/contract-addresses": "^1.0.0",
+    "@loopring_v2/contract-artifacts": "^1.0.0",
+    "@loopring_v2/contract-wrapper": "^1.0.0",
+    "@loopring_v2/json-schemas": "^1.0.0",
+    "@loopring_v2/order-utils": "^1.0.0",
+    "@loopring_v2/types": "^1.0.0",
+    "@types/web3-provider-engine": "^14.0.0"
+  }
 }
