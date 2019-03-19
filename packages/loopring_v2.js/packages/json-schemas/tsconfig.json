@@ -2,14 +2,18 @@
   "extends": "../../tsconfig",
   "compilerOptions":
   {
-    "outDir": "lib",
-    "rootDir": ".",
-    "resolveJsonModule": true
+    "declarationDir": "dist/types",
+    "outDir": "dist/lib",
+    "module": "commonjs",
+    "resolveJsonModule": true,
+    "typeRoots": [
+      "node_modules/@types"
+    ]
   },
-
-  "include": ["./src/**/*", "./test/**/*"],
+  "include": [
+    "src"
+  ],
   "files": [
-    "./schemas/schema_address.json"
+    "./src/schemas/schema_address.json"
   ]
-
 }

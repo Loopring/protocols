@@ -1,4 +1,4 @@
-import * as schemaAddress from '../schemas/schema_address.json';
+import * as schemaAddress from './schemas/schema_address.json';
 
 export const schemas = {
     schemaAddress
