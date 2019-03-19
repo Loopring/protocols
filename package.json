@@ -1,7 +1,7 @@
 {
   "name": "loopring_protocols",
   "version": "1.0.0",
-  "description": "loopring monorepo",
+  "description": "Loopring Procotols",
   "main": "index.js",
   "repository": "https://github.com/Loopring/protocols.git",
   "author": "Loopring Fundation",
