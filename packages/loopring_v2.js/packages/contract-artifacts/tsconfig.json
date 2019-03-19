@@ -2,12 +2,17 @@
   "extends": "../../tsconfig",
   "compilerOptions":
   {
-    "outDir": "lib",
-    "rootDir": ".",
-    "resolveJsonModule": true
+    "declarationDir": "dist/types",
+    "outDir": "dist/lib",
+    "module": "commonjs",
+    "resolveJsonModule": true,
+    "typeRoots": [
+      "node_modules/@types"
+    ]
   },
-
-  "include": ["./src/**/*", "./test/**/*"],
+  "include": [
+    "src"
+  ],
   "files": [
     "./artifacts/RingSubmitter.json",
     "./artifacts/OrderCanceller.json",
@@ -33,5 +38,4 @@
     "./artifacts/TEST.json",
     "./artifacts/DeserializerTest.json"
   ]
-
 }
