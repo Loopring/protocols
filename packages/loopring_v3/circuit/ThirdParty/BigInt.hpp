@@ -2,7 +2,7 @@
     BigInt
     ------
     Arbitrary-sized integer class for C++.
-    
+
     Version: 0.4.0-dev
     Released on: 03 January 2018 10:51 IST
     Author: Syed Faheel Ahmad (faheel@live.in)
