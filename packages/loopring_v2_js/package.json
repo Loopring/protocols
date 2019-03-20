@@ -1,0 +1,23 @@
+{
+  "name": "loopring_v2_js",
+  "version": "1.0.0",
+  "description": "loopring monorepo",
+  "main": "index.js",
+  "repository": "https://github.com/Loopring/protocols.git",
+  "author": "Loopring Fundation",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "lerna": "lerna",
+    "wsrun": "wsrun",
+    "build": "lerna link && wsrun build"
+  },
+  "devDependencies": {
+    "lerna": "^3.13.1",
+    "wsrun": "^3.6.4",
+    "husky": "^1.3.1"
+  }
+}
