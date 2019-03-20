@@ -33,7 +33,7 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("ERC20: withdraw from merkle tree", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.miner);
+      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0]);
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const wallet = exchangeTestUtil.wallets[stateID][0];
@@ -71,7 +71,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("ETH: withdraw from merkle tree", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.miner);
+      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0]);
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const wallet = exchangeTestUtil.wallets[stateID][0];
@@ -109,7 +109,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Withdraw from deposit block", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.miner);
+      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0]);
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const wallet = exchangeTestUtil.wallets[stateID][0];

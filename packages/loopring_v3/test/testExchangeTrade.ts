@@ -807,14 +807,18 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Separate state", async () => {
       const stateID = await exchangeTestUtil.createNewState(
-        exchangeTestUtil.testContext.miner,
+        exchangeTestUtil.testContext.stateOwners[1],
         1,
         new BN(web3.utils.toWei("0.0001", "ether")),
         new BN(web3.utils.toWei("0.0001", "ether")),
         new BN(web3.utils.toWei("0.001", "ether")),
         false,
       );
-      const [minerAccountID, feeRecipientAccountID] = await exchangeTestUtil.createRingMatcher(stateID);
+      const [minerAccountID, feeRecipientAccountID] = await exchangeTestUtil.createRingMatcher(
+        stateID,
+        exchangeTestUtil.testContext.ringMatchers[1],
+        exchangeTestUtil.testContext.feeRecipients[1],
+      );
       const ring: RingInfo = {
         orderA:
           {

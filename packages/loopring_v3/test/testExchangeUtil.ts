@@ -41,6 +41,7 @@ export class ExchangeTestUtil {
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
   public MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE: number;
   public STAKE_AMOUNT_IN_LRC: BN;
+  public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
 
   public MAX_NUM_STATES: number = 64;
 
@@ -72,6 +73,7 @@ export class ExchangeTestUtil {
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
     this.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE = (await this.exchange.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE()).toNumber();
     this.STAKE_AMOUNT_IN_LRC = await this.exchange.STAKE_AMOUNT_IN_LRC();
+    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = (await this.exchange.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW()).toNumber();
 
     for (let i = 0; i < this.MAX_NUM_STATES; i++) {
       const rings: RingInfo[] = [];
@@ -101,7 +103,7 @@ export class ExchangeTestUtil {
 
     await this.createNewState(
       this.testContext.deployer,
-      1,
+      5,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.01", "ether")),
@@ -133,9 +135,16 @@ export class ExchangeTestUtil {
     );
 
     for (let i = 0; i < numOperators; i++) {
-      this.operators[stateID].push(await this.createOperator(stateID, this.testContext.miner));
+      const operatorOwnerIdx = i % this.testContext.operators.length;
+      const operatorOwner = this.testContext.operators[operatorOwnerIdx];
+      const newOperator = await this.createOperator(stateID, operatorOwner);
+      this.addOperator(stateID, newOperator);
     }
-    [this.minerAccountID[stateID], this.feeRecipientAccountID[stateID]] = await this.createRingMatcher(stateID);
+    [this.minerAccountID[stateID], this.feeRecipientAccountID[stateID]] = await this.createRingMatcher(
+      stateID,
+      this.testContext.ringMatchers[0],
+      this.testContext.feeRecipients[0],
+    );
 
     for (const walletAddress of this.testContext.wallets) {
       const wallet = await this.createWallet(stateID, walletAddress);
@@ -144,13 +153,11 @@ export class ExchangeTestUtil {
   }
 
   public async createOperator(stateID: number, owner: string) {
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-
     // Make an account for the operator
     const keyPair = this.getKeyPairEDDSA();
     const depositInfo = await this.deposit(stateID, owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                           0, lrcAddress, new BN(0));
+                                           0, this.zeroAddress, new BN(0));
 
     const operatorID = await this.registerOperator(stateID, owner);
 
@@ -160,6 +167,11 @@ export class ExchangeTestUtil {
       operatorID,
     };
     return operator;
+  }
+
+  public async addOperator(stateID: number, operator: Operator) {
+    assert.equal(this.operators[stateID].length, operator.operatorID);
+    this.operators[stateID].push(operator);
   }
 
   public async createWallet(stateID: number, owner: string) {
@@ -177,7 +189,7 @@ export class ExchangeTestUtil {
     return wallet;
   }
 
-  public async createRingMatcher(stateID: number) {
+  public async createRingMatcher(stateID: number, owner: string, feeRecipient: string) {
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
 
@@ -185,14 +197,14 @@ export class ExchangeTestUtil {
 
     // Make an account for the ringmatcher
     const keyPairM = this.getKeyPairEDDSA();
-    await LRC.addBalance(this.testContext.miner, balance);
-    const minerDeposit = await this.deposit(stateID, this.testContext.miner,
+    await LRC.addBalance(owner, balance);
+    const minerDeposit = await this.deposit(stateID, owner,
                                             keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
                                             0, lrcAddress, balance);
 
     // Make an account to receive fees
     const keyPairF = this.getKeyPairEDDSA();
-    const feeRecipientDeposit = await this.deposit(stateID, this.testContext.miner,
+    const feeRecipientDeposit = await this.deposit(stateID, feeRecipient,
                                                    keyPairF.secretKey, keyPairF.publicKeyX, keyPairF.publicKeyY,
                                                    this.MAX_MUM_WALLETS, lrcAddress, new BN(0));
 
@@ -591,6 +603,9 @@ export class ExchangeTestUtil {
     const bitstream = new pjs.Bitstream(data);
     const stateID = bitstream.extractUint32(0);
 
+    // const activeOperator = await this.getActiveOperator(stateID);
+    // assert.equal(activeOperator.operatorID, operator.operatorID);
+    // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
     const tx = await this.exchange.commitBlock(
       web3.utils.toBN(blockType),
       web3.utils.hexToBytes(data),
@@ -796,8 +811,20 @@ export class ExchangeTestUtil {
   }
 
   public async getActiveOperator(stateID: number) {
-    const activeOperatorIdx = (await this.exchange.getActiveOperatorIdx(web3.utils.toBN(stateID))).toNumber();
-    return this.operators[stateID][activeOperatorIdx];
+    const activeOperatorID = (await this.exchange.getActiveOperatorID(web3.utils.toBN(stateID))).toNumber();
+    return this.operators[stateID][activeOperatorID];
+  }
+
+  public async getActiveOperators(stateID: number) {
+    const activeOperators: Operator[] = [];
+    const numActiveOperators = (await this.exchange.getNumActiveOperators(stateID)).toNumber();
+    for (let i = 0; i < numActiveOperators; i++) {
+      const data = await this.exchange.getActiveOperatorAt(stateID, web3.utils.toBN(i));
+      const activeOperator = this.operators[stateID][data.operatorID.toNumber()];
+      assert.equal(activeOperator.owner, data.owner, "Operator owner incorrect");
+      activeOperators.push(activeOperator);
+    }
+    return activeOperators;
   }
 
   public async commitWithdrawalRequests(onchain: boolean, stateID: number) {
@@ -1210,8 +1237,7 @@ export class ExchangeTestUtil {
   }
 
   public async registerOperator(stateID: number, owner: string) {
-    const stakeAmount = await this.exchange.STAKE_AMOUNT_IN_LRC();
-    await this.setBalanceAndApproveLRC(owner, stakeAmount);
+    await this.setBalanceAndApprove(owner, "LRC", this.STAKE_AMOUNT_IN_LRC);
 
     // Register an operator
     const tx = await this.exchange.registerOperator(web3.utils.toBN(stateID), {from: owner});
@@ -1219,9 +1245,12 @@ export class ExchangeTestUtil {
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "OperatorRegistered", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.operatorID];
+      return [eventObj.args.operatorID, eventObj.args.operator];
     });
     const operatorID = items[0][0].toNumber();
+    const operator = items[0][1];
+    // console.log("operatorID: " + operatorID);
+    assert.equal(operator, owner, "Operator owner doesn't match");
 
     return operatorID;
   }
@@ -1275,11 +1304,10 @@ export class ExchangeTestUtil {
     );
   }
 
-  public async setBalanceAndApproveLRC(owner: string, amount: BN) {
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
-    await LRC.setBalance(owner, amount);
-    await LRC.approve(this.exchange.address, amount, {from: owner});
+  public async setBalanceAndApprove(owner: string, token: string, amount: BN) {
+    const Token = await this.getTokenContract(token);
+    await Token.setBalance(owner, amount);
+    await Token.approve(this.exchange.address, amount, {from: owner});
   }
 
   public evmIncreaseTime(seconds: number) {
@@ -1506,24 +1534,20 @@ export class ExchangeTestUtil {
     tokenAddrInstanceMap.set(this.contracts.TESTToken.address, test);
 
     const deployer = accounts[0];
-    const transactionOrigin = accounts[1];
-    const feeRecipient = accounts[2];
-    const miner = accounts[3];
-    const orderOwners = accounts.slice(4, 14);
-    const orderDualAuthAddr = accounts.slice(14, 24);
-    const allOrderTokenRecipients = accounts.slice(24, 28);
-    const wallets = accounts.slice(28, 32);
-    const brokers =  accounts.slice(32, 36);
+    const stateOwners = accounts.slice(1, 5);
+    const operators = accounts.slice(5, 10);
+    const orderOwners = accounts.slice(10, 20);
+    const wallets = accounts.slice(20, 30);
+    const ringMatchers = accounts.slice(30, 40);
+    const feeRecipients = accounts.slice(40, 50);
 
     return new ExchangeTestContext(deployer,
-                                   transactionOrigin,
-                                   feeRecipient,
-                                   miner,
+                                   stateOwners,
+                                   operators,
                                    orderOwners,
-                                   orderDualAuthAddr,
-                                   allOrderTokenRecipients,
                                    wallets,
-                                   brokers,
+                                   ringMatchers,
+                                   feeRecipients,
                                    tokenSymbolAddrMap,
                                    tokenAddrSymbolMap,
                                    tokenAddrDecimalsMap,

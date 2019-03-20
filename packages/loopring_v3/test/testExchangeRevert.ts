@@ -16,6 +16,7 @@ contract("Exchange", (accounts: string[]) => {
     const lrcSupplyBefore = await LRC.totalSupply();
     const operatorRegisteredBefore =
       await exchangeTestUtil.exchange.isOperatorRegistered(stateID, block.operator.operatorID);
+    const activeOperatorsBefore = await exchangeTestUtil.getActiveOperators(stateID);
 
     await exchangeTestUtil.revertBlock(stateID, block.blockIdx);
 
@@ -24,15 +25,20 @@ contract("Exchange", (accounts: string[]) => {
     const lrcSupplyAfter = await LRC.totalSupply();
     const operatorRegisteredAfter =
       await exchangeTestUtil.exchange.isOperatorRegistered(stateID, block.operator.operatorID);
+    const activeOperatorsAfter = await exchangeTestUtil.getActiveOperators(stateID);
 
     assert(blockIdxBefore > blockIdxAfter, "blockIdx should have decreased");
-    assert(blockIdxAfter === block.blockIdx - 1, "State should have been reverted to the specified block");
+    assert.equal(blockIdxAfter, block.blockIdx - 1, "State should have been reverted to the specified block");
+
     assert(lrcBalanceBefore.eq(lrcBalanceAfter.add(exchangeTestUtil.STAKE_AMOUNT_IN_LRC)),
            "LRC balance of exchange needs to be reduced by STAKE_AMOUNT_IN_LRC");
     assert(lrcSupplyBefore.eq(lrcSupplyAfter.add(exchangeTestUtil.STAKE_AMOUNT_IN_LRC)),
            "LRC supply needs to be reduced by STAKE_AMOUNT_IN_LRC");
+
     assert(operatorRegisteredBefore, "Operator of block should have still been registered");
     assert(!operatorRegisteredAfter, "Operator of block should have been unregistered");
+    assert.equal(activeOperatorsBefore.length, activeOperatorsAfter.length + 1,
+                 "numActiveOperators should be decreased to 1");
   };
 
   before( async () => {
@@ -44,7 +50,7 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Revert block", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.miner, 2);
+      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], 2);
       const ring: RingInfo = {
         orderA:
           {

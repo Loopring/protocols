@@ -11,16 +11,104 @@ const {
 contract("Exchange", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
+  let exchange: any;
 
   const zeroAddress = "0x" + "00".repeat(20);
 
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+    exchange = exchangeTestUtil.exchange;
   });
 
   describe("DepositWithdraw", function() {
     this.timeout(0);
+
+    it("ERC20: Deposit", async () => {
+      const stateID = 0;
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const wallet = exchangeTestUtil.wallets[stateID][0];
+      const amount = new BN(web3.utils.toWei("7", "ether"));
+      const token = "LRC";
+      const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
+
+      // The correct deposit fee expected by the contract
+      const depositFee = await exchange.getDepositFee(stateID);
+
+      // No ETH sent
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          wallet.walletID, tokenID, amount, {from: owner, value: new BN(0)}),
+        "INCORRECT_ETH_FEE",
+      );
+
+      // Not enough ETH
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          wallet.walletID, tokenID, amount, {from: owner, value: depositFee.sub(new BN(1))}),
+        "INCORRECT_ETH_FEE",
+      );
+
+      // Too much ETH
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          wallet.walletID, tokenID, amount, {from: owner, value: depositFee.add(new BN(1))}),
+        "INCORRECT_ETH_FEE",
+      );
+
+      // Insufficient funds
+      await exchangeTestUtil.setBalanceAndApprove(owner, token, amount.sub(new BN(1)));
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          wallet.walletID, tokenID, amount, {from: owner, value: depositFee}),
+        "UNSUFFICIENT_FUNDS",
+      );
+
+      // Set the correct balance/approval
+      await exchangeTestUtil.setBalanceAndApprove(owner, token, amount);
+
+      // Everything correct
+      await exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        wallet.walletID, tokenID, amount, {from: owner, value: depositFee});
+    });
+
+    it("ETH: Deposit", async () => {
+      const stateID = 0;
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const wallet = exchangeTestUtil.wallets[stateID][0];
+      const amount = new BN(web3.utils.toWei("3", "ether"));
+      const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress("ETH");
+
+      // The correct deposit fee expected by the contract
+      const depositFee = await exchange.getDepositFee(stateID);
+
+      // No ETH sent
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          wallet.walletID, tokenID, amount, {from: owner, value: new BN(0)}),
+        "INCORRECT_ETH_VALUE",
+      );
+
+      // Not enough ETH
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          wallet.walletID, tokenID, amount, {from: owner, value: amount}),
+        "INCORRECT_ETH_VALUE",
+      );
+
+      // Too much ETH
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          wallet.walletID, tokenID, amount, {from: owner, value: amount.add(depositFee).add(new BN(1))}),
+        "INCORRECT_ETH_VALUE",
+      );
+
+      // Everything correct
+      await exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        wallet.walletID, tokenID, amount, {from: owner, value: amount.add(depositFee)});
+    });
 
     it("ERC20: deposit + onchain withdrawal", async () => {
       const stateID = 0;
