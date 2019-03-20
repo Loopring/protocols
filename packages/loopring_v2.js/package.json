@@ -13,7 +13,7 @@
   "scripts": {
     "lerna": "lerna",
     "wsrun": "wsrun",
-    "build": "lerna link && wsrun build"
+    "build": "lerna link && wsrun build $PKG --fast-exit -r --stages --exclude-missing"
   },
   "devDependencies": {
     "lerna": "^3.13.1",
