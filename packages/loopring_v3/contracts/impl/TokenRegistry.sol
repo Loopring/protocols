@@ -179,7 +179,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         // Burn TIER_UPGRADE_COST_PERCENTAGE of total LRC supply
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         uint totalSupply = LRC.totalSupply();
-        uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / BURN_BASE_PERCENTAGE;
+        uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / 10000;
         bool success = LRC.burnFrom(msg.sender, amount);
         require(success, BURN_FAILURE);
 
