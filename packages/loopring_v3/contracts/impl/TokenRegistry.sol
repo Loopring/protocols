@@ -100,6 +100,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         internal
         returns (uint16)
     {
+        // Q(dongw): should we use Error.ALREADY_REGISTERED?
         require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
         require(tokens.length < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
@@ -111,6 +112,9 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
             0
         );
         tokens.push(token);
+
+        // Q(dongw): should this be tokenID instead of tokenID + 1, or in
+        // the second line, we should ue emit TokenRegistered(tokenAddress, tokenID + 1);
         tokenToTokenID[tokenAddress] = tokenID + 1;
         emit TokenRegistered(tokenAddress, tokenID);
 
