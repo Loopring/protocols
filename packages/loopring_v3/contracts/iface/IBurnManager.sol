@@ -17,16 +17,13 @@
 pragma solidity 0.5.2;
 
 
-/// @title IExchange
-/// @author Brecht Devos - <brecht@loopring.org>
-contract IExchange
+/// @title IBurnManager
+/// @author Daniel Wang - <daniel@loopring.org>
+contract IBurnManager
 {
-    mapping (address => uint) public burnBalances;
-
-    function withdrawBurned(
-        address token,
-        uint amount
+    function burn(
+        address token
         )
         external
-        returns (bool success);
+        returns (bool);
 }

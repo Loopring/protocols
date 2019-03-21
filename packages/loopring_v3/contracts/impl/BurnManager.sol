@@ -17,6 +17,7 @@
 
 pragma solidity 0.5.2;
 
+import "../iface/IBurnManager.sol";
 import "../iface/IExchange.sol";
 
 import "../lib/BurnableERC20.sol";
@@ -25,7 +26,7 @@ import "../lib/NoDefaultFunc.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BurnManager is NoDefaultFunc
+contract BurnManager is IBurnManager, NoDefaultFunc
 {
     using MathUint for uint;
 
@@ -50,23 +51,23 @@ contract BurnManager is NoDefaultFunc
         external
         returns (bool)
     {
-        IExchange exchange = IExchange(exchangeAddress);
-
-        // Withdraw the complete token balance
-        uint balance = exchange.burnBalances(token);
-        bool success = exchange.withdrawBurned(token, balance);
-        require(success, "WITHDRAWAL_FAILURE");
-
         // We currently only support burning LRC directly
         if (token != lrcAddress) {
             require(false, UNIMPLEMENTED);
         }
 
+        IExchange exchange = IExchange(exchangeAddress);
+
+        // Withdraw the complete token balance
+        uint balance = exchange.burnBalances(token);
+        require(
+            exchange.withdrawBurned(token, balance),
+            WITHDRAWAL_FAILURE
+        );
+
         // Burn the LRC
         require(
-            BurnableERC20(lrcAddress).burn(
-                balance
-            ),
+            BurnableERC20(lrcAddress).burn(balance),
             BURN_FAILURE
         );
 
