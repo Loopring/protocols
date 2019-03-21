@@ -24,15 +24,15 @@ contract IExchangeHelper
 
     function verifyAccountBalance(
         uint256 merkleRoot,
-        uint24 accountID,
-        uint16 tokenID,
+        uint24  accountID,
+        uint16  tokenID,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
         uint256 publicKeyX,
         uint256 publicKeyY,
-        uint24 walletID,
-        uint32 nonce,
-        uint96 balance,
+        uint24  walletID,
+        uint32  nonce,
+        uint96  balance,
         uint256 tradeHistoryRoot
         )
         external;

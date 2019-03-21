@@ -40,4 +40,5 @@ contract Errors
     string constant BURN_RATE_MINIMIZED        = "BURN_RATE_MINIMIZED";
     string constant TOKEN_REGISTRY_FULL        = "TOKEN_REGISTRY_FULL";
     string constant NOT_OWNER                  = "NOT_OWNER";
+    string constant INVALID_MERKLE_TREE_DATA   = "INVALID_MERKLE_TREE_DATA";
 }

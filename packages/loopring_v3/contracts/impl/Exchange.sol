@@ -35,16 +35,16 @@ contract Exchange is IExchange, NoDefaultFunc
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-    uint32 public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS                 = 1 hours;
+    uint   public constant STAKE_AMOUNT_IN_LRC                          = 100000 ether;
 
-    uint public constant STAKE_AMOUNT_IN_LRC                                    = 100000 ether;
-    uint32 public constant MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW                 = 1 days;
+    uint32 public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS         = 1 hours;
+    uint32 public constant MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW         = 1 days;
+    uint32 public constant MAX_INACTIVE_UNTIL_DISABLED_IN_SECONDS       = 1 days;
 
-    uint32 public constant MAX_INACTIVE_UNTIL_DISABLED_IN_SECONDS               = 1 days;
-
-    uint32 public constant MIN_TIME_BLOCK_OPEN                          = 1 minutes;
+    uint32 public constant MIN_TIME_BLOCK_OPEN                          = 1  minutes;
     uint32 public constant MAX_TIME_BLOCK_OPEN                          = 15 minutes;
-    uint32 public constant MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE      = 2 minutes;
+    uint32 public constant MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE      = 2  minutes;
+
     //uint32 public constant MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED           = 15 minutes;
     uint32 public constant MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED           = 1 days;     // TESTING
 
@@ -59,10 +59,9 @@ contract Exchange is IExchange, NoDefaultFunc
     uint public constant MAX_NUM_WALLETS                         = 2 ** 23;
 
     // Default account
-    uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X =  2760979366321990647384327991146539505488430080750363450053902718557853404165;
+    uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
-    uint public constant DEFAULT_ACCOUNT_SECRETKEY   =   531595266505639429282323989096889429445309320547115026296307576144623272935;
-
+    uint public constant DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935;
 
     address public lrcAddress                = address(0x0);
     address public exchangeHelperAddress     = address(0x0);
@@ -90,7 +89,7 @@ contract Exchange is IExchange, NoDefaultFunc
 
     enum BlockType
     {
-        TRADE,
+        SETTLEMENT,
         DEPOSIT,
         ONCHAIN_WITHDRAW,
         OFFCHAIN_WITHDRAW,
@@ -339,7 +338,7 @@ contract Exchange is IExchange, NoDefaultFunc
 
         uint32 numDepositBlocksCommitted = currentBlock.numDepositBlocksCommitted;
         uint32 numWithdrawBlocksCommitted = currentBlock.numWithdrawBlocksCommitted;
-        if (blockType == uint(BlockType.TRADE)) {
+        if (blockType == uint(BlockType.SETTLEMENT)) {
             uint32 inputTimestamp;
             assembly {
                 inputTimestamp := and(mload(add(data, 75)), 0xFFFFFFFF)

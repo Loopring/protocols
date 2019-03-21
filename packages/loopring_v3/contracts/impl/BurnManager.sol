@@ -24,7 +24,7 @@ import "../lib/BurnableERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
-
+/// @title An Implementation of IBurnManager.
 /// @author Brecht Devos - <brecht@loopring.org>
 contract BurnManager is IBurnManager, NoDefaultFunc
 {
@@ -45,6 +45,7 @@ contract BurnManager is IBurnManager, NoDefaultFunc
         lrcAddress = _lrcAddress;
     }
 
+    // TODO(bretch): for other tokens, we need to allow withdrawal.
     function burn(
         address token
         )

@@ -45,6 +45,7 @@ contract BlockVerifier is IBlockVerifier, NoDefaultFunc
         uint256[] memory _vk_gammaABC;
         (_vk, _vk_gammaABC) = getVerifyingKey();
 
+        // Q(dongw): can we use `vk` and `grammaABC` directly here?
         return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
     }
 
