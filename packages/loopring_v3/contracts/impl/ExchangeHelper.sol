@@ -19,8 +19,9 @@ pragma solidity 0.5.2;
 import "../iface/IExchangeHelper.sol";
 
 import "../lib/MathUint.sol";
-import "../lib/MiMC.sol";
 import "../lib/NoDefaultFunc.sol";
+
+import "../thirdparty/MiMC.sol";
 
 
 /// @title An Implementation of IExchangeHelper.
@@ -79,7 +80,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         uint256[] memory balanceLeafElements = new uint256[](2);
         balanceLeafElements[0] = balance;
         balanceLeafElements[1] = tradeHistoryRoot;
-        uint256 balanceItem = MiMC.hash(balanceLeafElements, 1);
+        uint256 balanceItem = MiMC.Hash(balanceLeafElements, 1);
 
         // Calculate merkle root of balances tree
         uint tokenAddress = tokenID;
@@ -116,7 +117,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         accountLeafElements[2] = walletID;
         accountLeafElements[3] = nonce;
         accountLeafElements[4] = balancesRoot;
-        uint256 accountItem = MiMC.hash(accountLeafElements, 1);
+        uint256 accountItem = MiMC.Hash(accountLeafElements, 1);
 
         uint accountAddress = accountID;
         for (uint depth = 0; depth < 24; depth++) {
@@ -143,7 +144,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         x[0] = left;
         x[1] = right;
 
-        return MiMC.hash(x, IV);
+        return MiMC.Hash(x, IV);
     }
 
     function fillLevelIVs (

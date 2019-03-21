@@ -16,10 +16,10 @@
 */
 pragma solidity 0.5.2;
 
+import "../iface/IBlockVerifier.sol";
 import "../iface/IExchange.sol";
 import "../iface/IExchangeHelper.sol";
 import "../iface/ITokenRegistry.sol";
-import "../iface/IBlockVerifier.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";

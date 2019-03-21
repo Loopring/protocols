@@ -2,17 +2,14 @@
 
 pragma solidity 0.5.2;
 
-library Pairing
-{
-    struct G1Point
-    {
+library Pairing {
+    struct G1Point {
         uint X;
         uint Y;
     }
 
     // Encoding of field elements is: X[0] * z + X[1]
-    struct G2Point
-    {
+    struct G2Point {
         uint[2] X;
         uint[2] Y;
     }

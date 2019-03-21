@@ -1,4 +1,4 @@
-// Taken from ethsnarks
+// This code is taken from ethsnarks
 
 // Copyright (c) 2018 HarryR
 // License: LGPL-3.0+
@@ -14,16 +14,16 @@ pragma solidity 0.5.2;
 */
 library MiMC
 {
-    function getScalarField ()
+    function GetScalarField ()
         internal pure returns (uint256)
     {
         return 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001;
     }
 
-    function encipher( uint256 in_x, uint256 in_k )
+    function Encipher( uint256 in_x, uint256 in_k )
         internal pure returns(uint256 out_x)
     {
-        return miMCpe7( in_x, in_k, uint256(keccak256("mimc")), 91 );
+        return MiMCpe7( in_x, in_k, uint256(keccak256("mimc")), 91 );
     }
 
     /**
@@ -31,7 +31,7 @@ library MiMC
     *
     * Recommended at least 46 rounds, for a polynomial degree of 2^126
     */
-    function miMCpe7( uint256 in_x, uint256 in_k, uint256 in_seed, uint256 round_count )
+    function MiMCpe7( uint256 in_x, uint256 in_k, uint256 in_seed, uint256 round_count )
         internal pure returns(uint256 out_x)
     {
         assembly {
@@ -62,7 +62,7 @@ library MiMC
         }
     }
 
-    function miMCpe7_mp( uint256[] memory in_x, uint256 in_k, uint256 in_seed, uint256 round_count )
+    function MiMCpe7_mp( uint256[] memory in_x, uint256 in_k, uint256 in_seed, uint256 round_count )
         internal pure returns (uint256)
     {
         uint256 r = in_k;
@@ -70,21 +70,21 @@ library MiMC
 
         for( uint256 i = 0; i < in_x.length; i++ )
         {
-            r = (r + in_x[i] + miMCpe7(in_x[i], r, in_seed, round_count)) % localQ;
+            r = (r + in_x[i] + MiMCpe7(in_x[i], r, in_seed, round_count)) % localQ;
         }
 
         return r;
     }
 
-    function hash( uint256[] memory in_msgs, uint256 in_key )
+    function Hash( uint256[] memory in_msgs, uint256 in_key )
         internal pure returns (uint256)
     {
-        return miMCpe7_mp( in_msgs, in_key, uint256(keccak256("mimc")), 91 );
+        return MiMCpe7_mp( in_msgs, in_key, uint256(keccak256("mimc")), 91 );
     }
 
-    function hash( uint256[] memory in_msgs )
+    function Hash( uint256[] memory in_msgs )
         internal pure returns (uint256)
     {
-        return hash( in_msgs, 0 );
+        return Hash( in_msgs, 0 );
     }
 }

@@ -18,8 +18,9 @@ pragma solidity 0.5.2;
 
 import "../iface/IBlockVerifier.sol";
 
-import "../lib/Verifier.sol";
 import "../lib/NoDefaultFunc.sol";
+
+import "../thirdparty/Verifier.sol";
 
 
 /// @title An Implementation of IBlockVerifier.
@@ -44,7 +45,7 @@ contract BlockVerifier is IBlockVerifier, NoDefaultFunc
         uint256[] memory _vk_gammaABC;
         (_vk, _vk_gammaABC) = getVerifyingKey();
 
-        return Verifier.verify(_vk, _vk_gammaABC, proof, publicInputs);
+        return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
     }
 
     function getVerifyingKey()

@@ -18,6 +18,7 @@
 pragma solidity 0.5.2;
 
 import "../iface/IExchange.sol";
+
 import "../lib/BurnableERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";

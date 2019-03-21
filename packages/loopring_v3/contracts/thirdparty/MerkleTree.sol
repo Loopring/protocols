@@ -1,4 +1,4 @@
-// Taken from ethsnarks
+// This code is taken from ethsnarks
 
 pragma solidity 0.5.2;
 
@@ -22,7 +22,7 @@ library MerkleTree
     }
 
 
-    function fillLevelIVs (uint256[12] memory IVs)
+    function FillLevelIVs (uint256[12] memory IVs)
         internal pure
     {
         IVs[0] = 149674538925118052205057075966660054952481571156186698930522557832224430770;
@@ -40,24 +40,24 @@ library MerkleTree
     }
 
 
-    function hashImpl (uint256 left, uint256 right, uint256 IV)
+    function HashImpl (uint256 left, uint256 right, uint256 IV)
         internal pure returns (uint256)
     {
         uint256[] memory x = new uint256[](2);
         x[0] = left;
         x[1] = right;
 
-        return MiMC.hash(x, IV);
+        return MiMC.Hash(x, IV);
     }
 
 
-    function insert(Data storage self, uint256 leaf)
+    function Insert(Data storage self, uint256 leaf)
         internal returns (uint256, uint256)
     {
         require( leaf != 0 );
 
         uint256[12] memory IVs;
-        fillLevelIVs(IVs);
+        FillLevelIVs(IVs);
 
         uint256 offset = self.cur;
 
@@ -65,7 +65,7 @@ library MerkleTree
 
         self.leaves[0][offset] = leaf;
 
-        uint256 new_root = updateTree(self, IVs);
+        uint256 new_root = UpdateTree(self, IVs);
 
         self.cur = offset + 1;
 
@@ -73,30 +73,30 @@ library MerkleTree
     }
 
     // TODO: FIX THIS
-    function update(Data storage self, uint256 offset, uint256 leaf)
+    function Update(Data storage self, uint256 offset, uint256 leaf)
         internal returns (uint256)
     {
         require( leaf != 0 );
 
         uint256[12] memory IVs;
-        fillLevelIVs(IVs);
+        FillLevelIVs(IVs);
 
         require (offset != MAX_LEAF_COUNT - 1);
 
         self.leaves[0][offset] = leaf;
 
-        uint256 new_root = updateTree(self, IVs);
+        uint256 new_root = UpdateTree(self, IVs);
 
         return new_root;
     }
 
-    function getLeaf(Data storage self, uint depth, uint offset)
+    function GetLeaf(Data storage self, uint depth, uint offset)
         internal view returns (uint256)
     {
-        return getUniqueLeaf(depth, offset, self.leaves[depth][offset]);
+        return GetUniqueLeaf(depth, offset, self.leaves[depth][offset]);
     }
 
-    function getUniqueLeaf(uint256 depth, uint256 offset, uint256 leaf)
+    function GetUniqueLeaf(uint256 depth, uint256 offset, uint256 leaf)
         internal pure returns (uint256)
     {
         if (leaf == 0x0)
@@ -105,13 +105,13 @@ library MerkleTree
                 sha256(
                     abi.encodePacked(
                         uint16(depth),
-                        uint240(offset)))) % MiMC.getScalarField();
+                        uint240(offset)))) % MiMC.GetScalarField();
         }
 
         return leaf;
     }
 
-    function updateTree(Data storage self, uint256[12] memory IVs)
+    function UpdateTree(Data storage self, uint256[12] memory IVs)
         internal returns(uint256 root)
     {
         uint CurrentIndex = self.cur;
@@ -128,15 +128,15 @@ library MerkleTree
             {
                 leaf1 = self.leaves[depth][CurrentIndex];
 
-                leaf2 = getUniqueLeaf(depth, CurrentIndex + 1, self.leaves[depth][CurrentIndex + 1]);
+                leaf2 = GetUniqueLeaf(depth, CurrentIndex + 1, self.leaves[depth][CurrentIndex + 1]);
             } else
             {
-                leaf1 = getUniqueLeaf(depth, CurrentIndex - 1, self.leaves[depth][CurrentIndex - 1]);
+                leaf1 = GetUniqueLeaf(depth, CurrentIndex - 1, self.leaves[depth][CurrentIndex - 1]);
 
                 leaf2 = self.leaves[depth][CurrentIndex];
             }
 
-            self.leaves[depth+1][NextIndex] = hashImpl(leaf1, leaf2, IVs[depth]);
+            self.leaves[depth+1][NextIndex] = HashImpl(leaf1, leaf2, IVs[depth]);
 
             CurrentIndex = NextIndex;
         }
@@ -145,7 +145,7 @@ library MerkleTree
     }
 
 
-    function getRoot (Data storage self)
+    function GetRoot (Data storage self)
         internal view returns(uint256)
     {
         return self.leaves[TREE_DEPTH][0];

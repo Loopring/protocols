@@ -39,4 +39,5 @@ contract Errors
     string constant BURN_RATE_FROZEN           = "BURN_RATE_FROZEN";
     string constant BURN_RATE_MINIMIZED        = "BURN_RATE_MINIMIZED";
     string constant TOKEN_REGISTRY_FULL        = "TOKEN_REGISTRY_FULL";
+    string constant NOT_OWNER                  = "NOT_OWNER";
 }

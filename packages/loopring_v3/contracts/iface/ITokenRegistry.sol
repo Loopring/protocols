@@ -22,7 +22,7 @@ pragma solidity 0.5.2;
 contract ITokenRegistry
 {
 
-    // Burn rates (in bips - 100bips == 1%)
+    // Burn rates (in bips -- 100bips == 1%)
     uint16 public constant BURNRATE_TIER1 = 250;  // 2.5%
     uint16 public constant BURNRATE_TIER2 = 1500; //  15%
     uint16 public constant BURNRATE_TIER3 = 3000; //  30%

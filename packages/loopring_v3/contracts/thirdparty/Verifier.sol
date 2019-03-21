@@ -9,7 +9,7 @@ library Verifier
     using Pairing for Pairing.G1Point;
     using Pairing for Pairing.G2Point;
 
-    function scalarField ()
+    function ScalarField ()
         public
         pure
         returns (uint256)
@@ -40,7 +40,7 @@ library Verifier
     }
 
 
-    function negateY( uint256 Y )
+    function NegateY( uint256 Y )
         internal pure returns (uint256)
     {
         uint q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
@@ -92,7 +92,7 @@ library Verifier
         ok = check_1 * check_2 * check_3 * check_4
         assert ok == FQ12.one()
     */
-    function verify(
+    function Verify(
         uint256[14] memory in_vk,
         uint256[] memory vk_gammaABC,
         uint256[8] memory in_proof,
@@ -139,15 +139,15 @@ library Verifier
             in_proof[2], in_proof[3], in_proof[4], in_proof[5], // proof.B   (G2)
 
             // (-vk.alpha, vk.beta)
-            in_vk[0], negateY(in_vk[1]),                        // -vk.alpha (G1)
+            in_vk[0], NegateY(in_vk[1]),                        // -vk.alpha (G1)
             in_vk[2], in_vk[3], in_vk[4], in_vk[5],             // vk.beta   (G2)
 
             // (-vk_x, vk.gamma)
-            add_input[0], negateY(add_input[1]),                // -vk_x     (G1)
+            add_input[0], NegateY(add_input[1]),                // -vk_x     (G1)
             in_vk[6], in_vk[7], in_vk[8], in_vk[9],             // vk.gamma  (G2)
 
             // (-proof.C, vk.delta)
-            in_proof[6], negateY(in_proof[7]),                  // -proof.C  (G1)
+            in_proof[6], NegateY(in_proof[7]),                  // -proof.C  (G1)
             in_vk[10], in_vk[11], in_vk[12], in_vk[13]          // vk.delta  (G2)
         ];
 
@@ -160,7 +160,7 @@ library Verifier
     }
 
 
-    function verify(
+    function Verify(
         VerifyingKey memory vk,
         ProofWithInput memory pwi
         )
@@ -168,11 +168,11 @@ library Verifier
         view
         returns (bool)
     {
-        return verify(vk, pwi.proof, pwi.input);
+        return Verify(vk, pwi.proof, pwi.input);
     }
 
 
-    function verify(
+    function Verify(
         VerifyingKey memory vk,
         Proof memory proof,
         uint256[] memory input
