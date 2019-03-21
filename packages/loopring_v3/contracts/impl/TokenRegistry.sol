@@ -177,10 +177,10 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc
         // Can't upgrade to a higher level than tier 1
         require(currentTier > 1, BURN_RATE_MINIMIZED);
 
-        // Burn TIER_UPGRADE_COST_PERCENTAGE of total LRC supply
+        // Burn TIER_UPGRADE_COST_BIPS of total LRC supply
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         uint totalSupply = LRC.totalSupply();
-        uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / 10000;
+        uint amount = totalSupply.mul(TIER_UPGRADE_COST_BIPS) / 10000;
         bool success = LRC.burnFrom(msg.sender, amount);
         require(success, BURN_FAILURE);
 

@@ -23,21 +23,21 @@ contract ITokenRegistry
 {
 
     // Burn rates (in bips - 100bips == 1%)
-    uint16 public constant BURNRATE_TIER1            =                  250;  // 2.5%
-    uint16 public constant BURNRATE_TIER2            =                  1500; //  15%
-    uint16 public constant BURNRATE_TIER3            =                  3000; //  30%
-    uint16 public constant BURNRATE_TIER4            =                  5000; //  50%
+    uint16 public constant BURNRATE_TIER1 = 250;  // 2.5%
+    uint16 public constant BURNRATE_TIER2 = 1500; //  15%
+    uint16 public constant BURNRATE_TIER3 = 3000; //  30%
+    uint16 public constant BURNRATE_TIER4 = 5000; //  50%
 
     // Fee
-    uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_BASE           = 100 ether;
-    uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_DELTA          = 10 ether;
+    uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_BASE   = 1000 ether;
+    uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_DELTA  = 500  ether;
 
     // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
-    uint16 public constant TIER_UPGRADE_COST_PERCENTAGE  =                         10; // 0.1%
+    uint16 public constant TIER_UPGRADE_COST_BIPS  =  5; // 0.05% or 680K LRC
 
     // General
-    uint public constant MAX_NUM_TOKENS                               = 2 ** 12; // =4096
-    uint public constant TIER_UPGRADE_DURATION                        = 365 days;
+    uint public constant MAX_NUM_TOKENS         = 2 ** 12; // =4096
+    uint public constant TIER_UPGRADE_DURATION  = 365 days;
 
     event TokenTierUpgraded(
         address indexed addr,
