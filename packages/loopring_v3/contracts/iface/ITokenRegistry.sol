@@ -21,7 +21,8 @@ pragma solidity 0.5.2;
 /// @author Brecht Devos - <brecht@loopring.org>
 contract ITokenRegistry {
 
-    // Q(dongw): we may need to use the concept of 'bips', 100 bips == 1 percentage.
+    // Q(dongw): we may need to use the concept of 'bips', 100 bips == 1 percentage. The base
+    // of bips is always 10000 (100%)
     // Burn rates
     uint16 public constant BURNRATE_TIER1            =                       25; // 2.5%
     uint16 public constant BURNRATE_TIER2            =                  15 * 10; //  15%

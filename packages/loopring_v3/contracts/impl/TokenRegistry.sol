@@ -80,6 +80,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         token.tierValidUntil = 0xFFFFFFFF;
     }
 
+    // Q(dongw): how can people burn LRC to change tiers?
     function registerToken(
         address tokenAddress
         )
@@ -113,8 +114,6 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         );
         tokens.push(token);
 
-        // Q(dongw): should this be tokenID instead of tokenID + 1, or in
-        // the second line, we should ue emit TokenRegistered(tokenAddress, tokenID + 1);
         tokenToTokenID[tokenAddress] = tokenID + 1;
         emit TokenRegistered(tokenAddress, tokenID);
 
