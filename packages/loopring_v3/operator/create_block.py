@@ -89,14 +89,14 @@ def ringFromJSON(jRing, state):
     orderB = orderFromJSON(jRing["orderB"], state)
     minerAccountID = int(jRing["minerAccountID"])
     feeRecipientAccountID = int(jRing["feeRecipientAccountID"])
-    tokenID = int(jRing["tokenID"])
+    tokenId = int(jRing["tokenId"])
     fee = int(jRing["fee"])
 
     minerAccount = state.getAccount(minerAccountID)
     dualAuthA = state.getAccount(orderA.dualAuthAccountID)
     dualAuthB = state.getAccount(orderB.dualAuthAccountID)
 
-    ring = Ring(orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fee, minerAccount.nonce)
+    ring = Ring(orderA, orderB, minerAccountID, feeRecipientAccountID, tokenId, fee, minerAccount.nonce)
 
     ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(dualAuthA.secretKey)), FQ(int(dualAuthB.secretKey)))
 
@@ -114,7 +114,7 @@ def deposit(state, data):
         publicKeyX = int(depositInfo["publicKeyX"])
         publicKeyY = int(depositInfo["publicKeyY"])
         walletID = int(depositInfo["walletID"])
-        token = int(depositInfo["tokenID"])
+        token = int(depositInfo["tokenId"])
         amount = int(depositInfo["amount"])
 
         deposit = state.deposit(accountID, secretKey, publicKeyX, publicKeyY, walletID, token, amount)
@@ -137,14 +137,14 @@ def withdraw(onchain, state, data):
 
     for withdrawalInfo in data["withdrawals"]:
         accountID = int(withdrawalInfo["accountID"])
-        tokenID = int(withdrawalInfo["tokenID"])
+        tokenId = int(withdrawalInfo["tokenId"])
         amount = int(withdrawalInfo["amount"])
         dualAuthAccountID = int(withdrawalInfo["dualAuthAccountID"])
         feeTokenID = int(withdrawalInfo["feeTokenID"])
         fee = int(withdrawalInfo["fee"])
         walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
 
-        withdrawal = state.withdraw(onchain, export.stateID, accountID, tokenID, amount,
+        withdrawal = state.withdraw(onchain, export.stateID, accountID, tokenId, amount,
                                              export.operatorAccountID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage)
         export.withdrawals.append(withdrawal)
 

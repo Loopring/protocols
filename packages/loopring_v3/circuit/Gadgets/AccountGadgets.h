@@ -103,7 +103,7 @@ public:
     UpdateBalanceGadget(
         ProtoboardT& pb,
         const VariableT& root,
-        const VariableArrayT& tokenID,
+        const VariableArrayT& tokenId,
         const BalanceState before,
         const BalanceState after,
         const std::string& prefix
@@ -114,8 +114,8 @@ public:
         leafAfter(pb, libsnark::ONE, {after.balance, after.tradingHistory}, FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".proof"))),
-        proofVerifierBefore(pb, TREE_DEPTH_TOKENS, tokenID, merkle_tree_IVs(pb), leafBefore.result(), root, proof, FMT(prefix, ".pathBefore")),
-        rootCalculatorAfter(pb, TREE_DEPTH_TOKENS, tokenID, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
+        proofVerifierBefore(pb, TREE_DEPTH_TOKENS, tokenId, merkle_tree_IVs(pb), leafBefore.result(), root, proof, FMT(prefix, ".pathBefore")),
+        rootCalculatorAfter(pb, TREE_DEPTH_TOKENS, tokenId, merkle_tree_IVs(pb), leafAfter.result(), proof, FMT(prefix, ".pathAfter"))
     {
 
     }

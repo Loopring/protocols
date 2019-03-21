@@ -75,9 +75,9 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     event WalletRegistered(address walletOwner, uint24 walletID);
 
-    event Deposit(uint32 stateID, uint32 depositBlockIdx, uint16 slotIdx, uint24 accountID, uint16 tokenID, uint24 walletID, uint96 amount);
-    event Withdraw(uint32 stateID, uint24 accountID, uint16 tokenID, address to, uint96 amount);
-    event WithdrawRequest(uint32 stateID, uint32 withdrawBlockIdx, uint24 accountID, uint16 tokenID, uint96 amount);
+    event Deposit(uint32 stateID, uint32 depositBlockIdx, uint16 slotIdx, uint24 accountID, uint16 tokenId, uint24 walletID, uint96 amount);
+    event Withdraw(uint32 stateID, uint24 accountID, uint16 tokenId, address to, uint96 amount);
+    event WithdrawRequest(uint32 stateID, uint32 withdrawBlockIdx, uint24 accountID, uint16 tokenId, uint96 amount);
 
     event BlockCommitted(uint32 stateID, uint blockIdx, bytes32 publicDataHash);
     event BlockFinalized(uint32 stateID, uint blockIdx);
@@ -123,7 +123,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     struct PendingDeposit {
         uint24 accountID;
-        uint16 tokenID;
+        uint16 tokenId;
         uint96 amount;
     }
 
@@ -487,7 +487,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint publicKeyX,
         uint publicKeyY,
         uint24 walletID,
-        uint16 tokenID,
+        uint16 tokenId,
         uint96 amount
         )
         public
@@ -507,7 +507,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         state.numAccounts++;
         require(state.numAccounts <= 2 ** 24, "TOO_MANY_ACCOUNTS");
 
-        depositAndUpdateAccount(stateID, accountID, publicKeyX, publicKeyY, walletID, tokenID, amount);
+        depositAndUpdateAccount(stateID, accountID, publicKeyX, publicKeyY, walletID, tokenId, amount);
 
         return accountID;
     }
@@ -515,7 +515,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     function deposit(
         uint32 stateID,
         uint24 accountID,
-        uint16 tokenID,
+        uint16 tokenId,
         uint96 amount
         )
         external
@@ -523,7 +523,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     {
         State storage state = getState(stateID);
         Account storage account = getAccount(state, accountID);
-        depositAndUpdateAccount(stateID, accountID, account.publicKeyX, account.publicKeyY, account.walletID, tokenID, amount);
+        depositAndUpdateAccount(stateID, accountID, account.publicKeyX, account.publicKeyY, account.walletID, tokenId, amount);
     }
 
     // Allows the account owner to update the walletID and publicKey of the account
@@ -533,7 +533,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint publicKeyX,
         uint publicKeyY,
         uint24 walletID,
-        uint16 tokenID,
+        uint16 tokenId,
         uint96 amount
         )
         public
@@ -574,7 +574,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
 
         // Check expected ETH value sent
-        if (tokenID != 0) {
+        if (tokenId != 0) {
             require(msg.value == state.depositFeeInETH, "INCORRECT_ETH_FEE");
         } else {
             require(msg.value == (state.depositFeeInETH + amount), "INCORRECT_ETH_VALUE");
@@ -595,8 +595,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         depositBlock.fee = depositBlock.fee.add(state.depositFeeInETH);
 
         // Transfer the tokens from the owner into this contract
-        address tokenAddress = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
-        if (amount > 0 && tokenID != 0) {
+        address tokenAddress = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenId);
+        if (amount > 0 && tokenId != 0) {
             require(
                 tokenAddress.safeTransferFrom(
                     account.owner,
@@ -615,7 +615,7 @@ contract Exchange is IExchange, NoDefaultFunc {
                 publicKeyX,
                 publicKeyY,
                 walletID,
-                tokenID,
+                tokenId,
                 amount
             )
         );
@@ -627,20 +627,20 @@ contract Exchange is IExchange, NoDefaultFunc {
         // Store deposit info onchain so we can withdraw from uncommitted deposit blocks
         PendingDeposit memory pendingDeposit = PendingDeposit(
             accountID,
-            tokenID,
+            tokenId,
             amount
         );
         depositBlock.pendingDeposits.push(pendingDeposit);
         emit Deposit(
             stateID, uint32(state.numDepositBlocks - 1), uint16(depositBlock.numDeposits - 1),
-            accountID, tokenID, walletID, amount
+            accountID, tokenId, walletID, amount
         );
     }
 
     function requestWithdraw(
         uint32 stateID,
         uint24 accountID,
-        uint16 tokenID,
+        uint16 tokenId,
         uint96 amount
         )
         external
@@ -681,7 +681,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             abi.encodePacked(
                 withdrawBlock.hash,
                 accountID,
-                tokenID,
+                tokenId,
                 amount
             )
         );
@@ -690,7 +690,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             withdrawBlock.timestampFilled = uint32(now);
         }
 
-        emit WithdrawRequest(stateID, uint32(state.numWithdrawBlocks - 1), accountID, tokenID, amount);
+        emit WithdrawRequest(stateID, uint32(state.numWithdrawBlocks - 1), accountID, tokenId, amount);
     }
 
     function withdraw(
@@ -715,7 +715,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             data := mload(add(withdrawals, offset))
         }
         uint24 accountID = uint24((data / 0x10000000000000000000000000000) & 0xFFFFFF);
-        uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
+        uint16 tokenId = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
         uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
 
         Account storage account = getAccount(state, accountID);
@@ -729,15 +729,15 @@ contract Exchange is IExchange, NoDefaultFunc {
             withdrawBlock.withdrawals = withdrawals;
 
             // Transfer the tokens
-            withdrawAndBurn(account.owner, tokenID, account.walletID, amount);
+            withdrawAndBurn(account.owner, tokenId, account.walletID, amount);
         }
 
-        emit Withdraw(stateID, accountID, tokenID, account.owner, uint96(amount));
+        emit Withdraw(stateID, accountID, tokenId, account.owner, uint96(amount));
     }
 
     function withdrawAndBurn(
         address accountOwner,
-        uint16 tokenID,
+        uint16 tokenId,
         uint24 walletID,
         uint amount
         )
@@ -747,7 +747,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint amountToBurn = 0;
         uint amountToOwner = 0;
         if (walletID >= MAX_NUM_WALLETS) {
-            uint burnRate = ITokenRegistry(tokenRegistryAddress).getBurnRate(tokenID);
+            uint burnRate = ITokenRegistry(tokenRegistryAddress).getBurnRate(tokenId);
             amountToBurn = amount.mul(burnRate) / 1000;
             amountToOwner = amount - amountToBurn;
         } else {
@@ -756,7 +756,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
 
         address payable owner = address(uint160(accountOwner));
-        address token = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
+        address token = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenId);
 
         // Increase the burn balance
         if (amountToBurn > 0) {
@@ -1226,7 +1226,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     function withdrawFromMerkleTree(
         uint32 stateID,
         uint24 accountID,
-        uint16 tokenID,
+        uint16 tokenId,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
         uint32 nonce,
@@ -1248,7 +1248,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         verifyAccountBalance(
             lastBlock.merkleRoot,
             accountID,
-            tokenID,
+            tokenId,
             accountPath,
             balancePath,
             account,
@@ -1261,7 +1261,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         account.withdrawn = true;
 
         // Transfer the tokens
-        withdrawAndBurn(account.owner, tokenID, account.walletID, balance);
+        withdrawAndBurn(account.owner, tokenId, account.walletID, balance);
 
         return true;
     }
@@ -1269,7 +1269,7 @@ contract Exchange is IExchange, NoDefaultFunc {
     function verifyAccountBalance(
         bytes32 merkleRoot,
         uint24 accountID,
-        uint16 tokenID,
+        uint16 tokenId,
         uint256[24] memory accountPath,
         uint256[12] memory balancePath,
         Account storage account,
@@ -1282,7 +1282,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         IExchangeHelper(exchangeHelperAddress).verifyAccountBalance(
             uint256(merkleRoot),
             accountID,
-            tokenID,
+            tokenId,
             accountPath,
             balancePath,
             account.publicKeyX,
@@ -1321,7 +1321,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         // Transfer the tokens
         Account storage account = state.accounts[pendingDeposit.accountID];
-        withdrawAndBurn(account.owner, pendingDeposit.tokenID, account.walletID, amount);
+        withdrawAndBurn(account.owner, pendingDeposit.tokenId, account.walletID, amount);
     }
 
 }

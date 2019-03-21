@@ -27,8 +27,8 @@ export class Simulator {
       newState.accounts[deposit.accountID] = emptyAccount;
     }
     const account = newState.accounts[deposit.accountID];
-    account.balances[deposit.tokenID].balance =
-      account.balances[deposit.tokenID].balance.add(deposit.amount);
+    account.balances[deposit.tokenId].balance =
+      account.balances[deposit.tokenId].balance.add(deposit.amount);
     account.publicKeyX = deposit.publicKeyX;
     account.publicKeyY = deposit.publicKeyY;
     account.walletID = deposit.walletID;
@@ -158,15 +158,15 @@ export class Simulator {
     ringMatcher.balances[ring.orderA.tokenIdS].balance =
      ringMatcher.balances[ring.orderA.tokenIdS].balance.add(margin);
     // - Operator fee
-    ringMatcher.balances[ring.tokenID].balance =
-     ringMatcher.balances[ring.tokenID].balance.sub(ring.fee);
+    ringMatcher.balances[ring.tokenId].balance =
+     ringMatcher.balances[ring.tokenId].balance.sub(ring.fee);
     // Increase nonce
     ringMatcher.nonce++;
 
     // Update operator
     const operator = newState.accounts[operatorAccountID];
-    operator.balances[ring.tokenID].balance =
-     operator.balances[ring.tokenID].balance.add(ring.fee);
+    operator.balances[ring.tokenId].balance =
+     operator.balances[ring.tokenId].balance.add(ring.fee);
 
     // Check expected
     if (ring.expected) {
@@ -200,7 +200,7 @@ export class Simulator {
 
     const operatorFee: DetailedTokenTransfer = {
       description: "OperatorFee",
-      token: ring.tokenID,
+      token: ring.tokenId,
       from: ring.minerAccountID,
       to: operatorAccountID,
       amount: ring.fee,
@@ -351,8 +351,8 @@ export class Simulator {
 
   private copyAccount(account: Account) {
     const balances: {[key: number]: Balance} = {};
-    for (const tokenID of Object.keys(account.balances)) {
-      const balanceValue = account.balances[Number(tokenID)];
+    for (const tokenId of Object.keys(account.balances)) {
+      const balanceValue = account.balances[Number(tokenId)];
 
       const tradeHistory: {[key: number]: TradeHistory} = {};
       for (const orderID of Object.keys(balanceValue.tradeHistory)) {
@@ -362,7 +362,7 @@ export class Simulator {
           cancelled: tradeHistoryValue.cancelled,
         };
       }
-      balances[Number(tokenID)] = {
+      balances[Number(tokenId)] = {
         balance: balanceValue.balance,
         tradeHistory,
       };

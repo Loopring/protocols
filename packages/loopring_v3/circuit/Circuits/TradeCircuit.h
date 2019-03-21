@@ -53,7 +53,7 @@ public:
     const jubjub::VariablePointT feeRecipientPublicKey;
     libsnark::dual_variable_gadget<FieldT> minerAccountID;
     libsnark::dual_variable_gadget<FieldT> feeRecipientAccountID;
-    VariableArrayT tokenID;
+    VariableArrayT tokenId;
     libsnark::dual_variable_gadget<FieldT> fee;
     libsnark::dual_variable_gadget<FieldT> nonce_before;
     VariableT nonce_after;
@@ -173,7 +173,7 @@ public:
         feeRecipientPublicKey(pb, FMT(prefix, ".feeRecipientPublicKey")),
         minerAccountID(pb, 24, FMT(prefix, ".minerAccountID")),
         feeRecipientAccountID(pb, 24, FMT(prefix, ".feeRecipientAccountID")),
-        tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
+        tokenId(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenId"))),
         fee(pb, 96, FMT(prefix, ".fee")),
         nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, FMT(prefix, ".nonce_after"))),
@@ -331,7 +331,7 @@ public:
                         {balanceM_M_before, emptyTradeHistory},
                         {balanceS_MA.Y, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceF_M")),
-        updateBalanceO_M(pb, updateBalanceM_M.getNewRoot(), tokenID,
+        updateBalanceO_M(pb, updateBalanceM_M.getNewRoot(), tokenId,
                         {balanceO_M_before, emptyTradeHistory},
                         {balance_M.X, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceO_M")),
@@ -340,14 +340,14 @@ public:
                         {publicKey.x, publicKey.y, constant0, nonce_after, updateBalanceO_M.getNewRoot()},
                         FMT(prefix, ".updateAccount_M")),
 
-        updateBalanceF_O(pb, _operatorBalancesRoot, tokenID,
+        updateBalanceF_O(pb, _operatorBalancesRoot, tokenId,
                          {balanceF_O_before, emptyTradeHistory},
                          {balance_M.Y, emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_O")),
 
         message(flatten({orderA.getHash(), orderB.getHash(),
                          orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
-                         minerAccountID.bits, tokenID, fee.bits,
+                         minerAccountID.bits, tokenId, fee.bits,
                          feeRecipientAccountID.bits,
                          nonce_before.bits})),
         minerSignatureVerifier(pb, params, publicKey, message, FMT(prefix, ".minerSignatureVerifier")),
@@ -373,7 +373,7 @@ public:
         {
             minerAccountID.bits,
             feeRecipientAccountID.bits,
-            uint16_padding, tokenID,
+            uint16_padding, tokenId,
             fee.bits,
 
             margin.bits,
@@ -412,7 +412,7 @@ public:
         minerAccountID.generate_r1cs_witness_from_bits();
         feeRecipientAccountID.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.feeRecipientAccountID);
         feeRecipientAccountID.generate_r1cs_witness_from_bits();
-        tokenID.fill_with_bits_of_field_element(pb, ringSettlement.ring.tokenID);
+        tokenId.fill_with_bits_of_field_element(pb, ringSettlement.ring.tokenId);
         fee.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.fee);
         fee.generate_r1cs_witness_from_bits();
         nonce_before.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.nonce);

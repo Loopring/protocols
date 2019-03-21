@@ -75,7 +75,7 @@ void from_json(const json& j, Account& account)
 class BalanceUpdate
 {
 public:
-    ethsnarks::FieldT tokenID;
+    ethsnarks::FieldT tokenId;
     Proof proof;
     ethsnarks::FieldT rootBefore;
     ethsnarks::FieldT rootAfter;
@@ -85,7 +85,7 @@ public:
 
 void from_json(const json& j, BalanceUpdate& balanceUpdate)
 {
-    balanceUpdate.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    balanceUpdate.tokenId = ethsnarks::FieldT(j.at("tokenId"));
     balanceUpdate.proof = j.at("proof").get<Proof>();
     balanceUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
     balanceUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
@@ -187,7 +187,7 @@ void from_json(const json& j, FeeBalanceUpdate& update)
 class FeeTokenUpdate
 {
 public:
-    ethsnarks::FieldT tokenID;
+    ethsnarks::FieldT tokenId;
     Proof proof;
     ethsnarks::FieldT rootBefore;
     ethsnarks::FieldT rootAfter;
@@ -197,7 +197,7 @@ public:
 
 void from_json(const json& j, FeeTokenUpdate& update)
 {
-    update.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    update.tokenId = ethsnarks::FieldT(j.at("tokenId"));
     update.proof = j.at("proof").get<Proof>();
     update.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
     update.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
@@ -311,7 +311,7 @@ public:
 
     ethsnarks::FieldT minerAccountID;
     ethsnarks::FieldT feeRecipientAccountID;
-    ethsnarks::FieldT tokenID;
+    ethsnarks::FieldT tokenId;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT nonce;
 
@@ -337,7 +337,7 @@ void from_json(const json& j, Ring& ring)
 
     ring.minerAccountID = ethsnarks::FieldT(j.at("minerAccountID"));
     ring.feeRecipientAccountID = ethsnarks::FieldT(j.at("feeRecipientAccountID"));
-    ring.tokenID = ethsnarks::FieldT(j.at("tokenID"));
+    ring.tokenId = ethsnarks::FieldT(j.at("tokenId"));
     ring.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     ring.nonce = ethsnarks::FieldT(j.at("nonce"));
 

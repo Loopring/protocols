@@ -141,65 +141,65 @@ class Account(object):
         else:
             return self._balancesLeafs[str(address)].balance
 
-    def updateBalance(self, tokenID, amount):
+    def updateBalance(self, tokenId, amount):
         # Make sure the leaf exist in our map
-        if not(str(tokenID) in self._balancesLeafs):
-            self._balancesLeafs[str(tokenID)] = BalanceLeaf()
+        if not(str(tokenId) in self._balancesLeafs):
+            self._balancesLeafs[str(tokenId)] = BalanceLeaf()
 
-        balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
+        balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenId)])
         rootBefore = self._balancesTree._root
 
-        self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
+        self._balancesLeafs[str(tokenId)].balance = str(int(self._balancesLeafs[str(tokenId)].balance) + amount)
 
-        balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
-        proof = self._balancesTree.createProof(tokenID)
-        self._balancesTree.update(tokenID, self._balancesLeafs[str(tokenID)].hash())
+        balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenId)])
+        proof = self._balancesTree.createProof(tokenId)
+        self._balancesTree.update(tokenId, self._balancesLeafs[str(tokenId)].hash())
         rootAfter = self._balancesTree._root
 
-        return BalanceUpdateData(tokenID, proof,
+        return BalanceUpdateData(tokenId, proof,
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter)
 
-    def updateBalanceAndTradeHistory(self, tokenID, orderID, amount):
+    def updateBalanceAndTradeHistory(self, tokenId, orderID, amount):
         # Make sure the leaf exist in our map
-        if not(str(tokenID) in self._balancesLeafs):
-            self._balancesLeafs[str(tokenID)] = BalanceLeaf()
+        if not(str(tokenId) in self._balancesLeafs):
+            self._balancesLeafs[str(tokenId)] = BalanceLeaf()
 
-        balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
+        balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenId)])
         rootBefore = self._balancesTree._root
 
         # Update filled amounts
-        tradeHistory = self._balancesLeafs[str(tokenID)].getTradeHistory(orderID)
-        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, -amount, tradeHistory.cancelled)
-        self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
+        tradeHistory = self._balancesLeafs[str(tokenId)].getTradeHistory(orderID)
+        tradeHistoryUpdate = self._balancesLeafs[str(tokenId)].updateTradeHistory(orderID, -amount, tradeHistory.cancelled)
+        self._balancesLeafs[str(tokenId)].balance = str(int(self._balancesLeafs[str(tokenId)].balance) + amount)
 
-        balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
-        proof = self._balancesTree.createProof(tokenID)
-        self._balancesTree.update(tokenID, self._balancesLeafs[str(tokenID)].hash())
+        balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenId)])
+        proof = self._balancesTree.createProof(tokenId)
+        self._balancesTree.update(tokenId, self._balancesLeafs[str(tokenId)].hash())
         rootAfter = self._balancesTree._root
 
-        return (BalanceUpdateData(tokenID, proof,
+        return (BalanceUpdateData(tokenId, proof,
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter),
                 tradeHistoryUpdate)
 
-    def cancelOrder(self, tokenID, orderID):
+    def cancelOrder(self, tokenId, orderID):
         # Make sure the leaf exist in our map
-        if not(str(tokenID) in self._balancesLeafs):
-            self._balancesLeafs[str(tokenID)] = BalanceLeaf()
+        if not(str(tokenId) in self._balancesLeafs):
+            self._balancesLeafs[str(tokenId)] = BalanceLeaf()
 
-        balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
+        balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenId)])
         rootBefore = self._balancesTree._root
 
         # Update cancelled state
-        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, 0, 1)
+        tradeHistoryUpdate = self._balancesLeafs[str(tokenId)].updateTradeHistory(orderID, 0, 1)
 
-        balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
-        proof = self._balancesTree.createProof(tokenID)
-        self._balancesTree.update(tokenID, self._balancesLeafs[str(tokenID)].hash())
+        balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenId)])
+        proof = self._balancesTree.createProof(tokenId)
+        self._balancesTree.update(tokenId, self._balancesLeafs[str(tokenId)].hash())
         rootAfter = self._balancesTree._root
 
-        return (BalanceUpdateData(tokenID, proof,
+        return (BalanceUpdateData(tokenId, proof,
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter),
                 tradeHistoryUpdate)
@@ -219,10 +219,10 @@ class TradeHistoryUpdateData(object):
 
 class BalanceUpdateData(object):
     def __init__(self,
-                 tokenID, proof,
+                 tokenId, proof,
                  rootBefore, rootAfter,
                  before, after):
-        self.tokenID = int(tokenID)
+        self.tokenId = int(tokenId)
         self.proof = [str(_) for _ in proof]
         self.rootBefore = str(rootBefore)
         self.rootAfter = str(rootAfter)
@@ -250,12 +250,12 @@ class Deposit(object):
 
 class WithdrawProof(object):
     def __init__(self,
-                 stateID, accountID, tokenID,
+                 stateID, accountID, tokenId,
                  account, balance,
                  root,
                  accountProof, balanceProof):
         self.accountID = int(accountID)
-        self.tokenID = int(tokenID)
+        self.tokenId = int(tokenId)
         self.account = account
         self.balance = balance
         self.root = str(root)
@@ -334,12 +334,12 @@ class Order(object):
 
 
 class Ring(object):
-    def __init__(self, orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fee, nonce):
+    def __init__(self, orderA, orderB, minerAccountID, feeRecipientAccountID, tokenId, fee, nonce):
         self.orderA = orderA
         self.orderB = orderB
         self.minerAccountID = int(minerAccountID)
         self.feeRecipientAccountID = int(feeRecipientAccountID)
-        self.tokenID = int(tokenID)
+        self.tokenId = int(tokenId)
         self.fee = str(fee)
         self.nonce = int(nonce)
 
@@ -347,7 +347,7 @@ class Ring(object):
         msg_parts = [
                         FQ(int(self.orderA.hash), 1<<254), FQ(int(self.orderB.hash), 1<<254),
                         FQ(int(self.orderA.waiveFeePercentage), 1<<7), FQ(int(self.orderB.waiveFeePercentage), 1<<7),
-                        FQ(int(self.minerAccountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.fee), 1<<96),
+                        FQ(int(self.minerAccountID), 1<<24), FQ(int(self.tokenId), 1<<12), FQ(int(self.fee), 1<<96),
                         FQ(int(self.feeRecipientAccountID), 1<<24),
                         FQ(int(self.nonce), 1<<32)
                     ]
@@ -424,7 +424,7 @@ class Withdrawal(object):
                  publicKey,
                  walletPublicKey,
                  stateID,
-                 accountID, tokenID, amount,
+                 accountID, tokenId, amount,
                  walletID, dualAuthAccountID,
                  operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                  nonce,
@@ -438,7 +438,7 @@ class Withdrawal(object):
         self.walletPublicKeyY = str(walletPublicKey.y)
         self.stateID = stateID
         self.accountID = accountID
-        self.tokenID = tokenID
+        self.tokenId = tokenId
         self.amount = str(amount)
         self.walletID = walletID
         self.dualAuthAccountID = dualAuthAccountID
@@ -460,7 +460,7 @@ class Withdrawal(object):
 
     def message(self):
         msg_parts = [FQ(int(self.stateID), 1<<32),
-                     FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.amount), 1<<96),
+                     FQ(int(self.accountID), 1<<24), FQ(int(self.tokenId), 1<<12), FQ(int(self.amount), 1<<96),
                      FQ(int(self.dualAuthAccountID), 1<<24), FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
                      FQ(int(self.nonce), 1<<32)]
         return PureEdDSA.to_bits(*msg_parts)
@@ -783,7 +783,7 @@ class State(object):
         proof = self._accountsTree.createProof(ring.minerAccountID)
 
         balanceUpdateM_M = accountM.updateBalance(ring.orderA.tokenS, int(ring.margin))
-        balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -int(ring.fee))
+        balanceUpdateO_M = accountM.updateBalance(ring.tokenId, -int(ring.fee))
         accountM.nonce += 1
 
         self.updateAccountTree(ring.minerAccountID)
@@ -794,7 +794,7 @@ class State(object):
 
 
         # Operator payment
-        balanceUpdateF_O = self.getAccount(context.operatorAccountID).updateBalance(ring.tokenID, int(ring.fee))
+        balanceUpdateF_O = self.getAccount(context.operatorAccountID).updateBalance(ring.tokenId, int(ring.fee))
         ###
 
         return RingSettlement(ring,
@@ -845,7 +845,7 @@ class State(object):
 
     def withdraw(self,
                  onchain,
-                 stateID, accountID, tokenID, amount,
+                 stateID, accountID, tokenId, amount,
                  operatorAccountID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage):
 
         feeToWallet = int(fee) * walletSplitPercentage // 100
@@ -862,7 +862,7 @@ class State(object):
         print("fee: " + str(fee))
         balanceUpdateF_A = self.getAccount(accountID).updateBalance(feeTokenID, -fee)
 
-        balance = int(self.getAccount(accountID).getBalance(tokenID))
+        balance = int(self.getAccount(accountID).getBalance(tokenId))
         print("balance: " + str(balance))
         amountWithdrawn = int(amount) if (int(amount) < balance) else balance
         print("Withdraw: " + str(amountWithdrawn) + " (requested: " + str(amount) + ")")
@@ -870,7 +870,7 @@ class State(object):
         totalAmountWithdrawn = amountWithdrawn
         print("totalAmountWithdrawn: " + str(totalAmountWithdrawn))
 
-        balanceUpdateW_A = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn)
+        balanceUpdateW_A = self.getAccount(accountID).updateBalance(tokenId, -amountWithdrawn)
         if not onchain:
             self.getAccount(accountID).nonce += 1
 
@@ -901,7 +901,7 @@ class State(object):
         withdrawal = Withdrawal(Point(int(account.publicKeyX), int(account.publicKeyY)),
                                 Point(int(walletAccount.publicKeyX), int(walletAccount.publicKeyY)),
                                 stateID,
-                                accountID, tokenID, amount,
+                                accountID, tokenId, amount,
                                 walletAccount.walletID, dualAuthAccountID,
                                 operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                                 nonce,
@@ -965,13 +965,13 @@ class State(object):
         cancellation.sign(FQ(int(account.secretKey)), FQ(int(walletAccount.secretKey)))
         return cancellation
 
-    def createWithdrawProof(self, stateID, accountID, tokenID):
+    def createWithdrawProof(self, stateID, accountID, tokenId):
         account = copyAccountInfo(self.getAccount(accountID))
-        balance = copyBalanceInfo(self.getAccount(accountID)._balancesLeafs[str(tokenID)])
+        balance = copyBalanceInfo(self.getAccount(accountID)._balancesLeafs[str(tokenId)])
         accountProof = self._accountsTree.createProof(accountID)
-        balanceProof = self.getAccount(accountID)._balancesTree.createProof(tokenID)
+        balanceProof = self.getAccount(accountID)._balancesTree.createProof(tokenId)
 
-        return WithdrawProof(stateID, accountID, tokenID,
+        return WithdrawProof(stateID, accountID, tokenId,
                              account, balance,
                              self.getRoot(),
                              accountProof, balanceProof)

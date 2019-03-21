@@ -31,7 +31,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
     function verifyAccountBalance(
         uint256 merkleRoot,
         uint24 accountID,
-        uint16 tokenID,
+        uint16 tokenId,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
         uint256 publicKeyX,
@@ -45,7 +45,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
     {
         // Verify data
         uint256 calculatedRoot = getBalancesRoot(
-            tokenID,
+            tokenId,
             balance,
             tradeHistoryRoot,
             balancePath
@@ -63,7 +63,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
     }
 
     function getBalancesRoot(
-        uint16 tokenID,
+        uint16 tokenId,
         uint balance,
         uint tradeHistoryRoot,
         uint256[12] memory balancePath
@@ -81,7 +81,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         uint256 balanceItem = MiMC.Hash(balanceLeafElements, 1);
 
         // Calculate merkle root of balances tree
-        uint tokenAddress = tokenID;
+        uint tokenAddress = tokenId;
         for (uint depth = 0; depth < 12; depth++) {
             if (tokenAddress & 1 == 1) {
                 balanceItem = HashImpl(balancePath[depth], balanceItem, IVs[depth]);

@@ -49,7 +49,7 @@ export interface RingInfo {
 
   minerAccountID?: number;
   feeRecipientAccountID?: number;
-  tokenID?: number;
+  tokenId?: number;
   fee?: BN;
 
   expected?: RingExpectation;
@@ -70,13 +70,13 @@ export interface Deposit {
   publicKeyX: string;
   publicKeyY: string;
   walletID: number;
-  tokenID: number;
+  tokenId: number;
   amount: BN;
 }
 
 export interface WithdrawalRequest {
   accountID: number;
-  tokenID: number;
+  tokenId: number;
   amount: BN;
 
   dualAuthAccountID: number;

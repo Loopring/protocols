@@ -214,10 +214,10 @@ public:
         pb.val(walletPublicKey.y) = cancellation.walletPublicKey.y;
 
         accountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_A.accountID);
-        orderTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateT_A.tokenID);
+        orderTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateT_A.tokenId);
         orderID.fill_with_bits_of_field_element(pb, cancellation.tradeHistoryUpdate_A.orderID);
         dualAuthAccountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_W.accountID);
-        feeTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateF_A.tokenID);
+        feeTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateF_A.tokenId);
         fee.bits.fill_with_bits_of_field_element(pb, cancellation.fee);
         fee.generate_r1cs_witness_from_bits();
         walletSplitPercentage.bits.fill_with_bits_of_field_element(pb, cancellation.walletSplitPercentage);

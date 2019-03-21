@@ -48,7 +48,7 @@ export class ExchangeTestUtil {
   private contracts = new Artifacts(artifacts);
 
   private tokenAddressToIDMap = new Map<string, number>();
-  private tokenIDToAddressMap = new Map<number, string>();
+  private tokenIdToAddressMap = new Map<number, string>();
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
@@ -252,7 +252,7 @@ export class ExchangeTestUtil {
   public async setupRing(ring: RingInfo, bSetupOrderA: boolean = true, bSetupOrderB: boolean = true) {
     ring.minerAccountID = this.minerAccountID[ring.orderA.stateID];
     ring.feeRecipientAccountID = this.feeRecipientAccountID[ring.orderA.stateID];
-    ring.tokenID = ring.tokenID ? ring.tokenID : 2;
+    ring.tokenId = ring.tokenId ? ring.tokenId : 2;
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
     if (bSetupOrderA) {
       await this.setupOrder(ring.orderA, this.orderIDGenerator++);
@@ -406,7 +406,7 @@ export class ExchangeTestUtil {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
-    const tokenID = this.tokenAddressToIDMap.get(token);
+    const tokenId = this.tokenAddressToIDMap.get(token);
 
     let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots(web3.utils.toBN(stateID))).toNumber();
     if (numAvailableSlots === 0) {
@@ -444,7 +444,7 @@ export class ExchangeTestUtil {
         new BN(publicKeyX),
         new BN(publicKeyY),
         web3.utils.toBN(walletID),
-        tokenID,
+        tokenId,
         web3.utils.toBN(amount),
         {from: owner, value: ethToSend},
       );
@@ -455,7 +455,7 @@ export class ExchangeTestUtil {
         new BN(publicKeyX),
         new BN(publicKeyY),
         web3.utils.toBN(walletID),
-        tokenID,
+        tokenId,
         web3.utils.toBN(amount),
         {from: owner, value: ethToSend},
       );
@@ -485,12 +485,12 @@ export class ExchangeTestUtil {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
-    const tokenID = this.tokenAddressToIDMap.get(token);
+    const tokenId = this.tokenAddressToIDMap.get(token);
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[stateID], accountID, tokenID, amount,
+    this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[stateID], accountID, tokenId, amount,
                               dualAuthAccountID, feeTokenID, fee, walletSplitPercentage);
   }
 
@@ -499,7 +499,7 @@ export class ExchangeTestUtil {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
-    const tokenID = this.tokenAddressToIDMap.get(token);
+    const tokenId = this.tokenAddressToIDMap.get(token);
 
     let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawSlots(web3.utils.toBN(stateID))).toNumber();
     console.log("numAvailableSlots: " + numAvailableSlots);
@@ -518,7 +518,7 @@ export class ExchangeTestUtil {
     const tx = await this.exchange.requestWithdraw(
       web3.utils.toBN(stateID),
       web3.utils.toBN(accountID),
-      web3.utils.toBN(tokenID),
+      web3.utils.toBN(tokenId),
       web3.utils.toBN(amount),
       {from: txOrigin, value: withdrawFee},
     );
@@ -531,13 +531,13 @@ export class ExchangeTestUtil {
     const withdrawBlockIdx = items[0][0].toNumber();
 
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[stateID],
-                              accountID, tokenID, amount, 0, tokenID, new BN(0), 0, withdrawBlockIdx);
+                              accountID, tokenId, amount, 0, tokenId, new BN(0), 0, withdrawBlockIdx);
   }
 
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
                     secretKey: string, publicKeyX: string, publicKeyY: string,
-                    walletID: number, tokenID: number, amount: BN) {
-    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID, tokenID, amount});
+                    walletID: number, tokenId: number, amount: BN) {
+    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID, tokenId, amount});
   }
 
   public addCancel(cancels: Cancel[], accountID: number, orderTokenID: number, orderID: number,
@@ -563,10 +563,10 @@ export class ExchangeTestUtil {
   }
 
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
-                              accountID: number, tokenID: number, amount: BN,
+                              accountID: number, tokenId: number, amount: BN,
                               dualAuthAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number,
                               withdrawBlockIdx?: number) {
-    withdrawalRequests.push({accountID, tokenID, amount, dualAuthAccountID,
+    withdrawalRequests.push({accountID, tokenId, amount, dualAuthAccountID,
                              feeTokenID, fee, walletSplitPercentage, withdrawBlockIdx});
   }
 
@@ -714,7 +714,7 @@ export class ExchangeTestUtil {
               publicKeyX: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
               publicKeyY: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
               walletID: 0,
-              tokenID: 0,
+              tokenId: 0,
               amount: new BN(0),
             };
             deposits.push(dummyDeposit);
@@ -755,8 +755,8 @@ export class ExchangeTestUtil {
       blockInfos.push(blockInfo);
 
       /*for (const deposit of deposits) {
-        const balance = await this.getOffchainBalance(stateID, deposit.accountID, deposit.tokenID);
-        this.prettyPrintBalance(deposit.accountID, deposit.tokenID, balance);
+        const balance = await this.getOffchainBalance(stateID, deposit.accountID, deposit.tokenId);
+        this.prettyPrintBalance(deposit.accountID, deposit.tokenId, balance);
       }*/
     }
 
@@ -867,7 +867,7 @@ export class ExchangeTestUtil {
         } else {
           const dummyWithdrawalRequest: WithdrawalRequest = {
             accountID: 0,
-            tokenID: 0,
+            tokenId: 0,
             amount: new BN(0),
             dualAuthAccountID: 1,
             feeTokenID: 0,
@@ -905,7 +905,7 @@ export class ExchangeTestUtil {
       bs.addNumber(0, 32);
       for (const withdrawal of block.withdrawals) {
         bs.addNumber(withdrawal.accountID, 3);
-        bs.addNumber(withdrawal.tokenID, 2);
+        bs.addNumber(withdrawal.tokenId, 2);
         bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
       }
       if (!onchain) {
@@ -958,10 +958,10 @@ export class ExchangeTestUtil {
 
       const eventArr: any = await this.getEventsFromContract(this.exchange, "Withdraw", web3.eth.blockNumber);
       const items = eventArr.map((eventObj: any) => {
-        return [eventObj.args.to, eventObj.args.tokenID, eventObj.args.amount];
+        return [eventObj.args.to, eventObj.args.tokenId, eventObj.args.amount];
       });
-      const tokenID = items[0][1].toNumber();
-      const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
+      const tokenId = items[0][1].toNumber();
+      const tokenAddress = this.tokenIdToAddressMap.get(tokenId);
       const to = addressBook ? addressBook[items[0][0]] : items[0][0];
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
@@ -1038,7 +1038,7 @@ export class ExchangeTestUtil {
               },
             minerAccountID: this.minerAccountID[stateID],
             feeRecipientAccountID: this.feeRecipientAccountID[stateID],
-            tokenID: 0,
+            tokenId: 0,
             fee: new BN(0),
           };
           rings.push(dummyRing);
@@ -1083,7 +1083,7 @@ export class ExchangeTestUtil {
 
         bs.addNumber(ring.minerAccountID, 3);
         bs.addNumber(ring.feeRecipientAccountID, 3);
-        bs.addNumber(ring.tokenID, 2);
+        bs.addNumber(ring.tokenId, 2);
         bs.addBN(new BN(ring.fee, 10), 12);
         bs.addBN(new BN(ring.margin, 10), 12);
         let index = 0;
@@ -1197,16 +1197,16 @@ export class ExchangeTestUtil {
         // pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
       }
 
-      const tokenID = (await this.getTokenID(tokenAddress)).toNumber();
-      this.tokenAddressToIDMap.set(tokenAddress, tokenID);
-      this.tokenIDToAddressMap.set(tokenID, tokenAddress);
+      const tokenId = (await this.getTokenId(tokenAddress)).toNumber();
+      this.tokenAddressToIDMap.set(tokenAddress, tokenId);
+      this.tokenIdToAddressMap.set(tokenId, tokenAddress);
     }
-    // console.log(this.tokenIDMap);
+    // console.log(this.tokenIdMap);
   }
 
-  public async getTokenID(tokenAddress: string) {
-    const tokenID = await this.tokenRegistry.getTokenID(tokenAddress);
-    return tokenID;
+  public async getTokenId(tokenAddress: string) {
+    const tokenId = await this.tokenRegistry.getTokenId(tokenAddress);
+    return tokenId;
   }
 
   public async createNewState(
@@ -1274,8 +1274,8 @@ export class ExchangeTestUtil {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
-    const tokenID = this.tokenAddressToIDMap.get(token);
-    return tokenID;
+    const tokenId = this.tokenAddressToIDMap.get(token);
+    return tokenId;
   }
 
   public async revertBlock(stateID: number, blockIdx: number) {
@@ -1288,11 +1288,11 @@ export class ExchangeTestUtil {
   }
 
   public async withdrawFromMerkleTree(stateID: number, accountID: number, token: string) {
-    const tokenID = this.getTokenIdFromNameOrAddress(token);
+    const tokenId = this.getTokenIdFromNameOrAddress(token);
 
     const filename = "withdraw_proof.json";
     const result = childProcess.spawnSync("python3",
-    ["operator/create_withdraw_proof.py", "" + stateID, "" + accountID, "" + tokenID, filename], {stdio: "inherit"});
+    ["operator/create_withdraw_proof.py", "" + stateID, "" + accountID, "" + tokenId, filename], {stdio: "inherit"});
     assert(result.status === 0, "create_withdraw_proof failed!");
 
     // Read in the proof
@@ -1302,7 +1302,7 @@ export class ExchangeTestUtil {
     await this.exchange.withdrawFromMerkleTree(
       web3.utils.toBN(stateID),
       web3.utils.toBN(accountID),
-      web3.utils.toBN(tokenID),
+      web3.utils.toBN(tokenId),
       data.proof.accountProof,
       data.proof.balanceProof,
       web3.utils.toBN(data.proof.account.nonce),
@@ -1358,9 +1358,9 @@ export class ExchangeTestUtil {
            "Timestamp should have been increased by roughly the expected value");
   }
 
-  public async getOffchainBalance(stateID: number, accountID: number, tokenID: number) {
+  public async getOffchainBalance(stateID: number, accountID: number, tokenId: number) {
     const state = await this.loadState(stateID);
-    return state.accounts[accountID].balances[tokenID].balance;
+    return state.accounts[accountID].balances[tokenId].balance;
   }
 
   public async getTokenContract(token: string) {
@@ -1388,9 +1388,9 @@ export class ExchangeTestUtil {
       const accountA = stateA.accounts[Number(accountKey)];
       const accountB = stateB.accounts[Number(accountKey)];
 
-      for (const tokenID of Object.keys(accountA.balances)) {
-        const balanceValueA = accountA.balances[Number(tokenID)];
-        const balanceValueB = accountB.balances[Number(tokenID)];
+      for (const tokenId of Object.keys(accountA.balances)) {
+        const balanceValueA = accountA.balances[Number(tokenId)];
+        const balanceValueB = accountB.balances[Number(tokenId)];
 
         for (const orderID of Object.keys(balanceValueA.tradeHistory)) {
           const tradeHistoryValueA = balanceValueA.tradeHistory[Number(orderID)];
@@ -1509,16 +1509,16 @@ export class ExchangeTestUtil {
     return state;
   }
 
-  public prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
-    const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
+  public prettyPrintBalance(accountID: number, tokenId: number, balance: BN) {
+    const tokenAddress = this.tokenIdToAddressMap.get(tokenId);
     const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
     const prettyBalance = balance.div(web3.utils.toBN(10 ** decimals)).toString(10);
     console.log(accountID + ": " + prettyBalance + " " + tokenSymbol);
   }
 
-  public prettyPrintBalanceChange(accountID: number, tokenID: number, balanceBefore: BN, balanceAfter: BN) {
-    const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
+  public prettyPrintBalanceChange(accountID: number, tokenId: number, balanceBefore: BN, balanceAfter: BN) {
+    const tokenAddress = this.tokenIdToAddressMap.get(tokenId);
     const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
     const prettyBalanceBefore = balanceBefore.div(web3.utils.toBN(10 ** decimals)).toString(10);
@@ -1654,8 +1654,8 @@ export class ExchangeTestUtil {
     }
   }
 
-  private getPrettyAmount(tokenID: number, amount: BN) {
-    const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
+  private getPrettyAmount(tokenId: number, amount: BN) {
+    const tokenAddress = this.tokenIdToAddressMap.get(tokenId);
     const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
     const amountDec = Number(amount.toString(10)) / (10 ** decimals);

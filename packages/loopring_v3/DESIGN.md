@@ -92,7 +92,7 @@ function createAccountAndDeposit(
     uint publicKeyX,
     uint publicKeyY,
     uint24 walletID,
-    uint16 tokenID,
+    uint16 tokenId,
     uint96 amount
     )
     public
@@ -364,7 +364,7 @@ Once the block the deposit/withdraw block was committed in is finalized anyone c
 For every Ring (2 orders):
 ```
 bs.addNumber(ring.minerAccountID, 3);
-bs.addNumber(ring.tokenID, 2);
+bs.addNumber(ring.tokenId, 2);
 bs.addBN(new BN(ring.fee, 10), 12);
 bs.addBN(new BN(ring.margin, 10), 12);
 let index = 0;
@@ -404,7 +404,7 @@ This is already quite cheap, but can be greatly improved by packing the fee valu
 #### Withdrawal data
 ```
 bs.addNumber(withdrawal.accountID, 3);
-bs.addNumber(withdrawal.tokenID, 2);
+bs.addNumber(withdrawal.tokenId, 2);
 bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
 bs.addNumber(withdrawal.burnPercentage, 1);
 if (!onchain) {

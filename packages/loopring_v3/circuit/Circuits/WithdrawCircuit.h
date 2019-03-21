@@ -38,7 +38,7 @@ public:
     const jubjub::VariablePointT walletPublicKey;
 
     VariableArrayT accountID;
-    VariableArrayT tokenID;
+    VariableArrayT tokenId;
     libsnark::dual_variable_gadget<FieldT> amountRequested;
     libsnark::dual_variable_gadget<FieldT> amountWithdrawn;
     VariableArrayT dualAuthAccountID;
@@ -118,7 +118,7 @@ public:
         walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
-        tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
+        tokenId(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenId"))),
         amountRequested(pb, 96, FMT(prefix, ".amountRequested")),
         dualAuthAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
@@ -161,7 +161,7 @@ public:
         amountToWithdraw(pb, amountRequested.packed, balanceW_A_before, FMT(prefix, ".min(amountRequested, balance)")),
         amountWithdrawn(pb, 96, FMT(prefix, ".amountWithdrawn")),
 
-        updateBalanceF_A(pb, balancesRoot_before, tokenID,
+        updateBalanceF_A(pb, balancesRoot_before, tokenId,
                          {balanceF_A_before, tradingHistoryRootF_A},
                          {feePaymentOperator.X, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
@@ -194,7 +194,7 @@ public:
                          FMT(prefix, ".updateBalanceF_O")),
 
 
-        message(flatten({_stateID, accountID, tokenID, amountRequested.bits, dualAuthAccountID,
+        message(flatten({_stateID, accountID, tokenId, amountRequested.bits, dualAuthAccountID,
                          feeTokenID, fee.bits, walletSplitPercentage.bits, nonce_before.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
         walletSignatureVerifier(pb, params, walletPublicKey, message, FMT(prefix, ".walletSignatureVerifier"))
@@ -214,7 +214,7 @@ public:
 
     const std::vector<VariableArrayT> getPublicDataGeneral() const
     {
-        return {accountID, uint16_padding, tokenID, amountWithdrawn.bits};
+        return {accountID, uint16_padding, tokenId, amountWithdrawn.bits};
     }
 
     const std::vector<VariableArrayT> getPublicDataOffchain() const
@@ -224,7 +224,7 @@ public:
 
     const std::vector<VariableArrayT> getOnchainData() const
     {
-        return {accountID, uint16_padding, tokenID, amountRequested.bits};
+        return {accountID, uint16_padding, tokenId, amountRequested.bits};
     }
 
     void generate_r1cs_witness(const Withdrawal& withdrawal)
@@ -238,9 +238,9 @@ public:
         pb.val(walletPublicKey.y) = withdrawal.walletPublicKey.y;
 
         accountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_A.accountID);
-        tokenID.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateW_A.tokenID);
+        tokenId.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateW_A.tokenId);
         dualAuthAccountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_W.accountID);
-        feeTokenID.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateF_A.tokenID);
+        feeTokenID.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateF_A.tokenId);
         fee.bits.fill_with_bits_of_field_element(pb, withdrawal.fee);
         fee.generate_r1cs_witness_from_bits();
         walletSplitPercentage.bits.fill_with_bits_of_field_element(pb, withdrawal.walletSplitPercentage);

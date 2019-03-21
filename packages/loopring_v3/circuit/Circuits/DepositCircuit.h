@@ -22,7 +22,7 @@ public:
     VariableT constant0;
 
     VariableArrayT accountID;
-    VariableArrayT tokenID;
+    VariableArrayT tokenId;
 
     VariableArrayT uint16_padding;
 
@@ -60,7 +60,7 @@ public:
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
-        tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
+        tokenId(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenId"))),
 
         nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
 
@@ -83,7 +83,7 @@ public:
 
         amount(pb, 96, FMT(prefix, ".amount")),
 
-        updateBalance(pb, balancesRoot_before, tokenID,
+        updateBalance(pb, balancesRoot_before, tokenId,
                       {balance_before, tradingHistoryRoot_before},
                       {balance_after, tradingHistoryRoot_after},
                       FMT(prefix, ".updateBalance")),
@@ -104,7 +104,7 @@ public:
     const std::vector<VariableArrayT> getOnchainData() const
     {
         return {accountID, publicKeyX_after.bits, publicKeyY_after.bits,
-                walletID_after.bits, uint16_padding, tokenID,
+                walletID_after.bits, uint16_padding, tokenId,
                 amount.bits};
     }
 
@@ -113,7 +113,7 @@ public:
         uint16_padding.fill_with_bits_of_ulong(pb, 0);
 
         accountID.fill_with_bits_of_field_element(pb, deposit.accountUpdate.accountID);
-        tokenID.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.tokenID);
+        tokenId.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.tokenId);
 
         pb.val(nonce) = deposit.accountUpdate.before.nonce;
 

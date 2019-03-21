@@ -31,7 +31,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-    event TokenRegistered(address tokenAddress, uint16 tokenID);
+    event TokenRegistered(address tokenAddress, uint16 tokenId);
 
     struct Token {
         address tokenAddress;
@@ -70,12 +70,12 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
     }
 
     function setFixedTokenTier(
-        uint16 tokenID,
+        uint16 tokenId,
         uint tier
         )
         internal
     {
-        Token storage token = tokens[tokenID];
+        Token storage token = tokens[tokenId];
         token.tier = tier;
         token.tierValidUntil = 0xFFFFFFFF;
     }
@@ -104,17 +104,17 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         require(tokens.length < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
         // Add the token to the list
-        uint16 tokenID = uint16(tokens.length);
+        uint16 tokenId = uint16(tokens.length);
         Token memory token = Token(
             tokenAddress,
             4,
             0
         );
         tokens.push(token);
-        tokenToTokenID[tokenAddress] = tokenID + 1;
-        emit TokenRegistered(tokenAddress, tokenID);
+        tokenToTokenID[tokenAddress] = tokenId + 1;
+        emit TokenRegistered(tokenAddress, tokenId);
 
-        return tokenID;
+        return tokenId;
     }
 
     function getTokenRegistrationFee()
@@ -127,33 +127,33 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
     }
 
     function getTokenTier(
-        uint24 tokenID
+        uint24 tokenId
         )
         public
         view
         returns (uint tier)
     {
-        Token storage token = tokens[tokenID];
+        Token storage token = tokens[tokenId];
         // Fall back to lowest tier
         tier = (now > token.tierValidUntil) ? 4 : token.tier;
     }
 
     function getBurnRate(
-        uint24 tokenID
+        uint24 tokenId
         )
         public
         view
         returns (uint16 burnRate)
     {
-        uint tier = getTokenTier(tokenID);
+        uint tier = getTokenTier(tokenId);
         if (tier == 1) {
-            burnRate = BURNRATE_TIER1;
+            burnRate = BURNRATE_TIER1_BIPS;
         } else if (tier == 2) {
-            burnRate = BURNRATE_TIER2;
+            burnRate = BURNRATE_TIER2_BIPS;
         } else if (tier == 3) {
-            burnRate = BURNRATE_TIER3;
+            burnRate = BURNRATE_TIER3_BIPS;
         } else {
-            burnRate = BURNRATE_TIER4;
+            burnRate = BURNRATE_TIER4_BIPS;
         }
     }
 
@@ -167,21 +167,21 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         require(tokenAddress != lrcAddress, BURN_RATE_FROZEN);
         require(tokenAddress != wethAddress, BURN_RATE_FROZEN);
 
-        uint16 tokenID = getTokenID(tokenAddress);
-        uint currentTier = getTokenTier(tokenID);
+        uint16 tokenId = getTokenId(tokenAddress);
+        uint currentTier = getTokenTier(tokenId);
 
         // Can't upgrade to a higher level than tier 1
         require(currentTier > 1, BURN_RATE_MINIMIZED);
 
-        // Burn TIER_UPGRADE_COST_PERCENTAGE of total LRC supply
+        // Burn TIER_UPGRADE_COST_BIPS of total LRC supply
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         uint totalSupply = LRC.totalSupply();
-        uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / BURN_BASE_PERCENTAGE;
+        uint amount = totalSupply.mul(TIER_UPGRADE_COST_BIPS) / BASIC_POINT_BASE;
         bool success = LRC.burnFrom(msg.sender, amount);
         require(success, BURN_FAILURE);
 
         // Upgrade tier
-        Token storage token = tokens[tokenID];
+        Token storage token = tokens[tokenId];
         token.tier = currentTier.sub(1);
         token.tierValidUntil = now.add(TIER_UPGRADE_DURATION);
 
@@ -190,7 +190,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         return true;
     }
 
-    function getTokenID(
+    function getTokenId(
         address tokenAddress
         )
         public
@@ -202,14 +202,14 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
     }
 
     function getTokenAddress(
-        uint16 tokenID
+        uint16 tokenId
         )
         external
         view
         returns (address)
     {
-        require(tokenID < tokens.length, "INVALID_TOKENID");
-        return tokens[tokenID].tokenAddress;
+        require(tokenId < tokens.length, "INVALID_TOKENID");
+        return tokens[tokenId].tokenAddress;
     }
 
     function burn(
