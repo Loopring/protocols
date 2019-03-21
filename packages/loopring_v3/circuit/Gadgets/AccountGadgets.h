@@ -18,7 +18,7 @@ struct AccountState
 {
     const VariableT publicKeyX;
     const VariableT publicKeyY;
-    const VariableT walletID;
+    const VariableT walletId;
     const VariableT nonce;
     const VariableT balancesRoot;
 };
@@ -46,8 +46,8 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        leafBefore(pb, libsnark::ONE, {before.publicKeyX, before.publicKeyY, before.walletID, before.nonce, before.balancesRoot}, FMT(prefix, ".leafBefore")),
-        leafAfter(pb, libsnark::ONE, {after.publicKeyX, after.publicKeyY, after.walletID, after.nonce, after.balancesRoot}, FMT(prefix, ".leafAfter")),
+        leafBefore(pb, libsnark::ONE, {before.publicKeyX, before.publicKeyY, before.walletId, before.nonce, before.balancesRoot}, FMT(prefix, ".leafBefore")),
+        leafAfter(pb, libsnark::ONE, {after.publicKeyX, after.publicKeyY, after.walletId, after.nonce, after.balancesRoot}, FMT(prefix, ".leafAfter")),
 
         proof(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".proof"))),
         proofVerifierBefore(pb, TREE_DEPTH_ACCOUNTS, address, merkle_tree_IVs(pb), leafBefore.result(), root, proof, FMT(prefix, ".pathBefore")),

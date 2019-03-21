@@ -30,13 +30,13 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
 
     function verifyAccountBalance(
         uint256 merkleRoot,
-        uint24 accountID,
+        uint24 accountId,
         uint16 tokenId,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
         uint256 publicKeyX,
         uint256 publicKeyY,
-        uint24 walletID,
+        uint24 walletId,
         uint32 nonce,
         uint96 balance,
         uint256 tradeHistoryRoot
@@ -51,10 +51,10 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
             balancePath
         );
         calculatedRoot = getAccountsRoot(
-            accountID,
+            accountId,
             publicKeyX,
             publicKeyY,
-            walletID,
+            walletId,
             nonce,
             calculatedRoot,
             accountPath
@@ -94,10 +94,10 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
     }
 
     function getAccountsRoot(
-        uint24 accountID,
+        uint24 accountId,
         uint256 publicKeyX,
         uint256 publicKeyY,
-        uint24 walletID,
+        uint24 walletId,
         uint nonce,
         uint balancesRoot,
         uint256[24] memory accountPath
@@ -112,12 +112,12 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         uint256[] memory accountLeafElements = new uint256[](5);
         accountLeafElements[0] = publicKeyX;
         accountLeafElements[1] = publicKeyY;
-        accountLeafElements[2] = walletID;
+        accountLeafElements[2] = walletId;
         accountLeafElements[3] = nonce;
         accountLeafElements[4] = balancesRoot;
         uint256 accountItem = MiMC.Hash(accountLeafElements, 1);
 
-        uint accountAddress = accountID;
+        uint accountAddress = accountId;
         for (uint depth = 0; depth < 24; depth++) {
             if (accountAddress & 1 == 1) {
                 accountItem = HashImpl(accountPath[depth], accountItem, IVs[depth]);

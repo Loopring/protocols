@@ -464,8 +464,8 @@ public:
                       FMT(prefix, "fillAmountF_B = (orderB.amountF * fillAmountS_B) // orderB.amountS")),
 
         totalFee(make_variable(pb, FMT(prefix, ".totalFee"))),
-        accountsEqual(pb, orderA.accountID.packed, orderB.accountID.packed,
-                      FMT(prefix, "orderA.accountID == orderB.accountID")),
+        accountsEqual(pb, orderA.accountId.packed, orderB.accountId.packed,
+                      FMT(prefix, "orderA.accountId == orderB.accountId")),
         feeTokensEqual(pb, orderA.tokenF.packed, orderB.tokenF.packed,
                       FMT(prefix, "orderA.tokenF == orderB.tokenF")),
         balanceF_lt_totalFee(pb, orderA.balanceF, totalFee,

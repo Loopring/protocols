@@ -23,13 +23,13 @@ contract IExchangeHelper {
 
     function verifyAccountBalance(
         uint256 merkleRoot,
-        uint24 accountID,
+        uint24 accountId,
         uint16 tokenId,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
         uint256 publicKeyX,
         uint256 publicKeyY,
-        uint24 walletID,
+        uint24 walletId,
         uint32 nonce,
         uint96 balance,
         uint256 tradeHistoryRoot

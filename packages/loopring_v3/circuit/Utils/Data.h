@@ -58,7 +58,7 @@ class Account
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::FieldT walletID;
+    ethsnarks::FieldT walletId;
     ethsnarks::FieldT nonce;
     ethsnarks::FieldT balancesRoot;
 };
@@ -67,7 +67,7 @@ void from_json(const json& j, Account& account)
 {
     account.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    account.walletID = ethsnarks::FieldT(j.at("walletID"));
+    account.walletId = ethsnarks::FieldT(j.at("walletId"));
     account.nonce = ethsnarks::FieldT(j.at("nonce"));
     account.balancesRoot = ethsnarks::FieldT(j.at("balancesRoot").get<std::string>().c_str());
 }
@@ -96,7 +96,7 @@ void from_json(const json& j, BalanceUpdate& balanceUpdate)
 class TradeHistoryUpdate
 {
 public:
-    ethsnarks::FieldT orderID;
+    ethsnarks::FieldT orderId;
     Proof proof;
     ethsnarks::FieldT rootBefore;
     ethsnarks::FieldT rootAfter;
@@ -106,7 +106,7 @@ public:
 
 void from_json(const json& j, TradeHistoryUpdate& tradeHistoryUpdate)
 {
-    tradeHistoryUpdate.orderID = ethsnarks::FieldT(j.at("orderID"));
+    tradeHistoryUpdate.orderId = ethsnarks::FieldT(j.at("orderId"));
     tradeHistoryUpdate.proof = j.at("proof").get<Proof>();
     tradeHistoryUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
     tradeHistoryUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
@@ -117,7 +117,7 @@ void from_json(const json& j, TradeHistoryUpdate& tradeHistoryUpdate)
 class AccountUpdate
 {
 public:
-    ethsnarks::FieldT accountID;
+    ethsnarks::FieldT accountId;
     Proof proof;
     ethsnarks::FieldT rootBefore;
     ethsnarks::FieldT rootAfter;
@@ -127,7 +127,7 @@ public:
 
 void from_json(const json& j, AccountUpdate& accountUpdate)
 {
-    accountUpdate.accountID = ethsnarks::FieldT(j.at("accountID"));
+    accountUpdate.accountId = ethsnarks::FieldT(j.at("accountId"));
     accountUpdate.proof = j.at("proof").get<Proof>();
     accountUpdate.rootBefore = ethsnarks::FieldT(j.at("rootBefore").get<std::string>().c_str());
     accountUpdate.rootAfter = ethsnarks::FieldT(j.at("rootAfter").get<std::string>().c_str());
@@ -226,11 +226,11 @@ class Order
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::jubjub::EdwardsPoint walletPublicKey;
-    ethsnarks::FieldT stateID;
-    ethsnarks::FieldT walletID;
-    ethsnarks::FieldT orderID;
-    ethsnarks::FieldT accountID;
-    ethsnarks::FieldT dualAuthAccountID;
+    ethsnarks::FieldT stateId;
+    ethsnarks::FieldT walletId;
+    ethsnarks::FieldT orderId;
+    ethsnarks::FieldT accountId;
+    ethsnarks::FieldT dualAuthAccountId;
     ethsnarks::FieldT tokenS;
     ethsnarks::FieldT tokenB;
     ethsnarks::FieldT tokenF;
@@ -263,11 +263,11 @@ void from_json(const json& j, Order& order)
     order.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
     order.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
 
-    order.stateID = ethsnarks::FieldT(j.at("stateID"));
-    order.walletID = ethsnarks::FieldT(j.at("walletID"));
-    order.orderID = ethsnarks::FieldT(j.at("orderID"));
-    order.accountID = ethsnarks::FieldT(j.at("accountID"));
-    order.dualAuthAccountID = ethsnarks::FieldT(j.at("dualAuthAccountID"));
+    order.stateId = ethsnarks::FieldT(j.at("stateId"));
+    order.walletId = ethsnarks::FieldT(j.at("walletId"));
+    order.orderId = ethsnarks::FieldT(j.at("orderId"));
+    order.accountId = ethsnarks::FieldT(j.at("accountId"));
+    order.dualAuthAccountId = ethsnarks::FieldT(j.at("dualAuthAccountId"));
     order.tokenS = ethsnarks::FieldT(j.at("tokenS"));
     order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
     order.tokenF = ethsnarks::FieldT(j.at("tokenF"));
@@ -309,8 +309,8 @@ public:
     ethsnarks::FieldT fillF_B;
     ethsnarks::FieldT margin;
 
-    ethsnarks::FieldT minerAccountID;
-    ethsnarks::FieldT feeRecipientAccountID;
+    ethsnarks::FieldT minerAccountId;
+    ethsnarks::FieldT feeRecipientAccountId;
     ethsnarks::FieldT tokenId;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT nonce;
@@ -335,8 +335,8 @@ void from_json(const json& j, Ring& ring)
     ring.fillF_B = ethsnarks::FieldT(j.at("fillF_B").get<std::string>().c_str());
     ring.margin = ethsnarks::FieldT(j.at("margin").get<std::string>().c_str());
 
-    ring.minerAccountID = ethsnarks::FieldT(j.at("minerAccountID"));
-    ring.feeRecipientAccountID = ethsnarks::FieldT(j.at("feeRecipientAccountID"));
+    ring.minerAccountId = ethsnarks::FieldT(j.at("minerAccountId"));
+    ring.feeRecipientAccountId = ethsnarks::FieldT(j.at("feeRecipientAccountId"));
     ring.tokenId = ethsnarks::FieldT(j.at("tokenId"));
     ring.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     ring.nonce = ethsnarks::FieldT(j.at("nonce"));
@@ -422,14 +422,14 @@ class TradeContext
 {
 public:
 
-    ethsnarks::FieldT stateID;
+    ethsnarks::FieldT stateId;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
 
     ethsnarks::FieldT timestamp;
 
-    ethsnarks::FieldT operatorAccountID;
+    ethsnarks::FieldT operatorAccountId;
     AccountUpdate accountUpdate_O;
 
     std::vector<Loopring::RingSettlement> ringSettlements;
@@ -437,14 +437,14 @@ public:
 
 void from_json(const json& j, TradeContext& context)
 {
-    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+    context.stateId = ethsnarks::FieldT(j["stateId"].get<unsigned int>());
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
 
     context.timestamp = ethsnarks::FieldT(j["timestamp"].get<unsigned int>());
 
-    context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
+    context.operatorAccountId = ethsnarks::FieldT(j.at("operatorAccountId"));
     context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read settlements
@@ -471,7 +471,7 @@ void from_json(const json& j, Deposit& deposit)
 class DepositContext
 {
 public:
-    ethsnarks::FieldT stateID;
+    ethsnarks::FieldT stateId;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
@@ -481,7 +481,7 @@ public:
 
 void from_json(const json& j, DepositContext& context)
 {
-    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+    context.stateId = ethsnarks::FieldT(j["stateId"].get<unsigned int>());
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
@@ -537,12 +537,12 @@ class WithdrawContext
 {
 public:
 
-    ethsnarks::FieldT stateID;
+    ethsnarks::FieldT stateId;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
 
-    ethsnarks::FieldT operatorAccountID;
+    ethsnarks::FieldT operatorAccountId;
     AccountUpdate accountUpdate_O;
 
     std::vector<Loopring::Withdrawal> withdrawals;
@@ -550,12 +550,12 @@ public:
 
 void from_json(const json& j, WithdrawContext& context)
 {
-    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+    context.stateId = ethsnarks::FieldT(j["stateId"].get<unsigned int>());
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
 
-    context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
+    context.operatorAccountId = ethsnarks::FieldT(j.at("operatorAccountId"));
     context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read withdrawals
@@ -607,12 +607,12 @@ void from_json(const json& j, Cancellation& cancellation)
 class CancelContext
 {
 public:
-    ethsnarks::FieldT stateID;
+    ethsnarks::FieldT stateId;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
 
-    ethsnarks::FieldT operatorAccountID;
+    ethsnarks::FieldT operatorAccountId;
     AccountUpdate accountUpdate_O;
 
     std::vector<Loopring::Cancellation> cancels;
@@ -620,12 +620,12 @@ public:
 
 void from_json(const json& j, CancelContext& context)
 {
-    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+    context.stateId = ethsnarks::FieldT(j["stateId"].get<unsigned int>());
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
 
-    context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
+    context.operatorAccountId = ethsnarks::FieldT(j.at("operatorAccountId"));
     context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read cancels

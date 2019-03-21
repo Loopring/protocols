@@ -21,7 +21,7 @@ class DepositGadget : public GadgetT
 public:
     VariableT constant0;
 
-    VariableArrayT accountID;
+    VariableArrayT accountId;
     VariableArrayT tokenId;
 
     VariableArrayT uint16_padding;
@@ -31,7 +31,7 @@ public:
 
     const VariableT publicKeyX_before;
     const VariableT publicKeyY_before;
-    const VariableT walletID_before;
+    const VariableT walletId_before;
     const VariableT nonce;
 
     const VariableT tradingHistoryRoot_before;
@@ -39,7 +39,7 @@ public:
 
     libsnark::dual_variable_gadget<FieldT> publicKeyX_after;
     libsnark::dual_variable_gadget<FieldT> publicKeyY_after;
-    libsnark::dual_variable_gadget<FieldT> walletID_after;
+    libsnark::dual_variable_gadget<FieldT> walletId_after;
 
     const VariableT tradingHistoryRoot_after;
     const VariableT balancesRoot_after;
@@ -59,7 +59,7 @@ public:
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
 
-        accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
+        accountId(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountId"))),
         tokenId(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenId"))),
 
         nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
@@ -69,14 +69,14 @@ public:
 
         publicKeyX_before(make_variable(pb, 0, FMT(prefix, ".publicKeyX_before"))),
         publicKeyY_before(make_variable(pb, 0, FMT(prefix, ".publicKeyY_before"))),
-        walletID_before(make_variable(pb, 0, FMT(prefix, ".walletID_before"))),
+        walletId_before(make_variable(pb, 0, FMT(prefix, ".walletId_before"))),
 
         tradingHistoryRoot_before(make_variable(pb, 0, FMT(prefix, ".tradingHistoryRoot_before"))),
         balancesRoot_before(make_variable(pb, 0, FMT(prefix, ".balancesRoot_before"))),
 
         publicKeyX_after(pb, 256, FMT(prefix, ".publicKeyX_after")),
         publicKeyY_after(pb, 256, FMT(prefix, ".publicKeyY_after")),
-        walletID_after(pb, NUM_BITS_WALLETID, FMT(prefix, ".walletID_after")),
+        walletId_after(pb, NUM_BITS_WALLETID, FMT(prefix, ".walletId_after")),
 
         tradingHistoryRoot_after(make_variable(pb, 0, FMT(prefix, ".tradingHistoryRoot_after"))),
         balancesRoot_after(make_variable(pb, 0, FMT(prefix, ".balancesRoot_after"))),
@@ -88,9 +88,9 @@ public:
                       {balance_after, tradingHistoryRoot_after},
                       FMT(prefix, ".updateBalance")),
 
-        updateAccount(pb, root, accountID,
-                      {publicKeyX_before, publicKeyY_before, walletID_before, nonce, balancesRoot_before},
-                      {publicKeyX_after.packed, publicKeyY_after.packed, walletID_after.packed, nonce, updateBalance.getNewRoot()},
+        updateAccount(pb, root, accountId,
+                      {publicKeyX_before, publicKeyY_before, walletId_before, nonce, balancesRoot_before},
+                      {publicKeyX_after.packed, publicKeyY_after.packed, walletId_after.packed, nonce, updateBalance.getNewRoot()},
                       FMT(prefix, ".updateAccount"))
     {
 
@@ -103,8 +103,8 @@ public:
 
     const std::vector<VariableArrayT> getOnchainData() const
     {
-        return {accountID, publicKeyX_after.bits, publicKeyY_after.bits,
-                walletID_after.bits, uint16_padding, tokenId,
+        return {accountId, publicKeyX_after.bits, publicKeyY_after.bits,
+                walletId_after.bits, uint16_padding, tokenId,
                 amount.bits};
     }
 
@@ -112,7 +112,7 @@ public:
     {
         uint16_padding.fill_with_bits_of_ulong(pb, 0);
 
-        accountID.fill_with_bits_of_field_element(pb, deposit.accountUpdate.accountID);
+        accountId.fill_with_bits_of_field_element(pb, deposit.accountUpdate.accountId);
         tokenId.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.tokenId);
 
         pb.val(nonce) = deposit.accountUpdate.before.nonce;
@@ -123,14 +123,14 @@ public:
 
         pb.val(publicKeyX_before) = deposit.accountUpdate.before.publicKey.x;
         pb.val(publicKeyY_before) = deposit.accountUpdate.before.publicKey.y;
-        pb.val(walletID_before) = deposit.accountUpdate.before.walletID;
+        pb.val(walletId_before) = deposit.accountUpdate.before.walletId;
 
         publicKeyX_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.x);
         publicKeyX_after.generate_r1cs_witness_from_bits();
         publicKeyY_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.y);
         publicKeyY_after.generate_r1cs_witness_from_bits();
-        walletID_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.walletID);
-        walletID_after.generate_r1cs_witness_from_bits();
+        walletId_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.walletId);
+        walletId_after.generate_r1cs_witness_from_bits();
         pb.val(balance_after) = deposit.balanceUpdate.after.balance;
         pb.val(tradingHistoryRoot_after) = deposit.balanceUpdate.after.tradingHistoryRoot;
         pb.val(balancesRoot_after) = deposit.accountUpdate.after.balancesRoot;
@@ -146,7 +146,7 @@ public:
     {
         publicKeyX_after.generate_r1cs_constraints(true);
         publicKeyY_after.generate_r1cs_constraints(true);
-        walletID_after.generate_r1cs_constraints(true);
+        walletId_after.generate_r1cs_constraints(true);
 
         amount.generate_r1cs_constraints(true);
 
@@ -167,7 +167,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
-    libsnark::dual_variable_gadget<FieldT> stateID;
+    libsnark::dual_variable_gadget<FieldT> stateId;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
@@ -181,7 +181,7 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
-        stateID(pb, 32, FMT(prefix, ".stateID")),
+        stateId(pb, 32, FMT(prefix, ".stateId")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
@@ -201,11 +201,11 @@ public:
 
         pb.set_input_sizes(1);
 
-        stateID.generate_r1cs_constraints(true);
+        stateId.generate_r1cs_constraints(true);
         merkleRootBefore.generate_r1cs_constraints(true);
         merkleRootAfter.generate_r1cs_constraints(true);
 
-        publicData.add(stateID.bits);
+        publicData.add(stateId.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
         for (size_t j = 0; j < numAccounts; j++)
@@ -244,8 +244,8 @@ public:
 
     bool generateWitness(const DepositContext& context)
     {
-        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
-        stateID.generate_r1cs_witness_from_bits();
+        stateId.bits.fill_with_bits_of_field_element(pb, context.stateId);
+        stateId.generate_r1cs_witness_from_bits();
 
         merkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.merkleRootBefore);
         merkleRootBefore.generate_r1cs_witness_from_bits();

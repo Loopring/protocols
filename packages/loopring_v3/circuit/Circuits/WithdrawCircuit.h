@@ -37,16 +37,16 @@ public:
     const jubjub::VariablePointT publicKey;
     const jubjub::VariablePointT walletPublicKey;
 
-    VariableArrayT accountID;
+    VariableArrayT accountId;
     VariableArrayT tokenId;
     libsnark::dual_variable_gadget<FieldT> amountRequested;
     libsnark::dual_variable_gadget<FieldT> amountWithdrawn;
-    VariableArrayT dualAuthAccountID;
+    VariableArrayT dualAuthAccountId;
     VariableArrayT feeTokenID;
     libsnark::dual_variable_gadget<FieldT> fee;
     libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
 
-    VariableT walletID;
+    VariableT walletId;
 
     libsnark::dual_variable_gadget<FieldT> nonce_before;
     VariableT nonce_after;
@@ -66,7 +66,7 @@ public:
     VariableT dualAuthorWalletID;
 
     VariableT maxNumWallets;
-    LeqGadget walletID_lt_MaxNumWallets;
+    LeqGadget walletId_lt_MaxNumWallets;
     VariableT dualAuthorWalletID_T;
     TernaryGadget expectedDualAuthorWalletID;
 
@@ -100,7 +100,7 @@ public:
         bool _onchain,
         const VariableT& _accountsMerkleRoot,
         const VariableT& _operatorBalancesRoot,
-        const VariableArrayT& _stateID,
+        const VariableArrayT& _stateId,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
@@ -117,15 +117,15 @@ public:
         publicKey(pb, FMT(prefix, ".publicKey")),
         walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
 
-        accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
+        accountId(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountId"))),
         tokenId(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenId"))),
         amountRequested(pb, 96, FMT(prefix, ".amountRequested")),
-        dualAuthAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID"))),
+        dualAuthAccountId(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountId"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
         fee(pb, 96, FMT(prefix, ".fee")),
         walletSplitPercentage(pb, 7, FMT(prefix, ".walletSplitPercentage")),
 
-        walletID(make_variable(pb, FMT(prefix, ".walletID"))),
+        walletId(make_variable(pb, FMT(prefix, ".walletId"))),
 
         nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, FMT(prefix, ".nonce_after"))),
@@ -145,9 +145,9 @@ public:
 
         dualAuthorWalletID(make_variable(pb, FMT(prefix, ".dualAuthorWalletID"))),
         maxNumWallets(make_variable(pb, MAX_NUM_WALLETS, FMT(prefix, ".maxNumWallets"))),
-        walletID_lt_MaxNumWallets(pb, walletID, maxNumWallets, FMT(prefix, ".walletID < MAX_NUM_WALLETS")),
+        walletId_lt_MaxNumWallets(pb, walletId, maxNumWallets, FMT(prefix, ".walletId < MAX_NUM_WALLETS")),
         dualAuthorWalletID_T(make_variable(pb, FMT(prefix, ".dualAuthorWalletID_T"))),
-        expectedDualAuthorWalletID(pb, walletID_lt_MaxNumWallets.lt(), dualAuthorWalletID_T, walletID, FMT(prefix, ".expectedDualAuthorWalletID")),
+        expectedDualAuthorWalletID(pb, walletId_lt_MaxNumWallets.lt(), dualAuthorWalletID_T, walletId, FMT(prefix, ".expectedDualAuthorWalletID")),
 
         tradingHistoryRootF_O(make_variable(pb, FMT(prefix, ".tradingHistoryRootF_O"))),
         balanceF_O_before(make_variable(pb, FMT(prefix, ".balanceF_O_before"))),
@@ -171,9 +171,9 @@ public:
                          {balanceW_A_after, tradingHistoryRootW_A},
                          FMT(prefix, ".updateBalanceW_A")),
 
-        updateAccount_A(pb, _accountsMerkleRoot, accountID,
-                        {publicKey.x, publicKey.y, walletID, nonce_before.packed, balancesRoot_before},
-                        {publicKey.x, publicKey.y, walletID, nonce_after, updateBalanceW_A.getNewRoot()},
+        updateAccount_A(pb, _accountsMerkleRoot, accountId,
+                        {publicKey.x, publicKey.y, walletId, nonce_before.packed, balancesRoot_before},
+                        {publicKey.x, publicKey.y, walletId, nonce_after, updateBalanceW_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
 
 
@@ -182,7 +182,7 @@ public:
                          {feePaymentWallet.Y, emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_W")),
 
-        updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountID,
+        updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountId,
                         {walletPublicKey.x, walletPublicKey.y, dualAuthorWalletID, nonce_W, balancesRoot_W_before},
                         {walletPublicKey.x, walletPublicKey.y, dualAuthorWalletID, nonce_W, updateBalanceF_W.getNewRoot()},
                         FMT(prefix, ".updateAccount_W")),
@@ -194,7 +194,7 @@ public:
                          FMT(prefix, ".updateBalanceF_O")),
 
 
-        message(flatten({_stateID, accountID, tokenId, amountRequested.bits, dualAuthAccountID,
+        message(flatten({_stateId, accountId, tokenId, amountRequested.bits, dualAuthAccountId,
                          feeTokenID, fee.bits, walletSplitPercentage.bits, nonce_before.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
         walletSignatureVerifier(pb, params, walletPublicKey, message, FMT(prefix, ".walletSignatureVerifier"))
@@ -214,17 +214,17 @@ public:
 
     const std::vector<VariableArrayT> getPublicDataGeneral() const
     {
-        return {accountID, uint16_padding, tokenId, amountWithdrawn.bits};
+        return {accountId, uint16_padding, tokenId, amountWithdrawn.bits};
     }
 
     const std::vector<VariableArrayT> getPublicDataOffchain() const
     {
-        return {dualAuthAccountID, uint16_padding, feeTokenID, fee.bits, percentage_padding, walletSplitPercentage.bits};
+        return {dualAuthAccountId, uint16_padding, feeTokenID, fee.bits, percentage_padding, walletSplitPercentage.bits};
     }
 
     const std::vector<VariableArrayT> getOnchainData() const
     {
-        return {accountID, uint16_padding, tokenId, amountRequested.bits};
+        return {accountId, uint16_padding, tokenId, amountRequested.bits};
     }
 
     void generate_r1cs_witness(const Withdrawal& withdrawal)
@@ -237,9 +237,9 @@ public:
         pb.val(walletPublicKey.x) = withdrawal.walletPublicKey.x;
         pb.val(walletPublicKey.y) = withdrawal.walletPublicKey.y;
 
-        accountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_A.accountID);
+        accountId.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_A.accountId);
         tokenId.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateW_A.tokenId);
-        dualAuthAccountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_W.accountID);
+        dualAuthAccountId.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_W.accountId);
         feeTokenID.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateF_A.tokenId);
         fee.bits.fill_with_bits_of_field_element(pb, withdrawal.fee);
         fee.generate_r1cs_witness_from_bits();
@@ -252,7 +252,7 @@ public:
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        pb.val(walletID) = withdrawal.accountUpdate_A.before.walletID;
+        pb.val(walletId) = withdrawal.accountUpdate_A.before.walletId;
 
         nonce_before.bits.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_A.before.nonce);
         nonce_before.generate_r1cs_witness_from_bits();
@@ -271,9 +271,9 @@ public:
         pb.val(balanceF_W_before) = withdrawal.balanceUpdateF_W.before.balance;
         pb.val(nonce_W) = withdrawal.accountUpdate_W.before.nonce;
 
-        pb.val(dualAuthorWalletID) = withdrawal.accountUpdate_W.before.walletID;
-        walletID_lt_MaxNumWallets.generate_r1cs_witness();
-        pb.val(dualAuthorWalletID_T) = pb.val(walletID) + MAX_NUM_WALLETS;
+        pb.val(dualAuthorWalletID) = withdrawal.accountUpdate_W.before.walletId;
+        walletId_lt_MaxNumWallets.generate_r1cs_witness();
+        pb.val(dualAuthorWalletID_T) = pb.val(walletId) + MAX_NUM_WALLETS;
         expectedDualAuthorWalletID.generate_r1cs_witness();
 
         pb.val(tradingHistoryRootF_O) = withdrawal.balanceUpdateF_O.before.tradingHistoryRoot;
@@ -340,8 +340,8 @@ public:
             walletSignatureVerifier.generate_r1cs_constraints();
             pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
 
-            walletID_lt_MaxNumWallets.generate_r1cs_constraints();
-            pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID_T), "feeToWallet + feeToOperator == dualAuthorWalletID_T");
+            walletId_lt_MaxNumWallets.generate_r1cs_constraints();
+            pb.add_r1cs_constraint(ConstraintT(walletId + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID_T), "feeToWallet + feeToOperator == dualAuthorWalletID_T");
             expectedDualAuthorWalletID.generate_r1cs_constraints();
             pb.add_r1cs_constraint(ConstraintT(dualAuthorWalletID, FieldT::one(), expectedDualAuthorWalletID.result()), "dualAuthorWalletID == expectedDualAuthorWalletID");
         }
@@ -364,7 +364,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
-    libsnark::dual_variable_gadget<FieldT> stateID;
+    libsnark::dual_variable_gadget<FieldT> stateId;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
@@ -376,7 +376,7 @@ public:
     std::vector<sha256_many> hashers;
 
     const jubjub::VariablePointT publicKey;
-    libsnark::dual_variable_gadget<FieldT> operatorAccountID;
+    libsnark::dual_variable_gadget<FieldT> operatorAccountId;
     VariableT balancesRoot_before;
 
     UpdateAccountGadget* updateAccount_O = nullptr;
@@ -389,12 +389,12 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
-        stateID(pb, 32, FMT(prefix, ".stateID")),
+        stateId(pb, 32, FMT(prefix, ".stateId")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountID")),
+        operatorAccountId(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountId")),
         publicKey(pb, FMT(prefix, ".publicKey")),
         nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
         balancesRoot_before(make_variable(pb, 0, FMT(prefix, ".balancesRoot_before"))),
@@ -418,19 +418,19 @@ public:
 
         pb.set_input_sizes(1);
 
-        stateID.generate_r1cs_constraints(true);
+        stateId.generate_r1cs_constraints(true);
         merkleRootBefore.generate_r1cs_constraints(true);
         merkleRootAfter.generate_r1cs_constraints(true);
 
-        publicData.add(stateID.bits);
+        publicData.add(stateId.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
-        publicData.add(operatorAccountID.bits);
+        publicData.add(operatorAccountId.bits);
         for (size_t j = 0; j < numAccounts; j++)
         {
             VariableT withdrawalAccountsRoot = (j == 0) ? merkleRootBefore.packed : withdrawals.back().getNewAccountsRoot();
             VariableT withdrawalOperatorBalancesRoot = (j == 0) ? balancesRoot_before : withdrawals.back().getNewOperatorBalancesRoot();
-            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, withdrawalOperatorBalancesRoot, stateID.bits, std::string("withdrawals_") + std::to_string(j));
+            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, withdrawalOperatorBalancesRoot, stateId.bits, std::string("withdrawals_") + std::to_string(j));
             withdrawals.back().generate_r1cs_constraints();
 
             if (onchain)
@@ -448,7 +448,7 @@ public:
             }
         }
 
-        operatorAccountID.generate_r1cs_constraints(true);
+        operatorAccountId.generate_r1cs_constraints(true);
 
         if (onchain)
         {
@@ -459,7 +459,7 @@ public:
         {
             publicData.add(withdrawalBlockHashStart.bits);
 
-            updateAccount_O = new UpdateAccountGadget(pb, withdrawals.back().getNewAccountsRoot(), operatorAccountID.bits,
+            updateAccount_O = new UpdateAccountGadget(pb, withdrawals.back().getNewAccountsRoot(), operatorAccountId.bits,
                 {publicKey.x, publicKey.y, constant0, nonce, balancesRoot_before},
                 {publicKey.x, publicKey.y, constant0, nonce, withdrawals.back().getNewOperatorBalancesRoot()},
                 FMT(annotation_prefix, ".updateAccount_O"));
@@ -502,8 +502,8 @@ public:
 
     bool generateWitness(const WithdrawContext& context)
     {
-        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
-        stateID.generate_r1cs_witness_from_bits();
+        stateId.bits.fill_with_bits_of_field_element(pb, context.stateId);
+        stateId.generate_r1cs_witness_from_bits();
 
         merkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.merkleRootBefore);
         merkleRootBefore.generate_r1cs_witness_from_bits();
@@ -520,8 +520,8 @@ public:
             withdrawals[i].generate_r1cs_witness(context.withdrawals[i]);
         }
 
-        operatorAccountID.bits.fill_with_bits_of_field_element(pb, context.operatorAccountID);
-        operatorAccountID.generate_r1cs_witness_from_bits();
+        operatorAccountId.bits.fill_with_bits_of_field_element(pb, context.operatorAccountId);
+        operatorAccountId.generate_r1cs_witness_from_bits();
 
         if (onchain)
         {

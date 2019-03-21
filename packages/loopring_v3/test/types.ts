@@ -10,11 +10,11 @@ export interface OrderInfo {
   amountB: BN;
   amountF?: BN;
 
-  stateID?: number;
-  accountID?: number;
-  orderID?: number;
-  walletID?: number;
-  dualAuthAccountID?: number;
+  stateId?: number;
+  accountId?: number;
+  orderId?: number;
+  walletId?: number;
+  dualAuthAccountId?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;
@@ -47,8 +47,8 @@ export interface RingInfo {
   orderA: OrderInfo;
   orderB: OrderInfo;
 
-  minerAccountID?: number;
-  feeRecipientAccountID?: number;
+  minerAccountId?: number;
+  feeRecipientAccountId?: number;
   tokenId?: number;
   fee?: BN;
 
@@ -59,27 +59,27 @@ export interface RingBlock {
   rings: RingInfo[];
 
   timestamp?: number;
-  stateID?: number;
-  operatorAccountID?: number;
+  stateId?: number;
+  operatorAccountId?: number;
 }
 
 export interface Deposit {
   depositBlockIdx: number;
-  accountID: number;
+  accountId: number;
   secretKey: string;
   publicKeyX: string;
   publicKeyY: string;
-  walletID: number;
+  walletId: number;
   tokenId: number;
   amount: BN;
 }
 
 export interface WithdrawalRequest {
-  accountID: number;
+  accountId: number;
   tokenId: number;
   amount: BN;
 
-  dualAuthAccountID: number;
+  dualAuthAccountId: number;
   feeTokenID: number;
   fee: BN;
   walletSplitPercentage: number;
@@ -88,7 +88,7 @@ export interface WithdrawalRequest {
 }
 
 export interface Withdrawal {
-  stateID: number;
+  stateId: number;
   blockIdx: number;
   withdrawalIdx: number;
 }
@@ -96,14 +96,14 @@ export interface Withdrawal {
 export interface WithdrawBlock {
   withdrawals: WithdrawalRequest[];
 
-  operatorAccountID?: number;
+  operatorAccountId?: number;
 }
 
 export interface Cancel {
-  accountID: number;
+  accountId: number;
   orderTokenID: number;
-  orderID: number;
-  dualAuthAccountID: number;
+  orderId: number;
+  dualAuthAccountId: number;
   feeTokenID: number;
   fee: BN;
   walletSplitPercentage: number;
@@ -112,7 +112,7 @@ export interface Cancel {
 export interface CancelBlock {
   cancels: Cancel[];
 
-  operatorAccountID?: number;
+  operatorAccountId?: number;
 }
 
 export interface Block {
@@ -124,13 +124,13 @@ export interface Block {
 export interface Operator {
   owner: string;
   operatorID: number;
-  accountID: number;
+  accountId: number;
 }
 
 export interface Wallet {
   owner: string;
-  walletID: number;
-  walletAccountID: number;
+  walletId: number;
+  walletAccountId: number;
 }
 
 export interface TradeHistory {
@@ -144,8 +144,8 @@ export interface Balance {
 }
 
 export interface Account {
-  accountID: number;
-  walletID: number;
+  accountId: number;
+  walletId: number;
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
@@ -177,7 +177,7 @@ export interface SimulatorDepositReport {
 }
 
 export interface DepositInfo {
-  accountID: number;
+  accountId: number;
   depositBlockIdx: number;
   slotIdx: number;
 }

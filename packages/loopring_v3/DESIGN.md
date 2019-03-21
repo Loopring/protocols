@@ -78,7 +78,7 @@ I went through a lot of iterations for the merkle tree structure, currently the 
 - While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances merkle root is stored inside the account leaf). The same is useful for wallets, ringmatchers and operators because these also pay/receive fees in different tokens.
 - The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this quite small sub-tree. The trading-history is not part of the account because that way we'd only have 2^16 leafs for all tokens together.
 - The burned fees are stored directly in the balance of the wallet accounts. This way we don't have to update a separate sub-tree just for these balances.
-- No need for multiple account trees to lock accounts to a single wallet. The walletID stored in the account is used for this together with dual-authoring accounts that only the owner of the wallet can create see [Wallets](#wallets) for more info).
+- No need for multiple account trees to lock accounts to a single wallet. The walletId stored in the account is used for this together with dual-authoring accounts that only the owner of the wallet can create see [Wallets](#wallets) for more info).
 
 ## Account creation
 
@@ -88,10 +88,10 @@ Creating an account is a special case for depositing. When creating an account a
 
 ```
 function createAccountAndDeposit(
-    uint32 stateID,
+    uint32 stateId,
     uint publicKeyX,
     uint publicKeyY,
-    uint24 walletID,
+    uint24 walletId,
     uint16 tokenId,
     uint96 amount
     )
@@ -100,7 +100,7 @@ function createAccountAndDeposit(
     returns (uint24);
 ```
 
-A walletID (3 bytes) is given that can lock the account to a specific wallet (see [here](#wallets) for more info).
+A walletId (3 bytes) is given that can lock the account to a specific wallet (see [here](#wallets) for more info).
 
 ## Depositing
 
@@ -114,7 +114,7 @@ See [here](#depositwithdraw-block-handling) how blocks are handled.
 
 ## Account info updating
 
-The depositing circuit also allows updating some information that is stored in the account. The user can choose the change his public key or change the walletID of the account.
+The depositing circuit also allows updating some information that is stored in the account. The user can choose the change his public key or change the walletId of the account.
 
 ## Withdrawing
 
@@ -126,7 +126,7 @@ Burned fees are stored in the accounts of the wallet. When withdrawing the compl
 
 A request for withdrawal is sent offchain to the operator. The operator should include the withdrawal in a reasonable time in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.**
 
-If walletID > 0 than the withdrawal request also needs to be signed by the wallet (so the wallet can keep track of all changes to the account). The wallet can also request a percentage of the fee paid to the operator.
+If walletId > 0 than the withdrawal request also needs to be signed by the wallet (so the wallet can keep track of all changes to the account). The wallet can also request a percentage of the fee paid to the operator.
 
 The nonce of the account is increased after the cancel is processed.
 
@@ -156,13 +156,13 @@ Orders can be short-lived and the order owner can safely keep recreating orders 
 
 The user sends a request for cancelling an order. The operator should include the cancellation as soon as possible in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.**
 
-If walletID > 0 than the cancel request also needs to be signed by the wallet (so the wallet can keep track of all changes to the account). The wallet can also request a percentage of the fee paid to the operator.
+If walletId > 0 than the cancel request also needs to be signed by the wallet (so the wallet can keep track of all changes to the account). The wallet can also request a percentage of the fee paid to the operator.
 
 The nonce of the account is increased after the cancel is processed.
 
 ### Updating the Account info
 
-The account information can be updated with a new public key or a new walletID which can invalidate everything the account is used in.
+The account information can be updated with a new public key or a new walletId which can invalidate everything the account is used in.
 
 ### Wallet stops signing rings with the dual-author address
 
@@ -217,17 +217,17 @@ We make sure every operation signed by a user can only be used in a single state
 
 ## Wallets
 
-Wallets can register themselves so they can get a dedicated walletID so they can lock accounts of users to their wallet.
+Wallets can register themselves so they can get a dedicated walletId so they can lock accounts of users to their wallet.
 
 The steps needed by a wallet to achieve this:
-- Call `registerWallet` to get a unique walletID and bind the walletID to msg.sender, which will be the owner of the wallet
-- Call `createAccountAndDeposit` and specify as walletID the walletID given above + set the most significant bit of this 3 byte value to 1. Only the msg.sender that registered the wallet can be used to create an account like this.
-- Let users create accounts with the walletID
+- Call `registerWallet` to get a unique walletId and bind the walletId to msg.sender, which will be the owner of the wallet
+- Call `createAccountAndDeposit` and specify as walletId the walletId given above + set the most significant bit of this 3 byte value to 1. Only the msg.sender that registered the wallet can be used to create an account like this.
+- Let users create accounts with the walletId
 - Let users create orders using these accounts and specify as dual-author address the special dual-author account created by the owner of the wallet
-- The circuit will check that the walletID in the account of the user matches the walletID of the wallet/dual-author account.
+- The circuit will check that the walletId in the account of the user matches the walletId of the wallet/dual-author account.
 
-Without the special dual-author account anyone would be able to use any account, no matter the walletID specified in the account.
-If the wallet doesn't need to lock the account of the user in than he can create a wallet account for walletID 0. Anyone is allowed to create dual-author/wallet accounts for walletID 0.
+Without the special dual-author account anyone would be able to use any account, no matter the walletId specified in the account.
+If the wallet doesn't need to lock the account of the user in than he can create a wallet account for walletId 0. Anyone is allowed to create dual-author/wallet accounts for walletId 0.
 
 The wallet/dual-author account is used for multiple things:
 - To make sure the ring cannot be stolen by the operator
@@ -251,9 +251,9 @@ All operators are staked. LRC is used for this. If the operator fails to prove a
 
 Multiple operators can be active at the same time. The operator is chosen at random like this:
 ```
-function getActiveOperatorIdx(uint32 stateID) public view returns (uint32)
+function getActiveOperatorIdx(uint32 stateId) public view returns (uint32)
 {
-    State storage state = getState(stateID);
+    State storage state = getState(stateId);
     if (state.numActiveOperators == 0) {
         return 0;
     }
@@ -320,17 +320,17 @@ Proofs do not need to be submitted in order. The proof can be submitted anytime 
 
 ## Order Aliasing
 
-Every account has a trading history tree with 2^16 leafs for every token. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities:
+Every account has a trading history tree with 2^16 leafs for every token. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderId**. While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities:
 
 ### Safely updating the validUntil time of an order
 
-For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely by creating a new order with a new validUntil value, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderID.
+For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely by creating a new order with a new validUntil value, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderId.
 
 This especially a problem because the operator can set the timestamp that is tested onchain within a certain window (see [here](#validSince--validUntil)). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders. The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants. Order Aliasing fixes this problem.
 
 ### The possibility for some simple filling logic between orders
 
-A user could create an order selling X tokenZ for either N tokenA or M tokenB (or even more tokens) while using the same orderID. The user is guaranteed never to spend more than X tokenZ, but will have bought [0, N] tokenA and/or [0, M] tokenA.
+A user could create an order selling X tokenZ for either N tokenA or M tokenB (or even more tokens) while using the same orderId. The user is guaranteed never to spend more than X tokenZ, but will have bought [0, N] tokenA and/or [0, M] tokenA.
 
 A realistic use case would be for selling some token for one of the available stable coins. Or selling some token for ETH and WETH. In these casse the user doesn't really care which token specifically he buys, but increases his chance of finding a matching order.
 
@@ -363,17 +363,17 @@ Once the block the deposit/withdraw block was committed in is finalized anyone c
 #### Ring settlement data
 For every Ring (2 orders):
 ```
-bs.addNumber(ring.minerAccountID, 3);
+bs.addNumber(ring.minerAccountId, 3);
 bs.addNumber(ring.tokenId, 2);
 bs.addBN(new BN(ring.fee, 10), 12);
 bs.addBN(new BN(ring.margin, 10), 12);
 let index = 0;
 for (const order of [orderA, orderB]) {
-  bs.addNumber(order.accountID, 3);
-  bs.addNumber(order.dualAuthAccountID, 3);
+  bs.addNumber(order.accountId, 3);
+  bs.addNumber(order.dualAuthAccountId, 3);
   bs.addNumber(order.tokenS, 2);
   bs.addNumber(order.tokenF, 2);
-  bs.addNumber(order.orderID, 2);
+  bs.addNumber(order.orderId, 2);
   bs.addBN(new BN(index === 0 ? ring.fillS_A : ring.fillS_B, 10), 12);
   bs.addBN(new BN(index === 0 ? ring.fillF_A : ring.fillF_B, 10), 12);
   bs.addNumber(order.walletSplitPercentage, 1);
@@ -388,10 +388,10 @@ We can save some more bytes (e.g. on the large values of the margin and the fees
 
 #### Order cancellation data
 ```
-bs.addNumber(cancel.accountID, 3);
+bs.addNumber(cancel.accountId, 3);
 bs.addNumber(cancel.orderTokenID, 2);
-bs.addNumber(cancel.orderID, 2);
-bs.addNumber(cancel.dualAuthAccountID, 3);
+bs.addNumber(cancel.orderId, 2);
+bs.addNumber(cancel.dualAuthAccountId, 3);
 bs.addNumber(cancel.feeTokenID, 2);
 bs.addBN(cancel.fee, 12);
 bs.addNumber(cancel.walletSplitPercentage, 1);
@@ -403,12 +403,12 @@ This is already quite cheap, but can be greatly improved by packing the fee valu
 
 #### Withdrawal data
 ```
-bs.addNumber(withdrawal.accountID, 3);
+bs.addNumber(withdrawal.accountId, 3);
 bs.addNumber(withdrawal.tokenId, 2);
 bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
 bs.addNumber(withdrawal.burnPercentage, 1);
 if (!onchain) {
-  bs.addNumber(withdrawal.dualAuthAccountID, 3);
+  bs.addNumber(withdrawal.dualAuthAccountId, 3);
   bs.addNumber(withdrawal.feeTokenID, 2);
   bs.addBN(web3.utils.toBN(withdrawal.fee), 12);
   bs.addNumber(withdrawal.walletSplitPercentage, 1);
@@ -456,7 +456,7 @@ Ring settlements are about ~5x more expensive than the simple token transfers th
 The DEX can use an existing state so the DEX doesn't need to operate its own operators, or the DEX can create a new state and can limit the state to operators the DEX operators itself if that's what the DEX wants. In any case, the steps needed for the setup are the same
 
 - (The DEX calls `createNewState` to create the new state)
-- The DEX calls `registerWallet` to get a walletID so it can lock the account of its users to its DEX.
+- The DEX calls `registerWallet` to get a walletId so it can lock the account of its users to its DEX.
 - The DEX also calls `createAccountAndDeposit` to create a dual-author account that can be used to sign off on rings using these accounts. This account will be also be used to receive fees.
 - The DEX calls `createAccountAndDeposit` to create a ringmatcher account to match rings and pay fees to the operator.
 
@@ -467,7 +467,7 @@ The user
 
 ### Trading
 
-Users create orders using accounts created with the walletID of the DEX. Orders are added to the order books of the DEX.
+Users create orders using accounts created with the walletId of the DEX. Orders are added to the order books of the DEX.
 
 The DEX matches the order with another order, signs the ring using the ringmatcher private key and the dual-author keys of the orders. The order gets completely filled in the ring:
 - The GUI of the DEX can be updated immediately with the state after the ring settlement. The order can be shown as filled, but not yet verified.

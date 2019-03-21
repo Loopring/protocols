@@ -7,7 +7,7 @@ export class Simulator {
 
   public deposit(deposit: Deposit, state: State) {
     const newState = this.copyState(state);
-    if (state.accounts[deposit.accountID] === undefined) {
+    if (state.accounts[deposit.accountId] === undefined) {
       // Make sure all tokens exist
       const balances: {[key: number]: Balance} = {};
       for (let i = 0; i < 2 ** 12; i++) {
@@ -17,21 +17,21 @@ export class Simulator {
         };
       }
       const emptyAccount: Account = {
-        accountID: deposit.accountID,
-        walletID: 0,
+        accountId: deposit.accountId,
+        walletId: 0,
         publicKeyX: "0",
         publicKeyY: "0",
         nonce: 0,
         balances,
       };
-      newState.accounts[deposit.accountID] = emptyAccount;
+      newState.accounts[deposit.accountId] = emptyAccount;
     }
-    const account = newState.accounts[deposit.accountID];
+    const account = newState.accounts[deposit.accountId];
     account.balances[deposit.tokenId].balance =
       account.balances[deposit.tokenId].balance.add(deposit.amount);
     account.publicKeyX = deposit.publicKeyX;
     account.publicKeyY = deposit.publicKeyY;
-    account.walletID = deposit.walletID;
+    account.walletId = deposit.walletId;
 
     const simulatorReport: SimulatorDepositReport = {
       stateBefore: state,
@@ -40,9 +40,9 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public settleRing(ring: RingInfo, state: State, timestamp: number, operatorAccountID: number) {
-    let [fillAmountSA, fillAmountBA] = this.getMaxFillAmounts(ring.orderA, state.accounts[ring.orderA.accountID]);
-    let [fillAmountSB, fillAmountBB] = this.getMaxFillAmounts(ring.orderB, state.accounts[ring.orderB.accountID]);
+  public settleRing(ring: RingInfo, state: State, timestamp: number, operatorAccountId: number) {
+    let [fillAmountSA, fillAmountBA] = this.getMaxFillAmounts(ring.orderA, state.accounts[ring.orderA.accountId]);
+    let [fillAmountSB, fillAmountBB] = this.getMaxFillAmounts(ring.orderB, state.accounts[ring.orderB.accountId]);
 
     if (fillAmountBA.lt(fillAmountSB)) {
       fillAmountSB = fillAmountBA;
@@ -63,9 +63,9 @@ export class Simulator {
     valid = valid && this.ensure(!fillAmountSA.lt(fillAmountBB), "Not matchable");
 
     // self-trading
-    const balanceF = state.accounts[ring.orderA.accountID].balances[ring.orderA.tokenIdF].balance;
+    const balanceF = state.accounts[ring.orderA.accountId].balances[ring.orderA.tokenIdF].balance;
     const totalFee = fillAmountFA.add(fillAmountFB);
-    if (ring.orderA.accountID === ring.orderB.accountID &&
+    if (ring.orderA.accountId === ring.orderB.accountId &&
         ring.orderA.tokenIdF === ring.orderB.tokenIdF &&
         balanceF.lt(totalFee)) {
       valid = this.ensure(false, "Self-trading impossible");
@@ -109,7 +109,7 @@ export class Simulator {
     const newState = this.copyState(state);
 
     // Update accountA
-    const accountA = newState.accounts[ring.orderA.accountID];
+    const accountA = newState.accounts[ring.orderA.accountId];
     accountA.balances[ring.orderA.tokenIdS].balance =
       accountA.balances[ring.orderA.tokenIdS].balance.sub(fillAmountSA);
     accountA.balances[ring.orderA.tokenIdB].balance =
@@ -118,7 +118,7 @@ export class Simulator {
       accountA.balances[ring.orderA.tokenIdF].balance.sub(walletFeeA.add(matchingFeeA));
 
     // Update accountB
-    const accountB = newState.accounts[ring.orderB.accountID];
+    const accountB = newState.accounts[ring.orderB.accountId];
     accountB.balances[ring.orderB.tokenIdS].balance =
       accountB.balances[ring.orderB.tokenIdS].balance.sub(fillAmountSB);
     accountB.balances[ring.orderB.tokenIdB].balance =
@@ -127,24 +127,24 @@ export class Simulator {
       accountB.balances[ring.orderB.tokenIdF].balance.sub(walletFeeB.add(matchingFeeB));
 
     // Update trade history A
-    accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID].filled =
-      accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderID].filled.add(fillAmountSA);
+    accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderId].filled =
+      accountA.balances[ring.orderA.tokenIdS].tradeHistory[ring.orderA.orderId].filled.add(fillAmountSA);
     // Update trade history B
-    accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID].filled =
-      accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID].filled.add(fillAmountSB);
+    accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderId].filled =
+      accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderId].filled.add(fillAmountSB);
 
     // Update walletA
-    const walletA = newState.accounts[ring.orderA.dualAuthAccountID];
+    const walletA = newState.accounts[ring.orderA.dualAuthAccountId];
     walletA.balances[ring.orderA.tokenIdF].balance =
       walletA.balances[ring.orderA.tokenIdF].balance.add(walletFeeA);
 
     // Update walletB
-    const walletB = newState.accounts[ring.orderB.dualAuthAccountID];
+    const walletB = newState.accounts[ring.orderB.dualAuthAccountId];
     walletB.balances[ring.orderB.tokenIdF].balance =
       walletB.balances[ring.orderB.tokenIdF].balance.add(walletFeeB);
 
     // Update feeRecipient
-    const feeRecipient = newState.accounts[ring.feeRecipientAccountID];
+    const feeRecipient = newState.accounts[ring.feeRecipientAccountId];
     // - Matching fee A
     feeRecipient.balances[ring.orderA.tokenIdF].balance =
       feeRecipient.balances[ring.orderA.tokenIdF].balance.add(matchingFeeA);
@@ -153,7 +153,7 @@ export class Simulator {
      feeRecipient.balances[ring.orderB.tokenIdF].balance.add(matchingFeeB);
 
     // Update ringMatcher
-    const ringMatcher = newState.accounts[ring.minerAccountID];
+    const ringMatcher = newState.accounts[ring.minerAccountId];
     // - Margin
     ringMatcher.balances[ring.orderA.tokenIdS].balance =
      ringMatcher.balances[ring.orderA.tokenIdS].balance.add(margin);
@@ -164,7 +164,7 @@ export class Simulator {
     ringMatcher.nonce++;
 
     // Update operator
-    const operator = newState.accounts[operatorAccountID];
+    const operator = newState.accounts[operatorAccountId];
     operator.balances[ring.tokenId].balance =
      operator.balances[ring.tokenId].balance.add(ring.fee);
 
@@ -201,8 +201,8 @@ export class Simulator {
     const operatorFee: DetailedTokenTransfer = {
       description: "OperatorFee",
       token: ring.tokenId,
-      from: ring.minerAccountID,
-      to: operatorAccountID,
+      from: ring.minerAccountId,
+      to: operatorAccountId,
       amount: ring.fee,
       subPayments: [],
     };
@@ -227,24 +227,24 @@ export class Simulator {
     const sell: DetailedTokenTransfer = {
       description: "Sell",
       token: order.tokenIdS,
-      from: order.accountID,
-      to: orderTo.accountID,
+      from: order.accountId,
+      to: orderTo.accountId,
       amount: fillAmountS,
       subPayments: [],
     };
     const buy: DetailedTokenTransfer = {
       description: "ToBuyer",
       token: order.tokenIdS,
-      from: order.accountID,
-      to: orderTo.accountID,
+      from: order.accountId,
+      to: orderTo.accountId,
       amount: fillAmountS.sub(margin),
       subPayments: [],
     };
     const marginP: DetailedTokenTransfer = {
       description: "Margin",
       token: order.tokenIdS,
-      from: order.accountID,
-      to: ring.minerAccountID,
+      from: order.accountId,
+      to: ring.minerAccountId,
       amount: margin,
       subPayments: [],
     };
@@ -254,7 +254,7 @@ export class Simulator {
     const fee: DetailedTokenTransfer = {
       description: "Fee",
       token: order.tokenIdF,
-      from: order.accountID,
+      from: order.accountId,
       to: 0,
       amount: fillAmountF,
       subPayments: [],
@@ -262,16 +262,16 @@ export class Simulator {
     const feeWallet: DetailedTokenTransfer = {
       description: "Wallet@" + order.walletSplitPercentage + "%",
       token: order.tokenIdF,
-      from: order.accountID,
-      to: order.dualAuthAccountID,
+      from: order.accountId,
+      to: order.dualAuthAccountId,
       amount: walletFee,
       subPayments: [],
     };
     const feeMatching: DetailedTokenTransfer = {
       description: "Matching@" + order.waiveFeePercentage + "%",
       token: order.tokenIdF,
-      from: order.accountID,
-      to: ring.minerAccountID,
+      from: order.accountId,
+      to: ring.minerAccountId,
       amount: matchingFee,
       subPayments: [],
     };
@@ -286,7 +286,7 @@ export class Simulator {
   }
 
   private getMaxFillAmounts(order: OrderInfo, accountData: any) {
-    let tradeHistory = accountData.balances[order.tokenIdS].tradeHistory[order.orderID];
+    let tradeHistory = accountData.balances[order.tokenIdS].tradeHistory[order.orderId];
     if (!tradeHistory) {
       tradeHistory = {
         filled: new BN(0),
@@ -355,9 +355,9 @@ export class Simulator {
       const balanceValue = account.balances[Number(tokenId)];
 
       const tradeHistory: {[key: number]: TradeHistory} = {};
-      for (const orderID of Object.keys(balanceValue.tradeHistory)) {
-        const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
-        tradeHistory[Number(orderID)] = {
+      for (const orderId of Object.keys(balanceValue.tradeHistory)) {
+        const tradeHistoryValue = balanceValue.tradeHistory[Number(orderId)];
+        tradeHistory[Number(orderId)] = {
           filled: tradeHistoryValue.filled,
           cancelled: tradeHistoryValue.cancelled,
         };
@@ -368,8 +368,8 @@ export class Simulator {
       };
     }
     const accountCopy: Account = {
-      accountID: account.accountID,
-      walletID: account.walletID,
+      accountId: account.accountId,
+      walletId: account.walletId,
       publicKeyX: account.publicKeyX,
       publicKeyY: account.publicKeyY,
       nonce: account.nonce,
@@ -380,9 +380,9 @@ export class Simulator {
 
   private copyState(state: State) {
     const accounts: {[key: number]: Account} = {};
-    for (const accountID of Object.keys(state.accounts)) {
-      const accountValue = state.accounts[Number(accountID)];
-      accounts[Number(accountID)] = this.copyAccount(accountValue);
+    for (const accountId of Object.keys(state.accounts)) {
+      const accountValue = state.accounts[Number(accountId)];
+      accounts[Number(accountId)] = this.copyAccount(accountValue);
     }
     const stateCopy: State = {
       accounts,

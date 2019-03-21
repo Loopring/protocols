@@ -51,11 +51,11 @@ class CancelExport(object):
 
 
 def orderFromJSON(jOrder, state):
-    stateID = int(jOrder["stateID"])
-    walletID = int(jOrder["walletID"])
-    orderID = int(jOrder["orderID"])
-    accountID = int(jOrder["accountID"])
-    dualAuthAccountID = int(jOrder["dualAuthAccountID"])
+    stateId = int(jOrder["stateId"])
+    walletId = int(jOrder["walletId"])
+    orderId = int(jOrder["orderId"])
+    accountId = int(jOrder["accountId"])
+    dualAuthAccountId = int(jOrder["dualAuthAccountId"])
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
     tokenF = int(jOrder["tokenIdF"])
@@ -68,12 +68,12 @@ def orderFromJSON(jOrder, state):
     walletSplitPercentage = int(jOrder["walletSplitPercentage"])
     waiveFeePercentage = int(jOrder["waiveFeePercentage"])
 
-    account = state.getAccount(accountID)
-    walletAccount = state.getAccount(dualAuthAccountID)
+    account = state.getAccount(accountId)
+    walletAccount = state.getAccount(dualAuthAccountId)
 
     order = Order(Point(account.publicKeyX, account.publicKeyY),
                   Point(walletAccount.publicKeyX, walletAccount.publicKeyY),
-                  stateID, walletID, orderID, accountID, dualAuthAccountID,
+                  stateId, walletId, orderId, accountId, dualAuthAccountId,
                   tokenS, tokenB, tokenF,
                   amountS, amountB, amountF,
                   allOrNone, validSince, validUntil,
@@ -87,16 +87,16 @@ def orderFromJSON(jOrder, state):
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
-    minerAccountID = int(jRing["minerAccountID"])
-    feeRecipientAccountID = int(jRing["feeRecipientAccountID"])
+    minerAccountId = int(jRing["minerAccountId"])
+    feeRecipientAccountId = int(jRing["feeRecipientAccountId"])
     tokenId = int(jRing["tokenId"])
     fee = int(jRing["fee"])
 
-    minerAccount = state.getAccount(minerAccountID)
-    dualAuthA = state.getAccount(orderA.dualAuthAccountID)
-    dualAuthB = state.getAccount(orderB.dualAuthAccountID)
+    minerAccount = state.getAccount(minerAccountId)
+    dualAuthA = state.getAccount(orderA.dualAuthAccountId)
+    dualAuthB = state.getAccount(orderB.dualAuthAccountId)
 
-    ring = Ring(orderA, orderB, minerAccountID, feeRecipientAccountID, tokenId, fee, minerAccount.nonce)
+    ring = Ring(orderA, orderB, minerAccountId, feeRecipientAccountId, tokenId, fee, minerAccount.nonce)
 
     ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(dualAuthA.secretKey)), FQ(int(dualAuthB.secretKey)))
 
@@ -105,19 +105,19 @@ def ringFromJSON(jRing, state):
 
 def deposit(state, data):
     export = DepositExport()
-    export.stateID = state.stateID
+    export.stateId = state.stateId
     export.merkleRootBefore = str(state.getRoot())
 
     for depositInfo in data:
-        accountID = int(depositInfo["accountID"])
+        accountId = int(depositInfo["accountId"])
         secretKey = int(depositInfo["secretKey"])
         publicKeyX = int(depositInfo["publicKeyX"])
         publicKeyY = int(depositInfo["publicKeyY"])
-        walletID = int(depositInfo["walletID"])
+        walletId = int(depositInfo["walletId"])
         token = int(depositInfo["tokenId"])
         amount = int(depositInfo["amount"])
 
-        deposit = state.deposit(accountID, secretKey, publicKeyX, publicKeyY, walletID, token, amount)
+        deposit = state.deposit(accountId, secretKey, publicKeyX, publicKeyY, walletId, token, amount)
 
         export.deposits.append(deposit)
 
@@ -127,33 +127,33 @@ def deposit(state, data):
 
 def withdraw(onchain, state, data):
     export = WithdrawalExport(onchain)
-    export.stateID = state.stateID
+    export.stateId = state.stateId
     export.merkleRootBefore = str(state.getRoot())
-    export.operatorAccountID = int(data["operatorAccountID"])
+    export.operatorAccountId = int(data["operatorAccountId"])
 
     # Operator payment
     rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountId))
 
     for withdrawalInfo in data["withdrawals"]:
-        accountID = int(withdrawalInfo["accountID"])
+        accountId = int(withdrawalInfo["accountId"])
         tokenId = int(withdrawalInfo["tokenId"])
         amount = int(withdrawalInfo["amount"])
-        dualAuthAccountID = int(withdrawalInfo["dualAuthAccountID"])
+        dualAuthAccountId = int(withdrawalInfo["dualAuthAccountId"])
         feeTokenID = int(withdrawalInfo["feeTokenID"])
         fee = int(withdrawalInfo["fee"])
         walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
 
-        withdrawal = state.withdraw(onchain, export.stateID, accountID, tokenId, amount,
-                                             export.operatorAccountID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage)
+        withdrawal = state.withdraw(onchain, export.stateId, accountId, tokenId, amount,
+                                             export.operatorAccountId, dualAuthAccountId, feeTokenID, fee, walletSplitPercentage)
         export.withdrawals.append(withdrawal)
 
     # Operator payment
-    proof = state._accountsTree.createProof(export.operatorAccountID)
-    state.updateAccountTree(export.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    proof = state._accountsTree.createProof(export.operatorAccountId)
+    state.updateAccountTree(export.operatorAccountId)
+    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountId))
     rootAfter = state._accountsTree._root
-    export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+    export.accountUpdate_O = AccountUpdateData(export.operatorAccountId, proof, rootBefore, rootAfter, accountBefore, accountAfter)
 
     export.merkleRootAfter = str(state.getRoot())
     return export
@@ -161,32 +161,32 @@ def withdraw(onchain, state, data):
 
 def cancel(state, data):
     export = CancelExport()
-    export.stateID = state.stateID
+    export.stateId = state.stateId
     export.merkleRootBefore = str(state.getRoot())
-    export.operatorAccountID = int(data["operatorAccountID"])
+    export.operatorAccountId = int(data["operatorAccountId"])
 
     # Operator payment
     rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountId))
 
     for cancelInfo in data["cancels"]:
-        accountID = int(cancelInfo["accountID"])
+        accountId = int(cancelInfo["accountId"])
         orderTokenID = int(cancelInfo["orderTokenID"])
-        orderID = int(cancelInfo["orderID"])
-        dualAuthAccountID = int(cancelInfo["dualAuthAccountID"])
+        orderId = int(cancelInfo["orderId"])
+        dualAuthAccountId = int(cancelInfo["dualAuthAccountId"])
         feeTokenID = int(cancelInfo["feeTokenID"])
         fee = int(cancelInfo["fee"])
         walletSplitPercentage = int(cancelInfo["walletSplitPercentage"])
 
-        export.cancels.append(state.cancelOrder(export.stateID, accountID, orderTokenID, orderID,
-                                                dualAuthAccountID, export.operatorAccountID, feeTokenID, fee, walletSplitPercentage))
+        export.cancels.append(state.cancelOrder(export.stateId, accountId, orderTokenID, orderId,
+                                                dualAuthAccountId, export.operatorAccountId, feeTokenID, fee, walletSplitPercentage))
 
     # Operator payment
-    proof = state._accountsTree.createProof(export.operatorAccountID)
-    state.updateAccountTree(export.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    proof = state._accountsTree.createProof(export.operatorAccountId)
+    state.updateAccountTree(export.operatorAccountId)
+    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountId))
     rootAfter = state._accountsTree._root
-    export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+    export.accountUpdate_O = AccountUpdateData(export.operatorAccountId, proof, rootBefore, rootAfter, accountBefore, accountAfter)
 
     export.merkleRootAfter = str(state.getRoot())
     return export
@@ -194,16 +194,16 @@ def cancel(state, data):
 
 def trade(state, data):
     export = TradeExport()
-    export.stateID = state.stateID
+    export.stateId = state.stateId
     export.merkleRootBefore = str(state.getRoot())
     export.timestamp = int(data["timestamp"])
-    export.operatorAccountID = int(data["operatorAccountID"])
+    export.operatorAccountId = int(data["operatorAccountId"])
 
-    context = Context(export.operatorAccountID, export.timestamp)
+    context = Context(export.operatorAccountId, export.timestamp)
 
     # Operator payment
     rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountId))
 
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, state)
@@ -211,21 +211,21 @@ def trade(state, data):
         export.ringSettlements.append(ringSettlement)
 
     # Operator payment
-    proof = state._accountsTree.createProof(export.operatorAccountID)
-    state.updateAccountTree(export.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    proof = state._accountsTree.createProof(export.operatorAccountId)
+    state.updateAccountTree(export.operatorAccountId)
+    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountId))
     rootAfter = state._accountsTree._root
-    export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+    export.accountUpdate_O = AccountUpdateData(export.operatorAccountId, proof, rootBefore, rootAfter, accountBefore, accountAfter)
 
     export.merkleRootAfter = str(state.getRoot())
     return export
 
 
-def main(stateID, blockIdx, blockType, inputFilename, outputFilename):
+def main(stateId, blockIdx, blockType, inputFilename, outputFilename):
     previousBlockIdx = int(blockIdx) - 1
-    previous_state_filename = "./states/state_" + str(stateID) + "_" + str(previousBlockIdx) + ".json"
+    previous_state_filename = "./states/state_" + str(stateId) + "_" + str(previousBlockIdx) + ".json"
 
-    state = State(stateID)
+    state = State(stateId)
     if os.path.exists(previous_state_filename):
         state.load(previous_state_filename)
 
@@ -253,7 +253,7 @@ def main(stateID, blockIdx, blockType, inputFilename, outputFilename):
     subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
 
     pathlib.Path("./states").mkdir(parents=True, exist_ok=True)
-    state_filename = "./states/state_" + str(stateID) + "_" + str(blockIdx) + ".json"
+    state_filename = "./states/state_" + str(stateId) + "_" + str(blockIdx) + ".json"
     state.save(state_filename)
 
 

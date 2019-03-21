@@ -32,10 +32,10 @@ public:
     const jubjub::VariablePointT publicKey;
     const jubjub::VariablePointT walletPublicKey;
 
-    VariableArrayT accountID;
+    VariableArrayT accountId;
     VariableArrayT orderTokenID;
-    VariableArrayT orderID;
-    VariableArrayT dualAuthAccountID;
+    VariableArrayT orderId;
+    VariableArrayT dualAuthAccountId;
     VariableArrayT feeTokenID;
     libsnark::dual_variable_gadget<FieldT> fee;
     libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
@@ -58,7 +58,7 @@ public:
     VariableT balanceF_O_before;
     VariableT tradingHistoryRootF_O;
 
-    VariableT walletID;
+    VariableT walletId;
     libsnark::dual_variable_gadget<FieldT> nonce_before;
     VariableT nonce_after;
     VariableT balancesRoot_before;
@@ -88,7 +88,7 @@ public:
         const jubjub::Params& params,
         const VariableT& _accountsMerkleRoot,
         const VariableT& _operatorBalancesRoot,
-        const VariableArrayT& _stateID,
+        const VariableArrayT& _stateId,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
@@ -103,10 +103,10 @@ public:
         publicKey(pb, FMT(prefix, ".publicKey")),
         walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
 
-        accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
+        accountId(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
         orderTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".orderTokenID"))),
-        orderID(make_var_array(pb, 16, FMT(prefix, ".orderID"))),
-        dualAuthAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID"))),
+        orderId(make_var_array(pb, 16, FMT(prefix, ".orderId"))),
+        dualAuthAccountId(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountId"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
         fee(pb, 96, FMT(prefix, ".fee")),
         walletSplitPercentage(pb, 7, FMT(prefix, ".walletSplitPercentage")),
@@ -129,7 +129,7 @@ public:
         balanceF_O_before(make_variable(pb, FMT(prefix, ".balanceF_O_before"))),
         tradingHistoryRootF_O(make_variable(pb, FMT(prefix, ".tradingHistoryRootF_O"))),
 
-        walletID(make_variable(pb, FMT(prefix, ".walletID"))),
+        walletId(make_variable(pb, FMT(prefix, ".walletId"))),
         nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, 1, FMT(prefix, ".cancelled_after"))),
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
@@ -140,7 +140,7 @@ public:
         feePaymentWallet(pb, 96, balanceF_A_before, balanceF_W_before, feeToWallet.result(), FMT(prefix, ".feePaymentWallet")),
         feePaymentOperator(pb, 96, feePaymentWallet.X, balanceF_O_before, feeToOperator, FMT(prefix, ".feePaymentOperator")),
 
-        updateTradeHistory_A(pb, tradingHistoryRootT_A_before, orderID,
+        updateTradeHistory_A(pb, tradingHistoryRootT_A_before, orderId,
                              filled, cancelled_before, filled, cancelled_after, FMT(prefix, ".updateTradeHistory_A")),
 
         updateBalanceT_A(pb, balancesRoot_before, orderTokenID,
@@ -153,9 +153,9 @@ public:
                          {feePaymentOperator.X, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
 
-        updateAccount_A(pb, _accountsMerkleRoot, accountID,
-                        {publicKey.x, publicKey.y, walletID, nonce_before.packed, balancesRoot_before},
-                        {publicKey.x, publicKey.y, walletID, nonce_after, updateBalanceF_A.getNewRoot()},
+        updateAccount_A(pb, _accountsMerkleRoot, accountId,
+                        {publicKey.x, publicKey.y, walletId, nonce_before.packed, balancesRoot_before},
+                        {publicKey.x, publicKey.y, walletId, nonce_after, updateBalanceF_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
 
 
@@ -164,7 +164,7 @@ public:
                          {feePaymentWallet.Y, emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_W")),
 
-        updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountID,
+        updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountId,
                         {walletPublicKey.x, walletPublicKey.y, dualAuthorWalletID, nonce_W, balancesRoot_W_before},
                         {walletPublicKey.x, walletPublicKey.y, dualAuthorWalletID, nonce_W, updateBalanceF_W.getNewRoot()},
                         FMT(prefix, ".updateAccount_W")),
@@ -175,7 +175,7 @@ public:
                          {feePaymentOperator.Y, tradingHistoryRootF_O},
                          FMT(prefix, ".updateBalanceF_O")),
 
-        message(flatten({_stateID, accountID, orderTokenID, orderID, dualAuthAccountID,
+        message(flatten({_stateId, accountId, orderTokenID, orderId, dualAuthAccountId,
                          feeTokenID, fee.bits, walletSplitPercentage.bits,
                          nonce_before.bits, padding.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
@@ -196,7 +196,7 @@ public:
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {accountID, uint16_padding, orderTokenID, orderID, dualAuthAccountID,
+        return {accountId, uint16_padding, orderTokenID, orderId, dualAuthAccountId,
                 uint16_padding, feeTokenID, fee.bits, percentage_padding, walletSplitPercentage.bits};
     }
 
@@ -213,10 +213,10 @@ public:
         pb.val(walletPublicKey.x) = cancellation.walletPublicKey.x;
         pb.val(walletPublicKey.y) = cancellation.walletPublicKey.y;
 
-        accountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_A.accountID);
+        accountId.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_A.accountId);
         orderTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateT_A.tokenId);
-        orderID.fill_with_bits_of_field_element(pb, cancellation.tradeHistoryUpdate_A.orderID);
-        dualAuthAccountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_W.accountID);
+        orderId.fill_with_bits_of_field_element(pb, cancellation.tradeHistoryUpdate_A.orderId);
+        dualAuthAccountId.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_W.accountId);
         feeTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateF_A.tokenId);
         fee.bits.fill_with_bits_of_field_element(pb, cancellation.fee);
         fee.generate_r1cs_witness_from_bits();
@@ -236,12 +236,12 @@ public:
         pb.val(balancesRoot_W_before) = cancellation.accountUpdate_W.before.balancesRoot;
         pb.val(balanceF_W_before) = cancellation.balanceUpdateF_W.before.balance;
         pb.val(nonce_W) = cancellation.accountUpdate_W.before.nonce;
-        pb.val(dualAuthorWalletID) = cancellation.accountUpdate_W.before.walletID;
+        pb.val(dualAuthorWalletID) = cancellation.accountUpdate_W.before.walletId;
 
         pb.val(balanceF_O_before) = cancellation.balanceUpdateF_O.before.balance;
         pb.val(tradingHistoryRootF_O) = cancellation.balanceUpdateF_O.before.tradingHistoryRoot;
 
-        pb.val(walletID) = cancellation.accountUpdate_A.before.walletID;
+        pb.val(walletId) = cancellation.accountUpdate_A.before.walletId;
         nonce_before.bits.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_A.before.nonce);
         nonce_before.generate_r1cs_witness_from_bits();
         pb.val(nonce_after) = cancellation.accountUpdate_A.after.nonce;
@@ -294,8 +294,8 @@ public:
         pb.add_r1cs_constraint(ConstraintT(cancelled_after, FieldT::one(), FieldT::one()), "cancelled_after == 1");
         pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
 
-        pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
-                               FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));
+        pb.add_r1cs_constraint(ConstraintT(walletId + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
+                               FMT(annotation_prefix, ".walletId + MAX_NUM_WALLETS = dualAuthorWalletID"));
     }
 };
 
@@ -310,7 +310,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
-    libsnark::dual_variable_gadget<FieldT> stateID;
+    libsnark::dual_variable_gadget<FieldT> stateId;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
@@ -318,7 +318,7 @@ public:
     VariableT nonce;
 
     const jubjub::VariablePointT publicKey;
-    libsnark::dual_variable_gadget<FieldT> operatorAccountID;
+    libsnark::dual_variable_gadget<FieldT> operatorAccountId;
     VariableT balancesRoot_before;
 
     UpdateAccountGadget* updateAccount_O = nullptr;
@@ -329,12 +329,12 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
-        stateID(pb, 32, FMT(prefix, ".stateID")),
+        stateId(pb, 32, FMT(prefix, ".stateId")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountID")),
+        operatorAccountId(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountId")),
         publicKey(pb, FMT(prefix, ".publicKey")),
         nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
         balancesRoot_before(make_variable(pb, 0, FMT(prefix, ".balancesRoot_before")))
@@ -356,15 +356,15 @@ public:
 
         pb.set_input_sizes(1);
 
-        publicData.add(stateID.bits);
+        publicData.add(stateId.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
-        publicData.add(operatorAccountID.bits);
+        publicData.add(operatorAccountId.bits);
         for (size_t j = 0; j < numCancels; j++)
         {
             VariableT cancelAccountsRoot = (j == 0) ? merkleRootBefore.packed : cancels.back().getNewAccountsRoot();
             VariableT cancelOperatorBalancesRoot = (j == 0) ? balancesRoot_before : cancels.back().getNewOperatorBalancesRoot();
-            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelOperatorBalancesRoot, stateID.bits, std::string("cancels_") + std::to_string(j));
+            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelOperatorBalancesRoot, stateId.bits, std::string("cancels_") + std::to_string(j));
             cancels.back().generate_r1cs_constraints();
 
             // Store data from withdrawal
@@ -372,8 +372,8 @@ public:
             publicData.add(cancels.back().getPublicData());
         }
 
-        operatorAccountID.generate_r1cs_constraints(true);
-        updateAccount_O = new UpdateAccountGadget(pb, cancels.back().getNewAccountsRoot(), operatorAccountID.bits,
+        operatorAccountId.generate_r1cs_constraints(true);
+        updateAccount_O = new UpdateAccountGadget(pb, cancels.back().getNewAccountsRoot(), operatorAccountId.bits,
                 {publicKey.x, publicKey.y, constant0, nonce, balancesRoot_before},
                 {publicKey.x, publicKey.y, constant0, nonce, cancels.back().getNewOperatorBalancesRoot()},
                 FMT(annotation_prefix, ".updateAccount_O"));
@@ -394,8 +394,8 @@ public:
 
     bool generateWitness(const Loopring::CancelContext& context)
     {
-        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
-        stateID.generate_r1cs_witness_from_bits();
+        stateId.bits.fill_with_bits_of_field_element(pb, context.stateId);
+        stateId.generate_r1cs_witness_from_bits();
 
         merkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.merkleRootBefore);
         merkleRootBefore.generate_r1cs_witness_from_bits();
@@ -409,8 +409,8 @@ public:
             cancels[i].generate_r1cs_witness(context.cancels[i]);
         }
 
-        operatorAccountID.bits.fill_with_bits_of_field_element(pb, context.operatorAccountID);
-        operatorAccountID.generate_r1cs_witness_from_bits();
+        operatorAccountId.bits.fill_with_bits_of_field_element(pb, context.operatorAccountId);
+        operatorAccountId.generate_r1cs_witness_from_bits();
 
         pb.val(publicKey.x) = context.accountUpdate_O.before.publicKey.x;
         pb.val(publicKey.y) = context.accountUpdate_O.before.publicKey.y;

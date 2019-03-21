@@ -12,14 +12,14 @@ class Export(object):
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
-def main(stateID, accountID, tokenId, outputFilename):
-    state_filename = "state_" + str(stateID) + ".json"
+def main(stateId, accountId, tokenId, outputFilename):
+    state_filename = "state_" + str(stateId) + ".json"
 
-    state = State(stateID)
+    state = State(stateId)
     if os.path.exists(state_filename):
         state.load(state_filename)
 
-    proof = state.createWithdrawProof(int(stateID), int(accountID), int(tokenId))
+    proof = state.createWithdrawProof(int(stateId), int(accountId), int(tokenId))
 
     export = Export()
     export.proof = proof
