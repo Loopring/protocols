@@ -81,7 +81,6 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc
         token.tierValidUntil = 0xFFFFFFFF;
     }
 
-    // Q(dongw): how can people burn LRC to change tiers?
     function registerToken(
         address tokenAddress
         )
