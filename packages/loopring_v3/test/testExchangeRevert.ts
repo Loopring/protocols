@@ -1,5 +1,4 @@
 import BN = require("bn.js");
-import { Artifacts } from "../util/Artifacts";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, RingInfo } from "./types";

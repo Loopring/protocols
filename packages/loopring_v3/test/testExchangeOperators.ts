@@ -1,5 +1,4 @@
 import BN = require("bn.js");
-import { Artifacts } from "../util/Artifacts";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Operator } from "./types";
@@ -28,7 +27,9 @@ contract("Exchange", (accounts: string[]) => {
   const unregisterOperatorChecked = async (stateID: number, operator: Operator) => {
     const bOperatorRegisteredBefore = await exchange.isOperatorRegistered(stateID, operator.operatorID);
     const activeOperatorsBefore = await exchangeTestUtil.getActiveOperators(stateID);
+
     await exchange.unregisterOperator(stateID, operator.operatorID, {from: operator.owner});
+
     const bOperatorRegisteredAfter = await exchange.isOperatorRegistered(stateID, operator.operatorID);
     const activeOperatorsAfter = await exchangeTestUtil.getActiveOperators(stateID);
 

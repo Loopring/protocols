@@ -183,6 +183,7 @@ export class ExchangeTestUtil {
                                              keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                              this.MAX_MUM_WALLETS + walletID, this.zeroAddress, new BN(0));
     const wallet: Wallet = {
+      owner,
       walletID,
       walletAccountID: walletDeposit.accountID,
     };
@@ -295,18 +296,19 @@ export class ExchangeTestUtil {
     order.amountF = order.amountF ? order.amountF : new BN(web3.utils.toWei("1.5", "ether"));
 
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
-    order.walletSplitPercentage = order.walletSplitPercentage ? order.walletSplitPercentage : 50;
+    order.walletSplitPercentage = (order.walletSplitPercentage !== undefined) ? order.walletSplitPercentage : 50;
 
-    order.waiveFeePercentage = order.waiveFeePercentage ? order.waiveFeePercentage : 50;
+    order.waiveFeePercentage = (order.waiveFeePercentage !== undefined) ? order.waiveFeePercentage : 50;
 
     const walletIndex = index % this.testContext.wallets.length;
-    order.walletID = order.walletID ? order.walletID : this.wallets[order.stateID][walletIndex].walletID;
-    order.dualAuthAccountID = order.dualAuthAccountID ?
+    order.walletID = (order.walletID !== undefined) ?
+                     order.walletID : this.wallets[order.stateID][walletIndex].walletID;
+    order.dualAuthAccountID = (order.dualAuthAccountID !== undefined) ?
                               order.dualAuthAccountID : this.wallets[order.stateID][walletIndex].walletAccountID;
 
-    order.orderID = order.orderID ? order.orderID : index;
+    order.orderID = (order.orderID !== undefined) ? order.orderID : index;
 
-    order.stateID = order.stateID ? order.stateID : 0;
+    order.stateID = (order.stateID !== undefined) ? order.stateID : 0;
 
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
     order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
@@ -436,7 +438,7 @@ export class ExchangeTestUtil {
 
     // Do the deposit
     if (accountID !== undefined) {
-      const tx = await this.exchange.deposit(
+      const tx = await this.exchange.depositAndUpdateAccount(
         web3.utils.toBN(stateID),
         web3.utils.toBN(accountID),
         new BN(publicKeyX),
@@ -727,8 +729,18 @@ export class ExchangeTestUtil {
       }
       await this.advanceBlockTimestamp(timeToWait);
 
-      const jDepositsInfo = JSON.stringify(deposits, replacer, 4);
-      const [blockIdx, blockFilename] = await this.createBlock(stateID, 1, jDepositsInfo);
+      // Store state before
+      const currentBlockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
+      const stateBefore = await this.loadState(stateID, currentBlockIdx);
+
+      const [blockIdx, blockFilename] = await this.createBlock(stateID, 1, JSON.stringify(deposits, replacer, 4));
+
+      // Store state after
+      const stateAfter = await this.loadState(stateID, currentBlockIdx + 1);
+
+      // Validate state change
+      this.validateDeposits(deposits, stateBefore, stateAfter);
+
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
       bs.addNumber(block.stateID, 4);
@@ -758,51 +770,54 @@ export class ExchangeTestUtil {
     if (blockIdx === undefined) {
       blockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
     }
-    const stateFile = "states/state_" + stateID + "_" + blockIdx + ".json";
-    const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
-
     const accounts: {[key: number]: Account} = {};
-    const accountsKeys: string[] = Object.keys(jState.accounts_values);
-    for (const accountKey of accountsKeys) {
-      const jAccount = jState.accounts_values[accountKey];
+    if (blockIdx > 0) {
+      const stateFile = "states/state_" + stateID + "_" + blockIdx + ".json";
+      const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
 
-      const balances: {[key: number]: Balance} = {};
-      const balancesKeys: string[] = Object.keys(jAccount._balancesLeafs);
-      for (const balanceKey of balancesKeys) {
-        const jBalance = jAccount._balancesLeafs[balanceKey];
+      const accountsKeys: string[] = Object.keys(jState.accounts_values);
+      for (const accountKey of accountsKeys) {
+        const jAccount = jState.accounts_values[accountKey];
 
-        const tradeHistory: {[key: number]: TradeHistory} = {};
-        const tradeHistoryKeys: string[] = Object.keys(jBalance._tradeHistoryLeafs);
-        for (const tradeHistoryKey of tradeHistoryKeys) {
-          const jTradeHistory = jBalance._tradeHistoryLeafs[tradeHistoryKey];
-          tradeHistory[Number(tradeHistoryKey)] = {
-            filled: new BN(jTradeHistory.filled, 10),
-            cancelled: jTradeHistory.cancelled === 1,
-          };
-        }
-        balances[Number(balanceKey)] = {
-          balance: new BN(jBalance.balance, 10),
-          tradeHistory,
-        };
+        const balances: {[key: number]: Balance} = {};
+        const balancesKeys: string[] = Object.keys(jAccount._balancesLeafs);
+        for (const balanceKey of balancesKeys) {
+          const jBalance = jAccount._balancesLeafs[balanceKey];
 
-        // Make sure all tokens exist
-        for (let i = 0; i < 2 ** 12; i++) {
-          if (!balances[i]) {
-            balances[i] = {
-              balance: new BN(0),
-              tradeHistory: {},
+          const tradeHistory: {[key: number]: TradeHistory} = {};
+          const tradeHistoryKeys: string[] = Object.keys(jBalance._tradeHistoryLeafs);
+          for (const tradeHistoryKey of tradeHistoryKeys) {
+            const jTradeHistory = jBalance._tradeHistoryLeafs[tradeHistoryKey];
+            tradeHistory[Number(tradeHistoryKey)] = {
+              filled: new BN(jTradeHistory.filled, 10),
+              cancelled: jTradeHistory.cancelled === 1,
             };
           }
+          balances[Number(balanceKey)] = {
+            balance: new BN(jBalance.balance, 10),
+            tradeHistory,
+          };
+
+          // Make sure all tokens exist
+          for (let i = 0; i < 2 ** 12; i++) {
+            if (!balances[i]) {
+              balances[i] = {
+                balance: new BN(0),
+                tradeHistory: {},
+              };
+            }
+          }
         }
+        const account: Account = {
+          accountID: Number(accountKey),
+          walletID: jAccount.walletID,
+          publicKeyX: jAccount.publicKeyX,
+          publicKeyY: jAccount.publicKeyY,
+          nonce: jAccount.nonce,
+          balances,
+        };
+        accounts[Number(accountKey)] = account;
       }
-      const account: Account = {
-        accountID: Number(accountKey),
-        walletID: jAccount.walletID,
-        publicKeyX: new BN(jAccount.publicKeyX, 10),
-        publicKeyY: new BN(jAccount.publicKeyY, 10),
-        balances,
-      };
-      accounts[Number(accountKey)] = account;
     }
     const state: State = {
       accounts,
@@ -1367,13 +1382,40 @@ export class ExchangeTestUtil {
     }
   }
 
+  public compareStates(stateA: State, stateB: State) {
+    const accountsKeys: string[] = Object.keys(stateA.accounts);
+    for (const accountKey of accountsKeys) {
+      const accountA = stateA.accounts[Number(accountKey)];
+      const accountB = stateB.accounts[Number(accountKey)];
+
+      for (const tokenID of Object.keys(accountA.balances)) {
+        const balanceValueA = accountA.balances[Number(tokenID)];
+        const balanceValueB = accountB.balances[Number(tokenID)];
+
+        for (const orderID of Object.keys(balanceValueA.tradeHistory)) {
+          const tradeHistoryValueA = balanceValueA.tradeHistory[Number(orderID)];
+          const tradeHistoryValueB = balanceValueA.tradeHistory[Number(orderID)];
+
+          assert(tradeHistoryValueA.filled.eq(tradeHistoryValueB.filled));
+          assert(tradeHistoryValueA.cancelled === tradeHistoryValueB.cancelled);
+        }
+        assert(balanceValueA.balance.eq(balanceValueB.balance));
+      }
+      assert.equal(accountA.accountID, accountB.accountID);
+      assert.equal(accountA.walletID, accountB.walletID);
+      assert.equal(accountA.publicKeyX, accountB.publicKeyX);
+      assert.equal(accountA.publicKeyY, accountB.publicKeyY);
+      assert.equal(accountA.nonce, accountB.nonce);
+    }
+  }
+
   public validateRingSettlements(ringBlock: RingBlock, stateBefore: State, stateAfter: State) {
+    console.log("----------------------------------------------------");
     const operatorAccountID = ringBlock.operatorAccountID;
     const timestamp = ringBlock.timestamp;
     let latestState = stateBefore;
     const addressBook = this.getAddressBookBlock(ringBlock);
     for (const ring of ringBlock.rings) {
-      console.log("----------------------------------------------------");
       const simulator = new Simulator();
       const simulatorReport = simulator.settleRing(ring, latestState, timestamp, operatorAccountID);
 
@@ -1382,33 +1424,70 @@ export class ExchangeTestUtil {
       }
       this.logFilledAmountsRing(ring, latestState, simulatorReport.stateAfter);
       latestState = simulatorReport.stateAfter;
-      console.log("----------------------------------------------------");
     }
 
-     // Verify resulting state
-    const accountsKeys: string[] = Object.keys(stateBefore.accounts);
-    for (const accountKey of accountsKeys) {
-      const account = stateAfter.accounts[Number(accountKey)];
-      const accountSimulator = latestState.accounts[Number(accountKey)];
+    // Verify resulting state
+    this.compareStates(stateAfter, latestState);
+    console.log("----------------------------------------------------");
+  }
 
-      for (const tokenID of Object.keys(account.balances)) {
-        const balanceValue = account.balances[Number(tokenID)];
-        const balanceValueSimulator = accountSimulator.balances[Number(tokenID)];
+  public validateDeposits(deposits: Deposit[], stateBefore: State, stateAfter: State) {
+    console.log("----------------------------------------------------");
+    let latestState = stateBefore;
+    for (const deposit of deposits) {
+      const simulator = new Simulator();
+      const simulatorReport = simulator.deposit(deposit, latestState);
 
-        for (const orderID of Object.keys(balanceValue.tradeHistory)) {
-          const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
-          const tradeHistoryValueSimulator = balanceValue.tradeHistory[Number(orderID)];
+      let accountBefore = latestState.accounts[deposit.accountID];
+      const accountAfter = simulatorReport.stateAfter.accounts[deposit.accountID];
 
-          assert(tradeHistoryValue.filled.eq(tradeHistoryValueSimulator.filled));
-          assert(tradeHistoryValue.cancelled === tradeHistoryValueSimulator.cancelled);
+      let bNewAccount = false;
+      if (accountBefore === undefined) {
+        const balances: {[key: number]: Balance} = {};
+        for (let i = 0; i < 2 ** 12; i++) {
+          balances[i] = {
+            balance: new BN(0),
+            tradeHistory: {},
+          };
         }
-        assert(balanceValue.balance.eq(balanceValueSimulator.balance));
+        const emptyAccount: Account = {
+          accountID: deposit.accountID,
+          walletID: 0,
+          publicKeyX: "0",
+          publicKeyY: "0",
+          nonce: 0,
+          balances,
+        };
+        accountBefore = emptyAccount;
+        bNewAccount = true;
       }
-      assert(account.accountID === accountSimulator.accountID);
-      assert(account.walletID === accountSimulator.walletID);
-      assert(account.publicKeyX.eq(accountSimulator.publicKeyX));
-      assert(account.publicKeyY.eq(accountSimulator.publicKeyY));
+
+      console.log("> Account " + deposit.accountID + (bNewAccount ? " (NEW ACCOUNT)" : ""));
+      if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
+        console.log("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
+      }
+      if (accountBefore.publicKeyY !== accountAfter.publicKeyY) {
+        console.log("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
+      }
+      if (accountBefore.walletID !== accountAfter.walletID) {
+        console.log("walletID: " + accountBefore.walletID + " -> " + accountAfter.walletID);
+      }
+      if (accountBefore.nonce !== accountAfter.nonce) {
+        console.log("nonce: " + accountBefore.nonce + " -> " + accountAfter.nonce);
+      }
+      for (let i = 0; i < 2 ** 12; i++) {
+        if (!accountBefore.balances[i].balance.eq(accountAfter.balances[i].balance)) {
+          this.prettyPrintBalanceChange(deposit.accountID, i, accountBefore.balances[i].balance,
+                                                              accountAfter.balances[i].balance);
+        }
+      }
+
+      latestState = simulatorReport.stateAfter;
     }
+
+    // Verify resulting state
+    this.compareStates(stateAfter, latestState);
+    console.log("----------------------------------------------------");
   }
 
   public async loadStateForRingBlock(stateID: number, blockIdx: number, ringBlock: RingBlock) {

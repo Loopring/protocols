@@ -128,6 +128,7 @@ export interface Operator {
 }
 
 export interface Wallet {
+  owner: string;
   walletID: number;
   walletAccountID: number;
 }
@@ -145,8 +146,9 @@ export interface Balance {
 export interface Account {
   accountID: number;
   walletID: number;
-  publicKeyX: BN;
-  publicKeyY: BN;
+  publicKeyX: string;
+  publicKeyY: string;
+  nonce: number;
   balances: {[key: number]: Balance};
 }
 
@@ -163,10 +165,15 @@ export interface DetailedTokenTransfer {
   subPayments: DetailedTokenTransfer[];
 }
 
-export interface SimulatorReport {
+export interface SimulatorTradeReport {
   stateBefore: State;
   stateAfter: State;
   detailedTransfers: DetailedTokenTransfer[];
+}
+
+export interface SimulatorDepositReport {
+  stateBefore: State;
+  stateAfter: State;
 }
 
 export interface DepositInfo {

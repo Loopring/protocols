@@ -507,26 +507,27 @@ contract Exchange is IExchange, NoDefaultFunc {
         state.numAccounts++;
         require(state.numAccounts <= 2 ** 24, "TOO_MANY_ACCOUNTS");
 
-        deposit(stateID, accountID, publicKeyX, publicKeyY, walletID, tokenID, amount);
+        depositAndUpdateAccount(stateID, accountID, publicKeyX, publicKeyY, walletID, tokenID, amount);
 
         return accountID;
     }
 
-    function depositToken(
+    function deposit(
         uint32 stateID,
         uint24 accountID,
         uint16 tokenID,
         uint96 amount
         )
-        public
+        external
         payable
     {
         State storage state = getState(stateID);
-        Account storage account = state.accounts[accountID];
-        deposit(stateID, accountID, account.publicKeyX, account.publicKeyY, account.walletID, tokenID, amount);
+        Account storage account = getAccount(state, accountID);
+        depositAndUpdateAccount(stateID, accountID, account.publicKeyX, account.publicKeyY, account.walletID, tokenID, amount);
     }
 
-    function deposit(
+    // Allows the account owner to update the walletID and publicKey of the account
+    function depositAndUpdateAccount(
         uint32 stateID,
         uint24 accountID,
         uint publicKeyX,
@@ -543,30 +544,33 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         State storage state = getState(stateID);
 
-        Account storage account = state.accounts[accountID];
+        Account storage account = getAccount(state, accountID);
         // Account type cannot be changed
-        if (account.walletID >=  MAX_NUM_WALLETS) {
-            require(walletID >= MAX_NUM_WALLETS, "INVALID_WALLETID");
+        if (account.walletID < MAX_NUM_WALLETS) {
+            require(walletID < MAX_NUM_WALLETS, "INVALID_WALLETID_CHANGE");
         } else {
-            require(walletID < MAX_NUM_WALLETS, "INVALID_WALLETID");
+            require(walletID >= MAX_NUM_WALLETS, "INVALID_WALLETID_CHANGE");
         }
         // Update account info
         account.walletID = walletID;
         account.publicKeyX = publicKeyX;
         account.publicKeyY = publicKeyY;
 
-        // Check if msg.sender wants to create a dual author account for a wallet
-        if (walletID >= MAX_NUM_WALLETS) {
-            // Don't allow depositing to accounts like this
-            require(amount == 0, "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS");
+        // Wallet needs to exist
+        uint targetWalletID = walletID < MAX_NUM_WALLETS ? walletID : walletID - MAX_NUM_WALLETS;
+        require(targetWalletID < state.numWallets, "INVALID_WALLETID");
 
-            uint targetWalletID = walletID - MAX_NUM_WALLETS;
-            if (targetWalletID > 0) {
-                require(state.wallets[targetWalletID].owner == msg.sender, "NOT_AUTHORIZED_TO_CREATE_DUAL_AUTHOR_ACCOUNT_FOR_WALLET");
-            }
-        } else {
+        // Check if msg.sender wants to create a dual author account for a wallet
+        if (walletID < MAX_NUM_WALLETS) {
             // Don't allow depositing to accounts not owned by msg.sender so no tokens can be lost this way
             require(account.owner == msg.sender, "UNAUTHORIZED");
+        } else {
+            // Don't allow depositing to accounts like this
+            require(amount == 0, "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS");
+            // Check if msg.sender is allowed to create accounts for this wallet
+            if (targetWalletID > 0) {
+                require(state.wallets[targetWalletID].owner == msg.sender, "UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT");
+            }
         }
 
         // Check expected ETH value sent
@@ -599,7 +603,7 @@ contract Exchange is IExchange, NoDefaultFunc {
                     address(this),
                     amount
                 ),
-                "UNSUFFICIENT_FUNDS"
+                "INSUFFICIENT_FUNDS"
             );
         }
 
@@ -652,7 +656,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         // Check expected ETH value sent
         require(msg.value == state.withdrawFeeInETH, "WRONG_ETH_VALUE");
 
-        Account storage account = state.accounts[accountID];
+        Account storage account = getAccount(state, accountID);
         // Allow anyone to withdraw wallet fees
         if (account.walletID < MAX_NUM_WALLETS) {
             require(account.owner == msg.sender, "UNAUTHORIZED");
@@ -714,8 +718,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
         uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
 
-        assert(accountID < state.numAccounts);
-        Account storage account = state.accounts[accountID];
+        Account storage account = getAccount(state, accountID);
 
         if (amount > 0) {
             // Set the amount to 0 so it cannot be withdrawn anymore
@@ -1027,6 +1030,18 @@ contract Exchange is IExchange, NoDefaultFunc {
         state = states[stateID];
     }
 
+    function getAccount(
+        State storage state,
+        uint24 accountID
+        )
+        internal
+        view
+        returns (Account storage account)
+    {
+        require(accountID < state.numAccounts, "INVALID_ACCOUNTID");
+        account = state.accounts[accountID];
+    }
+
     function getBlockIdx(
         uint32 stateID
         )
@@ -1227,7 +1242,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         Block storage lastBlock = state.blocks[state.numBlocks - 1];
         require(lastBlock.state == BlockState.FINALIZED, "LAST_BLOCK_NOT_FINALIZED");
 
-        Account storage account = state.accounts[accountID];
+        Account storage account = getAccount(state, accountID);
         require(account.withdrawn == false, "ALREADY_WITHDRAWN");
 
         verifyAccountBalance(

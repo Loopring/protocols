@@ -1,12 +1,7 @@
 import BN = require("bn.js");
-import { Artifacts } from "../util/Artifacts";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { OrderInfo, RingInfo } from "./types";
-
-const {
-  TESTToken,
-} = new Artifacts(artifacts);
+import { RingInfo } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
 
@@ -14,6 +9,106 @@ contract("Exchange", (accounts: string[]) => {
   let exchange: any;
 
   const zeroAddress = "0x" + "00".repeat(20);
+
+  const createAccountAndDepositChecked = async (stateID: number, keyPair: any, walletID: number, tokenID: number,
+                                                amount: BN, owner: string, depositFee: BN,
+                                                token: string) => {
+    const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
+    const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
+    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+
+    const ethValue = (token === "ETH") ? amount.add(depositFee) : depositFee;
+    await exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+      walletID, tokenID, amount, {from: owner, value: ethValue, gasPrice: 0});
+
+    const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
+    const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
+    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+
+    const expectedBalanceDelta = (token === "ETH") ? amount.add(depositFee) : amount;
+    assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(expectedBalanceDelta)),
+           "Token balance of owner should be decreased by amount");
+    assert(balanceContractAfter.eq(balanceContractBefore.add(expectedBalanceDelta)),
+           "Token balance of contract should be increased by amount");
+
+    assert.equal(numAvailableSlotsBefore, numAvailableSlotsAfter + 1,
+           "Number of available deposit slots should have been decreased by 1");
+
+    // Get the Deposit event
+    const eventArr: any = await exchangeTestUtil.getEventsFromContract(exchange, "Deposit", web3.eth.blockNumber);
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.accountID, eventObj.args.depositBlockIdx, eventObj.args.slotIdx];
+    });
+    assert.equal(items.length, 1, "A single Deposit event should have been emitted");
+    const accountID = items[0][0].toNumber();
+    return accountID;
+  };
+
+  const depositChecked = async (stateID: number, accountID: number, tokenID: number, amount: BN,
+                                owner: string, depositFee: BN,
+                                token: string) => {
+    const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
+    const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
+    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+
+    const ethValue = (token === "ETH") ? amount.add(depositFee) : depositFee;
+    await exchange.deposit(stateID, accountID, tokenID, amount, {from: owner, value: ethValue, gasPrice: 0});
+
+    const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
+    const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
+    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+
+    const expectedBalanceDelta = (token === "ETH") ? amount.add(depositFee) : amount;
+    assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(expectedBalanceDelta)),
+           "Token balance of owner should be decreased by amount");
+    assert(balanceContractAfter.eq(balanceContractBefore.add(expectedBalanceDelta)),
+           "Token balance of contract should be increased by amount");
+
+    assert.equal(numAvailableSlotsBefore, numAvailableSlotsAfter + 1,
+           "Number of available deposit slots should have been decreased by 1");
+
+    // Get the Deposit event
+    const eventArr: any = await exchangeTestUtil.getEventsFromContract(exchange, "Deposit", web3.eth.blockNumber);
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.accountID, eventObj.args.depositBlockIdx, eventObj.args.slotIdx];
+    });
+    assert.equal(items.length, 1, "A single Deposit event should have been emitted");
+    assert.equal(items[0][0].toNumber(), accountID, "Deposit accountID should match");
+  };
+
+  const depositAndUpdateAccountChecked = async (stateID: number, accountID: number, keyPair: any, walletID: number,
+                                                tokenID: number, amount: BN,
+                                                owner: string, depositFee: BN,
+                                                token: string) => {
+    const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
+    const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
+    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+
+    const ethValue = (token === "ETH") ? amount.add(depositFee) : depositFee;
+    await exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, walletID,
+                                           tokenID, amount, {from: owner, value: ethValue, gasPrice: 0});
+
+    const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
+    const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
+    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+
+    const expectedBalanceDelta = (token === "ETH") ? amount.add(depositFee) : amount;
+    assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(expectedBalanceDelta)),
+           "Token balance of owner should be decreased by amount");
+    assert(balanceContractAfter.eq(balanceContractBefore.add(expectedBalanceDelta)),
+           "Token balance of contract should be increased by amount");
+
+    assert.equal(numAvailableSlotsBefore, numAvailableSlotsAfter + 1,
+           "Number of available deposit slots should have been decreased by 1");
+
+    // Get the Deposit event
+    const eventArr: any = await exchangeTestUtil.getEventsFromContract(exchange, "Deposit", web3.eth.blockNumber);
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.accountID, eventObj.args.depositBlockIdx, eventObj.args.slotIdx];
+    });
+    assert.equal(items.length, 1, "A single Deposit event should have been emitted");
+    assert.equal(items[0][0].toNumber(), accountID, "Deposit accountID should match");
+  };
 
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
@@ -26,12 +121,12 @@ contract("Exchange", (accounts: string[]) => {
 
     it("ERC20: Deposit", async () => {
       const stateID = 0;
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      let keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const wallet = exchangeTestUtil.wallets[stateID][0];
-      const amount = new BN(web3.utils.toWei("7", "ether"));
-      const token = "LRC";
-      const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
+      let wallet = exchangeTestUtil.wallets[stateID][0];
+      let amount = new BN(web3.utils.toWei("7", "ether"));
+      let token = "LRC";
+      let tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
 
       // The correct deposit fee expected by the contract
       const depositFee = await exchange.getDepositFee(stateID);
@@ -62,15 +157,74 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           wallet.walletID, tokenID, amount, {from: owner, value: depositFee}),
-        "UNSUFFICIENT_FUNDS",
+        "INSUFFICIENT_FUNDS",
       );
 
       // Set the correct balance/approval
       await exchangeTestUtil.setBalanceAndApprove(owner, token, amount);
 
+      // Invalid tokenID
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          wallet.walletID, 123, amount, {from: owner, value: depositFee}),
+        "INVALID_TOKENID",
+      );
+
+      // Invalid walletID
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          789, tokenID, amount, {from: owner, value: depositFee}),
+        "INVALID_WALLETID",
+      );
+
       // Everything correct
-      await exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
-        wallet.walletID, tokenID, amount, {from: owner, value: depositFee});
+      const accountID = await createAccountAndDepositChecked(stateID, keyPair, wallet.walletID, tokenID,
+                                                             amount, owner, depositFee, token);
+
+      // Do deposit to the same account with another token
+      token = "WETH";
+      tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
+      amount = new BN(web3.utils.toWei("4.5", "ether"));
+
+      // New balance/approval for another deposit
+      await exchangeTestUtil.setBalanceAndApprove(owner, token, amount);
+
+      // Invalid msg.sender
+      const wrongOwner = exchangeTestUtil.testContext.deployer;
+      await expectThrow(
+        exchange.deposit(stateID, accountID, tokenID, amount, {from: wrongOwner, value: depositFee}),
+        "UNAUTHORIZED",
+      );
+
+      // Invalid accountID
+      await expectThrow(
+        exchange.deposit(stateID, 258, tokenID, amount, {from: owner, value: depositFee}),
+        "INVALID_ACCOUNTID",
+      );
+
+      // Everything correct
+      await depositChecked(stateID, accountID, tokenID, amount, owner, depositFee, token);
+
+      // Change some account info
+      amount = new BN(0);
+      keyPair = exchangeTestUtil.getKeyPairEDDSA();
+
+      // Change the publicKey
+      await depositAndUpdateAccountChecked(stateID, accountID, keyPair, wallet.walletID,
+        tokenID, amount, owner, depositFee, token);
+
+      // Try to change the type of the account
+      const invalidWalletID = wallet.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
+      await expectThrow(
+        exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
+                                         tokenID, amount, {from: owner, value: depositFee}),
+        "INVALID_WALLETID_CHANGE",
+      );
+
+      // Change the walletID
+      wallet = exchangeTestUtil.wallets[stateID][1];
+      await depositAndUpdateAccountChecked(stateID, accountID, keyPair, wallet.walletID,
+        tokenID, amount, owner, depositFee, token);
     });
 
     it("ETH: Deposit", async () => {
@@ -106,8 +260,94 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Everything correct
-      await exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
-        wallet.walletID, tokenID, amount, {from: owner, value: amount.add(depositFee)});
+      await createAccountAndDepositChecked(stateID, keyPair,
+        wallet.walletID, tokenID, amount, owner, depositFee, "ETH");
+    });
+
+    it("Dual-author/wallet account (walletID > 0)", async () => {
+      const stateID = 0;
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const walletA = exchangeTestUtil.wallets[stateID][0];
+      const walletB = exchangeTestUtil.wallets[stateID][1];
+      const walletC = await exchangeTestUtil.createWallet(stateID, walletA.owner);
+      let amount = new BN(0);
+      const token = "ETH";
+      const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
+
+      const depositFee = await exchange.getDepositFee(stateID);
+
+      // The dual-author walletID
+      let walletID = walletA.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
+
+      // Unauthorized msg.sender (not wallet owner)
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          walletID, tokenID, amount, {from: walletB.owner, value: depositFee}),
+        "UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT",
+      );
+
+      // Everything correct
+      const accountID = await createAccountAndDepositChecked(stateID, keyPair, walletID, tokenID,
+                                                             amount, walletA.owner, depositFee, token);
+
+      // Try to change the type of the account
+      let invalidWalletID = walletA.walletID;
+      await expectThrow(
+        exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
+                                         tokenID, amount, {from: walletA.owner, value: depositFee}),
+        "INVALID_WALLETID_CHANGE",
+      );
+
+      // Try to change to a wallet not owned by the current wallet owner
+      invalidWalletID = walletB.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
+      await expectThrow(
+        exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
+                                         tokenID, amount, {from: walletA.owner, value: depositFee}),
+        "UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT",
+      );
+
+      // Change the walletID to a wallet also owned by the previous wallet owner
+      walletID = walletC.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
+      await depositAndUpdateAccountChecked(stateID, accountID, keyPair, walletID,
+        tokenID, amount, walletA.owner, depositFee, token);
+
+      // Try to deposit
+      amount = new BN(web3.utils.toWei("3", "ether"));
+      await expectThrow(
+        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+          walletID, tokenID, amount, {from: walletA.owner, value: depositFee}),
+        "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS",
+      );
+    });
+
+    it("Dual-author/wallet account (walletID == 0)", async () => {
+      const stateID = 0;
+      const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
+      const keyPairB = exchangeTestUtil.getKeyPairEDDSA();
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
+      let amount = new BN(0);
+      const token = "ETH";
+      const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
+
+      const depositFee = await exchange.getDepositFee(stateID);
+
+      // The dual-author walletID for walletID 0
+      const walletID = exchangeTestUtil.MAX_MUM_WALLETS;
+
+      // Anyone can create these accounts
+      const accountIDA = await createAccountAndDepositChecked(stateID, keyPairA, walletID, tokenID,
+                                                              amount, ownerA, depositFee, token);
+
+      const accountIDB = await createAccountAndDepositChecked(stateID, keyPairB, walletID, tokenID,
+                                                              amount, ownerB, depositFee, token);
+
+      // Try to deposit
+      amount = new BN(web3.utils.toWei("3", "ether"));
+      await expectThrow(
+        exchange.deposit(stateID, accountIDA, tokenID, amount, {from: ownerA, value: depositFee}),
+        "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS",
+      );
     });
 
     it("ERC20: deposit + onchain withdrawal", async () => {

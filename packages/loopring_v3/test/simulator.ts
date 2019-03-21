@@ -1,15 +1,44 @@
-import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
-import childProcess = require("child_process");
-import ethUtil = require("ethereumjs-util");
-import path = require("path");
-import * as pjs from "protocol2-js";
-import util = require("util");
-import { Account, Balance, Block, Cancel, CancelBlock, DetailedTokenTransfer, OrderInfo,
-         RingBlock, RingInfo, SimulatorReport, State, TradeHistory, Wallet, Withdrawal,
+import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DetailedTokenTransfer, OrderInfo,
+         RingBlock, RingInfo, SimulatorDepositReport, SimulatorTradeReport, State, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
 export class Simulator {
+
+  public deposit(deposit: Deposit, state: State) {
+    const newState = this.copyState(state);
+    if (state.accounts[deposit.accountID] === undefined) {
+      // Make sure all tokens exist
+      const balances: {[key: number]: Balance} = {};
+      for (let i = 0; i < 2 ** 12; i++) {
+        balances[i] = {
+          balance: new BN(0),
+          tradeHistory: {},
+        };
+      }
+      const emptyAccount: Account = {
+        accountID: deposit.accountID,
+        walletID: 0,
+        publicKeyX: "0",
+        publicKeyY: "0",
+        nonce: 0,
+        balances,
+      };
+      newState.accounts[deposit.accountID] = emptyAccount;
+    }
+    const account = newState.accounts[deposit.accountID];
+    account.balances[deposit.tokenID].balance =
+      account.balances[deposit.tokenID].balance.add(deposit.amount);
+    account.publicKeyX = deposit.publicKeyX;
+    account.publicKeyY = deposit.publicKeyY;
+    account.walletID = deposit.walletID;
+
+    const simulatorReport: SimulatorDepositReport = {
+      stateBefore: state,
+      stateAfter: newState,
+    };
+    return simulatorReport;
+  }
 
   public settleRing(ring: RingInfo, state: State, timestamp: number, operatorAccountID: number) {
     let [fillAmountSA, fillAmountBA] = this.getMaxFillAmounts(ring.orderA, state.accounts[ring.orderA.accountID]);
@@ -131,6 +160,8 @@ export class Simulator {
     // - Operator fee
     ringMatcher.balances[ring.tokenID].balance =
      ringMatcher.balances[ring.tokenID].balance.sub(ring.fee);
+    // Increase nonce
+    ringMatcher.nonce++;
 
     // Update operator
     const operator = newState.accounts[operatorAccountID];
@@ -181,7 +212,7 @@ export class Simulator {
     detailedTransfers.push(...detailedTransfersB);
     detailedTransfers.push(operatorFee);
 
-    const simulatorReport: SimulatorReport = {
+    const simulatorReport: SimulatorTradeReport = {
       stateBefore: state,
       stateAfter: newState,
       detailedTransfers,
@@ -341,6 +372,7 @@ export class Simulator {
       walletID: account.walletID,
       publicKeyX: account.publicKeyX,
       publicKeyY: account.publicKeyY,
+      nonce: account.nonce,
       balances,
     };
     return accountCopy;
