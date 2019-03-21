@@ -19,8 +19,10 @@ pragma solidity 0.5.2;
 
 /// @title IExchange
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IExchange {
+contract IExchange
+{
 
+    // Q(dongw): Should we expose more methods here?
     mapping (address => uint) public burnBalances;
 
     function withdrawBurned(

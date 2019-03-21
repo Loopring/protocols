@@ -24,7 +24,8 @@ import "./MathUint.sol";
 /// @title ERC20 Token Implementation
 /// @dev see https://github.com/ethereum/EIPs/issues/20
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ERC20Token is ERC20, Errors{
+contract ERC20Token is ERC20, Errors
+{
     using MathUint for uint;
 
     string  public name;

@@ -19,7 +19,8 @@ pragma solidity 0.5.2;
 
 /// @title IExchangeHelper
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IExchangeHelper {
+contract IExchangeHelper
+{
 
     function verifyAccountBalance(
         uint256 merkleRoot,

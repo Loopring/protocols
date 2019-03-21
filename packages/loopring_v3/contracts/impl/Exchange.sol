@@ -30,7 +30,8 @@ import "../lib/NoDefaultFunc.sol";
 
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract Exchange is IExchange, NoDefaultFunc {
+contract Exchange is IExchange, NoDefaultFunc
+{
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
@@ -87,7 +88,8 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     event WithdrawBurned(address token, uint amount);
 
-    enum BlockType {
+    enum BlockType
+    {
         TRADE,
         DEPOSIT,
         ONCHAIN_WITHDRAW,
@@ -95,17 +97,20 @@ contract Exchange is IExchange, NoDefaultFunc {
         CANCEL
     }
 
-    enum BlockState {
+    enum BlockState
+    {
         COMMITTED,
         VERIFIED,
         FINALIZED
     }
 
-    struct Wallet {
+    struct Wallet
+    {
         address owner;
     }
 
-    struct Operator {
+    struct Operator
+    {
         address payable owner;
         uint32 ID;
         uint32 activeOperatorIdx;
@@ -113,7 +118,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint32 unregisterTimestamp;
     }
 
-    struct Account {
+    struct Account
+    {
         address owner;
         uint24 walletID;
         bool withdrawn;
@@ -121,13 +127,15 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint publicKeyY;
     }
 
-    struct PendingDeposit {
+    struct PendingDeposit
+    {
         uint24 accountID;
         uint16 tokenID;
         uint96 amount;
     }
 
-    struct DepositBlock {
+    struct DepositBlock
+    {
         bytes32 hash;
         PendingDeposit[] pendingDeposits;
 
@@ -137,7 +145,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint32 timestampFilled;
     }
 
-    struct WithdrawBlock {
+    struct WithdrawBlock
+    {
         bytes32 hash;
 
         uint numWithdrawals;
@@ -146,7 +155,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint32 timestampFilled;
     }
 
-    struct Block {
+    struct Block
+    {
         bytes32 merkleRoot;
 
         bytes32 publicDataHash;
@@ -160,7 +170,8 @@ contract Exchange is IExchange, NoDefaultFunc {
         bytes withdrawals;
     }
 
-    struct State {
+    struct State
+    {
         address owner;
         uint depositFeeInETH;
         uint withdrawFeeInETH;

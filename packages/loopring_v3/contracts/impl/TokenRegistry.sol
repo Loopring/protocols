@@ -27,13 +27,15 @@ import "../lib/NoDefaultFunc.sol";
 
 /// @title An Implementation of ITokenRegistry.
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
+contract TokenRegistry is ITokenRegistry, NoDefaultFunc
+{
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
     event TokenRegistered(address tokenAddress, uint16 tokenID);
 
-    struct Token {
+    struct Token
+    {
         address tokenAddress;
         uint tier;
         uint tierValidUntil;
@@ -101,9 +103,8 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         internal
         returns (uint16)
     {
-        // Q(dongw): should we use Error.ALREADY_REGISTERED?
-        require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
-        require(tokens.length < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
+        require(tokenToTokenID[tokenAddress] == 0, ALREADY_EXIST);
+        require(tokens.length < MAX_NUM_TOKENS, TOKEN_REGISTRY_FULL);
 
         // Add the token to the list
         uint16 tokenID = uint16(tokens.length);
@@ -200,7 +201,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         view
         returns (uint16)
     {
-        require(tokenToTokenID[tokenAddress] != 0, "TOKEN_NOT_REGISTERED");
+        require(tokenToTokenID[tokenAddress] != 0, NOT_FOUND);
         return tokenToTokenID[tokenAddress] - 1;
     }
 
@@ -211,7 +212,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         view
         returns (address)
     {
-        require(tokenID < tokens.length, "INVALID_TOKENID");
+        require(tokenID < tokens.length, INVALID_TOKEN_ID);
         return tokens[tokenID].tokenAddress;
     }
 

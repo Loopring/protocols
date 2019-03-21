@@ -24,7 +24,8 @@ import "../lib/NoDefaultFunc.sol";
 
 /// @title An Implementation of IBlockVerifier.
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract BlockVerifier is IBlockVerifier, NoDefaultFunc {
+contract BlockVerifier is IBlockVerifier, NoDefaultFunc
+{
     uint256[14] vk;
     uint256[] gammaABC;
 
@@ -54,6 +55,8 @@ contract BlockVerifier is IBlockVerifier, NoDefaultFunc {
         return (vk, gammaABC);
     }
 
+
+    // Q(dongw): should this be permissioned?
     function setVerifyingKey(
         uint256[14] memory _vk,
         uint256[] memory _gammaABC

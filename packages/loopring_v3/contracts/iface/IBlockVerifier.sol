@@ -19,7 +19,8 @@ pragma solidity 0.5.2;
 
 /// @title IBlockVerifier
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IBlockVerifier {
+contract IBlockVerifier
+{
 
     function verifyProof(
         bytes32 publicDataHash,

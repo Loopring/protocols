@@ -22,7 +22,8 @@ import "./Ownable.sol";
 /// @title Claimable
 /// @dev Extension for the Ownable contract, where the ownership needs
 ///      to be claimed. This allows the new owner to accept the transfer.
-contract Claimable is Ownable {
+contract Claimable is Ownable
+{
     address public pendingOwner;
 
     /// @dev Modifier throws if called by any account other than the pendingOwner.

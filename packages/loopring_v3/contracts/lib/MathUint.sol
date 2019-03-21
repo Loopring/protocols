@@ -19,7 +19,8 @@ pragma solidity 0.5.2;
 
 /// @title Utility Functions for uint
 /// @author Daniel Wang - <daniel@loopring.org>
-library MathUint {
+library MathUint
+{
 
     function mul(
         uint a,

@@ -24,7 +24,8 @@ import "../lib/NoDefaultFunc.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BurnManager is NoDefaultFunc {
+contract BurnManager is NoDefaultFunc
+{
     using MathUint for uint;
 
     address public exchangeAddress = address(0x0);

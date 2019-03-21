@@ -25,7 +25,8 @@ import "../lib/NoDefaultFunc.sol";
 
 /// @title An Implementation of IExchangeHelper.
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
+contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
+{
     using MathUint          for uint;
 
     function verifyAccountBalance(
@@ -73,20 +74,20 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         returns (uint256)
     {
         uint256[29] memory IVs;
-        FillLevelIVs(IVs);
+        fillLevelIVs(IVs);
 
         uint256[] memory balanceLeafElements = new uint256[](2);
         balanceLeafElements[0] = balance;
         balanceLeafElements[1] = tradeHistoryRoot;
-        uint256 balanceItem = MiMC.Hash(balanceLeafElements, 1);
+        uint256 balanceItem = MiMC.hash(balanceLeafElements, 1);
 
         // Calculate merkle root of balances tree
         uint tokenAddress = tokenID;
         for (uint depth = 0; depth < 12; depth++) {
             if (tokenAddress & 1 == 1) {
-                balanceItem = HashImpl(balancePath[depth], balanceItem, IVs[depth]);
+                balanceItem = hashImpl(balancePath[depth], balanceItem, IVs[depth]);
             } else {
-                balanceItem = HashImpl(balanceItem, balancePath[depth], IVs[depth]);
+                balanceItem = hashImpl(balanceItem, balancePath[depth], IVs[depth]);
             }
             tokenAddress = tokenAddress / 2;
         }
@@ -107,7 +108,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         returns (uint256)
     {
         uint256[29] memory IVs;
-        FillLevelIVs(IVs);
+        fillLevelIVs(IVs);
 
         uint256[] memory accountLeafElements = new uint256[](5);
         accountLeafElements[0] = publicKeyX;
@@ -115,21 +116,21 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         accountLeafElements[2] = walletID;
         accountLeafElements[3] = nonce;
         accountLeafElements[4] = balancesRoot;
-        uint256 accountItem = MiMC.Hash(accountLeafElements, 1);
+        uint256 accountItem = MiMC.hash(accountLeafElements, 1);
 
         uint accountAddress = accountID;
         for (uint depth = 0; depth < 24; depth++) {
             if (accountAddress & 1 == 1) {
-                accountItem = HashImpl(accountPath[depth], accountItem, IVs[depth]);
+                accountItem = hashImpl(accountPath[depth], accountItem, IVs[depth]);
             } else {
-                accountItem = HashImpl(accountItem, accountPath[depth], IVs[depth]);
+                accountItem = hashImpl(accountItem, accountPath[depth], IVs[depth]);
             }
             accountAddress = accountAddress / 2;
         }
         return accountItem;
     }
 
-    function HashImpl (
+    function hashImpl (
         uint256 left,
         uint256 right,
         uint256 IV
@@ -142,10 +143,10 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         x[0] = left;
         x[1] = right;
 
-        return MiMC.Hash(x, IV);
+        return MiMC.hash(x, IV);
     }
 
-    function FillLevelIVs (
+    function fillLevelIVs (
         uint256[29] memory IVs
         )
         internal

@@ -19,7 +19,8 @@ pragma solidity 0.5.2;
 
 /// @title Utility Functions for bytes
 /// @author Daniel Wang - <daniel@loopring.org>
-library BytesUtil {
+library BytesUtil
+{
     function bytesToBytes32(
         bytes memory b,
         uint offset

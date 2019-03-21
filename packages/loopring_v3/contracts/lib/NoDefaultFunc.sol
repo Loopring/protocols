@@ -21,7 +21,8 @@ import "../iface/Errors.sol";
 
 /// @title NoDefaultFunc
 /// @dev Disable default functions.
-contract NoDefaultFunc is Errors {
+contract NoDefaultFunc is Errors
+{
     function ()
         external
         payable

@@ -18,13 +18,15 @@ pragma solidity 0.5.2;
 
 
 /// @title Errors
-contract Errors {
+contract Errors
+{
     string constant ZERO_VALUE                 = "ZERO_VALUE";
     string constant ZERO_ADDRESS               = "ZERO_ADDRESS";
     string constant INVALID_VALUE              = "INVALID_VALUE";
     string constant INVALID_ADDRESS            = "INVALID_ADDRESS";
     string constant INVALID_SIZE               = "INVALID_SIZE";
     string constant INVALID_STATE              = "INVALID_STATE";
+    string constant INVALID_TOKEN_ID           = "INVALID_TOKEN_ID";
     string constant NOT_FOUND                  = "NOT_FOUND";
     string constant ALREADY_EXIST              = "ALREADY_EXIST";
     string constant REENTRY                    = "REENTRY";
@@ -36,5 +38,5 @@ contract Errors {
     string constant BURN_FAILURE               = "BURN_FAILURE";
     string constant BURN_RATE_FROZEN           = "BURN_RATE_FROZEN";
     string constant BURN_RATE_MINIMIZED        = "BURN_RATE_MINIMIZED";
-    string constant NOT_OWNER                  = "NOT_OWNER";
+    string constant TOKEN_REGISTRY_FULL        = "TOKEN_REGISTRY_FULL";
 }

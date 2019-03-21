@@ -19,7 +19,8 @@ pragma solidity 0.5.2;
 
 /// @title ITokenRegistry
 /// @author Brecht Devos - <brecht@loopring.org>
-contract ITokenRegistry {
+contract ITokenRegistry
+{
 
     // Burn rates (in bips - 100bips == 1%)
     uint16 public constant BURNRATE_TIER1            =                  250;  // 2.5%

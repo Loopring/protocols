@@ -23,7 +23,8 @@ import "../lib/Claimable.sol";
 
 /// @title Killable
 /// @dev The Killable contract allows the contract owner to suspend, resume or kill the contract
-contract Killable is Claimable, Errors  {
+contract Killable is Claimable, Errors
+{
 
     bool public suspended = false;
 
