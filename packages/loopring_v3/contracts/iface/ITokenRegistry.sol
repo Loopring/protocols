@@ -21,8 +21,6 @@ pragma solidity 0.5.2;
 /// @author Brecht Devos - <brecht@loopring.org>
 contract ITokenRegistry {
 
-    uint16 public constant BASIC_POINT_BASE       = 10000; // 100%
-
     // Burn rates
     uint16 public constant BURNRATE_TIER1_BIPS    = 250;  // 2.5%
     uint16 public constant BURNRATE_TIER2_BIPS    = 1500; // 15%

@@ -748,7 +748,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         uint amountToOwner = 0;
         if (walletId >= MAX_NUM_WALLETS) {
             uint burnRate = ITokenRegistry(tokenRegistryAddress).getBurnRate(tokenId);
-            amountToBurn = amount.mul(burnRate) / 1000;
+            amountToBurn = amount.mul(burnRate) / 10000;
             amountToOwner = amount - amountToBurn;
         } else {
             amountToBurn = 0;
