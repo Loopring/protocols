@@ -297,6 +297,8 @@ An operator can choose to unregister itself at any time by calling `unregisterOp
 
 The operator needs all the order data to generate the proof. To allow orders to be matched by any criteria by a ringmatcher we need an extra mechanism so operators cannot freely match orders and/or rings if needed.
 
+> [Feedback]: The last sentence above is not clear to me. Are we trying to say operators is not allowed to extract orders from pending settlement requests (sent from ring-matchers) and rematch these orders?
+
 #### Restrict order matching
 
 We use **dual-authoring** here. Orders can only be matched in rings signed by the wallet (or anyone having the necessary keys).
