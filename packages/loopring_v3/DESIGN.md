@@ -311,6 +311,8 @@ We use a **nonce** here. The nonce of the ringmatcher account paying the operato
 
 Note that doing an offchain withdraw also increments the nonce value. A ringmatcher thus may want to limit himself to onchain withdrawals so the nonce value of the account remains the same.
 
+> Since we have blocks for different requests (settlement, deposit, withdrawal, cancellation), does it make sense to use 4 nonce for each type?
+
 #### Only allow cancels/offchain withdrawal requests to be used once by an operator
 
 The **nonce** of the account is increased by 1 for these operations.
