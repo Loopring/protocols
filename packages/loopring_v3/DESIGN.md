@@ -527,6 +527,8 @@ The DEX matches the order with another order, signs the ring using the ringmatch
 - The DEX sends it to the operators of the state. Because these rings need to be settled in a reasonable time the operator needs to call `commitBlock` as soon as possible after receiving rings.
 - The operator generates the proof and calls `proofBlock` within the maximum time allowed
 
+> [Comment]: Seems we need to further seperate wallets from DEX. Lets say they are actually two organization, in order for an order to be matched by a dex, the wallet may need to send the order's dual authoring key together with the order to DEX (just like in protocol 2.0).
+
 The DEX could now show an extra 'Verified" symbol for the order fill.
 
 An order can be in the following states:
