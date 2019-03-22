@@ -485,6 +485,8 @@ We can only efficiently prove circuits with a maximum of 256,000,000 constraints
 
 So in a block we are currently limited by the number of constraints used in the circuit. Verifying a proof costs _only_ ~600,000 gas so this is actually not that bad
 
+> Question: when we submit two proofs, one is for a block of 2 settlements, and one is for a block of 200 settlements, will verifying the two proof take the same amount of time/computation? If the answer is yes, thn we probably wont' be restricted by `256,000,000 / ~650,000`.
+
 ### Proof generation
 
 Haven't done much testing for this. From [Matter Labs](https://medium.com/matter-labs/introducing-matter-testnet-502fab5a6f17):
