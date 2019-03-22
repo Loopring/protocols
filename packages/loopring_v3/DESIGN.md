@@ -292,6 +292,10 @@ Every operator stakes the same amount of LRC to make the onchain logic as cheap 
 An operator can choose to unregister itself at any time by calling `unregisterOperator`. To make sure the operator doesn't have any unproven blocks left an operator can only withdraw the amount he staked after a safe period of time (currently 1 day) by calling `withdrawOperatorStake`.
 
 > [Feedback]: the amount of LRC for staking may actualy vary among operators, if we ever allow this amount to be updated by a super user. For example, if the amount was specified as 100K LRC, then one month later, we decrease it to 80K, then operators who join late will only need to stake 80K instead of 100K, and operators who have staked 100K can actualy unregistere and register again. But if we change the amount from 80K to 100K, previous operators should still be treated valid and equal.
+> 
+> [Question]: Active operators are allowed to commit new blocks, but proof submission can be allowed for all operators in the same time, is that so?
+> 
+> [Feedback]: What's the benefit of such a round-robin approach? What if we allow operators to complete? 
 
 ### Restrictions
 
@@ -323,20 +327,20 @@ The fee paid to the operator is completely independent of the fee paid by the or
 
 > [Feedback]: ringmatchers and operators can reach offchain agreeement about how fees should be paid which is compeletely detached to the protocol (for example, paying fee per settlement using USD). What happends if the fee is paid onchain though the protocol, is it subject to fee-burning?
 
-## Circuit permutations
+## Circuit Permutations
 
 A circuit always does the same. There's no way to do dynamic loops. Let's take the rings settlement circuit as an example:
 - The circuit always settles a fixed number of rings
 - The rings always contain the predetermined number of orders
 
 Currently there are 5 circuits:
-- Trade
+- Trade （aka Settlement)
 - Deposit
 - Offchain withdraw
 - Onchain withdraw
 - Cancel
 
-## Delayed proof submission
+## Delayed Proof Submission
 
 Creating a proof can take a long time. If the proof needs to be available at the same time the state is updated onchain we limit the maximum throughput of the system by the proof generation time. But we don't need the proof immediately. This allows different operators to work together much more efficiently:
 - The selected operator that is allowed to commit work can change quickly. If the operator wants to do work than he can quickly commit that work onchain without needing the time to also generate the proof immediately.
