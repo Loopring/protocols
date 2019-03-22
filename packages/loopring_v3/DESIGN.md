@@ -362,6 +362,8 @@ For safety the order owner can limit the time an order is valid, and increase th
 
 This especially a problem because the operator can set the timestamp that is tested onchain within a certain window (see [here](#validSince--validUntil)). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders. The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants. Order Aliasing fixes this problem.
 
+> [Feedback]: I dont' quite understand this. One question is whether the orderId need to be increment by 1 from 0 or it is a random number which is not safe).
+
 ### The possibility for some simple filling logic between orders
 
 A user could create an order selling X tokenZ for either N tokenA or M tokenB (or even more tokens) while using the same orderID. The user is guaranteed never to spend more than X tokenZ, but will have bought [0, N] tokenA and/or [0, M] tokenA.
