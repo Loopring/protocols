@@ -354,6 +354,8 @@ Proofs do not need to be submitted in order. The proof can be submitted anytime 
 
 Every account has a trading history tree with 2^16 leafs for every token. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities:
 
+> Question: if all 2^16 (65536) leafs are used, can we change the cuircit to trim (reset) the trading-history subtree to the initial state so the same account can be used for more trading?
+
 ### Safely updating the validUntil time of an order
 
 For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely by creating a new order with a new validUntil value, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderID.
