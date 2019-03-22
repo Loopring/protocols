@@ -376,7 +376,11 @@ A realistic use case would be for selling some token for one of the available st
 ## Deposit/Withdraw block handling
 
 Onchain deposit/withdrawal requests are queued in blocks onchain.
+
 - The amount of blocks that can be created in a certain timespan is limited. This is to make sure the operator isn't overwhelmed by these requests and can actually process them. A block can be created every `MIN_TIME_OPEN_BLOCK`.
+
+> Here the `block` concept is different from a blockchain's block and an offchain chunk, right? We may need another term for it.
+
 - A block can only remain open for only a limited time, this is to ensure users don't have to wait an unreasonable amount of time until their request is processed. A block is open when there is at least one request in a block. A block is automatically closed after `MAX_TIME_OPEN_BLOCK` when not full. (Of course, for an operator full blocks are preferred because the circuit is created for a fixed number of requests so the cost to process a block is approximately the same, no matter the number of requests that are actually done in the block.)
 - A block is committable after `MIN_TIME_CLOSED_BLOCK_UNTIL_COMMITTABLE`. This is a short time after the block is closed so that all parties know how the state will be changed.
 - A block needs to be processed after `MAX_TIME_CLOSED_BLOCK_UNTIL_FORCED`. No other work can be committed until the forced block is committed by the operator.
