@@ -404,6 +404,8 @@ Once the block the deposit/withdraw block was committed in is finalized anyone c
 
 **Data availability is ensured for ALL merkle trees for ALL States**.
 
+> [Comment] should we make this an option? For marketing purpose, we can disable this option to claim a much higher thoughput, at leaset for some of our own operators. 
+
 #### Ring settlement data
 For every Ring (2 orders):
 ```
