@@ -135,21 +135,21 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           wallet.walletID, tokenID, amount, {from: owner, value: new BN(0)}),
-        "INCORRECT_ETH_FEE",
+        INVALID_VALUE,
       );
 
       // Not enough ETH
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           wallet.walletID, tokenID, amount, {from: owner, value: depositFee.sub(new BN(1))}),
-        "INCORRECT_ETH_FEE",
+        INVALID_VALUE,
       );
 
       // Too much ETH
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           wallet.walletID, tokenID, amount, {from: owner, value: depositFee.add(new BN(1))}),
-        "INCORRECT_ETH_FEE",
+        INVALID_VALUE,
       );
 
       // Insufficient funds

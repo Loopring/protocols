@@ -50,13 +50,13 @@ contract Exchange is IExchange, NoDefaultFunc
 
     uint32 public constant MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE          = 1 days;     // TESTING
 
-    uint16 public constant NUM_DEPOSITS_IN_BLOCK                 = 8;
-    uint16 public constant NUM_WITHDRAWALS_IN_BLOCK              = 8;
+    uint16 public constant NUM_DEPOSITS_IN_BLOCK                        = 8;
+    uint16 public constant NUM_WITHDRAWALS_IN_BLOCK                     = 8;
 
-    //uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 1 minutes;
-    uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 1 days;        // TESTING
+    //uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS           = 1 minutes;
+    uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS             = 1 days;        // TESTING
 
-    uint public constant MAX_NUM_WALLETS                         = 2 ** 23;
+    uint   public constant MAX_NUM_WALLETS                              = 2 ** 23;
 
     // Default account
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
@@ -67,25 +67,6 @@ contract Exchange is IExchange, NoDefaultFunc
     address public exchangeHelperAddress     = address(0x0);
     address public tokenRegistryAddress      = address(0x0);
     address public blockVerifierAddress      = address(0x0);
-
-    event NewState(uint32 stateID, address owner);
-
-    event OperatorRegistered(address operator, uint32 operatorID);
-    event OperatorUnregistered(address operator, uint32 operatorID);
-
-    event WalletRegistered(address walletOwner, uint24 walletID);
-
-    event Deposit(uint32 stateID, uint32 depositBlockIdx, uint16 slotIdx, uint24 accountID, uint16 tokenID, uint24 walletID, uint96 amount);
-    event Withdraw(uint32 stateID, uint24 accountID, uint16 tokenID, address to, uint96 amount);
-    event WithdrawRequest(uint32 stateID, uint32 withdrawBlockIdx, uint24 accountID, uint16 tokenID, uint96 amount);
-
-    event BlockCommitted(uint32 stateID, uint blockIdx, bytes32 publicDataHash);
-    event BlockFinalized(uint32 stateID, uint blockIdx);
-    event Revert(uint32 stateID, uint blockIdx);
-
-    event BlockFeeWithdraw(uint32 stateID, uint32 blockIdx, address operator, uint amount);
-
-    event WithdrawBurned(address token, uint amount);
 
     enum BlockType
     {
@@ -341,10 +322,17 @@ contract Exchange is IExchange, NoDefaultFunc
             assembly {
                 inputTimestamp := and(mload(add(data, 75)), 0xFFFFFFFF)
             }
-            require(inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
-                    inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS, INVALID_TIMESTAMP);
+            require(
+                inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
+                inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS,
+                INVALID_TIMESTAMP
+            );
         } else if (blockType == uint(BlockType.DEPOSIT)) {
-            require(isDepositBlockCommittable(stateID, numDepositBlocksCommitted), CANNOT_COMMIT_BLOCK_YET);
+            require(
+                isDepositBlockCommittable(stateID, numDepositBlocksCommitted),
+                CANNOT_COMMIT_BLOCK_YET
+            );
+
             DepositBlock storage depositBlock = state.depositBlocks[numDepositBlocksCommitted];
             bytes32 depositBlockHash = depositBlock.hash;
             // Pad the block so it's full
@@ -366,7 +354,11 @@ contract Exchange is IExchange, NoDefaultFunc
             }
             numDepositBlocksCommitted++;
         } else if (blockType == uint(BlockType.ONCHAIN_WITHDRAW)) {
-            require(isWithdrawBlockCommittable(stateID, numWithdrawBlocksCommitted), CANNOT_COMMIT_BLOCK_YET);
+            require(
+                isWithdrawBlockCommittable(stateID, numWithdrawBlocksCommitted),
+                CANNOT_COMMIT_BLOCK_YET
+            );
+
             WithdrawBlock storage withdrawBlock = state.withdrawBlocks[numWithdrawBlocksCommitted];
             bytes32 withdrawBlockHash = withdrawBlock.hash;
             // Pad the block so it's full
@@ -426,8 +418,12 @@ contract Exchange is IExchange, NoDefaultFunc
         Block storage specifiedBlock = state.blocks[blockIdx];
         require(specifiedBlock.state == BlockState.COMMITTED, BLOCK_VERIFIED_ALREADY);
 
-        bool verified = IBlockVerifier(blockVerifierAddress).verifyProof(specifiedBlock.publicDataHash, proof);
-        require(verified, INVALID_PROOF);
+        require(
+            IBlockVerifier(blockVerifierAddress).verifyProof(
+                specifiedBlock.publicDataHash, proof
+            ),
+            INVALID_PROOF
+        );
 
         // Update state of this block and potentially the following blocks
         Block storage previousBlock = state.blocks[blockIdx - 1];
@@ -438,7 +434,9 @@ contract Exchange is IExchange, NoDefaultFunc
             // The number of blocks after the specified block index is limited
             // so we don't have to worry about running out of gas in this loop
             uint nextBlockIdx = blockIdx + 1;
-            while (nextBlockIdx < state.numBlocks && state.blocks[nextBlockIdx].state == BlockState.VERIFIED) {
+            while (nextBlockIdx < state.numBlocks &&
+                state.blocks[nextBlockIdx].state == BlockState.VERIFIED) {
+
                 state.blocks[nextBlockIdx].state = BlockState.FINALIZED;
                 emit BlockFinalized(stateID, nextBlockIdx);
                 nextBlockIdx++;
@@ -518,7 +516,15 @@ contract Exchange is IExchange, NoDefaultFunc
         state.numAccounts++;
         require(state.numAccounts <= 2 ** 24, TOO_MANY_ACCOUNTS);
 
-        depositAndUpdateAccount(stateID, accountID, publicKeyX, publicKeyY, walletID, tokenID, amount);
+        depositAndUpdateAccount(
+            stateID,
+            accountID,
+            publicKeyX,
+            publicKeyY,
+            walletID,
+            tokenID,
+            amount
+        );
 
         return accountID;
     }
@@ -534,7 +540,15 @@ contract Exchange is IExchange, NoDefaultFunc
     {
         State storage state = getState(stateID);
         Account storage account = getAccount(state, accountID);
-        depositAndUpdateAccount(stateID, accountID, account.publicKeyX, account.publicKeyY, account.walletID, tokenID, amount);
+        depositAndUpdateAccount(
+            stateID,
+            accountID,
+            account.publicKeyX,
+            account.publicKeyY,
+            account.walletID,
+            tokenID,
+            amount
+        );
     }
 
     // Allows the account owner to update the walletID and publicKey of the account
@@ -577,18 +591,21 @@ contract Exchange is IExchange, NoDefaultFunc
             require(account.owner == msg.sender, UNAUTHORIZED);
         } else {
             // Don't allow depositing to accounts like this
-            require(amount == 0, "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS");
+            require(amount == 0, CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS);
             // Check if msg.sender is allowed to create accounts for this wallet
             if (targetWalletID > 0) {
-                require(state.wallets[targetWalletID].owner == msg.sender, "UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT");
+                require(
+                    state.wallets[targetWalletID].owner == msg.sender,
+                    UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT
+                );
             }
         }
 
         // Check expected ETH value sent
         if (tokenID != 0) {
-            require(msg.value == state.depositFeeInETH, "INCORRECT_ETH_FEE");
+            require(msg.value == state.depositFeeInETH, INVALID_VALUE);
         } else {
-            require(msg.value == (state.depositFeeInETH + amount), "INCORRECT_ETH_VALUE");
+            require(msg.value == (state.depositFeeInETH + amount), INVALID_VALUE);
         }
 
         // Get the deposit block
@@ -701,7 +718,13 @@ contract Exchange is IExchange, NoDefaultFunc
             withdrawBlock.timestampFilled = uint32(now);
         }
 
-        emit WithdrawRequest(stateID, uint32(state.numWithdrawBlocks - 1), accountID, tokenID, amount);
+        emit WithdrawRequest(
+            stateID,
+            uint32(state.numWithdrawBlocks - 1),
+            accountID,
+            tokenID,
+            amount
+        );
     }
 
     function withdraw(
@@ -962,7 +985,10 @@ contract Exchange is IExchange, NoDefaultFunc
 
         require(operator.unregisterTimestamp > 0, OPERATOR_STILL_REGISTERED);
         require(operator.amountStaked > 0, WITHDRAWN_ALREADY);
-        require(now > operator.unregisterTimestamp + MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW, TOO_EARLY_TO_WITHDRAW);
+        require(
+            now > operator.unregisterTimestamp + MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW,
+            TOO_EARLY_TO_WITHDRAW
+        );
 
         uint amount = operator.amountStaked;
         // Make sure it cannot be withdrawn again
@@ -997,7 +1023,8 @@ contract Exchange is IExchange, NoDefaultFunc
         if(requestedBlock.numDepositBlocksCommitted > previousBlock.numDepositBlocksCommitted) {
             fee = state.depositBlocks[previousBlock.numDepositBlocksCommitted].fee;
             state.depositBlocks[previousBlock.numDepositBlocksCommitted].fee = 0;
-        } else if (requestedBlock.numWithdrawBlocksCommitted > previousBlock.numWithdrawBlocksCommitted) {
+        } else if (
+            requestedBlock.numWithdrawBlocksCommitted > previousBlock.numWithdrawBlocksCommitted) {
             fee = state.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee;
             state.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee = 0;
         } else {
@@ -1079,8 +1106,10 @@ contract Exchange is IExchange, NoDefaultFunc
         //                             when the deposits will be available)
         State storage state = getState(stateID);
         DepositBlock storage depositBlock = state.depositBlocks[state.numDepositBlocks - 1];
-        if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK && now > depositBlock.timestampOpened + MIN_TIME_BLOCK_OPEN) ||
-            (depositBlock.numDeposits > 0 && now > depositBlock.timestampOpened + MAX_TIME_BLOCK_OPEN)) {
+        if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK &&
+            now > depositBlock.timestampOpened + MIN_TIME_BLOCK_OPEN) ||
+            (depositBlock.numDeposits > 0 &&
+                now > depositBlock.timestampOpened + MAX_TIME_BLOCK_OPEN)) {
             return true;
         } else {
             return false;
@@ -1098,8 +1127,12 @@ contract Exchange is IExchange, NoDefaultFunc
         State storage state = getState(stateID);
         assert(depositBlockIdx < state.numDepositBlocks);
         DepositBlock storage depositBlock = state.depositBlocks[depositBlockIdx];
-        if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK && now > depositBlock.timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
-            (depositBlock.numDeposits > 0 && now > depositBlock.timestampOpened + MAX_TIME_BLOCK_OPEN + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
+        if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK &&
+            now > depositBlock.timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
+            (depositBlock.numDeposits > 0 &&
+                now > depositBlock.timestampOpened +
+                MAX_TIME_BLOCK_OPEN +
+                MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
             return true;
         } else {
             return false;
@@ -1117,8 +1150,12 @@ contract Exchange is IExchange, NoDefaultFunc
         State storage state = getState(stateID);
         assert(depositBlockIdx <= state.numDepositBlocks);
         DepositBlock storage depositBlock = state.depositBlocks[depositBlockIdx];
-        if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK && now > depositBlock.timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
-            (depositBlock.numDeposits > 0 && now > depositBlock.timestampOpened + MAX_TIME_BLOCK_OPEN + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
+        if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK &&
+            now > depositBlock.timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
+            (depositBlock.numDeposits > 0 &&
+                now > depositBlock.timestampOpened +
+                MAX_TIME_BLOCK_OPEN +
+                MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
             return true;
         } else {
             return false;
@@ -1157,8 +1194,10 @@ contract Exchange is IExchange, NoDefaultFunc
         //                             when the deposits will be available)
         State storage state = getState(stateID);
         WithdrawBlock storage withdrawBlock = state.withdrawBlocks[state.numWithdrawBlocks - 1];
-        if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK && now > withdrawBlock.timestampOpened + MIN_TIME_BLOCK_OPEN) ||
-            (withdrawBlock.numWithdrawals > 0 && now > withdrawBlock.timestampOpened + MAX_TIME_BLOCK_OPEN)) {
+        if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK &&
+            now > withdrawBlock.timestampOpened + MIN_TIME_BLOCK_OPEN) ||
+            (withdrawBlock.numWithdrawals > 0 &&
+                now > withdrawBlock.timestampOpened + MAX_TIME_BLOCK_OPEN)) {
             return true;
         } else {
             return false;
@@ -1176,8 +1215,12 @@ contract Exchange is IExchange, NoDefaultFunc
         State storage state = getState(stateID);
         assert(withdrawBlockIdx < state.numWithdrawBlocks);
         WithdrawBlock storage withdrawBlock = state.withdrawBlocks[withdrawBlockIdx];
-        if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK && now > withdrawBlock.timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
-            (withdrawBlock.numWithdrawals > 0 && now > withdrawBlock.timestampOpened + MAX_TIME_BLOCK_OPEN + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
+        if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK &&
+            now > withdrawBlock.timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
+            (withdrawBlock.numWithdrawals > 0 &&
+                now > withdrawBlock.timestampOpened +
+                MAX_TIME_BLOCK_OPEN +
+                MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
             return true;
         } else {
             return false;
@@ -1195,8 +1238,12 @@ contract Exchange is IExchange, NoDefaultFunc
         State storage state = getState(stateID);
         assert(withdrawBlockIdx <= state.numWithdrawBlocks);
         WithdrawBlock storage withdrawBlock = state.withdrawBlocks[withdrawBlockIdx];
-        if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK && now > withdrawBlock.timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
-            (withdrawBlock.numWithdrawals > 0 && now > withdrawBlock.timestampOpened + MAX_TIME_BLOCK_OPEN + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
+        if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK &&
+            now > withdrawBlock.timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
+            (withdrawBlock.numWithdrawals > 0 &&
+                now > withdrawBlock.timestampOpened +
+                MAX_TIME_BLOCK_OPEN +
+                MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
             return true;
         } else {
             return false;
@@ -1228,10 +1275,16 @@ contract Exchange is IExchange, NoDefaultFunc
     {
         State storage state = getState(stateID);
         Block storage currentBlock = state.blocks[state.numBlocks - 1];
-        WithdrawBlock storage withdrawBlock = state.withdrawBlocks[currentBlock.numWithdrawBlocksCommitted];
-        DepositBlock storage depositBlock = state.depositBlocks[currentBlock.numDepositBlocksCommitted];
-        return ((withdrawBlock.timestampOpened != 0 && withdrawBlock.timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now) ||
-                (depositBlock.timestampOpened != 0 && depositBlock.timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now));
+        WithdrawBlock storage withdrawBlock =
+            state.withdrawBlocks[currentBlock.numWithdrawBlocksCommitted];
+
+        DepositBlock storage depositBlock =
+            state.depositBlocks[currentBlock.numDepositBlocksCommitted];
+
+        return ((withdrawBlock.timestampOpened != 0 &&
+            withdrawBlock.timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now) ||
+                (depositBlock.timestampOpened != 0 &&
+                    depositBlock.timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now));
     }
 
     function withdrawFromMerkleTree(
@@ -1322,8 +1375,14 @@ contract Exchange is IExchange, NoDefaultFunc
         require (depositBlockIdx >= lastBlock.numDepositBlocksCommitted, BLOCK_COMMITTED_ALREADY);
 
         require(depositBlockIdx < state.numDepositBlocks, INVALID_BLOCK_IDX);
-        require(slotIdx < state.depositBlocks[depositBlockIdx].pendingDeposits.length, INVALID_SLOT_IDX);
-        PendingDeposit storage pendingDeposit = state.depositBlocks[depositBlockIdx].pendingDeposits[slotIdx];
+        require(
+            slotIdx < state.depositBlocks[depositBlockIdx].pendingDeposits.length,
+            INVALID_SLOT_IDX
+        );
+
+        PendingDeposit storage pendingDeposit =
+            state.depositBlocks[depositBlockIdx].pendingDeposits[slotIdx];
+
         uint amount = pendingDeposit.amount;
         require(amount > 0, WITHDRAWN_ALREADY);
 
