@@ -605,3 +605,6 @@ Recap:
 - No collisions
 - Fine-grained order sharing with the possibility of a fee
 - Same order can be shared multiple times in multiple rings with multiple parties
+
+## Withdrawal Mode
+[TBD]
