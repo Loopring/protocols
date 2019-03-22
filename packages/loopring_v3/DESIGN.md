@@ -1,7 +1,7 @@
 
-WIP of protocol 3.0 design.
+# Loopring 3.0
 
-# Intro
+## Intro
 
 For protocol 3 we want to greatly improve the throughput of the protocol. We do this by using zk-SNARKs. As much work as possible is done offchain while we only verify the work onchain.
 
