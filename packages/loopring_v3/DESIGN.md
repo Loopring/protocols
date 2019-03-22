@@ -233,9 +233,9 @@ Wallets can register themselves so they can get a dedicated walletID so they can
 
 The steps needed by a wallet to achieve this:
 - Call `registerWallet` to get a unique walletID and bind the walletID to msg.sender, which will be the owner of the wallet
-- Call `createAccountAndDeposit` and specify as walletID the walletID given above + set the most significant bit of this 3 byte value to 1. Only the msg.sender that registered the wallet can be used to create an account like this.
-- Let users create accounts with the walletID
-- Let users create orders using these accounts and specify as dual-author address the special dual-author account created by the owner of the wallet
+- Call `createAccountAndDeposit` and specify the walletID given above as its own walletID, then set the most significant 3 bits of the accountId to 1. Only the msg.sender that registered the wallet can be used to create an account like this.
+- Let users create accounts with the walletID.
+- Let users create orders using these accounts and specify as dual-author address the special dual-author account created by the owner of the wallet.
 - The circuit will check that the walletID in the account of the user matches the walletID of the wallet/dual-author account.
 
 Without the special dual-author account anyone would be able to use any account, no matter the walletID specified in the account.
@@ -249,7 +249,11 @@ The wallet/dual-author account is used for multiple things:
 
 Note that this reusing of this special account is done for efficiency reasons. The wallet account doesn't need to sign the complete ring, just the order would work just as well. But by using the account also as the dual-author account the circuit is more efficient. This does have the drawback that creating an account for dual-authoring is needed, which costs a bit of gas. If we need unlimited dual-author addresses we should decouple both so that dual-authoring doesn't need an account (by storing the public key directly in the order).
 
-> [Feedback]: Seem the dual-authroing is different form 2.0. In 2.0. each order will have a unique dual-authroring pubKey, but seems in 3.0, different orders can share the same pubKey and the wallet owns the corrsponding private key. If this is true, what if an order is created not by a wallet software do we still support the 2.0-style dual authoring?
+> [Feedback]: In general I don't understand the above paragraphs. It seem the dual-authroing is different form 2.0. In 2.0. each order will have a unique dual-authroring pubKey, but seems in 3.0, different orders can share the same pubKey and the wallet owns the corrsponding private key. If this is true, what if an order is NOT created by a wallet software, do we still support the 2.0-style dual authoring?
+> 
+> Is there a special account type called dual-authoring account, or we can use any account as a dual-authoring account? This is still confusing in the doc.
+> 
+> When we state "wallet/dual-author account", do we really mean "wallet (aka dual-authoring) account"?
 
 ## Ringmatchers
 
