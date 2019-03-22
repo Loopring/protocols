@@ -509,7 +509,9 @@ The DEX can use an existing state so the DEX doesn't need to operate its own ope
 - The DEX also calls `createAccountAndDeposit` to create a dual-author account that can be used to sign off on rings using these accounts. This account will be also be used to receive fees.
 - The DEX calls `createAccountAndDeposit` to create a ringmatcher account to match rings and pay fees to the operator.
 
-> Questions: It seems to me a DEX can join any State without permission.
+> Questions: It seems to me a DEX can join any State without permission. But if an operator wants to join in an existing State, it should get permission from existing operators or the owner of the state.
+> 
+> Feedback: I recommand to rename `createNewState` to `createRealm`, `createAccountAndDeposit` to `createAccount`.
 
 ### Setting up a user
 
