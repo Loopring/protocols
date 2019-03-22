@@ -1,37 +1,37 @@
 
 # Loopring 3.0
 
-## Intro
+## Introduction
+In Loopring Protocol 3 we want to improve the throughput of the protocol significantly. We do this by using zk-SNARKs -- as much work as possible is done offchain, and we only verify the work onchain.
 
-For protocol 3 we want to greatly improve the throughput of the protocol. We do this by using zk-SNARKs. As much work as possible is done offchain while we only verify the work onchain.
+For the best performance, we only support offchain balances. These are balances that are stored in Merkle trees. Users can deposit and withdraw tokens to our smart contracts, and their balance will be updated in the Merkle trees. This way we can transfer tokens between users just by updating the Merkle tree offchain, there is no need for expensive token transfers onchain.
 
-For the best performance we support offchain balances. These are balances that are stored in a merkle tree. Users can deposit and withdraw tokens to the smart contract and their balance is updated in the merkle tree. This way we can transfer tokens between users just by updating the merkle tree offchain, no need for expensive token transfers onchain.
+In the long run, we still want to support onchain transfers due to reasons such as:
 
-In the future, we still want to support onchain transfers:
-- It may not be possible to deposit/withdraw security tokens to the smart contract
-- Users may prefer to keep funds in their normal wallet
+- It may be impossible to deposit/withdraw security tokens to the smart contract
+- Users may prefer to keep funds in their regular wallets for security reasons
 
-Note that there is never any risk of losing funds when depositing to the smart contract. Both options are non-custodial.
+Note that there is never any risk of losing funds when depositing to the smart contract. Both options are trustless and secure.
 
-Data availability for all merkle trees is ensured. Anyone can recreate the merkle trees just by using the data available on the Ethereum blockchain.
+Data availability for all Merkle trees is an option that can be turned on or off by operators. When data availability is enabled, anyone can recreate the Merkle trees just by using the data published onchain.
 
-## New developments
+## New Development
 
 Things change quickly.
 
-One of the main drawbacks of SNARKS compared to STARKS is the trusted setup that is needed. This seems to be largely solved. ([Sonic: Nearly Trustless Setup](https://www.benthamsgaze.org/2019/02/07/introducing-sonic-a-practical-zk-snark-with-a-nearly-trustless-setup/)). It remains to be seen if the better proving times of STARKs will be important in the future or not (proving times for SNARKs may be a non-issue or could be improved as well).
+One of the main drawbacks of SNARKs compared to STARKs is the trusted setup. This problem seems to be largely solved. ([Sonic: Nearly Trustless Setup](https://www.benthamsgaze.org/2019/02/07/introducing-sonic-a-practical-zk-snark-with-a-nearly-trustless-setup/)). It remains to be seen if the better proving times of STARKs will be important in the future or not (proving times for SNARKs may be a non-issue or could be improved as well).
 
-Bellman is also being used more and more instead of libsnark for creating the circuits. They work mostly the same (manually programming the constraints). We should use the library/framework with the best support and best features. Currently I feel this is still libsnark.
+Bellman is also being used more and more instead of libsnark for creating the circuits. They work mostly the same (manually programming the constraints). We should use the library/framework with the best support and best features. Currently, I feel this is still libsnark.
 
-## Trading using offchain balances
+## Trading with Offchain Balances
 
 ### Immediate finality
-Offchain balances are guaranteed to be available for a short time in the future (until a withdrawal). This allows a CEX like experience. A DEX can settle a ring offchain and immediately show the final results to the user without having to wait on the onchain settlement. Using onchain balances, users can modify their balances/allowances directly by interfacing with the ethereum block chain. So finality is only achieved when the ring settlement is done on the ethereum blockchain.
+Offchain balances are guaranteed to be available for a short time in the future (until a withdrawal), which enables a CEX like experience. A DEX can settle a ring offchain and immediately show the final results to the user without having to wait for the onchain settlement confirmation. Using onchain balances, users can modify their balances/allowances directly by interfacing with the blockchain, therefore finality is only achieved when the ring settlement is confirmed onchain.
 
-### Higher throughput/Lower cost
-An offchain token transfer is strictly a small extra cost for generating the proof for updating a merkle tree. The cost of a single onchain token transfer is ~20,000 gas. Checking the balance/allowance of the sender is an extra ~5,000 gas. These costs greatly limit the possible the possible throughput and increases the cost of settling rings.
+### Higher Throughput & Lower Cost
+An offchain token transfer takes only a minimal cost for generating the proof for updating a Merkle tree. The cost of a single onchain token transfer, however, takes roughly 20,000 gas, and checking the balance/allowance of the sender takes roughly other 5,000 gas. These costs significantly limit the possible throughput and increase the cost of rings settlement.
 
-### Concurrent proof generation
+### Concurrent Proof Generation
 If we don't do onchain transfers we don't need the proof immediately when settling rings because we can easily revert the state back by restoring the merkle tree roots. The operator can just call `commitBlock` without a proof, but the operator includes a deposit instead. The operator then needs to submit the proof within some time limit (e.g. 120 seconds) or he loses his deposit (which needs to be substantial). This allows for
 - faster settlement of rings because operators don't need to wait on the proof generation before they can publish the settlements (and thus also the new merkle tree states) onchain.
 - the proof generation can be parallelized. Multiple operators can generate a proof at the same time. This isn't possible otherwise because the initial state needs to be known at proof generation time.
@@ -85,8 +85,8 @@ Creating an account is a special case for depositing. When creating an account a
 ```
 function createAccountAndDeposit(
     uint32 stateID,
-    uint publicKeyX,
-    uint publicKeyY,
+    uint publicKeyX, // the 1st half of user's EdDSA pubkey
+    uint publicKeyY, // the 2nd half of user's EdDSA pubkey
     uint24 walletID,
     uint16 tokenID,
     uint96 amount
@@ -98,6 +98,8 @@ function createAccountAndDeposit(
 
 A walletID (3 bytes) is given that can lock the account to a specific wallet (see [here](#wallets) for more info).
 
+> [feedback]: We may want to remove the wallet id from the account, and add an walletId field to requests (deposit, withdral) and orders. Then one account can actually use multiple wallets.
+
 ## Depositing
 
 This is done by calling the `deposit` function on the smart contract and adding the deposit info to an onchain hash. A fee in ETH is paid for this. The fee amount can be freely set by the state owner. A fee in ETH seems to make sense because the user needs ETH to interact with the smart contract anyway.
@@ -107,6 +109,8 @@ Note that we can **directly support ETH** for trading, no need to wrap it in WET
 We also store the deposit information onchain so users can withdraw these deposited balances in withdrawal mode when they are were not yet added in the Accounts merkle tree.
 
 See [here](#depositwithdraw-block-handling) how blocks are handled.
+
+> [Feedback]: This fee for depositing or creating a new account should also subject to fee-burn.
 
 ## Account info updating
 
@@ -118,11 +122,15 @@ The user lets the operator know either onchain or offchain that he wants to with
 
 Burned fees are stored in the accounts of the wallet. When withdrawing the complete balance of the burned fees is also automatically withdrawn.
 
+> Question(dongw): I don't understand this. Burn should have nothing to do with wallet.
+
 #### Offchain withdrawal
 
 A request for withdrawal is sent offchain to the operator. The operator should include the withdrawal in a reasonable time in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.**
 
 If walletID > 0 than the withdrawal request also needs to be signed by the wallet (so the wallet can keep track of all changes to the account). The wallet can also request a percentage of the fee paid to the operator.
+
+> [Feedback]: I suggest that withdrawal don't need signatures from wallets.
 
 The nonce of the account is increased after the cancel is processed.
 
@@ -156,6 +164,8 @@ If walletID > 0 than the cancel request also needs to be signed by the wallet (s
 
 The nonce of the account is increased after the cancel is processed.
 
+> Question(dongw): how many orders at most can be supported by one single account?
+
 ### Updating the Account info
 
 The account information can be updated with a new public key or a new walletID which can invalidate everything the account is used in.
@@ -171,6 +181,8 @@ If the order never left the DEX and the user trusts the DEX than the order can s
 ## Withdrawal mode
 
 The operator may stop submitting new blocks at any time. When some conditions are met (TBD), all functionality for the state is halted and only withdrawing funds is possible. Anyone is able to withdraw funds from the contract by submitting an inclusion proof in the Accounts merkle tree (the funds will be send to the account owner like usually).
+
+> [Feedback]: We need to finalize those conditions.
 
 ## Signature types
 
