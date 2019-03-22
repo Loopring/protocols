@@ -578,6 +578,8 @@ Automatically sharing orders between DEXs can be problematic, mainly because of 
 
 A solution for this could be dual authoring. But, we don't share the dual author keys with anyone. When a ringmatcher wants to create a ring using orders of wallet A and wallet B then the ring needs to be signed by wallet A **and** wallet B **independently**. This negotiation would be completely offchain.
 
+> Feedback: a wallet may not have a backend to provide order-signing service, a ring-matcher is more likely to have such a service. How can we support 3 roles: wallet, ring-matcher, and operator.
+
 The protocol would be something like this. DEX A signs a ring using orders of DEX A and DEX B and sends it to DEX B. DEX B can now decide if he wants to share the order with DEX A or not in the given ring. If not, DEX B simply sends a message back that there is no deal. If DEX B does want to share the order, he can sign the ring as well. The ring is now signed by DEX A and DEX B (the DEXs of the orders in the ring) and the ring can be sent to the operator for settlement. DEX B now sends the doubly signed ring back to DEX A so the DEX can be sure the ring will be settled (or DEX A could just monitor the rings submitted to the operators).
 
 This process should be very fast. The delay between the initial request and knowing whether the ring can be settled should take at most seconds. DEXs also know exactly the state each order is in or is going to be in because every shared order still needs to pass through the DEX it is from.
