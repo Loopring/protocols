@@ -2,6 +2,7 @@
 # Loopring 3.0
 
 > [Feedback]: We may want to use term `Chunk` for any offchain blocks and use `Block` as those onchain blocks. This will be less confusing.
+> `State` is also too general, we may want to use `Realm` or something more specific.
 
 ## Introduction
 In Loopring Protocol 3 we want to improve the throughput of the protocol significantly. We do this by using zk-SNARKs -- as much work as possible is done offchain, and we only verify the work onchain.
