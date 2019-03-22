@@ -135,21 +135,21 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           wallet.walletID, tokenID, amount, {from: owner, value: new BN(0)}),
-        "INCORRECT_ETH_FEE",
+        INVALID_VALUE,
       );
 
       // Not enough ETH
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           wallet.walletID, tokenID, amount, {from: owner, value: depositFee.sub(new BN(1))}),
-        "INCORRECT_ETH_FEE",
+        INVALID_VALUE,
       );
 
       // Too much ETH
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           wallet.walletID, tokenID, amount, {from: owner, value: depositFee.add(new BN(1))}),
-        "INCORRECT_ETH_FEE",
+        INVALID_VALUE,
       );
 
       // Insufficient funds
@@ -157,7 +157,7 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           wallet.walletID, tokenID, amount, {from: owner, value: depositFee}),
-        "INSUFFICIENT_FUNDS",
+        "INSUFFICIENT_FUND",
       );
 
       // Set the correct balance/approval
@@ -218,7 +218,7 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
                                          tokenID, amount, {from: owner, value: depositFee}),
-        "INVALID_WALLETID_CHANGE",
+        "INVALID_WALLET_ID_CHANGE",
       );
 
       // Change the walletID
@@ -295,7 +295,7 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
                                          tokenID, amount, {from: walletA.owner, value: depositFee}),
-        "INVALID_WALLETID_CHANGE",
+        "INVALID_WALLET_ID_CHANGE",
       );
 
       // Try to change to a wallet not owned by the current wallet owner

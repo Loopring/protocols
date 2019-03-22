@@ -66,7 +66,7 @@ contract("Exchange", (accounts: string[]) => {
       // Try to withdraw again
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(stateID, accountID, token),
-        "ALREADY_WITHDRAWN",
+        "WITHDRAWN_ALREADY",
       );
     });
 
@@ -104,7 +104,7 @@ contract("Exchange", (accounts: string[]) => {
       // Try to withdraw again
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(stateID, accountID, token),
-        "ALREADY_WITHDRAWN",
+        "WITHDRAWN_ALREADY",
       );
     });
 
@@ -159,13 +159,13 @@ contract("Exchange", (accounts: string[]) => {
       // Try to withdraw a deposit on a non-finalized block
       await expectThrow(
         exchangeTestUtil.withdrawFromPendingDeposit(stateID, depositInfoC.depositBlockIdx, depositInfoC.slotIdx),
-        "LAST_BLOCK_NOT_FINALIZED",
+        "PREV_BLOCK_NOT_FINALIZED",
       );
 
       // Cannot revert to a non-finalized block
       await expectThrow(
         exchangeTestUtil.revertBlock(stateID, finalizedBlockIdx + 2),
-        "PREVIOUS_BLOCK_NOT_FINALIZED",
+        "PREV_BLOCK_NOT_FINALIZED",
       );
 
       // Revert back to finalized state
@@ -177,7 +177,7 @@ contract("Exchange", (accounts: string[]) => {
       // Cannot withdraw from deposit blocks that are included in a block
       await expectThrow(
         exchangeTestUtil.withdrawFromPendingDeposit(stateID, depositInfoA.depositBlockIdx, depositInfoA.slotIdx),
-        "DEPOSIT_BLOCK_WAS_COMMITTED",
+        "BLOCK_COMMITTED_ALREADY",
       );
       // We should be in withdrawal mode and able to withdraw from the pending deposits
       await withdrawFromPendingDepositChecked(stateID, depositInfoB.depositBlockIdx, depositInfoB.slotIdx,
@@ -190,7 +190,7 @@ contract("Exchange", (accounts: string[]) => {
       // Try to withdraw again
       await expectThrow(
         exchangeTestUtil.withdrawFromPendingDeposit(stateID, depositInfoC.depositBlockIdx, depositInfoC.slotIdx),
-        "ALREADY_WITHDRAWN",
+        "WITHDRAWN_ALREADY",
       );
     });
 

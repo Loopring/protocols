@@ -1,4 +1,4 @@
-// Taken from ethsnarks
+// This code is taken from ethsnarks
 
 // Copyright (c) 2018 HarryR
 // License: LGPL-3.0+

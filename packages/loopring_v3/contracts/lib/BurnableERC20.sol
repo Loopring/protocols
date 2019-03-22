@@ -21,7 +21,8 @@ import "./ERC20.sol";
 
 /// @title Burnable ERC20 Token Interface
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BurnableERC20 is ERC20 {
+contract BurnableERC20 is ERC20
+{
     function burn(
         uint256 value
         )

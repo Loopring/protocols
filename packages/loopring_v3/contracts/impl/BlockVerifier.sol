@@ -18,13 +18,15 @@ pragma solidity 0.5.2;
 
 import "../iface/IBlockVerifier.sol";
 
-import "../lib/Verifier.sol";
 import "../lib/NoDefaultFunc.sol";
+
+import "../thirdparty/Verifier.sol";
 
 
 /// @title An Implementation of IBlockVerifier.
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract BlockVerifier is IBlockVerifier, NoDefaultFunc {
+contract BlockVerifier is IBlockVerifier, NoDefaultFunc
+{
     uint256[14] vk;
     uint256[] gammaABC;
 
@@ -43,6 +45,7 @@ contract BlockVerifier is IBlockVerifier, NoDefaultFunc {
         uint256[] memory _vk_gammaABC;
         (_vk, _vk_gammaABC) = getVerifyingKey();
 
+        // Q(dongw): can we use `vk` and `grammaABC` directly here?
         return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
     }
 
@@ -54,6 +57,8 @@ contract BlockVerifier is IBlockVerifier, NoDefaultFunc {
         return (vk, gammaABC);
     }
 
+
+    // Q(dongw): should this be permissioned?
     function setVerifyingKey(
         uint256[14] memory _vk,
         uint256[] memory _gammaABC

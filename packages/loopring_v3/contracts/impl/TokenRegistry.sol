@@ -20,20 +20,21 @@ import "../iface/ITokenRegistry.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
-
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
 
 /// @title An Implementation of ITokenRegistry.
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
+contract TokenRegistry is ITokenRegistry, NoDefaultFunc
+{
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
     event TokenRegistered(address tokenAddress, uint16 tokenID);
 
-    struct Token {
+    struct Token
+    {
         address tokenAddress;
         uint tier;
         uint tierValidUntil;
@@ -100,8 +101,8 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         internal
         returns (uint16)
     {
-        require(tokenToTokenID[tokenAddress] == 0, "ALREADY_REGISTERED");
-        require(tokens.length < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
+        require(tokenToTokenID[tokenAddress] == 0, ALREADY_EXIST);
+        require(tokens.length < MAX_NUM_TOKENS, TOKEN_REGISTRY_FULL);
 
         // Add the token to the list
         uint16 tokenID = uint16(tokens.length);
@@ -111,6 +112,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
             0
         );
         tokens.push(token);
+
         tokenToTokenID[tokenAddress] = tokenID + 1;
         emit TokenRegistered(tokenAddress, tokenID);
 
@@ -173,10 +175,10 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         // Can't upgrade to a higher level than tier 1
         require(currentTier > 1, BURN_RATE_MINIMIZED);
 
-        // Burn TIER_UPGRADE_COST_PERCENTAGE of total LRC supply
+        // Burn TIER_UPGRADE_COST_BIPS of total LRC supply
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         uint totalSupply = LRC.totalSupply();
-        uint amount = totalSupply.mul(TIER_UPGRADE_COST_PERCENTAGE) / BURN_BASE_PERCENTAGE;
+        uint amount = totalSupply.mul(TIER_UPGRADE_COST_BIPS) / 10000;
         bool success = LRC.burnFrom(msg.sender, amount);
         require(success, BURN_FAILURE);
 
@@ -197,7 +199,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         view
         returns (uint16)
     {
-        require(tokenToTokenID[tokenAddress] != 0, "TOKEN_NOT_REGISTERED");
+        require(tokenToTokenID[tokenAddress] != 0, NOT_FOUND);
         return tokenToTokenID[tokenAddress] - 1;
     }
 
@@ -208,7 +210,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc {
         view
         returns (address)
     {
-        require(tokenID < tokens.length, "INVALID_TOKENID");
+        require(tokenID < tokens.length, INVALID_TOKEN_ID);
         return tokens[tokenID].tokenAddress;
     }
 

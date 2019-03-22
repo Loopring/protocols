@@ -98,7 +98,7 @@ contract("Exchange", (accounts: string[]) => {
       // Try to unregister an operator twice
       await expectThrow(
         exchange.unregisterOperator(stateID, operatorC.operatorID, {from: operatorC.owner}),
-        "OPERATOR_ALREADY_UNREGISTERED",
+        "OPERATOR_UNREGISTERED_ALREADY",
       );
     });
 
@@ -142,7 +142,7 @@ contract("Exchange", (accounts: string[]) => {
       // Try to withdraw again
       await expectThrow(
         exchange.withdrawOperatorStake(web3.utils.toBN(stateID), operator.operatorID),
-        "ALREADY_WITHDRAWN",
+        "WITHDRAWN_ALREADY",
       );
     });
 

@@ -50,7 +50,7 @@ contract("Claimable", (accounts: string[]) => {
   describe("anyone", () => {
 
     it("should not be able to transfer ownership", async () => {
-      await expectThrow(claimable.transferOwnership(owner2, {from: owner2}), "NOT_OWNER");
+      await expectThrow(claimable.transferOwnership(owner2, {from: owner2}), "UNAUTHORIZED");
     });
 
     it("should not be able to claim ownership", async () => {

@@ -20,7 +20,8 @@ pragma solidity 0.5.2;
 /// @title ERC20 Token Interface
 /// @dev see https://github.com/ethereum/EIPs/issues/20
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ERC20 {
+contract ERC20
+{
     function totalSupply()
         public
         view
