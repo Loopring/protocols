@@ -66,6 +66,8 @@ Burnrates are stored onchain in `TokenRegistry`. 3 tokens are pre-registered and
 
 ![Accounts tree](https://i.imgur.com/0FyNcRo.png)
 
+(burnBalance is not part anymore of the Balance leaf, please ignore this value)
+
 I went through a lot of iterations for the merkle tree structure, currently the one shown above is used. There's a lot of ways the merkle tree can be structured (or can be even split up in multiple trees, like a separate tree for the trading history, or a separate tree for the fees). I think the one above has a good balance between complexity, proving times and user-friendliness.
 
 - Only a single account needed for all tokens that are or will be registered
