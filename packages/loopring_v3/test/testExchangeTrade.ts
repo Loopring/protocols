@@ -803,6 +803,7 @@ contract("Exchange", (accounts: string[]) => {
     it("Separate state", async () => {
       const stateID = await exchangeTestUtil.createNewState(
         exchangeTestUtil.testContext.stateOwners[1],
+        true,
         1,
         new BN(web3.utils.toWei("0.0001", "ether")),
         new BN(web3.utils.toWei("0.0001", "ether")),

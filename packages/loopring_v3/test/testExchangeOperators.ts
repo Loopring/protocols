@@ -72,14 +72,14 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Register operator", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], 0);
+      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], true, 0);
       await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[0]);
       await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[1]);
       await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[2]);
     });
 
     it("Unregister operator", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], 0);
+      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], true, 0);
 
       const operatorA = await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[0]);
       const operatorB = await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[1]);
@@ -103,7 +103,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Withdraw operator stake", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], 0);
+      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], true, 0);
 
       // Register an operator
       const operator = await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[0]);
@@ -147,7 +147,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Register operator with insufficient stake amount", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], 0);
+      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], true, 0);
       const owner = exchangeTestUtil.testContext.stateOwners[0];
 
       // No funds

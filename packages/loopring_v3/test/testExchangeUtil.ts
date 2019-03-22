@@ -103,6 +103,7 @@ export class ExchangeTestUtil {
 
     await this.createNewState(
       this.testContext.deployer,
+      true,
       5,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether")),
@@ -492,6 +493,7 @@ export class ExchangeTestUtil {
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
     this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[stateID], accountID, tokenID, amount,
                               dualAuthAccountID, feeTokenID, fee, walletSplitPercentage);
+    return this.pendingOffchainWithdrawalRequests[stateID][this.pendingOffchainWithdrawalRequests[stateID].length - 1];
   }
 
   public async requestWithdrawalOnchain(stateID: number, accountID: number, token: string,
@@ -504,14 +506,13 @@ export class ExchangeTestUtil {
     let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawSlots(web3.utils.toBN(stateID))).toNumber();
     console.log("numAvailableSlots: " + numAvailableSlots);
     if (numAvailableSlots === 0) {
-        const timeToWait = (await this.exchange.MIN_TIME_OPEN_DEPOSIT_BLOCK()).toNumber();
+        const timeToWait = (await this.exchange.MIN_TIME_BLOCK_OPEN()).toNumber();
         await this.advanceBlockTimestamp(timeToWait);
         numAvailableSlots = (await this.exchange.getNumAvailableWithdrawSlots(web3.utils.toBN(stateID))).toNumber();
         console.log("numAvailableSlots: " + numAvailableSlots);
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
-    const txOrigin = (owner === this.zeroAddress) ? this.testContext.orderOwners[0] : owner;
     const withdrawFee = await this.exchange.getWithdrawFee(stateID);
 
     // Submit the withdraw request
@@ -520,18 +521,20 @@ export class ExchangeTestUtil {
       web3.utils.toBN(accountID),
       web3.utils.toBN(tokenID),
       web3.utils.toBN(amount),
-      {from: txOrigin, value: withdrawFee},
+      {from: owner, value: withdrawFee},
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawRequest", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.withdrawBlockIdx];
+      return [eventObj.args.withdrawBlockIdx, eventObj.args.slotIdx];
     });
     const withdrawBlockIdx = items[0][0].toNumber();
+    const slotIdx = items[0][1].toNumber();
 
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[stateID],
-                              accountID, tokenID, amount, 0, tokenID, new BN(0), 0, withdrawBlockIdx);
+                              accountID, tokenID, amount, 0, tokenID, new BN(0), 0, withdrawBlockIdx, slotIdx);
+    return this.pendingOnchainWithdrawalRequests[stateID][this.pendingOnchainWithdrawalRequests[stateID].length - 1];
   }
 
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
@@ -565,9 +568,9 @@ export class ExchangeTestUtil {
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
                               accountID: number, tokenID: number, amount: BN,
                               dualAuthAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number,
-                              withdrawBlockIdx?: number) {
+                              withdrawBlockIdx?: number, slotIdx?: number) {
     withdrawalRequests.push({accountID, tokenID, amount, dualAuthAccountID,
-                             feeTokenID, fee, walletSplitPercentage, withdrawBlockIdx});
+                             feeTokenID, fee, walletSplitPercentage, withdrawBlockIdx, slotIdx});
   }
 
   public sendRing(stateID: number, ring: RingInfo) {
@@ -894,8 +897,19 @@ export class ExchangeTestUtil {
         await this.advanceBlockTimestamp(timeToWait);
       }
 
+      // Store state before
+      const currentBlockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
+      const stateBefore = await this.loadState(stateID, currentBlockIdx);
+
       const jWithdrawalsInfo = JSON.stringify(withdrawalBlock, replacer, 4);
       const [blockIdx, blockFilename] = await this.createBlock(stateID, blockType, jWithdrawalsInfo);
+
+      // Store state after
+      const stateAfter = await this.loadState(stateID, currentBlockIdx + 1);
+
+      // Validate state change
+      this.validateWithdrawals(withdrawalBlock, stateBefore, stateAfter);
+
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
       bs.addNumber(block.stateID, 4);
@@ -1211,6 +1225,7 @@ export class ExchangeTestUtil {
 
   public async createNewState(
       owner: string,
+      bSetupTestState: boolean = true,
       numOperators: number = 1,
       depositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
       withdrawFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
@@ -1232,7 +1247,9 @@ export class ExchangeTestUtil {
     });
     const stateID = items[0][0].toNumber();
 
-    await this.setupTestState(stateID, numOperators);
+    if (bSetupTestState) {
+      await this.setupTestState(stateID, numOperators);
+    }
 
     return stateID;
   }
@@ -1487,6 +1504,31 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
+    console.log("----------------------------------------------------");
+  }
+
+  public validateWithdrawals(withdrawBlock: WithdrawBlock, stateBefore: State, stateAfter: State) {
+    console.log("----------------------------------------------------");
+    /*const operatorAccountID = withdrawBlock.operatorAccountID;
+    let latestState = stateBefore;
+    for (const withdrawal of withdrawBlock.withdrawals) {
+      const simulator = new Simulator();
+      const simulatorReport = simulator.withdraw(withdrawBlock, latestState);
+
+      let accountBefore = latestState.accounts[withdrawal.accountID];
+      const accountAfter = simulatorReport.stateAfter.accounts[withdrawal.accountID];
+
+      this.prettyPrintBalanceChange(
+        withdrawal.accountID, withdrawal.tokenID,
+        accountBefore.balances[i].balance,
+        accountAfter.balances[i].balance,
+      );
+
+      latestState = simulatorReport.stateAfter;
+    }
+
+    // Verify resulting state
+    this.compareStates(stateAfter, latestState);*/
     console.log("----------------------------------------------------");
   }
 

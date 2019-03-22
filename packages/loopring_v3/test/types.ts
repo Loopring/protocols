@@ -85,6 +85,7 @@ export interface WithdrawalRequest {
   walletSplitPercentage: number;
 
   withdrawBlockIdx?: number;
+  slotIdx?: number;
 }
 
 export interface Withdrawal {
@@ -172,6 +173,11 @@ export interface SimulatorTradeReport {
 }
 
 export interface SimulatorDepositReport {
+  stateBefore: State;
+  stateAfter: State;
+}
+
+export interface SimulatorWithdrawReport {
   stateBefore: State;
   stateAfter: State;
 }

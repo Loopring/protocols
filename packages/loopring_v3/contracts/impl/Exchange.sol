@@ -77,7 +77,7 @@ contract Exchange is IExchange, NoDefaultFunc {
 
     event Deposit(uint32 stateID, uint32 depositBlockIdx, uint16 slotIdx, uint24 accountID, uint16 tokenID, uint24 walletID, uint96 amount);
     event Withdraw(uint32 stateID, uint24 accountID, uint16 tokenID, address to, uint96 amount);
-    event WithdrawRequest(uint32 stateID, uint32 withdrawBlockIdx, uint24 accountID, uint16 tokenID, uint96 amount);
+    event WithdrawRequest(uint32 stateID, uint32 withdrawBlockIdx, uint16 slotIdx, uint24 accountID, uint16 tokenID, uint96 amount);
 
     event BlockCommitted(uint32 stateID, uint blockIdx, bytes32 publicDataHash);
     event BlockFinalized(uint32 stateID, uint blockIdx);
@@ -476,7 +476,7 @@ contract Exchange is IExchange, NoDefaultFunc {
             unregisterOperatorInternal(stateID, specifiedBlock.operatorID);
         }
 
-        // Remove all blocks after and including blockIdx;
+        // Remove all blocks after and including blockIdx
         state.numBlocks = blockIdx;
 
         emit Revert(stateID, blockIdx);
@@ -657,7 +657,7 @@ contract Exchange is IExchange, NoDefaultFunc {
         require(msg.value == state.withdrawFeeInETH, "WRONG_ETH_VALUE");
 
         Account storage account = getAccount(state, accountID);
-        // Allow anyone to withdraw wallet fees
+        // Allow anyone to withdraw from fee accounts
         if (account.walletID < MAX_NUM_WALLETS) {
             require(account.owner == msg.sender, "UNAUTHORIZED");
         }
@@ -690,13 +690,16 @@ contract Exchange is IExchange, NoDefaultFunc {
             withdrawBlock.timestampFilled = uint32(now);
         }
 
-        emit WithdrawRequest(stateID, uint32(state.numWithdrawBlocks - 1), accountID, tokenID, amount);
+        emit WithdrawRequest(
+            stateID, uint32(state.numWithdrawBlocks - 1), uint16(withdrawBlock.numWithdrawals - 1),
+            accountID, tokenID, amount
+        );
     }
 
     function withdraw(
         uint32 stateID,
         uint blockIdx,
-        uint withdrawalIdx
+        uint slotIdx
         )
         external
     {
@@ -704,16 +707,21 @@ contract Exchange is IExchange, NoDefaultFunc {
 
         require(blockIdx < state.numBlocks, "INVALID_BLOCKIDX");
         Block storage withdrawBlock = state.blocks[blockIdx];
+
+        // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
+        // Get the withdraw data of the given slot
         // TODO: optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 4 + 32 + 32 + 3 + 32 + (3 + 2 + 12) * (withdrawalIdx + 1);
-        require(offset < withdrawals.length + 32, "INVALID_WITHDRAWALIDX");
+        uint offset = 4 + 32 + 32 + 3 + 32 + (3 + 2 + 12) * (slotIdx + 1);
+        require(offset < withdrawals.length + 32, "INVALID_SLOTIDX");
         uint data;
         assembly {
             data := mload(add(withdrawals, offset))
         }
+
+        // Extract the data
         uint24 accountID = uint24((data / 0x10000000000000000000000000000) & 0xFFFFFF);
         uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
         uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
@@ -775,7 +783,9 @@ contract Exchange is IExchange, NoDefaultFunc {
         }
     }
 
-    function registerWallet(uint32 stateID)
+    function registerWallet(
+        uint32 stateID
+        )
         external
     {
         // State cannot be in withdraw mode

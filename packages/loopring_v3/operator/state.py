@@ -857,18 +857,10 @@ class State(object):
         nonce = accountBefore.nonce
         proof = self._accountsTree.createProof(accountID)
 
-        feeBalance = int(self.getAccount(accountID).getBalance(feeTokenID))
-        print("feeBalance: " + str(feeBalance))
-        print("fee: " + str(fee))
         balanceUpdateF_A = self.getAccount(accountID).updateBalance(feeTokenID, -fee)
 
         balance = int(self.getAccount(accountID).getBalance(tokenID))
-        print("balance: " + str(balance))
         amountWithdrawn = int(amount) if (int(amount) < balance) else balance
-        print("Withdraw: " + str(amountWithdrawn) + " (requested: " + str(amount) + ")")
-
-        totalAmountWithdrawn = amountWithdrawn
-        print("totalAmountWithdrawn: " + str(totalAmountWithdrawn))
 
         balanceUpdateW_A = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn)
         if not onchain:
@@ -905,7 +897,7 @@ class State(object):
                                 walletAccount.walletID, dualAuthAccountID,
                                 operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                                 nonce,
-                                totalAmountWithdrawn,
+                                amountWithdrawn,
                                 balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                 balanceUpdateF_W, accountUpdate_W,
                                 balanceUpdateF_O)

@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DetailedTokenTransfer, OrderInfo,
-         RingBlock, RingInfo, SimulatorDepositReport, SimulatorTradeReport, State, TradeHistory, Wallet, Withdrawal,
-         WithdrawalRequest, WithdrawBlock } from "./types";
+         RingBlock, RingInfo, SimulatorDepositReport, SimulatorTradeReport, SimulatorWithdrawReport,
+         State, TradeHistory, Wallet, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
 
 export class Simulator {
 
@@ -34,6 +34,28 @@ export class Simulator {
     account.walletID = deposit.walletID;
 
     const simulatorReport: SimulatorDepositReport = {
+      stateBefore: state,
+      stateAfter: newState,
+    };
+    return simulatorReport;
+  }
+
+  public withdraw(withdrawal: WithdrawalRequest, state: State) {
+    const newState = this.copyState(state);
+
+    const feeToWallet = withdrawal.fee.mul(new BN(withdrawal.walletSplitPercentage)).div(new BN(100));
+    const feeToOperator = withdrawal.fee.sub(feeToWallet);
+
+    const account = newState.accounts[withdrawal.accountID];
+
+    const balance = account.balances[withdrawal.tokenID].balance;
+    const amountToWithdraw = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
+
+    // Update balance
+    account.balances[withdrawal.tokenID].balance =
+      account.balances[withdrawal.tokenID].balance.sub(amountToWithdraw);
+
+    const simulatorReport: SimulatorWithdrawReport = {
       stateBefore: state,
       stateAfter: newState,
     };
