@@ -188,19 +188,19 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: new BN(0)}),
-        "INCORRECT_ETH_FEE",
+        "INVALID_VALUE",
       );
       // Not enough ETH
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: depositFee.sub(new BN(1))}),
-        "INCORRECT_ETH_FEE",
+        "INVALID_VALUE",
       );
       // Too much ETH
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: depositFee.add(new BN(1))}),
-        "INCORRECT_ETH_FEE",
+        "INVALID_VALUE",
       );
 
       // Insufficient funds
@@ -208,7 +208,7 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: depositFee}),
-        "INSUFFICIENT_FUNDS",
+        "INSUFFICIENT_FUND",
       );
 
       // Set the correct balance/approval
@@ -269,7 +269,7 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
                                          tokenID, amount, {from: owner, value: depositFee}),
-        "INVALID_WALLETID_CHANGE",
+        "INVALID_WALLET_ID_CHANGE",
       );
 
       // Change the walletID
@@ -347,7 +347,7 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
                                          tokenID, amount, {from: walletA.owner, value: depositFee}),
-        "INVALID_WALLETID_CHANGE",
+        "INVALID_WALLET_ID_CHANGE",
       );
 
       // Try to change to a wallet not owned by the current wallet owner
@@ -425,17 +425,17 @@ contract("Exchange", (accounts: string[]) => {
       // No ETH sent
       await expectThrow(
         exchange.requestWithdraw(stateID, accountID, tokenID, toWithdraw, {from: ownerA, value: new BN(0)}),
-        "WRONG_ETH_VALUE",
+        "INVALID_VALUE",
       );
       // Not enough ETH sent
       await expectThrow(
         exchange.requestWithdraw(stateID, accountID, tokenID, toWithdraw, {from: ownerA, value: withdrawFee.sub(one)}),
-        "WRONG_ETH_VALUE",
+        "INVALID_VALUE",
       );
       // too much ETH sent
       await expectThrow(
         exchange.requestWithdraw(stateID, accountID, tokenID, toWithdraw, {from: ownerA, value: withdrawFee.add(one)}),
-        "WRONG_ETH_VALUE",
+        "INVALID_VALUE",
       );
 
       // Only the account owner can request a withdrawal
@@ -447,7 +447,7 @@ contract("Exchange", (accounts: string[]) => {
       // Try to withdraw nothing
       await expectThrow(
         exchange.requestWithdraw(stateID, accountID, tokenID, new BN(0), {from: ownerB, value: withdrawFee}),
-        "CANNOT_WITHDRAW_NOTHING",
+        "INVALID_VALUE",
       );
 
       // Do the request

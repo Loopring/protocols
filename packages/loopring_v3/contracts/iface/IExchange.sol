@@ -19,7 +19,82 @@ pragma solidity 0.5.2;
 
 /// @title IExchange
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IExchange {
+contract IExchange
+{
+    event NewState(
+        uint32 stateID,
+        address owner
+    );
+
+    event OperatorRegistered(
+        address operator,
+        uint32 operatorID
+    );
+
+    event OperatorUnregistered(
+        address operator,
+        uint32 operatorID
+    );
+
+    event WalletRegistered(
+        address walletOwner,
+        uint24 walletID
+    );
+
+    event Deposit(
+        uint32 stateID,
+        uint32 depositBlockIdx,
+        uint16 slotIdx,
+        uint24 accountID,
+        uint16 tokenID,
+        uint24 walletID,
+        uint96 amount
+    );
+
+    event Withdraw(
+        uint32 stateID,
+        uint24 accountID,
+        uint16 tokenID,
+        address to,
+        uint96 amount
+    );
+
+    event WithdrawRequest(
+        uint32 stateID,
+        uint32 withdrawBlockIdx,
+        uint16 slotIdx,
+        uint24 accountID,
+        uint16 tokenID,
+        uint96 amount
+    );
+
+    event BlockCommitted(
+        uint32 stateID,
+        uint blockIdx,
+        bytes32 publicDataHash
+    );
+
+    event BlockFinalized(
+        uint32 stateID,
+        uint blockIdx
+    );
+
+    event Revert(
+        uint32 stateID,
+        uint blockIdx
+    );
+
+    event BlockFeeWithdraw(
+        uint32 stateID,
+        uint32 blockIdx,
+        address operator,
+        uint amount
+    );
+
+    event WithdrawBurned(
+        address token,
+        uint amount
+    );
 
     mapping (address => uint) public burnBalances;
 

@@ -19,26 +19,28 @@ pragma solidity 0.5.2;
 import "../iface/IExchangeHelper.sol";
 
 import "../lib/MathUint.sol";
-import "../lib/MiMC.sol";
 import "../lib/NoDefaultFunc.sol";
+
+import "../thirdparty/MiMC.sol";
 
 
 /// @title An Implementation of IExchangeHelper.
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
-    using MathUint          for uint;
+contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
+{
+    using MathUint for uint;
 
     function verifyAccountBalance(
         uint256 merkleRoot,
-        uint24 accountID,
-        uint16 tokenID,
+        uint24  accountID,
+        uint16  tokenID,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
         uint256 publicKeyX,
         uint256 publicKeyY,
-        uint24 walletID,
-        uint32 nonce,
-        uint96 balance,
+        uint24  walletID,
+        uint32  nonce,
+        uint96  balance,
         uint256 tradeHistoryRoot
         )
         external
@@ -59,7 +61,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
             calculatedRoot,
             accountPath
         );
-        require(calculatedRoot == merkleRoot, "INVALID_MERKLE_TREE_DATA");
+        require(calculatedRoot == merkleRoot, INVALID_MERKLE_TREE_DATA);
     }
 
     function getBalancesRoot(
@@ -73,7 +75,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         returns (uint256)
     {
         uint256[29] memory IVs;
-        FillLevelIVs(IVs);
+        fillLevelIVs(IVs);
 
         uint256[] memory balanceLeafElements = new uint256[](2);
         balanceLeafElements[0] = balance;
@@ -84,9 +86,9 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         uint tokenAddress = tokenID;
         for (uint depth = 0; depth < 12; depth++) {
             if (tokenAddress & 1 == 1) {
-                balanceItem = HashImpl(balancePath[depth], balanceItem, IVs[depth]);
+                balanceItem = hashImpl(balancePath[depth], balanceItem, IVs[depth]);
             } else {
-                balanceItem = HashImpl(balanceItem, balancePath[depth], IVs[depth]);
+                balanceItem = hashImpl(balanceItem, balancePath[depth], IVs[depth]);
             }
             tokenAddress = tokenAddress / 2;
         }
@@ -107,7 +109,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         returns (uint256)
     {
         uint256[29] memory IVs;
-        FillLevelIVs(IVs);
+        fillLevelIVs(IVs);
 
         uint256[] memory accountLeafElements = new uint256[](5);
         accountLeafElements[0] = publicKeyX;
@@ -120,16 +122,16 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         uint accountAddress = accountID;
         for (uint depth = 0; depth < 24; depth++) {
             if (accountAddress & 1 == 1) {
-                accountItem = HashImpl(accountPath[depth], accountItem, IVs[depth]);
+                accountItem = hashImpl(accountPath[depth], accountItem, IVs[depth]);
             } else {
-                accountItem = HashImpl(accountItem, accountPath[depth], IVs[depth]);
+                accountItem = hashImpl(accountItem, accountPath[depth], IVs[depth]);
             }
             accountAddress = accountAddress / 2;
         }
         return accountItem;
     }
 
-    function HashImpl (
+    function hashImpl (
         uint256 left,
         uint256 right,
         uint256 IV
@@ -145,22 +147,23 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc {
         return MiMC.Hash(x, IV);
     }
 
-    function FillLevelIVs (
+    // Q(dongw): should we initialize this array once and for all?
+    function fillLevelIVs (
         uint256[29] memory IVs
         )
         internal
         pure
     {
-        IVs[0] = 149674538925118052205057075966660054952481571156186698930522557832224430770;
-        IVs[1] = 9670701465464311903249220692483401938888498641874948577387207195814981706974;
-        IVs[2] = 18318710344500308168304415114839554107298291987930233567781901093928276468271;
-        IVs[3] = 6597209388525824933845812104623007130464197923269180086306970975123437805179;
-        IVs[4] = 21720956803147356712695575768577036859892220417043839172295094119877855004262;
-        IVs[5] = 10330261616520855230513677034606076056972336573153777401182178891807369896722;
-        IVs[6] = 17466547730316258748333298168566143799241073466140136663575045164199607937939;
-        IVs[7] = 18881017304615283094648494495339883533502299318365959655029893746755475886610;
-        IVs[8] = 21580915712563378725413940003372103925756594604076607277692074507345076595494;
-        IVs[9] = 12316305934357579015754723412431647910012873427291630993042374701002287130550;
+        IVs[0]  = 149674538925118052205057075966660054952481571156186698930522557832224430770;
+        IVs[1]  = 9670701465464311903249220692483401938888498641874948577387207195814981706974;
+        IVs[2]  = 18318710344500308168304415114839554107298291987930233567781901093928276468271;
+        IVs[3]  = 6597209388525824933845812104623007130464197923269180086306970975123437805179;
+        IVs[4]  = 21720956803147356712695575768577036859892220417043839172295094119877855004262;
+        IVs[5]  = 10330261616520855230513677034606076056972336573153777401182178891807369896722;
+        IVs[6]  = 17466547730316258748333298168566143799241073466140136663575045164199607937939;
+        IVs[7]  = 18881017304615283094648494495339883533502299318365959655029893746755475886610;
+        IVs[8]  = 21580915712563378725413940003372103925756594604076607277692074507345076595494;
+        IVs[9]  = 12316305934357579015754723412431647910012873427291630993042374701002287130550;
         IVs[10] = 18905410889238873726515380969411495891004493295170115920825550288019118582494;
         IVs[11] = 12819107342879320352602391015489840916114959026915005817918724958237245903353;
         IVs[12] = 8245796392944118634696709403074300923517437202166861682117022548371601758802;

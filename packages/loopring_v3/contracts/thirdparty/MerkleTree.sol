@@ -1,4 +1,4 @@
-// Taken from ethsnarks
+// This code is taken from ethsnarks
 
 pragma solidity 0.5.2;
 

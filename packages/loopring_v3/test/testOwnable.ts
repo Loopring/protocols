@@ -36,7 +36,7 @@ contract("Ownable", (accounts: string[]) => {
     });
 
     it("should not be able to transfer ownership", async () => {
-      await expectThrow(ownable.transferOwnership(owner2, {from: owner2}), "NOT_OWNER");
+      await expectThrow(ownable.transferOwnership(owner2, {from: owner2}), "UNAUTHORIZED");
     });
 
   });

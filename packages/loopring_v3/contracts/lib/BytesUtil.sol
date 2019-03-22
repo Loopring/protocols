@@ -19,7 +19,10 @@ pragma solidity 0.5.2;
 
 /// @title Utility Functions for bytes
 /// @author Daniel Wang - <daniel@loopring.org>
-library BytesUtil {
+library BytesUtil
+{
+    string constant INVALID_SIZE = "INVALID_SIZE";
+
     function bytesToBytes32(
         bytes memory b,
         uint offset
@@ -73,7 +76,7 @@ library BytesUtil {
         pure
         returns (uint data)
     {
-        require(b.length >= offset + numBytes, "INVALID_SIZE");
+        require(b.length >= offset + numBytes, INVALID_SIZE);
         assembly {
             data := mload(add(add(b, numBytes), offset))
         }
@@ -87,7 +90,7 @@ library BytesUtil {
         pure
         returns (bytes memory data)
     {
-        require(b.length >= offset + 32, "INVALID_SIZE");
+        require(b.length >= offset + 32, INVALID_SIZE);
         assembly {
             data := add(add(b, 32), offset)
         }

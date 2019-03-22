@@ -16,17 +16,14 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/Errors.sol";
 
-
-/// @title NoDefaultFunc
-/// @dev Disable default functions.
-contract NoDefaultFunc is Errors
+/// @title IBurnManager
+/// @author Daniel Wang - <daniel@loopring.org>
+contract IBurnManager
 {
-    function ()
+    function burn(
+        address token
+        )
         external
-        payable
-    {
-        revert(UNSUPPORTED);
-    }
+        returns (bool);
 }

@@ -22,12 +22,13 @@ import "./Ownable.sol";
 /// @title Claimable
 /// @dev Extension for the Ownable contract, where the ownership needs
 ///      to be claimed. This allows the new owner to accept the transfer.
-contract Claimable is Ownable {
+contract Claimable is Ownable
+{
     address public pendingOwner;
 
     /// @dev Modifier throws if called by any account other than the pendingOwner.
     modifier onlyPendingOwner() {
-        require(msg.sender == pendingOwner, "UNAUTHORIZED");
+        require(msg.sender == pendingOwner, UNAUTHORIZED);
         _;
     }
 
@@ -39,7 +40,7 @@ contract Claimable is Ownable {
         public
         onlyOwner
     {
-        require(newOwner != address(0x0) && newOwner != owner, "INVALID_ADDRESS");
+        require(newOwner != address(0x0) && newOwner != owner, INVALID_ADDRESS);
         pendingOwner = newOwner;
     }
 
