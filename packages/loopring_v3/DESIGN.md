@@ -190,6 +190,8 @@ Ideally we want to only support a single signature type. Even though only a sing
 
 Currently this is EDDSA (7,000 constraints), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). EDDSA may have hardware wallet support (not sure), but maybe ECDSA signatures would be nicer because they are more standard.
 
+> [Feedback]: IF ECDSA can be supported, I strongy prefer to use ECDSA instead of EDDSA even if the gas cost is higher. Using ECDSA will avoid the creation and maintaince of an extra ECDSA public/private key pair.
+
 ## ValidSince / ValidUntil
 
 A block and its proof is always made for a fixed input. The operator cannot accurately know on what timestamp the block will be processed on the ethereum blockchain, but he needs a fixed timestamp to create a block and its proof (the chosen timestamp impacts which orders are valid and invalid).
@@ -207,6 +209,8 @@ require(block.timestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
 Fees are stored in the wallet/dual-author accounts of the wallet/ringmatcher. These accounts are special as anyone can request a withdrawal onchain. In `withdraw` we check if the account is a wallet/dual-author account to see if we need to burn part of the balance.
 
 Once withdrawn from the merkle tree the balances are stored onchain in the Exchange contract so the BurnManager can withdraw them using `withdrawBurned`.
+
+> [Feedback]: Is it possible that a wallet create its own account aud use it both for trading and for receiving fees in the same time? 
 
 ## Brokers
 
@@ -244,6 +248,8 @@ The wallet/dual-author account is used for multiple things:
 - Can be used as a 'wallet authentication' account created specifically for a wallet that is used to 'unlock' the account of a user so it can be used in offchain operations (trading, offchain withdrawals, cancels).
 
 Note that this reusing of this special account is done for efficiency reasons. The wallet account doesn't need to sign the complete ring, just the order would work just as well. But by using the account also as the dual-author account the circuit is more efficient. This does have the drawback that creating an account for dual-authoring is needed, which costs a bit of gas. If we need unlimited dual-author addresses we should decouple both so that dual-authoring doesn't need an account (by storing the public key directly in the order).
+
+> [Feedback]: Seem the dual-authroing is different form 2.0. In 2.0. each order will have a unique dual-authroring pubKey, but seems in 3.0, different orders can share the same pubKey and the wallet owns the corrsponding private key. If this is true, what if an order is created not by a wallet software do we still support the 2.0-style dual authoring?
 
 ## Ringmatchers
 
