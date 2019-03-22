@@ -321,6 +321,8 @@ The **nonce** of the account is increased by 1 for these operations.
 
 The fee paid to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ringmatchers pays a fee in ETH to the ethereum miners, the ringmatcher now pays a fee to the operator. **Any token can be used to pay the fee.**
 
+> [Feedback]: ringmatchers and operators can reach offchain agreeement about how fees should be paid which is compeletely detached to the protocol (for example, paying fee per settlement using USD). What happends if the fee is paid onchain though the protocol, is it subject to fee-burning?
+
 ## Circuit permutations
 
 A circuit always does the same. There's no way to do dynamic loops. Let's take the rings settlement circuit as an example:
