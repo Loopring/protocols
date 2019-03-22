@@ -57,12 +57,7 @@ function getTokenRegistrationFee() public view returns (uint)
     return TOKEN_REGISTRATION_FEE_IN_LRC_BASE.add(TOKEN_REGISTRATION_FEE_IN_LRC_DELTA.mul(tokens.length));
 }
 ```
-
-We also add the token to the onchain TokenRegistry merkle tree. This way we can verify the burn rate of the token in the circuit. Because the merkle tree can be updated at any time onchain (without the operator knowing), older merkle tree roots remain valid for a short period of time (currently 5 minutes).
-
-We only store the burn rate in the merkle tree to make the circuit as simple as possible. If a token tier needs to be downgraded someone needs to call `updateBurnRate` function of the TokenRegistry to update the burn rate in the merkle tree.
-
-3 tokens are pre-registered and have a fixed tier:
+Burnrates are stored onchain in `TokenRegistry`. 3 tokens are pre-registered and have a fixed tier:
 - ETH: tier 3
 - WETH: tier 3
 - LRC: tier 1
@@ -76,13 +71,12 @@ I went through a lot of iterations for the merkle tree structure, currently the 
 - Only a single account needed for all tokens that are or will be registered
 - No special handling for anything. Every actor in the loopring ecosystem has an account in the same tree.
 - While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances merkle root is stored inside the account leaf). The same is useful for wallets, ringmatchers and operators because these also pay/receive fees in different tokens.
-- The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this quite small sub-tree. The trading-history is not part of the account because that way we'd only have 2^16 leafs for all tokens together.
-- The burned fees are stored directly in the balance of the wallet accounts. This way we don't have to update a separate sub-tree just for these balances.
+- The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this quite small sub-tree. The trading-history is not part of the account leaf because that way we'd only have 2^16 leafs for all tokens together.
 - No need for multiple account trees to lock accounts to a single wallet. The walletID stored in the account is used for this together with dual-authoring accounts that only the owner of the wallet can create see [Wallets](#wallets) for more info).
 
 ## Account creation
 
-Before the user can start trading he needs to create an account. An account allows a user to trade any token that is registered. The account is added to the Accounts merkle tree.
+Before the user can start trading he needs to create an account. An account allows a user to trade any token that is registered (or will be registered in the future). The account is added to the Accounts merkle tree.
 
 Creating an account is a special case for depositing. When creating an account a user can immediately deposit funds for a token.
 
@@ -104,7 +98,7 @@ A walletID (3 bytes) is given that can lock the account to a specific wallet (se
 
 ## Depositing
 
-This is done by calling the `depositToken` function on the smart contract and adding the deposit info to an onchain hash. A fee in ETH is paid for this. The fee amount can be freely set by the state owner. A fee in ETH seems to make sense because the user needs ETH to interact with the smart contract anyway.
+This is done by calling the `deposit` function on the smart contract and adding the deposit info to an onchain hash. A fee in ETH is paid for this. The fee amount can be freely set by the state owner. A fee in ETH seems to make sense because the user needs ETH to interact with the smart contract anyway.
 
 Note that we can **directly support ETH** for trading, no need to wrap it in WETH when using offchain balances.
 
@@ -114,7 +108,7 @@ See [here](#depositwithdraw-block-handling) how blocks are handled.
 
 ## Account info updating
 
-The depositing circuit also allows updating some information that is stored in the account. The user can choose the change his public key or change the walletID of the account.
+The depositing circuit also allows updating some information that is stored in the account by calling `depositAndUpdateAccount`. The user can choose the change his public key or change the walletID of the account.
 
 ## Withdrawing
 
@@ -196,7 +190,7 @@ require(block.timestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
 
 ## Fee burning
 
-Burned fees are stored in the `burnBalance` field of the account of the wallet. Wallet accounts are special as anyone can request a withdrawal onchain for these accounts. (This is why these balance are stored in the accounts of the wallets and not in the accounts of the ringmatcher, because the ringmatcher needs to pay fees to the operator so depends on his balances to be available for payments).
+Fees are stored in the wallet/dual-author accounts of the wallet/ringmatcher. These accounts are special as anyone can request a withdrawal onchain. In `withdraw` we check if the account is a wallet/dual-author account to see if we need to burn part of the balance.
 
 Once withdrawn from the merkle tree the balances are stored onchain in the Exchange contract so the BurnManager can withdraw them using `withdrawBurned`.
 
@@ -208,7 +202,7 @@ The account system is used for this. Users can create a special account for a br
 
 ## States
 
-Proof submission needs to be done sequentially so merkle trees can be updated correctly. To allow concurrent settling of orders by different independent parties we allow separate states for the merkle trees that can give contention.
+Block submission needs to be done sequentially so merkle trees can be updated correctly. To allow concurrent settling of orders by different independent parties we allow separate states for the merkle trees that can give contention.
 
 Anyone can register a new state. The owner of the state can set the deposit / offchain withdrawal fees by calling `setStateFees`.
 The owner of the state can also close the state at any time. The state will immediately enter withdrawal mode.
@@ -239,7 +233,8 @@ Note that this reusing of this special account is done for efficiency reasons. T
 
 ## Ringmatchers
 
-There's nothing really special for ringmatchers. They need to create an account like normal users and should have some funds available to pay the operator.
+Ringmatchers need to create a normal account so they can pay the operator (and receive the burnrate-free margin). They also need to create a wallet/dual-author account
+to receive the matching fee (because the burnrate needs to be applied on these funds when withdrawing).
 
 ## Operators
 
@@ -247,27 +242,26 @@ Operators are responsible for creating blocks. Blocks need to be submitted oncha
 
 At creation time, a state specifies if anyone can become an operator for the state or not. If not, only the owner can add operators.
 
-All operators are staked. LRC is used for this. If the operator fails to prove a block he submitted the amount staked is burned and the state is reverted to the last block that was proven. The operator is removed from the list of active operators. Anyone can call `notifyBlockVerificationTooLate` when it takes the operator longer than `MAX_PROOF_GENERATION_TIME_IN_SECONDS` (currently 1 hour) to verify a block he submitted.
+All operators are staked. LRC is used for this. If the operator fails to prove a block he submitted the amount staked is burned and the state is reverted to the last block that was proven. The operator is removed from the list of active operators. Anyone can call `revertBlock` when it takes the operator longer than `MAX_PROOF_GENERATION_TIME_IN_SECONDS` (currently 1 hour) to verify a block he submitted.
 
 Multiple operators can be active at the same time. The operator is chosen at random like this:
 ```
-function getActiveOperatorIdx(uint32 stateID) public view returns (uint32)
-{
-    State storage state = getState(stateID);
-    if (state.numActiveOperators == 0) {
-        return 0;
-    }
+function getActiveOperatorID(uint32 stateID) public view returns (uint32)
+  {
+      State storage state = getState(stateID);
+      require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
 
-    // Use a previous blockhash as the source of randomness
-    // Keep the operator the same for 4 blocks
-    bytes32 hash = blockhash(block.number - (block.number % 4));
-    uint randomOperatorIdx = (uint(hash) % state.numActiveOperators);
+      // Use a previous blockhash as the source of randomness
+      // Keep the operator the same for 4 blocks
+      uint blockNumber = block.number - 1;
+      bytes32 hash = blockhash(blockNumber - (blockNumber % 4));
+      uint randomOperatorIdx = (uint(hash) % state.numActiveOperators);
 
-    return uint32(randomOperatorIdx);
-}
+      return state.activeOperators[uint32(randomOperatorIdx)];
+  }
 ```
 
-Every operator stakes the same amount of LRC to make the onchain logic as cheap as possible (otherwise we'd have to use weights to give operators with a larger stake more chance to be selected). An operator can register itself (by calling `registerOperator`) multiple times to increase its chances to be chosen as the active operator. The active operator can be queried by calling `getActiveOperatorIdx`.
+Every operator stakes the same amount of LRC to make the onchain logic as cheap as possible (otherwise we'd have to use weights to give operators with a larger stake more chance to be selected). An operator can register itself (by calling `registerOperator`) multiple times to increase its chances to be chosen as the active operator. The active operator can be queried by calling `getActiveOperatorID`.
 
 An operator can choose to unregister itself at any time by calling `unregisterOperator`. To make sure the operator doesn't have any unproven blocks left an operator can only withdraw the amount he staked after a safe period of time (currently 1 day) by calling `withdrawOperatorStake`.
 
@@ -440,7 +434,7 @@ So in a block we are currently limited by the number of constraints used in the 
 
 ### Proof generation
 
-Haven't done much testing for this. From [thematter](https://medium.com/matter-labs/introducing-matter-testnet-502fab5a6f17):
+Haven't done much testing for this. From [Matter Labs](https://medium.com/matter-labs/introducing-matter-testnet-502fab5a6f17):
 > [about circuits with 256 million constraints] "the computation took 20 minutes on a 72-core AWS server".
 
 > At the target latency of 5 min at 100 TPS we estimate the offchain part to be approximately 0.001 USD. This estimate is very conservative.
@@ -480,7 +474,7 @@ An order can be in the following states:
 - **Unmatched** in an orderbook
 - **Matched** by the DEX
 - **Commited** in a block sent in `commitBlock`
-- **Verified** in a block by a proof in `proofBlock`
+- **Verified** in a block by a proof in `verifyBlock`
 - **Finalized** when the block it was in is finalized (so all blocks before it are also verified)
 
 Only when the block is finalized is the filling of the order irreversible.
