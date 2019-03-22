@@ -268,6 +268,8 @@ At creation time, a state specifies if anyone can become an operator for the sta
 
 All operators are staked. LRC is used for this. If the operator fails to prove a block he submitted the amount staked is burned and the state is reverted to the last block that was proven. The operator is removed from the list of active operators. Anyone can call `revertBlock` when it takes the operator longer than `MAX_PROOF_GENERATION_TIME_IN_SECONDS` (currently 1 hour) to verify a block he submitted.
 
+> [Feedback]: should we make every onchain block-submission tx check the condition for reverting blocks? This will guarantee bad blocks are reverted automatically in a timely fashion. I assume the condition checking is relative easier and will not use many gas.
+
 Multiple operators can be active at the same time. The operator is chosen at random like this:
 ```
 function getActiveOperatorID(uint32 stateID) public view returns (uint32)
@@ -288,6 +290,8 @@ function getActiveOperatorID(uint32 stateID) public view returns (uint32)
 Every operator stakes the same amount of LRC to make the onchain logic as cheap as possible (otherwise we'd have to use weights to give operators with a larger stake more chance to be selected). An operator can register itself (by calling `registerOperator`) multiple times to increase its chances to be chosen as the active operator. The active operator can be queried by calling `getActiveOperatorID`.
 
 An operator can choose to unregister itself at any time by calling `unregisterOperator`. To make sure the operator doesn't have any unproven blocks left an operator can only withdraw the amount he staked after a safe period of time (currently 1 day) by calling `withdrawOperatorStake`.
+
+> [Feedback]: the amount of LRC for staking may actualy vary among operators, if we ever allow this amount to be updated by a super user. For example, if the amount was specified as 100K LRC, then one month later, we decrease it to 80K, then operators who join late will only need to stake 80K instead of 100K, and operators who have staked 100K can actualy unregistere and register again. But if we change the amount from 80K to 100K, previous operators should still be treated valid and equal.
 
 ### Restrictions
 
