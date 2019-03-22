@@ -43,7 +43,7 @@ contract Ownable is Errors
     /// @dev Throws if called by any account other than the owner.
     modifier onlyOwner()
     {
-        require(msg.sender == owner, NOT_OWNER);
+        require(msg.sender == owner, UNAUTHORIZED);
         _;
     }
 
