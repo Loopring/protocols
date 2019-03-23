@@ -1,6 +1,7 @@
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var TokenRegistry = artifacts.require("./impl/TokenRegistry.sol");
+var OperatorRegistry = artifacts.require("./impl/OperatorRegistry.sol");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var Exchange = artifacts.require("./impl/Exchange");
 var ExchangeHelper = artifacts.require("./impl/ExchangeHelper");
@@ -23,6 +24,10 @@ module.exports = function(deployer, network, accounts) {
           LRCToken.address,
           WETHToken.address,
         ),
+        deployer.deploy(
+          OperatorRegistry,
+          LRCToken.address,
+        ),
         deployer.deploy(BlockVerifier),
       ]);
     }).then(() => {
@@ -31,6 +36,7 @@ module.exports = function(deployer, network, accounts) {
           Exchange,
           ExchangeHelper.address,
           TokenRegistry.address,
+          OperatorRegistry.address,
           BlockVerifier.address,
           LRCToken.address,
         ),

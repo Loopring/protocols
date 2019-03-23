@@ -29,6 +29,7 @@ export class ExchangeTestUtil {
   public testContext: ExchangeTestContext;
   public exchange: any;
   public tokenRegistry: any;
+  public operatorRegistry: any;
   public blockVerifier: any;
 
   public minerAccountID: number[] = [];
@@ -72,8 +73,9 @@ export class ExchangeTestUtil {
     this.MAX_MUM_WALLETS = (await this.exchange.MAX_NUM_WALLETS()).toNumber();
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
     this.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE = (await this.exchange.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE()).toNumber();
-    this.STAKE_AMOUNT_IN_LRC = await this.exchange.STAKE_AMOUNT_IN_LRC();
-    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = (await this.exchange.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW()).toNumber();
+    this.STAKE_AMOUNT_IN_LRC = await this.operatorRegistry.STAKE_AMOUNT_IN_LRC();
+    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW =
+      (await this.operatorRegistry.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW()).toNumber();
 
     for (let i = 0; i < this.MAX_NUM_STATES; i++) {
       const rings: RingInfo[] = [];
@@ -829,7 +831,7 @@ export class ExchangeTestUtil {
   }
 
   public async getActiveOperator(stateID: number) {
-    const activeOperatorID = (await this.exchange.getActiveOperatorID(web3.utils.toBN(stateID))).toNumber();
+    const activeOperatorID = (await this.operatorRegistry.getActiveOperatorID(web3.utils.toBN(stateID))).toNumber();
     return this.operators[stateID][activeOperatorID];
   }
 
@@ -837,7 +839,7 @@ export class ExchangeTestUtil {
     const activeOperators: Operator[] = [];
     const numActiveOperators = (await this.exchange.getNumActiveOperators(stateID)).toNumber();
     for (let i = 0; i < numActiveOperators; i++) {
-      const data = await this.exchange.getActiveOperatorAt(stateID, web3.utils.toBN(i));
+      const data = await this.operatorRegistry.getActiveOperatorAt(stateID, web3.utils.toBN(i));
       const activeOperator = this.operators[stateID][data.operatorID.toNumber()];
       assert.equal(activeOperator.owner, data.owner, "Operator owner incorrect");
       activeOperators.push(activeOperator);
@@ -1269,13 +1271,15 @@ export class ExchangeTestUtil {
   }
 
   public async registerOperator(stateID: number, owner: string) {
-    await this.setBalanceAndApprove(owner, "LRC", this.STAKE_AMOUNT_IN_LRC);
+    await this.setBalanceAndApprove(owner, "LRC", this.STAKE_AMOUNT_IN_LRC, this.operatorRegistry.address);
 
     // Register an operator
-    const tx = await this.exchange.registerOperator(web3.utils.toBN(stateID), {from: owner});
+    const tx = await this.operatorRegistry.registerOperator(web3.utils.toBN(stateID), {from: owner});
     // pjs.logInfo("\x1b[46m%s\x1b[0m", "[RegisterOperator] Gas used: " + tx.receipt.gasUsed);
 
-    const eventArr: any = await this.getEventsFromContract(this.exchange, "OperatorRegistered", web3.eth.blockNumber);
+    const eventArr: any = await this.getEventsFromContract(
+      this.operatorRegistry, "OperatorRegistered", web3.eth.blockNumber,
+    );
     const items = eventArr.map((eventObj: any) => {
       return [eventObj.args.operatorID, eventObj.args.operator];
     });
@@ -1336,10 +1340,13 @@ export class ExchangeTestUtil {
     );
   }
 
-  public async setBalanceAndApprove(owner: string, token: string, amount: BN) {
+  public async setBalanceAndApprove(owner: string, token: string, amount: BN, contractAddress?: string) {
+    if (contractAddress === undefined) {
+      contractAddress = this.exchange.address;
+    }
     const Token = await this.getTokenContract(token);
     await Token.setBalance(owner, amount);
-    await Token.approve(this.exchange.address, amount, {from: owner});
+    await Token.approve(contractAddress, amount, {from: owner});
   }
 
   public evmIncreaseTime(seconds: number) {
@@ -1578,15 +1585,17 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const [exchange, tokenRegistry, blockVerifier, lrcToken] = await Promise.all([
+    const [exchange, tokenRegistry, operatorRegistry, blockVerifier, lrcToken] = await Promise.all([
         this.contracts.Exchange.deployed(),
         this.contracts.TokenRegistry.deployed(),
+        this.contracts.OperatorRegistry.deployed(),
         this.contracts.BlockVerifier.deployed(),
         this.contracts.LRCToken.deployed(),
       ]);
 
     this.exchange = exchange;
     this.tokenRegistry = tokenRegistry;
+    this.operatorRegistry = operatorRegistry;
     this.blockVerifier = blockVerifier;
 
     const currBlockNumber = await web3.eth.getBlockNumber();

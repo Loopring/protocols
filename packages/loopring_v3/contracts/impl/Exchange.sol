@@ -19,6 +19,7 @@ pragma solidity 0.5.2;
 import "../iface/IBlockVerifier.sol";
 import "../iface/IExchange.sol";
 import "../iface/IExchangeHelper.sol";
+import "../iface/IOperatorRegistry.sol";
 import "../iface/ITokenRegistry.sol";
 
 import "../lib/BurnableERC20.sol";
@@ -35,11 +36,7 @@ contract Exchange is IExchange, NoDefaultFunc
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-    uint   public constant STAKE_AMOUNT_IN_LRC                          = 100000 ether;
-
     uint32 public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS         = 1 hours;
-    uint32 public constant MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW         = 1 days;
-    uint32 public constant MAX_INACTIVE_UNTIL_DISABLED_IN_SECONDS       = 1 days;
 
     uint32 public constant MIN_TIME_BLOCK_OPEN                          = 1  minutes;
     uint32 public constant MAX_TIME_BLOCK_OPEN                          = 15 minutes;
@@ -66,6 +63,7 @@ contract Exchange is IExchange, NoDefaultFunc
     address public lrcAddress                = address(0x0);
     address public exchangeHelperAddress     = address(0x0);
     address public tokenRegistryAddress      = address(0x0);
+    address public operatorRegistryAddress   = address(0x0);
     address public blockVerifierAddress      = address(0x0);
 
     enum BlockType
@@ -87,15 +85,6 @@ contract Exchange is IExchange, NoDefaultFunc
     struct Wallet
     {
         address owner;
-    }
-
-    struct Operator
-    {
-        address payable owner;
-        uint32 ID;
-        uint32 activeOperatorIdx;
-        uint   amountStaked;
-        uint32 unregisterTimestamp;
     }
 
     struct Account
@@ -154,7 +143,6 @@ contract Exchange is IExchange, NoDefaultFunc
         uint depositFeeInETH;
         uint withdrawFeeInETH;
         uint maxWithdrawFeeInETH;
-        bool closedOperatorRegistering;
 
         uint numAccounts;
         mapping (uint => Account) accounts;
@@ -169,11 +157,6 @@ contract Exchange is IExchange, NoDefaultFunc
 
         uint numWallets;
         mapping (uint => Wallet) wallets;
-
-        uint numActiveOperators;
-        uint totalNumOperators;
-        mapping (uint => Operator) operators;
-        mapping (uint32 => uint32) activeOperators;          // list idx -> operatorID
     }
 
     State[] private states;
@@ -181,6 +164,7 @@ contract Exchange is IExchange, NoDefaultFunc
     constructor(
         address _exchangeHelperAddress,
         address _tokenRegistryAddress,
+        address _operatorRegistryAddress,
         address _blockVerifierAddress,
         address _lrcAddress
         )
@@ -188,10 +172,12 @@ contract Exchange is IExchange, NoDefaultFunc
     {
         require(_exchangeHelperAddress != address(0x0), ZERO_ADDRESS);
         require(_tokenRegistryAddress != address(0x0), ZERO_ADDRESS);
+        require(_operatorRegistryAddress != address(0x0), ZERO_ADDRESS);
         require(_blockVerifierAddress != address(0x0), ZERO_ADDRESS);
         require(_lrcAddress != address(0x0), ZERO_ADDRESS);
         exchangeHelperAddress = _exchangeHelperAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
+        operatorRegistryAddress = _operatorRegistryAddress;
         blockVerifierAddress = _blockVerifierAddress;
         lrcAddress = _lrcAddress;
     }
@@ -210,14 +196,11 @@ contract Exchange is IExchange, NoDefaultFunc
             depositFeeInETH,
             withdrawFeeInETH,
             maxWithdrawFeeInETH,
-            closedOperatorRegistering,
             0,
             0,
             1,
             1,
-            1,
-            0,
-            0
+            1
         );
         states.push(memoryState);
 
@@ -234,6 +217,11 @@ contract Exchange is IExchange, NoDefaultFunc
         State storage state = states[states.length - 1];
         state.blocks[state.numBlocks] = genesisBlock;
         state.numBlocks++;
+
+        IOperatorRegistry(operatorRegistryAddress).createNewState(
+            owner,
+            closedOperatorRegistering
+        );
 
         emit NewState(uint16(states.length - 1), owner);
 
@@ -302,8 +290,9 @@ contract Exchange is IExchange, NoDefaultFunc
         require(!isInWithdrawMode(stateID), IN_WITHDRAW_MODE);
 
         // Get active operator
-        Operator storage operator = state.operators[getActiveOperatorID(stateID)];
-        require(operator.owner == msg.sender, UNAUTHORIZED);
+        uint32 operatorID = IOperatorRegistry(operatorRegistryAddress).getActiveOperatorID(stateID);
+        address operatorOwner = IOperatorRegistry(operatorRegistryAddress).getOperatorOwner(stateID, operatorID);
+        require(operatorOwner == msg.sender, UNAUTHORIZED);
 
         Block storage currentBlock = state.blocks[state.numBlocks - 1];
 
@@ -390,7 +379,7 @@ contract Exchange is IExchange, NoDefaultFunc
             publicDataHash,
             BlockState.COMMITTED,
             uint32(now),
-            operator.ID,
+            operatorID,
             numDepositBlocksCommitted,
             numWithdrawBlocksCommitted,
             (blockType == uint(BlockType.ONCHAIN_WITHDRAW) ||
@@ -469,21 +458,11 @@ contract Exchange is IExchange, NoDefaultFunc
             TOO_LATE_PROOF
         );
 
-        // Get the operator of the block we're reverting
-        Operator storage operator = state.operators[specifiedBlock.operatorID];
-
-        // Burn the LRC staked by the operator
-        // It's possible the operator already withdrew his stake
-        // if it takes a long time before someone calls this function
-        if(operator.amountStaked > 0) {
-            require(BurnableERC20(lrcAddress).burn(operator.amountStaked), BURN_FAILURE);
-            operator.amountStaked = 0;
-        }
-
-        // Unregister the operator (if still registered)
-        if (operator.unregisterTimestamp == 0) {
-            unregisterOperatorInternal(stateID, specifiedBlock.operatorID);
-        }
+        // Eject operator
+        IOperatorRegistry(operatorRegistryAddress).ejectOperator(
+            stateID,
+            specifiedBlock.operatorID
+        );
 
         // Remove all blocks after and including blockIdx
         state.numBlocks = blockIdx;
@@ -836,181 +815,6 @@ contract Exchange is IExchange, NoDefaultFunc
     }
 
 
-    function registerOperator(
-        uint32 stateID
-        )
-        external
-    {
-        // State cannot be in withdraw mode
-        require(!isInWithdrawMode(stateID), IN_WITHDRAW_MODE);
-
-        State storage state = getState(stateID);
-
-        if(state.closedOperatorRegistering) {
-            require(msg.sender == state.owner, UNAUTHORIZED);
-        }
-
-        // Move the LRC to this contract
-        require(
-            lrcAddress.safeTransferFrom(
-                msg.sender,
-                address(this),
-                STAKE_AMOUNT_IN_LRC
-            ),
-            TRANSFER_FAILURE
-        );
-
-        // Add the operator
-        Operator memory operator = Operator(
-            msg.sender,
-            uint32(state.totalNumOperators++),
-            uint32(state.numActiveOperators++),
-            STAKE_AMOUNT_IN_LRC,
-            0
-        );
-        state.operators[operator.ID] = operator;
-        state.activeOperators[operator.activeOperatorIdx] = operator.ID;
-
-        uint maxNumOperators = 2 ** 32;
-        require(state.totalNumOperators <= maxNumOperators, TOO_MANY_OPERATORS);
-        require(state.numActiveOperators <= maxNumOperators, TOO_MANY_ACTIVE_OPERATORS);
-
-        emit OperatorRegistered(operator.owner, operator.ID);
-    }
-
-    function unregisterOperator(
-        uint32 stateID,
-        uint32 operatorID
-        )
-        external
-    {
-        State storage state = getState(stateID);
-
-        require(operatorID < state.totalNumOperators, INVALID_OPERATOR_ID);
-        Operator storage operator = state.operators[operatorID];
-        require(msg.sender == operator.owner, UNAUTHORIZED);
-
-        unregisterOperatorInternal(stateID, operatorID);
-    }
-
-    function unregisterOperatorInternal(
-        uint32 stateID,
-        uint32 operatorID
-        )
-        internal
-    {
-        State storage state = getState(stateID);
-
-        require(operatorID < state.totalNumOperators, INVALID_OPERATOR_ID);
-        Operator storage operator = state.operators[operatorID];
-        require(operator.unregisterTimestamp == 0, OPERATOR_UNREGISTERED_ALREADY);
-
-        // Set the timestamp so we know when the operator is allowed to withdraw his staked LRC
-        // (the operator could still have unproven blocks)
-        operator.unregisterTimestamp = uint32(now);
-
-        // Move the last operator to the slot of the operator we're unregistering
-        require(state.numActiveOperators > 0, NO_ACTIVE_OPERATORS);
-        uint32 movedOperatorID = uint32(state.numActiveOperators - 1);
-        Operator storage movedOperator = state.operators[movedOperatorID];
-        state.activeOperators[operator.activeOperatorIdx] = movedOperatorID;
-        movedOperator.activeOperatorIdx = operator.activeOperatorIdx;
-
-        // Reduce the length of the array of active operators
-        state.numActiveOperators--;
-
-        emit OperatorUnregistered(operator.owner, operator.ID);
-    }
-
-    function getActiveOperatorID(
-        uint32 stateID
-        )
-        public
-        view
-        returns (uint32)
-    {
-        State storage state = getState(stateID);
-        require(state.numActiveOperators > 0, NO_ACTIVE_OPERATORS);
-
-        // Use a previous blockhash as the source of randomness
-        // Keep the operator the same for 4 blocks
-        uint blockNumber = block.number - 1;
-        bytes32 hash = blockhash(blockNumber - (blockNumber % 4));
-        uint randomOperatorIdx = (uint(hash) % state.numActiveOperators);
-
-        return state.activeOperators[uint32(randomOperatorIdx)];
-    }
-
-    function isOperatorRegistered(
-        uint32 stateID,
-        uint32 operatorID
-        )
-        external
-        view
-        returns (bool)
-    {
-        State storage state = getState(stateID);
-        require(operatorID < state.totalNumOperators, INVALID_OPERATOR_ID);
-        Operator storage operator = state.operators[operatorID];
-        return operator.unregisterTimestamp == 0;
-    }
-
-    function getNumActiveOperators(
-        uint32 stateID
-        )
-        external
-        view
-        returns (uint)
-    {
-        State storage state = getState(stateID);
-        return state.numActiveOperators;
-    }
-
-    function getActiveOperatorAt(
-        uint32 stateID,
-        uint32 index
-        )
-        external
-        view
-        returns (address owner, uint32 operatorID)
-    {
-        State storage state = getState(stateID);
-        Operator storage operator = state.operators[state.activeOperators[index]];
-        owner = operator.owner;
-        operatorID = operator.ID;
-    }
-
-    function withdrawOperatorStake(
-        uint32 stateID,
-        uint32 operatorID
-        )
-        external
-    {
-        State storage state = getState(stateID);
-
-        require(operatorID < state.totalNumOperators, INVALID_OPERATOR_ID);
-        Operator storage operator = state.operators[operatorID];
-
-        require(operator.unregisterTimestamp > 0, OPERATOR_STILL_REGISTERED);
-        require(operator.amountStaked > 0, WITHDRAWN_ALREADY);
-        require(
-            now > operator.unregisterTimestamp + MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW,
-            TOO_EARLY_TO_WITHDRAW
-        );
-
-        uint amount = operator.amountStaked;
-        // Make sure it cannot be withdrawn again
-        operator.amountStaked = 0;
-
-        require(
-            lrcAddress.safeTransfer(
-                operator.owner,
-                amount
-            ),
-            TRANSFER_FAILURE
-        );
-    }
-
     function withdrawBlockFee(
         uint32 stateID,
         uint32 blockIdx
@@ -1025,7 +829,10 @@ contract Exchange is IExchange, NoDefaultFunc
 
         require(requestedBlock.state == BlockState.FINALIZED, BLOCK_NOT_FINALIZED);
 
-        address payable operator = state.operators[requestedBlock.operatorID].owner;
+        address payable operator = IOperatorRegistry(operatorRegistryAddress).getOperatorOwner(
+            stateID,
+            requestedBlock.operatorID
+        );
 
         uint fee = 0;
         if(requestedBlock.numDepositBlocksCommitted > previousBlock.numDepositBlocksCommitted) {

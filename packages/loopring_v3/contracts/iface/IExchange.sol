@@ -26,16 +26,6 @@ contract IExchange
         address owner
     );
 
-    event OperatorRegistered(
-        address operator,
-        uint32 operatorID
-    );
-
-    event OperatorUnregistered(
-        address operator,
-        uint32 operatorID
-    );
-
     event WalletRegistered(
         address walletOwner,
         uint24 walletID
