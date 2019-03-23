@@ -12,8 +12,8 @@ class Export(object):
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
-def main(stateID, accountID, tokenID, outputFilename):
-    state_filename = "state_" + str(stateID) + ".json"
+def main(stateID, blockIdx, accountID, tokenID, outputFilename):
+    state_filename = "./states/state_" + str(stateID) + "_" + str(blockIdx) + ".json"
 
     state = State(stateID)
     if os.path.exists(state_filename):

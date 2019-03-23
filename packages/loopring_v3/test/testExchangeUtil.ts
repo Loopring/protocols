@@ -1311,16 +1311,21 @@ export class ExchangeTestUtil {
   public async withdrawFromMerkleTree(stateID: number, accountID: number, token: string) {
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
+    const blockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
     const filename = "withdraw_proof.json";
-    const result = childProcess.spawnSync("python3",
-    ["operator/create_withdraw_proof.py", "" + stateID, "" + accountID, "" + tokenID, filename], {stdio: "inherit"});
+    const result = childProcess.spawnSync(
+      "python3",
+      ["operator/create_withdraw_proof.py",
+      "" + stateID, "" + blockIdx, "" + accountID, "" + tokenID, filename],
+      {stdio: "inherit"},
+    );
     assert(result.status === 0, "create_withdraw_proof failed!");
 
     // Read in the proof
     const data = JSON.parse(fs.readFileSync(filename, "ascii"));
     // console.log(data);
 
-    await this.exchange.withdrawFromMerkleTree(
+    const tx = await this.exchange.withdrawFromMerkleTree(
       web3.utils.toBN(stateID),
       web3.utils.toBN(accountID),
       web3.utils.toBN(tokenID),
@@ -1330,6 +1335,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(data.proof.balance.balance),
       web3.utils.toBN(data.proof.balance.tradingHistoryRoot),
     );
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawFromMerkleTree] Gas used: " + tx.receipt.gasUsed);
   }
 
   public async withdrawFromPendingDeposit(stateID: number, depositBlockIdx: number, slotIdx: number) {
