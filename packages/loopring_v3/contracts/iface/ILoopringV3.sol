@@ -17,10 +17,10 @@
 pragma solidity 0.5.2;
 
 
-/// @title ILoopring
+/// @title ILoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopring
+contract ILoopringV3
 {
     event ExchangeCreated(
         uint    exchanegId,

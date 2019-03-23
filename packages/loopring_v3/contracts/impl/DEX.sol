@@ -17,7 +17,7 @@
 pragma solidity 0.5.2;
 
 import "../iface/IDEX.sol";
-import "../iface/ILoopring.sol";
+import "../iface/ILoopringV3.sol";
 
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
@@ -78,7 +78,7 @@ contract DEX is IDEX, NoDefaultFunc
         view
         returns (uint)
     {
-        uint global = ILoopring(loopringAddress).dexStakedLRCPerFailure();
+        uint global = ILoopringV3(loopringAddress).dexStakedLRCPerFailure();
 
         if (global > stakedLRCPerFailure) {
             return stakedLRCPerFailure;
