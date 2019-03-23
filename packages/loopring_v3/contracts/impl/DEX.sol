@@ -17,6 +17,7 @@
 pragma solidity 0.5.2;
 
 import "../iface/IDEX.sol";
+import "../iface/ILoopring.sol";
 
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
@@ -27,13 +28,12 @@ import "../lib/NoDefaultFunc.sol";
 /// @author Brecht Devos - <brecht@loopring.org>,
 contract DEX is IDEX, NoDefaultFunc
 {
-
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
     constructor(
         uint    _id,
-        address _loopring,
+        address _loopringAddress,
         address _ownerContractAddress,
         address _creator,
         address _lrcAddress,
@@ -43,14 +43,14 @@ contract DEX is IDEX, NoDefaultFunc
         public
     {
         require(0 != _id, "INVALID_ID");
-        require(address(0) != _loopring, "ZERO_ADDRESS");
+        require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _ownerContractAddress, "ZERO_ADDRESS");
         require(address(0) != _creator, "ZERO_ADDRESS");
         require(0 != _stakedLRCPerFailure, "ZERO_VALUE");
         require(0 != _numOfFailuresAllowed, "ZERO_VALUE");
 
         id = _id;
-        loopring = _loopring;
+        loopringAddress = _loopringAddress;
         ownerContractAddress = _ownerContractAddress;
         creator = _creator;
         lrcAddress = _lrcAddress;
@@ -71,4 +71,19 @@ contract DEX is IDEX, NoDefaultFunc
 
         emit LRCStaked(id, stakedLRCAmount);
     }
+
+    function getStakedLRCPerFailure()
+        external
+        view
+        returns (uint)
+    {
+        uint global = ILoopring(loopringAddress).dexStakedLRCPerFailure();
+
+        if (global > stakedLRCPerFailure) {
+            return stakedLRCPerFailure;
+        } else {
+            return global;
+        }
+    }
+
 }
