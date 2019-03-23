@@ -16,14 +16,12 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/Errors.sol";
-
 
 /// @title Ownable
 /// @dev The Ownable contract has an owner address, and provides basic
 ///      authorization control functions, this simplifies the implementation of
 ///      "user permissions".
-contract Ownable is Errors
+contract Ownable
 {
     address public owner;
 
@@ -43,7 +41,7 @@ contract Ownable is Errors
     /// @dev Throws if called by any account other than the owner.
     modifier onlyOwner()
     {
-        require(msg.sender == owner, UNAUTHORIZED);
+        require(msg.sender == owner, "UNAUTHORIZED");
         _;
     }
 
@@ -56,7 +54,7 @@ contract Ownable is Errors
         public
         onlyOwner
     {
-        require(newOwner != address(0x0), ZERO_ADDRESS);
+        require(newOwner != address(0x0), "ZERO_ADDRESS");
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
     }

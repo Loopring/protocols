@@ -21,11 +21,6 @@ pragma solidity 0.5.2;
 /// @author Daniel Wang - <daniel@loopring.org>
 library MathUint
 {
-
-    string constant ADD_OVERFLOW  = "ADD_OVERFLOW";
-    string constant MUL_OVERFLOW  = "MUL_OVERFLOW";
-    string constant SUB_UNDERFLOW = "SUB_UNDERFLOW";
-
     function mul(
         uint a,
         uint b
@@ -35,7 +30,7 @@ library MathUint
         returns (uint c)
     {
         c = a * b;
-        require(a == 0 || c / a == b, MUL_OVERFLOW);
+        require(a == 0 || c / a == b, "MUL_OVERFLOW");
     }
 
     function sub(
@@ -46,7 +41,7 @@ library MathUint
         pure
         returns (uint)
     {
-        require(b <= a, SUB_UNDERFLOW);
+        require(b <= a, "SUB_UNDERFLOW");
         return a - b;
     }
 
@@ -59,6 +54,6 @@ library MathUint
         returns (uint c)
     {
         c = a + b;
-        require(c >= a, ADD_OVERFLOW);
+        require(c >= a, "ADD_OVERFLOW");
     }
 }

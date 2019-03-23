@@ -7,7 +7,6 @@ matrix:
     - os: osx
       language: cpp
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./install_dependencies_linux.sh ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./install_dependencies_mac.sh ; fi
+  - ./install
 script:
   - make

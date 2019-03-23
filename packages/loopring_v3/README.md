@@ -4,6 +4,8 @@
 
 ```
 ./install
+
+make
 npm run compile
 ```
 

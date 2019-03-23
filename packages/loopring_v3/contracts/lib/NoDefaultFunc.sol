@@ -16,17 +16,15 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/Errors.sol";
-
 
 /// @title NoDefaultFunc
 /// @dev Disable default functions.
-contract NoDefaultFunc is Errors
+contract NoDefaultFunc
 {
     function ()
         external
         payable
     {
-        revert(UNSUPPORTED);
+        revert("UNSUPPORTED");
     }
 }

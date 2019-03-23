@@ -16,7 +16,6 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/Errors.sol";
 
 
 /**
@@ -204,7 +203,7 @@ contract StandardToken is ERC20, BasicToken {
     }
 }
 
-contract LRCToken is StandardToken, Errors {
+contract LRCToken is StandardToken {
     using SafeMath for uint256;
 
     string     public name = "New Loopring token on ethereum";
@@ -288,7 +287,7 @@ contract LRCToken is StandardToken, Errors {
         external
         payable
     {
-        revert(UNSUPPORTED);
+        revert("UNSUPPORTED");
     }
 
 }
