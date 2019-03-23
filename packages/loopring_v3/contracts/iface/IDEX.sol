@@ -30,11 +30,6 @@ contract IDEX
 
     uint    public totalBurnedLRC  = 0;
 
-    event LRCStaked(
-      uint exchangeId,
-      uint stakedLRC
-    );
-
     function getStakedLRCAmount()
         external
         view
