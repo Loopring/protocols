@@ -170,11 +170,11 @@ contract Exchange is IExchange, NoDefaultFunc
         )
         public
     {
-        require(_exchangeHelperAddress != address(0x0), ZERO_ADDRESS);
-        require(_tokenRegistryAddress != address(0x0), ZERO_ADDRESS);
-        require(_operatorRegistryAddress != address(0x0), ZERO_ADDRESS);
-        require(_blockVerifierAddress != address(0x0), ZERO_ADDRESS);
-        require(_lrcAddress != address(0x0), ZERO_ADDRESS);
+        require(_exchangeHelperAddress != address(0x0), "ZERO_ADDRESS");
+        require(_tokenRegistryAddress != address(0x0), "ZERO_ADDRESS");
+        require(_operatorRegistryAddress != address(0x0), "ZERO_ADDRESS");
+        require(_blockVerifierAddress != address(0x0), "ZERO_ADDRESS");
+        require(_lrcAddress != address(0x0), "ZERO_ADDRESS");
         exchangeHelperAddress = _exchangeHelperAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         operatorRegistryAddress = _operatorRegistryAddress;
@@ -266,8 +266,8 @@ contract Exchange is IExchange, NoDefaultFunc
         external
     {
         State storage state = getState(stateID);
-        require(msg.sender == state.owner, UNAUTHORIZED);
-        require(withdrawFee <= state.maxWithdrawFeeInETH, TOO_LARGE_AMOUNT);
+        require(msg.sender == state.owner, "UNAUTHORIZED");
+        require(withdrawFee <= state.maxWithdrawFeeInETH, "TOO_LARGE_AMOUNT");
 
         state.depositFeeInETH = depositFee;
         state.withdrawFeeInETH = withdrawFee;
@@ -287,12 +287,12 @@ contract Exchange is IExchange, NoDefaultFunc
         State storage state = getState(stateID);
 
         // State cannot be in withdraw mode
-        require(!isInWithdrawMode(stateID), IN_WITHDRAW_MODE);
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
 
         // Get active operator
         uint32 operatorID = IOperatorRegistry(operatorRegistryAddress).getActiveOperatorID(stateID);
         address operatorOwner = IOperatorRegistry(operatorRegistryAddress).getOperatorOwner(stateID, operatorID);
-        require(operatorOwner == msg.sender, UNAUTHORIZED);
+        require(operatorOwner == msg.sender, "UNAUTHORIZED");
 
         Block storage currentBlock = state.blocks[state.numBlocks - 1];
 
@@ -302,7 +302,7 @@ contract Exchange is IExchange, NoDefaultFunc
             merkleRootBefore := mload(add(data, 36))
             merkleRootAfter := mload(add(data, 68))
         }
-        require(merkleRootBefore == currentBlock.merkleRoot, INVALID_MERKLE_ROOT);
+        require(merkleRootBefore == currentBlock.merkleRoot, "INVALID_MERKLE_ROOT");
 
         uint32 numDepositBlocksCommitted = currentBlock.numDepositBlocksCommitted;
         uint32 numWithdrawBlocksCommitted = currentBlock.numWithdrawBlocksCommitted;
@@ -314,12 +314,12 @@ contract Exchange is IExchange, NoDefaultFunc
             require(
                 inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
                 inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS,
-                INVALID_TIMESTAMP
+                "INVALID_TIMESTAMP"
             );
         } else if (blockType == uint(BlockType.DEPOSIT)) {
             require(
                 isDepositBlockCommittable(stateID, numDepositBlocksCommitted),
-                CANNOT_COMMIT_BLOCK_YET
+                "CANNOT_COMMIT_BLOCK_YET"
             );
 
             DepositBlock storage depositBlock = state.depositBlocks[numDepositBlocksCommitted];
@@ -345,7 +345,7 @@ contract Exchange is IExchange, NoDefaultFunc
         } else if (blockType == uint(BlockType.ONCHAIN_WITHDRAW)) {
             require(
                 isWithdrawBlockCommittable(stateID, numWithdrawBlocksCommitted),
-                CANNOT_COMMIT_BLOCK_YET
+                "CANNOT_COMMIT_BLOCK_YET"
             );
 
             WithdrawBlock storage withdrawBlock = state.withdrawBlocks[numWithdrawBlocksCommitted];
@@ -368,8 +368,8 @@ contract Exchange is IExchange, NoDefaultFunc
         }
 
         // Check if we need to commit a deposit or withdraw block
-        require(!isWithdrawBlockForced(stateID, numWithdrawBlocksCommitted), BLOCK_COMMIT_FORCED);
-        require(!isDepositBlockForced(stateID, numDepositBlocksCommitted), BLOCK_COMMIT_FORCED);
+        require(!isWithdrawBlockForced(stateID, numWithdrawBlocksCommitted), "BLOCK_COMMIT_FORCED");
+        require(!isDepositBlockForced(stateID, numDepositBlocksCommitted), "BLOCK_COMMIT_FORCED");
 
         bytes32 publicDataHash = sha256(data);
 
@@ -399,19 +399,19 @@ contract Exchange is IExchange, NoDefaultFunc
         public
     {
         // State cannot be in withdraw mode
-        require(!isInWithdrawMode(stateID), IN_WITHDRAW_MODE);
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
 
         State storage state = getState(stateID);
 
-        require(blockIdx < state.numBlocks, INVALID_BLOCK_IDX);
+        require(blockIdx < state.numBlocks, "INVALID_BLOCK_IDX");
         Block storage specifiedBlock = state.blocks[blockIdx];
-        require(specifiedBlock.state == BlockState.COMMITTED, BLOCK_VERIFIED_ALREADY);
+        require(specifiedBlock.state == BlockState.COMMITTED, "BLOCK_VERIFIED_ALREADY");
 
         require(
             IBlockVerifier(blockVerifierAddress).verifyProof(
                 specifiedBlock.publicDataHash, proof
             ),
-            INVALID_PROOF
+            "INVALID_PROOF"
         );
 
         // Update state of this block and potentially the following blocks
@@ -443,19 +443,19 @@ contract Exchange is IExchange, NoDefaultFunc
     {
         State storage state = getState(stateID);
 
-        require(blockIdx < state.numBlocks, INVALID_BLOCK_IDX);
+        require(blockIdx < state.numBlocks, "INVALID_BLOCK_IDX");
         Block storage specifiedBlock = state.blocks[blockIdx];
-        require(specifiedBlock.state == BlockState.COMMITTED, INVALID_BLOCK_STATE);
+        require(specifiedBlock.state == BlockState.COMMITTED, "INVALID_BLOCK_STATE");
 
         // The specified block needs to be the first block not finalized
         // (this way we always revert to a guaranteed valid block and don't need to revert multiple times)
         Block storage previousBlock = state.blocks[uint(blockIdx).sub(1)];
-        require(previousBlock.state == BlockState.FINALIZED, PREV_BLOCK_NOT_FINALIZED);
+        require(previousBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
 
         // Check if this block is verified too late
         require(
             now > specifiedBlock.timestamp + MAX_PROOF_GENERATION_TIME_IN_SECONDS,
-            TOO_LATE_PROOF
+            "TOO_LATE_PROOF"
         );
 
         // Eject operator
@@ -493,7 +493,7 @@ contract Exchange is IExchange, NoDefaultFunc
         uint24 accountID = uint24(state.numAccounts);
         state.accounts[accountID] = account;
         state.numAccounts++;
-        require(state.numAccounts <= 2 ** 24, TOO_MANY_ACCOUNTS);
+        require(state.numAccounts <= 2 ** 24, "TOO_MANY_ACCOUNTS");
 
         depositAndUpdateAccount(
             stateID,
@@ -544,16 +544,16 @@ contract Exchange is IExchange, NoDefaultFunc
         payable
     {
         // State cannot be in withdraw mode
-        require(!isInWithdrawMode(stateID), IN_WITHDRAW_MODE);
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
 
         State storage state = getState(stateID);
 
         Account storage account = getAccount(state, accountID);
         // Account type cannot be changed
         if (account.walletID < MAX_NUM_WALLETS) {
-            require(walletID < MAX_NUM_WALLETS, INVALID_WALLET_ID_CHANGE);
+            require(walletID < MAX_NUM_WALLETS, "INVALID_WALLET_ID_CHANGE");
         } else {
-            require(walletID >= MAX_NUM_WALLETS, INVALID_WALLET_ID_CHANGE);
+            require(walletID >= MAX_NUM_WALLETS, "INVALID_WALLET_ID_CHANGE");
         }
         // Update account info
         account.walletID = walletID;
@@ -562,29 +562,29 @@ contract Exchange is IExchange, NoDefaultFunc
 
         // Wallet needs to exist
         uint targetWalletID = walletID < MAX_NUM_WALLETS ? walletID : walletID - MAX_NUM_WALLETS;
-        require(targetWalletID < state.numWallets, INVALID_WALLET_ID);
+        require(targetWalletID < state.numWallets, "INVALID_WALLET_ID");
 
         // Check if msg.sender wants to create a dual author account for a wallet
         if (walletID < MAX_NUM_WALLETS) {
             // Don't allow depositing to accounts not owned by msg.sender so no tokens can be lost this way
-            require(account.owner == msg.sender, UNAUTHORIZED);
+            require(account.owner == msg.sender, "UNAUTHORIZED");
         } else {
             // Don't allow depositing to accounts like this
-            require(amount == 0, CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS);
+            require(amount == 0, "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS");
             // Check if msg.sender is allowed to create accounts for this wallet
             if (targetWalletID > 0) {
                 require(
                     state.wallets[targetWalletID].owner == msg.sender,
-                    UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT
+                    "UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT"
                 );
             }
         }
 
         // Check expected ETH value sent
         if (tokenID != 0) {
-            require(msg.value == state.depositFeeInETH, INVALID_VALUE);
+            require(msg.value == state.depositFeeInETH, "INVALID_VALUE");
         } else {
-            require(msg.value == (state.depositFeeInETH + amount), INVALID_VALUE);
+            require(msg.value == (state.depositFeeInETH + amount), "INVALID_VALUE");
         }
 
         // Get the deposit block
@@ -596,7 +596,7 @@ contract Exchange is IExchange, NoDefaultFunc
         if (depositBlock.numDeposits == 0) {
             depositBlock.timestampOpened = uint32(now);
         }
-        require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, BLOCK_FULL);
+        require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, "BLOCK_FULL");
 
         // Increase the fee for this block
         depositBlock.fee = depositBlock.fee.add(state.depositFeeInETH);
@@ -610,7 +610,7 @@ contract Exchange is IExchange, NoDefaultFunc
                     address(this),
                     amount
                 ),
-                INSUFFICIENT_FUND
+                "INSUFFICIENT_FUND"
             );
         }
 
@@ -654,19 +654,19 @@ contract Exchange is IExchange, NoDefaultFunc
         payable
     {
         // State cannot be in withdraw mode
-        require(!isInWithdrawMode(stateID), IN_WITHDRAW_MODE);
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
 
-        require(amount > 0, INVALID_VALUE);
+        require(amount > 0, "INVALID_VALUE");
 
         State storage state = getState(stateID);
 
         // Check expected ETH value sent
-        require(msg.value == state.withdrawFeeInETH, INVALID_VALUE);
+        require(msg.value == state.withdrawFeeInETH, "INVALID_VALUE");
 
         Account storage account = getAccount(state, accountID);
         // Allow anyone to withdraw from fee accounts
         if (account.walletID < MAX_NUM_WALLETS) {
-            require(account.owner == msg.sender, UNAUTHORIZED);
+            require(account.owner == msg.sender, "UNAUTHORIZED");
         }
 
         // Get the withdraw block
@@ -678,7 +678,7 @@ contract Exchange is IExchange, NoDefaultFunc
         if (withdrawBlock.numWithdrawals == 0) {
             withdrawBlock.timestampOpened = uint32(now);
         }
-        require(withdrawBlock.numWithdrawals < NUM_WITHDRAWALS_IN_BLOCK, BLOCK_FULL);
+        require(withdrawBlock.numWithdrawals < NUM_WITHDRAWALS_IN_BLOCK, "BLOCK_FULL");
 
         // Increase the fee for this block
         withdrawBlock.fee = withdrawBlock.fee.add(state.withdrawFeeInETH);
@@ -716,17 +716,17 @@ contract Exchange is IExchange, NoDefaultFunc
     {
         State storage state = getState(stateID);
 
-        require(blockIdx < state.numBlocks, INVALID_BLOCK_IDX);
+        require(blockIdx < state.numBlocks, "INVALID_BLOCK_IDX");
         Block storage withdrawBlock = state.blocks[blockIdx];
 
         // Only allow withdrawing on finalized blocks
-        require(withdrawBlock.state == BlockState.FINALIZED, BLOCK_NOT_FINALIZED);
+        require(withdrawBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
         // Get the withdraw data of the given slot
         // TODO: optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
         uint offset = 4 + 32 + 32 + 3 + 32 + (3 + 2 + 12) * (slotIdx + 1);
-        require(offset < withdrawals.length + 32, INVALID_BLOCK_IDX);
+        require(offset < withdrawals.length + 32, "INVALID_BLOCK_IDX");
         uint data;
         assembly {
             data := mload(add(withdrawals, offset))
@@ -789,7 +789,7 @@ contract Exchange is IExchange, NoDefaultFunc
                 owner.transfer(amountToOwner);
             } else {
                 // ERC20 token
-                require(token.safeTransfer(owner, amountToOwner), TRANSFER_FAILURE);
+                require(token.safeTransfer(owner, amountToOwner), "TRANSFER_FAILURE");
             }
         }
     }
@@ -800,7 +800,7 @@ contract Exchange is IExchange, NoDefaultFunc
         external
     {
         // State cannot be in withdraw mode
-        require(!isInWithdrawMode(stateID), IN_WITHDRAW_MODE);
+        require(!isInWithdrawMode(stateID), "IN_WITHDRAW_MODE");
 
         State storage state = getState(stateID);
 
@@ -809,7 +809,7 @@ contract Exchange is IExchange, NoDefaultFunc
         );
         state.wallets[state.numWallets] = wallet;
         state.numWallets++;
-        require(state.numWallets <= MAX_NUM_WALLETS, TOO_MANY_WALLETS);
+        require(state.numWallets <= MAX_NUM_WALLETS, "TOO_MANY_WALLETS");
 
         emit WalletRegistered(wallet.owner, uint24(state.numWallets - 1));
     }
@@ -823,11 +823,11 @@ contract Exchange is IExchange, NoDefaultFunc
     {
         State storage state = getState(stateID);
 
-        require(blockIdx > 0 && blockIdx < state.numBlocks, INVALID_BLOCK_IDX);
+        require(blockIdx > 0 && blockIdx < state.numBlocks, "INVALID_BLOCK_IDX");
         Block storage requestedBlock = state.blocks[blockIdx];
         Block storage previousBlock = state.blocks[blockIdx - 1];
 
-        require(requestedBlock.state == BlockState.FINALIZED, BLOCK_NOT_FINALIZED);
+        require(requestedBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
         address payable operator = IOperatorRegistry(operatorRegistryAddress).getOperatorOwner(
             stateID,
@@ -845,7 +845,7 @@ contract Exchange is IExchange, NoDefaultFunc
         } else {
             revert(BLOCK_HAS_NO_OPERATOR_FEE);
         }
-        require(fee == 0, FEE_WITHDRAWN_ALREADY);
+        require(fee == 0, "FEE_WITHDRAWN_ALREADY");
 
         operator.transfer(fee);
 
@@ -860,12 +860,12 @@ contract Exchange is IExchange, NoDefaultFunc
         returns (bool success)
     {
         // TODO: should only be callable by BurnManager
-        require(burnBalances[token] >= amount, TOO_LARGE_AMOUNT);
+        require(burnBalances[token] >= amount, "TOO_LARGE_AMOUNT");
         burnBalances[token] = burnBalances[token].sub(amount);
 
         // Token transfer needs to be done after the state changes to prevent a reentrancy attack
         success = token.safeTransfer(msg.sender, amount);
-        require(success, TRANSFER_FAILURE);
+        require(success, "TRANSFER_FAILURE");
 
         emit WithdrawBurned(token, amount);
 
@@ -879,7 +879,7 @@ contract Exchange is IExchange, NoDefaultFunc
         view
         returns (State storage state)
     {
-        require(stateID < states.length, INVALID_STATE_ID);
+        require(stateID < states.length, "INVALID_STATE_ID");
         state = states[stateID];
     }
 
@@ -891,7 +891,7 @@ contract Exchange is IExchange, NoDefaultFunc
         view
         returns (Account storage account)
     {
-        require(accountID < state.numAccounts, INVALID_ACCOUNT_ID);
+        require(accountID < state.numAccounts, "INVALID_ACCOUNT_ID");
         account = state.accounts[accountID];
     }
 
@@ -1115,14 +1115,14 @@ contract Exchange is IExchange, NoDefaultFunc
         external
         returns (bool)
     {
-        require(isInWithdrawMode(stateID), NOT_IN_WITHDRAW_MODE);
+        require(isInWithdrawMode(stateID), "NOT_IN_WITHDRAW_MODE");
 
         State storage state = getState(stateID);
         Block storage lastBlock = state.blocks[state.numBlocks - 1];
-        require(lastBlock.state == BlockState.FINALIZED, PREV_BLOCK_NOT_FINALIZED);
+        require(lastBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
 
         Account storage account = getAccount(state, accountID);
-        require(account.withdrawn == false, WITHDRAWN_ALREADY);
+        require(account.withdrawn == false, "WITHDRAWN_ALREADY");
 
         verifyAccountBalance(
             lastBlock.merkleRoot,
@@ -1181,25 +1181,25 @@ contract Exchange is IExchange, NoDefaultFunc
         external
         returns (bool)
     {
-        require(isInWithdrawMode(stateID), NOT_IN_WITHDRAW_MODE);
+        require(isInWithdrawMode(stateID), "NOT_IN_WITHDRAW_MODE");
 
         State storage state = getState(stateID);
         Block storage lastBlock = state.blocks[state.numBlocks - 1];
-        require(lastBlock.state == BlockState.FINALIZED, PREV_BLOCK_NOT_FINALIZED);
+        require(lastBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
 
-        require (depositBlockIdx >= lastBlock.numDepositBlocksCommitted, BLOCK_COMMITTED_ALREADY);
+        require (depositBlockIdx >= lastBlock.numDepositBlocksCommitted, "BLOCK_COMMITTED_ALREADY");
 
-        require(depositBlockIdx < state.numDepositBlocks, INVALID_BLOCK_IDX);
+        require(depositBlockIdx < state.numDepositBlocks, "INVALID_BLOCK_IDX");
         require(
             slotIdx < state.depositBlocks[depositBlockIdx].pendingDeposits.length,
-            INVALID_SLOT_IDX
+            "INVALID_SLOT_IDX"
         );
 
         PendingDeposit storage pendingDeposit =
             state.depositBlocks[depositBlockIdx].pendingDeposits[slotIdx];
 
         uint amount = pendingDeposit.amount;
-        require(amount > 0, WITHDRAWN_ALREADY);
+        require(amount > 0, "WITHDRAWN_ALREADY");
 
         // Set the amount to 0 so it cannot be withdrawn again
         pendingDeposit.amount = 0;
