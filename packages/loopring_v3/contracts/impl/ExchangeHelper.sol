@@ -61,7 +61,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
             calculatedRoot,
             accountPath
         );
-        require(calculatedRoot == merkleRoot, INVALID_MERKLE_TREE_DATA);
+        require(calculatedRoot == merkleRoot, "INVALID_MERKLE_TREE_DATA");
     }
 
     function getBalancesRoot(
