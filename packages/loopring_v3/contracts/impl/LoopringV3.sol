@@ -35,27 +35,21 @@ contract LoopringV3 is ILoopringV3, Ownable
 
     function updateSettings(
         address _lrcAddress,
-        uint _dexCreationCostLRC,
-        uint _dexCreationIncrementalCostLRC,
-        uint _dexStakedLRCPerFailure
+        uint _creationCostLRC
         )
         external
         onlyOwner
     {
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
-        require(0 != _dexCreationCostLRC, "ZERO_VALUE");
-        require(0 != _dexCreationIncrementalCostLRC, "ZERO_VALUE");
-        require(0 != _dexStakedLRCPerFailure, "ZERO_VALUE");
+        require(0 != _creationCostLRC, "ZERO_VALUE");
 
         lrcAddress = _lrcAddress;
-        dexCreationCostLRC = _dexCreationCostLRC;
-        dexCreationIncrementalCostLRC = _dexCreationIncrementalCostLRC;
-        dexStakedLRCPerFailure = _dexStakedLRCPerFailure;
+        creationCostLRC = _creationCostLRC;
     }
 
     function createExchange(
-        address exchangeOwnerContractAddress,
-        uint32  numFailuresAllowed)
+        address exchangeOwnerContractAddress
+        )
         external
         returns (uint exchangeId, address exchangeAddress)
     {
@@ -70,13 +64,10 @@ contract LoopringV3 is ILoopringV3, Ownable
             "CREATOR_IS_CONTRACT"
         );
 
-        uint totalCostLRC = dexCreationCostLRC +
-            exchanges.length * dexCreationIncrementalCostLRC;
-
         // Burn the LRC
-        if (totalCostLRC > 0) {
+        if (creationCostLRC > 0) {
             require(
-                BurnableERC20(lrcAddress).burn(totalCostLRC),
+                BurnableERC20(lrcAddress).burn(creationCostLRC),
                 "BURN_FAILURE"
             );
         }
@@ -87,10 +78,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeId,
             address(this),
             exchangeOwnerContractAddress,
-            sender,
-            lrcAddress,
-            dexStakedLRCPerFailure,
-            numFailuresAllowed
+            sender
         );
 
         exchangeAddress = address(exchange);
@@ -101,7 +89,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeAddress,
             exchangeOwnerContractAddress,
             sender,
-            totalCostLRC
+            creationCostLRC
         );
     }
 

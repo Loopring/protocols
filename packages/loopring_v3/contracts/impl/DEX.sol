@@ -19,6 +19,7 @@ pragma solidity 0.5.2;
 import "../iface/IDEX.sol";
 import "../iface/ILoopringV3.sol";
 
+import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
@@ -36,10 +37,7 @@ contract DEX is IDEX, NoDefaultFunc
         uint    _id,
         address _loopringAddress,
         address _ownerContractAddress,
-        address _creator,
-        address _lrcAddress,
-        uint    _stakedLRCPerFailure,
-        uint32  _numOfFailuresAllowed
+        address _creator
         )
         public
     {
@@ -47,44 +45,22 @@ contract DEX is IDEX, NoDefaultFunc
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _ownerContractAddress, "ZERO_ADDRESS");
         require(address(0) != _creator, "ZERO_ADDRESS");
-        require(0 != _stakedLRCPerFailure, "ZERO_VALUE");
-        require(0 != _numOfFailuresAllowed, "ZERO_VALUE");
 
         id = _id;
         loopringAddress = _loopringAddress;
         ownerContractAddress = _ownerContractAddress;
         creator = _creator;
-        lrcAddress = _lrcAddress;
 
-        stakedLRCPerFailure = _stakedLRCPerFailure;
-        numOfFailuresAllowed = _numOfFailuresAllowed;
-
-        uint stakedLRCAmount = stakedLRCPerFailure.mul(numOfFailuresAllowed);
-
-        require(
-            lrcAddress.safeTransferFrom(
-                creator,
-                address(this),
-                stakedLRCAmount
-            ),
-            "INSUFFICIENT_FUND"
-        );
-
-        emit LRCStaked(id, stakedLRCAmount);
+        lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
     }
 
-    function getStakedLRCPerFailure()
+
+    function getStakedLRCAmount()
         external
         view
         returns (uint)
     {
-        uint global = ILoopringV3(loopringAddress).dexStakedLRCPerFailure();
-
-        if (global > stakedLRCPerFailure) {
-            return stakedLRCPerFailure;
-        } else {
-            return global;
-        }
+        return ERC20(lrcAddress).balanceOf(address(this));
     }
 
 }

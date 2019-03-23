@@ -28,12 +28,15 @@ contract IDEX
     address public creator              = address(0);
     address public lrcAddress           = address(0);
 
-    uint    public stakedLRCPerFailure  = 0;
-    uint32  public numOfFailuresAllowed = 0;
-    uint32  public numOfFailuresOccured = 0;
+    uint    public totalBurnedLRC  = 0;
 
     event LRCStaked(
       uint exchangeId,
-      uint amount
+      uint totalStakedLRC
     );
+
+    function getStakedLRCAmount()
+        external
+        view
+        returns (uint);
 }

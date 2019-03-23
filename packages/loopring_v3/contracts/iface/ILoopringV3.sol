@@ -27,28 +27,23 @@ contract ILoopringV3
         address exchangeAddress,
         address exchangeOwnerContractAddress,
         address creator,
-        uint    lrcBurned
+        uint    burnedLRC
     );
 
     address[] public exchanges;
 
     address public lrcAddress = address(0);
 
-    uint public dexCreationCostLRC              = 0 ether;
-    uint public dexCreationIncrementalCostLRC   = 0 ether;
-    uint public dexStakedLRCPerFailure          = 0 ether;
+    uint public creationCostLRC              = 0 ether;
 
     function updateSettings(
         address _lrcAddress,
-        uint _dexCreationCostLRC,
-        uint _dexCreationIncrementalCostLRC,
-        uint _dexStakedLRCPerFailure
+        uint _creationCostLRC
         )
         external;
 
     function createExchange(
-        address _exchangeOwnerContractAddress,
-        uint32  _numFailuresAllowed
+        address _exchangeOwnerContractAddress
         )
         external
         returns (uint exchangeId, address exchangeAddress);
