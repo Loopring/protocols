@@ -35,7 +35,7 @@ contract ILoopring
 
     uint public dexCreationCostLRC              = 0 ether;
     uint public dexCreationIncrementalCostLRC   = 0 ether;
-    uint public dexStakedLRCPerFailure           = 0 ether;
+    uint public dexStakedLRCPerFailure          = 0 ether;
 
     function updateSettings(
         address _lrcAddress,
