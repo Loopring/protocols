@@ -24,8 +24,9 @@ import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
 
-/// @title An Implementation of IExchange.
-/// @author Brecht Devos - <brecht@loopring.org>,
+/// @title An Implementation of IDEX.
+/// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang  - <daniel@loopring.org>
 contract DEX is IDEX, NoDefaultFunc
 {
     using MathUint          for uint;

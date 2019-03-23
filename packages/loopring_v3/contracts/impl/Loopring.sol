@@ -17,7 +17,6 @@
 pragma solidity 0.5.2;
 
 import "../iface/ILoopring.sol";
-// import "../iface/IDEX.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/BurnableERC20.sol";
@@ -27,8 +26,9 @@ import "../lib/Ownable.sol";
 import "./DEX.sol";
 
 
-/// @title An Implementation of IExchange.
-/// @author Brecht Devos - <brecht@loopring.org>,
+/// @title An Implementation of ILoopring.
+/// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang  - <daniel@loopring.org>
 contract Loopring is ILoopring, Ownable
 {
     using AddressUtil for address;

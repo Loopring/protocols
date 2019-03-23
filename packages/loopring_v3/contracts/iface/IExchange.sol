@@ -17,8 +17,9 @@
 pragma solidity 0.5.2;
 
 
-/// @title IExchange
+/// @title ILoopring
 /// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang  - <daniel@loopring.org>
 contract IExchange
 {
     event NewState(

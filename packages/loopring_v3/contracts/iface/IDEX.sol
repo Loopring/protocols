@@ -17,8 +17,9 @@
 pragma solidity 0.5.2;
 
 
-/// @title IExchange
-/// @author Daniel Wang - <daniel@loopring.org>
+/// @title IDEX
+/// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang  - <daniel@loopring.org>
 contract IDEX
 {
     uint    public id = 0;
