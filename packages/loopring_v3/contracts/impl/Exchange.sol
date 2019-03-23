@@ -188,7 +188,7 @@ contract Exchange is IExchange, NoDefaultFunc
         uint depositFeeInETH,
         uint withdrawFeeInETH,
         uint maxWithdrawFeeInETH,
-        bool closedOperatorRegistering
+        bool operatorRegistrationClosed
         )
         external
     {
@@ -221,7 +221,7 @@ contract Exchange is IExchange, NoDefaultFunc
 
         IOperatorRegistry(operatorRegistryAddress).createNewState(
             owner,
-            closedOperatorRegistering
+            operatorRegistrationClosed
         );
 
         emit NewState(uint16(states.length - 1), owner);

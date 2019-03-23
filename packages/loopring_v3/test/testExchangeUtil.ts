@@ -1232,7 +1232,7 @@ export class ExchangeTestUtil {
       depositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
       withdrawFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
       maxWithdrawFeeInETH: BN = new BN(web3.utils.toWei("0.001", "ether")),
-      closedOperatorRegistering: boolean = false,
+      operatorRegistrationClosed: boolean = false,
     ) {
     // Create the new state
     const tx = await this.exchange.createNewState(
@@ -1240,7 +1240,7 @@ export class ExchangeTestUtil {
       depositFeeInETH,
       withdrawFeeInETH,
       maxWithdrawFeeInETH,
-      closedOperatorRegistering);
+      operatorRegistrationClosed);
     // pjs.logInfo("\x1b[46m%s\x1b[0m", "[NewState] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "NewState", web3.eth.blockNumber);

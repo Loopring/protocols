@@ -59,7 +59,7 @@ contract ITokenRegistry
         returns (address);
 
     function getBurnRate(
-        uint24 tokenID
+        uint16 tokenID
         )
         public
         view

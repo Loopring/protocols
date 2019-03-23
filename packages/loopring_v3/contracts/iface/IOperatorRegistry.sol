@@ -33,19 +33,19 @@ contract IOperatorRegistry
 
     function createNewState(
         address owner,
-        bool closedOperatorRegistering
+        bool operatorRegistrationClosed
         )
         external;
 
     function getActiveOperatorID(
-        uint32 stateID
+        uint32 stateIdx
         )
         external
         view
         returns (uint32);
 
     function getOperatorOwner(
-        uint32 stateID,
+        uint32 stateIdx,
         uint32 operatorID
         )
         external
@@ -53,7 +53,7 @@ contract IOperatorRegistry
         returns (address payable owner);
 
     function ejectOperator(
-        uint32 stateID,
+        uint32 stateIdx,
         uint32 operatorID
         )
         external;
