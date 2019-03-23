@@ -88,7 +88,7 @@ public:
         const jubjub::Params& params,
         const VariableT& _accountsMerkleRoot,
         const VariableT& _operatorBalancesRoot,
-        const VariableArrayT& _stateID,
+        const VariableArrayT& _realmID,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
@@ -175,7 +175,7 @@ public:
                          {feePaymentOperator.Y, tradingHistoryRootF_O},
                          FMT(prefix, ".updateBalanceF_O")),
 
-        message(flatten({_stateID, accountID, orderTokenID, orderID, dualAuthAccountID,
+        message(flatten({_realmID, accountID, orderTokenID, orderID, dualAuthAccountID,
                          feeTokenID, fee.bits, walletSplitPercentage.bits,
                          nonce_before.bits, padding.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
@@ -310,7 +310,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
-    libsnark::dual_variable_gadget<FieldT> stateID;
+    libsnark::dual_variable_gadget<FieldT> realmID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
@@ -329,7 +329,7 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
-        stateID(pb, 32, FMT(prefix, ".stateID")),
+        realmID(pb, 32, FMT(prefix, ".realmID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
@@ -356,7 +356,7 @@ public:
 
         pb.set_input_sizes(1);
 
-        publicData.add(stateID.bits);
+        publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
         publicData.add(operatorAccountID.bits);
@@ -364,7 +364,7 @@ public:
         {
             VariableT cancelAccountsRoot = (j == 0) ? merkleRootBefore.packed : cancels.back().getNewAccountsRoot();
             VariableT cancelOperatorBalancesRoot = (j == 0) ? balancesRoot_before : cancels.back().getNewOperatorBalancesRoot();
-            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelOperatorBalancesRoot, stateID.bits, std::string("cancels_") + std::to_string(j));
+            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelOperatorBalancesRoot, realmID.bits, std::string("cancels_") + std::to_string(j));
             cancels.back().generate_r1cs_constraints();
 
             // Store data from withdrawal
@@ -394,8 +394,8 @@ public:
 
     bool generateWitness(const Loopring::CancelContext& context)
     {
-        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
-        stateID.generate_r1cs_witness_from_bits();
+        realmID.bits.fill_with_bits_of_field_element(pb, context.realmID);
+        realmID.generate_r1cs_witness_from_bits();
 
         merkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.merkleRootBefore);
         merkleRootBefore.generate_r1cs_witness_from_bits();

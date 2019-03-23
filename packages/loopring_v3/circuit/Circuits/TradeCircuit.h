@@ -47,7 +47,7 @@ public:
     VariableT emptyTradeHistory;
     VariableT maxNumWallets;
 
-    VariableT blockStateID;
+    VariableT blockRealmID;
 
     const jubjub::VariablePointT publicKey;
     const jubjub::VariablePointT feeRecipientPublicKey;
@@ -153,7 +153,7 @@ public:
     RingSettlementGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
-        const VariableT& _stateID,
+        const VariableT& _realmID,
         const VariableT& _accountsRoot,
         const VariableT& _timestamp,
         const VariableT& _operatorBalancesRoot,
@@ -182,8 +182,8 @@ public:
 
         maxNumWallets_leq_feeRecipientWalletID(pb, maxNumWallets, feeRecipientWalletID, FMT(prefix, ".maxNumWallets <= feeRecipientWalletID")),
 
-        orderA(pb, params, _stateID, FMT(prefix, ".orderA")),
-        orderB(pb, params, _stateID, FMT(prefix, ".orderB")),
+        orderA(pb, params, _realmID, FMT(prefix, ".orderA")),
+        orderB(pb, params, _realmID, FMT(prefix, ".orderB")),
 
         orderMatching(pb, _timestamp, orderA, orderB, FMT(prefix, ".orderMatching")),
 
@@ -646,7 +646,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
-    libsnark::dual_variable_gadget<FieldT> stateID;
+    libsnark::dual_variable_gadget<FieldT> realmID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
     libsnark::dual_variable_gadget<FieldT> timestamp;
@@ -667,7 +667,7 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
-        stateID(pb, 32, FMT(prefix, ".stateID")),
+        realmID(pb, 32, FMT(prefix, ".realmID")),
 
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
@@ -703,12 +703,12 @@ public:
 
         pb.set_input_sizes(1);
 
-        stateID.generate_r1cs_constraints(true);
+        realmID.generate_r1cs_constraints(true);
         merkleRootBefore.generate_r1cs_constraints(true);
         merkleRootAfter.generate_r1cs_constraints(true);
         timestamp.generate_r1cs_constraints(true);
 
-        publicData.add(stateID.bits);
+        publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
         publicData.add(operatorAccountID.bits);
@@ -720,7 +720,7 @@ public:
             ringSettlements.push_back(new RingSettlementGadget(
                 pb,
                 params,
-                stateID.packed,
+                realmID.packed,
                 ringAccountsRoot,
                 timestamp.packed,
                 ringOperatorBalancesRoot,
@@ -762,8 +762,8 @@ public:
 
         lrcTokenID.fill_with_bits_of_ulong(pb, 1);
 
-        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
-        stateID.generate_r1cs_witness_from_bits();
+        realmID.bits.fill_with_bits_of_field_element(pb, context.realmID);
+        realmID.generate_r1cs_witness_from_bits();
 
         merkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.merkleRootBefore);
         merkleRootBefore.generate_r1cs_witness_from_bits();

@@ -31,21 +31,21 @@ contract IOperatorRegistry
         uint32 operatorID
     );
 
-    function createNewState(
+    function createRealm(
         address owner,
         bool closedOperatorRegistering
         )
         external;
 
     function getActiveOperatorID(
-        uint32 stateID
+        uint32 realmID
         )
         external
         view
         returns (uint32);
 
     function getOperatorOwner(
-        uint32 stateID,
+        uint32 realmID,
         uint32 operatorID
         )
         external
@@ -53,7 +53,7 @@ contract IOperatorRegistry
         returns (address payable owner);
 
     function ejectOperator(
-        uint32 stateID,
+        uint32 realmID,
         uint32 operatorID
         )
         external;

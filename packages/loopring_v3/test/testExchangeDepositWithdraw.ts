@@ -10,20 +10,20 @@ contract("Exchange", (accounts: string[]) => {
 
   const zeroAddress = "0x" + "00".repeat(20);
 
-  const createAccountAndDepositChecked = async (stateID: number, keyPair: any, walletID: number, tokenID: number,
-                                                amount: BN, owner: string, depositFee: BN,
-                                                token: string) => {
+  const createAccountChecked = async (realmID: number, keyPair: any, walletID: number, tokenID: number,
+                                      amount: BN, owner: string, depositFee: BN,
+                                      token: string) => {
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots(realmID)).toNumber();
 
     const ethValue = (token === "ETH") ? amount.add(depositFee) : depositFee;
-    await exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+    await exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
       walletID, tokenID, amount, {from: owner, value: ethValue, gasPrice: 0});
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots(realmID)).toNumber();
 
     const expectedBalanceDelta = (token === "ETH") ? amount.add(depositFee) : amount;
     assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(expectedBalanceDelta)),
@@ -44,19 +44,19 @@ contract("Exchange", (accounts: string[]) => {
     return accountID;
   };
 
-  const depositChecked = async (stateID: number, accountID: number, tokenID: number, amount: BN,
+  const depositChecked = async (realmID: number, accountID: number, tokenID: number, amount: BN,
                                 owner: string, depositFee: BN,
                                 token: string) => {
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots(realmID)).toNumber();
 
     const ethValue = (token === "ETH") ? amount.add(depositFee) : depositFee;
-    await exchange.deposit(stateID, accountID, tokenID, amount, {from: owner, value: ethValue, gasPrice: 0});
+    await exchange.deposit(realmID, accountID, tokenID, amount, {from: owner, value: ethValue, gasPrice: 0});
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots(realmID)).toNumber();
 
     const expectedBalanceDelta = (token === "ETH") ? amount.add(depositFee) : amount;
     assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(expectedBalanceDelta)),
@@ -76,21 +76,21 @@ contract("Exchange", (accounts: string[]) => {
     assert.equal(items[0][0].toNumber(), accountID, "Deposit accountID should match");
   };
 
-  const depositAndUpdateAccountChecked = async (stateID: number, accountID: number, keyPair: any, walletID: number,
-                                                tokenID: number, amount: BN,
-                                                owner: string, depositFee: BN,
-                                                token: string) => {
+  const updateAccountChecked = async (realmID: number, accountID: number, keyPair: any, walletID: number,
+                                      tokenID: number, amount: BN,
+                                      owner: string, depositFee: BN,
+                                      token: string) => {
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots(realmID)).toNumber();
 
     const ethValue = (token === "ETH") ? amount.add(depositFee) : depositFee;
-    await exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, walletID,
-                                           tokenID, amount, {from: owner, value: ethValue, gasPrice: 0});
+    await exchange.updateAccount(realmID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, walletID,
+                                 tokenID, amount, {from: owner, value: ethValue, gasPrice: 0});
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots(stateID)).toNumber();
+    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots(realmID)).toNumber();
 
     const expectedBalanceDelta = (token === "ETH") ? amount.add(depositFee) : amount;
     assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(expectedBalanceDelta)),
@@ -110,7 +110,7 @@ contract("Exchange", (accounts: string[]) => {
     assert.equal(items[0][0].toNumber(), accountID, "Deposit accountID should match");
   };
 
-  const withdrawOnceChecked = async (stateID: number, blockIdx: number, slotIdx: number,
+  const withdrawOnceChecked = async (realmID: number, blockIdx: number, slotIdx: number,
                                      accountID: number, tokenID: number,
                                      owner: string, token: string, expectedAmount: BN, bBurn: boolean = false) => {
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
@@ -118,7 +118,7 @@ contract("Exchange", (accounts: string[]) => {
     console.log(token);
     const burnBalanceBefore = await exchange.burnBalances(token);
 
-    await exchange.withdraw(stateID, blockIdx, slotIdx);
+    await exchange.withdraw(realmID, blockIdx, slotIdx);
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
@@ -150,15 +150,15 @@ contract("Exchange", (accounts: string[]) => {
     assert(items[0][2].eq(expectedAmount), "amount should match");
   };
 
-  const withdrawChecked = async (stateID: number, blockIdx: number, slotIdx: number,
+  const withdrawChecked = async (realmID: number, blockIdx: number, slotIdx: number,
                                  accountID: number, tokenID: number,
                                  owner: string, token: string, expectedAmount: BN, bBurn: boolean = false) => {
     // Withdraw
-    await withdrawOnceChecked(stateID, blockIdx, slotIdx,
+    await withdrawOnceChecked(realmID, blockIdx, slotIdx,
                               accountID, tokenID,
                               owner, token, expectedAmount, bBurn);
     // Withdraw again, no tokens should be transferred
-    await withdrawOnceChecked(stateID, blockIdx, slotIdx,
+    await withdrawOnceChecked(realmID, blockIdx, slotIdx,
                               accountID, tokenID,
                               owner, token, new BN(0), bBurn);
   };
@@ -173,32 +173,32 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("ERC20: Deposit", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], false);
+      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], false);
       let keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const walletA = await exchangeTestUtil.createWallet(stateID, exchangeTestUtil.testContext.wallets[0]);
+      const walletA = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[0]);
       let amount = new BN(web3.utils.toWei("7", "ether"));
       let token = "LRC";
       let tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
 
       // The correct deposit fee expected by the contract
-      const depositFee = await exchange.getDepositFee(stateID);
+      const depositFee = await exchange.getDepositFee(realmID);
 
       // No ETH sent
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: new BN(0)}),
         "INVALID_VALUE",
       );
       // Not enough ETH
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: depositFee.sub(new BN(1))}),
         "INVALID_VALUE",
       );
       // Too much ETH
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: depositFee.add(new BN(1))}),
         "INVALID_VALUE",
       );
@@ -206,7 +206,7 @@ contract("Exchange", (accounts: string[]) => {
       // Insufficient funds
       await exchangeTestUtil.setBalanceAndApprove(owner, token, amount.sub(new BN(1)));
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: depositFee}),
         "INSUFFICIENT_FUND",
       );
@@ -216,21 +216,21 @@ contract("Exchange", (accounts: string[]) => {
 
       // Invalid tokenID
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, 123, amount, {from: owner, value: depositFee}),
         "INVALID_TOKENID",
       );
 
       // Invalid walletID
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           789, tokenID, amount, {from: owner, value: depositFee}),
         "INVALID_WALLETID",
       );
 
       // Everything correct
-      const accountID = await createAccountAndDepositChecked(stateID, keyPair, walletA.walletID, tokenID,
-                                                             amount, owner, depositFee, token);
+      const accountID = await createAccountChecked(realmID, keyPair, walletA.walletID, tokenID,
+                                                   amount, owner, depositFee, token);
 
       // Do deposit to the same account with another token
       token = "WETH";
@@ -243,109 +243,109 @@ contract("Exchange", (accounts: string[]) => {
       // Invalid msg.sender
       const wrongOwner = exchangeTestUtil.testContext.deployer;
       await expectThrow(
-        exchange.deposit(stateID, accountID, tokenID, amount, {from: wrongOwner, value: depositFee}),
+        exchange.deposit(realmID, accountID, tokenID, amount, {from: wrongOwner, value: depositFee}),
         "UNAUTHORIZED",
       );
 
       // Invalid accountID
       await expectThrow(
-        exchange.deposit(stateID, 258, tokenID, amount, {from: owner, value: depositFee}),
+        exchange.deposit(realmID, 258, tokenID, amount, {from: owner, value: depositFee}),
         "INVALID_ACCOUNTID",
       );
 
       // Everything correct
-      await depositChecked(stateID, accountID, tokenID, amount, owner, depositFee, token);
+      await depositChecked(realmID, accountID, tokenID, amount, owner, depositFee, token);
 
       // Change some account info
       amount = new BN(0);
       keyPair = exchangeTestUtil.getKeyPairEDDSA();
 
       // Change the publicKey
-      await depositAndUpdateAccountChecked(stateID, accountID, keyPair, walletA.walletID,
+      await updateAccountChecked(realmID, accountID, keyPair, walletA.walletID,
         tokenID, amount, owner, depositFee, token);
 
       // Try to change the type of the account
       const invalidWalletID = walletA.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
       await expectThrow(
-        exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
-                                         tokenID, amount, {from: owner, value: depositFee}),
+        exchange.updateAccount(realmID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
+                               tokenID, amount, {from: owner, value: depositFee}),
         "INVALID_WALLET_ID_CHANGE",
       );
 
       // Change the walletID
-      const walletB = await exchangeTestUtil.createWallet(stateID, exchangeTestUtil.testContext.wallets[1]);
+      const walletB = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[1]);
       assert(walletA.walletID !== walletB.walletID);
-      await depositAndUpdateAccountChecked(stateID, accountID, keyPair, walletB.walletID,
+      await updateAccountChecked(realmID, accountID, keyPair, walletB.walletID,
         tokenID, amount, owner, depositFee, token);
     });
 
     it("ETH: Deposit", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], false);
+      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], false);
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const walletA = await exchangeTestUtil.createWallet(stateID, exchangeTestUtil.testContext.wallets[0]);
+      const walletA = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[0]);
       const amount = new BN(web3.utils.toWei("3", "ether"));
       const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress("ETH");
 
       // The correct deposit fee expected by the contract
-      const depositFee = await exchange.getDepositFee(stateID);
+      const depositFee = await exchange.getDepositFee(realmID);
 
       // No ETH sent
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: new BN(0)}),
         "INCORRECT_ETH_VALUE",
       );
 
       // Not enough ETH
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: amount}),
         "INCORRECT_ETH_VALUE",
       );
 
       // Too much ETH
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletA.walletID, tokenID, amount, {from: owner, value: amount.add(depositFee).add(new BN(1))}),
         "INCORRECT_ETH_VALUE",
       );
 
       // Everything correct
-      await createAccountAndDepositChecked(stateID, keyPair,
+      await createAccountChecked(realmID, keyPair,
         walletA.walletID, tokenID, amount, owner, depositFee, "ETH");
     });
 
     it("Dual-author/wallet account (walletID > 0)", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], false);
+      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], false);
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-      const walletA = await exchangeTestUtil.createWallet(stateID, exchangeTestUtil.testContext.wallets[0]);
-      const walletB = await exchangeTestUtil.createWallet(stateID, exchangeTestUtil.testContext.wallets[1]);
-      const walletC = await exchangeTestUtil.createWallet(stateID, walletA.owner);
+      const walletA = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[0]);
+      const walletB = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[1]);
+      const walletC = await exchangeTestUtil.createWallet(realmID, walletA.owner);
       let amount = new BN(0);
       const token = "ETH";
       const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
 
-      const depositFee = await exchange.getDepositFee(stateID);
+      const depositFee = await exchange.getDepositFee(realmID);
 
       // The dual-author walletID
       let walletID = walletA.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
 
       // Unauthorized msg.sender (not wallet owner)
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletID, tokenID, amount, {from: walletB.owner, value: depositFee}),
         "UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT",
       );
 
       // Everything correct
-      const accountID = await createAccountAndDepositChecked(stateID, keyPair, walletID, tokenID,
-                                                             amount, walletA.owner, depositFee, token);
+      const accountID = await createAccountChecked(realmID, keyPair, walletID, tokenID,
+                                                   amount, walletA.owner, depositFee, token);
 
       // Try to change the type of the account
       let invalidWalletID = walletA.walletID;
       await expectThrow(
-        exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
+        exchange.updateAccount(realmID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
                                          tokenID, amount, {from: walletA.owner, value: depositFee}),
         "INVALID_WALLET_ID_CHANGE",
       );
@@ -353,27 +353,27 @@ contract("Exchange", (accounts: string[]) => {
       // Try to change to a wallet not owned by the current wallet owner
       invalidWalletID = walletB.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
       await expectThrow(
-        exchange.depositAndUpdateAccount(stateID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
+        exchange.updateAccount(realmID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
                                          tokenID, amount, {from: walletA.owner, value: depositFee}),
         "UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT",
       );
 
       // Change the walletID to a wallet also owned by the previous wallet owner
       walletID = walletC.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
-      await depositAndUpdateAccountChecked(stateID, accountID, keyPair, walletID,
+      await updateAccountChecked(realmID, accountID, keyPair, walletID,
         tokenID, amount, walletA.owner, depositFee, token);
 
       // Try to deposit
       amount = new BN(web3.utils.toWei("3", "ether"));
       await expectThrow(
-        exchange.createAccountAndDeposit(stateID, keyPair.publicKeyX, keyPair.publicKeyY,
+        exchange.createAccount(realmID, keyPair.publicKeyX, keyPair.publicKeyY,
           walletID, tokenID, amount, {from: walletA.owner, value: depositFee}),
         "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS",
       );
     });
 
     it("Dual-author/wallet account (walletID == 0)", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], false);
+      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], false);
       const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
       const keyPairB = exchangeTestUtil.getKeyPairEDDSA();
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
@@ -382,96 +382,96 @@ contract("Exchange", (accounts: string[]) => {
       const token = "ETH";
       const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
 
-      const depositFee = await exchange.getDepositFee(stateID);
+      const depositFee = await exchange.getDepositFee(realmID);
 
       // The dual-author walletID for walletID 0
       const walletID = exchangeTestUtil.MAX_MUM_WALLETS;
 
       // Anyone can create these accounts
-      const accountIDA = await createAccountAndDepositChecked(stateID, keyPairA, walletID, tokenID,
-                                                              amount, ownerA, depositFee, token);
+      const accountIDA = await createAccountChecked(realmID, keyPairA, walletID, tokenID,
+                                                    amount, ownerA, depositFee, token);
 
-      const accountIDB = await createAccountAndDepositChecked(stateID, keyPairB, walletID, tokenID,
-                                                              amount, ownerB, depositFee, token);
+      const accountIDB = await createAccountChecked(realmID, keyPairB, walletID, tokenID,
+                                                    amount, ownerB, depositFee, token);
 
       // Try to deposit
       amount = new BN(web3.utils.toWei("3", "ether"));
       await expectThrow(
-        exchange.deposit(stateID, accountIDA, tokenID, amount, {from: ownerA, value: depositFee}),
+        exchange.deposit(realmID, accountIDA, tokenID, amount, {from: ownerA, value: depositFee}),
         "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS",
       );
     });
 
     it("Onchain withdrawal request", async () => {
-      const stateID = 0;
+      const realmID = 0;
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
-      const wallet = exchangeTestUtil.wallets[stateID][0];
+      const wallet = exchangeTestUtil.wallets[realmID][0];
       const balance = new BN(web3.utils.toWei("7", "ether"));
       const toWithdraw = new BN(web3.utils.toWei("4", "ether"));
       const token = "LRC";
       const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
       const one = new BN(1);
 
-      const depositInfo = await exchangeTestUtil.deposit(stateID, ownerA,
+      const depositInfo = await exchangeTestUtil.deposit(realmID, ownerA,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                          wallet.walletID, token, balance);
       const accountID = depositInfo.accountID;
-      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitDeposits(realmID);
 
-      const withdrawFee = await exchange.getWithdrawFee(stateID);
+      const withdrawFee = await exchange.getWithdrawFee(realmID);
 
       // No ETH sent
       await expectThrow(
-        exchange.requestWithdraw(stateID, accountID, tokenID, toWithdraw, {from: ownerA, value: new BN(0)}),
+        exchange.requestWithdraw(realmID, accountID, tokenID, toWithdraw, {from: ownerA, value: new BN(0)}),
         "INVALID_VALUE",
       );
       // Not enough ETH sent
       await expectThrow(
-        exchange.requestWithdraw(stateID, accountID, tokenID, toWithdraw, {from: ownerA, value: withdrawFee.sub(one)}),
+        exchange.requestWithdraw(realmID, accountID, tokenID, toWithdraw, {from: ownerA, value: withdrawFee.sub(one)}),
         "INVALID_VALUE",
       );
       // too much ETH sent
       await expectThrow(
-        exchange.requestWithdraw(stateID, accountID, tokenID, toWithdraw, {from: ownerA, value: withdrawFee.add(one)}),
+        exchange.requestWithdraw(realmID, accountID, tokenID, toWithdraw, {from: ownerA, value: withdrawFee.add(one)}),
         "INVALID_VALUE",
       );
 
       // Only the account owner can request a withdrawal
       await expectThrow(
-        exchange.requestWithdraw(stateID, accountID, tokenID, toWithdraw, {from: ownerB, value: withdrawFee}),
+        exchange.requestWithdraw(realmID, accountID, tokenID, toWithdraw, {from: ownerB, value: withdrawFee}),
         "UNAUTHORIZED",
       );
 
       // Try to withdraw nothing
       await expectThrow(
-        exchange.requestWithdraw(stateID, accountID, tokenID, new BN(0), {from: ownerB, value: withdrawFee}),
+        exchange.requestWithdraw(realmID, accountID, tokenID, new BN(0), {from: ownerB, value: withdrawFee}),
         "INVALID_VALUE",
       );
 
       // Do the request
       const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOnchain(
-        stateID, accountID, token, toWithdraw, ownerA,
+        realmID, accountID, token, toWithdraw, ownerA,
       );
 
       // Commit the deposit
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(stateID);
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(realmID);
       // Verify the block
-      await exchangeTestUtil.verifyPendingBlocks(stateID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
-      await withdrawChecked(stateID, blockIdx, witdrawalRequest.slotIdx,
+      const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+      await withdrawChecked(realmID, blockIdx, witdrawalRequest.slotIdx,
                             accountID, tokenID,
                             ownerA, token, toWithdraw);
     });
 
     it("Offchain withdrawal request", async () => {
-      const stateID = 0;
+      const realmID = 0;
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const wallet = exchangeTestUtil.wallets[stateID][0];
+      const wallet = exchangeTestUtil.wallets[realmID][0];
       const balance = new BN(web3.utils.toWei("4", "ether"));
       const toWithdraw = new BN(web3.utils.toWei("5", "ether"));
       const token = "ETH";
@@ -479,32 +479,32 @@ contract("Exchange", (accounts: string[]) => {
       const feeToken = "ETH";
       const fee = new BN(web3.utils.toWei("0.5", "ether"));
 
-      const depositInfo = await exchangeTestUtil.deposit(stateID, owner,
+      const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                          wallet.walletID, token, balance);
       const accountID = depositInfo.accountID;
-      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitDeposits(realmID);
 
       const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOffchain(
-        stateID, accountID, token, toWithdraw,
+        realmID, accountID, token, toWithdraw,
         feeToken, fee, 0, wallet.walletAccountID,
       );
-      await exchangeTestUtil.commitOffchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyPendingBlocks(stateID);
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
-      await withdrawChecked(stateID, blockIdx, 0,
+      const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+      await withdrawChecked(realmID, blockIdx, 0,
                             accountID, tokenID,
                             owner, token, balance.sub(fee));
     });
 
     it("Withdraw (normal account)", async () => {
-      const stateID = 0;
+      const realmID = 0;
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
-      const wallet = exchangeTestUtil.wallets[stateID][0];
+      const wallet = exchangeTestUtil.wallets[realmID][0];
 
       const balanceA = new BN(web3.utils.toWei("7", "ether"));
       const toWithdrawA = new BN(web3.utils.toWei("4", "ether"));
@@ -516,58 +516,58 @@ contract("Exchange", (accounts: string[]) => {
       const tokenB = "ETH";
       const tokenIDB = exchangeTestUtil.getTokenIdFromNameOrAddress(tokenB);
 
-      const depositInfoA = await exchangeTestUtil.deposit(stateID, ownerA,
+      const depositInfoA = await exchangeTestUtil.deposit(realmID, ownerA,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                           wallet.walletID, tokenA, balanceA);
-      const depositInfoB = await exchangeTestUtil.deposit(stateID, ownerB,
+      const depositInfoB = await exchangeTestUtil.deposit(realmID, ownerB,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                           wallet.walletID, tokenB, balanceB);
-      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitDeposits(realmID);
 
       // Do the request
       const witdrawalRequestA = await exchangeTestUtil.requestWithdrawalOnchain(
-        stateID, depositInfoA.accountID, tokenA, toWithdrawA, ownerA,
+        realmID, depositInfoA.accountID, tokenA, toWithdrawA, ownerA,
       );
       const witdrawalRequestB = await exchangeTestUtil.requestWithdrawalOnchain(
-        stateID, depositInfoB.accountID, tokenB, toWithdrawB, ownerB,
+        realmID, depositInfoB.accountID, tokenB, toWithdrawB, ownerB,
       );
 
       // Try to withdraw before the block is committed
-      const nextBlockIdx = (await exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber() + 1;
+      const nextBlockIdx = (await exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber() + 1;
       await expectThrow(
-        exchange.withdraw(stateID, nextBlockIdx, witdrawalRequestA.slotIdx),
+        exchange.withdraw(realmID, nextBlockIdx, witdrawalRequestA.slotIdx),
         "INVALID_BLOCKIDX",
       );
 
       // Commit the deposit
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(stateID);
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(realmID);
 
       // Try to withdraw before the block is finalized
       await expectThrow(
-        exchange.withdraw(stateID, nextBlockIdx, witdrawalRequestB.slotIdx),
+        exchange.withdraw(realmID, nextBlockIdx, witdrawalRequestB.slotIdx),
         "BLOCK_NOT_FINALIZED",
       );
 
       // Verify the block
-      await exchangeTestUtil.verifyPendingBlocks(stateID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       // Withdraw
-      await withdrawChecked(stateID, nextBlockIdx, witdrawalRequestB.slotIdx,
+      await withdrawChecked(realmID, nextBlockIdx, witdrawalRequestB.slotIdx,
                             depositInfoB.accountID, tokenIDB,
                             ownerB, tokenB, balanceB);
-      await withdrawChecked(stateID, nextBlockIdx, witdrawalRequestA.slotIdx,
+      await withdrawChecked(realmID, nextBlockIdx, witdrawalRequestA.slotIdx,
                             depositInfoA.accountID, tokenIDA,
                             ownerA, tokenA, toWithdrawA);
     });
 
     it("Withdraw (wallet account)", async () => {
-      const stateID = 0;
-      const walletA = await exchangeTestUtil.createWallet(stateID, exchangeTestUtil.testContext.wallets[0]);
-      const walletB = await exchangeTestUtil.createWallet(stateID, exchangeTestUtil.testContext.wallets[1]);
+      const realmID = 0;
+      const walletA = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[0]);
+      const walletB = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[1]);
       const ring: RingInfo = {
         orderA:
           {
-            stateID,
+            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             tokenF: "ETH",
@@ -579,7 +579,7 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            stateID,
+            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             tokenF: "LRC",
@@ -592,33 +592,33 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(stateID, ring);
+      await exchangeTestUtil.sendRing(realmID, ring);
 
-      await exchangeTestUtil.commitDeposits(stateID);
-      await exchangeTestUtil.commitRings(stateID);
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitRings(realmID);
 
       const witdrawalRequestA = await exchangeTestUtil.requestWithdrawalOnchain(
-        stateID, ring.orderA.dualAuthAccountID,
+        realmID, ring.orderA.dualAuthAccountID,
         ring.orderA.tokenF, ring.orderA.amountF.mul(new BN(2)),
         ring.orderA.owner,
       );
       const witdrawalRequestB = await exchangeTestUtil.requestWithdrawalOnchain(
-        stateID, ring.orderB.dualAuthAccountID,
+        realmID, ring.orderB.dualAuthAccountID,
         ring.orderB.tokenF, ring.orderB.amountF.mul(new BN(2)),
         ring.orderB.owner,
       );
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(stateID);
-      await exchangeTestUtil.verifyPendingBlocks(stateID);
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       const walletFeeA = ring.orderA.amountF.mul(new BN(ring.orderA.walletSplitPercentage)).div(new BN(100));
       const walletFeeB = ring.orderB.amountF.mul(new BN(ring.orderB.walletSplitPercentage)).div(new BN(100));
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(stateID))).toNumber();
-      await withdrawChecked(stateID, blockIdx, witdrawalRequestA.slotIdx,
+      const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+      await withdrawChecked(realmID, blockIdx, witdrawalRequestA.slotIdx,
                             ring.orderA.dualAuthAccountID, ring.orderA.tokenIdF,
                             walletA.owner, ring.orderA.tokenF, walletFeeA, true);
-      await withdrawChecked(stateID, blockIdx, witdrawalRequestB.slotIdx,
+      await withdrawChecked(realmID, blockIdx, witdrawalRequestB.slotIdx,
                             ring.orderB.dualAuthAccountID, ring.orderB.tokenIdF,
                             walletB.owner, ring.orderB.tokenF, walletFeeB, true);
     });

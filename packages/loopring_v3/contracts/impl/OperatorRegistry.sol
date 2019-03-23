@@ -33,6 +33,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
 
     uint   public constant STAKE_AMOUNT_IN_LRC                          = 100000 ether;
     uint32 public constant MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW         = 1 days;
+    uint16 public constant NUM_BLOCKS_OPERATOR_ACTIVE                   = 4;
 
     struct Operator
     {
@@ -43,7 +44,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         uint32 unregisterTimestamp;
     }
 
-    struct State
+    struct Realm
     {
         address owner;
         bool closedOperatorRegistering;
@@ -56,7 +57,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
 
     address public lrcAddress                = address(0x0);
 
-    State[] private states;
+    Realm[] private realms;
 
     constructor(
         address _lrcAddress
@@ -67,7 +68,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         lrcAddress = _lrcAddress;
     }
 
-    function createNewState(
+    function createRealm(
         address owner,
         bool closedOperatorRegistering
         )
@@ -75,24 +76,25 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
     {
         // TODO: Only allow the exchange contract to call this
 
-        State memory memoryState = State(
-            owner,
-            closedOperatorRegistering,
-            0,
-            0
+        realms.push(
+            Realm(
+                owner,
+                closedOperatorRegistering,
+                0,
+                0
+            )
         );
-        states.push(memoryState);
     }
 
     function registerOperator(
-        uint32 stateID
+        uint32 realmID
         )
         external
     {
-        State storage state = getState(stateID);
+        Realm storage realm = getRealm(realmID);
 
-        if(state.closedOperatorRegistering) {
-            require(msg.sender == state.owner, "UNAUTHORIZED");
+        if(realm.closedOperatorRegistering) {
+            require(msg.sender == realm.owner, "UNAUTHORIZED");
         }
 
         // Move the LRC to this contract
@@ -108,46 +110,46 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         // Add the operator
         Operator memory operator = Operator(
             msg.sender,
-            uint32(state.totalNumOperators++),
-            uint32(state.numActiveOperators++),
+            uint32(realm.totalNumOperators++),
+            uint32(realm.numActiveOperators++),
             STAKE_AMOUNT_IN_LRC,
             0
         );
-        state.operators[operator.ID] = operator;
-        state.activeOperators[operator.activeOperatorIdx] = operator.ID;
+        realm.operators[operator.ID] = operator;
+        realm.activeOperators[operator.activeOperatorIdx] = operator.ID;
 
         uint maxNumOperators = 2 ** 32;
-        require(state.totalNumOperators <= maxNumOperators, "TOO_MANY_OPERATORS");
-        require(state.numActiveOperators <= maxNumOperators, "TOO_MANY_ACTIVE_OPERATORS");
+        require(realm.totalNumOperators <= maxNumOperators, "TOO_MANY_OPERATORS");
+        require(realm.numActiveOperators <= maxNumOperators, "TOO_MANY_ACTIVE_OPERATORS");
 
         emit OperatorRegistered(operator.owner, operator.ID);
     }
 
     function unregisterOperator(
-        uint32 stateID,
+        uint32 realmID,
         uint32 operatorID
         )
         external
     {
-        State storage state = getState(stateID);
+        Realm storage realm = getRealm(realmID);
 
-        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
-        Operator storage operator = state.operators[operatorID];
+        require(operatorID < realm.totalNumOperators, "INVALID_OPERATOR_ID");
+        Operator storage operator = realm.operators[operatorID];
         require(msg.sender == operator.owner, "UNAUTHORIZED");
 
-        unregisterOperatorInternal(stateID, operatorID);
+        unregisterOperatorInternal(realmID, operatorID);
     }
 
     function unregisterOperatorInternal(
-        uint32 stateID,
+        uint32 realmID,
         uint32 operatorID
         )
         internal
     {
-        State storage state = getState(stateID);
+        Realm storage realm = getRealm(realmID);
 
-        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
-        Operator storage operator = state.operators[operatorID];
+        require(operatorID < realm.totalNumOperators, "INVALID_OPERATOR_ID");
+        Operator storage operator = realm.operators[operatorID];
         require(operator.unregisterTimestamp == 0, "OPERATOR_UNREGISTERED_ALREADY");
 
         // Set the timestamp so we know when the operator is allowed to withdraw his staked LRC
@@ -155,30 +157,30 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         operator.unregisterTimestamp = uint32(now);
 
         // Move the last operator to the slot of the operator we're unregistering
-        require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
-        uint32 movedOperatorID = uint32(state.numActiveOperators - 1);
-        Operator storage movedOperator = state.operators[movedOperatorID];
-        state.activeOperators[operator.activeOperatorIdx] = movedOperatorID;
+        require(realm.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
+        uint32 movedOperatorID = uint32(realm.numActiveOperators - 1);
+        Operator storage movedOperator = realm.operators[movedOperatorID];
+        realm.activeOperators[operator.activeOperatorIdx] = movedOperatorID;
         movedOperator.activeOperatorIdx = operator.activeOperatorIdx;
 
         // Reduce the length of the array of active operators
-        state.numActiveOperators--;
+        realm.numActiveOperators--;
 
         emit OperatorUnregistered(operator.owner, operator.ID);
     }
 
     function ejectOperator(
-        uint32 stateID,
+        uint32 realmID,
         uint32 operatorID
         )
         external
     {
         // TODO: Only allow the exchange contract to call this
 
-        State storage state = getState(stateID);
+        Realm storage realm = getRealm(realmID);
 
         // Get the operator of the block we're reverting
-        Operator storage operator = state.operators[operatorID];
+        Operator storage operator = realm.operators[operatorID];
 
         // Burn the LRC staked by the operator
         // It's possible the operator already withdrew his stake
@@ -190,91 +192,91 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
 
         // Unregister the operator (if still registered)
         if (operator.unregisterTimestamp == 0) {
-            unregisterOperatorInternal(stateID, operatorID);
+            unregisterOperatorInternal(realmID, operatorID);
         }
     }
 
     function getActiveOperatorID(
-        uint32 stateID
+        uint32 realmID
         )
         external
         view
         returns (uint32)
     {
-        State storage state = getState(stateID);
-        require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
+        Realm storage realm = getRealm(realmID);
+        require(realm.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
 
         // Use a previous blockhash as the source of randomness
-        // Keep the operator the same for 4 blocks
+        // Keep the operator the same for NUM_BLOCKS_OPERATOR_ACTIVE blocks
         uint blockNumber = block.number - 1;
-        bytes32 hash = blockhash(blockNumber - (blockNumber % 4));
-        uint randomOperatorIdx = (uint(hash) % state.numActiveOperators);
+        bytes32 hash = blockhash(blockNumber - (blockNumber % NUM_BLOCKS_OPERATOR_ACTIVE));
+        uint randomOperatorIdx = (uint(hash) % realm.numActiveOperators);
 
-        return state.activeOperators[uint32(randomOperatorIdx)];
+        return realm.activeOperators[uint32(randomOperatorIdx)];
     }
 
     function getOperatorOwner(
-        uint32 stateID,
+        uint32 realmID,
         uint32 operatorID
         )
         external
         view
         returns (address payable owner)
     {
-        State storage state = getState(stateID);
-        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
-        return state.operators[operatorID].owner;
+        Realm storage realm = getRealm(realmID);
+        require(operatorID < realm.totalNumOperators, "INVALID_OPERATOR_ID");
+        return realm.operators[operatorID].owner;
     }
 
     function isOperatorRegistered(
-        uint32 stateID,
+        uint32 realmID,
         uint32 operatorID
         )
         external
         view
         returns (bool)
     {
-        State storage state = getState(stateID);
-        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
-        Operator storage operator = state.operators[operatorID];
+        Realm storage realm = getRealm(realmID);
+        require(operatorID < realm.totalNumOperators, "INVALID_OPERATOR_ID");
+        Operator storage operator = realm.operators[operatorID];
         return operator.unregisterTimestamp == 0;
     }
 
     function getNumActiveOperators(
-        uint32 stateID
+        uint32 realmID
         )
         external
         view
         returns (uint)
     {
-        State storage state = getState(stateID);
-        return state.numActiveOperators;
+        Realm storage realm = getRealm(realmID);
+        return realm.numActiveOperators;
     }
 
     function getActiveOperatorAt(
-        uint32 stateID,
+        uint32 realmID,
         uint32 index
         )
         external
         view
         returns (address owner, uint32 operatorID)
     {
-        State storage state = getState(stateID);
-        Operator storage operator = state.operators[state.activeOperators[index]];
+        Realm storage realm = getRealm(realmID);
+        Operator storage operator = realm.operators[realm.activeOperators[index]];
         owner = operator.owner;
         operatorID = operator.ID;
     }
 
     function withdrawOperatorStake(
-        uint32 stateID,
+        uint32 realmID,
         uint32 operatorID
         )
         external
     {
-        State storage state = getState(stateID);
+        Realm storage realm = getRealm(realmID);
 
-        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
-        Operator storage operator = state.operators[operatorID];
+        require(operatorID < realm.totalNumOperators, "INVALID_OPERATOR_ID");
+        Operator storage operator = realm.operators[operatorID];
 
         require(operator.unregisterTimestamp > 0, "OPERATOR_STILL_REGISTERED");
         require(operator.amountStaked > 0, "WITHDRAWN_ALREADY");
@@ -296,14 +298,14 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         );
     }
 
-    function getState(
-        uint32 stateID
+    function getRealm(
+        uint32 realmID
         )
         internal
         view
-        returns (State storage state)
+        returns (Realm storage realm)
     {
-        require(stateID < states.length, "INVALID_STATE_ID");
-        state = states[stateID];
+        require(realmID < realms.length, "INVALID_STATE_ID");
+        realm = realms[realmID];
     }
 }

@@ -8,12 +8,12 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
 
-  const registerOperatorChecked = async (stateID: number, owner: string) => {
-    const activeOperatorsBefore = await exchangeTestUtil.getActiveOperators(stateID);
-    const operator = await exchangeTestUtil.createOperator(stateID, owner);
-    exchangeTestUtil.addOperator(stateID, operator);
-    const activeOperatorsAfter = await exchangeTestUtil.getActiveOperators(stateID);
-    const bOperatorRegistered = await exchange.isOperatorRegistered(stateID, operator.operatorID);
+  const registerOperatorChecked = async (realmID: number, owner: string) => {
+    const activeOperatorsBefore = await exchangeTestUtil.getActiveOperators(realmID);
+    const operator = await exchangeTestUtil.createOperator(realmID, owner);
+    exchangeTestUtil.addOperator(realmID, operator);
+    const activeOperatorsAfter = await exchangeTestUtil.getActiveOperators(realmID);
+    const bOperatorRegistered = await exchange.isOperatorRegistered(realmID, operator.operatorID);
 
     const activeOperatorIdx = activeOperatorsBefore.length;
     assert.equal(activeOperatorsAfter.length, activeOperatorsBefore.length + 1,
@@ -24,14 +24,14 @@ contract("Exchange", (accounts: string[]) => {
     return operator;
   };
 
-  const unregisterOperatorChecked = async (stateID: number, operator: Operator) => {
-    const bOperatorRegisteredBefore = await exchange.isOperatorRegistered(stateID, operator.operatorID);
-    const activeOperatorsBefore = await exchangeTestUtil.getActiveOperators(stateID);
+  const unregisterOperatorChecked = async (realmID: number, operator: Operator) => {
+    const bOperatorRegisteredBefore = await exchange.isOperatorRegistered(realmID, operator.operatorID);
+    const activeOperatorsBefore = await exchangeTestUtil.getActiveOperators(realmID);
 
-    await exchange.unregisterOperator(stateID, operator.operatorID, {from: operator.owner});
+    await exchange.unregisterOperator(realmID, operator.operatorID, {from: operator.owner});
 
-    const bOperatorRegisteredAfter = await exchange.isOperatorRegistered(stateID, operator.operatorID);
-    const activeOperatorsAfter = await exchangeTestUtil.getActiveOperators(stateID);
+    const bOperatorRegisteredAfter = await exchange.isOperatorRegistered(realmID, operator.operatorID);
+    const activeOperatorsAfter = await exchangeTestUtil.getActiveOperators(realmID);
 
     assert(bOperatorRegisteredBefore, "Operator should be registered before");
     assert(!bOperatorRegisteredAfter, "Operator should be unregistered after");
@@ -49,10 +49,10 @@ contract("Exchange", (accounts: string[]) => {
     }
   };
 
-  const withdrawOperatorStakeChecked = async (stateID: number, operator: Operator) => {
+  const withdrawOperatorStakeChecked = async (realmID: number, operator: Operator) => {
     const lrcBalanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, "LRC");
     const lrcBalanceOperatorBefore = await exchangeTestUtil.getOnchainBalance(operator.owner, "LRC");
-    await exchange.withdrawOperatorStake(web3.utils.toBN(stateID), operator.operatorID);
+    await exchange.withdrawOperatorStake(web3.utils.toBN(realmID), operator.operatorID);
     const lrcBalanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, "LRC");
     const lrcBalanceOperatorAfter = await exchangeTestUtil.getOnchainBalance(operator.owner, "LRC");
 
@@ -72,57 +72,57 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Register operator", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], true, 0);
-      await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[0]);
-      await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[1]);
-      await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[2]);
+      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 0);
+      await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[0]);
+      await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[1]);
+      await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[2]);
     });
 
     it("Unregister operator", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], true, 0);
+      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 0);
 
-      const operatorA = await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[0]);
-      const operatorB = await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[1]);
-      const operatorC = await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[2]);
+      const operatorA = await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[0]);
+      const operatorB = await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[1]);
+      const operatorC = await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[2]);
 
       // Try to unregister an operator from a different address
       await expectThrow(
-        exchange.unregisterOperator(stateID, operatorA.operatorID, {from: operatorB.owner}),
+        exchange.unregisterOperator(realmID, operatorA.operatorID, {from: operatorB.owner}),
         "UNAUTHORIZED",
       );
 
-      await unregisterOperatorChecked(stateID, operatorB);
-      await unregisterOperatorChecked(stateID, operatorC);
-      await unregisterOperatorChecked(stateID, operatorA);
+      await unregisterOperatorChecked(realmID, operatorB);
+      await unregisterOperatorChecked(realmID, operatorC);
+      await unregisterOperatorChecked(realmID, operatorA);
 
       // Try to unregister an operator twice
       await expectThrow(
-        exchange.unregisterOperator(stateID, operatorC.operatorID, {from: operatorC.owner}),
+        exchange.unregisterOperator(realmID, operatorC.operatorID, {from: operatorC.owner}),
         "OPERATOR_UNREGISTERED_ALREADY",
       );
     });
 
     it("Withdraw operator stake", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], true, 0);
+      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 0);
 
       // Register an operator
-      const operator = await registerOperatorChecked(stateID, exchangeTestUtil.testContext.operators[0]);
+      const operator = await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[0]);
 
       // Jump forward a bit in time
       await exchangeTestUtil.advanceBlockTimestamp(60 * 24 * 3600);
 
       // Try to withdraw the operator stake while still registered
       await expectThrow(
-        exchange.withdrawOperatorStake(web3.utils.toBN(stateID), operator.operatorID),
+        exchange.withdrawOperatorStake(web3.utils.toBN(realmID), operator.operatorID),
         "OPERATOR_STILL_REGISTERED",
       );
 
       // Unregister the operator
-      await unregisterOperatorChecked(stateID, operator);
+      await unregisterOperatorChecked(realmID, operator);
 
       // Try to withdraw the operator stake too early
       await expectThrow(
-        exchange.withdrawOperatorStake(web3.utils.toBN(stateID), operator.operatorID),
+        exchange.withdrawOperatorStake(web3.utils.toBN(realmID), operator.operatorID),
         "TOO_EARLY_TO_WITHDRAW",
       );
 
@@ -130,42 +130,42 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to withdraw the operator stake too early
       await expectThrow(
-        exchange.withdrawOperatorStake(web3.utils.toBN(stateID), operator.operatorID),
+        exchange.withdrawOperatorStake(web3.utils.toBN(realmID), operator.operatorID),
         "TOO_EARLY_TO_WITHDRAW",
       );
 
       await exchangeTestUtil.advanceBlockTimestamp(200);
 
       // Withdraw successfully
-      await withdrawOperatorStakeChecked(stateID, operator);
+      await withdrawOperatorStakeChecked(realmID, operator);
 
       // Try to withdraw again
       await expectThrow(
-        exchange.withdrawOperatorStake(web3.utils.toBN(stateID), operator.operatorID),
+        exchange.withdrawOperatorStake(web3.utils.toBN(realmID), operator.operatorID),
         "WITHDRAWN_ALREADY",
       );
     });
 
     it("Register operator with insufficient stake amount", async () => {
-      const stateID = await exchangeTestUtil.createNewState(exchangeTestUtil.testContext.stateOwners[0], true, 0);
+      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 0);
       const owner = exchangeTestUtil.testContext.stateOwners[0];
 
       // No funds
       await expectThrow(
-        exchange.registerOperator(web3.utils.toBN(stateID), {from: owner}),
+        exchange.registerOperator(web3.utils.toBN(realmID), {from: owner}),
         "TRANSFER_FAILURE",
       );
 
       // Give the operator almost enough tokens
       await exchangeTestUtil.setBalanceAndApprove(owner, "LRC", exchangeTestUtil.STAKE_AMOUNT_IN_LRC.sub(new BN(1)));
       await expectThrow(
-        exchange.registerOperator(web3.utils.toBN(stateID), {from: owner}),
+        exchange.registerOperator(web3.utils.toBN(realmID), {from: owner}),
         "TRANSFER_FAILURE",
       );
 
       // Give the operator enough tokens
       await exchangeTestUtil.setBalanceAndApprove(owner, "LRC", exchangeTestUtil.STAKE_AMOUNT_IN_LRC);
-      await exchange.registerOperator(web3.utils.toBN(stateID), {from: owner});
+      await exchange.registerOperator(web3.utils.toBN(realmID), {from: owner});
     });
 
   });

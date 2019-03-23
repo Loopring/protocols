@@ -100,7 +100,7 @@ public:
         bool _onchain,
         const VariableT& _accountsMerkleRoot,
         const VariableT& _operatorBalancesRoot,
-        const VariableArrayT& _stateID,
+        const VariableArrayT& _realmID,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
@@ -194,7 +194,7 @@ public:
                          FMT(prefix, ".updateBalanceF_O")),
 
 
-        message(flatten({_stateID, accountID, tokenID, amountRequested.bits, dualAuthAccountID,
+        message(flatten({_realmID, accountID, tokenID, amountRequested.bits, dualAuthAccountID,
                          feeTokenID, fee.bits, walletSplitPercentage.bits, nonce_before.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
         walletSignatureVerifier(pb, params, walletPublicKey, message, FMT(prefix, ".walletSignatureVerifier"))
@@ -364,7 +364,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
-    libsnark::dual_variable_gadget<FieldT> stateID;
+    libsnark::dual_variable_gadget<FieldT> realmID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
@@ -389,7 +389,7 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
-        stateID(pb, 32, FMT(prefix, ".stateID")),
+        realmID(pb, 32, FMT(prefix, ".realmID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
@@ -418,11 +418,11 @@ public:
 
         pb.set_input_sizes(1);
 
-        stateID.generate_r1cs_constraints(true);
+        realmID.generate_r1cs_constraints(true);
         merkleRootBefore.generate_r1cs_constraints(true);
         merkleRootAfter.generate_r1cs_constraints(true);
 
-        publicData.add(stateID.bits);
+        publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
         publicData.add(operatorAccountID.bits);
@@ -430,7 +430,7 @@ public:
         {
             VariableT withdrawalAccountsRoot = (j == 0) ? merkleRootBefore.packed : withdrawals.back().getNewAccountsRoot();
             VariableT withdrawalOperatorBalancesRoot = (j == 0) ? balancesRoot_before : withdrawals.back().getNewOperatorBalancesRoot();
-            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, withdrawalOperatorBalancesRoot, stateID.bits, std::string("withdrawals_") + std::to_string(j));
+            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, withdrawalOperatorBalancesRoot, realmID.bits, std::string("withdrawals_") + std::to_string(j));
             withdrawals.back().generate_r1cs_constraints();
 
             if (onchain)
@@ -502,8 +502,8 @@ public:
 
     bool generateWitness(const WithdrawContext& context)
     {
-        stateID.bits.fill_with_bits_of_field_element(pb, context.stateID);
-        stateID.generate_r1cs_witness_from_bits();
+        realmID.bits.fill_with_bits_of_field_element(pb, context.realmID);
+        realmID.generate_r1cs_witness_from_bits();
 
         merkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.merkleRootBefore);
         merkleRootBefore.generate_r1cs_witness_from_bits();

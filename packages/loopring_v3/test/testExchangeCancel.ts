@@ -23,11 +23,11 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Cancel", async () => {
-      const stateID = 0;
+      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
-            stateID,
+            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -36,7 +36,7 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            stateID,
+            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -46,16 +46,16 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(stateID, ring);
+      await exchangeTestUtil.sendRing(realmID, ring);
 
-      await exchangeTestUtil.commitDeposits(stateID);
+      await exchangeTestUtil.commitDeposits(realmID);
 
       await exchangeTestUtil.cancelOrder(ring.orderA, "WETH", new BN(web3.utils.toWei("1", "ether")));
-      await exchangeTestUtil.commitCancels(stateID);
+      await exchangeTestUtil.commitCancels(realmID);
 
-      await exchangeTestUtil.commitRings(stateID);
+      await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(stateID);
+      // await exchangeTestUtil.verifyPendingBlocks(realmID);
     });
 
   });

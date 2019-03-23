@@ -226,7 +226,7 @@ class Order
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::jubjub::EdwardsPoint walletPublicKey;
-    ethsnarks::FieldT stateID;
+    ethsnarks::FieldT realmID;
     ethsnarks::FieldT walletID;
     ethsnarks::FieldT orderID;
     ethsnarks::FieldT accountID;
@@ -263,7 +263,7 @@ void from_json(const json& j, Order& order)
     order.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
     order.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
 
-    order.stateID = ethsnarks::FieldT(j.at("stateID"));
+    order.realmID = ethsnarks::FieldT(j.at("realmID"));
     order.walletID = ethsnarks::FieldT(j.at("walletID"));
     order.orderID = ethsnarks::FieldT(j.at("orderID"));
     order.accountID = ethsnarks::FieldT(j.at("accountID"));
@@ -422,7 +422,7 @@ class TradeContext
 {
 public:
 
-    ethsnarks::FieldT stateID;
+    ethsnarks::FieldT realmID;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
@@ -437,7 +437,7 @@ public:
 
 void from_json(const json& j, TradeContext& context)
 {
-    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+    context.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
@@ -471,7 +471,7 @@ void from_json(const json& j, Deposit& deposit)
 class DepositContext
 {
 public:
-    ethsnarks::FieldT stateID;
+    ethsnarks::FieldT realmID;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
@@ -481,7 +481,7 @@ public:
 
 void from_json(const json& j, DepositContext& context)
 {
-    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+    context.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
@@ -537,7 +537,7 @@ class WithdrawContext
 {
 public:
 
-    ethsnarks::FieldT stateID;
+    ethsnarks::FieldT realmID;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
@@ -550,7 +550,7 @@ public:
 
 void from_json(const json& j, WithdrawContext& context)
 {
-    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+    context.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
@@ -607,7 +607,7 @@ void from_json(const json& j, Cancellation& cancellation)
 class CancelContext
 {
 public:
-    ethsnarks::FieldT stateID;
+    ethsnarks::FieldT realmID;
 
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
@@ -620,7 +620,7 @@ public:
 
 void from_json(const json& j, CancelContext& context)
 {
-    context.stateID = ethsnarks::FieldT(j["stateID"].get<unsigned int>());
+    context.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());

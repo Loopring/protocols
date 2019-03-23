@@ -10,7 +10,7 @@ export interface OrderInfo {
   amountB: BN;
   amountF?: BN;
 
-  stateID?: number;
+  realmID?: number;
   accountID?: number;
   orderID?: number;
   walletID?: number;
@@ -59,7 +59,7 @@ export interface RingBlock {
   rings: RingInfo[];
 
   timestamp?: number;
-  stateID?: number;
+  realmID?: number;
   operatorAccountID?: number;
 }
 
@@ -89,7 +89,7 @@ export interface WithdrawalRequest {
 }
 
 export interface Withdrawal {
-  stateID: number;
+  realmID: number;
   blockIdx: number;
   withdrawalIdx: number;
 }
@@ -153,7 +153,7 @@ export interface Account {
   balances: {[key: number]: Balance};
 }
 
-export interface State {
+export interface Realm {
   accounts: {[key: number]: Account};
 }
 
@@ -167,19 +167,19 @@ export interface DetailedTokenTransfer {
 }
 
 export interface SimulatorTradeReport {
-  stateBefore: State;
-  stateAfter: State;
+  realmBefore: Realm;
+  realmAfter: Realm;
   detailedTransfers: DetailedTokenTransfer[];
 }
 
 export interface SimulatorDepositReport {
-  stateBefore: State;
-  stateAfter: State;
+  realmBefore: Realm;
+  realmAfter: Realm;
 }
 
 export interface SimulatorWithdrawReport {
-  stateBefore: State;
-  stateAfter: State;
+  realmBefore: Realm;
+  realmAfter: Realm;
 }
 
 export interface DepositInfo {

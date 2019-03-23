@@ -51,7 +51,7 @@ class CancelExport(object):
 
 
 def orderFromJSON(jOrder, state):
-    stateID = int(jOrder["stateID"])
+    realmID = int(jOrder["realmID"])
     walletID = int(jOrder["walletID"])
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
@@ -73,7 +73,7 @@ def orderFromJSON(jOrder, state):
 
     order = Order(Point(account.publicKeyX, account.publicKeyY),
                   Point(walletAccount.publicKeyX, walletAccount.publicKeyY),
-                  stateID, walletID, orderID, accountID, dualAuthAccountID,
+                  realmID, walletID, orderID, accountID, dualAuthAccountID,
                   tokenS, tokenB, tokenF,
                   amountS, amountB, amountF,
                   allOrNone, validSince, validUntil,
@@ -105,7 +105,7 @@ def ringFromJSON(jRing, state):
 
 def deposit(state, data):
     export = DepositExport()
-    export.stateID = state.stateID
+    export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
 
     for depositInfo in data:
@@ -127,7 +127,7 @@ def deposit(state, data):
 
 def withdraw(onchain, state, data):
     export = WithdrawalExport(onchain)
-    export.stateID = state.stateID
+    export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
     export.operatorAccountID = int(data["operatorAccountID"])
 
@@ -144,7 +144,7 @@ def withdraw(onchain, state, data):
         fee = int(withdrawalInfo["fee"])
         walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
 
-        withdrawal = state.withdraw(onchain, export.stateID, accountID, tokenID, amount,
+        withdrawal = state.withdraw(onchain, export.realmID, accountID, tokenID, amount,
                                              export.operatorAccountID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage)
         export.withdrawals.append(withdrawal)
 
@@ -161,7 +161,7 @@ def withdraw(onchain, state, data):
 
 def cancel(state, data):
     export = CancelExport()
-    export.stateID = state.stateID
+    export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
     export.operatorAccountID = int(data["operatorAccountID"])
 
@@ -178,7 +178,7 @@ def cancel(state, data):
         fee = int(cancelInfo["fee"])
         walletSplitPercentage = int(cancelInfo["walletSplitPercentage"])
 
-        export.cancels.append(state.cancelOrder(export.stateID, accountID, orderTokenID, orderID,
+        export.cancels.append(state.cancelOrder(export.realmID, accountID, orderTokenID, orderID,
                                                 dualAuthAccountID, export.operatorAccountID, feeTokenID, fee, walletSplitPercentage))
 
     # Operator payment
@@ -194,7 +194,7 @@ def cancel(state, data):
 
 def trade(state, data):
     export = TradeExport()
-    export.stateID = state.stateID
+    export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
     export.timestamp = int(data["timestamp"])
     export.operatorAccountID = int(data["operatorAccountID"])
@@ -221,11 +221,11 @@ def trade(state, data):
     return export
 
 
-def main(stateID, blockIdx, blockType, inputFilename, outputFilename):
+def main(realmID, blockIdx, blockType, inputFilename, outputFilename):
     previousBlockIdx = int(blockIdx) - 1
-    previous_state_filename = "./states/state_" + str(stateID) + "_" + str(previousBlockIdx) + ".json"
+    previous_state_filename = "./states/state_" + str(realmID) + "_" + str(previousBlockIdx) + ".json"
 
-    state = State(stateID)
+    state = State(realmID)
     if os.path.exists(previous_state_filename):
         state.load(previous_state_filename)
 
@@ -253,7 +253,7 @@ def main(stateID, blockIdx, blockType, inputFilename, outputFilename):
     subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
 
     pathlib.Path("./states").mkdir(parents=True, exist_ok=True)
-    state_filename = "./states/state_" + str(stateID) + "_" + str(blockIdx) + ".json"
+    state_filename = "./states/state_" + str(realmID) + "_" + str(blockIdx) + ".json"
     state.save(state_filename)
 
 

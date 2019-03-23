@@ -16,11 +16,11 @@ class OrderGadget : public GadgetT
 {
 public:
 
-    VariableT blockStateID;
+    VariableT blockRealmID;
 
     libsnark::dual_variable_gadget<FieldT> padding;
 
-    libsnark::dual_variable_gadget<FieldT> stateID;
+    libsnark::dual_variable_gadget<FieldT> realmID;
     VariableT walletID;
     VariableArrayT orderID;
     libsnark::dual_variable_gadget<FieldT> accountID;
@@ -56,16 +56,16 @@ public:
     OrderGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
-        const VariableT& _blockStateID,
+        const VariableT& _blockRealmID,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
-        blockStateID(_blockStateID),
+        blockRealmID(_blockRealmID),
 
         padding(pb, 2, FMT(prefix, ".padding")),
 
-        stateID(pb, 32, FMT(prefix, ".stateID")),
+        realmID(pb, 32, FMT(prefix, ".realmID")),
         walletID(make_variable(pb, FMT(prefix, ".walletID"))),
         orderID(make_var_array(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".orderID"))),
         accountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID")),
@@ -97,7 +97,7 @@ public:
         balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
         signatureVerifier(pb, params, publicKey,
-                          flatten({stateID.bits, orderID, accountID.bits, dualAuthAccountID,
+                          flatten({realmID.bits, orderID, accountID.bits, dualAuthAccountID,
                           tokenS.bits, tokenB.bits, tokenF.bits,
                           amountS.bits, amountB.bits, amountF.bits,
                           allOrNone.bits, validSince.bits, validUntil.bits,
@@ -118,8 +118,8 @@ public:
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        stateID.bits.fill_with_bits_of_field_element(pb, order.stateID);
-        stateID.generate_r1cs_witness_from_bits();
+        realmID.bits.fill_with_bits_of_field_element(pb, order.realmID);
+        realmID.generate_r1cs_witness_from_bits();
         pb.val(walletID) = order.walletID;
         orderID.fill_with_bits_of_field_element(pb, order.orderID);
         accountID.bits.fill_with_bits_of_field_element(pb, order.accountID);
@@ -171,11 +171,11 @@ public:
 
     void generate_r1cs_constraints()
     {
-        forceEqual(pb, blockStateID, stateID.packed, FMT(annotation_prefix, ".blockStateID == stateID"));
+        forceEqual(pb, blockRealmID, realmID.packed, FMT(annotation_prefix, ".blockRealmID == realmID"));
 
         padding.generate_r1cs_constraints(true);
 
-        stateID.generate_r1cs_constraints(true);
+        realmID.generate_r1cs_constraints(true);
 
         accountID.generate_r1cs_constraints(true);
 
