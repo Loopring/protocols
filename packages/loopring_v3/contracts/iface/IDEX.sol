@@ -32,7 +32,7 @@ contract IDEX
 
     event LRCStaked(
       uint exchangeId,
-      uint totalStakedLRC
+      uint stakedLRC
     );
 
     function getStakedLRCAmount()
