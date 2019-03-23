@@ -30,8 +30,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
 {
     using MathUint for uint;
 
-    uint256[24] private salts;    // salts for the account/balance Merkel tree.
-    uint256 private leafSalt = 1; // TODO(bretch): we may want to use a specific salt instaed of `1`.
+    uint256[24] private salts; // salts for the account/balance Merkel tree.
 
     constructor() public {
         salts[0]  = 149674538925118052205057075966660054952481571156186698930522557832224430770;
@@ -58,11 +57,6 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         salts[21] = 16867999085723044773810250829569850875786210932876177117428755424200948460050;
         salts[22] = 1884116508014449609846749684134533293456072152192763829918284704109129550542;
         salts[23] = 14643335163846663204197941112945447472862168442334003800621296569318670799451;
-        // salts[24] = 01933387276732345916104540506251808516402995586485132246682941535467305930334;
-        // salts[25] = 07286414555941977227951257572976885370489143210539802284740420664558593616067;
-        // salts[26] = 16932161189449419608528042274282099409408565503929504242784173714823499212410;
-        // salts[27] = 16562533130736679030886586765487416082772837813468081467237161865787494093536;
-        // salts[28] = 06037428193077828806710267464232314380014232668931818917272972397574634037180;
     }
 
     function verifyAccountBalance(
@@ -112,7 +106,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         uint256[] memory balanceLeafElements = new uint256[](2);
         balanceLeafElements[0] = balance;
         balanceLeafElements[1] = tradeHistoryRoot;
-        uint256 hash = MiMC.Hash(balanceLeafElements, leafSalt);
+        uint256 hash = MiMC.Hash(balanceLeafElements, 1);
 
         // Calculate merkle root of balances tree
         uint tokenAddress = tokenID;
@@ -147,7 +141,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         accountLeafElements[3] = nonce;
         accountLeafElements[4] = balancesRoot;
 
-        uint256 hash = MiMC.Hash(accountLeafElements, leafSalt);
+        uint256 hash = MiMC.Hash(accountLeafElements, 1);
 
         uint accountAddress = accountID;
         for (uint depth = 0; depth < 24; depth++) {
