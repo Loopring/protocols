@@ -22,14 +22,14 @@ pragma solidity 0.5.2;
 contract IDEX
 {
     uint    public id = 0;
-    address public loopring = address(0);
+    address public loopring             = address(0);
     address public ownerContractAddress = address(0);
     address public creator              = address(0);
     address public lrcAddress           = address(0);
 
-    uint    public stakedLRCPerFailure = 0;
-    uint32  public numOfFailuresAllowed  = 0;
-    uint32  public numOfFailuresOccured  = 0;
+    uint    public stakedLRCPerFailure  = 0;
+    uint32  public numOfFailuresAllowed = 0;
+    uint32  public numOfFailuresOccured = 0;
 
     event LRCStaked(
       uint exchangeId,
