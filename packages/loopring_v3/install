@@ -28,7 +28,4 @@ esac
 
 make PIP_ARGS= python-dependencies
 cd ..
-
-make
-
 npm install

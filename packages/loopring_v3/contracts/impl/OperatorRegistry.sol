@@ -63,7 +63,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         )
         public
     {
-        require(_lrcAddress != address(0x0), ZERO_ADDRESS);
+        require(_lrcAddress != address(0x0), "ZERO_ADDRESS");
         lrcAddress = _lrcAddress;
     }
 
@@ -92,7 +92,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         State storage state = getState(stateID);
 
         if(state.closedOperatorRegistering) {
-            require(msg.sender == state.owner, UNAUTHORIZED);
+            require(msg.sender == state.owner, "UNAUTHORIZED");
         }
 
         // Move the LRC to this contract
@@ -102,7 +102,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
                 address(this),
                 STAKE_AMOUNT_IN_LRC
             ),
-            TRANSFER_FAILURE
+            "TRANSFER_FAILURE"
         );
 
         // Add the operator
@@ -117,8 +117,8 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         state.activeOperators[operator.activeOperatorIdx] = operator.ID;
 
         uint maxNumOperators = 2 ** 32;
-        require(state.totalNumOperators <= maxNumOperators, TOO_MANY_OPERATORS);
-        require(state.numActiveOperators <= maxNumOperators, TOO_MANY_ACTIVE_OPERATORS);
+        require(state.totalNumOperators <= maxNumOperators, "TOO_MANY_OPERATORS");
+        require(state.numActiveOperators <= maxNumOperators, "TOO_MANY_ACTIVE_OPERATORS");
 
         emit OperatorRegistered(operator.owner, operator.ID);
     }
@@ -131,9 +131,9 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
     {
         State storage state = getState(stateID);
 
-        require(operatorID < state.totalNumOperators, INVALID_OPERATOR_ID);
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
         Operator storage operator = state.operators[operatorID];
-        require(msg.sender == operator.owner, UNAUTHORIZED);
+        require(msg.sender == operator.owner, "UNAUTHORIZED");
 
         unregisterOperatorInternal(stateID, operatorID);
     }
@@ -146,16 +146,16 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
     {
         State storage state = getState(stateID);
 
-        require(operatorID < state.totalNumOperators, INVALID_OPERATOR_ID);
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
         Operator storage operator = state.operators[operatorID];
-        require(operator.unregisterTimestamp == 0, OPERATOR_UNREGISTERED_ALREADY);
+        require(operator.unregisterTimestamp == 0, "OPERATOR_UNREGISTERED_ALREADY");
 
         // Set the timestamp so we know when the operator is allowed to withdraw his staked LRC
         // (the operator could still have unproven blocks)
         operator.unregisterTimestamp = uint32(now);
 
         // Move the last operator to the slot of the operator we're unregistering
-        require(state.numActiveOperators > 0, NO_ACTIVE_OPERATORS);
+        require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
         uint32 movedOperatorID = uint32(state.numActiveOperators - 1);
         Operator storage movedOperator = state.operators[movedOperatorID];
         state.activeOperators[operator.activeOperatorIdx] = movedOperatorID;
@@ -184,7 +184,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         // It's possible the operator already withdrew his stake
         // if it takes a long time before someone calls this function
         if(operator.amountStaked > 0) {
-            require(BurnableERC20(lrcAddress).burn(operator.amountStaked), BURN_FAILURE);
+            require(BurnableERC20(lrcAddress).burn(operator.amountStaked), "BURN_FAILURE");
             operator.amountStaked = 0;
         }
 
@@ -202,7 +202,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         returns (uint32)
     {
         State storage state = getState(stateID);
-        require(state.numActiveOperators > 0, NO_ACTIVE_OPERATORS);
+        require(state.numActiveOperators > 0, "NO_ACTIVE_OPERATORS");
 
         // Use a previous blockhash as the source of randomness
         // Keep the operator the same for 4 blocks
@@ -222,7 +222,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         returns (address payable owner)
     {
         State storage state = getState(stateID);
-        require(operatorID < state.totalNumOperators, INVALID_OPERATOR_ID);
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
         return state.operators[operatorID].owner;
     }
 
@@ -235,7 +235,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         returns (bool)
     {
         State storage state = getState(stateID);
-        require(operatorID < state.totalNumOperators, INVALID_OPERATOR_ID);
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
         Operator storage operator = state.operators[operatorID];
         return operator.unregisterTimestamp == 0;
     }
@@ -273,14 +273,14 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
     {
         State storage state = getState(stateID);
 
-        require(operatorID < state.totalNumOperators, INVALID_OPERATOR_ID);
+        require(operatorID < state.totalNumOperators, "INVALID_OPERATOR_ID");
         Operator storage operator = state.operators[operatorID];
 
-        require(operator.unregisterTimestamp > 0, OPERATOR_STILL_REGISTERED);
-        require(operator.amountStaked > 0, WITHDRAWN_ALREADY);
+        require(operator.unregisterTimestamp > 0, "OPERATOR_STILL_REGISTERED");
+        require(operator.amountStaked > 0, "WITHDRAWN_ALREADY");
         require(
             now > operator.unregisterTimestamp + MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW,
-            TOO_EARLY_TO_WITHDRAW
+            "TOO_EARLY_TO_WITHDRAW"
         );
 
         uint amount = operator.amountStaked;
@@ -292,7 +292,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
                 operator.owner,
                 amount
             ),
-            TRANSFER_FAILURE
+            "TRANSFER_FAILURE"
         );
     }
 
@@ -303,7 +303,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         view
         returns (State storage state)
     {
-        require(stateID < states.length, INVALID_STATE_ID);
+        require(stateID < states.length, "INVALID_STATE_ID");
         state = states[stateID];
     }
 }

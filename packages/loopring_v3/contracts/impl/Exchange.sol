@@ -175,6 +175,7 @@ contract Exchange is IExchange, NoDefaultFunc
         require(_operatorRegistryAddress != address(0x0), "ZERO_ADDRESS");
         require(_blockVerifierAddress != address(0x0), "ZERO_ADDRESS");
         require(_lrcAddress != address(0x0), "ZERO_ADDRESS");
+
         exchangeHelperAddress = _exchangeHelperAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
         operatorRegistryAddress = _operatorRegistryAddress;
@@ -843,7 +844,7 @@ contract Exchange is IExchange, NoDefaultFunc
             fee = state.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee;
             state.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee = 0;
         } else {
-            revert(BLOCK_HAS_NO_OPERATOR_FEE);
+            revert("BLOCK_HAS_NO_OPERATOR_FEE");
         }
         require(fee == 0, "FEE_WITHDRAWN_ALREADY");
 

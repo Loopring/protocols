@@ -16,8 +16,6 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/Errors.sol";
-
 import "../lib/Claimable.sol";
 
 
@@ -29,13 +27,13 @@ contract Killable is Claimable
 
     modifier notSuspended()
     {
-        require(!suspended, INVALID_STATE);
+        require(!suspended, "INVALID_STATE");
         _;
     }
 
     modifier isSuspended()
     {
-        require(suspended, INVALID_STATE);
+        require(suspended, "INVALID_STATE");
         _;
     }
 

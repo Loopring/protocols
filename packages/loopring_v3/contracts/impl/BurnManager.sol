@@ -39,8 +39,8 @@ contract BurnManager is IBurnManager, NoDefaultFunc
         )
         public
     {
-        require(_exchangeAddress != address(0x0), ZERO_ADDRESS);
-        require(_lrcAddress != address(0x0), ZERO_ADDRESS);
+        require(_exchangeAddress != address(0x0), "ZERO_ADDRESS");
+        require(_lrcAddress != address(0x0), "ZERO_ADDRESS");
         exchangeAddress = _exchangeAddress;
         lrcAddress = _lrcAddress;
     }
@@ -54,7 +54,7 @@ contract BurnManager is IBurnManager, NoDefaultFunc
     {
         // We currently only support burning LRC directly
         if (token != lrcAddress) {
-            require(false, UNIMPLEMENTED);
+            require(false, "UNIMPLEMENTED");
         }
 
         IExchange exchange = IExchange(exchangeAddress);
@@ -63,13 +63,13 @@ contract BurnManager is IBurnManager, NoDefaultFunc
         uint balance = exchange.burnBalances(token);
         require(
             exchange.withdrawBurned(token, balance),
-            WITHDRAWAL_FAILURE
+            "WITHDRAWAL_FAILURE"
         );
 
         // Burn the LRC
         require(
             BurnableERC20(lrcAddress).burn(balance),
-            BURN_FAILURE
+            "BURN_FAILURE"
         );
 
         return true;

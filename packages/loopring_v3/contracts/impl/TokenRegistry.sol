@@ -52,8 +52,8 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc
         )
         public
     {
-        require(_lrcAddress != address(0x0), ZERO_ADDRESS);
-        require(_wethAddress != address(0x0), ZERO_ADDRESS);
+        require(_lrcAddress != address(0x0), "ZERO_ADDRESS");
+        require(_wethAddress != address(0x0), "ZERO_ADDRESS");
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
@@ -101,8 +101,8 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc
         internal
         returns (uint16)
     {
-        require(tokenToTokenID[tokenAddress] == 0, ALREADY_EXIST);
-        require(tokens.length < MAX_NUM_TOKENS, TOKEN_REGISTRY_FULL);
+        require(tokenToTokenID[tokenAddress] == 0, "ALREADY_EXIST");
+        require(tokens.length < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
         // Add the token to the list
         uint16 tokenID = uint16(tokens.length);
@@ -165,22 +165,22 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc
         external
         returns (bool)
     {
-        require(tokenAddress != address(0x0), BURN_RATE_FROZEN);
-        require(tokenAddress != lrcAddress, BURN_RATE_FROZEN);
-        require(tokenAddress != wethAddress, BURN_RATE_FROZEN);
+        require(tokenAddress != address(0x0), "BURN_RATE_FROZEN");
+        require(tokenAddress != lrcAddress, "BURN_RATE_FROZEN");
+        require(tokenAddress != wethAddress, "BURN_RATE_FROZEN");
 
         uint16 tokenID = getTokenID(tokenAddress);
         uint currentTier = getTokenTier(tokenID);
 
         // Can't upgrade to a higher level than tier 1
-        require(currentTier > 1, BURN_RATE_MINIMIZED);
+        require(currentTier > 1, "BURN_RATE_MINIMIZED");
 
         // Burn TIER_UPGRADE_COST_BIPS of total LRC supply
         BurnableERC20 LRC = BurnableERC20(lrcAddress);
         uint totalSupply = LRC.totalSupply();
         uint amount = totalSupply.mul(TIER_UPGRADE_COST_BIPS) / 10000;
         bool success = LRC.burnFrom(msg.sender, amount);
-        require(success, BURN_FAILURE);
+        require(success, "BURN_FAILURE");
 
         // Upgrade tier
         Token storage token = tokens[tokenID];
@@ -199,7 +199,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc
         view
         returns (uint16)
     {
-        require(tokenToTokenID[tokenAddress] != 0, NOT_FOUND);
+        require(tokenToTokenID[tokenAddress] != 0, "NOT_FOUND");
         return tokenToTokenID[tokenAddress] - 1;
     }
 
@@ -210,7 +210,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc
         view
         returns (address)
     {
-        require(tokenID < tokens.length, INVALID_TOKEN_ID);
+        require(tokenID < tokens.length, "INVALID_TOKEN_ID");
         return tokens[tokenID].tokenAddress;
     }
 
@@ -225,7 +225,7 @@ contract TokenRegistry is ITokenRegistry, NoDefaultFunc
                 from,
                 amount
             ),
-            BURN_FAILURE
+            "BURN_FAILURE"
         );
     }
 }

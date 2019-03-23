@@ -45,7 +45,7 @@ contract Authorizable is Claimable
 
     modifier onlyAuthorized()
     {
-        require(positionMap[msg.sender] > 0, UNAUTHORIZED);
+        require(positionMap[msg.sender] > 0, "UNAUTHORIZED");
         _;
     }
 
@@ -55,9 +55,9 @@ contract Authorizable is Claimable
         external
         onlyOwner
     {
-        require(address(0x0) != addr, ZERO_ADDRESS);
-        require(0 == positionMap[addr], ALREADY_EXIST);
-        require(isContract(addr), INVALID_ADDRESS);
+        require(address(0x0) != addr, "ZERO_ADDRESS");
+        require(0 == positionMap[addr], "ALREADY_EXIST");
+        require(isContract(addr), "INVALID_ADDRESS");
 
         authorizedAddresses.push(addr);
         positionMap[addr] = authorizedAddresses.length;
@@ -70,10 +70,10 @@ contract Authorizable is Claimable
         external
         onlyOwner
     {
-        require(address(0x0) != addr, ZERO_ADDRESS);
+        require(address(0x0) != addr, "ZERO_ADDRESS");
 
         uint pos = positionMap[addr];
-        require(pos != 0, NOT_FOUND);
+        require(pos != 0, "NOT_FOUND");
 
         uint size = authorizedAddresses.length;
         if (pos != size) {
