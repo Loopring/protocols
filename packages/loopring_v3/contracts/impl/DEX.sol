@@ -65,6 +65,12 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         require(address(0) != _committer, "ZERO_ADDRESS");
         oldCommitter = committer;
         committer = _committer;
+
+        emit CommitterChanged(
+            id,
+            oldCommitter,
+            committer
+        );
     }
 
     function getStake()
@@ -80,15 +86,15 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         bytes calldata data
         )
         external
-        onlyComitter
+        onlyCommitter
     {
         commitBlockInternal(blockType, data);
     }
 
     // == Internal Functions ================================================
 
-    /// @dev Throws if called by any account other than the owner.
-    modifier onlyComitter()
+    /// @dev Throws if called by any account other than the committer.
+    modifier onlyCommitter()
     {
         require(msg.sender == committer, "UNAUTHORIZED");
         _;

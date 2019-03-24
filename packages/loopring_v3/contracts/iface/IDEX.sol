@@ -30,6 +30,12 @@ contract IDEX
         // TODO(brecht): add more fields
     );
 
+    event CommitterChanged(
+        uint  exchanegId,
+        address oldCommitter,
+        address newCommitter
+    );
+
     // == Public Variables ================================================
 
     uint    public id = 0;
