@@ -83,6 +83,7 @@ contract DEX is IDEX, NoDefaultFunc
             ),
             "BLOCK_COMMIT_PREVENTED"
         );
+
         commitBlockInternal(blockType, data);
     }
 
@@ -95,5 +96,10 @@ contract DEX is IDEX, NoDefaultFunc
         internal
     {
         //...
+
+        emit BlockCommitted(
+            id,
+            blockType
+        );
     }
 }

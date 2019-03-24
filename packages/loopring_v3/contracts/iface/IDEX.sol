@@ -22,6 +22,14 @@ pragma solidity 0.5.2;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IDEX
 {
+    // == Events ==========================================================
+
+    event BlockCommitted(
+        uint  exchanegId,
+        uint  blockType
+        // TODO(brecht): add more fields
+    );
+
     // == Public Variables ================================================
 
     uint    public id = 0;
