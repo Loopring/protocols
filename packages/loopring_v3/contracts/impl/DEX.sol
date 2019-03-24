@@ -40,20 +40,31 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         uint    _id,
         address _loopringAddress,
         address _owner,
-        address _creator
+        address _committer
         )
         public
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _owner, "ZERO_ADDRESS");
-        require(address(0) != _creator, "ZERO_ADDRESS");
+        require(address(0) != _committer, "ZERO_ADDRESS");
 
         id = _id;
         loopringAddress = _loopringAddress;
         owner = _owner;
-        creator = _creator;
+        committer = _committer;
         lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
+    }
+
+
+    function setCommitter(address _committer)
+        external
+        onlyOwner
+        returns (address oldCommitter)
+    {
+        require(address(0) != _committer, "ZERO_ADDRESS");
+        oldCommitter = committer;
+        committer = _committer;
     }
 
     function getStake()
@@ -69,12 +80,19 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         bytes calldata data
         )
         external
-        onlyOwner
+        onlyComitter
     {
         commitBlockInternal(blockType, data);
     }
 
     // == Internal Functions ================================================
+
+    /// @dev Throws if called by any account other than the owner.
+    modifier onlyComitter()
+    {
+        require(msg.sender == committer, "UNAUTHORIZED");
+        _;
+    }
 
     function commitBlockInternal(
         uint  blockType,

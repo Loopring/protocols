@@ -35,10 +35,14 @@ contract IDEX
     uint    public id = 0;
     address public loopringAddress      = address(0);
     address public owner                = address(0);
-    address public creator              = address(0);
+    address public committer            = address(0);
     address public lrcAddress           = address(0);
 
     // == Public Functions ================================================
+
+    function setCommitter(address _committer)
+        external
+        returns (address oldCommitter);
 
     function getStake()
         external

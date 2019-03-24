@@ -27,8 +27,8 @@ contract ILoopringV3
     event ExchangeCreated(
         uint    exchanegId,
         address exchangeAddress,
-        address exchangeOwnerContractAddress,
-        address creator,
+        address owner,
+        address committer,
         uint    burnedLRC
     );
 
