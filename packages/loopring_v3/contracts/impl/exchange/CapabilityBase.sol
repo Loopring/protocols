@@ -17,17 +17,17 @@
 pragma solidity 0.5.2;
 
 import "../../iface/ILoopringV3.sol";
-
 import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/NoDefaultFunc.sol";
 import "../../lib/Ownable.sol";
 
 
 /// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract CapabilityBase is Ownable
+contract CapabilityBase is Ownable, NoDefaultFunc
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;

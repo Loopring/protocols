@@ -33,13 +33,8 @@ contract ICapability1BlockManagement
         address newCommitter
     );
 
-
-
     address public owner                = address(0);
     address public committer            = address(0);
-
-
-    // == Public Functions ==
 
     function setCommitter(address _committer)
         external

@@ -17,7 +17,6 @@
 pragma solidity 0.5.2;
 
 import "../../iface/exchange/ICapability1BlockManagement.sol";
-
 import "./CapabilityBase.sol";
 
 

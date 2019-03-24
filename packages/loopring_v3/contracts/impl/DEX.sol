@@ -18,18 +18,14 @@ pragma solidity 0.5.2;
 
 import "../iface/IDEX.sol";
 import "../iface/ILoopringV3.sol";
-
-import "../lib/NoDefaultFunc.sol";
-
 import "./exchange/Capability3StakingLRC.sol";
 
 
 /// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract DEX is IDEX, Capability3StakingLRC, NoDefaultFunc
+contract DEX is IDEX, Capability3StakingLRC
 {
-
     constructor(
         uint    _id,
         address _loopringAddress,

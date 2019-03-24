@@ -29,7 +29,6 @@ contract ICapability2TokenRegistration is ICapability1BlockManagement
     mapping (uint16 => address) public tokenIdToToken;
     uint16  public numTokensRegistered  = 0;
 
-
     event TokenRegistered(
         address token,
         uint16 tokenId

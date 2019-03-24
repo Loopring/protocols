@@ -16,11 +16,11 @@
 */
 pragma solidity 0.5.2;
 
-
 import "./exchange/ICapability3StakingLRC.sol";
 
 
 /// @title IDEX
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IDEX is ICapability3StakingLRC {}
+contract IDEX is ICapability3StakingLRC {
+}
