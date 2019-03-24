@@ -16,38 +16,33 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/IDEX.sol";
-import "./exchange/Capability3StakeQuery.sol";
-
+import "../../iface/exchange/ICapability2TokenRegistration.sol";
+import "./Capability1BlockManagement.sol";
 
 /// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract DEX is IDEX, Capability3StakeQuery
+contract Capability2TokenRegistration is ICapability2TokenRegistration, Capability1BlockManagement
 {
-    constructor(
-        uint    _id,
-        address _loopringAddress,
-        address _owner,
-        address _committer
+    function registerToken(
+        address token
         )
         public
+        // onlyOwner
+        returns (uint16 tokenId)
     {
-        require(0 != _id, "INVALID_ID");
-        require(address(0) != _loopringAddress, "ZERO_ADDRESS");
-        require(address(0) != _owner, "ZERO_ADDRESS");
-        require(address(0) != _committer, "ZERO_ADDRESS");
+        require(tokenToTokenId[token] == 0, "ALREADY_EXIST");
+        require(numTokensRegistered < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
-        id = _id;
-        loopringAddress = _loopringAddress;
-        owner = _owner;
-        committer = _committer;
+        tokenId = numTokensRegistered + 1;
 
-        loopring = ILoopringV3(loopringAddress);
+        tokenToTokenId[token] = tokenId;
+        tokenIdToToken[tokenId] = token;
+        numTokensRegistered += 1;
 
-        registerToken(loopring.lrcAddress());
-        registerToken(loopring.wethAddress());
-
-        lrcAddress = loopring.lrcAddress();
+        emit TokenRegistered(
+            token,
+            tokenId
+        );
     }
 }
