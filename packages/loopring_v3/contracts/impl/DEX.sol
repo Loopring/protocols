@@ -34,6 +34,11 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
+
+    // == Private Variables ==
+
+    ILoopringV3 loopring;
+
     // == Public Functions ==
 
     constructor(
@@ -54,7 +59,7 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         owner = _owner;
         committer = _committer;
 
-        ILoopringV3 loopring = ILoopringV3(loopringAddress);
+        loopring = ILoopringV3(loopringAddress);
 
         registerToken(loopring.lrcAddress());
         registerToken(loopring.wethAddress());
@@ -84,7 +89,7 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         view
         returns (uint)
     {
-        return ILoopringV3(loopringAddress).getStake(id);
+        return loopring.getStake(id);
     }
 
     function commitBlock(
