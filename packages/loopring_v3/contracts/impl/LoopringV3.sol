@@ -245,7 +245,9 @@ contract LoopringV3 is ILoopringV3, Ownable
         Token storage token = tokens[_token];
 
         uint8 currentTier = 4;
-        if (token.tier != 0) currentTier = token.tier;
+        if (token.tier != 0 && token.tierValidUntil > now) {
+            currentTier = token.tier;
+        }
 
         // Can't upgrade to a higher level than tier 1
         require(currentTier > 1, "BURN_RATE_MINIMIZED");
