@@ -475,6 +475,7 @@ contract Exchange is IExchange, NoDefaultFunc
         }
 
         // Check expected ETH value sent
+        // Q(daniel): we'd better check `msg.value >= depositFee` because exact equal is hard
         if (tokenID != 0) {
             require(msg.value == depositFee, "INVALID_VALUE");
         } else {
@@ -487,6 +488,8 @@ contract Exchange is IExchange, NoDefaultFunc
             numDepositBlocks++;
             depositBlock = depositBlocks[numDepositBlocks - 1];
         }
+
+        // Q(daniel): we can move this logic into the above {}.
         if (depositBlock.numDeposits == 0) {
             depositBlock.timestampOpened = uint32(now);
         }
@@ -521,17 +524,20 @@ contract Exchange is IExchange, NoDefaultFunc
             )
         );
         depositBlock.numDeposits++;
+
         if (depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK) {
             depositBlock.timestampFilled = uint32(now);
         }
 
         // Store deposit info onchain so we can withdraw from uncommitted deposit blocks
+        // Q(daniel): should we extend to pending depoits and emit event only if amount > 0?
         PendingDeposit memory pendingDeposit = PendingDeposit(
             accountID,
             tokenID,
             amount
         );
         depositBlock.pendingDeposits.push(pendingDeposit);
+
         emit Deposit(
             uint32(numDepositBlocks - 1), uint16(depositBlock.numDeposits - 1),
             accountID, tokenID, amount
