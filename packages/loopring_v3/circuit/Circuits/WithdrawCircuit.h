@@ -144,7 +144,7 @@ public:
         nonce_W(make_variable(pb, FMT(prefix, ".nonce_W"))),
 
         dualAuthorWalletID(make_variable(pb, FMT(prefix, ".dualAuthorWalletID"))),
-        maxNumWallets(make_variable(pb, MAX_NUM_WALLETS, FMT(prefix, ".maxNumWallets"))),
+        maxNumWallets(make_variable(pb, 0, FMT(prefix, ".maxNumWallets"))),
         walletID_lt_MaxNumWallets(pb, walletID, maxNumWallets, FMT(prefix, ".walletID < MAX_NUM_WALLETS")),
         dualAuthorWalletID_T(make_variable(pb, FMT(prefix, ".dualAuthorWalletID_T"))),
         expectedDualAuthorWalletID(pb, walletID_lt_MaxNumWallets.lt(), dualAuthorWalletID_T, walletID, FMT(prefix, ".expectedDualAuthorWalletID")),
@@ -273,7 +273,7 @@ public:
 
         pb.val(dualAuthorWalletID) = withdrawal.accountUpdate_W.before.walletID;
         walletID_lt_MaxNumWallets.generate_r1cs_witness();
-        pb.val(dualAuthorWalletID_T) = pb.val(walletID) + MAX_NUM_WALLETS;
+        pb.val(dualAuthorWalletID_T) = 0;
         expectedDualAuthorWalletID.generate_r1cs_witness();
 
         pb.val(tradingHistoryRootF_O) = withdrawal.balanceUpdateF_O.before.tradingHistoryRoot;
@@ -340,10 +340,10 @@ public:
             walletSignatureVerifier.generate_r1cs_constraints();
             pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
 
-            walletID_lt_MaxNumWallets.generate_r1cs_constraints();
+            /*walletID_lt_MaxNumWallets.generate_r1cs_constraints();
             pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID_T), "feeToWallet + feeToOperator == dualAuthorWalletID_T");
             expectedDualAuthorWalletID.generate_r1cs_constraints();
-            pb.add_r1cs_constraint(ConstraintT(dualAuthorWalletID, FieldT::one(), expectedDualAuthorWalletID.result()), "dualAuthorWalletID == expectedDualAuthorWalletID");
+            pb.add_r1cs_constraint(ConstraintT(dualAuthorWalletID, FieldT::one(), expectedDualAuthorWalletID.result()), "dualAuthorWalletID == expectedDualAuthorWalletID");*/
         }
         else
         {

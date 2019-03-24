@@ -264,14 +264,6 @@ contract("Exchange", (accounts: string[]) => {
       await updateAccountChecked(realmID, accountID, keyPair, walletA.walletID,
         tokenID, amount, owner, depositFee, token);
 
-      // Try to change the type of the account
-      const invalidWalletID = walletA.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
-      await expectThrow(
-        exchange.updateAccount(realmID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
-                               tokenID, amount, {from: owner, value: depositFee}),
-        "INVALID_WALLET_ID_CHANGE",
-      );
-
       // Change the walletID
       const walletB = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[1]);
       assert(walletA.walletID !== walletB.walletID);
@@ -329,7 +321,7 @@ contract("Exchange", (accounts: string[]) => {
       const depositFee = await exchange.getDepositFee(realmID);
 
       // The dual-author walletID
-      let walletID = walletA.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
+      let walletID = walletA.walletID;
 
       // Unauthorized msg.sender (not wallet owner)
       await expectThrow(
@@ -351,7 +343,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Try to change to a wallet not owned by the current wallet owner
-      invalidWalletID = walletB.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
+      invalidWalletID = walletB.walletID;
       await expectThrow(
         exchange.updateAccount(realmID, accountID, keyPair.publicKeyX, keyPair.publicKeyY, invalidWalletID,
                                          tokenID, amount, {from: walletA.owner, value: depositFee}),
@@ -359,7 +351,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Change the walletID to a wallet also owned by the previous wallet owner
-      walletID = walletC.walletID + exchangeTestUtil.MAX_MUM_WALLETS;
+      walletID = walletC.walletID;
       await updateAccountChecked(realmID, accountID, keyPair, walletID,
         tokenID, amount, walletA.owner, depositFee, token);
 
@@ -385,7 +377,7 @@ contract("Exchange", (accounts: string[]) => {
       const depositFee = await exchange.getDepositFee(realmID);
 
       // The dual-author walletID for walletID 0
-      const walletID = exchangeTestUtil.MAX_MUM_WALLETS;
+      const walletID = 0;
 
       // Anyone can create these accounts
       const accountIDA = await createAccountChecked(realmID, keyPairA, walletID, tokenID,

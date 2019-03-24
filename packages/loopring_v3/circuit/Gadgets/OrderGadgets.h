@@ -154,7 +154,7 @@ public:
         pb.val(cancelled) = order.cancelled;
         pb.val(nonce) = order.nonce;
 
-        pb.val(dualAuthorWalletID) = order.walletID + MAX_NUM_WALLETS;
+        pb.val(dualAuthorWalletID) = 0;
 
         pb.val(balanceS) = order.balanceS;
         pb.val(balanceB) = order.balanceB;
@@ -195,8 +195,8 @@ public:
 
         signatureVerifier.generate_r1cs_constraints();
 
-        pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
-                               FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));
+        /*pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
+                               FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));*/
     }
 };
 

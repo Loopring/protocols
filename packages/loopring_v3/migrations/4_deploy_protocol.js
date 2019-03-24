@@ -36,9 +36,11 @@ module.exports = function(deployer, network, accounts) {
           Exchange,
           ExchangeHelper.address,
           TokenRegistry.address,
-          OperatorRegistry.address,
           BlockVerifier.address,
           LRCToken.address,
+          LRCToken.address,
+          0,
+          1000000000000000,
         ),
       ]);
     }).then(() => {

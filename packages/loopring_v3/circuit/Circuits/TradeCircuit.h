@@ -167,7 +167,7 @@ public:
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
         emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("6534726031924637156958436868622484975370199861911592821911265735257245326584"), FMT(prefix, ".emptyTradeHistory"))),
-        maxNumWallets(make_variable(pb, MAX_NUM_WALLETS, FMT(prefix, ".maxNumWallets"))),
+        maxNumWallets(make_variable(pb, 0, FMT(prefix, ".maxNumWallets"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
         feeRecipientPublicKey(pb, FMT(prefix, ".feeRecipientPublicKey")),

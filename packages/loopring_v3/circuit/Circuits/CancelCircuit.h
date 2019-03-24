@@ -294,8 +294,8 @@ public:
         pb.add_r1cs_constraint(ConstraintT(cancelled_after, FieldT::one(), FieldT::one()), "cancelled_after == 1");
         pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
 
-        pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
-                               FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));
+        /*pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
+                               FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));*/
     }
 };
 

@@ -53,8 +53,6 @@ contract Exchange is IExchange, NoDefaultFunc
     //uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS           = 1 minutes;
     uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS             = 1 days;        // TESTING
 
-    uint   public constant MAX_NUM_WALLETS                              = 2 ** 23;
-
     // Default account
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
@@ -63,7 +61,6 @@ contract Exchange is IExchange, NoDefaultFunc
     address public lrcAddress                = address(0x0);
     address public exchangeHelperAddress     = address(0x0);
     address public tokenRegistryAddress      = address(0x0);
-    address public operatorRegistryAddress   = address(0x0);
     address public blockVerifierAddress      = address(0x0);
 
     enum BlockType
@@ -90,7 +87,6 @@ contract Exchange is IExchange, NoDefaultFunc
     struct Account
     {
         address owner;
-        uint24 walletID;
         bool   withdrawn;
         uint   publicKeyX;
         uint   publicKeyY;
@@ -131,148 +127,89 @@ contract Exchange is IExchange, NoDefaultFunc
         BlockState state;
 
         uint32 timestamp;
-        uint32 operatorID;
         uint32 numDepositBlocksCommitted;
         uint32 numWithdrawBlocksCommitted;
         bytes  withdrawals;
     }
 
-    struct Realm
-    {
-        address owner;
-        uint depositFeeInETH;
-        uint withdrawFeeInETH;
-        uint maxWithdrawFeeInETH;
+    uint32 dexID;
+    address payable exchangeOwner;
+    uint public depositFee = 0;
+    uint public withdrawFee = 0;
+    uint public maxWithdrawFee = 0;
 
-        uint numAccounts;
-        mapping (uint => Account) accounts;
+    Account[] accounts;
+    Block[] blocks;
 
-        uint numBlocks;
-        mapping (uint => Block) blocks;
-
-        uint numDepositBlocks;
-        mapping (uint => DepositBlock) depositBlocks;
-        uint numWithdrawBlocks;
-        mapping (uint => WithdrawBlock) withdrawBlocks;
-
-        uint numWallets;
-        mapping (uint => Wallet) wallets;
-    }
-
-    Realm[] private realms;
+    uint numDepositBlocks = 1;
+    mapping (uint => DepositBlock) depositBlocks;
+    uint numWithdrawBlocks = 1;
+    mapping (uint => WithdrawBlock) withdrawBlocks;
 
     constructor(
         address _exchangeHelperAddress,
         address _tokenRegistryAddress,
-        address _operatorRegistryAddress,
         address _blockVerifierAddress,
-        address _lrcAddress
+        address _lrcAddress,
+        address payable _exchangeOwner,
+        uint32 _dexID,
+        uint _maxWithdrawFee
         )
         public
     {
         require(_exchangeHelperAddress != address(0x0), "ZERO_ADDRESS");
         require(_tokenRegistryAddress != address(0x0), "ZERO_ADDRESS");
-        require(_operatorRegistryAddress != address(0x0), "ZERO_ADDRESS");
         require(_blockVerifierAddress != address(0x0), "ZERO_ADDRESS");
         require(_lrcAddress != address(0x0), "ZERO_ADDRESS");
+        require(_exchangeOwner != address(0x0), "ZERO_ADDRESS");
 
         exchangeHelperAddress = _exchangeHelperAddress;
         tokenRegistryAddress = _tokenRegistryAddress;
-        operatorRegistryAddress = _operatorRegistryAddress;
         blockVerifierAddress = _blockVerifierAddress;
         lrcAddress = _lrcAddress;
-    }
-
-    function createRealm(
-        address owner,
-        uint depositFeeInETH,
-        uint withdrawFeeInETH,
-        uint maxWithdrawFeeInETH,
-        bool closedOperatorRegistering
-        )
-        external
-    {
-        realms.push(
-            Realm(
-                owner,
-                depositFeeInETH,
-                withdrawFeeInETH,
-                maxWithdrawFeeInETH,
-                0,
-                0,
-                1,
-                1,
-                1
-            )
-        );
+        exchangeOwner = _exchangeOwner;
+        dexID = _dexID;
+        maxWithdrawFee = _maxWithdrawFee;
 
         Block memory genesisBlock = Block(
             0x29c496a5d270dec45f84b17ac910e27e342b7feaff48ba1d717e7d3dd622d9ed,
             0x0,
             BlockState.FINALIZED,
             uint32(now),
-            0xFFFFFFFF,
             0,
             0,
             new bytes(0)
         );
-        Realm storage realm = realms[realms.length - 1];
-        realm.blocks[realm.numBlocks] = genesisBlock;
-        realm.numBlocks++;
-
-        IOperatorRegistry(operatorRegistryAddress).createRealm(
-            owner,
-            closedOperatorRegistering
-        );
-
-        emit RealmCreated(uint16(realms.length - 1), owner);
-
-        /*depositInternal(
-            uint24(0xFFFFFF),
-            address(this),
-            DEFAULT_ACCOUNT_PUBLICKEY_X,
-            DEFAULT_ACCOUNT_PUBLICKEY_Y,
-            uint16(0),
-            address(0x0),
-            uint96(0)
-        );*/
+        blocks.push(genesisBlock);
     }
 
-    function getDepositFee(
-        uint32 realmID
+    function setFees(
+        uint _depositFee,
+        uint _withdrawFee
         )
+        external
+    {
+        // require(msg.sender == exchangeOwner, "UNAUTHORIZED");
+        require(withdrawFee <= maxWithdrawFee, "TOO_LARGE_AMOUNT");
+
+        depositFee = _depositFee;
+        withdrawFee = _withdrawFee;
+    }
+
+    function getDepositFee()
         external
         view
         returns (uint)
     {
-        Realm storage realm = getRealm(realmID);
-        return realm.depositFeeInETH;
+        return depositFee;
     }
 
-    function getWithdrawFee(
-        uint32 realmID
-        )
+    function getWithdrawFee()
         external
         view
         returns (uint)
     {
-        Realm storage realm = getRealm(realmID);
-        return realm.withdrawFeeInETH;
-    }
-
-    function setRealmFees(
-        uint32 realmID,
-        uint depositFee,
-        uint withdrawFee
-        )
-        external
-    {
-        Realm storage realm = getRealm(realmID);
-        require(msg.sender == realm.owner, "UNAUTHORIZED");
-        require(withdrawFee <= realm.maxWithdrawFeeInETH, "TOO_LARGE_AMOUNT");
-
-        realm.depositFeeInETH = depositFee;
-        realm.withdrawFeeInETH = withdrawFee;
+        return withdrawFee;
     }
 
     function commitBlock(
@@ -281,22 +218,20 @@ contract Exchange is IExchange, NoDefaultFunc
         )
         public
     {
-        uint32 realmID = 0;
+        // require(msg.sender == exchangeOwner, "UNAUTHORIZED");
+
+        // Extract the dexID from the data
+        uint32 dexIDInData = 0;
         assembly {
-            realmID := and(mload(add(data, 4)), 0xFFFFFFFF)
+            dexIDInData := and(mload(add(data, 4)), 0xFFFFFFFF)
         }
+        require(dexIDInData == dexID, "INVALID_DEXID");
 
-        Realm storage realm = getRealm(realmID);
+        // Exchange cannot be in withdraw mode
+        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
 
-        // Realm cannot be in withdraw mode
-        require(!isInWithdrawMode(realmID), "IN_WITHDRAW_MODE");
-
-        // Get active operator
-        uint32 operatorID = IOperatorRegistry(operatorRegistryAddress).getActiveOperatorID(realmID);
-        address operatorOwner = IOperatorRegistry(operatorRegistryAddress).getOperatorOwner(realmID, operatorID);
-        require(operatorOwner == msg.sender, "UNAUTHORIZED");
-
-        Block storage currentBlock = realm.blocks[realm.numBlocks - 1];
+        // Get the current block
+        Block storage currentBlock = blocks[blocks.length - 1];
 
         bytes32 merkleRootBefore;
         bytes32 merkleRootAfter;
@@ -320,11 +255,11 @@ contract Exchange is IExchange, NoDefaultFunc
             );
         } else if (blockType == uint(BlockType.DEPOSIT)) {
             require(
-                isDepositBlockCommittable(realmID, numDepositBlocksCommitted),
+                isDepositBlockCommittable(numDepositBlocksCommitted),
                 "CANNOT_COMMIT_BLOCK_YET"
             );
 
-            DepositBlock storage depositBlock = realm.depositBlocks[numDepositBlocksCommitted];
+            DepositBlock storage depositBlock = depositBlocks[numDepositBlocksCommitted];
             bytes32 depositBlockHash = depositBlock.hash;
             // Pad the block so it's full
             for (uint i = depositBlock.numDeposits; i < NUM_DEPOSITS_IN_BLOCK; i++) {
@@ -346,11 +281,11 @@ contract Exchange is IExchange, NoDefaultFunc
             numDepositBlocksCommitted++;
         } else if (blockType == uint(BlockType.ONCHAIN_WITHDRAW)) {
             require(
-                isWithdrawBlockCommittable(realmID, numWithdrawBlocksCommitted),
+                isWithdrawBlockCommittable(numWithdrawBlocksCommitted),
                 "CANNOT_COMMIT_BLOCK_YET"
             );
 
-            WithdrawBlock storage withdrawBlock = realm.withdrawBlocks[numWithdrawBlocksCommitted];
+            WithdrawBlock storage withdrawBlock = withdrawBlocks[numWithdrawBlocksCommitted];
             bytes32 withdrawBlockHash = withdrawBlock.hash;
             // Pad the block so it's full
             for (uint i = withdrawBlock.numWithdrawals; i < NUM_WITHDRAWALS_IN_BLOCK; i++) {
@@ -370,8 +305,8 @@ contract Exchange is IExchange, NoDefaultFunc
         }
 
         // Check if we need to commit a deposit or withdraw block
-        require(!isWithdrawBlockForced(realmID, numWithdrawBlocksCommitted), "BLOCK_COMMIT_FORCED");
-        require(!isDepositBlockForced(realmID, numDepositBlocksCommitted), "BLOCK_COMMIT_FORCED");
+        require(!isWithdrawBlockForced(numWithdrawBlocksCommitted), "BLOCK_COMMIT_FORCED");
+        require(!isDepositBlockForced(numDepositBlocksCommitted), "BLOCK_COMMIT_FORCED");
 
         bytes32 publicDataHash = sha256(data);
 
@@ -381,32 +316,27 @@ contract Exchange is IExchange, NoDefaultFunc
             publicDataHash,
             BlockState.COMMITTED,
             uint32(now),
-            operatorID,
             numDepositBlocksCommitted,
             numWithdrawBlocksCommitted,
             (blockType == uint(BlockType.ONCHAIN_WITHDRAW) ||
              blockType == uint(BlockType.OFFCHAIN_WITHDRAW)) ? data : new bytes(0)
         );
-        realm.blocks[realm.numBlocks] = newBlock;
-        realm.numBlocks++;
+        blocks.push(newBlock);
 
-        emit BlockCommitted(realmID, realm.numBlocks - 1, publicDataHash);
+        emit BlockCommitted(blocks.length - 1, publicDataHash);
     }
 
     function verifyBlock(
-        uint32 realmID,
         uint blockIdx,
         uint256[8] calldata proof
         )
         external
     {
-        // Realm cannot be in withdraw mode
-        require(!isInWithdrawMode(realmID), "IN_WITHDRAW_MODE");
+        // Exchange cannot be in withdraw mode
+        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
 
-        Realm storage realm = getRealm(realmID);
-
-        require(blockIdx < realm.numBlocks, "INVALID_BLOCK_IDX");
-        Block storage specifiedBlock = realm.blocks[blockIdx];
+        require(blockIdx < blocks.length, "INVALID_BLOCK_IDX");
+        Block storage specifiedBlock = blocks[blockIdx];
         require(specifiedBlock.state == BlockState.COMMITTED, "BLOCK_VERIFIED_ALREADY");
 
         require(
@@ -417,19 +347,19 @@ contract Exchange is IExchange, NoDefaultFunc
         );
 
         // Update state of this block and potentially the following blocks
-        Block storage previousBlock = realm.blocks[blockIdx - 1];
+        Block storage previousBlock = blocks[blockIdx - 1];
         if (previousBlock.state == BlockState.FINALIZED) {
             specifiedBlock.state = BlockState.FINALIZED;
-            emit BlockFinalized(realmID, blockIdx);
+            emit BlockFinalized(blockIdx);
             // The next blocks could become finalized as well so check this now
             // The number of blocks after the specified block index is limited
             // so we don't have to worry about running out of gas in this loop
             uint nextBlockIdx = blockIdx + 1;
-            while (nextBlockIdx < realm.numBlocks &&
-                realm.blocks[nextBlockIdx].state == BlockState.VERIFIED) {
+            while (nextBlockIdx < blocks.length &&
+                blocks[nextBlockIdx].state == BlockState.VERIFIED) {
 
-                realm.blocks[nextBlockIdx].state = BlockState.FINALIZED;
-                emit BlockFinalized(realmID, nextBlockIdx);
+                blocks[nextBlockIdx].state = BlockState.FINALIZED;
+                emit BlockFinalized(nextBlockIdx);
                 nextBlockIdx++;
             }
         } else {
@@ -438,20 +368,17 @@ contract Exchange is IExchange, NoDefaultFunc
     }
 
     function revertBlock(
-        uint32 realmID,
         uint32 blockIdx
         )
         external
     {
-        Realm storage realm = getRealm(realmID);
-
-        require(blockIdx < realm.numBlocks, "INVALID_BLOCK_IDX");
-        Block storage specifiedBlock = realm.blocks[blockIdx];
+        require(blockIdx < blocks.length, "INVALID_BLOCK_IDX");
+        Block storage specifiedBlock = blocks[blockIdx];
         require(specifiedBlock.state == BlockState.COMMITTED, "INVALID_BLOCK_STATE");
 
         // The specified block needs to be the first block not finalized
         // (this way we always revert to a guaranteed valid block and don't need to revert multiple times)
-        Block storage previousBlock = realm.blocks[uint(blockIdx).sub(1)];
+        Block storage previousBlock = blocks[uint(blockIdx).sub(1)];
         require(previousBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
 
         // Check if this block is verified too late
@@ -461,22 +388,20 @@ contract Exchange is IExchange, NoDefaultFunc
         );
 
         // Eject operator
-        IOperatorRegistry(operatorRegistryAddress).ejectOperator(
+        /*IOperatorRegistry(operatorRegistryAddress).ejectOperator(
             realmID,
             specifiedBlock.operatorID
-        );
+        );*/
 
         // Remove all blocks after and including blockIdx
-        realm.numBlocks = blockIdx;
+        blocks.length = blockIdx;
 
-        emit Revert(realmID, blockIdx);
+        emit Revert(blockIdx);
     }
 
     function createAccount(
-        uint32 realmID,
         uint publicKeyX,
         uint publicKeyY,
-        uint24 walletID,
         uint16 tokenID,
         uint96 amount
         )
@@ -484,25 +409,22 @@ contract Exchange is IExchange, NoDefaultFunc
         payable
         returns (uint24)
     {
-        Realm storage realm = getRealm(realmID);
+        require(accounts.length < 2 ** 24, "TOO_MANY_ACCOUNTS");
+
         Account memory account = Account(
             msg.sender,
-            walletID,
             false,
             publicKeyX,
             publicKeyY
         );
-        uint24 accountID = uint24(realm.numAccounts);
-        realm.accounts[accountID] = account;
-        realm.numAccounts++;
-        require(realm.numAccounts <= 2 ** 24, "TOO_MANY_ACCOUNTS");
+        accounts.push(account);
+
+        uint24 accountID = uint24(accounts.length - 1);
 
         updateAccount(
-            realmID,
             accountID,
             publicKeyX,
             publicKeyY,
-            walletID,
             tokenID,
             amount
         );
@@ -511,7 +433,6 @@ contract Exchange is IExchange, NoDefaultFunc
     }
 
     function deposit(
-        uint32 realmID,
         uint24 accountID,
         uint16 tokenID,
         uint96 amount
@@ -519,25 +440,20 @@ contract Exchange is IExchange, NoDefaultFunc
         external
         payable
     {
-        Realm storage realm = getRealm(realmID);
-        Account storage account = getAccount(realm, accountID);
+        Account storage account = getAccount(accountID);
         updateAccount(
-            realmID,
             accountID,
             account.publicKeyX,
             account.publicKeyY,
-            account.walletID,
             tokenID,
             amount
         );
     }
 
     function updateAccount(
-        uint32 realmID,
         uint24 accountID,
         uint publicKeyX,
         uint publicKeyY,
-        uint24 walletID,
         uint16 tokenID,
         uint96 amount
         )
@@ -545,54 +461,30 @@ contract Exchange is IExchange, NoDefaultFunc
         payable
     {
         // Realm cannot be in withdraw mode
-        require(!isInWithdrawMode(realmID), "IN_WITHDRAW_MODE");
+        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
 
-        Realm storage realm = getRealm(realmID);
+        Account storage account = getAccount(accountID);
 
-        Account storage account = getAccount(realm, accountID);
-        // Account type cannot be changed
-        if (account.walletID < MAX_NUM_WALLETS) {
-            require(walletID < MAX_NUM_WALLETS, "INVALID_WALLET_ID_CHANGE");
-        } else {
-            require(walletID >= MAX_NUM_WALLETS, "INVALID_WALLET_ID_CHANGE");
-        }
         // Update account info
-        account.walletID = walletID;
-        account.publicKeyX = publicKeyX;
-        account.publicKeyY = publicKeyY;
-
-        // Wallet needs to exist
-        uint targetWalletID = walletID < MAX_NUM_WALLETS ? walletID : walletID - MAX_NUM_WALLETS;
-        require(targetWalletID < realm.numWallets, "INVALID_WALLET_ID");
-
-        // Check if msg.sender wants to create a dual author account for a wallet
-        if (walletID < MAX_NUM_WALLETS) {
-            // Don't allow depositing to accounts not owned by msg.sender so no tokens can be lost this way
-            require(account.owner == msg.sender, "UNAUTHORIZED");
+        if (!isFeeRecipientAccount(account)) {
+            account.publicKeyX = publicKeyX;
+            account.publicKeyY = publicKeyY;
         } else {
-            // Don't allow depositing to accounts like this
-            require(amount == 0, "CANNOT_DEPOSIT_TO_DUAL_AUTHOR_ACCOUNTS");
-            // Check if msg.sender is allowed to create accounts for this wallet
-            if (targetWalletID > 0) {
-                require(
-                    realm.wallets[targetWalletID].owner == msg.sender,
-                    "UNAUTHORIZED_FOR_DUAL_AUTHOR_ACCOUNT"
-                );
-            }
+            require(amount == 0, "CANNOT_DEPOSIT_TO_FEE_RECIPIENT_ACCOUNTS");
         }
 
         // Check expected ETH value sent
         if (tokenID != 0) {
-            require(msg.value == realm.depositFeeInETH, "INVALID_VALUE");
+            require(msg.value == depositFee, "INVALID_VALUE");
         } else {
-            require(msg.value == (realm.depositFeeInETH + amount), "INVALID_VALUE");
+            require(msg.value == (depositFee + amount), "INVALID_VALUE");
         }
 
         // Get the deposit block
-        DepositBlock storage depositBlock = realm.depositBlocks[realm.numDepositBlocks - 1];
-        if (isActiveDepositBlockClosed(realmID)) {
-            realm.numDepositBlocks++;
-            depositBlock = realm.depositBlocks[realm.numDepositBlocks - 1];
+        DepositBlock storage depositBlock = depositBlocks[numDepositBlocks - 1];
+        if (isActiveDepositBlockClosed()) {
+            numDepositBlocks++;
+            depositBlock = depositBlocks[numDepositBlocks - 1];
         }
         if (depositBlock.numDeposits == 0) {
             depositBlock.timestampOpened = uint32(now);
@@ -600,7 +492,7 @@ contract Exchange is IExchange, NoDefaultFunc
         require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, "BLOCK_FULL");
 
         // Increase the fee for this block
-        depositBlock.fee = depositBlock.fee.add(realm.depositFeeInETH);
+        depositBlock.fee = depositBlock.fee.add(depositFee);
 
         // Transfer the tokens from the owner into this contract
         address tokenAddress = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
@@ -622,7 +514,7 @@ contract Exchange is IExchange, NoDefaultFunc
                 accountID,
                 publicKeyX,
                 publicKeyY,
-                walletID,
+                uint24(0),
                 tokenID,
                 amount
             )
@@ -640,13 +532,12 @@ contract Exchange is IExchange, NoDefaultFunc
         );
         depositBlock.pendingDeposits.push(pendingDeposit);
         emit Deposit(
-            realmID, uint32(realm.numDepositBlocks - 1), uint16(depositBlock.numDeposits - 1),
-            accountID, tokenID, walletID, amount
+            uint32(numDepositBlocks - 1), uint16(depositBlock.numDeposits - 1),
+            accountID, tokenID, amount
         );
     }
 
     function requestWithdraw(
-        uint32 realmID,
         uint24 accountID,
         uint16 tokenID,
         uint96 amount
@@ -655,26 +546,23 @@ contract Exchange is IExchange, NoDefaultFunc
         payable
     {
         // Realm cannot be in withdraw mode
-        require(!isInWithdrawMode(realmID), "IN_WITHDRAW_MODE");
-
+        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
         require(amount > 0, "INVALID_VALUE");
 
-        Realm storage realm = getRealm(realmID);
-
         // Check expected ETH value sent
-        require(msg.value == realm.withdrawFeeInETH, "INVALID_VALUE");
+        require(msg.value == withdrawFee, "INVALID_VALUE");
 
-        Account storage account = getAccount(realm, accountID);
+        Account storage account = getAccount(accountID);
         // Allow anyone to withdraw from fee accounts
-        if (account.walletID < MAX_NUM_WALLETS) {
+        if (!isFeeRecipientAccount(account)) {
             require(account.owner == msg.sender, "UNAUTHORIZED");
         }
 
         // Get the withdraw block
-        WithdrawBlock storage withdrawBlock = realm.withdrawBlocks[realm.numWithdrawBlocks - 1];
-        if (isActiveWithdrawBlockClosed(realmID)) {
-            realm.numWithdrawBlocks++;
-            withdrawBlock = realm.withdrawBlocks[realm.numWithdrawBlocks - 1];
+        WithdrawBlock storage withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
+        if (isActiveWithdrawBlockClosed()) {
+            numWithdrawBlocks++;
+            withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
         }
         if (withdrawBlock.numWithdrawals == 0) {
             withdrawBlock.timestampOpened = uint32(now);
@@ -682,7 +570,7 @@ contract Exchange is IExchange, NoDefaultFunc
         require(withdrawBlock.numWithdrawals < NUM_WITHDRAWALS_IN_BLOCK, "BLOCK_FULL");
 
         // Increase the fee for this block
-        withdrawBlock.fee = withdrawBlock.fee.add(realm.withdrawFeeInETH);
+        withdrawBlock.fee = withdrawBlock.fee.add(withdrawFee);
 
         // Update the withdraw block hash
         withdrawBlock.hash = sha256(
@@ -699,8 +587,7 @@ contract Exchange is IExchange, NoDefaultFunc
         }
 
         emit WithdrawRequest(
-            realmID,
-            uint32(realm.numWithdrawBlocks - 1),
+            uint32(numWithdrawBlocks - 1),
             uint16(withdrawBlock.numWithdrawals - 1),
             accountID,
             tokenID,
@@ -709,16 +596,13 @@ contract Exchange is IExchange, NoDefaultFunc
     }
 
     function withdraw(
-        uint32 realmID,
         uint blockIdx,
         uint slotIdx
         )
         external
     {
-        Realm storage realm = getRealm(realmID);
-
-        require(blockIdx < realm.numBlocks, "INVALID_BLOCK_IDX");
-        Block storage withdrawBlock = realm.blocks[blockIdx];
+        require(blockIdx < blocks.length, "INVALID_BLOCK_IDX");
+        Block storage withdrawBlock = blocks[blockIdx];
 
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
@@ -738,7 +622,7 @@ contract Exchange is IExchange, NoDefaultFunc
         uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
         uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
 
-        Account storage account = getAccount(realm, accountID);
+        Account storage account = getAccount(accountID);
 
         if (amount > 0) {
             // Set the amount to 0 so it cannot be withdrawn anymore
@@ -749,24 +633,24 @@ contract Exchange is IExchange, NoDefaultFunc
             withdrawBlock.withdrawals = withdrawals;
 
             // Transfer the tokens
-            withdrawAndBurn(account.owner, tokenID, account.walletID, amount);
+            withdrawAndBurn(account.owner, tokenID, amount, isFeeRecipientAccount(account));
         }
 
-        emit Withdraw(realmID, accountID, tokenID, account.owner, uint96(amount));
+        emit Withdraw(accountID, tokenID, account.owner, uint96(amount));
     }
 
     function withdrawAndBurn(
         address accountOwner,
         uint16 tokenID,
-        uint24 walletID,
-        uint amount
+        uint amount,
+        bool bBurn
         )
         internal
     {
         // Calculate how much needs to get burned
         uint amountToBurn = 0;
         uint amountToOwner = 0;
-        if (walletID >= MAX_NUM_WALLETS) {
+        if (bBurn) {
             uint burnRate = ITokenRegistry(tokenRegistryAddress).getBurnRate(tokenID);
             amountToBurn = amount.mul(burnRate) / 10000;
             amountToOwner = amount - amountToBurn;
@@ -795,63 +679,35 @@ contract Exchange is IExchange, NoDefaultFunc
         }
     }
 
-    function registerWallet(
-        uint32 realmID
-        )
-        external
-    {
-        // Realm cannot be in withdraw mode
-        require(!isInWithdrawMode(realmID), "IN_WITHDRAW_MODE");
-
-        Realm storage realm = getRealm(realmID);
-
-        Wallet memory wallet = Wallet(
-            msg.sender
-        );
-        realm.wallets[realm.numWallets] = wallet;
-        realm.numWallets++;
-        require(realm.numWallets <= MAX_NUM_WALLETS, "TOO_MANY_WALLETS");
-
-        emit WalletRegistered(wallet.owner, uint24(realm.numWallets - 1));
-    }
-
-
     function withdrawBlockFee(
-        uint32 realmID,
         uint32 blockIdx
         )
         external
         returns (bool)
     {
-        Realm storage realm = getRealm(realmID);
-
-        require(blockIdx > 0 && blockIdx < realm.numBlocks, "INVALID_BLOCK_IDX");
-        Block storage requestedBlock = realm.blocks[blockIdx];
-        Block storage previousBlock = realm.blocks[blockIdx - 1];
+        // require(msg.sender == exchangeOwner, "UNAUTHORIZED");
+        require(blockIdx > 0 && blockIdx < blocks.length, "INVALID_BLOCK_IDX");
+        Block storage requestedBlock = blocks[blockIdx];
+        Block storage previousBlock = blocks[blockIdx - 1];
 
         require(requestedBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
-        address payable operator = IOperatorRegistry(operatorRegistryAddress).getOperatorOwner(
-            realmID,
-            requestedBlock.operatorID
-        );
-
         uint fee = 0;
         if(requestedBlock.numDepositBlocksCommitted > previousBlock.numDepositBlocksCommitted) {
-            fee = realm.depositBlocks[previousBlock.numDepositBlocksCommitted].fee;
-            realm.depositBlocks[previousBlock.numDepositBlocksCommitted].fee = 0;
+            fee = depositBlocks[previousBlock.numDepositBlocksCommitted].fee;
+            depositBlocks[previousBlock.numDepositBlocksCommitted].fee = 0;
         } else if (
             requestedBlock.numWithdrawBlocksCommitted > previousBlock.numWithdrawBlocksCommitted) {
-            fee = realm.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee;
-            realm.withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee = 0;
+            fee = withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee;
+            withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee = 0;
         } else {
             revert("BLOCK_HAS_NO_OPERATOR_FEE");
         }
         require(fee == 0, "FEE_WITHDRAWN_ALREADY");
 
-        operator.transfer(fee);
+        exchangeOwner.transfer(fee);
 
-        emit BlockFeeWithdraw(realmID, blockIdx, operator, fee);
+        emit BlockFeeWithdraw(blockIdx, fee);
 
         return true;
     }
@@ -876,238 +732,236 @@ contract Exchange is IExchange, NoDefaultFunc
         return success;
     }
 
-    function getRealm(
-        uint32 realmID
-        )
-        internal
-        view
-        returns (Realm storage realm)
-    {
-        require(realmID < realms.length, "INVALID_REALM_ID");
-        realm = realms[realmID];
-    }
-
     function getAccount(
-        Realm storage realm,
         uint24 accountID
         )
         internal
         view
         returns (Account storage account)
     {
-        require(accountID < realm.numAccounts, "INVALID_ACCOUNT_ID");
-        account = realm.accounts[accountID];
+        require(accountID < accounts.length, "INVALID_ACCOUNT_ID");
+        account = accounts[accountID];
     }
 
-    function getBlockIdx(
-        uint32 realmID
-        )
+    function getBlockIdx()
         external
         view
         returns (uint)
     {
-        Realm storage realm = getRealm(realmID);
-        return realm.numBlocks.sub(1);
+        return blocks.length.sub(1);
     }
 
-    function isActiveDepositBlockClosed(
-        uint32 realmID
-        )
+    function isActiveDepositBlockClosed()
         internal
         view
         returns (bool)
     {
-        // When to create a new deposit block:
-        // - block is full: the old block needs to be at least MIN_TIME_OPEN_DEPOSIT_BLOCK seconds old
-        //                  (so we don't saturate the operators with deposits)
-        // - block is partially full: the old block is at least MAX_TIME_OPEN_DEPOSIT_BLOCK seconds old
-        //                            (so we can guarantee a maximum amount of time to the users
-        //                             when the deposits will be available)
-        Realm storage realm = getRealm(realmID);
-        DepositBlock storage depositBlock = realm.depositBlocks[realm.numDepositBlocks - 1];
-        if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK &&
-            now > depositBlock.timestampOpened + MIN_TIME_BLOCK_OPEN) ||
-            (depositBlock.numDeposits > 0 &&
-                now > depositBlock.timestampOpened + MAX_TIME_BLOCK_OPEN)) {
-            return true;
-        } else {
-            return false;
-        }
+        DepositBlock storage depositBlock = depositBlocks[numDepositBlocks - 1];
+        return isActiveOnchainBlockClosed(
+            depositBlock.numDeposits,
+            NUM_DEPOSITS_IN_BLOCK,
+            depositBlock.timestampOpened
+        );
     }
 
     function isDepositBlockCommittable(
-        uint32 realmID,
         uint32 depositBlockIdx
         )
         internal
         view
         returns (bool)
     {
-        Realm storage realm = getRealm(realmID);
-        assert(depositBlockIdx < realm.numDepositBlocks);
-        DepositBlock storage depositBlock = realm.depositBlocks[depositBlockIdx];
-        if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK &&
-            now > depositBlock.timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
-            (depositBlock.numDeposits > 0 &&
-                now > depositBlock.timestampOpened +
-                MAX_TIME_BLOCK_OPEN +
-                MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
-            return true;
-        } else {
-            return false;
-        }
+        assert(depositBlockIdx < numDepositBlocks);
+        DepositBlock storage depositBlock = depositBlocks[depositBlockIdx];
+        return isOnchainBlockCommittable(
+            depositBlock.numDeposits,
+            NUM_DEPOSITS_IN_BLOCK,
+            depositBlock.timestampOpened,
+            depositBlock.timestampFilled
+        );
     }
 
     function isDepositBlockForced(
-        uint32 realmID,
         uint32 depositBlockIdx
         )
         internal
         view
         returns (bool)
     {
-        Realm storage realm = getRealm(realmID);
-        assert(depositBlockIdx <= realm.numDepositBlocks);
-        DepositBlock storage depositBlock = realm.depositBlocks[depositBlockIdx];
-        if ((depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK &&
-            now > depositBlock.timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
-            (depositBlock.numDeposits > 0 &&
-                now > depositBlock.timestampOpened +
-                MAX_TIME_BLOCK_OPEN +
-                MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
-            return true;
-        } else {
-            return false;
-        }
+        assert(depositBlockIdx <= numDepositBlocks);
+        DepositBlock storage depositBlock = depositBlocks[depositBlockIdx];
+        return isOnchainBlockForced(
+            depositBlock.numDeposits,
+            NUM_DEPOSITS_IN_BLOCK,
+            depositBlock.timestampOpened,
+            depositBlock.timestampFilled
+        );
     }
 
-    function getNumAvailableDepositSlots(
-        uint32 realmID
-        )
+    function getNumAvailableDepositSlots()
         external
         view
         returns (uint)
     {
-        if (isActiveDepositBlockClosed(realmID)) {
+        if (isActiveDepositBlockClosed()) {
             return NUM_DEPOSITS_IN_BLOCK;
         } else {
-            Realm storage realm = getRealm(realmID);
-            DepositBlock storage depositBlock = realm.depositBlocks[realm.numDepositBlocks - 1];
+            DepositBlock storage depositBlock = depositBlocks[numDepositBlocks - 1];
             return NUM_DEPOSITS_IN_BLOCK - depositBlock.numDeposits;
         }
     }
 
 
-    function isActiveWithdrawBlockClosed(
-        uint32 realmID
-        )
+    function isActiveWithdrawBlockClosed()
         internal
         view
         returns (bool)
     {
-        // When to create a new withdraw block:
-        // - block is full: the old block needs to be at least MIN_TIME_OPEN_BLOCK seconds old
-        //                  (so we don't saturate the operators with deposits)
-        // - block is partially full: the old block is at least MAX_TIME_OPEN_BLOCK seconds old
-        //                            (so we can guarantee a maximum amount of time to the users
-        //                             when the deposits will be available)
-        Realm storage realm = getRealm(realmID);
-        WithdrawBlock storage withdrawBlock = realm.withdrawBlocks[realm.numWithdrawBlocks - 1];
-        if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK &&
-            now > withdrawBlock.timestampOpened + MIN_TIME_BLOCK_OPEN) ||
-            (withdrawBlock.numWithdrawals > 0 &&
-                now > withdrawBlock.timestampOpened + MAX_TIME_BLOCK_OPEN)) {
-            return true;
-        } else {
-            return false;
-        }
+        WithdrawBlock storage withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
+        return isActiveOnchainBlockClosed(
+            withdrawBlock.numWithdrawals,
+            NUM_WITHDRAWALS_IN_BLOCK,
+            withdrawBlock.timestampOpened
+        );
     }
 
     function isWithdrawBlockCommittable(
-        uint32 realmID,
         uint32 withdrawBlockIdx
         )
         internal
         view
         returns (bool)
     {
-        Realm storage realm = getRealm(realmID);
-        assert(withdrawBlockIdx < realm.numWithdrawBlocks);
-        WithdrawBlock storage withdrawBlock = realm.withdrawBlocks[withdrawBlockIdx];
-        if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK &&
-            now > withdrawBlock.timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
-            (withdrawBlock.numWithdrawals > 0 &&
-                now > withdrawBlock.timestampOpened +
-                MAX_TIME_BLOCK_OPEN +
-                MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
-            return true;
-        } else {
-            return false;
-        }
+        assert(withdrawBlockIdx < numWithdrawBlocks);
+        WithdrawBlock storage withdrawBlock = withdrawBlocks[withdrawBlockIdx];
+        return isOnchainBlockCommittable(
+            withdrawBlock.numWithdrawals,
+            NUM_WITHDRAWALS_IN_BLOCK,
+            withdrawBlock.timestampOpened,
+            withdrawBlock.timestampFilled
+        );
     }
 
     function isWithdrawBlockForced(
-        uint32 realmID,
         uint32 withdrawBlockIdx
         )
         internal
         view
         returns (bool)
     {
-        Realm storage realm = getRealm(realmID);
-        assert(withdrawBlockIdx <= realm.numWithdrawBlocks);
-        WithdrawBlock storage withdrawBlock = realm.withdrawBlocks[withdrawBlockIdx];
-        if ((withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK &&
-            now > withdrawBlock.timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
-            (withdrawBlock.numWithdrawals > 0 &&
-                now > withdrawBlock.timestampOpened +
-                MAX_TIME_BLOCK_OPEN +
-                MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
-            return true;
-        } else {
-            return false;
-        }
+        assert(withdrawBlockIdx <= numWithdrawBlocks);
+        WithdrawBlock storage withdrawBlock = withdrawBlocks[withdrawBlockIdx];
+        return isOnchainBlockForced(
+            withdrawBlock.numWithdrawals,
+            NUM_WITHDRAWALS_IN_BLOCK,
+            withdrawBlock.timestampOpened,
+            withdrawBlock.timestampFilled
+        );
     }
 
-    function getNumAvailableWithdrawSlots(
-        uint32 realmID
-        )
+    function getNumAvailableWithdrawSlots()
         external
         view
         returns (uint)
     {
-        if (isActiveWithdrawBlockClosed(realmID)) {
+        if (isActiveWithdrawBlockClosed()) {
             return NUM_WITHDRAWALS_IN_BLOCK;
         } else {
-            Realm storage realm = getRealm(realmID);
-            WithdrawBlock storage withdrawBlock = realm.withdrawBlocks[realm.numWithdrawBlocks - 1];
+            WithdrawBlock storage withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
             return NUM_WITHDRAWALS_IN_BLOCK - withdrawBlock.numWithdrawals;
         }
     }
 
-    function isInWithdrawMode(
-        uint32 realmID
+    function isInWithdrawMode()
+        public
+        view
+        returns (bool)
+    {
+        Block storage currentBlock = blocks[blocks.length - 1];
+        WithdrawBlock storage withdrawBlock =
+            withdrawBlocks[currentBlock.numWithdrawBlocksCommitted];
+
+        DepositBlock storage depositBlock =
+            depositBlocks[currentBlock.numDepositBlocksCommitted];
+
+        return isOnchainBlockTooLate(depositBlock.timestampOpened) ||
+                   isOnchainBlockTooLate(withdrawBlock.timestampOpened);
+    }
+
+    function isActiveOnchainBlockClosed(
+        uint count,
+        uint maxCount,
+        uint32 timestampOpened
+        )
+        internal
+        view
+        returns (bool)
+    {
+        if ((count == maxCount && now > timestampOpened + MIN_TIME_BLOCK_OPEN) ||
+                (count > 0 && now > timestampOpened + MAX_TIME_BLOCK_OPEN)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function isOnchainBlockCommittable(
+        uint count,
+        uint maxCount,
+        uint timestampOpened,
+        uint timestampFilled
+        )
+        internal
+        view
+        returns (bool)
+    {
+        if ((count == maxCount && now > timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
+                (count > 0 && now > timestampOpened + MAX_TIME_BLOCK_OPEN + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function isOnchainBlockForced(
+        uint count,
+        uint maxCount,
+        uint timestampOpened,
+        uint timestampFilled
+        )
+        internal
+        view
+        returns (bool)
+    {
+        if ((count == maxCount && now > timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
+                (count > 0 && now > timestampOpened + MAX_TIME_BLOCK_OPEN + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function isOnchainBlockTooLate(
+        uint timestampOpened
         )
         public
         view
         returns (bool)
     {
-        Realm storage realm = getRealm(realmID);
-        Block storage currentBlock = realm.blocks[realm.numBlocks - 1];
-        WithdrawBlock storage withdrawBlock =
-            realm.withdrawBlocks[currentBlock.numWithdrawBlocksCommitted];
+        return (timestampOpened != 0 && timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now);
+    }
 
-        DepositBlock storage depositBlock =
-            realm.depositBlocks[currentBlock.numDepositBlocksCommitted];
-
-        return ((withdrawBlock.timestampOpened != 0 &&
-            withdrawBlock.timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now) ||
-                (depositBlock.timestampOpened != 0 &&
-                    depositBlock.timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now));
+    function isFeeRecipientAccount(
+        Account storage account
+        )
+        internal
+        view
+        returns (bool)
+    {
+        return account.publicKeyX == 0 && account.publicKeyY == 0;
     }
 
     function withdrawFromMerkleTree(
-        uint32 realmID,
         uint24 accountID,
         uint16 tokenID,
         uint256[24] calldata accountPath,
@@ -1119,13 +973,12 @@ contract Exchange is IExchange, NoDefaultFunc
         external
         returns (bool)
     {
-        require(isInWithdrawMode(realmID), "NOT_IN_WITHDRAW_MODE");
+        require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
 
-        Realm storage realm = getRealm(realmID);
-        Block storage lastBlock = realm.blocks[realm.numBlocks - 1];
+        Block storage lastBlock = blocks[blocks.length - 1];
         require(lastBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
 
-        Account storage account = getAccount(realm, accountID);
+        Account storage account = getAccount(accountID);
         require(account.withdrawn == false, "WITHDRAWN_ALREADY");
 
         verifyAccountBalance(
@@ -1144,7 +997,7 @@ contract Exchange is IExchange, NoDefaultFunc
         account.withdrawn = true;
 
         // Transfer the tokens
-        withdrawAndBurn(account.owner, tokenID, account.walletID, balance);
+        withdrawAndBurn(account.owner, tokenID, balance, isFeeRecipientAccount(account));
 
         return true;
     }
@@ -1170,7 +1023,7 @@ contract Exchange is IExchange, NoDefaultFunc
             balancePath,
             account.publicKeyX,
             account.publicKeyY,
-            account.walletID,
+            0,
             nonce,
             balance,
             tradeHistoryRoot
@@ -1178,29 +1031,27 @@ contract Exchange is IExchange, NoDefaultFunc
     }
 
     function withdrawFromPendingDeposit(
-        uint32 realmID,
         uint depositBlockIdx,
         uint slotIdx
         )
         external
         returns (bool)
     {
-        require(isInWithdrawMode(realmID), "NOT_IN_WITHDRAW_MODE");
+        require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
 
-        Realm storage realm = getRealm(realmID);
-        Block storage lastBlock = realm.blocks[realm.numBlocks - 1];
+        Block storage lastBlock = blocks[blocks.length - 1];
         require(lastBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
 
         require (depositBlockIdx >= lastBlock.numDepositBlocksCommitted, "BLOCK_COMMITTED_ALREADY");
 
-        require(depositBlockIdx < realm.numDepositBlocks, "INVALID_BLOCK_IDX");
+        require(depositBlockIdx < numDepositBlocks, "INVALID_BLOCK_IDX");
         require(
-            slotIdx < realm.depositBlocks[depositBlockIdx].pendingDeposits.length,
+            slotIdx < depositBlocks[depositBlockIdx].pendingDeposits.length,
             "INVALID_SLOT_IDX"
         );
 
         PendingDeposit storage pendingDeposit =
-            realm.depositBlocks[depositBlockIdx].pendingDeposits[slotIdx];
+            depositBlocks[depositBlockIdx].pendingDeposits[slotIdx];
 
         uint amount = pendingDeposit.amount;
         require(amount > 0, "WITHDRAWN_ALREADY");
@@ -1209,8 +1060,8 @@ contract Exchange is IExchange, NoDefaultFunc
         pendingDeposit.amount = 0;
 
         // Transfer the tokens
-        Account storage account = realm.accounts[pendingDeposit.accountID];
-        withdrawAndBurn(account.owner, pendingDeposit.tokenID, account.walletID, amount);
+        Account storage account = getAccount(pendingDeposit.accountID);
+        withdrawAndBurn(account.owner, pendingDeposit.tokenID, amount, isFeeRecipientAccount(account));
     }
 
 }

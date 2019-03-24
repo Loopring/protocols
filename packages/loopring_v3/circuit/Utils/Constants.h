@@ -9,8 +9,6 @@ namespace Loopring
 
     static const unsigned int NUM_BITS_WALLETID = 24;
 
-    static const unsigned int MAX_NUM_WALLETS = 8388608;
-
     static const unsigned int TOKENID_ETH = 0;
     static const unsigned int TOKENID_LRC = 1;
 }
