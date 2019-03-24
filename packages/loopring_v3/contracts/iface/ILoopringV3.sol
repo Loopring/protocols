@@ -42,7 +42,6 @@ contract ILoopringV3
         uint amount
     );
 
-
     event StakeWithdrawn(
         uint exchangeId,
         uint amount
