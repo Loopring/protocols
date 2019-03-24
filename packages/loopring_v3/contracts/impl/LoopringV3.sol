@@ -35,7 +35,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     using ERC20SafeTransfer for address;
 
 
-    // == Public Functions ================================================
+    // == Public Functions ==
 
     function updateSettings(
         address _lrcAddress,
@@ -203,19 +203,21 @@ contract LoopringV3 is ILoopringV3, Ownable
         view
         returns (uint16 burnRate)
     {
-        uint8 tier = tokens[_token].tier;
-        if (tier == 1) {
+        Token storage token = tokens[_token];
+        if (token.tierValidUntil < now) {
+            burnRate = BURNRATE_TIER4;
+        } else if (token.tier == 1) {
             burnRate = BURNRATE_TIER1;
-        } else if (tier == 2) {
+        } else if (token.tier == 2) {
             burnRate = BURNRATE_TIER2;
-        } else if (tier == 3) {
+        } else if (token.tier == 3) {
             burnRate = BURNRATE_TIER3;
         } else {
             burnRate = BURNRATE_TIER4;
         }
     }
 
-    // == Internal Functions ================================================
+    // == Internal Functions ==
 
     function getExchangeAddress(
         uint exchangeId
@@ -231,7 +233,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         return exchanges[exchangeId - 1];
     }
 
-    function upgradeTokenTier(
+    function buydownTokenBurnRate(
         address _token
         )
         external
@@ -265,7 +267,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             token.tierValidUntil += TIER_UPGRADE_DURATION;
         }
 
-        emit TokenTierUpgraded(_token, token.tier);
+        emit TokenBurnRateDown(_token, token.tier);
     }
 
 }
