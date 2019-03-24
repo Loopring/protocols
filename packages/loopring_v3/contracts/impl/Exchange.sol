@@ -487,13 +487,10 @@ contract Exchange is IExchange, NoDefaultFunc
         if (isActiveDepositBlockClosed()) {
             numDepositBlocks++;
             depositBlock = depositBlocks[numDepositBlocks - 1];
-        }
-
-        // Q(daniel): we can move this logic into the above {}.
-        if (depositBlock.numDeposits == 0) {
             depositBlock.timestampOpened = uint32(now);
+        } else {
+            require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, "BLOCK_FULL");
         }
-        require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, "BLOCK_FULL");
 
         // Increase the fee for this block
         depositBlock.fee = depositBlock.fee.add(depositFee);
@@ -538,12 +535,15 @@ contract Exchange is IExchange, NoDefaultFunc
         );
         depositBlock.pendingDeposits.push(pendingDeposit);
 
+
         emit Deposit(
             uint32(numDepositBlocks - 1), uint16(depositBlock.numDeposits - 1),
             accountID, tokenID, amount
         );
     }
 
+    // Q(daniel): also create a meothod without having to specify accountId.
+    // Maybe allow amount == 0 to withdrawa all outstanding balance.
     function requestWithdraw(
         uint24 accountID,
         uint16 tokenID,
@@ -567,14 +567,15 @@ contract Exchange is IExchange, NoDefaultFunc
 
         // Get the withdraw block
         WithdrawBlock storage withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
+
+
         if (isActiveWithdrawBlockClosed()) {
             numWithdrawBlocks++;
             withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
-        }
-        if (withdrawBlock.numWithdrawals == 0) {
             withdrawBlock.timestampOpened = uint32(now);
+        } else {
+            require(withdrawBlock.numWithdrawals < NUM_WITHDRAWALS_IN_BLOCK, "BLOCK_FULL");
         }
-        require(withdrawBlock.numWithdrawals < NUM_WITHDRAWALS_IN_BLOCK, "BLOCK_FULL");
 
         // Increase the fee for this block
         withdrawBlock.fee = withdrawBlock.fee.add(withdrawFee);
@@ -593,6 +594,15 @@ contract Exchange is IExchange, NoDefaultFunc
             withdrawBlock.timestampFilled = uint32(now);
         }
 
+        //  Q(daniel): we don't have something like the following for withdrawal...
+        //
+        //  PendingDeposit memory pendingDeposit = PendingDeposit(
+        //     accountID,
+        //     tokenID,
+        //     amount
+        // );
+        // depositBlock.pendingDeposits.push(pendingDeposit);
+
         emit WithdrawRequest(
             uint32(numWithdrawBlocks - 1),
             uint16(withdrawBlock.numWithdrawals - 1),
@@ -602,6 +612,11 @@ contract Exchange is IExchange, NoDefaultFunc
         );
     }
 
+    // For a wallet or a user, how to find the value of slotIdx?
+    // Is it a good idea to give each withdrawal an unique id then keep a map
+    // from this id to "block index and slot idx index"; if the withdrawal (request) id
+    // is incremental, we can also keep a maxProcessedWithdrawalRequestId in the smart contract.
+    // Maybe this is also applicable to deposit.
     function withdraw(
         uint blockIdx,
         uint slotIdx
@@ -618,6 +633,8 @@ contract Exchange is IExchange, NoDefaultFunc
         // TODO: optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
         uint offset = 4 + 32 + 32 + 3 + 32 + (3 + 2 + 12) * (slotIdx + 1);
+
+        // Q(daniel): this should be `INVAliD_SLOT_IDX`?
         require(offset < withdrawals.length + 32, "INVALID_BLOCK_IDX");
         uint data;
         assembly {
