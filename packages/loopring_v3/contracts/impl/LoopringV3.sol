@@ -32,6 +32,7 @@ import "./DEX.sol";
 contract LoopringV3 is ILoopringV3, Ownable
 {
     using AddressUtil for address;
+    using ERC20SafeTransfer for address;
 
     function updateSettings(
         address _lrcAddress,
@@ -51,7 +52,10 @@ contract LoopringV3 is ILoopringV3, Ownable
         address exchangeOwnerContractAddress
         )
         external
-        returns (uint exchangeId, address exchangeAddress)
+        returns (
+            uint exchangeId,
+            address exchangeAddress
+        )
     {
         require(
             exchangeOwnerContractAddress.isContract(),
@@ -91,6 +95,103 @@ contract LoopringV3 is ILoopringV3, Ownable
             sender,
             creationCostLRC
         );
+    }
+
+
+    function getStake(
+        uint exchangeId
+        )
+        public
+        view
+        returns (uint)
+    {
+        require(
+            exchangeId > 0 && exchangeId <= exchanges.length,
+            "INVALID_EXCHANGE_ID"
+        );
+        return exchangeStakes[exchangeId - 1];
+    }
+
+    function burnStake(
+        uint exchangeId
+        )
+        external
+        returns (uint stakedLRC)
+    {
+        address exchangeAddress = getExchangeAddress(exchangeId);
+        require(msg.sender == exchangeAddress, "UNAUTHORIZED");
+
+        stakedLRC = getStake(exchangeId);
+        if (stakedLRC > 0) {
+            require(
+                BurnableERC20(lrcAddress).burn(stakedLRC),
+                "BURN_FAILURE"
+            );
+            delete exchangeStakes[exchangeId];
+            totalStake -= stakedLRC;
+
+            emit StakeBurned(exchangeId, stakedLRC);
+        }
+    }
+
+    function depositStake(
+        uint exchangeId,
+        uint amountLRC
+        )
+        external
+        returns (uint stakedLRC)
+    {
+        require(amountLRC > 0, "ZERO_VALUE");
+        require(
+            lrcAddress.safeTransferFrom(
+                msg.sender,
+                address(this),
+                amountLRC
+            ),
+            "TRANSFER_FAILURE"
+        );
+        stakedLRC = exchangeStakes[exchangeId] + amountLRC;
+        exchangeStakes[exchangeId] = stakedLRC;
+        totalStake += stakedLRC;
+        emit StakeDeposited(exchangeId, stakedLRC);
+    }
+
+
+    function withdrawStake(
+        uint exchangeId
+        )
+        external
+        returns (uint stakedLRC)
+    {
+        address exchangeAddress = getExchangeAddress(exchangeId);
+        require(msg.sender == exchangeAddress, "UNAUTHORIZED");
+
+        stakedLRC = getStake(exchangeId);
+        if (stakedLRC > 0) {
+            require(
+                BurnableERC20(lrcAddress).burn(stakedLRC),
+                "BURN_FAILURE"
+            );
+            delete exchangeStakes[exchangeId];
+            totalStake -= stakedLRC;
+
+            emit StakeWithdrawn(exchangeId, stakedLRC);
+        }
+    }
+
+    // ----------------- internal methods -----------------
+    function getExchangeAddress(
+        uint exchangeId
+        )
+        internal
+        view
+        returns (address)
+    {
+        require(
+            exchangeId > 0 && exchangeId <= exchanges.length,
+            "INVALID_EXCHANGE_ID"
+        );
+        return exchanges[exchangeId - 1];
     }
 
 }

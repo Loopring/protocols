@@ -32,9 +32,29 @@ contract ILoopringV3
 
     address[] public exchanges;
 
-    address public lrcAddress = address(0);
+    mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
+    uint public totalStake = 0 ether;
 
-    uint public creationCostLRC              = 0 ether;
+    address public lrcAddress   = address(0);
+    uint public creationCostLRC = 0 ether;
+
+
+    event StakeDeposited(
+        uint exchangeId,
+        uint amount
+    );
+
+    event StakeBurned(
+        uint exchangeId,
+        uint amount
+    );
+
+
+    event StakeWithdrawn(
+        uint exchangeId,
+        uint amount
+    );
+
 
     function updateSettings(
         address _lrcAddress,
@@ -46,5 +66,34 @@ contract ILoopringV3
         address _exchangeOwnerContractAddress
         )
         external
-        returns (uint exchangeId, address exchangeAddress);
+        returns (
+            uint exchangeId,
+            address exchangeAddress
+        );
+
+    function getStake(
+        uint exchangeId
+        )
+        public
+        view
+        returns (uint stakedLRC);
+
+    function burnStake(
+        uint exchangeId
+        )
+        external
+        returns (uint stakedLRC);
+
+    function depositStake(
+        uint exchangeId,
+        uint amountLRC
+        )
+        external
+        returns (uint stakedLRC);
+
+    function withdrawStake(
+        uint exchangeId
+        )
+        external
+        returns (uint stakedLRC);
 }

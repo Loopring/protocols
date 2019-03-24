@@ -28,9 +28,7 @@ contract IDEX
     address public creator              = address(0);
     address public lrcAddress           = address(0);
 
-    uint    public totalBurnedLRC  = 0;
-
-    function getStakedLRCAmount()
+    function getStake()
         external
         view
         returns (uint);

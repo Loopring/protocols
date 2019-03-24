@@ -54,13 +54,14 @@ contract DEX is IDEX, NoDefaultFunc
         lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
     }
 
-
-    function getStakedLRCAmount()
+    function getStake()
         external
         view
         returns (uint)
     {
-        return ERC20(lrcAddress).balanceOf(address(this));
+        return ILoopringV3(loopringAddress).getStake(id);
     }
+
+    // ----------------- internal methods -----------------
 
 }
