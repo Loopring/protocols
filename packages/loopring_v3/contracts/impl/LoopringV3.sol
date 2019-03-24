@@ -231,7 +231,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         return exchanges[exchangeId - 1];
     }
 
-    function upgradeTokenTier(
+    function buydownTokenBurnRate(
         address _token
         )
         external
@@ -265,7 +265,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             token.tierValidUntil += TIER_UPGRADE_DURATION;
         }
 
-        emit TokenTierUpgraded(_token, token.tier);
+        emit TokenBurnRateDown(_token, token.tier);
     }
 
 }

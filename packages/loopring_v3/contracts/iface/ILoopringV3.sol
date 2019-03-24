@@ -60,7 +60,7 @@ contract ILoopringV3
         uint time
     );
 
-    event TokenTierUpgraded(
+    event TokenBurnRateDown(
         address indexed token,
         uint            tier
     );
@@ -143,7 +143,7 @@ contract ILoopringV3
         view
         returns (uint16 burnRate);
 
-    function upgradeTokenTier(
+    function buydownTokenBurnRate(
         address token
         )
         external;
