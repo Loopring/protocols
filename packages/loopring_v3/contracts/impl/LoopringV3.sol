@@ -256,8 +256,14 @@ contract LoopringV3 is ILoopringV3, Ownable
         require(success, "BURN_FAILURE");
 
         // Upgrade tier
+        token.tokenAddress = _token;
         token.tier = currentTier - 1;
-        token.tierValidUntil = now.add(TIER_UPGRADE_DURATION);
+
+        if (token.tierValidUntil < now) {
+            token.tierValidUntil = now + TIER_UPGRADE_DURATION;
+        } else {
+            token.tierValidUntil += TIER_UPGRADE_DURATION;
+        }
 
         emit TokenTierUpgraded(_token, token.tier);
     }

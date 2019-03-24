@@ -144,7 +144,7 @@ contract ILoopringV3
         returns (uint16 burnRate);
 
     function upgradeTokenTier(
-        address _token
+        address token
         )
         external;
 }
