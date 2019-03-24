@@ -16,6 +16,7 @@
 */
 pragma solidity 0.5.2;
 
+import "../iface/IExchangeOwner.sol";
 import "../iface/IDEX.sol";
 import "../iface/ILoopringV3.sol";
 
@@ -64,6 +65,35 @@ contract DEX is IDEX, NoDefaultFunc
         return ILoopringV3(loopringAddress).getStake(id);
     }
 
+    function commitBlock(
+        uint  blockType,
+        bytes calldata data,
+        bytes calldata exchangeData
+        )
+        external
+    {
+        IExchangeOwner owner = IExchangeOwner(ownerContractAddress);
+
+        require(
+            owner.canCommitBlock(
+                id,
+                blockType,
+                data,
+                exchangeData
+            ),
+            "BLOCK_COMMIT_PREVENTED"
+        );
+        commitBlockInternal(blockType, data);
+    }
+
     // == Internal Functions ================================================
 
+    function commitBlockInternal(
+        uint  blockType,
+        bytes memory data
+        )
+        internal
+    {
+        //...
+    }
 }

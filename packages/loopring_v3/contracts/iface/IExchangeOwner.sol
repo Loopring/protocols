@@ -1,3 +1,4 @@
+
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -19,28 +20,14 @@ pragma solidity 0.5.2;
 
 /// @title IDEX
 /// @author Brecht Devos - <brecht@loopring.org>
-/// @author Daniel Wang  - <daniel@loopring.org>
-contract IDEX
+contract IExchangeOwner
 {
-    // == Public Variables ================================================
-
-    uint    public id = 0;
-    address public loopringAddress      = address(0);
-    address public ownerContractAddress = address(0);
-    address public creator              = address(0);
-    address public lrcAddress           = address(0);
-
-    // == Public Functions ================================================
-
-    function getStake()
-        external
-        view
-        returns (uint);
-
-    function commitBlock(
+   function canCommitBlock(
+        uint exchangeId,
         uint blockType,
         bytes calldata data,
         bytes calldata exchangeData
         )
-        external;
+        external
+        returns (bool);
 }
