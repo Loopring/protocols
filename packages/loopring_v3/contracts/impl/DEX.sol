@@ -110,7 +110,6 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         require(tokenToTokenId[token] == 0, "ALREADY_EXIST");
         require(numTokensRegistered < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
-        // Add the token to the list
         tokenId = numTokensRegistered + 1;
 
         tokenToTokenId[token] = tokenId;
