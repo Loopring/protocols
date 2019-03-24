@@ -53,7 +53,13 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         loopringAddress = _loopringAddress;
         owner = _owner;
         committer = _committer;
-        lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
+
+        ILoopringV3 loopring = ILoopringV3(loopringAddress);
+
+        registerToken(loopring.lrcAddress());
+        registerToken(loopring.wethAddress());
+
+        lrcAddress = loopring.lrcAddress();
     }
 
 
