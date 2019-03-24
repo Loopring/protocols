@@ -44,7 +44,7 @@ contract IDEX
 
     // == Public Constants ==
 
-    uint    public constant MAX_NUM_TOKENS         = 2 ** 12; // =4096
+    uint    public constant MAX_NUM_TOKENS = 2 ** 12; // =4096
 
     // == Public Variables ==
 
