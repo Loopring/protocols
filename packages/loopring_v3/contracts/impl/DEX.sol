@@ -34,10 +34,9 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-
     // == Private Variables ==
 
-    ILoopringV3 loopring;
+    ILoopringV3 private loopring;
 
     // == Public Functions ==
 
@@ -101,7 +100,6 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
     {
         commitBlockInternal(blockType, data);
     }
-
 
     function registerToken(
         address token
