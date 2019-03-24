@@ -34,7 +34,7 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-    // == Public Functions ================================================
+    // == Public Functions ==
 
     constructor(
         uint    _id,
@@ -91,7 +91,30 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         commitBlockInternal(blockType, data);
     }
 
-    // == Internal Functions ================================================
+
+    function registerToken(
+        address token
+        )
+        internal
+        returns (uint16 tokenId)
+    {
+        require(tokenToTokenId[token] == 0, "ALREADY_EXIST");
+        require(numTokensRegistered < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
+
+        // Add the token to the list
+        tokenId = numTokensRegistered + 1;
+
+        tokenToTokenId[token] = tokenId;
+        tokenIdToToken[tokenId] = token;
+        numTokensRegistered += 1;
+
+        emit TokenRegistered(
+            token,
+            tokenId
+        );
+    }
+
+    // == Internal Functions ==
 
     /// @dev Throws if called by any account other than the committer.
     modifier onlyCommitter()

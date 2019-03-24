@@ -35,7 +35,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     using ERC20SafeTransfer for address;
 
 
-    // == Public Functions ================================================
+    // == Public Functions ==
 
     function updateSettings(
         address _lrcAddress,
@@ -215,7 +215,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         }
     }
 
-    // == Internal Functions ================================================
+    // == Internal Functions ==
 
     function getExchangeAddress(
         uint exchangeId

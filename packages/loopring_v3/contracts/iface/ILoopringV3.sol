@@ -22,7 +22,7 @@ pragma solidity 0.5.2;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopringV3
 {
-    // == Structs =========================================================
+    // == Structs ==
 
     struct Token
     {
@@ -31,7 +31,7 @@ contract ILoopringV3
         uint    tierValidUntil;
     }
 
-    // == Events ==========================================================
+    // == Events ==
 
     event ExchangeCreated(
         uint    exchanegId,
@@ -65,7 +65,7 @@ contract ILoopringV3
         uint            tier
     );
 
-    // == Constants =======================================================
+    // == Constants ==
 
     // Burn rates (in bips -- 100bips == 1%)
     uint16 public constant BURNRATE_TIER1 =  250;  // 2.5%
@@ -75,7 +75,7 @@ contract ILoopringV3
 
     uint   public constant TIER_UPGRADE_DURATION  = 365 days;
 
-    // == Public Variables ================================================
+    // == Public Variables ==
 
     address[] public exchanges;
 
@@ -91,7 +91,7 @@ contract ILoopringV3
 
     mapping (address => Token) public tokens;
 
-    // == Public Functions ================================================
+    // == Public Functions ==
 
     function updateSettings(
         address _lrcAddress,
