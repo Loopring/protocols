@@ -171,8 +171,12 @@ contract LoopringV3 is ILoopringV3, Ownable
         stakedLRC = getStake(exchangeId);
         if (stakedLRC > 0) {
             require(
-                BurnableERC20(lrcAddress).burn(stakedLRC),
-                "BURN_FAILURE"
+                lrcAddress.safeTransferFrom(
+                    address(this),
+                    msg.sender,
+                    stakedLRC
+                ),
+                "WITHDRAWAL_FAILURE"
             );
             delete exchangeStakes[exchangeId];
             totalStake -= stakedLRC;
