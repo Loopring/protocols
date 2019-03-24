@@ -431,6 +431,8 @@ contract Exchange is IExchange, NoDefaultFunc
         return accountID;
     }
 
+    // Q(daniel): should we create another method that doesn't require
+    // the accountID param and use the msg.sender to find the accountId?
     function deposit(
         uint24 accountID,
         uint16 tokenID,
