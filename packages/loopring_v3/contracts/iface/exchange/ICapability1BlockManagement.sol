@@ -16,11 +16,27 @@
 */
 pragma solidity 0.5.2;
 
-import "./exchange/ICapability3StakeQuery.sol";
 
-
-/// @title IDEX
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title An Implementation of IDEX.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IDEX is ICapability3StakeQuery {
+contract ICapability1BlockManagement
+{
+    event BlockCommitted(
+        uint  exchanegId,
+        uint  blockType
+        // TODO(brecht): add more fields
+    );
+
+    event CommitterChanged(
+        uint  exchanegId,
+        address oldCommitter,
+        address newCommitter
+    );
+
+    address public owner                = address(0);
+    address public committer            = address(0);
+
+    function setCommitter(address _committer)
+        external
+        returns (address oldCommitter);
 }

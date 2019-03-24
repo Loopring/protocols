@@ -16,11 +16,25 @@
 */
 pragma solidity 0.5.2;
 
-import "./exchange/ICapability3StakeQuery.sol";
+import "../../iface/ILoopringV3.sol";
+import "../../lib/ERC20.sol";
+import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/NoDefaultFunc.sol";
+import "../../lib/Ownable.sol";
 
 
-/// @title IDEX
+/// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IDEX is ICapability3StakeQuery {
+contract CapabilityBase is Ownable, NoDefaultFunc
+{
+    using MathUint          for uint;
+    using ERC20SafeTransfer for address;
+
+    uint    public id = 0;
+    address public loopringAddress      = address(0);
+    address public lrcAddress           = address(0);
+
+    ILoopringV3 internal loopring;
 }

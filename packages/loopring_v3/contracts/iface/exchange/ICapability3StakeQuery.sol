@@ -16,11 +16,15 @@
 */
 pragma solidity 0.5.2;
 
-import "./exchange/ICapability3StakeQuery.sol";
+import "./ICapability2TokenRegistration.sol";
 
 
-/// @title IDEX
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title An Implementation of IDEX.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IDEX is ICapability3StakeQuery {
+contract ICapability3StakeQuery is ICapability2TokenRegistration
+{
+    function getStake()
+        external
+        view
+        returns (uint);
 }
