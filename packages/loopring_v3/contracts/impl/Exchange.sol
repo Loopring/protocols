@@ -535,6 +535,8 @@ contract Exchange is IExchange, NoDefaultFunc
 
         // Store deposit info onchain so we can withdraw from uncommitted deposit blocks
         // Q(daniel): should we extend to pending depoits and emit event only if amount > 0?
+
+        // Q(daniel): how to withdrawal directly from pending deposit instead of approved withdrawl requests?
         PendingDeposit memory pendingDeposit = PendingDeposit(
             accountID,
             tokenID,
