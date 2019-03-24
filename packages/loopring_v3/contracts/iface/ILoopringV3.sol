@@ -142,4 +142,9 @@ contract ILoopringV3
         public
         view
         returns (uint16 burnRate);
+
+    function upgradeTokenTier(
+        address _token
+        )
+        external;
 }

@@ -235,7 +235,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         address _token
         )
         external
-        returns (bool)
     {
         require(_token != address(0), "ZERO_ADDRESS");
         require(_token != lrcAddress, "BURN_RATE_FROZEN");
@@ -261,8 +260,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         token.tierValidUntil = now.add(TIER_UPGRADE_DURATION);
 
         emit TokenTierUpgraded(_token, token.tier);
-
-        return true;
     }
 
 }
