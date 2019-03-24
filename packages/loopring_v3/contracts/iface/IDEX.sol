@@ -47,8 +47,7 @@ contract IDEX
 
     function commitBlock(
         uint blockType,
-        bytes calldata data,
-        bytes calldata exchangeData
+        bytes calldata data
         )
         external;
 }

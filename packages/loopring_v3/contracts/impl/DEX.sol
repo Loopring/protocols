@@ -16,7 +16,6 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/IExchangeOwner.sol";
 import "../iface/IDEX.sol";
 import "../iface/ILoopringV3.sol";
 
@@ -46,7 +45,6 @@ contract DEX is IDEX, NoDefaultFunc
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
-        require(address(0) != _ownerContractAddress, "ZERO_ADDRESS");
         require(address(0) != _creator, "ZERO_ADDRESS");
 
         id = _id;
@@ -67,21 +65,14 @@ contract DEX is IDEX, NoDefaultFunc
 
     function commitBlock(
         uint  blockType,
-        bytes calldata data,
-        bytes calldata exchangeData
+        bytes calldata data
         )
         external
     {
-        IExchangeOwner owner = IExchangeOwner(ownerContractAddress);
-
         require(
-            owner.canCommitBlock(
-                id,
-                blockType,
-                data,
-                exchangeData
-            ),
-            "BLOCK_COMMIT_PREVENTED"
+            ownerContractAddress == address(0) ||
+            ownerContractAddress == msg.sender,
+            "UNAUTHORIZED"
         );
 
         commitBlockInternal(blockType, data);
