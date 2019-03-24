@@ -34,7 +34,7 @@ contract IDEX
 
     uint    public id = 0;
     address public loopringAddress      = address(0);
-    address public ownerContractAddress = address(0);
+    address public owner                = address(0);
     address public creator              = address(0);
     address public lrcAddress           = address(0);
 

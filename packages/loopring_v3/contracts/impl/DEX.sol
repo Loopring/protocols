@@ -38,7 +38,7 @@ contract DEX is IDEX, NoDefaultFunc
     constructor(
         uint    _id,
         address _loopringAddress,
-        address _ownerContractAddress,
+        address _owner,
         address _creator
         )
         public
@@ -49,7 +49,7 @@ contract DEX is IDEX, NoDefaultFunc
 
         id = _id;
         loopringAddress = _loopringAddress;
-        ownerContractAddress = _ownerContractAddress;
+        owner = _owner;
         creator = _creator;
 
         lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
@@ -70,8 +70,7 @@ contract DEX is IDEX, NoDefaultFunc
         external
     {
         require(
-            ownerContractAddress == address(0) ||
-            ownerContractAddress == msg.sender,
+            owner == address(0) || owner == msg.sender,
             "UNAUTHORIZED"
         );
 
