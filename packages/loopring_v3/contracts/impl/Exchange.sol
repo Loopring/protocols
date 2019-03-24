@@ -648,6 +648,7 @@ contract Exchange is IExchange, NoDefaultFunc
 
         Account storage account = getAccount(accountID);
 
+        // Q(daniel): if amount == 0, should we not put this withdrawal into the block in the first place?
         if (amount > 0) {
             // Set the amount to 0 so it cannot be withdrawn anymore
             data = data & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000;
