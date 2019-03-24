@@ -612,11 +612,14 @@ contract Exchange is IExchange, NoDefaultFunc
         );
     }
 
-    // For a wallet or a user, how to find the value of slotIdx?
+    // Q(daniel): For a wallet or a user, how to find the value of slotIdx?
     // Is it a good idea to give each withdrawal request an unique id then keep a map
     // from this id to "block index and slot index"; if the withdrawal request id
     // is incremental, we can also keep a maxProcessedWithdrawalRequestId in the smart contract.
     // Maybe this is also applicable to deposit.
+
+    // Q(daniel): Dolomite suggested we add a `address to` to this method so if two is NOT 0x0,
+    // funds are withdrawal to the to address, instead of owner. Not sure if this is necessary.
     function withdraw(
         uint blockIdx,
         uint slotIdx
@@ -675,6 +678,9 @@ contract Exchange is IExchange, NoDefaultFunc
         // Calculate how much needs to get burned
         uint amountToBurn = 0;
         uint amountToOwner = 0;
+
+        // Q(daniel): reuse the ITokenRegistry?
+
         if (bBurn) {
             uint burnRate = ITokenRegistry(tokenRegistryAddress).getBurnRate(tokenID);
             amountToBurn = amount.mul(burnRate) / 10000;
@@ -745,6 +751,8 @@ contract Exchange is IExchange, NoDefaultFunc
         returns (bool success)
     {
         // TODO: should only be callable by BurnManager
+        //Q(daniel): this should only be called by the owner of ILoopring.
+
         require(burnBalances[token] >= amount, "TOO_LARGE_AMOUNT");
         burnBalances[token] = burnBalances[token].sub(amount);
 
