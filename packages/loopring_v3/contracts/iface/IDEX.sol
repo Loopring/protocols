@@ -22,6 +22,7 @@ pragma solidity 0.5.2;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IDEX
 {
+
     // == Events ==========================================================
 
     event BlockCommitted(
@@ -35,6 +36,7 @@ contract IDEX
         address oldCommitter,
         address newCommitter
     );
+
 
     // == Public Variables ================================================
 
