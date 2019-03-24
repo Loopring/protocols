@@ -23,12 +23,13 @@ import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
+import "../lib/Ownable.sol";
 
 
 /// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract DEX is IDEX, NoDefaultFunc
+contract DEX is IDEX, Ownable, NoDefaultFunc
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
@@ -45,18 +46,14 @@ contract DEX is IDEX, NoDefaultFunc
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
+        require(address(0) != _owner, "ZERO_ADDRESS");
         require(address(0) != _creator, "ZERO_ADDRESS");
 
         id = _id;
         loopringAddress = _loopringAddress;
-        lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
+        owner = _owner;
         creator = _creator;
-
-        if (address(0) == _owner) {
-            owner = creator;
-        } else {
-            owner = _owner;
-        }
+        lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
     }
 
     function getStake()
@@ -72,9 +69,8 @@ contract DEX is IDEX, NoDefaultFunc
         bytes calldata data
         )
         external
+        onlyOwner
     {
-        require(owner == msg.sender, "UNAUTHORIZED");
-
         commitBlockInternal(blockType, data);
     }
 
