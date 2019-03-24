@@ -22,6 +22,8 @@ pragma solidity 0.5.2;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopringV3
 {
+    // == Events ==========================================================
+
     event ExchangeCreated(
         uint    exchanegId,
         address exchangeAddress,
@@ -29,15 +31,6 @@ contract ILoopringV3
         address creator,
         uint    burnedLRC
     );
-
-    address[] public exchanges;
-
-    mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
-    uint public totalStake = 0 ether;
-
-    address public lrcAddress   = address(0);
-    uint public creationCostLRC = 0 ether;
-
 
     event StakeDeposited(
         uint exchangeId,
@@ -55,6 +48,17 @@ contract ILoopringV3
         uint amount
     );
 
+    // == Public Variables ================================================
+
+    address[] public exchanges;
+
+    mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
+    uint public totalStake = 0 ether;
+
+    address public lrcAddress   = address(0);
+    uint public creationCostLRC = 0 ether;
+
+    // == Public Functions ================================================
 
     function updateSettings(
         address _lrcAddress,

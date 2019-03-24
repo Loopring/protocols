@@ -33,6 +33,8 @@ contract DEX is IDEX, NoDefaultFunc
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
+    // == Public Functions ================================================
+
     constructor(
         uint    _id,
         address _loopringAddress,
@@ -62,6 +64,6 @@ contract DEX is IDEX, NoDefaultFunc
         return ILoopringV3(loopringAddress).getStake(id);
     }
 
-    // ----------------- internal methods -----------------
+    // == Internal Functions ================================================
 
 }
