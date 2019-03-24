@@ -22,7 +22,16 @@ pragma solidity 0.5.2;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopringV3
 {
-    // == Events ==========================================================
+    // == Structs ==
+
+    struct Token
+    {
+        address tokenAddress;
+        uint8   tier;
+        uint    tierValidUntil;
+    }
+
+    // == Events ==
 
     event ExchangeCreated(
         uint    exchanegId,
@@ -47,21 +56,48 @@ contract ILoopringV3
         uint amount
     );
 
-    // == Public Variables ================================================
+    event SettingsUpdated(
+        uint time
+    );
+
+    event TokenBurnRateDown(
+        address indexed token,
+        uint            tier
+    );
+
+    // == Constants ==
+
+    // Burn rates (in bips -- 100bips == 1%)
+    uint16 public constant BURNRATE_TIER1 =  250;  // 2.5%
+    uint16 public constant BURNRATE_TIER2 = 1500; //  15%
+    uint16 public constant BURNRATE_TIER3 = 3000; //  30%
+    uint16 public constant BURNRATE_TIER4 = 5000; //  50%
+
+    uint   public constant TIER_UPGRADE_DURATION  = 365 days;
+
+    // == Public Variables ==
 
     address[] public exchanges;
 
     mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
-    uint public totalStake = 0 ether;
 
+    uint    public totalStake   = 0 ether;
     address public lrcAddress   = address(0);
-    uint public creationCostLRC = 0 ether;
+    address public wethAddress  = address(0);
+    uint    public exchangeCreationCostLRC = 0 ether;
 
-    // == Public Functions ================================================
+     // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
+    uint16  public  tierUpgradeCostBips  =  0; // 0.01% or 130K LRC
+
+    mapping (address => Token) public tokens;
+
+    // == Public Functions ==
 
     function updateSettings(
         address _lrcAddress,
-        uint _creationCostLRC
+        address _wethAddress,
+        uint    _exchangeCreationCostLRC,
+        uint16  _tierUpgradeCostBips
         )
         external;
 
@@ -99,4 +135,16 @@ contract ILoopringV3
         )
         external
         returns (uint stakedLRC);
+
+    function getTokenBurnRate(
+        address token
+        )
+        public
+        view
+        returns (uint16 burnRate);
+
+    function buydownTokenBurnRate(
+        address token
+        )
+        external;
 }

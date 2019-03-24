@@ -34,7 +34,11 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-    // == Public Functions ================================================
+    // == Private Variables ==
+
+    ILoopringV3 private loopring;
+
+    // == Public Functions ==
 
     constructor(
         uint    _id,
@@ -53,7 +57,13 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         loopringAddress = _loopringAddress;
         owner = _owner;
         committer = _committer;
-        lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
+
+        loopring = ILoopringV3(loopringAddress);
+
+        registerToken(loopring.lrcAddress());
+        registerToken(loopring.wethAddress());
+
+        lrcAddress = loopring.lrcAddress();
     }
 
 
@@ -78,7 +88,7 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         view
         returns (uint)
     {
-        return ILoopringV3(loopringAddress).getStake(id);
+        return loopring.getStake(id);
     }
 
     function commitBlock(
@@ -91,7 +101,28 @@ contract DEX is IDEX, Ownable, NoDefaultFunc
         commitBlockInternal(blockType, data);
     }
 
-    // == Internal Functions ================================================
+    function registerToken(
+        address token
+        )
+        internal
+        returns (uint16 tokenId)
+    {
+        require(tokenToTokenId[token] == 0, "ALREADY_EXIST");
+        require(numTokensRegistered < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
+
+        tokenId = numTokensRegistered + 1;
+
+        tokenToTokenId[token] = tokenId;
+        tokenIdToToken[tokenId] = token;
+        numTokensRegistered += 1;
+
+        emit TokenRegistered(
+            token,
+            tokenId
+        );
+    }
+
+    // == Internal Functions ==
 
     /// @dev Throws if called by any account other than the committer.
     modifier onlyCommitter()

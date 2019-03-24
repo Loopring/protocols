@@ -22,7 +22,8 @@ pragma solidity 0.5.2;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IDEX
 {
-    // == Events ==========================================================
+
+    // == Events ==
 
     event BlockCommitted(
         uint  exchanegId,
@@ -36,7 +37,16 @@ contract IDEX
         address newCommitter
     );
 
-    // == Public Variables ================================================
+    event TokenRegistered(
+        address token,
+        uint16 tokenId
+    );
+
+    // == Public Constants ==
+
+    uint    public constant MAX_NUM_TOKENS = 2 ** 12; // =4096
+
+    // == Public Variables ==
 
     uint    public id = 0;
     address public loopringAddress      = address(0);
@@ -44,7 +54,11 @@ contract IDEX
     address public committer            = address(0);
     address public lrcAddress           = address(0);
 
-    // == Public Functions ================================================
+    mapping (address => uint16) public tokenToTokenId;
+    mapping (uint16 => address) public tokenIdToToken;
+    uint16  public numTokensRegistered  = 0;
+
+    // == Public Functions ==
 
     function setCommitter(address _committer)
         external
@@ -60,4 +74,10 @@ contract IDEX
         bytes calldata data
         )
         external;
+
+    function registerToken(
+        address token
+        )
+        internal
+        returns (uint16 tokenId);
 }

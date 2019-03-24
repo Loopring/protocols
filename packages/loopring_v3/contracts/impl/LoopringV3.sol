@@ -20,6 +20,7 @@ import "../iface/ILoopringV3.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
+import "../lib/MathUint.sol";
 import "../lib/Ownable.sol";
 
 import "./DEX.sol";
@@ -30,22 +31,38 @@ import "./DEX.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3, Ownable
 {
+    using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-    // == Public Functions ================================================
+
+    // == Public Functions ==
 
     function updateSettings(
         address _lrcAddress,
-        uint _creationCostLRC
+        address _wethAddress,
+        uint    _exchangeCreationCostLRC,
+        uint16  _tierUpgradeCostBips
         )
         external
         onlyOwner
     {
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
-        require(0 != _creationCostLRC, "ZERO_VALUE");
+        require(address(0) != _wethAddress, "ZERO_ADDRESS");
+        require(0 != _exchangeCreationCostLRC, "ZERO_VALUE");
+        require(10 >= _tierUpgradeCostBips, "VALUE_TOO_LARGE");
+
+        delete tokens[lrcAddress];
+        delete tokens[wethAddress];
 
         lrcAddress = _lrcAddress;
-        creationCostLRC = _creationCostLRC;
+        wethAddress = _wethAddress;
+        exchangeCreationCostLRC = _exchangeCreationCostLRC;
+        tierUpgradeCostBips = _tierUpgradeCostBips;
+
+        tokens[lrcAddress]  = Token(lrcAddress, 1, 0xFFFFFFFF);
+        tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
+
+        emit SettingsUpdated(now);
     }
 
     function createExchange(
@@ -58,9 +75,9 @@ contract LoopringV3 is ILoopringV3, Ownable
         )
     {
         // Burn the LRC
-        if (creationCostLRC > 0) {
+        if (exchangeCreationCostLRC > 0) {
             require(
-                BurnableERC20(lrcAddress).burn(creationCostLRC),
+                BurnableERC20(lrcAddress).burn(exchangeCreationCostLRC),
                 "BURN_FAILURE"
             );
         }
@@ -89,7 +106,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeAddress,
             msg.sender,
             committer,
-            creationCostLRC
+            exchangeCreationCostLRC
         );
     }
 
@@ -179,7 +196,28 @@ contract LoopringV3 is ILoopringV3, Ownable
         }
     }
 
-    // == Internal Functions ================================================
+    function getTokenBurnRate(
+        address _token
+        )
+        public
+        view
+        returns (uint16 burnRate)
+    {
+        Token storage token = tokens[_token];
+        if (token.tierValidUntil < now) {
+            burnRate = BURNRATE_TIER4;
+        } else if (token.tier == 1) {
+            burnRate = BURNRATE_TIER1;
+        } else if (token.tier == 2) {
+            burnRate = BURNRATE_TIER2;
+        } else if (token.tier == 3) {
+            burnRate = BURNRATE_TIER3;
+        } else {
+            burnRate = BURNRATE_TIER4;
+        }
+    }
+
+    // == Internal Functions ==
 
     function getExchangeAddress(
         uint exchangeId
@@ -193,6 +231,43 @@ contract LoopringV3 is ILoopringV3, Ownable
             "INVALID_EXCHANGE_ID"
         );
         return exchanges[exchangeId - 1];
+    }
+
+    function buydownTokenBurnRate(
+        address _token
+        )
+        external
+    {
+        require(_token != address(0), "ZERO_ADDRESS");
+        require(_token != lrcAddress, "BURN_RATE_FROZEN");
+        require(_token != wethAddress, "BURN_RATE_FROZEN");
+
+        Token storage token = tokens[_token];
+
+        uint8 currentTier = 4;
+        if (token.tier != 0) currentTier = token.tier;
+
+        // Can't upgrade to a higher level than tier 1
+        require(currentTier > 1, "BURN_RATE_MINIMIZED");
+
+        // Burn tierUpgradeCostBips of total LRC supply
+        BurnableERC20 LRC = BurnableERC20(lrcAddress);
+        uint totalSupply = LRC.totalSupply();
+        uint amount = totalSupply.mul(tierUpgradeCostBips) / 10000;
+        bool success = LRC.burnFrom(msg.sender, amount);
+        require(success, "BURN_FAILURE");
+
+        // Upgrade tier
+        token.tokenAddress = _token;
+        token.tier = currentTier - 1;
+
+        if (token.tierValidUntil < now) {
+            token.tierValidUntil = now + TIER_UPGRADE_DURATION;
+        } else {
+            token.tierValidUntil += TIER_UPGRADE_DURATION;
+        }
+
+        emit TokenBurnRateDown(_token, token.tier);
     }
 
 }
