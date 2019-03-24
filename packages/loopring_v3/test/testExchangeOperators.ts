@@ -72,14 +72,14 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Register operator", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 0);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true, 0);
       await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[0]);
       await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[1]);
       await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[2]);
     });
 
     it("Unregister operator", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 0);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true, 0);
 
       const operatorA = await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[0]);
       const operatorB = await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[1]);
@@ -103,7 +103,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Withdraw operator stake", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 0);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true, 0);
 
       // Register an operator
       const operator = await registerOperatorChecked(realmID, exchangeTestUtil.testContext.operators[0]);
@@ -147,7 +147,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Register operator with insufficient stake amount", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 0);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true, 0);
       const owner = exchangeTestUtil.testContext.stateOwners[0];
 
       // No funds

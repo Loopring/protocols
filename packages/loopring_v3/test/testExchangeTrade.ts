@@ -801,7 +801,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Separate state", async () => {
-      const realmID = await exchangeTestUtil.createRealm(
+      const realmID = await exchangeTestUtil.createExchange(
         exchangeTestUtil.testContext.stateOwners[1],
         true,
         1,

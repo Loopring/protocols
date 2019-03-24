@@ -16,11 +16,11 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/IBlockVerifier.sol";
 import "../iface/IExchange.sol";
+import "../iface/ILoopringV3.sol";
+
+import "../iface/IBlockVerifier.sol";
 import "../iface/IExchangeHelper.sol";
-import "../iface/IOperatorRegistry.sol";
-import "../iface/ITokenRegistry.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -34,33 +34,6 @@ contract Exchange is IExchange, NoDefaultFunc
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
-
-    uint32 public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS         = 1 hours;
-
-    uint32 public constant MIN_TIME_BLOCK_OPEN                          = 1  minutes;
-    uint32 public constant MAX_TIME_BLOCK_OPEN                          = 15 minutes;
-    uint32 public constant MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE      = 2  minutes;
-
-    //uint32 public constant MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED           = 15 minutes;
-    uint32 public constant MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED           = 1 days;     // TESTING
-
-    uint32 public constant MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE          = 1 days;     // TESTING
-
-    uint16 public constant NUM_DEPOSITS_IN_BLOCK                        = 8;
-    uint16 public constant NUM_WITHDRAWALS_IN_BLOCK                     = 8;
-
-    //uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS           = 1 minutes;
-    uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS             = 1 days;        // TESTING
-
-    // Default account
-    uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
-    uint public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
-    uint public constant DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935;
-
-    address public lrcAddress                = address(0x0);
-    address public exchangeHelperAddress     = address(0x0);
-    address public tokenRegistryAddress      = address(0x0);
-    address public blockVerifierAddress      = address(0x0);
 
     enum BlockType
     {
@@ -131,11 +104,9 @@ contract Exchange is IExchange, NoDefaultFunc
         bytes  withdrawals;
     }
 
-    uint32 dexID;
-    address payable exchangeOwner;
-    uint public depositFee = 0;
-    uint public withdrawFee = 0;
-    uint public maxWithdrawFee = 0;
+    // == Private Variables ==
+
+    ILoopringV3 private loopring;
 
     Account[] accounts;
     Block[] blocks;
@@ -145,30 +116,40 @@ contract Exchange is IExchange, NoDefaultFunc
     uint numWithdrawBlocks = 1;
     mapping (uint => WithdrawBlock) withdrawBlocks;
 
+    // == Public Functions ==
+
     constructor(
-        address _exchangeHelperAddress,
-        address _tokenRegistryAddress,
-        address _blockVerifierAddress,
+        uint    _id,
+        address _loopringAddress,
+        address _owner,
+        address payable _committer,
         address _lrcAddress,
-        address payable _exchangeOwner,
-        uint32 _dexID,
-        uint _maxWithdrawFee
+        address _wethAddress,
+        address _exchangeHelperAddress,
+        address _blockVerifierAddress
         )
         public
     {
-        require(_exchangeHelperAddress != address(0x0), "ZERO_ADDRESS");
-        require(_tokenRegistryAddress != address(0x0), "ZERO_ADDRESS");
-        require(_blockVerifierAddress != address(0x0), "ZERO_ADDRESS");
-        require(_lrcAddress != address(0x0), "ZERO_ADDRESS");
-        require(_exchangeOwner != address(0x0), "ZERO_ADDRESS");
+        require(0 != _id, "INVALID_ID");
+        require(address(0) != _loopringAddress, "ZERO_ADDRESS");
+        require(address(0) != _owner, "ZERO_ADDRESS");
+        require(address(0) != _committer, "ZERO_ADDRESS");
 
-        exchangeHelperAddress = _exchangeHelperAddress;
-        tokenRegistryAddress = _tokenRegistryAddress;
-        blockVerifierAddress = _blockVerifierAddress;
+        // We can't call functions on the loopring contract here
+        loopring = ILoopringV3(loopringAddress);
+
+        id = _id;
+        loopringAddress = _loopringAddress;
+        owner = _owner;
+        committer = _committer;
+
         lrcAddress = _lrcAddress;
-        exchangeOwner = _exchangeOwner;
-        dexID = _dexID;
-        maxWithdrawFee = _maxWithdrawFee;
+        exchangeHelperAddress = _exchangeHelperAddress;
+        blockVerifierAddress = _blockVerifierAddress;
+
+        registerToken(address(0));
+        registerToken(_wethAddress);
+        registerToken(lrcAddress);
 
         Block memory genesisBlock = Block(
             0x29c496a5d270dec45f84b17ac910e27e342b7feaff48ba1d717e7d3dd622d9ed,
@@ -188,8 +169,9 @@ contract Exchange is IExchange, NoDefaultFunc
         )
         external
     {
+
         // require(msg.sender == exchangeOwner, "UNAUTHORIZED");
-        require(withdrawFee <= maxWithdrawFee, "TOO_LARGE_AMOUNT");
+        require(withdrawFee <= loopring.maxWithdrawFee(), "TOO_LARGE_AMOUNT");
 
         depositFee = _depositFee;
         withdrawFee = _withdrawFee;
@@ -219,12 +201,12 @@ contract Exchange is IExchange, NoDefaultFunc
     {
         // require(msg.sender == exchangeOwner, "UNAUTHORIZED");
 
-        // Extract the dexID from the data
-        uint32 dexIDInData = 0;
+        // Extract the exchange ID from the data
+        /*uint32 exchangeIdInData = 0;
         assembly {
-            dexIDInData := and(mload(add(data, 4)), 0xFFFFFFFF)
+            exchangeIdInData := and(mload(add(data, 4)), 0xFFFFFFFF)
         }
-        require(dexIDInData == dexID, "INVALID_DEXID");
+        require(exchangeIdInData == id, "INVALID_ID");*/
 
         // Exchange cannot be in withdraw mode
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
@@ -494,7 +476,7 @@ contract Exchange is IExchange, NoDefaultFunc
         depositBlock.fee = depositBlock.fee.add(depositFee);
 
         // Transfer the tokens from the owner into this contract
-        address tokenAddress = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
+        address tokenAddress = getTokenAddress(tokenID);
         if (amount > 0 && tokenID != 0) {
             require(
                 tokenAddress.safeTransferFrom(
@@ -646,20 +628,20 @@ contract Exchange is IExchange, NoDefaultFunc
         )
         internal
     {
+        address payable owner = address(uint160(accountOwner));
+        address token = getTokenAddress(tokenID);
+
         // Calculate how much needs to get burned
         uint amountToBurn = 0;
         uint amountToOwner = 0;
         if (bBurn) {
-            uint burnRate = ITokenRegistry(tokenRegistryAddress).getBurnRate(tokenID);
+            uint burnRate = loopring.getTokenBurnRate(token);
             amountToBurn = amount.mul(burnRate) / 10000;
             amountToOwner = amount - amountToBurn;
         } else {
             amountToBurn = 0;
             amountToOwner = amount;
         }
-
-        address payable owner = address(uint160(accountOwner));
-        address token = ITokenRegistry(tokenRegistryAddress).getTokenAddress(tokenID);
 
         // Increase the burn balance
         if (amountToBurn > 0) {
@@ -704,7 +686,7 @@ contract Exchange is IExchange, NoDefaultFunc
         }
         require(fee == 0, "FEE_WITHDRAWN_ALREADY");
 
-        exchangeOwner.transfer(fee);
+        committer.transfer(fee);
 
         emit BlockFeeWithdraw(blockIdx, fee);
 
@@ -959,7 +941,7 @@ contract Exchange is IExchange, NoDefaultFunc
     {
         return account.publicKeyX == 0 && account.publicKeyY == 0;
     }
-
+/*
     function withdrawFromMerkleTree(
         uint24 accountID,
         uint16 tokenID,
@@ -1061,6 +1043,74 @@ contract Exchange is IExchange, NoDefaultFunc
         // Transfer the tokens
         Account storage account = getAccount(pendingDeposit.accountID);
         withdrawAndBurn(account.owner, pendingDeposit.tokenID, amount, isFeeRecipientAccount(account));
+    }
+*/
+    function registerToken(
+        address token
+        )
+        public
+        returns (uint16 tokenId)
+    {
+        require(tokenToTokenId[token] == 0, "TOKEN_ALREADY_EXIST");
+        require(numTokensRegistered < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
+
+        tokenId = numTokensRegistered + 1;
+
+        tokenToTokenId[token] = tokenId;
+        tokenIdToToken[tokenId] = token;
+        numTokensRegistered += 1;
+
+        emit TokenRegistered(
+            token,
+            tokenId
+        );
+    }
+
+    function getTokenID(
+        address tokenAddress
+        )
+        public
+        view
+        returns (uint16)
+    {
+        require(tokenToTokenId[tokenAddress] != 0, "TOKEN_NOT_FOUND");
+        return tokenToTokenId[tokenAddress] - 1;
+    }
+
+    function getTokenAddress(
+        uint16 tokenID
+        )
+        public
+        view
+        returns (address)
+    {
+        return tokenIdToToken[tokenID + 1];
+    }
+
+    function setCommitter(
+        address payable _committer
+        )
+        external
+        // onlyOwner
+        returns (address payable oldCommitter)
+    {
+        require(address(0) != _committer, "ZERO_ADDRESS");
+        oldCommitter = committer;
+        committer = _committer;
+
+        emit CommitterChanged(
+            id,
+            oldCommitter,
+            committer
+        );
+    }
+
+    function getStake()
+        external
+        view
+        returns (uint)
+    {
+        return loopring.getStake(id);
     }
 
 }

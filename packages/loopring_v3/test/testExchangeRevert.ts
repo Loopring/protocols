@@ -49,7 +49,7 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Revert block", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 2);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true, 2);
       const ring: RingInfo = {
         orderA:
           {

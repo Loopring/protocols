@@ -127,7 +127,7 @@ contract("Exchange", (accounts: string[]) => {
     let amountToOwner = expectedAmount;
     let amountToBurn = new BN(0);
     if (bBurn) {
-      const burnRate = await exchangeTestUtil.tokenRegistry.getBurnRate(tokenID);
+      const burnRate = await exchangeTestUtil.loopringV3.getTokenBurnRate(token);
       amountToBurn = expectedAmount.mul(burnRate).div(new BN(1000));
       amountToOwner = expectedAmount.sub(amountToBurn);
     }
@@ -173,7 +173,7 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("ERC20: Deposit", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], false);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], false);
       let keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const walletA = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[0]);
@@ -272,7 +272,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("ETH: Deposit", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], false);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], false);
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const walletA = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[0]);
@@ -309,7 +309,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Dual-author/wallet account (walletID > 0)", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], false);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], false);
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const walletA = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[0]);
       const walletB = await exchangeTestUtil.createWallet(realmID, exchangeTestUtil.testContext.wallets[1]);
@@ -365,7 +365,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Dual-author/wallet account (walletID == 0)", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], false);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], false);
       const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
       const keyPairB = exchangeTestUtil.getKeyPairEDDSA();
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];

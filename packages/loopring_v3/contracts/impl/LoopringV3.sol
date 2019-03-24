@@ -23,7 +23,7 @@ import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/Ownable.sol";
 
-import "./DEX.sol";
+import "./Exchange.sol";
 
 
 /// @title An Implementation of ILoopringV3.
@@ -40,14 +40,19 @@ contract LoopringV3 is ILoopringV3, Ownable
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
+        address _exchangeHelperAddress,
+        address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips
+        uint16  _tierUpgradeCostBips,
+        uint    _maxWithdrawFee
         )
         external
         onlyOwner
     {
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
+        require(address(0) != _exchangeHelperAddress, "ZERO_ADDRESS");
+        require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
         require(0 != _exchangeCreationCostLRC, "ZERO_VALUE");
         require(10 >= _tierUpgradeCostBips, "VALUE_TOO_LARGE");
 
@@ -56,8 +61,11 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
+        exchangeHelperAddress = _exchangeHelperAddress;
+        blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         tierUpgradeCostBips = _tierUpgradeCostBips;
+        maxWithdrawFee = _maxWithdrawFee;
 
         tokens[lrcAddress]  = Token(lrcAddress, 1, 0xFFFFFFFF);
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
@@ -66,7 +74,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     }
 
     function createExchange(
-        address _committer
+        address payable _committer
         )
         external
         returns (
@@ -77,25 +85,29 @@ contract LoopringV3 is ILoopringV3, Ownable
         // Burn the LRC
         if (exchangeCreationCostLRC > 0) {
             require(
-                BurnableERC20(lrcAddress).burn(exchangeCreationCostLRC),
+                BurnableERC20(lrcAddress).burnFrom(msg.sender, exchangeCreationCostLRC),
                 "BURN_FAILURE"
             );
         }
 
         exchangeId = exchanges.length + 1;
 
-        address committer;
+        address payable committer;
         if (address(0) == _committer) {
             committer = msg.sender;
         } else {
             committer = _committer;
         }
 
-        IDEX exchange = new DEX(
+        Exchange exchange = new Exchange(
             exchangeId,
             address(this),
             msg.sender,
-            committer
+            committer,
+            lrcAddress,
+            wethAddress,
+            exchangeHelperAddress,
+            blockVerifierAddress
         );
 
         exchangeAddress = address(exchange);

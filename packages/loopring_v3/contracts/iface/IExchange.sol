@@ -19,8 +19,11 @@ pragma solidity 0.5.2;
 
 /// @title IExchange
 /// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang  - <daniel@loopring.org>
 contract IExchange
 {
+    // == Events ==
+
     event Deposit(
         uint32 depositBlockIdx,
         uint16 slotIdx,
@@ -67,7 +70,61 @@ contract IExchange
         uint amount
     );
 
+    event CommitterChanged(
+        uint exchangeId,
+        address oldCommitter,
+        address newCommitter
+    );
+
+    event TokenRegistered(
+        address token,
+        uint16 tokenId
+    );
+
+    // == Public Constants ==
+
+    uint    public constant MAX_NUM_TOKENS = 2 ** 12; // =4096
+
+    uint32  public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS         = 1 hours;
+
+    uint32  public constant MIN_TIME_BLOCK_OPEN                          = 1  minutes;
+    uint32  public constant MAX_TIME_BLOCK_OPEN                          = 15 minutes;
+    uint32  public constant MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE      = 2  minutes;
+
+    uint32  public constant MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED           = /*15 minutes*/ 1 days;     // TESTING
+    uint32  public constant MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE          = 1 days;
+
+    uint16  public constant NUM_DEPOSITS_IN_BLOCK                        = 8;
+    uint16  public constant NUM_WITHDRAWALS_IN_BLOCK                     = 8;
+
+    uint32  public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS             = /*1 minutes*/ 1 days;        // TESTING
+
+    // Default account
+    uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
+    uint public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
+    uint public constant DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935;
+
+    // == Public Variables ==
+
+    uint    public id = 0;
+    address public loopringAddress           = address(0);
+    address public owner                     = address(0);
+    address payable public committer         = address(0);
+    address public lrcAddress                = address(0);
+    address public exchangeHelperAddress     = address(0);
+    address public blockVerifierAddress      = address(0);
+
+    mapping (address => uint16) public tokenToTokenId;
+    mapping (uint16 => address) public tokenIdToToken;
+    uint16  public numTokensRegistered  = 0;
+
+    uint    public depositFee       = 0;
+    uint    public withdrawFee      = 0;
+    uint    public maxWithdrawFee   = 0;
+
     mapping (address => uint) public burnBalances;
+
+    // == Public Functions ==
 
     function withdrawBurned(
         address token,
@@ -77,8 +134,8 @@ contract IExchange
         returns (bool success);
 
     function setFees(
-        uint depositFee,
-        uint withdrawFee
+        uint _depositFee,
+        uint _withdrawFee
         )
         external;
 
@@ -176,7 +233,7 @@ contract IExchange
         public
         view
         returns (bool);
-
+/*
     function withdrawFromMerkleTree(
         uint24 accountID,
         uint16 tokenID,
@@ -195,4 +252,33 @@ contract IExchange
         )
         external
         returns (bool);
+*/
+    function setCommitter(address payable _committer)
+        external
+        returns (address payable oldCommitter);
+
+    function getStake()
+        external
+        view
+        returns (uint);
+
+    function registerToken(
+        address token
+        )
+        public
+        returns (uint16 tokenId);
+
+    function getTokenID(
+        address tokenAddress
+        )
+        public
+        view
+        returns (uint16);
+
+    function getTokenAddress(
+        uint16 tokenID
+        )
+        public
+        view
+        returns (address);
 }

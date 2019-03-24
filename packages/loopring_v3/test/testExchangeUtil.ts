@@ -27,10 +27,15 @@ function replacer(name: any, val: any) {
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
-  public exchange: any;
-  public tokenRegistry: any;
-  public operatorRegistry: any;
+
+  public loopringV3: any;
   public blockVerifier: any;
+  public exchangeHelper: any;
+
+  public lrcAddress: string;
+  public wethAddress: string;
+
+  public exchange: any;
 
   public minerAccountID: number[] = [];
   public feeRecipientAccountID: number[] = [];
@@ -67,13 +72,18 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-    await this.registerTokens();
 
-    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
-    this.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE = (await this.exchange.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE()).toNumber();
-    this.STAKE_AMOUNT_IN_LRC = await this.operatorRegistry.STAKE_AMOUNT_IN_LRC();
-    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW =
-      (await this.operatorRegistry.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW()).toNumber();
+    // Initialize Loopring
+    await this.loopringV3.updateSettings(
+      this.lrcAddress,
+      this.wethAddress,
+      this.exchangeHelper.address,
+      this.blockVerifier.address,
+      new BN(web3.utils.toWei("1000", "ether")),
+      new BN(0),
+      new BN(0),
+      {from: this.testContext.deployer},
+    );
 
     for (let i = 0; i < this.MAX_NUM_STATES; i++) {
       const rings: RingInfo[] = [];
@@ -101,7 +111,7 @@ export class ExchangeTestUtil {
       this.pendingBlocks.push(pendingBlocks);
     }
 
-    await this.createRealm(
+    await this.createExchange(
       this.testContext.deployer,
       true,
       5,
@@ -110,6 +120,11 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.01", "ether")),
       false,
     );
+
+    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
+    this.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE = (await this.exchange.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE()).toNumber();
+    this.STAKE_AMOUNT_IN_LRC = new BN(0);
+    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
   }
 
   public async setupTestState(realmID: number, numOperators: number = 1) {
@@ -1196,15 +1211,7 @@ export class ExchangeTestUtil {
       // console.log(symbol + ": " + tokenAddress);
 
       if (symbol !== "ETH" && symbol !== "WETH" && symbol !== "LRC") {
-        const tokenRegistrationFee = await this.tokenRegistry.getTokenRegistrationFee();
-        await LRC.addBalance(this.testContext.orderOwners[0], tokenRegistrationFee);
-        await LRC.approve(
-          this.tokenRegistry.address,
-          tokenRegistrationFee,
-          {from: this.testContext.orderOwners[0]},
-        );
-
-        const tx = await this.tokenRegistry.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
+        const tx = await this.exchange.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
         // pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
       }
 
@@ -1216,11 +1223,11 @@ export class ExchangeTestUtil {
   }
 
   public async getTokenID(tokenAddress: string) {
-    const tokenID = await this.tokenRegistry.getTokenID(tokenAddress);
+    const tokenID = await this.exchange.getTokenID(tokenAddress);
     return tokenID;
   }
 
-  public async createRealm(
+  public async createExchange(
       owner: string,
       bSetupTestState: boolean = true,
       numOperators: number = 1,
@@ -1229,30 +1236,35 @@ export class ExchangeTestUtil {
       maxWithdrawFeeInETH: BN = new BN(web3.utils.toWei("0.001", "ether")),
       closedOperatorRegistering: boolean = false,
     ) {
-    // Create the new state
-    /*const tx = await this.exchange.createRealm(
-      owner,
-      depositFeeInETH,
-      withdrawFeeInETH,
-      maxWithdrawFeeInETH,
-      closedOperatorRegistering);
-    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateRealm] Gas used: " + tx.receipt.gasUsed);
 
-    const eventArr: any = await this.getEventsFromContract(this.exchange, "RealmCreated", web3.eth.blockNumber);
+    const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
+
+    // Send enough tokens to the owner so the Exchange can be created
+    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
+    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
+    await LRC.addBalance(owner, exchangeCreationCostLRC);
+    await LRC.approve(this.loopringV3.address, exchangeCreationCostLRC, {from: owner});
+
+    // Create the new exchange
+    const tx = await this.loopringV3.createExchange(owner, {from: owner, gasLimit: "6700000"});
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
+
+    const eventArr: any = await this.getEventsFromContract(this.loopringV3, "ExchangeCreated", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.realmID];
+      return [eventObj.args.exchangeAddress];
     });
-    const realmID = items[0][0].toNumber();
-     */
-
+    const exchangeAddress = items[0][0];
     const realmID = 0;
+
+    this.exchange = await this.contracts.Exchange.at(exchangeAddress);
+
+    await this.registerTokens();
 
     if (bSetupTestState) {
       await this.setupTestState(realmID, numOperators);
     }
 
     return realmID;
-
   }
 
   public async registerWallet(realmID: number, owner: string) {
@@ -1592,24 +1604,26 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const [exchange, tokenRegistry, operatorRegistry, blockVerifier, lrcToken] = await Promise.all([
-        this.contracts.Exchange.deployed(),
-        this.contracts.TokenRegistry.deployed(),
-        this.contracts.OperatorRegistry.deployed(),
+    const [loopringV3, exchangeHelper, blockVerifier, lrcToken, wethToken] = await Promise.all([
+        this.contracts.LoopringV3.deployed(),
+        this.contracts.ExchangeHelper.deployed(),
         this.contracts.BlockVerifier.deployed(),
         this.contracts.LRCToken.deployed(),
+        this.contracts.WETHToken.deployed(),
       ]);
 
-    this.exchange = exchange;
-    this.tokenRegistry = tokenRegistry;
-    this.operatorRegistry = operatorRegistry;
+    this.loopringV3 = loopringV3;
+    this.exchangeHelper = exchangeHelper;
     this.blockVerifier = blockVerifier;
+
+    this.lrcAddress = lrcToken.address;
+    this.wethAddress = wethToken.address;
 
     const currBlockNumber = await web3.eth.getBlockNumber();
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;
     return new Context(currBlockNumber,
                        currBlockTimestamp,
-                       this.contracts.LRCToken.address);
+                       lrcToken.address);
   }
 
   private async createExchangeTestContext(accounts: string[]) {
