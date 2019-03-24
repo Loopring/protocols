@@ -203,12 +203,14 @@ contract LoopringV3 is ILoopringV3, Ownable
         view
         returns (uint16 burnRate)
     {
-        uint8 tier = tokens[_token].tier;
-        if (tier == 1) {
+        Token storage token = tokens[_token];
+        if (token.tierValidUntil < now) {
+            burnRate = BURNRATE_TIER4;
+        } else if (token.tier == 1) {
             burnRate = BURNRATE_TIER1;
-        } else if (tier == 2) {
+        } else if (token.tier == 2) {
             burnRate = BURNRATE_TIER2;
-        } else if (tier == 3) {
+        } else if (token.tier == 3) {
             burnRate = BURNRATE_TIER3;
         } else {
             burnRate = BURNRATE_TIER4;
