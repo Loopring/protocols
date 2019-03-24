@@ -613,8 +613,8 @@ contract Exchange is IExchange, NoDefaultFunc
     }
 
     // For a wallet or a user, how to find the value of slotIdx?
-    // Is it a good idea to give each withdrawal an unique id then keep a map
-    // from this id to "block index and slot idx index"; if the withdrawal (request) id
+    // Is it a good idea to give each withdrawal request an unique id then keep a map
+    // from this id to "block index and slot index"; if the withdrawal request id
     // is incremental, we can also keep a maxProcessedWithdrawalRequestId in the smart contract.
     // Maybe this is also applicable to deposit.
     function withdraw(
