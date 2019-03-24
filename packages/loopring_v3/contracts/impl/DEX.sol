@@ -49,10 +49,14 @@ contract DEX is IDEX, NoDefaultFunc
 
         id = _id;
         loopringAddress = _loopringAddress;
-        owner = _owner;
         creator = _creator;
-
         lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
+
+        if (address(0) == _owner) {
+            owner = creator;
+        } else {
+            owner = _owner;
+        }
     }
 
     function getStake()
@@ -69,10 +73,7 @@ contract DEX is IDEX, NoDefaultFunc
         )
         external
     {
-        require(
-            owner == address(0) || owner == msg.sender,
-            "UNAUTHORIZED"
-        );
+        require(owner == msg.sender, "UNAUTHORIZED");
 
         commitBlockInternal(blockType, data);
     }
