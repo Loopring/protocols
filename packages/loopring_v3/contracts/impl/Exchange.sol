@@ -436,7 +436,6 @@ contract Exchange is IExchange, NoDefaultFunc
     // Q(daniel): should we create another method that doesn't require
     // the accountID param and use the msg.sender to find the accountId?
 
-    // Q(daniel): we may want to create an account on the first deposit automatically.
     function deposit(
         uint24 accountID,
         uint16 tokenID,
@@ -455,6 +454,7 @@ contract Exchange is IExchange, NoDefaultFunc
         );
     }
 
+
     function updateAccount(
         uint24 accountID,
         uint publicKeyX,
@@ -472,6 +472,7 @@ contract Exchange is IExchange, NoDefaultFunc
 
         // Update account info
         if (!isFeeRecipientAccount(account)) {
+            // Q(daniel): what are these values for feeRecipientAccounts?
             account.publicKeyX = publicKeyX;
             account.publicKeyY = publicKeyY;
         } else {
@@ -492,11 +493,13 @@ contract Exchange is IExchange, NoDefaultFunc
             numDepositBlocks++;
             depositBlock = depositBlocks[numDepositBlocks - 1];
             depositBlock.timestampOpened = uint32(now);
+            // Q(daniel): should we set the hash's value to the previous block's hash?
         } else {
             require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, "BLOCK_FULL");
         }
 
         // Increase the fee for this block
+        // Q(daniel): when will these fee collected?
         depositBlock.fee = depositBlock.fee.add(depositFee);
 
         // Transfer the tokens from the owner into this contract
