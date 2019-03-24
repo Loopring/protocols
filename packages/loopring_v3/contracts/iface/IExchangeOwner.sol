@@ -1,4 +1,3 @@
-
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -18,7 +17,7 @@
 pragma solidity 0.5.2;
 
 
-/// @title IDEX
+/// @title IExchangeOwner
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IExchangeOwner
 {
