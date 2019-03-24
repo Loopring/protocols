@@ -49,8 +49,8 @@ contract DEX is IDEX, NoDefaultFunc
 
         id = _id;
         loopringAddress = _loopringAddress;
-        creator = _creator;
         lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
+        creator = _creator;
 
         if (address(0) == _owner) {
             owner = creator;
