@@ -23,12 +23,13 @@ import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
+import "../lib/Ownable.sol";
 
 
 /// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract DEX is IDEX, NoDefaultFunc
+contract DEX is IDEX, Ownable, NoDefaultFunc
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
@@ -38,22 +39,38 @@ contract DEX is IDEX, NoDefaultFunc
     constructor(
         uint    _id,
         address _loopringAddress,
-        address _ownerContractAddress,
-        address _creator
+        address _owner,
+        address _committer
         )
         public
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
-        require(address(0) != _ownerContractAddress, "ZERO_ADDRESS");
-        require(address(0) != _creator, "ZERO_ADDRESS");
+        require(address(0) != _owner, "ZERO_ADDRESS");
+        require(address(0) != _committer, "ZERO_ADDRESS");
 
         id = _id;
         loopringAddress = _loopringAddress;
-        ownerContractAddress = _ownerContractAddress;
-        creator = _creator;
-
+        owner = _owner;
+        committer = _committer;
         lrcAddress = ILoopringV3(loopringAddress).lrcAddress();
+    }
+
+
+    function setCommitter(address _committer)
+        external
+        onlyOwner
+        returns (address oldCommitter)
+    {
+        require(address(0) != _committer, "ZERO_ADDRESS");
+        oldCommitter = committer;
+        committer = _committer;
+
+        emit CommitterChanged(
+            id,
+            oldCommitter,
+            committer
+        );
     }
 
     function getStake()
@@ -64,6 +81,36 @@ contract DEX is IDEX, NoDefaultFunc
         return ILoopringV3(loopringAddress).getStake(id);
     }
 
+    function commitBlock(
+        uint  blockType,
+        bytes calldata data
+        )
+        external
+        onlyCommitter
+    {
+        commitBlockInternal(blockType, data);
+    }
+
     // == Internal Functions ================================================
 
+    /// @dev Throws if called by any account other than the committer.
+    modifier onlyCommitter()
+    {
+        require(msg.sender == committer, "UNAUTHORIZED");
+        _;
+    }
+
+    function commitBlockInternal(
+        uint  blockType,
+        bytes memory data
+        )
+        internal
+    {
+        //...
+
+        emit BlockCommitted(
+            id,
+            blockType
+        );
+    }
 }

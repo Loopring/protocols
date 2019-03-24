@@ -22,18 +22,42 @@ pragma solidity 0.5.2;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IDEX
 {
+    // == Events ==========================================================
+
+    event BlockCommitted(
+        uint  exchanegId,
+        uint  blockType
+        // TODO(brecht): add more fields
+    );
+
+    event CommitterChanged(
+        uint  exchanegId,
+        address oldCommitter,
+        address newCommitter
+    );
+
     // == Public Variables ================================================
 
     uint    public id = 0;
     address public loopringAddress      = address(0);
-    address public ownerContractAddress = address(0);
-    address public creator              = address(0);
+    address public owner                = address(0);
+    address public committer            = address(0);
     address public lrcAddress           = address(0);
 
     // == Public Functions ================================================
+
+    function setCommitter(address _committer)
+        external
+        returns (address oldCommitter);
 
     function getStake()
         external
         view
         returns (uint);
+
+    function commitBlock(
+        uint blockType,
+        bytes calldata data
+        )
+        external;
 }

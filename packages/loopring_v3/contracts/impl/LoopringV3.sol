@@ -18,7 +18,6 @@ pragma solidity 0.5.2;
 
 import "../iface/ILoopringV3.sol";
 
-import "../lib/AddressUtil.sol";
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/Ownable.sol";
@@ -31,7 +30,6 @@ import "./DEX.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3, Ownable
 {
-    using AddressUtil for address;
     using ERC20SafeTransfer for address;
 
     // == Public Functions ================================================
@@ -51,7 +49,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     }
 
     function createExchange(
-        address exchangeOwnerContractAddress
+        address _committer
         )
         external
         returns (
@@ -59,17 +57,6 @@ contract LoopringV3 is ILoopringV3, Ownable
             address exchangeAddress
         )
     {
-        require(
-            exchangeOwnerContractAddress.isContract(),
-            "OWNER_NOT_CONTRACT"
-        );
-
-        address sender = msg.sender;
-        require(
-            sender.isContract(),
-            "CREATOR_IS_CONTRACT"
-        );
-
         // Burn the LRC
         if (creationCostLRC > 0) {
             require(
@@ -80,11 +67,18 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         exchangeId = exchanges.length + 1;
 
+        address committer;
+        if (address(0) == _committer) {
+            committer = msg.sender;
+        } else {
+            committer = _committer;
+        }
+
         IDEX exchange = new DEX(
             exchangeId,
             address(this),
-            exchangeOwnerContractAddress,
-            sender
+            msg.sender,
+            committer
         );
 
         exchangeAddress = address(exchange);
@@ -93,8 +87,8 @@ contract LoopringV3 is ILoopringV3, Ownable
         emit ExchangeCreated(
             exchangeId,
             exchangeAddress,
-            exchangeOwnerContractAddress,
-            sender,
+            msg.sender,
+            committer,
             creationCostLRC
         );
     }
@@ -171,8 +165,12 @@ contract LoopringV3 is ILoopringV3, Ownable
         stakedLRC = getStake(exchangeId);
         if (stakedLRC > 0) {
             require(
-                BurnableERC20(lrcAddress).burn(stakedLRC),
-                "BURN_FAILURE"
+                lrcAddress.safeTransferFrom(
+                    address(this),
+                    msg.sender,
+                    stakedLRC
+                ),
+                "WITHDRAWAL_FAILURE"
             );
             delete exchangeStakes[exchangeId];
             totalStake -= stakedLRC;
