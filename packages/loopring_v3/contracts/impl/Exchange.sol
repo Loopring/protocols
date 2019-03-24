@@ -137,6 +137,8 @@ contract Exchange is IExchange, NoDefaultFunc
     uint public withdrawFee = 0;
     uint public maxWithdrawFee = 0;
 
+    // Q(daniel): should we use mapping for blocks/accounts so when the blocks/accounts are long, the time to access
+    // the last one is going to be liner?
     Account[] accounts;
     Block[] blocks;
 
