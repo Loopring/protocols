@@ -29,6 +29,7 @@ export class ExchangeTestUtil {
   public testContext: ExchangeTestContext;
 
   public loopringV3: any;
+  public exchangeDeployer: any;
   public blockVerifier: any;
   public exchangeHelper: any;
 
@@ -77,6 +78,7 @@ export class ExchangeTestUtil {
     await this.loopringV3.updateSettings(
       this.lrcAddress,
       this.wethAddress,
+      this.exchangeDeployer.address,
       this.exchangeHelper.address,
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
@@ -1246,7 +1248,7 @@ export class ExchangeTestUtil {
     await LRC.approve(this.loopringV3.address, exchangeCreationCostLRC, {from: owner});
 
     // Create the new exchange
-    const tx = await this.loopringV3.createExchange(owner, {from: owner, gasLimit: "6700000"});
+    const tx = await this.loopringV3.createExchange(owner, {from: owner});
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.loopringV3, "ExchangeCreated", web3.eth.blockNumber);
@@ -1604,8 +1606,9 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const [loopringV3, exchangeHelper, blockVerifier, lrcToken, wethToken] = await Promise.all([
+    const [loopringV3, exchangeDeployer, exchangeHelper, blockVerifier, lrcToken, wethToken] = await Promise.all([
         this.contracts.LoopringV3.deployed(),
+        this.contracts.ExchangeDeployer.deployed(),
         this.contracts.ExchangeHelper.deployed(),
         this.contracts.BlockVerifier.deployed(),
         this.contracts.LRCToken.deployed(),
@@ -1613,6 +1616,7 @@ export class ExchangeTestUtil {
       ]);
 
     this.loopringV3 = loopringV3;
+    this.exchangeDeployer = exchangeDeployer;
     this.exchangeHelper = exchangeHelper;
     this.blockVerifier = blockVerifier;
 

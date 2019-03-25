@@ -84,6 +84,7 @@ contract ILoopringV3
     uint    public totalStake                = 0 ether;
     address public lrcAddress                = address(0);
     address public wethAddress               = address(0);
+    address public exchangeDeployerAddress   = address(0);
     address public exchangeHelperAddress     = address(0);
     address public blockVerifierAddress      = address(0);
     uint    public exchangeCreationCostLRC   = 0 ether;
@@ -99,6 +100,7 @@ contract ILoopringV3
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
+        address _exchangeDeployerAddress,
         address _exchangeHelperAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,

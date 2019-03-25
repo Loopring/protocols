@@ -17,13 +17,12 @@
 pragma solidity 0.5.2;
 
 import "../iface/ILoopringV3.sol";
+import "../iface/IExchangeDeployer.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/Ownable.sol";
-
-import "./Exchange.sol";
 
 
 /// @title An Implementation of ILoopringV3.
@@ -40,6 +39,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
+        address _exchangeDeployerAddress,
         address _exchangeHelperAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
@@ -51,6 +51,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     {
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
+        require(address(0) != _exchangeDeployerAddress, "ZERO_ADDRESS");
         require(address(0) != _exchangeHelperAddress, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
         require(0 != _exchangeCreationCostLRC, "ZERO_VALUE");
@@ -62,6 +63,7 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
+        exchangeDeployerAddress = _exchangeDeployerAddress;
         exchangeHelperAddress = _exchangeHelperAddress;
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
@@ -101,7 +103,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             operator = _operator;
         }
 
-        Exchange exchange = new Exchange(
+        exchangeAddress = IExchangeDeployer(exchangeDeployerAddress).deployExchange(
             exchangeId,
             address(this),
             msg.sender,
@@ -111,8 +113,6 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeHelperAddress,
             blockVerifierAddress
         );
-
-        exchangeAddress = address(exchange);
         exchanges.push(exchangeAddress);
 
         emit ExchangeCreated(

@@ -233,7 +233,7 @@ contract IExchange
         public
         view
         returns (bool);
-/*
+
     function withdrawFromMerkleTree(
         uint24 accountID,
         uint16 tokenID,
@@ -252,7 +252,7 @@ contract IExchange
         )
         external
         returns (bool);
-*/
+
     function setOperator(address payable _operator)
         external
         returns (address payable oldOperator);

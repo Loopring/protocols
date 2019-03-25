@@ -941,7 +941,7 @@ contract Exchange is IExchange, NoDefaultFunc
     {
         return account.publicKeyX == 0 && account.publicKeyY == 0;
     }
-/*
+
     function withdrawFromMerkleTree(
         uint24 accountID,
         uint16 tokenID,
@@ -1044,7 +1044,7 @@ contract Exchange is IExchange, NoDefaultFunc
         Account storage account = getAccount(pendingDeposit.accountID);
         withdrawAndBurn(account.owner, pendingDeposit.tokenID, amount, isFeeRecipientAccount(account));
     }
-*/
+
     function registerToken(
         address token
         )

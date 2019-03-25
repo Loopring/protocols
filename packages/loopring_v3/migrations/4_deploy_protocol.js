@@ -1,5 +1,6 @@
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
+var ExchangeDeployer = artifacts.require("./impl/ExchangeDeployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var ExchangeHelper = artifacts.require("./impl/ExchangeHelper");
 var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
@@ -16,6 +17,7 @@ module.exports = function(deployer, network, accounts) {
       ]);
     }).then(() => {
       return Promise.all([
+        deployer.deploy(ExchangeDeployer),
         deployer.deploy(ExchangeHelper),
         deployer.deploy(BlockVerifier),
       ]);
