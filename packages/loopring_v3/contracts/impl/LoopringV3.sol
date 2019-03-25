@@ -58,6 +58,7 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         delete tokens[lrcAddress];
         delete tokens[wethAddress];
+        delete tokens[address(0)];    // ETH
 
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
@@ -69,6 +70,7 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         tokens[lrcAddress]  = Token(lrcAddress, 1, 0xFFFFFFFF);
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
+        tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);    // ETH
 
         emit SettingsUpdated(now);
     }
@@ -250,7 +252,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         )
         external
     {
-        require(_token != address(0), "ZERO_ADDRESS");
+        require(_token != address(0), "BURN_RATE_FROZEN");
         require(_token != lrcAddress, "BURN_RATE_FROZEN");
         require(_token != wethAddress, "BURN_RATE_FROZEN");
 
