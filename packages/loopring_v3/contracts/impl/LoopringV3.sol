@@ -66,7 +66,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     }
 
     function createExchange(
-        address _committer
+        address _operator
         )
         external
         returns (
@@ -84,18 +84,18 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         exchangeId = exchanges.length + 1;
 
-        address committer;
-        if (address(0) == _committer) {
-            committer = msg.sender;
+        address operator;
+        if (address(0) == _operator) {
+            operator = msg.sender;
         } else {
-            committer = _committer;
+            operator = _operator;
         }
 
         IDEX exchange = new DEX(
             exchangeId,
             address(this),
             msg.sender,
-            committer
+            operator
         );
 
         exchangeAddress = address(exchange);
@@ -105,7 +105,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeId,
             exchangeAddress,
             msg.sender,
-            committer,
+            operator,
             exchangeCreationCostLRC
         );
     }

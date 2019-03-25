@@ -37,7 +37,7 @@ contract ILoopringV3
         uint    exchanegId,
         address exchangeAddress,
         address owner,
-        address committer,
+        address operator,
         uint    burnedLRC
     );
 

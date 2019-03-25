@@ -27,16 +27,16 @@ contract ICapability1BlockManagement
         // TODO(brecht): add more fields
     );
 
-    event CommitterChanged(
+    event OperatorChanged(
         uint  exchanegId,
-        address oldCommitter,
-        address newCommitter
+        address oldOperator,
+        address newOperator
     );
 
     address public owner                = address(0);
-    address public committer            = address(0);
+    address public operator            = address(0);
 
-    function setCommitter(address _committer)
+    function setOperator(address _operator)
         external
-        returns (address oldCommitter);
+        returns (address oldOperator);
 }
