@@ -395,7 +395,7 @@ export class ExchangeTestUtil {
         // console.log("numAvailableSlots: " + numAvailableSlots);
     }
 
-    const depositFee = await this.exchange.depositFee();
+    const depositFee = await this.exchange.getDepositFee();
 
     let ethToSend = depositFee;
     if (amount.gt(0)) {

@@ -75,9 +75,9 @@ contract IBlockManagement is IAccountManagement
     address public exchangeHelperAddress     = address(0);
     address public blockVerifierAddress      = address(0);
 
-    uint    public depositFee       = 0;
-    uint    public withdrawFee      = 0;
-    uint    public maxWithdrawFee   = 0;
+    uint    public minimumDepositFee       = 0;
+    uint    public minimumWithdrawFee      = 0;
+    uint    public maxWithdrawFee          = 0;
 
     // == Private Variables ==
 

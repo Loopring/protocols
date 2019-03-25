@@ -127,11 +127,14 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
             require(amount == 0, "CANNOT_DEPOSIT_TO_FEE_RECIPIENT_ACCOUNTS");
         }
 
-        // Check expected ETH value sent
+        // Check expected ETH value sent, can be larger than the minimum depos
+        uint depositFee = 0;
         if (tokenID != 0) {
-            require(msg.value == depositFee, "INVALID_VALUE");
+            require(msg.value >= minimumDepositFee, "INVALID_VALUE");
+            depositFee = msg.value;
         } else {
-            require(msg.value == (depositFee + amount), "INVALID_VALUE");
+            require(msg.value >= (minimumDepositFee.add(amount)), "INVALID_VALUE");
+            depositFee = msg.value - amount;
         }
 
         // Get the deposit block
@@ -204,7 +207,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         require(amount > 0, "INVALID_VALUE");
 
         // Check expected ETH value sent
-        require(msg.value == withdrawFee, "INVALID_VALUE");
+        require(msg.value >= minimumWithdrawFee, "INVALID_VALUE");
 
         uint24 accountID = getAccountID();
         Account storage account = getAccount(accountID);
@@ -226,7 +229,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         require(withdrawBlock.numWithdrawals < NUM_WITHDRAWALS_IN_BLOCK, "BLOCK_FULL");
 
         // Increase the fee for this block
-        withdrawBlock.fee = withdrawBlock.fee.add(withdrawFee);
+        withdrawBlock.fee = withdrawBlock.fee.add(msg.value);
 
         // Update the withdraw block hash
         withdrawBlock.hash = sha256(

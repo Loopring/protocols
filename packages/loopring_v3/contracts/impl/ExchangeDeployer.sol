@@ -39,7 +39,7 @@ contract ExchangeDeployer is IExchangeDeployer
         external
         returns (address)
     {
-         Exchange exchange = new Exchange(
+        Exchange exchange = new Exchange(
             exchangeId,
             loopringAddress,
             owner,

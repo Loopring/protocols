@@ -71,17 +71,17 @@ contract BlockManagement is IBlockManagement, AccountManagement
     // == Public Functions ==
 
     function setFees(
-        uint _depositFee,
-        uint _withdrawFee
+        uint _minimumDepositFee,
+        uint _minimumWithdrawFee
         )
         external
     {
-
+        // TODO: only allow the fees to change every ~1 day
         // require(msg.sender == exchangeOwner, "UNAUTHORIZED");
-        require(withdrawFee <= loopring.maxWithdrawFee(), "TOO_LARGE_AMOUNT");
+        require(_minimumWithdrawFee <= loopring.maxWithdrawFee(), "TOO_LARGE_AMOUNT");
 
-        depositFee = _depositFee;
-        withdrawFee = _withdrawFee;
+        minimumDepositFee = _minimumDepositFee;
+        minimumWithdrawFee = _minimumWithdrawFee;
     }
 
     function getDepositFee()
@@ -89,7 +89,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
         view
         returns (uint)
     {
-        return depositFee;
+        return minimumDepositFee;
     }
 
     function getWithdrawFee()
@@ -97,7 +97,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
         view
         returns (uint)
     {
-        return withdrawFee;
+        return minimumWithdrawFee;
     }
 
     function commitBlock(
