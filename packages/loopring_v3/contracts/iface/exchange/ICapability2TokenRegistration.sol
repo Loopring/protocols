@@ -19,7 +19,7 @@ pragma solidity 0.5.2;
 import "./ICapability1BlockManagement.sol";
 
 
-/// @title An Implementation of IDEX.
+/// @title ICapability2TokenRegistration
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ICapability2TokenRegistration is ICapability1BlockManagement
 {

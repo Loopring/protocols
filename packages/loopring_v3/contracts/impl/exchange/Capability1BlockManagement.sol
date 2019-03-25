@@ -20,7 +20,7 @@ import "../../iface/exchange/ICapability1BlockManagement.sol";
 import "./CapabilityBase.sol";
 
 
-/// @title An Implementation of IDEX.
+/// @title An Implementation of ICapability1BlockManagement.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Capability1BlockManagement is ICapability1BlockManagement, CapabilityBase

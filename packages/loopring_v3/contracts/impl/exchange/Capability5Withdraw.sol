@@ -16,27 +16,15 @@
 */
 pragma solidity 0.5.2;
 
+import "../../iface/exchange/ICapability5Withdraw.sol";
 
-/// @title ICapability1BlockManagement
+import "./Capability4Deposit.sol";
+
+/// @title An Implementation of ICapability5Withdraw.
+/// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ICapability1BlockManagement
+contract Capability5Withdraw is ICapability5Withdraw, Capability4Deposit
 {
-    event BlockCommitted(
-        uint  exchanegId,
-        uint  blockType
-        // TODO(brecht): add more fields
-    );
 
-    event CommitterChanged(
-        uint  exchanegId,
-        address oldCommitter,
-        address newCommitter
-    );
 
-    address public owner                = address(0);
-    address public committer            = address(0);
-
-    function setCommitter(address _committer)
-        external
-        returns (address oldCommitter);
 }

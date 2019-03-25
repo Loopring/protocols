@@ -20,7 +20,7 @@ import "../../iface/exchange/ICapability3StakeQuery.sol";
 
 import "./Capability2TokenRegistration.sol";
 
-/// @title An Implementation of IDEX.
+/// @title An Implementation of ICapability3StakeQuery.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Capability3StakeQuery is ICapability3StakeQuery, Capability2TokenRegistration

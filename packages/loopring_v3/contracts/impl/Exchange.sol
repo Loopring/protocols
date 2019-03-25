@@ -53,9 +53,10 @@ contract Exchange is IExchange, NoDefaultFunc
     uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS             = 1 days;        // TESTING
 
     // Default account
+    // Q(daniel): what are these?
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
-    uint public constant DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935;
+    // uint public constant DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935;
 
     address public lrcAddress                = address(0x0);
     address public exchangeHelperAddress     = address(0x0);
@@ -73,9 +74,9 @@ contract Exchange is IExchange, NoDefaultFunc
 
     enum BlockState
     {
-        COMMITTED,
-        VERIFIED,
-        FINALIZED
+        COMMITTED,  // a valid block commited but no proof provided yet
+        VERIFIED,   // a valid proof provided and but not confirmed yet
+        FINALIZED   // a valid proof provided and confirmed onchain
     }
 
     struct Wallet
@@ -91,7 +92,7 @@ contract Exchange is IExchange, NoDefaultFunc
         uint   publicKeyY;
     }
 
-    struct PendingDeposit
+    struct PendingDeposit // Q(daniel): better to rename to DepositRequest/WithdrawRequest
     {
         uint24 accountID;
         uint16 tokenID;

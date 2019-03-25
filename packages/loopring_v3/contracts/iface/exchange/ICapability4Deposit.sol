@@ -16,27 +16,30 @@
 */
 pragma solidity 0.5.2;
 
+import "./ICapability3StakeQuery.sol";
 
-/// @title ICapability1BlockManagement
+
+/// @title ICapability4Deposit
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ICapability1BlockManagement
+contract ICapability4Deposit is ICapability3StakeQuery
 {
-    event BlockCommitted(
-        uint  exchanegId,
-        uint  blockType
-        // TODO(brecht): add more fields
-    );
+    struct DepositRequest
+    {
+        bytes32 hash;
+        uint24  accountId;
+        uint16  tokenId;
+        uint96  amount;
+        uint    timestamp;
+    }
 
-    event CommitterChanged(
-        uint  exchanegId,
-        address oldCommitter,
-        address newCommitter
-    );
+    struct Account
+    {
+        uint24 accountId;
+    }
 
-    address public owner                = address(0);
-    address public committer            = address(0);
+    DepositRequest[] public depositRequests;
+    uint numDepositRequestsProcessed = 0;
 
-    function setCommitter(address _committer)
-        external
-        returns (address oldCommitter);
+    Account[] public accounts;
+    mapping (address => uint24) addressToAccountId;
 }

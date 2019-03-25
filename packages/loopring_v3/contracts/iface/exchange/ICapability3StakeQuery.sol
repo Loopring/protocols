@@ -19,7 +19,7 @@ pragma solidity 0.5.2;
 import "./ICapability2TokenRegistration.sol";
 
 
-/// @title An Implementation of IDEX.
+/// @title ICapability3StakeQuery
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ICapability3StakeQuery is ICapability2TokenRegistration
 {
