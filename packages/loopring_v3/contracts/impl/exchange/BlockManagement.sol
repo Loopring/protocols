@@ -171,11 +171,9 @@ contract BlockManagement is IBlockManagement, AccountManagement
             "TOO_LATE_PROOF"
         );
 
-        // Eject operator
-        /*IOperatorRegistry(operatorRegistryAddress).ejectOperator(
-            realmID,
-            specifiedBlock.operatorID
-        );*/
+        // TODO: - burn stake amount of Exchange
+        //       - store info somewhere in Exchange contract what block was reverted so
+        //       - the ExchangeOwner can punish the operator that submitted the block
 
         // Remove all blocks after and including blockIdx
         blocks.length = blockIdx;
@@ -630,7 +628,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
 
         // Increase the burn balance
         if (amountToBurn > 0) {
-            burnBalances[token] = burnBalances[token].add(amountToBurn);
+            // TODO: send to LoopringV3 contract for burning / burn LRC directly
         }
 
         // Transfer the tokens from the contract to the owner
@@ -643,26 +641,6 @@ contract BlockManagement is IBlockManagement, AccountManagement
                 require(token.safeTransfer(owner, amountToOwner), "TRANSFER_FAILURE");
             }
         }
-    }
-
-    function withdrawBurned(
-        address token,
-        uint amount
-        )
-        external
-        returns (bool success)
-    {
-        // TODO: should only be callable by BurnManager
-        require(burnBalances[token] >= amount, "TOO_LARGE_AMOUNT");
-        burnBalances[token] = burnBalances[token].sub(amount);
-
-        // Token transfer needs to be done after the state changes to prevent a reentrancy attack
-        success = token.safeTransfer(msg.sender, amount);
-        require(success, "TRANSFER_FAILURE");
-
-        emit WithdrawBurned(token, amount);
-
-        return success;
     }
 
     function isActiveDepositBlockClosed()

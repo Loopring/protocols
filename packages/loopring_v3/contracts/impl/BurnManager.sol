@@ -57,7 +57,7 @@ contract BurnManager is IBurnManager, NoDefaultFunc
             require(false, "UNIMPLEMENTED");
         }
 
-        IExchange exchange = IExchange(exchangeAddress);
+        /*IExchange exchange = IExchange(exchangeAddress);
 
         // Withdraw the complete token balance
         uint balance = exchange.burnBalances(token);
@@ -70,7 +70,7 @@ contract BurnManager is IBurnManager, NoDefaultFunc
         require(
             BurnableERC20(lrcAddress).burn(balance),
             "BURN_FAILURE"
-        );
+        );*/
 
         return true;
     }

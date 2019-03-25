@@ -83,8 +83,6 @@ contract IBlockManagement is IAccountManagement
     uint    public withdrawFee      = 0;
     uint    public maxWithdrawFee   = 0;
 
-    mapping (address => uint) public burnBalances;
-
     // == Private Variables ==
 
     struct PendingDeposit
@@ -132,13 +130,6 @@ contract IBlockManagement is IAccountManagement
         returns (bool);
 
     // == Public Functions ==
-
-    function withdrawBurned(
-        address token,
-        uint amount
-        )
-        external
-        returns (bool success);
 
     function setFees(
         uint _depositFee,

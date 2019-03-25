@@ -190,6 +190,9 @@ contract LoopringV3 is ILoopringV3, Ownable
         external
         returns (uint stakedLRC)
     {
+        // TODO: Only allow withdrawing after ~1 day, otherwise the exchange can withdraw immediatly
+        //       when something goes, which isn't helpful as 'reputation'
+
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
@@ -286,4 +289,14 @@ contract LoopringV3 is ILoopringV3, Ownable
         emit TokenBurnRateDown(_token, token.tier);
     }
 
+    function withdrawBurned(
+        address token,
+        address recipient
+        )
+        external
+        onlyOwner
+        returns (bool)
+    {
+        // TODO: Allow withdrawing non-LRC tokens
+    }
 }

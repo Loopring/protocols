@@ -155,4 +155,11 @@ contract ILoopringV3
         address token
         )
         external;
+
+    function withdrawBurned(
+        address token,
+        address recipient
+        )
+        external
+        returns (bool);
 }
