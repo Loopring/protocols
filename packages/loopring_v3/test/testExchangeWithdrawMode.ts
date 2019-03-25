@@ -42,7 +42,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                         wallet.walletID, token, balance);
+                                                         token, balance);
       const accountID = depositInfo.accountID;
 
       await exchangeTestUtil.commitDeposits(realmID);
@@ -80,7 +80,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                         wallet.walletID, token, balance);
+                                                         token, balance);
       const accountID = depositInfo.accountID;
 
       await exchangeTestUtil.commitDeposits(realmID);
@@ -125,7 +125,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const depositInfoA = await exchangeTestUtil.deposit(realmID, owner,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                          wallet.walletID, tokenA, balanceA);
+                                                          tokenA, balanceA);
 
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.verifyPendingBlocks(realmID);
@@ -134,19 +134,19 @@ contract("Exchange", (accounts: string[]) => {
 
       const depositInfoB = await exchangeTestUtil.deposit(realmID, owner,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                          wallet.walletID, tokenB, balanceB);
+                                                          tokenB, balanceB);
 
       await exchangeTestUtil.commitDeposits(realmID);
 
       const depositInfoC = await exchangeTestUtil.deposit(realmID, owner,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                          wallet.walletID, tokenC, balanceC);
+                                                          tokenC, balanceC);
 
       await exchangeTestUtil.commitDeposits(realmID);
 
       const depositInfoD = await exchangeTestUtil.deposit(realmID, owner,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                          wallet.walletID, tokenD, balanceD);
+                                                          tokenD, balanceD);
 
       await expectThrow(
         exchangeTestUtil.withdrawFromPendingDeposit(realmID, depositInfoA.depositBlockIdx, depositInfoA.slotIdx),

@@ -18,7 +18,6 @@ export class Simulator {
       }
       const emptyAccount: Account = {
         accountID: deposit.accountID,
-        walletID: 0,
         publicKeyX: "0",
         publicKeyY: "0",
         nonce: 0,
@@ -31,7 +30,6 @@ export class Simulator {
       account.balances[deposit.tokenID].balance.add(deposit.amount);
     account.publicKeyX = deposit.publicKeyX;
     account.publicKeyY = deposit.publicKeyY;
-    account.walletID = deposit.walletID;
 
     const simulatorReport: SimulatorDepositReport = {
       realmBefore: realm,
@@ -391,7 +389,6 @@ export class Simulator {
     }
     const accountCopy: Account = {
       accountID: account.accountID,
-      walletID: account.walletID,
       publicKeyX: account.publicKeyX,
       publicKeyY: account.publicKeyY,
       nonce: account.nonce,
