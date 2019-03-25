@@ -260,6 +260,7 @@ contract Exchange is IExchange, NoDefaultFunc
                 "CANNOT_COMMIT_BLOCK_YET"
             );
 
+            // this is the first unprocessed onchain block.
             DepositBlock storage depositBlock = depositBlocks[numDepositBlocksCommitted];
             bytes32 depositBlockHash = depositBlock.hash;
             // Pad the block so it's full
@@ -276,6 +277,8 @@ contract Exchange is IExchange, NoDefaultFunc
                     )
                 );
             }
+
+            // TODO(bretch): we should check instead of modify it.
             assembly {
                 mstore(add(data, 100), depositBlockHash)
             }
@@ -299,6 +302,7 @@ contract Exchange is IExchange, NoDefaultFunc
                     )
                 );
             }
+             // TODO(bretch): we should check instead of modify it.
             assembly {
                 mstore(add(data, 103), withdrawBlockHash)
             }
@@ -306,6 +310,7 @@ contract Exchange is IExchange, NoDefaultFunc
         }
 
         // Check if we need to commit a deposit or withdraw block
+        // TODO(bretch): this is a bug if there are two blocks to be forced.
         require(!isWithdrawBlockForced(numWithdrawBlocksCommitted), "BLOCK_COMMIT_FORCED");
         require(!isDepositBlockForced(numDepositBlocksCommitted), "BLOCK_COMMIT_FORCED");
 
@@ -590,6 +595,7 @@ contract Exchange is IExchange, NoDefaultFunc
         withdrawBlock.fee = withdrawBlock.fee.add(withdrawFee);
 
         // Update the withdraw block hash
+        // Q(daniel): first value of the hash to be the value of the previous block's hash?
         withdrawBlock.hash = sha256(
             abi.encodePacked(
                 withdrawBlock.hash,
@@ -604,6 +610,7 @@ contract Exchange is IExchange, NoDefaultFunc
         }
 
         //  Q(daniel): we don't have something like the following for withdrawal...
+        // Q(daniel): how a user can prove that he/she has already send an request?
         //
         //  PendingDeposit memory pendingDeposit = PendingDeposit(
         //     accountID,
