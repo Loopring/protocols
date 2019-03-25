@@ -71,11 +71,7 @@ contract IBlockManagement is IAccountManagement
 
     // == Public Variables ==
 
-    uint    public id = 0;
-    address public loopringAddress           = address(0);
-    address public owner                     = address(0);
     address payable public operator          = address(0);
-    address public lrcAddress                = address(0);
     address public exchangeHelperAddress     = address(0);
     address public blockVerifierAddress      = address(0);
 
