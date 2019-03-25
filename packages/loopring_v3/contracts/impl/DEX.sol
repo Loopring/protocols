@@ -29,19 +29,19 @@ contract DEX is IDEX, Capability3StakeQuery
         uint    _id,
         address _loopringAddress,
         address _owner,
-        address _committer
+        address _operator
         )
         public
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _owner, "ZERO_ADDRESS");
-        require(address(0) != _committer, "ZERO_ADDRESS");
+        require(address(0) != _operator, "ZERO_ADDRESS");
 
         id = _id;
         loopringAddress = _loopringAddress;
         owner = _owner;
-        committer = _committer;
+        operator = _operator;
 
         loopring = ILoopringV3(loopringAddress);
 

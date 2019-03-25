@@ -74,7 +74,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     }
 
     function createExchange(
-        address payable _committer
+        address payable _operator
         )
         external
         returns (
@@ -92,18 +92,18 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         exchangeId = exchanges.length + 1;
 
-        address payable committer;
-        if (address(0) == _committer) {
-            committer = msg.sender;
+        address payable operator;
+        if (address(0) == _operator) {
+            operator = msg.sender;
         } else {
-            committer = _committer;
+            operator = _operator;
         }
 
         Exchange exchange = new Exchange(
             exchangeId,
             address(this),
             msg.sender,
-            committer,
+            operator,
             lrcAddress,
             wethAddress,
             exchangeHelperAddress,
@@ -117,7 +117,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeId,
             exchangeAddress,
             msg.sender,
-            committer,
+            operator,
             exchangeCreationCostLRC
         );
     }
@@ -257,7 +257,9 @@ contract LoopringV3 is ILoopringV3, Ownable
         Token storage token = tokens[_token];
 
         uint8 currentTier = 4;
-        if (token.tier != 0) currentTier = token.tier;
+        if (token.tier != 0 && token.tierValidUntil > now) {
+            currentTier = token.tier;
+        }
 
         // Can't upgrade to a higher level than tier 1
         require(currentTier > 1, "BURN_RATE_MINIMIZED");

@@ -37,7 +37,7 @@ contract ILoopringV3
         uint    exchangeId,
         address exchangeAddress,
         address owner,
-        address committer,
+        address operator,
         uint    burnedLRC
     );
 
@@ -108,7 +108,7 @@ contract ILoopringV3
         external;
 
     function createExchange(
-        address payable _committer
+        address payable _operator
         )
         external
         returns (

@@ -70,10 +70,10 @@ contract IExchange
         uint amount
     );
 
-    event CommitterChanged(
+    event OperatorChanged(
         uint exchangeId,
-        address oldCommitter,
-        address newCommitter
+        address oldOperator,
+        address newOperator
     );
 
     event TokenRegistered(
@@ -109,7 +109,7 @@ contract IExchange
     uint    public id = 0;
     address public loopringAddress           = address(0);
     address public owner                     = address(0);
-    address payable public committer         = address(0);
+    address payable public operator          = address(0);
     address public lrcAddress                = address(0);
     address public exchangeHelperAddress     = address(0);
     address public blockVerifierAddress      = address(0);
@@ -253,9 +253,9 @@ contract IExchange
         external
         returns (bool);
 */
-    function setCommitter(address payable _committer)
+    function setOperator(address payable _operator)
         external
-        returns (address payable oldCommitter);
+        returns (address payable oldOperator);
 
     function getStake()
         external

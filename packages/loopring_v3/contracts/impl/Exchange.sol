@@ -122,7 +122,7 @@ contract Exchange is IExchange, NoDefaultFunc
         uint    _id,
         address _loopringAddress,
         address _owner,
-        address payable _committer,
+        address payable _operator,
         address _lrcAddress,
         address _wethAddress,
         address _exchangeHelperAddress,
@@ -133,7 +133,7 @@ contract Exchange is IExchange, NoDefaultFunc
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _owner, "ZERO_ADDRESS");
-        require(address(0) != _committer, "ZERO_ADDRESS");
+        require(address(0) != _operator, "ZERO_ADDRESS");
 
         // We can't call functions on the loopring contract here
         loopring = ILoopringV3(loopringAddress);
@@ -141,7 +141,7 @@ contract Exchange is IExchange, NoDefaultFunc
         id = _id;
         loopringAddress = _loopringAddress;
         owner = _owner;
-        committer = _committer;
+        operator = _operator;
 
         lrcAddress = _lrcAddress;
         exchangeHelperAddress = _exchangeHelperAddress;
@@ -686,7 +686,7 @@ contract Exchange is IExchange, NoDefaultFunc
         }
         require(fee == 0, "FEE_WITHDRAWN_ALREADY");
 
-        committer.transfer(fee);
+        operator.transfer(fee);
 
         emit BlockFeeWithdraw(blockIdx, fee);
 
@@ -1087,21 +1087,19 @@ contract Exchange is IExchange, NoDefaultFunc
         return tokenIdToToken[tokenID + 1];
     }
 
-    function setCommitter(
-        address payable _committer
-        )
+    function setOperator(address payable _operator)
         external
         // onlyOwner
-        returns (address payable oldCommitter)
+        returns (address payable oldOperator)
     {
-        require(address(0) != _committer, "ZERO_ADDRESS");
-        oldCommitter = committer;
-        committer = _committer;
+        require(address(0) != _operator, "ZERO_ADDRESS");
+        oldOperator = operator;
+        operator = _operator;
 
-        emit CommitterChanged(
+        emit OperatorChanged(
             id,
-            oldCommitter,
-            committer
+            oldOperator,
+            operator
         );
     }
 

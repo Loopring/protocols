@@ -25,19 +25,19 @@ import "./CapabilityBase.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Capability1BlockManagement is ICapability1BlockManagement, CapabilityBase
 {
-    function setCommitter(address _committer)
+    function setOperator(address _operator)
         external
         // onlyOwner
-        returns (address oldCommitter)
+        returns (address oldOperator)
     {
-        require(address(0) != _committer, "ZERO_ADDRESS");
-        oldCommitter = committer;
-        committer = _committer;
+        require(address(0) != _operator, "ZERO_ADDRESS");
+        oldOperator = operator;
+        operator = _operator;
 
-        emit CommitterChanged(
+        emit OperatorChanged(
             id,
-            oldCommitter,
-            committer
+            oldOperator,
+            operator
         );
     }
 
@@ -46,14 +46,14 @@ contract Capability1BlockManagement is ICapability1BlockManagement, CapabilityBa
         bytes calldata data
         )
         external
-        onlyCommitter
+        onlyOperator
     {
         commitBlockInternal(blockType, data);
     }
 
-    modifier onlyCommitter()
+    modifier onlyOperator()
     {
-        require(msg.sender == committer, "UNAUTHORIZED");
+        require(msg.sender == operator, "UNAUTHORIZED");
         _;
     }
 
