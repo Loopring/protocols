@@ -17,13 +17,12 @@
 pragma solidity 0.5.2;
 
 import "../iface/ILoopringV3.sol";
+import "../iface/IExchangeDeployer.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/Ownable.sol";
-
-import "./DEX.sol";
 
 
 /// @title An Implementation of ILoopringV3.
@@ -40,33 +39,46 @@ contract LoopringV3 is ILoopringV3, Ownable
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
+        address _exchangeDeployerAddress,
+        address _exchangeHelperAddress,
+        address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips
+        uint16  _tierUpgradeCostBips,
+        uint    _maxWithdrawFee
         )
         external
         onlyOwner
     {
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
+        require(address(0) != _exchangeDeployerAddress, "ZERO_ADDRESS");
+        require(address(0) != _exchangeHelperAddress, "ZERO_ADDRESS");
+        require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
         require(0 != _exchangeCreationCostLRC, "ZERO_VALUE");
         require(10 >= _tierUpgradeCostBips, "VALUE_TOO_LARGE");
 
         delete tokens[lrcAddress];
         delete tokens[wethAddress];
+        delete tokens[address(0)];    // ETH
 
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
+        exchangeDeployerAddress = _exchangeDeployerAddress;
+        exchangeHelperAddress = _exchangeHelperAddress;
+        blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         tierUpgradeCostBips = _tierUpgradeCostBips;
+        maxWithdrawFee = _maxWithdrawFee;
 
         tokens[lrcAddress]  = Token(lrcAddress, 1, 0xFFFFFFFF);
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
+        tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);    // ETH
 
         emit SettingsUpdated(now);
     }
 
     function createExchange(
-        address _operator
+        address payable _operator
         )
         external
         returns (
@@ -77,28 +89,30 @@ contract LoopringV3 is ILoopringV3, Ownable
         // Burn the LRC
         if (exchangeCreationCostLRC > 0) {
             require(
-                BurnableERC20(lrcAddress).burn(exchangeCreationCostLRC),
+                BurnableERC20(lrcAddress).burnFrom(msg.sender, exchangeCreationCostLRC),
                 "BURN_FAILURE"
             );
         }
 
         exchangeId = exchanges.length + 1;
 
-        address operator;
+        address payable operator;
         if (address(0) == _operator) {
             operator = msg.sender;
         } else {
             operator = _operator;
         }
 
-        IDEX exchange = new DEX(
+        exchangeAddress = IExchangeDeployer(exchangeDeployerAddress).deployExchange(
             exchangeId,
             address(this),
             msg.sender,
-            operator
+            operator,
+            lrcAddress,
+            wethAddress,
+            exchangeHelperAddress,
+            blockVerifierAddress
         );
-
-        exchangeAddress = address(exchange);
         exchanges.push(exchangeAddress);
 
         emit ExchangeCreated(
@@ -176,6 +190,9 @@ contract LoopringV3 is ILoopringV3, Ownable
         external
         returns (uint stakedLRC)
     {
+        // TODO: Only allow withdrawing after ~1 day, otherwise the exchange can withdraw immediatly
+        //       when something goes, which isn't helpful as 'reputation'
+
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
@@ -238,7 +255,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         )
         external
     {
-        require(_token != address(0), "ZERO_ADDRESS");
+        require(_token != address(0), "BURN_RATE_FROZEN");
         require(_token != lrcAddress, "BURN_RATE_FROZEN");
         require(_token != wethAddress, "BURN_RATE_FROZEN");
 
@@ -272,4 +289,14 @@ contract LoopringV3 is ILoopringV3, Ownable
         emit TokenBurnRateDown(_token, token.tier);
     }
 
+    function withdrawBurned(
+        address token,
+        address recipient
+        )
+        external
+        onlyOwner
+        returns (bool)
+    {
+        // TODO: Allow withdrawing non-LRC tokens
+    }
 }

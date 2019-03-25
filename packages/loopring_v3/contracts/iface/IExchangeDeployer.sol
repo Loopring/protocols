@@ -16,21 +16,22 @@
 */
 pragma solidity 0.5.2;
 
-import "../../iface/exchange/ICapability3StakeQuery.sol";
 
-import "./Capability2TokenRegistration.sol";
-
-/// @title An Implementation of IDEX.
+/// @title IExchangeDeployer
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Capability3StakeQuery is ICapability3StakeQuery, Capability2TokenRegistration
+contract IExchangeDeployer
 {
-
-    function getStake()
+    function deployExchange(
+        uint    exchangeId,
+        address loopringAddress,
+        address owner,
+        address payable operator,
+        address lrcAddress,
+        address wethAddress,
+        address exchangeHelperAddress,
+        address blockVerifierAddress
+        )
         external
-        view
-        returns (uint)
-    {
-        return loopring.getStake(id);
-    }
+        returns (address);
 }

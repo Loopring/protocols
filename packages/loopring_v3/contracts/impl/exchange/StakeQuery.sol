@@ -16,27 +16,20 @@
 */
 pragma solidity 0.5.2;
 
+import "../../iface/exchange/IStakeQuery.sol";
+
+import "./TokenRegistration.sol";
 
 /// @title An Implementation of IDEX.
+/// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ICapability1BlockManagement
+contract StakeQuery is IStakeQuery, TokenRegistration
 {
-    event BlockCommitted(
-        uint  exchanegId,
-        uint  blockType
-        // TODO(brecht): add more fields
-    );
-
-    event OperatorChanged(
-        uint  exchanegId,
-        address oldOperator,
-        address newOperator
-    );
-
-    address public owner                = address(0);
-    address public operator            = address(0);
-
-    function setOperator(address _operator)
+    function getStake()
         external
-        returns (address oldOperator);
+        view
+        returns (uint)
+    {
+        return loopring.getStake(id);
+    }
 }

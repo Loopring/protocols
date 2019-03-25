@@ -1,10 +1,9 @@
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
-var TokenRegistry = artifacts.require("./impl/TokenRegistry.sol");
-var OperatorRegistry = artifacts.require("./impl/OperatorRegistry.sol");
+var ExchangeDeployer = artifacts.require("./impl/ExchangeDeployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-var Exchange = artifacts.require("./impl/Exchange");
 var ExchangeHelper = artifacts.require("./impl/ExchangeHelper");
+var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
 var BurnManager = artifacts.require("./impl/BurnManager");
 
 module.exports = function(deployer, network, accounts) {
@@ -18,36 +17,19 @@ module.exports = function(deployer, network, accounts) {
       ]);
     }).then(() => {
       return Promise.all([
+        deployer.deploy(ExchangeDeployer),
         deployer.deploy(ExchangeHelper),
-        deployer.deploy(
-          TokenRegistry,
-          LRCToken.address,
-          WETHToken.address,
-        ),
-        deployer.deploy(
-          OperatorRegistry,
-          LRCToken.address,
-        ),
         deployer.deploy(BlockVerifier),
       ]);
     }).then(() => {
       return Promise.all([
-        deployer.deploy(
-          Exchange,
-          ExchangeHelper.address,
-          TokenRegistry.address,
-          BlockVerifier.address,
-          LRCToken.address,
-          LRCToken.address,
-          0,
-          1000000000000000,
-        ),
+        deployer.deploy(LoopringV3),
       ]);
     }).then(() => {
       return Promise.all([
         deployer.deploy(
           BurnManager,
-          Exchange.address,
+          LoopringV3.address,
           LRCToken.address,
         ),
       ]);

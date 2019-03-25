@@ -13,18 +13,12 @@ contract("Exchange", (accounts: string[]) => {
     const blockIdxBefore = (await exchangeTestUtil.exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
     const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
     const lrcSupplyBefore = await LRC.totalSupply();
-    const operatorRegisteredBefore =
-      await exchangeTestUtil.exchange.isOperatorRegistered(realmID, block.operator.operatorID);
-    const activeOperatorsBefore = await exchangeTestUtil.getActiveOperators(realmID);
 
     await exchangeTestUtil.revertBlock(realmID, block.blockIdx);
 
     const blockIdxAfter = (await exchangeTestUtil.exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
     const lrcBalanceAfter = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
     const lrcSupplyAfter = await LRC.totalSupply();
-    const operatorRegisteredAfter =
-      await exchangeTestUtil.exchange.isOperatorRegistered(realmID, block.operator.operatorID);
-    const activeOperatorsAfter = await exchangeTestUtil.getActiveOperators(realmID);
 
     assert(blockIdxBefore > blockIdxAfter, "blockIdx should have decreased");
     assert.equal(blockIdxAfter, block.blockIdx - 1, "State should have been reverted to the specified block");
@@ -33,11 +27,6 @@ contract("Exchange", (accounts: string[]) => {
            "LRC balance of exchange needs to be reduced by STAKE_AMOUNT_IN_LRC");
     assert(lrcSupplyBefore.eq(lrcSupplyAfter.add(exchangeTestUtil.STAKE_AMOUNT_IN_LRC)),
            "LRC supply needs to be reduced by STAKE_AMOUNT_IN_LRC");
-
-    assert(operatorRegisteredBefore, "Operator of block should have still been registered");
-    assert(!operatorRegisteredAfter, "Operator of block should have been unregistered");
-    assert.equal(activeOperatorsBefore.length, activeOperatorsAfter.length + 1,
-                 "numActiveOperators should be decreased to 1");
   };
 
   before( async () => {
@@ -49,7 +38,7 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Revert block", async () => {
-      const realmID = await exchangeTestUtil.createRealm(exchangeTestUtil.testContext.stateOwners[0], true, 2);
+      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true, 2);
       const ring: RingInfo = {
         orderA:
           {
@@ -90,7 +79,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                         wallet.walletID, token, balance);
+                                                         token, balance);
       const pendingDeposits = exchangeTestUtil.getPendingDeposits(realmID);
 
       const blocksA = await exchangeTestUtil.commitDeposits(realmID, pendingDeposits);

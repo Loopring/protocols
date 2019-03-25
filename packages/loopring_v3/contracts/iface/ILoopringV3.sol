@@ -34,7 +34,7 @@ contract ILoopringV3
     // == Events ==
 
     event ExchangeCreated(
-        uint    exchanegId,
+        uint    exchangeId,
         address exchangeAddress,
         address owner,
         address operator,
@@ -81,10 +81,14 @@ contract ILoopringV3
 
     mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
 
-    uint    public totalStake   = 0 ether;
-    address public lrcAddress   = address(0);
-    address public wethAddress  = address(0);
-    uint    public exchangeCreationCostLRC = 0 ether;
+    uint    public totalStake                = 0 ether;
+    address public lrcAddress                = address(0);
+    address public wethAddress               = address(0);
+    address public exchangeDeployerAddress   = address(0);
+    address public exchangeHelperAddress     = address(0);
+    address public blockVerifierAddress      = address(0);
+    uint    public exchangeCreationCostLRC   = 0 ether;
+    uint    public maxWithdrawFee            = 0 ether;
 
      // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
     uint16  public  tierUpgradeCostBips  =  0; // 0.01% or 130K LRC
@@ -96,13 +100,17 @@ contract ILoopringV3
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
+        address _exchangeDeployerAddress,
+        address _exchangeHelperAddress,
+        address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips
+        uint16  _tierUpgradeCostBips,
+        uint    _maxWithdrawFee
         )
         external;
 
     function createExchange(
-        address _exchangeOwnerContractAddress
+        address payable _operator
         )
         external
         returns (
@@ -147,4 +155,11 @@ contract ILoopringV3
         address token
         )
         external;
+
+    function withdrawBurned(
+        address token,
+        address recipient
+        )
+        external
+        returns (bool);
 }

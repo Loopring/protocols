@@ -27,7 +27,7 @@ import "../../lib/Ownable.sol";
 /// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract CapabilityBase is Ownable, NoDefaultFunc
+contract Base is Ownable, NoDefaultFunc
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;

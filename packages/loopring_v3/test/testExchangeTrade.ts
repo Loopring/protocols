@@ -17,7 +17,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Trade", function() {
     this.timeout(0);
 
-    it("Perfect match", async () => {
+    it.only("Perfect match", async () => {
       const realmID = 0;
       const ring: RingInfo = {
         orderA:
@@ -395,7 +395,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
-            walletID: wallet.walletID,
             dualAuthAccountID: wallet.walletAccountID,
           },
         orderB:
@@ -405,7 +404,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
-            walletID: wallet.walletID,
             dualAuthAccountID: wallet.walletAccountID,
           },
         expected: {
@@ -801,7 +799,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Separate state", async () => {
-      const realmID = await exchangeTestUtil.createRealm(
+      const realmID = await exchangeTestUtil.createExchange(
         exchangeTestUtil.testContext.stateOwners[1],
         true,
         1,

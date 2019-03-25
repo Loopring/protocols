@@ -124,13 +124,11 @@ export interface Block {
 
 export interface Operator {
   owner: string;
-  operatorID: number;
   accountID: number;
 }
 
 export interface Wallet {
   owner: string;
-  walletID: number;
   walletAccountID: number;
 }
 
@@ -146,7 +144,6 @@ export interface Balance {
 
 export interface Account {
   accountID: number;
-  walletID: number;
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;

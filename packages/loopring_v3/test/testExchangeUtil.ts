@@ -27,15 +27,21 @@ function replacer(name: any, val: any) {
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
-  public exchange: any;
-  public tokenRegistry: any;
-  public operatorRegistry: any;
+
+  public loopringV3: any;
+  public exchangeDeployer: any;
   public blockVerifier: any;
+  public exchangeHelper: any;
+
+  public lrcAddress: string;
+  public wethAddress: string;
+
+  public exchange: any;
 
   public minerAccountID: number[] = [];
   public feeRecipientAccountID: number[] = [];
 
-  public operators: Operator[][] = [];
+  public operators: Operator[] = [];
   public wallets: Wallet[][] = [];
 
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
@@ -67,13 +73,19 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-    await this.registerTokens();
 
-    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
-    this.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE = (await this.exchange.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE()).toNumber();
-    this.STAKE_AMOUNT_IN_LRC = await this.operatorRegistry.STAKE_AMOUNT_IN_LRC();
-    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW =
-      (await this.operatorRegistry.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW()).toNumber();
+    // Initialize Loopring
+    await this.loopringV3.updateSettings(
+      this.lrcAddress,
+      this.wethAddress,
+      this.exchangeDeployer.address,
+      this.exchangeHelper.address,
+      this.blockVerifier.address,
+      new BN(web3.utils.toWei("1000", "ether")),
+      new BN(0),
+      new BN(0),
+      {from: this.testContext.deployer},
+    );
 
     for (let i = 0; i < this.MAX_NUM_STATES; i++) {
       const rings: RingInfo[] = [];
@@ -91,9 +103,6 @@ export class ExchangeTestUtil {
       const cancels: Cancel[] = [];
       this.pendingCancels.push(cancels);
 
-      const operators: Operator[] = [];
-      this.operators.push(operators);
-
       const wallets: Wallet[] = [];
       this.wallets.push(wallets);
 
@@ -101,7 +110,7 @@ export class ExchangeTestUtil {
       this.pendingBlocks.push(pendingBlocks);
     }
 
-    await this.createRealm(
+    await this.createExchange(
       this.testContext.deployer,
       true,
       5,
@@ -110,37 +119,16 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.01", "ether")),
       false,
     );
+
+    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
+    this.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE = (await this.exchange.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE()).toNumber();
+    this.STAKE_AMOUNT_IN_LRC = new BN(0);
+    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
   }
 
-  public async setupTestState(realmID: number, numOperators: number = 1) {
-    await this.deposit(
-      realmID,
-      this.testContext.deployer,
-      (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
-      0,
-      this.zeroAddress,
-      new BN(0),
-    );
+  public async setupTestState(realmID: number) {
+    this.operators[realmID] = await this.createOperator(realmID, this.testContext.operators[0]);
 
-    await this.deposit(
-      realmID,
-      this.testContext.deployer,
-      (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
-      0,
-      this.zeroAddress,
-      new BN(0),
-    );
-
-    for (let i = 0; i < numOperators; i++) {
-      const operatorOwnerIdx = i % this.testContext.operators.length;
-      const operatorOwner = this.testContext.operators[operatorOwnerIdx];
-      const newOperator = await this.createOperator(realmID, operatorOwner);
-      this.addOperator(realmID, newOperator);
-    }
     [this.minerAccountID[realmID], this.feeRecipientAccountID[realmID]] = await this.createRingMatcher(
       realmID,
       this.testContext.ringMatchers[0],
@@ -158,34 +146,23 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const depositInfo = await this.deposit(realmID, owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                           0, this.zeroAddress, new BN(0));
-
-    const operatorID = await this.registerOperator(realmID, owner);
+                                           this.zeroAddress, new BN(0));
 
     const operator: Operator = {
       owner,
       accountID: depositInfo.accountID,
-      operatorID,
     };
     return operator;
   }
 
-  public async addOperator(realmID: number, operator: Operator) {
-    // assert.equal(this.operators[realmID].length, operator.operatorID);
-    this.operators[realmID].push(operator);
-  }
-
   public async createWallet(realmID: number, owner: string) {
-    const walletID = await this.registerWallet(realmID, owner);
-
     // Make a dual author account for the wallet
     const keyPair = this.getKeyPairEDDSA();
     const walletDeposit = await this.deposit(realmID, owner,
                                              keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                             walletID, this.zeroAddress, new BN(0));
+                                             this.zeroAddress, new BN(0));
     const wallet: Wallet = {
       owner,
-      walletID,
       walletAccountID: walletDeposit.accountID,
     };
     return wallet;
@@ -202,13 +179,13 @@ export class ExchangeTestUtil {
     await LRC.addBalance(owner, balance);
     const minerDeposit = await this.deposit(realmID, owner,
                                             keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
-                                            0, lrcAddress, balance);
+                                            lrcAddress, balance);
 
     // Make an account to receive fees
     const keyPairF = this.getKeyPairEDDSA();
     const feeRecipientDeposit = await this.deposit(realmID, feeRecipient,
                                                    keyPairF.secretKey, keyPairF.publicKeyX, keyPairF.publicKeyY,
-                                                   0, lrcAddress, new BN(0));
+                                                   lrcAddress, new BN(0));
 
     return [minerDeposit.accountID, feeRecipientDeposit.accountID];
   }
@@ -302,8 +279,7 @@ export class ExchangeTestUtil {
     order.waiveFeePercentage = (order.waiveFeePercentage !== undefined) ? order.waiveFeePercentage : 50;
 
     const walletIndex = index % this.testContext.wallets.length;
-    order.walletID = (order.walletID !== undefined) ?
-                     order.walletID : this.wallets[order.realmID][walletIndex].walletID;
+    order.walletID = 0;
     order.dualAuthAccountID = (order.dualAuthAccountID !== undefined) ?
                               order.dualAuthAccountID : this.wallets[order.realmID][walletIndex].walletAccountID;
 
@@ -325,21 +301,21 @@ export class ExchangeTestUtil {
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
     const depositInfo = await this.deposit(order.realmID, order.owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                           order.walletID, order.tokenS, balanceS);
+                                           order.tokenS, balanceS);
     order.accountID = depositInfo.accountID;
 
     const balanceF = (order.balanceF !== undefined) ? order.balanceF : order.amountF;
     if (balanceF.gt(0)) {
       await this.deposit(order.realmID, order.owner,
-                        keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                        order.walletID, order.tokenF, balanceF, order.accountID);
+                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                         order.tokenF, balanceF, order.accountID);
     }
 
     const balanceB = (order.balanceB !== undefined) ? order.balanceB : new BN(0);
     if (balanceB.gt(0)) {
       await this.deposit(order.realmID, order.owner,
-                        keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                        order.walletID, order.tokenB, balanceB, order.accountID);
+                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                         order.tokenB, balanceB, order.accountID);
     }
   }
 
@@ -403,7 +379,7 @@ export class ExchangeTestUtil {
   }
 
   public async deposit(realmID: number, owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
-                       walletID: number, token: string, amount: BN, accountID?: number) {
+                       token: string, amount: BN, accountID?: number) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
@@ -442,7 +418,6 @@ export class ExchangeTestUtil {
     // Do the deposit
     if (accountID !== undefined) {
       const tx = await this.exchange.updateAccount(
-        web3.utils.toBN(accountID),
         new BN(publicKeyX),
         new BN(publicKeyY),
         tokenID,
@@ -474,7 +449,7 @@ export class ExchangeTestUtil {
 
     this.addDeposit(this.pendingDeposits[realmID], depositInfo.depositBlockIdx, depositInfo.accountID,
                     secretKey, publicKeyX, publicKeyY,
-                    walletID, this.tokenAddressToIDMap.get(token), amount);
+                    this.tokenAddressToIDMap.get(token), amount);
     return depositInfo;
   }
 
@@ -514,7 +489,7 @@ export class ExchangeTestUtil {
     const withdrawFee = await this.exchange.getWithdrawFee();
 
     // Submit the withdraw request
-    const tx = await this.exchange.requestWithdraw(
+    const tx = await this.exchange.withdraw(
       web3.utils.toBN(accountID),
       web3.utils.toBN(tokenID),
       web3.utils.toBN(amount),
@@ -536,8 +511,8 @@ export class ExchangeTestUtil {
 
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
                     secretKey: string, publicKeyX: string, publicKeyY: string,
-                    walletID: number, tokenID: number, amount: BN) {
-    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID, tokenID, amount});
+                    tokenID: number, amount: BN) {
+    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID: 0, tokenID, amount});
   }
 
   public addCancel(cancels: Cancel[], accountID: number, orderTokenID: number, orderID: number,
@@ -752,11 +727,6 @@ export class ExchangeTestUtil {
       const blockInfo = await this.commitBlock(operator, 1, bs.getData(), blockFilename);
 
       blockInfos.push(blockInfo);
-
-      /*for (const deposit of deposits) {
-        const balance = await this.getOffchainBalance(realmID, deposit.accountID, deposit.tokenID);
-        this.prettyPrintBalance(deposit.accountID, deposit.tokenID, balance);
-      }*/
     }
 
     this.pendingDeposits[realmID] = [];
@@ -809,7 +779,6 @@ export class ExchangeTestUtil {
         }
         const account: Account = {
           accountID: Number(accountKey),
-          walletID: jAccount.walletID,
           publicKeyX: jAccount.publicKeyX,
           publicKeyY: jAccount.publicKeyY,
           nonce: jAccount.nonce,
@@ -825,21 +794,7 @@ export class ExchangeTestUtil {
   }
 
   public async getActiveOperator(realmID: number) {
-    // const activeOperatorID = (await this.operatorRegistry.getActiveOperatorID(web3.utils.toBN(realmID))).toNumber();
-    const activeOperatorID = 0;
-    return this.operators[realmID][activeOperatorID];
-  }
-
-  public async getActiveOperators(realmID: number) {
-    const activeOperators: Operator[] = [];
-    /*const numActiveOperators = (await this.exchange.getNumActiveOperators(realmID)).toNumber();
-    for (let i = 0; i < numActiveOperators; i++) {
-      const data = await this.operatorRegistry.getActiveOperatorAt(realmID, web3.utils.toBN(i));
-      const activeOperator = this.operators[realmID][data.operatorID.toNumber()];
-      assert.equal(activeOperator.owner, data.owner, "Operator owner incorrect");
-      activeOperators.push(activeOperator);
-    }*/
-    return activeOperators;
+    return this.operators[realmID];
   }
 
   public async commitWithdrawalRequests(onchain: boolean, realmID: number) {
@@ -1009,7 +964,7 @@ export class ExchangeTestUtil {
                 walletID: 0,
                 orderID: 0,
                 accountID: 0,
-                dualAuthAccountID: 1,
+                dualAuthAccountID: 0,
 
                 tokenIdS: 0,
                 tokenIdB: 0,
@@ -1031,7 +986,7 @@ export class ExchangeTestUtil {
                 walletID: 0,
                 orderID: 0,
                 accountID: 0,
-                dualAuthAccountID: 1,
+                dualAuthAccountID: 0,
 
                 tokenIdS: 0,
                 tokenIdB: 0,
@@ -1196,15 +1151,7 @@ export class ExchangeTestUtil {
       // console.log(symbol + ": " + tokenAddress);
 
       if (symbol !== "ETH" && symbol !== "WETH" && symbol !== "LRC") {
-        const tokenRegistrationFee = await this.tokenRegistry.getTokenRegistrationFee();
-        await LRC.addBalance(this.testContext.orderOwners[0], tokenRegistrationFee);
-        await LRC.approve(
-          this.tokenRegistry.address,
-          tokenRegistrationFee,
-          {from: this.testContext.orderOwners[0]},
-        );
-
-        const tx = await this.tokenRegistry.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
+        const tx = await this.exchange.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
         // pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
       }
 
@@ -1216,11 +1163,11 @@ export class ExchangeTestUtil {
   }
 
   public async getTokenID(tokenAddress: string) {
-    const tokenID = await this.tokenRegistry.getTokenID(tokenAddress);
+    const tokenID = await this.exchange.getTokenID(tokenAddress);
     return tokenID;
   }
 
-  public async createRealm(
+  public async createExchange(
       owner: string,
       bSetupTestState: boolean = true,
       numOperators: number = 1,
@@ -1229,67 +1176,35 @@ export class ExchangeTestUtil {
       maxWithdrawFeeInETH: BN = new BN(web3.utils.toWei("0.001", "ether")),
       closedOperatorRegistering: boolean = false,
     ) {
-    // Create the new state
-    /*const tx = await this.exchange.createRealm(
-      owner,
-      depositFeeInETH,
-      withdrawFeeInETH,
-      maxWithdrawFeeInETH,
-      closedOperatorRegistering);
-    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateRealm] Gas used: " + tx.receipt.gasUsed);
 
-    const eventArr: any = await this.getEventsFromContract(this.exchange, "RealmCreated", web3.eth.blockNumber);
+    const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
+
+    // Send enough tokens to the owner so the Exchange can be created
+    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
+    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
+    await LRC.addBalance(owner, exchangeCreationCostLRC);
+    await LRC.approve(this.loopringV3.address, exchangeCreationCostLRC, {from: owner});
+
+    // Create the new exchange
+    const tx = await this.loopringV3.createExchange(owner, {from: owner});
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
+
+    const eventArr: any = await this.getEventsFromContract(this.loopringV3, "ExchangeCreated", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.realmID];
+      return [eventObj.args.exchangeAddress];
     });
-    const realmID = items[0][0].toNumber();
-     */
-
+    const exchangeAddress = items[0][0];
     const realmID = 0;
 
+    this.exchange = await this.contracts.Exchange.at(exchangeAddress);
+
+    await this.registerTokens();
+
     if (bSetupTestState) {
-      await this.setupTestState(realmID, numOperators);
+      await this.setupTestState(realmID);
     }
 
     return realmID;
-
-  }
-
-  public async registerWallet(realmID: number, owner: string) {
-    // Register a wallet
-    /*const tx = await this.exchange.registerWallet({from: owner});
-    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[RegisterWallet] Gas used: " + tx.receipt.gasUsed);
-
-    const eventArr: any = await this.getEventsFromContract(this.exchange, "WalletRegistered", web3.eth.blockNumber);
-    const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.walletID];
-    });
-    const walletID = items[0][0].toNumber();
-
-    return walletID;*/
-    return 0;
-  }
-
-  public async registerOperator(realmID: number, owner: string) {
-    /*await this.setBalanceAndApprove(owner, "LRC", this.STAKE_AMOUNT_IN_LRC, this.operatorRegistry.address);
-
-    // Register an operator
-    const tx = await this.operatorRegistry.registerOperator(web3.utils.toBN(realmID), {from: owner});
-    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[RegisterOperator] Gas used: " + tx.receipt.gasUsed);
-
-    const eventArr: any = await this.getEventsFromContract(
-      this.operatorRegistry, "OperatorRegistered", web3.eth.blockNumber,
-    );
-    const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.operatorID, eventObj.args.operator];
-    });
-    const operatorID = items[0][0].toNumber();
-    const operator = items[0][1];
-    // console.log("operatorID: " + operatorID);
-    assert.equal(operator, owner, "Operator owner doesn't match");
-
-    return operatorID;*/
-    return 0;
   }
 
   public getTokenIdFromNameOrAddress(token: string) {
@@ -1433,7 +1348,6 @@ export class ExchangeTestUtil {
         assert(balanceValueA.balance.eq(balanceValueB.balance));
       }
       assert.equal(accountA.accountID, accountB.accountID);
-      assert.equal(accountA.walletID, accountB.walletID);
       assert.equal(accountA.publicKeyX, accountB.publicKeyX);
       assert.equal(accountA.publicKeyY, accountB.publicKeyY);
       assert.equal(accountA.nonce, accountB.nonce);
@@ -1483,7 +1397,6 @@ export class ExchangeTestUtil {
         }
         const emptyAccount: Account = {
           accountID: deposit.accountID,
-          walletID: 0,
           publicKeyX: "0",
           publicKeyY: "0",
           nonce: 0,
@@ -1499,9 +1412,6 @@ export class ExchangeTestUtil {
       }
       if (accountBefore.publicKeyY !== accountAfter.publicKeyY) {
         console.log("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
-      }
-      if (accountBefore.walletID !== accountAfter.walletID) {
-        console.log("walletID: " + accountBefore.walletID + " -> " + accountAfter.walletID);
       }
       if (accountBefore.nonce !== accountAfter.nonce) {
         console.log("nonce: " + accountBefore.nonce + " -> " + accountAfter.nonce);
@@ -1592,24 +1502,28 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const [exchange, tokenRegistry, operatorRegistry, blockVerifier, lrcToken] = await Promise.all([
-        this.contracts.Exchange.deployed(),
-        this.contracts.TokenRegistry.deployed(),
-        this.contracts.OperatorRegistry.deployed(),
+    const [loopringV3, exchangeDeployer, exchangeHelper, blockVerifier, lrcToken, wethToken] = await Promise.all([
+        this.contracts.LoopringV3.deployed(),
+        this.contracts.ExchangeDeployer.deployed(),
+        this.contracts.ExchangeHelper.deployed(),
         this.contracts.BlockVerifier.deployed(),
         this.contracts.LRCToken.deployed(),
+        this.contracts.WETHToken.deployed(),
       ]);
 
-    this.exchange = exchange;
-    this.tokenRegistry = tokenRegistry;
-    this.operatorRegistry = operatorRegistry;
+    this.loopringV3 = loopringV3;
+    this.exchangeDeployer = exchangeDeployer;
+    this.exchangeHelper = exchangeHelper;
     this.blockVerifier = blockVerifier;
+
+    this.lrcAddress = lrcToken.address;
+    this.wethAddress = wethToken.address;
 
     const currBlockNumber = await web3.eth.getBlockNumber();
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber)).timestamp;
     return new Context(currBlockNumber,
                        currBlockTimestamp,
-                       this.contracts.LRCToken.address);
+                       lrcToken.address);
   }
 
   private async createExchangeTestContext(accounts: string[]) {
