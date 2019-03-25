@@ -166,6 +166,11 @@ contract IExchange
         )
         external;
 
+    function getAccountID()
+        public
+        view
+        returns (uint24 accountID);
+
     function createAccount(
         uint publicKeyX,
         uint publicKeyY,
@@ -176,16 +181,7 @@ contract IExchange
         payable
         returns (uint24);
 
-    function deposit(
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
-        )
-        external
-        payable;
-
     function updateAccount(
-        uint24 accountID,
         uint publicKeyX,
         uint publicKeyY,
         uint16 tokenID,
@@ -194,8 +190,7 @@ contract IExchange
         public
         payable;
 
-    function requestWithdraw(
-        uint24 accountID,
+    function deposit(
         uint16 tokenID,
         uint96 amount
         )
@@ -203,8 +198,14 @@ contract IExchange
         payable;
 
     function withdraw(
-        uint blockIdx,
-        uint slotIdx
+        uint16 tokenID,
+        uint96 amount
+        )
+        external
+        payable;
+
+    function distributeWithdrawals(
+        uint blockIdx
         )
         external;
 
@@ -235,7 +236,6 @@ contract IExchange
         returns (bool);
 
     function withdrawFromMerkleTree(
-        uint24 accountID,
         uint16 tokenID,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
@@ -246,12 +246,30 @@ contract IExchange
         external
         returns (bool);
 
+    function withdrawFromMerkleTreeForAccount(
+        uint24 accountID,
+        uint16 tokenID,
+        uint256[24] memory accountPath,
+        uint256[12] memory balancePath,
+        uint32 nonce,
+        uint96 balance,
+        uint256 tradeHistoryRoot
+        )
+        public
+        returns (bool);
+
     function withdrawFromPendingDeposit(
         uint depositBlockIdx,
         uint slotIdx
         )
         external
         returns (bool);
+
+    function withdrawFromApprovedWithdrawal(
+        uint blockIdx,
+        uint slotIdx
+        )
+        external;
 
     function setOperator(address payable _operator)
         external

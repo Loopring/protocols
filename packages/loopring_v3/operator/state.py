@@ -15,6 +15,10 @@ TREE_DEPTH_TRADING_HISTORY = 16
 TREE_DEPTH_ACCOUNTS = 24
 TREE_DEPTH_TOKENS = 12
 
+DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165
+DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667
+DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935
+
 
 def copyBalanceInfo(leaf):
     c = copy.deepcopy(leaf)
@@ -29,6 +33,9 @@ def copyAccountInfo(account):
     c._balancesTree = None
     c._balancesLeafs = None
     return c
+
+def getDefaultAccount():
+    return Account(DEFAULT_ACCOUNT_SECRETKEY, Point(DEFAULT_ACCOUNT_PUBLICKEY_X, DEFAULT_ACCOUNT_PUBLICKEY_Y), 0)
 
 class Context(object):
     def __init__(self, operatorAccountID, timestamp):
@@ -535,9 +542,10 @@ class State(object):
         self.realmID = int(realmID)
         # Accounts
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
-        self._accountsTree.newTree(Account(0, Point(0, 0), 0).hash())
+        self._accountsTree.newTree(getDefaultAccount().hash())
         self._accounts = {}
-        # print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        self._accounts[str(0)] = getDefaultAccount()
+        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
         with open(filename) as f:
@@ -546,7 +554,7 @@ class State(object):
             # Accounts
             accountLeafsDict = data["accounts_values"]
             for key, val in accountLeafsDict.items():
-                account = Account(0, Point(0, 0), 0)
+                account = getDefaultAccount()
                 account.fromJSON(val)
                 self._accounts[key] = account
             self._accountsTree._root = data["accounts_root"]
@@ -816,7 +824,7 @@ class State(object):
         rootBefore = self._accountsTree._root
 
         if not(str(accountID) in self._accounts):
-            accountBefore = copyAccountInfo(Account(0, Point(0, 0), 0))
+            accountBefore = copyAccountInfo(getDefaultAccount())
         else:
             accountBefore = copyAccountInfo(self.getAccount(accountID))
 

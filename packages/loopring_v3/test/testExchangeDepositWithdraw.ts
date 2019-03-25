@@ -350,24 +350,24 @@ contract("Exchange", (accounts: string[]) => {
 
       // No ETH sent
       await expectThrow(
-        exchange.requestWithdraw(realmID, accountID, tokenID, toWithdraw, {from: ownerA, value: new BN(0)}),
+        exchange.withdraw(realmID, tokenID, toWithdraw, {from: ownerA, value: new BN(0)}),
         "INVALID_VALUE",
       );
       // Not enough ETH sent
       await expectThrow(
-        exchange.requestWithdraw(realmID, accountID, tokenID, toWithdraw, {from: ownerA, value: withdrawFee.sub(one)}),
+        exchange.withdraw(realmID, tokenID, toWithdraw, {from: ownerA, value: withdrawFee.sub(one)}),
         "INVALID_VALUE",
       );
 
       // Only the account owner can request a withdrawal
       await expectThrow(
-        exchange.requestWithdraw(realmID, accountID, tokenID, toWithdraw, {from: ownerB, value: withdrawFee}),
+        exchange.withdraw(realmID, tokenID, toWithdraw, {from: ownerB, value: withdrawFee}),
         "UNAUTHORIZED",
       );
 
       // Try to withdraw nothing
       await expectThrow(
-        exchange.requestWithdraw(realmID, accountID, tokenID, new BN(0), {from: ownerB, value: withdrawFee}),
+        exchange.withdraw(realmID, tokenID, new BN(0), {from: ownerB, value: withdrawFee}),
         "INVALID_VALUE",
       );
 

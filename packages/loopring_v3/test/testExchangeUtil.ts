@@ -127,26 +127,6 @@ export class ExchangeTestUtil {
   }
 
   public async setupTestState(realmID: number) {
-    await this.deposit(
-      realmID,
-      this.testContext.deployer,
-      (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
-      this.zeroAddress,
-      new BN(0),
-    );
-
-    await this.deposit(
-      realmID,
-      this.testContext.deployer,
-      (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
-      (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
-      this.zeroAddress,
-      new BN(0),
-    );
-
     this.operators[realmID] = await this.createOperator(realmID, this.testContext.operators[0]);
 
     [this.minerAccountID[realmID], this.feeRecipientAccountID[realmID]] = await this.createRingMatcher(
@@ -438,7 +418,6 @@ export class ExchangeTestUtil {
     // Do the deposit
     if (accountID !== undefined) {
       const tx = await this.exchange.updateAccount(
-        web3.utils.toBN(accountID),
         new BN(publicKeyX),
         new BN(publicKeyY),
         tokenID,
@@ -510,7 +489,7 @@ export class ExchangeTestUtil {
     const withdrawFee = await this.exchange.getWithdrawFee();
 
     // Submit the withdraw request
-    const tx = await this.exchange.requestWithdraw(
+    const tx = await this.exchange.withdraw(
       web3.utils.toBN(accountID),
       web3.utils.toBN(tokenID),
       web3.utils.toBN(amount),
@@ -985,7 +964,7 @@ export class ExchangeTestUtil {
                 walletID: 0,
                 orderID: 0,
                 accountID: 0,
-                dualAuthAccountID: 1,
+                dualAuthAccountID: 0,
 
                 tokenIdS: 0,
                 tokenIdB: 0,
@@ -1007,7 +986,7 @@ export class ExchangeTestUtil {
                 walletID: 0,
                 orderID: 0,
                 accountID: 0,
-                dualAuthAccountID: 1,
+                dualAuthAccountID: 0,
 
                 tokenIdS: 0,
                 tokenIdB: 0,

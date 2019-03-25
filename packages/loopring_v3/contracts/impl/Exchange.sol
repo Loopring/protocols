@@ -109,6 +109,8 @@ contract Exchange is IExchange, NoDefaultFunc
     ILoopringV3 private loopring;
 
     Account[] accounts;
+    mapping (address => uint24) ownerToAccountId;
+
     Block[] blocks;
 
     uint numDepositBlocks = 1;
@@ -152,7 +154,7 @@ contract Exchange is IExchange, NoDefaultFunc
         registerToken(lrcAddress);
 
         Block memory genesisBlock = Block(
-            0x29c496a5d270dec45f84b17ac910e27e342b7feaff48ba1d717e7d3dd622d9ed,
+            0x1325726ba90231a978b9ab8b6b232f27d419333c8098fbd57b3ddc7378c0d9ed,
             0x0,
             BlockState.FINALIZED,
             uint32(now),
@@ -161,6 +163,15 @@ contract Exchange is IExchange, NoDefaultFunc
             new bytes(0)
         );
         blocks.push(genesisBlock);
+
+        // Reserve default account slot at accountID 0
+        Account memory defaultAccount = Account(
+            address(0),
+            false,
+            DEFAULT_ACCOUNT_PUBLICKEY_X,
+            DEFAULT_ACCOUNT_PUBLICKEY_Y
+        );
+        accounts.push(defaultAccount);
     }
 
     function setFees(
@@ -380,6 +391,16 @@ contract Exchange is IExchange, NoDefaultFunc
         emit Revert(blockIdx);
     }
 
+    function getAccountID()
+        public
+        view
+        returns (uint24 accountID)
+    {
+        accountID = ownerToAccountId[msg.sender];
+        // Default account is at ID 0, which cannot be used
+        require(accountID != 0, "SENDER_HAS_NO_ACCOUNT");
+    }
+
     function createAccount(
         uint publicKeyX,
         uint publicKeyY,
@@ -402,8 +423,10 @@ contract Exchange is IExchange, NoDefaultFunc
 
         uint24 accountID = uint24(accounts.length - 1);
 
+        require(ownerToAccountId[msg.sender] == 0, "SENDER_ALREADY_HAS_AN_ACCOUNT");
+        ownerToAccountId[msg.sender] = accountID;
+
         updateAccount(
-            accountID,
             publicKeyX,
             publicKeyY,
             tokenID,
@@ -414,16 +437,14 @@ contract Exchange is IExchange, NoDefaultFunc
     }
 
     function deposit(
-        uint24 accountID,
         uint16 tokenID,
         uint96 amount
         )
         external
         payable
     {
-        Account storage account = getAccount(accountID);
+        Account storage account = getAccount(getAccountID());
         updateAccount(
-            accountID,
             account.publicKeyX,
             account.publicKeyY,
             tokenID,
@@ -432,7 +453,6 @@ contract Exchange is IExchange, NoDefaultFunc
     }
 
     function updateAccount(
-        uint24 accountID,
         uint publicKeyX,
         uint publicKeyY,
         uint16 tokenID,
@@ -444,6 +464,7 @@ contract Exchange is IExchange, NoDefaultFunc
         // Realm cannot be in withdraw mode
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
 
+        uint24 accountID = getAccountID();
         Account storage account = getAccount(accountID);
 
         // Update account info
@@ -518,8 +539,8 @@ contract Exchange is IExchange, NoDefaultFunc
         );
     }
 
-    function requestWithdraw(
-        uint24 accountID,
+    // Set the large value for amount to withdraw the complete balance
+    function withdraw(
         uint16 tokenID,
         uint96 amount
         )
@@ -533,7 +554,9 @@ contract Exchange is IExchange, NoDefaultFunc
         // Check expected ETH value sent
         require(msg.value == withdrawFee, "INVALID_VALUE");
 
+        uint24 accountID = getAccountID();
         Account storage account = getAccount(accountID);
+
         // Allow anyone to withdraw from fee accounts
         if (!isFeeRecipientAccount(account)) {
             require(account.owner == msg.sender, "UNAUTHORIZED");
@@ -576,9 +599,8 @@ contract Exchange is IExchange, NoDefaultFunc
         );
     }
 
-    function withdraw(
-        uint blockIdx,
-        uint slotIdx
+    function distributeWithdrawals(
+        uint blockIdx
         )
         external
     {
@@ -588,36 +610,11 @@ contract Exchange is IExchange, NoDefaultFunc
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
-        // Get the withdraw data of the given slot
-        // TODO: optimize
-        bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 4 + 32 + 32 + 3 + 32 + (3 + 2 + 12) * (slotIdx + 1);
-        require(offset < withdrawals.length + 32, "INVALID_BLOCK_IDX");
-        uint data;
-        assembly {
-            data := mload(add(withdrawals, offset))
-        }
-
-        // Extract the data
-        uint24 accountID = uint24((data / 0x10000000000000000000000000000) & 0xFFFFFF);
-        uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
-        uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
-
-        Account storage account = getAccount(accountID);
-
-        if (amount > 0) {
-            // Set the amount to 0 so it cannot be withdrawn anymore
-            data = data & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000;
-            assembly {
-                mstore(add(withdrawals, offset), data)
-            }
-            withdrawBlock.withdrawals = withdrawals;
-
-            // Transfer the tokens
-            withdrawAndBurn(account.owner, tokenID, amount, isFeeRecipientAccount(account));
-        }
-
-        emit Withdraw(accountID, tokenID, account.owner, uint96(amount));
+        // TODO: Check if transfers still need to be done + do all tranfers + update necessary state
+        //       Make sure to zero out this data when done, this will not only make sure it cannot be withdrawn again
+        //       it will also save on gas for the operator because he will get a rebate for reverting storage data to 0
+        // Maybe we can even allow doing the withdrawals in parts so we don't have a single very large transaction?
+        // We should allow the transfer to fail in here, in that case the user could maybe retry manually later?
     }
 
     function withdrawAndBurn(
@@ -943,7 +940,6 @@ contract Exchange is IExchange, NoDefaultFunc
     }
 
     function withdrawFromMerkleTree(
-        uint24 accountID,
         uint16 tokenID,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
@@ -952,6 +948,30 @@ contract Exchange is IExchange, NoDefaultFunc
         uint256 tradeHistoryRoot
         )
         external
+        returns (bool)
+    {
+        return withdrawFromMerkleTreeForAccount(
+            getAccountID(),
+            tokenID,
+            accountPath,
+            balancePath,
+            nonce,
+            balance,
+            tradeHistoryRoot
+        );
+    }
+
+    // We still alow anyone to withdraw these funds for the account owner
+    function withdrawFromMerkleTreeForAccount(
+        uint24 accountID,
+        uint16 tokenID,
+        uint256[24] memory accountPath,
+        uint256[12] memory balancePath,
+        uint32 nonce,
+        uint96 balance,
+        uint256 tradeHistoryRoot
+        )
+        public
         returns (bool)
     {
         require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
@@ -1043,6 +1063,55 @@ contract Exchange is IExchange, NoDefaultFunc
         // Transfer the tokens
         Account storage account = getAccount(pendingDeposit.accountID);
         withdrawAndBurn(account.owner, pendingDeposit.tokenID, amount, isFeeRecipientAccount(account));
+    }
+
+    function withdrawFromApprovedWithdrawal(
+        uint blockIdx,
+        uint slotIdx
+        )
+        external
+    {
+        // TODO: special case if slotIdx == 0 to search in byte array
+        //       (maybe not needed anymore with automatic transferring in normal cases)
+
+        require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
+
+        require(blockIdx < blocks.length, "INVALID_BLOCK_IDX");
+        Block storage withdrawBlock = blocks[blockIdx];
+
+        // Only allow withdrawing on finalized blocks
+        require(withdrawBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+
+        // Get the withdraw data of the given slot
+        // TODO: optimize
+        bytes memory withdrawals = withdrawBlock.withdrawals;
+        uint offset = 4 + 32 + 32 + 3 + 32 + (3 + 2 + 12) * (slotIdx + 1);
+        require(offset < withdrawals.length + 32, "INVALID_SLOT_IDX");
+        uint data;
+        assembly {
+            data := mload(add(withdrawals, offset))
+        }
+
+        // Extract the data
+        uint24 accountID = uint24((data / 0x10000000000000000000000000000) & 0xFFFFFF);
+        uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
+        uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
+
+        Account storage account = getAccount(accountID);
+
+        if (amount > 0) {
+            // Set the amount to 0 so it cannot be withdrawn anymore
+            data = data & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000;
+            assembly {
+                mstore(add(withdrawals, offset), data)
+            }
+            withdrawBlock.withdrawals = withdrawals;
+
+            // Transfer the tokens
+            withdrawAndBurn(account.owner, tokenID, amount, isFeeRecipientAccount(account));
+        }
+
+        emit Withdraw(accountID, tokenID, account.owner, uint96(amount));
     }
 
     function registerToken(
