@@ -16,16 +16,15 @@
 */
 pragma solidity 0.5.2;
 
-import "../../iface/exchange/ICapability3StakeQuery.sol";
+import "../../iface/exchange/IStakeQuery.sol";
 
-import "./Capability2TokenRegistration.sol";
+import "./TokenRegistration.sol";
 
 /// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Capability3StakeQuery is ICapability3StakeQuery, Capability2TokenRegistration
+contract StakeQuery is IStakeQuery, TokenRegistration
 {
-
     function getStake()
         external
         view

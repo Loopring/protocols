@@ -16,13 +16,13 @@
 */
 pragma solidity 0.5.2;
 
-import "../../iface/exchange/ICapability2TokenRegistration.sol";
-import "./Capability1BlockManagement.sol";
+import "../../iface/exchange/ITokenRegistration.sol";
+import "./BlockManagement.sol";
 
 /// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Capability2TokenRegistration is ICapability2TokenRegistration, Capability1BlockManagement
+contract TokenRegistration is ITokenRegistration, BlockManagement
 {
     function registerToken(
         address token
@@ -31,7 +31,7 @@ contract Capability2TokenRegistration is ICapability2TokenRegistration, Capabili
         // onlyOwner
         returns (uint16 tokenId)
     {
-        require(tokenToTokenId[token] == 0, "ALREADY_EXIST");
+        require(tokenToTokenId[token] == 0, "TOKEN_ALREADY_EXIST");
         require(numTokensRegistered < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
         tokenId = numTokensRegistered + 1;
@@ -45,4 +45,26 @@ contract Capability2TokenRegistration is ICapability2TokenRegistration, Capabili
             tokenId
         );
     }
+
+    function getTokenID(
+        address tokenAddress
+        )
+        public
+        view
+        returns (uint16)
+    {
+        require(tokenToTokenId[tokenAddress] != 0, "TOKEN_NOT_FOUND");
+        return tokenToTokenId[tokenAddress] - 1;
+    }
+
+    function getTokenAddress(
+        uint16 tokenID
+        )
+        public
+        view
+        returns (address)
+    {
+        return tokenIdToToken[tokenID + 1];
+    }
+
 }
