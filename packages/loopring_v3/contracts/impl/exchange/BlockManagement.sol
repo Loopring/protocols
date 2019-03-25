@@ -520,6 +520,17 @@ contract BlockManagement is IBlockManagement, AccountManagement
 
         uint32 numDepositBlocksCommitted = currentBlock.numDepositBlocksCommitted;
         uint32 numWithdrawBlocksCommitted = currentBlock.numWithdrawBlocksCommitted;
+
+        // TODO: double check this logic
+        // Check if the operator is forced to commit a deposit or withdraw block
+        // We give priority to withdrawals. If a withdraw block is forced it needs to
+        // be processed first, even if there is also a deposit block forced.
+        if (blockType != uint(BlockType.ONCHAIN_WITHDRAW) && isWithdrawBlockForced(numWithdrawBlocksCommitted)) {
+            revert("BLOCK_COMMIT_FORCED");
+        } else if (blockType != uint(BlockType.DEPOSIT) && isDepositBlockForced(numDepositBlocksCommitted)) {
+            revert("BLOCK_COMMIT_FORCED");
+        }
+
         if (blockType == uint(BlockType.SETTLEMENT)) {
             uint32 inputTimestamp;
             assembly {
@@ -580,10 +591,6 @@ contract BlockManagement is IBlockManagement, AccountManagement
             }
             numWithdrawBlocksCommitted++;
         }
-
-        // Check if we need to commit a deposit or withdraw block
-        require(!isWithdrawBlockForced(numWithdrawBlocksCommitted), "BLOCK_COMMIT_FORCED");
-        require(!isDepositBlockForced(numDepositBlocksCommitted), "BLOCK_COMMIT_FORCED");
 
         bytes32 publicDataHash = sha256(data);
 
