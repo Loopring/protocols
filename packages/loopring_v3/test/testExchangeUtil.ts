@@ -113,11 +113,8 @@ export class ExchangeTestUtil {
     await this.createExchange(
       this.testContext.deployer,
       true,
-      5,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether")),
-      new BN(web3.utils.toWei("0.01", "ether")),
-      false,
     );
 
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
@@ -182,9 +179,8 @@ export class ExchangeTestUtil {
                                             lrcAddress, balance);
 
     // Make an account to receive fees
-    const keyPairF = this.getKeyPairEDDSA();
     const feeRecipientDeposit = await this.deposit(realmID, feeRecipient,
-                                                   keyPairF.secretKey, keyPairF.publicKeyX, keyPairF.publicKeyY,
+                                                   "0", "0", "0",
                                                    lrcAddress, new BN(0));
 
     return [minerDeposit.accountID, feeRecipientDeposit.accountID];
@@ -1170,11 +1166,8 @@ export class ExchangeTestUtil {
   public async createExchange(
       owner: string,
       bSetupTestState: boolean = true,
-      numOperators: number = 1,
-      depositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
-      withdrawFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
-      maxWithdrawFeeInETH: BN = new BN(web3.utils.toWei("0.001", "ether")),
-      closedOperatorRegistering: boolean = false,
+      minDepositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
+      minWithdrawFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
     ) {
 
     const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
@@ -1194,7 +1187,7 @@ export class ExchangeTestUtil {
       return [eventObj.args.exchangeAddress];
     });
     const exchangeAddress = items[0][0];
-    const realmID = 0;
+    const realmID = 1;
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
 

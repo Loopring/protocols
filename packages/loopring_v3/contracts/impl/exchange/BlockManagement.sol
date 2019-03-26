@@ -498,11 +498,13 @@ contract BlockManagement is IBlockManagement, AccountManagement
         internal
     {
         // Extract the exchange ID from the data
-        /*uint32 exchangeIdInData = 0;
+        uint32 exchangeIdInData = 0;
         assembly {
             exchangeIdInData := and(mload(add(data, 4)), 0xFFFFFFFF)
         }
-        require(exchangeIdInData == id, "INVALID_ID");*/
+        require(exchangeIdInData == id, "INVALID_ID");
+
+        // TODO: Check if this exchange has a minimal amount of LRC staked?
 
         // Exchange cannot be in withdraw mode
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");

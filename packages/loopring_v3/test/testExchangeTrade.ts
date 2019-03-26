@@ -7,18 +7,19 @@ contract("Exchange", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
 
+  let realmID = 0;
   const zeroAddress = "0x" + "00".repeat(20);
 
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+    realmID = 1;
   });
 
   describe("Trade", function() {
     this.timeout(0);
 
-    it.only("Perfect match", async () => {
-      const realmID = 0;
+    it("Perfect match", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -54,7 +55,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Matchable (orderA < orderB)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -90,7 +90,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Matchable (orderA > orderB)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -126,7 +125,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("No funds available", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -161,7 +159,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("No fee funds available", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -196,7 +193,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Insufficient fee funds available", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -235,7 +231,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("tokenF == tokenS (sufficient funds)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -273,7 +268,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("tokenF == tokenS (insufficient funds)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -311,7 +305,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("tokenF == tokenB (amountF <= amountB)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -348,7 +341,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("tokenF == tokenB (amountF > amountB)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -385,7 +377,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("orderA.wallet == orderB.wallet", async () => {
-      const realmID = 0;
       const wallet = exchangeTestUtil.wallets[realmID][0];
       const ring: RingInfo = {
         orderA:
@@ -422,7 +413,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("WalletSplitPercentage == 0", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -458,7 +448,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("WalletSplitPercentage == 100", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -494,7 +483,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("allOrNone (successful)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -529,7 +517,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("allOrNone (unsuccessful)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -565,7 +552,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("waiveFeePercentage == 100", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -601,7 +587,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Self-trading (same tokenF, sufficient balance)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -645,7 +630,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Self-trading (same tokenF, insufficient balance)", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -689,7 +673,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("selling token with decimals == 0", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -725,7 +708,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("fillAmountB rounding error > 1%", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -762,7 +744,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("fillAmountB is 0 because of rounding error", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -799,24 +780,21 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Separate state", async () => {
-      const realmID = await exchangeTestUtil.createExchange(
+      const differentRealmID = await exchangeTestUtil.createExchange(
         exchangeTestUtil.testContext.stateOwners[1],
         true,
-        1,
         new BN(web3.utils.toWei("0.0001", "ether")),
         new BN(web3.utils.toWei("0.0001", "ether")),
-        new BN(web3.utils.toWei("0.001", "ether")),
-        false,
       );
       const [minerAccountID, feeRecipientAccountID] = await exchangeTestUtil.createRingMatcher(
-        realmID,
+        differentRealmID,
         exchangeTestUtil.testContext.ringMatchers[1],
         exchangeTestUtil.testContext.feeRecipients[1],
       );
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
+            differentRealmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -825,7 +803,7 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
+            differentRealmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -850,7 +828,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("tokenS/tokenB mismatch", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -885,7 +862,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Unmatchable", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -922,7 +898,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("validUntil < now", async () => {
-      const realmID = 0;
       const ring: RingInfo = {
         orderA:
           {
@@ -959,7 +934,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("validSince > now", async () => {
-      const realmID = 0;
+
       const ring: RingInfo = {
         orderA:
           {
@@ -996,7 +971,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Multiple rings", async () => {
-      const realmID = 0;
       const ringA: RingInfo = {
         orderA:
           {
@@ -1058,8 +1032,6 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Order filled in multiple rings", async () => {
-      const realmID = 0;
-
       const order: OrderInfo = {
         realmID,
         tokenS: "ETH",
