@@ -64,6 +64,9 @@ contract IBlockManagement is IAccountManagement
     uint32  public constant MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED           = /*15 minutes*/ 1 days;     // TESTING
     uint32  public constant MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE          = 1 days;
 
+    uint32  public constant MAX_AGE_REQUEST_UNTIL_FORCED                 = /*15 minutes*/ 1 days;     // TESTING
+    uint32  public constant MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE           = 1 days;
+
     uint16  public constant NUM_DEPOSITS_IN_BLOCK                        = 8;
     uint16  public constant NUM_WITHDRAWALS_IN_BLOCK                     = 8;
 
@@ -81,22 +84,11 @@ contract IBlockManagement is IAccountManagement
 
     // == Private Variables ==
 
-    struct PendingDeposit
+    struct DepositRequest
     {
         uint24 accountID;
         uint16 tokenID;
         uint96 amount;
-    }
-
-    struct DepositBlock
-    {
-        bytes32 hash;
-        PendingDeposit[] pendingDeposits;
-
-        uint16 numDeposits;
-        uint   fee;
-        uint32 timestampOpened;
-        uint32 timestampFilled;
     }
 
     struct WithdrawBlock
@@ -108,17 +100,20 @@ contract IBlockManagement is IAccountManagement
         uint32  timestampFilled;
     }
 
-    uint numDepositBlocks = 1;
-    mapping (uint => DepositBlock) depositBlocks;
+    struct Request
+    {
+        bytes32 accumulatedHash;
+        uint256 accumulatedFee;
+        uint32 timestamp;
+    }
+
+    Request[] depositChain;
+    DepositRequest[] depositRequests;
+
     uint numWithdrawBlocks = 1;
     mapping (uint => WithdrawBlock) withdrawBlocks;
 
     // == Private Functions ==
-
-    function isActiveDepositBlockClosed()
-        internal
-        view
-        returns (bool);
 
     function isActiveWithdrawBlockClosed()
         internal
@@ -177,7 +172,7 @@ contract IBlockManagement is IAccountManagement
         returns (uint);
 
     function getNumAvailableDepositSlots()
-        external
+        public
         view
         returns (uint);
 
@@ -214,9 +209,8 @@ contract IBlockManagement is IAccountManagement
         public
         returns (bool);
 
-    function withdrawFromPendingDeposit(
-        uint depositBlockIdx,
-        uint slotIdx
+    function withdrawFromDepositRequest(
+        uint depositRequestIdx
         )
         external
         returns (bool);

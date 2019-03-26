@@ -115,6 +115,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
     {
         // Realm cannot be in withdraw mode
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
+        require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS");
 
         uint24 accountID = getAccountID();
         Account storage account = getAccount(accountID);
@@ -137,19 +138,24 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
             depositFee = msg.value - amount;
         }
 
-        // Get the deposit block
-        DepositBlock storage depositBlock = depositBlocks[numDepositBlocks - 1];
-        if (isActiveDepositBlockClosed()) {
-            numDepositBlocks++;
-            depositBlock = depositBlocks[numDepositBlocks - 1];
-        }
-        if (depositBlock.numDeposits == 0) {
-            depositBlock.timestampOpened = uint32(now);
-        }
-        require(depositBlock.numDeposits < NUM_DEPOSITS_IN_BLOCK, "BLOCK_FULL");
-
-        // Increase the fee for this block
-        depositBlock.fee = depositBlock.fee.add(depositFee);
+        // Add the request to the deposit chain
+        Request storage previousRequest = depositChain[depositChain.length - 1];
+        Request memory request = Request(
+            sha256(
+                abi.encodePacked(
+                    previousRequest.accumulatedHash,
+                    accountID,
+                    publicKeyX,
+                    publicKeyY,
+                    uint24(0),
+                    tokenID,
+                    amount
+                )
+            ),
+            previousRequest.accumulatedFee.add(depositFee),
+            uint32(now)
+        );
+        depositChain.push(request);
 
         // Transfer the tokens from the owner into this contract
         address tokenAddress = getTokenAddress(tokenID);
@@ -164,34 +170,15 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
             );
         }
 
-        // Update the deposit block hash
-        depositBlock.hash = sha256(
-            abi.encodePacked(
-                depositBlock.hash,
-                accountID,
-                publicKeyX,
-                publicKeyY,
-                uint24(0),
-                tokenID,
-                amount
-            )
-        );
-        depositBlock.numDeposits++;
-        if (depositBlock.numDeposits == NUM_DEPOSITS_IN_BLOCK) {
-            depositBlock.timestampFilled = uint32(now);
-        }
-
         // Store deposit info onchain so we can withdraw from uncommitted deposit blocks
-        PendingDeposit memory pendingDeposit = PendingDeposit(
+        DepositRequest memory depositRequest = DepositRequest(
             accountID,
             tokenID,
             amount
         );
-        depositBlock.pendingDeposits.push(pendingDeposit);
-        emit Deposit(
-            uint32(numDepositBlocks - 1), uint16(depositBlock.numDeposits - 1),
-            accountID, tokenID, amount
-        );
+        depositRequests.push(depositRequest);
+
+        emit Deposit(uint32(depositRequests.length - 1), accountID, tokenID, amount);
     }
 
     // Set the large value for amount to withdraw the complete balance

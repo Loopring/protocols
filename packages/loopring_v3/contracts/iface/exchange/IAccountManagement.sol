@@ -24,8 +24,7 @@ contract IAccountManagement
     // == Events ==
 
     event Deposit(
-        uint32 depositBlockIdx,
-        uint16 slotIdx,
+        uint32 depositIdx,
         uint24 accountID,
         uint16 tokenID,
         uint96 amount

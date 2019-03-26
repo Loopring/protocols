@@ -69,6 +69,13 @@ contract Exchange is IExchange, StakeQuery
         );
         blocks.push(genesisBlock);
 
+        Request memory depositRequest = Request(
+            0,
+            0,
+            0xFFFFFFFF
+        );
+        depositChain.push(depositRequest);
+
         createDefaultAccount();
     }
 }

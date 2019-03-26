@@ -62,6 +62,8 @@ export class ExchangeTestUtil {
   private pendingOnchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingCancels: Cancel[][] = [];
 
+  private firstUnprocessedDepositRequest: number[] = [];
+
   private pendingWithdrawals: Withdrawal[] = [];
 
   private pendingBlocks: Block[][] = [];
@@ -434,13 +436,13 @@ export class ExchangeTestUtil {
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "Deposit", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.accountID, eventObj.args.depositBlockIdx, eventObj.args.slotIdx];
+      return [eventObj.args.accountID, eventObj.args.depositIdx];
     });
 
     const depositInfo: DepositInfo = {
       accountID: items[0][0].toNumber(),
       depositBlockIdx: items[0][1].toNumber(),
-      slotIdx: items[0][2].toNumber(),
+      slotIdx: 0,
     };
 
     this.addDeposit(this.pendingDeposits[realmID], depositInfo.depositBlockIdx, depositInfo.accountID,
@@ -672,10 +674,12 @@ export class ExchangeTestUtil {
     for (let i = 0; i < numBlocks; i++) {
       const deposits: Deposit[] = [];
       let isFull = true;
+      let numRequestsProcessed = 0;
       // Get all deposits for the block
       for (let b = i * numDepositsPerBlock; b < (i + 1) * numDepositsPerBlock; b++) {
           if (b < pendingDeposits.length) {
             deposits.push(pendingDeposits[b]);
+            numRequestsProcessed++;
           } else {
             const dummyDeposit: Deposit = {
               depositBlockIdx: deposits[0].depositBlockIdx,
@@ -693,11 +697,11 @@ export class ExchangeTestUtil {
       }
       assert(deposits.length === numDepositsPerBlock);
 
-      let timeToWait = (await this.exchange.MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE()).toNumber();
-      if (!isFull) {
-        timeToWait += (await this.exchange.MAX_TIME_BLOCK_OPEN()).toNumber();
-      }
-      await this.advanceBlockTimestamp(timeToWait);
+      const startIdx = this.firstUnprocessedDepositRequest[realmID];
+      this.firstUnprocessedDepositRequest[realmID] += numRequestsProcessed;
+
+      // console.log("startIdx: " + startIdx);
+      // console.log("numRequestsProcessed: " + numRequestsProcessed);
 
       // Store state before
       const currentBlockIdx = (await this.exchange.getBlockIdx()).toNumber();
@@ -717,6 +721,9 @@ export class ExchangeTestUtil {
       bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
       bs.addNumber(0, 32);
+      bs.addNumber(0, 32);
+      bs.addNumber(startIdx, 4);
+      bs.addNumber(numRequestsProcessed, 4);
 
       // Commit the block
       const operator = await this.getActiveOperator(realmID);
@@ -1188,6 +1195,8 @@ export class ExchangeTestUtil {
     });
     const exchangeAddress = items[0][0];
     const realmID = 1;
+
+    this.firstUnprocessedDepositRequest[realmID] = 1;
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
 
