@@ -116,13 +116,13 @@ contract("Exchange", (accounts: string[]) => {
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
     console.log(token);
-    const burnBalanceBefore = await exchange.burnBalances(token);
+    // const burnBalanceBefore = await exchange.burnBalances(token);
 
-    await exchange.withdraw(realmID, blockIdx, slotIdx);
+    await exchange.withdrawFromApprovedWithdrawal(blockIdx, slotIdx);
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const burnBalanceAfter = await exchange.burnBalances(token);
+    // const burnBalanceAfter = await exchange.burnBalances(token);
 
     let amountToOwner = expectedAmount;
     let amountToBurn = new BN(0);
@@ -136,8 +136,8 @@ contract("Exchange", (accounts: string[]) => {
            "Token balance of owner should be increased by amountToOwner");
     assert(balanceContractBefore.eq(balanceContractAfter.add(amountToOwner)),
            "Token balance of contract should be decreased by amountToOwner");
-    assert(burnBalanceAfter.eq(burnBalanceBefore.add(amountToBurn)),
-           "burnBalance should be increased by amountToBurn");
+    /*assert(burnBalanceAfter.eq(burnBalanceBefore.add(amountToBurn)),
+           "burnBalance should be increased by amountToBurn");*/
 
     // Get the Withdraw event
     const eventArr: any = await exchangeTestUtil.getEventsFromContract(exchange, "Withdraw", web3.eth.blockNumber);
@@ -421,7 +421,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Withdraw (normal account)", async () => {
-      const realmID = 0;
+      const realmID = 1;
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
@@ -449,23 +449,23 @@ contract("Exchange", (accounts: string[]) => {
       const witdrawalRequestA = await exchangeTestUtil.requestWithdrawalOnchain(
         realmID, depositInfoA.accountID, tokenA, toWithdrawA, ownerA,
       );
-      const witdrawalRequestB = await exchangeTestUtil.requestWithdrawalOnchain(
+      /*const witdrawalRequestB = await exchangeTestUtil.requestWithdrawalOnchain(
         realmID, depositInfoB.accountID, tokenB, toWithdrawB, ownerB,
-      );
+      );*/
 
       // Try to withdraw before the block is committed
-      const nextBlockIdx = (await exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber() + 1;
-      await expectThrow(
-        exchange.withdraw(realmID, nextBlockIdx, witdrawalRequestA.slotIdx),
+      const nextBlockIdx1 = (await exchange.getBlockIdx()).toNumber() + 1;
+      /*await expectThrow(
+        exchange.withdrawFromApprovedWithdrawal(nextBlockIdx, witdrawalRequestA.slotIdx),
         "INVALID_BLOCKIDX",
-      );
+      );*/
 
       // Commit the deposit
       await exchangeTestUtil.commitOnchainWithdrawalRequests(realmID);
 
       // Try to withdraw before the block is finalized
       await expectThrow(
-        exchange.withdraw(realmID, nextBlockIdx, witdrawalRequestB.slotIdx),
+        exchange.withdrawFromApprovedWithdrawal(nextBlockIdx1, 0),
         "BLOCK_NOT_FINALIZED",
       );
 
@@ -473,12 +473,37 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       // Withdraw
-      await withdrawChecked(realmID, nextBlockIdx, witdrawalRequestB.slotIdx,
-                            depositInfoB.accountID, tokenIDB,
-                            ownerB, tokenB, balanceB);
-      await withdrawChecked(realmID, nextBlockIdx, witdrawalRequestA.slotIdx,
+      await withdrawChecked(realmID, nextBlockIdx1, witdrawalRequestA.slotIdx,
                             depositInfoA.accountID, tokenIDA,
                             ownerA, tokenA, toWithdrawA);
+
+      const witdrawalRequestB = await exchangeTestUtil.requestWithdrawalOnchain(
+        realmID, depositInfoB.accountID, tokenB, toWithdrawB, ownerB,
+      );
+
+      // Try to withdraw before the block is committed
+      const nextBlockIdx2 = (await exchange.getBlockIdx()).toNumber() + 1;
+      /*await expectThrow(
+        exchange.withdrawFromApprovedWithdrawal(nextBlockIdx, witdrawalRequestA.slotIdx),
+        "INVALID_BLOCKIDX",
+      );*/
+
+      // Commit the deposit
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(realmID);
+
+      // Try to withdraw before the block is finalized
+      await expectThrow(
+        exchange.withdrawFromApprovedWithdrawal(nextBlockIdx2, 0),
+        "BLOCK_NOT_FINALIZED",
+      );
+
+      // Verify the block
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+
+      // Withdraw
+      await withdrawChecked(realmID, nextBlockIdx2, witdrawalRequestB.slotIdx,
+                            depositInfoB.accountID, tokenIDB,
+                            ownerB, tokenB, balanceB);
     });
 
     it("Withdraw (wallet account)", async () => {

@@ -371,9 +371,12 @@ public:
     VariableT constant0;
     VariableT nonce;
 
-    libsnark::dual_variable_gadget<FieldT> withdrawalBlockHashStart;
+    VariableArrayT withdrawalBlockHashStart;
     std::vector<VariableArrayT> withdrawalDataBits;
     std::vector<sha256_many> hashers;
+
+    libsnark::dual_variable_gadget<FieldT> startIndex;
+    libsnark::dual_variable_gadget<FieldT> count;
 
     const jubjub::VariablePointT publicKey;
     libsnark::dual_variable_gadget<FieldT> operatorAccountID;
@@ -399,7 +402,10 @@ public:
         nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
         balancesRoot_before(make_variable(pb, 0, FMT(prefix, ".balancesRoot_before"))),
 
-        withdrawalBlockHashStart(pb, 256, FMT(prefix, ".withdrawalBlockHashStart"))
+        withdrawalBlockHashStart(make_var_array(pb, 256, FMT(prefix, ".withdrawalBlockHashStart"))),
+
+        startIndex(pb, 32, FMT(prefix, ".startIndex")),
+        count(pb, 32, FMT(prefix, ".count"))
     {
 
     }
@@ -435,7 +441,7 @@ public:
 
             if (onchain)
             {
-                VariableArrayT withdrawalBlockHash = (j == 0) ? withdrawalBlockHashStart.bits : hashers.back().result().bits;
+                VariableArrayT withdrawalBlockHash = (j == 0) ? withdrawalBlockHashStart : hashers.back().result().bits;
 
                 // Hash data from deposit
                 std::vector<VariableArrayT> withdrawalData = withdrawals.back().getOnchainData();
@@ -453,11 +459,17 @@ public:
         if (onchain)
         {
              // Add the block hash
+            publicData.add(flattenReverse({withdrawalBlockHashStart}));
             publicData.add(flattenReverse({hashers.back().result().bits}));
+            publicData.add(startIndex.bits);
+            publicData.add(count.bits);
         }
         else
         {
-            publicData.add(withdrawalBlockHashStart.bits);
+            publicData.add(withdrawalBlockHashStart);
+            publicData.add(withdrawalBlockHashStart);
+            publicData.add(startIndex.bits);
+            publicData.add(count.bits);
 
             updateAccount_O = new UpdateAccountGadget(pb, withdrawals.back().getNewAccountsRoot(), operatorAccountID.bits,
                 {publicKey.x, publicKey.y, constant0, nonce, balancesRoot_before},
@@ -512,8 +524,18 @@ public:
 
         pb.val(balancesRoot_before) = context.accountUpdate_O.before.balancesRoot;
 
-        withdrawalBlockHashStart.bits.fill_with_bits_of_field_element(pb, 0);
-        withdrawalBlockHashStart.generate_r1cs_witness_from_bits();
+        // Store the starting hash
+        for (unsigned int i = 0; i < 256; i++)
+        {
+            pb.val(withdrawalBlockHashStart[255 - i]) = context.startHash.test_bit(i);
+        }
+        // printBits("start hash input: 0x", depositBlockHashStart.get_bits(pb), true);
+
+        startIndex.bits.fill_with_bits_of_field_element(pb, context.startIndex);
+        startIndex.generate_r1cs_witness_from_bits();
+
+        count.bits.fill_with_bits_of_field_element(pb, context.count);
+        count.generate_r1cs_witness_from_bits();
 
         for(unsigned int i = 0; i < context.withdrawals.size(); i++)
         {

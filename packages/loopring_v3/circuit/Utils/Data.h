@@ -476,6 +476,11 @@ public:
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
 
+    libff::bigint<libff::alt_bn128_r_limbs> startHash;
+
+    ethsnarks::FieldT startIndex;
+    ethsnarks::FieldT count;
+
     std::vector<Loopring::Deposit> deposits;
 };
 
@@ -485,6 +490,11 @@ void from_json(const json& j, DepositContext& context)
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+
+    context.startHash = libff::bigint<libff::alt_bn128_r_limbs>(j["startHash"].get<std::string>().c_str());
+
+    context.startIndex = ethsnarks::FieldT(j["startIndex"].get<std::string>().c_str());
+    context.count = ethsnarks::FieldT(j["count"].get<std::string>().c_str());
 
     // Read deposits
     json jDeposits = j["deposits"];
@@ -542,6 +552,11 @@ public:
     ethsnarks::FieldT merkleRootBefore;
     ethsnarks::FieldT merkleRootAfter;
 
+    libff::bigint<libff::alt_bn128_r_limbs> startHash;
+
+    ethsnarks::FieldT startIndex;
+    ethsnarks::FieldT count;
+
     ethsnarks::FieldT operatorAccountID;
     AccountUpdate accountUpdate_O;
 
@@ -554,6 +569,11 @@ void from_json(const json& j, WithdrawContext& context)
 
     context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
     context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+
+    context.startHash = libff::bigint<libff::alt_bn128_r_limbs>(j["startHash"].get<std::string>().c_str());
+
+    context.startIndex = ethsnarks::FieldT(j["startIndex"].get<std::string>().c_str());
+    context.count = ethsnarks::FieldT(j["count"].get<std::string>().c_str());
 
     context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
     context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();

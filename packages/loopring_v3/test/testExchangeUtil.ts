@@ -10,14 +10,14 @@ import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DepositInfo, DetailedTokenTransfer,
+import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer,
          Operator, OrderInfo, Realm, RingBlock, RingInfo, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
   if (name === "balance" || name === "amountS" || name === "amountB" || name === "amountF" ||
-      name === "amount" || name === "fee") {
+      name === "amount" || name === "fee" || name === "startHash") {
     return new BN(val, 16).toString(10);
   } else {
     return val;
@@ -45,7 +45,7 @@ export class ExchangeTestUtil {
   public wallets: Wallet[][] = [];
 
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
-  public MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE: number;
+  public MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE: number;
   public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
 
@@ -61,8 +61,6 @@ export class ExchangeTestUtil {
   private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingOnchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingCancels: Cancel[][] = [];
-
-  private firstUnprocessedDepositRequest: number[] = [];
 
   private pendingWithdrawals: Withdrawal[] = [];
 
@@ -120,7 +118,7 @@ export class ExchangeTestUtil {
     );
 
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
-    this.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE = (await this.exchange.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE()).toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE = (await this.exchange.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE()).toNumber();
     this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
   }
@@ -488,7 +486,6 @@ export class ExchangeTestUtil {
 
     // Submit the withdraw request
     const tx = await this.exchange.withdraw(
-      web3.utils.toBN(accountID),
       web3.utils.toBN(tokenID),
       web3.utils.toBN(amount),
       {from: owner, value: withdrawFee},
@@ -497,10 +494,10 @@ export class ExchangeTestUtil {
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawRequest", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.withdrawBlockIdx, eventObj.args.slotIdx];
+      return [eventObj.args.requestIdx];
     });
     const withdrawBlockIdx = items[0][0].toNumber();
-    const slotIdx = items[0][1].toNumber();
+    const slotIdx = 0;
 
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
                               accountID, tokenID, amount, 0, tokenID, new BN(0), 0, withdrawBlockIdx, slotIdx);
@@ -675,6 +672,7 @@ export class ExchangeTestUtil {
       const deposits: Deposit[] = [];
       let isFull = true;
       let numRequestsProcessed = 0;
+
       // Get all deposits for the block
       for (let b = i * numDepositsPerBlock; b < (i + 1) * numDepositsPerBlock; b++) {
           if (b < pendingDeposits.length) {
@@ -697,17 +695,24 @@ export class ExchangeTestUtil {
       }
       assert(deposits.length === numDepositsPerBlock);
 
-      const startIdx = this.firstUnprocessedDepositRequest[realmID];
-      this.firstUnprocessedDepositRequest[realmID] += numRequestsProcessed;
-
-      // console.log("startIdx: " + startIdx);
+      const startIndex = (await this.exchange.getLastUnprocessedDepositRequestIndex()).toNumber();
+      // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
+      const requestData = await this.exchange.getDepositRequestInfo(startIndex - 1);
+      // console.log(requestData);
+
+      const depositBlock: DepositBlock = {
+        startHash: new BN(requestData.accumulatedHash.slice(2), 16),
+        deposits,
+        startIndex,
+        count: numRequestsProcessed,
+      };
 
       // Store state before
       const currentBlockIdx = (await this.exchange.getBlockIdx()).toNumber();
       const stateBefore = await this.loadRealm(realmID, currentBlockIdx);
 
-      const [blockIdx, blockFilename] = await this.createBlock(realmID, 1, JSON.stringify(deposits, replacer, 4));
+      const [blockIdx, blockFilename] = await this.createBlock(realmID, 1, JSON.stringify(depositBlock, replacer, 4));
 
       // Store state after
       const stateAfter = await this.loadRealm(realmID, currentBlockIdx + 1);
@@ -722,7 +727,7 @@ export class ExchangeTestUtil {
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
       bs.addNumber(0, 32);
       bs.addNumber(0, 32);
-      bs.addNumber(startIdx, 4);
+      bs.addNumber(startIndex, 4);
       bs.addNumber(numRequestsProcessed, 4);
 
       // Commit the block
@@ -817,11 +822,12 @@ export class ExchangeTestUtil {
     const numBlocks = Math.floor((pendingWithdrawals.length + numWithdrawsPerBlock - 1) / numWithdrawsPerBlock);
     for (let i = 0; i < numBlocks; i++) {
       const withdrawalRequests: WithdrawalRequest[] = [];
-      let isFull = true;
+      let numRequestsProcessed = 0;
       // Get all withdrawals for the block
       for (let b = i * numWithdrawsPerBlock; b < (i + 1) * numWithdrawsPerBlock; b++) {
         if (b < pendingWithdrawals.length) {
           withdrawalRequests.push(pendingWithdrawals[b]);
+          numRequestsProcessed++;
         } else {
           const dummyWithdrawalRequest: WithdrawalRequest = {
             accountID: 0,
@@ -833,27 +839,27 @@ export class ExchangeTestUtil {
             walletSplitPercentage: 0,
           };
           withdrawalRequests.push(dummyWithdrawalRequest);
-          isFull = false;
         }
       }
       assert(withdrawalRequests.length === numWithdrawsPerBlock);
+
+      const startIndex = (await this.exchange.getLastUnprocessedWithdrawRequestIndex()).toNumber();
+      // console.log("startIndex: " + startIndex);
+      // console.log("numRequestsProcessed: " + numRequestsProcessed);
+      const requestData = await this.exchange.getWithdrawRequestInfo(startIndex - 1);
+      // console.log(requestData);
 
       const operator = await this.getActiveOperator(realmID);
       const withdrawalBlock: WithdrawBlock = {
         withdrawals: withdrawalRequests,
         operatorAccountID: operator.accountID,
+        startHash: onchain ? new BN(requestData.accumulatedHash.slice(2), 16) : new BN(0),
+        startIndex: onchain ? startIndex : 0,
+        count: onchain ? numRequestsProcessed : 0,
       };
 
-      if (onchain) {
-        let timeToWait = (await this.exchange.MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE()).toNumber();
-        if (!isFull) {
-          timeToWait += (await this.exchange.MAX_TIME_BLOCK_OPEN()).toNumber();
-        }
-        await this.advanceBlockTimestamp(timeToWait);
-      }
-
       // Store state before
-      const currentBlockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+      const currentBlockIdx = (await this.exchange.getBlockIdx()).toNumber();
       const stateBefore = await this.loadRealm(realmID, currentBlockIdx);
 
       const jWithdrawalsInfo = JSON.stringify(withdrawalBlock, replacer, 4);
@@ -872,6 +878,9 @@ export class ExchangeTestUtil {
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
       bs.addNumber(block.operatorAccountID, 3);
       bs.addNumber(0, 32);
+      bs.addNumber(0, 32);
+      bs.addNumber(startIndex, 4);
+      bs.addNumber(numRequestsProcessed, 4);
       for (const withdrawal of block.withdrawals) {
         bs.addNumber(withdrawal.accountID, 3);
         bs.addNumber(withdrawal.tokenID, 2);
@@ -1195,8 +1204,6 @@ export class ExchangeTestUtil {
     });
     const exchangeAddress = items[0][0];
     const realmID = 1;
-
-    this.firstUnprocessedDepositRequest[realmID] = 1;
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
 

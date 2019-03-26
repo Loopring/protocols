@@ -57,13 +57,6 @@ contract IBlockManagement is IAccountManagement
 
     uint32  public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS         = 1 hours;
 
-    uint32  public constant MIN_TIME_BLOCK_OPEN                          = 1  minutes;
-    uint32  public constant MAX_TIME_BLOCK_OPEN                          = 15 minutes;
-    uint32  public constant MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE      = 2  minutes;
-
-    uint32  public constant MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED           = /*15 minutes*/ 1 days;     // TESTING
-    uint32  public constant MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE          = 1 days;
-
     uint32  public constant MAX_AGE_REQUEST_UNTIL_FORCED                 = /*15 minutes*/ 1 days;     // TESTING
     uint32  public constant MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE           = 1 days;
 
@@ -91,15 +84,6 @@ contract IBlockManagement is IAccountManagement
         uint96 amount;
     }
 
-    struct WithdrawBlock
-    {
-        bytes32 hash;
-        uint    numWithdrawals;
-        uint    fee;
-        uint32  timestampOpened;
-        uint32  timestampFilled;
-    }
-
     struct Request
     {
         bytes32 accumulatedHash;
@@ -110,15 +94,7 @@ contract IBlockManagement is IAccountManagement
     Request[] depositChain;
     DepositRequest[] depositRequests;
 
-    uint numWithdrawBlocks = 1;
-    mapping (uint => WithdrawBlock) withdrawBlocks;
-
-    // == Private Functions ==
-
-    function isActiveWithdrawBlockClosed()
-        internal
-        view
-        returns (bool);
+    Request[] withdrawChain;
 
     // == Public Functions ==
 
@@ -164,7 +140,7 @@ contract IBlockManagement is IAccountManagement
         uint32 blockIdx
         )
         external
-        returns (bool);
+        returns (uint feeAmount);
 
     function getBlockIdx()
         external
@@ -177,7 +153,7 @@ contract IBlockManagement is IAccountManagement
         returns (uint);
 
     function getNumAvailableWithdrawSlots()
-        external
+        public
         view
         returns (uint);
 
@@ -224,4 +200,38 @@ contract IBlockManagement is IAccountManagement
     function setOperator(address payable _operator)
         external
         returns (address payable oldOperator);
+
+    function getTotalNumDepositRequests()
+        external
+        view
+        returns (uint);
+
+    function getLastUnprocessedDepositRequestIndex()
+        external
+        view
+        returns (uint);
+
+    function getDepositRequestInfo(
+        uint index
+        )
+        external
+        view
+        returns (bytes32 accumulatedHash, uint256 accumulatedFee, uint32 timestamp);
+
+    function getTotalNumWithdrawRequests()
+        external
+        view
+        returns (uint);
+
+    function getLastUnprocessedWithdrawRequestIndex()
+        external
+        view
+        returns (uint);
+
+    function getWithdrawRequestInfo(
+        uint index
+        )
+        external
+        view
+        returns (bytes32 accumulatedHash, uint256 accumulatedFee, uint32 timestamp);
 }

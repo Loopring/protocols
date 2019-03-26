@@ -171,9 +171,12 @@ public:
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
-    libsnark::dual_variable_gadget<FieldT> depositBlockHashStart;
+    VariableArrayT depositBlockHashStart;
     std::vector<VariableArrayT> depositDataBits;
     std::vector<sha256_many> hashers;
+
+    libsnark::dual_variable_gadget<FieldT> startIndex;
+    libsnark::dual_variable_gadget<FieldT> count;
 
     DepositsCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
@@ -185,7 +188,10 @@ public:
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
-        depositBlockHashStart(pb, 256, FMT(prefix, ".depositBlockHashStart"))
+        depositBlockHashStart(make_var_array(pb, 256, FMT(prefix, ".depositBlockHashStart"))),
+
+        startIndex(pb, 32, FMT(prefix, ".startIndex")),
+        count(pb, 32, FMT(prefix, ".count"))
     {
 
     }
@@ -208,13 +214,14 @@ public:
         publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
+        publicData.add(flattenReverse({depositBlockHashStart}));
         for (size_t j = 0; j < numAccounts; j++)
         {
             VariableT depositAccountsRoot = (j == 0) ? merkleRootBefore.packed : deposits.back().getNewAccountsRoot();
             deposits.emplace_back(pb, depositAccountsRoot, std::string("deposit_") + std::to_string(j));
             deposits.back().generate_r1cs_constraints();
 
-            VariableArrayT depositBlockHash = (j == 0) ? depositBlockHashStart.bits : hashers.back().result().bits;
+            VariableArrayT depositBlockHash = (j == 0) ? depositBlockHashStart : hashers.back().result().bits;
 
             // Hash data from deposit
             std::vector<VariableArrayT> depositData = deposits.back().getOnchainData();
@@ -228,6 +235,8 @@ public:
 
         // Add the block hash
         publicData.add(flattenReverse({hashers.back().result().bits}));
+        publicData.add(startIndex.bits);
+        publicData.add(count.bits);
 
         // Check the input hash
         publicDataHash.generate_r1cs_constraints(true);
@@ -252,8 +261,18 @@ public:
         merkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.merkleRootAfter);
         merkleRootAfter.generate_r1cs_witness_from_bits();
 
-        depositBlockHashStart.bits.fill_with_bits_of_field_element(pb, 0);
-        depositBlockHashStart.generate_r1cs_witness_from_bits();
+        // Store the starting hash
+        for (unsigned int i = 0; i < 256; i++)
+        {
+            pb.val(depositBlockHashStart[255 - i]) = context.startHash.test_bit(i);
+        }
+        // printBits("start hash input: 0x", depositBlockHashStart.get_bits(pb), true);
+
+        startIndex.bits.fill_with_bits_of_field_element(pb, context.startIndex);
+        startIndex.generate_r1cs_witness_from_bits();
+
+        count.bits.fill_with_bits_of_field_element(pb, context.count);
+        count.generate_r1cs_witness_from_bits();
 
         for(unsigned int i = 0; i < context.deposits.size(); i++)
         {

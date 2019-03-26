@@ -544,7 +544,7 @@ public:
         fee.generate_r1cs_constraints(true);
         nonce_before.generate_r1cs_constraints(true);
 
-        maxNumWallets_leq_feeRecipientWalletID.generate_r1cs_constraints();
+        // maxNumWallets_leq_feeRecipientWalletID.generate_r1cs_constraints();
 
         orderA.generate_r1cs_constraints();
         orderB.generate_r1cs_constraints();

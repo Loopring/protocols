@@ -74,6 +74,14 @@ export interface Deposit {
   amount: BN;
 }
 
+export interface DepositBlock {
+  deposits: Deposit[];
+
+  startHash: BN;
+  startIndex: number;
+  count: number;
+}
+
 export interface WithdrawalRequest {
   accountID: number;
   tokenID: number;
@@ -98,6 +106,10 @@ export interface WithdrawBlock {
   withdrawals: WithdrawalRequest[];
 
   operatorAccountID?: number;
+
+  startHash: BN;
+  startIndex: number;
+  count: number;
 }
 
 export interface Cancel {

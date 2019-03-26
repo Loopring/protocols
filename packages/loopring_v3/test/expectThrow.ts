@@ -12,5 +12,5 @@ export async function expectThrow(promise: Promise<any>, expectedRevertMessage?:
     }
     return;
   }
-  assert.fail("Expected throw not received");
+  assert.fail("Expected throw not received" + (expectedRevertMessage ? " (" + expectedRevertMessage + ")" : ""));
 }

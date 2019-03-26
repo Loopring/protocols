@@ -38,8 +38,7 @@ contract IAccountManagement
     );
 
     event WithdrawRequest(
-        uint32 withdrawBlockIdx,
-        uint16 slotIdx,
+        uint32 requestIdx,
         uint24 accountID,
         uint16 tokenID,
         uint96 amount

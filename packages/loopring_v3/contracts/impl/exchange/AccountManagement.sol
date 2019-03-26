@@ -115,7 +115,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
     {
         // Realm cannot be in withdraw mode
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
-        require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS");
+        require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint24 accountID = getAccountID();
         Account storage account = getAccount(accountID);
@@ -189,8 +189,9 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         external
         payable
     {
-        // Realm cannot be in withdraw mode
+        // Exchange cannot be in withdraw mode
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
+        require(getNumAvailableWithdrawSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
         require(amount > 0, "INVALID_VALUE");
 
         // Check expected ETH value sent
@@ -204,41 +205,23 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
             require(account.owner == msg.sender, "UNAUTHORIZED");
         }
 
-        // Get the withdraw block
-        WithdrawBlock storage withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
-        if (isActiveWithdrawBlockClosed()) {
-            numWithdrawBlocks++;
-            withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
-        }
-        if (withdrawBlock.numWithdrawals == 0) {
-            withdrawBlock.timestampOpened = uint32(now);
-        }
-        require(withdrawBlock.numWithdrawals < NUM_WITHDRAWALS_IN_BLOCK, "BLOCK_FULL");
-
-        // Increase the fee for this block
-        withdrawBlock.fee = withdrawBlock.fee.add(msg.value);
-
-        // Update the withdraw block hash
-        withdrawBlock.hash = sha256(
-            abi.encodePacked(
-                withdrawBlock.hash,
-                accountID,
-                tokenID,
-                amount
-            )
+        // Add the withdraw to the withdraw chain
+        Request storage previousRequest = withdrawChain[withdrawChain.length - 1];
+        Request memory request = Request(
+            sha256(
+                abi.encodePacked(
+                    previousRequest.accumulatedHash,
+                    accountID,
+                    tokenID,
+                    amount
+                )
+            ),
+            previousRequest.accumulatedFee.add(msg.value),
+            uint32(now)
         );
-        withdrawBlock.numWithdrawals++;
-        if (withdrawBlock.numWithdrawals == NUM_WITHDRAWALS_IN_BLOCK) {
-            withdrawBlock.timestampFilled = uint32(now);
-        }
+        withdrawChain.push(request);
 
-        emit WithdrawRequest(
-            uint32(numWithdrawBlocks - 1),
-            uint16(withdrawBlock.numWithdrawals - 1),
-            accountID,
-            tokenID,
-            amount
-        );
+        emit WithdrawRequest(uint32(depositRequests.length - 1), accountID, tokenID, amount);
     }
 
     // == Internal Functions ==

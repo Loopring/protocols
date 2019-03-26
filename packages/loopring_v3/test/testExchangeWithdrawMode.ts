@@ -57,7 +57,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.requestWithdrawalOnchain(realmID, accountID, token, balance, owner);
 
       // Operator doesn't do anything for a long time
-      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE + 1);
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE + 1);
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
       await withdrawFromMerkleTreeChecked(realmID, accountID, token,
@@ -95,7 +95,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.requestWithdrawalOnchain(realmID, accountID, token, balance, owner);
 
       // Operator doesn't do anything for a long time
-      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE + 1);
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE + 1);
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
       await withdrawFromMerkleTreeChecked(realmID, accountID, token,
@@ -154,7 +154,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Operator doesn't do anything for a long time
-      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE + 1);
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE + 1);
 
       // Try to withdraw a deposit on a non-finalized block
       await expectThrow(

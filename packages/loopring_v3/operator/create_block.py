@@ -107,8 +107,11 @@ def deposit(state, data):
     export = DepositExport()
     export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
+    export.startHash = str(data["startHash"])
+    export.startIndex = str(data["startIndex"])
+    export.count = str(data["count"])
 
-    for depositInfo in data:
+    for depositInfo in data["deposits"]:
         accountID = int(depositInfo["accountID"])
         secretKey = int(depositInfo["secretKey"])
         publicKeyX = int(depositInfo["publicKeyX"])
@@ -129,6 +132,9 @@ def withdraw(onchain, state, data):
     export = WithdrawalExport(onchain)
     export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
+    export.startHash = str(data["startHash"])
+    export.startIndex = str(data["startIndex"])
+    export.count = str(data["count"])
     export.operatorAccountID = int(data["operatorAccountID"])
 
     # Operator payment

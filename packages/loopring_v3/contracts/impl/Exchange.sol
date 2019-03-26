@@ -63,18 +63,20 @@ contract Exchange is IExchange, StakeQuery
             0x0,
             BlockState.FINALIZED,
             uint32(now),
-            0,
-            0,
+            1,
+            1,
+            true,
             new bytes(0)
         );
         blocks.push(genesisBlock);
 
-        Request memory depositRequest = Request(
+        Request memory genesisRequest = Request(
             0,
             0,
             0xFFFFFFFF
         );
-        depositChain.push(depositRequest);
+        depositChain.push(genesisRequest);
+        withdrawChain.push(genesisRequest);
 
         createDefaultAccount();
     }

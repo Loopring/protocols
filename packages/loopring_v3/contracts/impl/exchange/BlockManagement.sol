@@ -60,7 +60,8 @@ contract BlockManagement is IBlockManagement, AccountManagement
 
         uint32 timestamp;
         uint32 numDepositRequestsCommitted;
-        uint32 numWithdrawBlocksCommitted;
+        uint32 numWithdrawRequestsCommitted;
+        bool   blockFeeWithdrawn;
         bytes  withdrawals;
     }
 
@@ -203,7 +204,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
         uint32 blockIdx
         )
         external
-        returns (bool)
+        returns (uint feeAmount)
     {
         // require(msg.sender == exchangeOwner, "UNAUTHORIZED");
         require(blockIdx > 0 && blockIdx < blocks.length, "INVALID_BLOCK_IDX");
@@ -211,26 +212,30 @@ contract BlockManagement is IBlockManagement, AccountManagement
         Block storage previousBlock = blocks[blockIdx - 1];
 
         require(requestedBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        require(requestedBlock.blockFeeWithdrawn == false, "FEE_WITHDRAWN_ALREADY");
 
-        uint fee = 0;
+        feeAmount = 0;
         if(requestedBlock.numDepositRequestsCommitted > previousBlock.numDepositRequestsCommitted) {
-            // TODO
-            // fee = depositBlocks[previousBlock.numDepositBlocksCommitted].fee;
-            // depositBlocks[previousBlock.numDepositBlocksCommitted].fee = 0;
-        } else if (
-            requestedBlock.numWithdrawBlocksCommitted > previousBlock.numWithdrawBlocksCommitted) {
-            fee = withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee;
-            withdrawBlocks[previousBlock.numWithdrawBlocksCommitted].fee = 0;
+            feeAmount = depositChain[requestedBlock.numDepositRequestsCommitted - 1].accumulatedFee.sub(
+                depositChain[previousBlock.numDepositRequestsCommitted - 1].accumulatedFee
+            );
+        } else if(requestedBlock.numWithdrawRequestsCommitted > previousBlock.numWithdrawRequestsCommitted) {
+            feeAmount = withdrawChain[requestedBlock.numWithdrawRequestsCommitted - 1].accumulatedFee.sub(
+                withdrawChain[previousBlock.numWithdrawRequestsCommitted - 1].accumulatedFee
+            );
         } else {
             revert("BLOCK_HAS_NO_OPERATOR_FEE");
         }
-        require(fee == 0, "FEE_WITHDRAWN_ALREADY");
 
-        operator.transfer(fee);
+        // Make sure it can't be withdrawn again
+        requestedBlock.blockFeeWithdrawn = true;
 
-        emit BlockFeeWithdraw(blockIdx, fee);
+        // Transfer the fee to the operator
+        operator.transfer(feeAmount);
 
-        return true;
+        emit BlockFeeWithdraw(blockIdx, feeAmount);
+
+        return feeAmount;
     }
 
     function getBlockIdx()
@@ -251,16 +256,12 @@ contract BlockManagement is IBlockManagement, AccountManagement
     }
 
     function getNumAvailableWithdrawSlots()
-        external
+        public
         view
         returns (uint)
     {
-        if (isActiveWithdrawBlockClosed()) {
-            return NUM_WITHDRAWALS_IN_BLOCK;
-        } else {
-            WithdrawBlock storage withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
-            return NUM_WITHDRAWALS_IN_BLOCK - withdrawBlock.numWithdrawals;
-        }
+        // TODO
+        return 1024;
     }
 
     function isInWithdrawMode()
@@ -268,27 +269,17 @@ contract BlockManagement is IBlockManagement, AccountManagement
         view
         returns (bool)
     {
-        Block storage currentBlock = blocks[blocks.length - 1];
-        WithdrawBlock storage withdrawBlock =
-            withdrawBlocks[currentBlock.numWithdrawBlocksCommitted];
-
         bool enabled = false;
+        Block storage currentBlock = blocks[blocks.length - 1];
         if (currentBlock.numDepositRequestsCommitted < depositChain.length) {
             uint32 requestTimestamp = depositChain[currentBlock.numDepositRequestsCommitted].timestamp;
-            enabled = requestTimestamp < now.sub(MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE);
+            enabled = enabled || (requestTimestamp < now.sub(MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE));
         }
-
-        return enabled || isOnchainBlockTooLate(withdrawBlock.timestampOpened);
-    }
-
-    function isOnchainBlockTooLate(
-        uint timestampOpened
-        )
-        public
-        view
-        returns (bool)
-    {
-        return (timestampOpened != 0 && timestampOpened + MAX_TIME_BLOCK_UNTIL_WITHDRAWALMODE < now);
+        if (currentBlock.numWithdrawRequestsCommitted < withdrawChain.length) {
+            uint32 requestTimestamp = withdrawChain[currentBlock.numWithdrawRequestsCommitted].timestamp;
+            enabled = enabled || (requestTimestamp < now.sub(MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE));
+        }
+        return enabled;
     }
 
     function withdrawFromMerkleTree(
@@ -418,7 +409,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
         // TODO: special case if slotIdx == 0 to search in byte array
         //       (maybe not needed anymore with automatic transferring in normal cases)
 
-        require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
+        // require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
 
         require(blockIdx < blocks.length, "INVALID_BLOCK_IDX");
         Block storage withdrawBlock = blocks[blockIdx];
@@ -429,7 +420,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
         // Get the withdraw data of the given slot
         // TODO: optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 4 + 32 + 32 + 3 + 32 + (3 + 2 + 12) * (slotIdx + 1);
+        uint offset = 4 + 32 + 32 + 3 + 32 + 32 + 4 + 4 + (3 + 2 + 12) * (slotIdx + 1);
         require(offset < withdrawals.length + 32, "INVALID_SLOT_IDX");
         uint data;
         assembly {
@@ -474,6 +465,68 @@ contract BlockManagement is IBlockManagement, AccountManagement
         );
     }
 
+    function getTotalNumDepositRequests()
+        external
+        view
+        returns (uint)
+    {
+        return depositChain.length - 1;
+    }
+
+    function getLastUnprocessedDepositRequestIndex()
+        external
+        view
+        returns (uint)
+    {
+        Block storage currentBlock = blocks[blocks.length - 1];
+        return currentBlock.numDepositRequestsCommitted;
+    }
+
+    function getDepositRequestInfo(
+        uint index
+        )
+        external
+        view
+        returns (bytes32 accumulatedHash, uint256 accumulatedFee, uint32 timestamp)
+    {
+        require(index < depositChain.length, "INVALID_INDEX");
+        Request storage request = depositChain[index];
+        accumulatedHash = request.accumulatedHash;
+        accumulatedFee = request.accumulatedFee;
+        timestamp = request.timestamp;
+    }
+
+    function getTotalNumWithdrawRequests()
+        external
+        view
+        returns (uint)
+    {
+        return withdrawChain.length - 1;
+    }
+
+    function getLastUnprocessedWithdrawRequestIndex()
+        external
+        view
+        returns (uint)
+    {
+        Block storage currentBlock = blocks[blocks.length - 1];
+        return currentBlock.numWithdrawRequestsCommitted;
+    }
+
+    function getWithdrawRequestInfo(
+        uint index
+        )
+        external
+        view
+        returns (bytes32 accumulatedHash, uint256 accumulatedFee, uint32 timestamp)
+    {
+        require(index < withdrawChain.length, "INVALID_INDEX");
+        Request storage request = withdrawChain[index];
+        accumulatedHash = request.accumulatedHash;
+        accumulatedFee = request.accumulatedFee;
+        timestamp = request.timestamp;
+    }
+
     // == Internal Functions ==
 
     modifier onlyOperator()
@@ -512,13 +565,13 @@ contract BlockManagement is IBlockManagement, AccountManagement
         require(merkleRootBefore == currentBlock.merkleRoot, "INVALID_MERKLE_ROOT");
 
         uint32 numDepositRequestsCommitted = currentBlock.numDepositRequestsCommitted;
-        uint32 numWithdrawBlocksCommitted = currentBlock.numWithdrawBlocksCommitted;
+        uint32 numWithdrawRequestsCommitted = currentBlock.numWithdrawRequestsCommitted;
 
         // TODO: double check this logic
         // Check if the operator is forced to commit a deposit or withdraw block
         // We give priority to withdrawals. If a withdraw block is forced it needs to
         // be processed first, even if there is also a deposit block forced.
-        if (blockType != uint(BlockType.ONCHAIN_WITHDRAW) && isWithdrawBlockForced(numWithdrawBlocksCommitted)) {
+        if (blockType != uint(BlockType.ONCHAIN_WITHDRAW) && isWithdrawRequestForced(numWithdrawRequestsCommitted)) {
             revert("BLOCK_COMMIT_FORCED");
         } else if (blockType != uint(BlockType.DEPOSIT) && isDepositRequestForced(numDepositRequestsCommitted)) {
             revert("BLOCK_COMMIT_FORCED");
@@ -541,9 +594,9 @@ contract BlockManagement is IBlockManagement, AccountManagement
                 startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
-            require (startIdx + count <= depositChain.length, "INVALID_DEPOSITREQUEST_RANGE");
-            require (startIdx > 0, "INVALID_DEPOSITREQUEST_RANGE");
+            require (startIdx == numDepositRequestsCommitted, "INVALID_DEPOSITREQUEST_RANGE");
             require (count <= NUM_DEPOSITS_IN_BLOCK, "INVALID_DEPOSITREQUEST_RANGE");
+            require (startIdx + count <= depositChain.length, "INVALID_DEPOSITREQUEST_RANGE");
 
             bytes32 startingHash = depositChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = depositChain[startIdx + count - 1].accumulatedHash;
@@ -567,18 +620,23 @@ contract BlockManagement is IBlockManagement, AccountManagement
             }
             numDepositRequestsCommitted = uint32(startIdx + count);
         } else if (blockType == uint(BlockType.ONCHAIN_WITHDRAW)) {
-            require(
-                isWithdrawBlockCommittable(numWithdrawBlocksCommitted),
-                "CANNOT_COMMIT_BLOCK_YET"
-            );
+            uint startIdx = 0;
+            uint count = 0;
+             assembly {
+                startIdx := and(mload(add(data, 139)), 0xFFFFFFFF)
+                count := and(mload(add(data, 143)), 0xFFFFFFFF)
+            }
+            require (startIdx == numWithdrawRequestsCommitted, "INVALID_WITHDRAWREQUEST_RANGE");
+            require (count <= NUM_WITHDRAWALS_IN_BLOCK, "INVALID_WITHDRAWREQUEST_RANGE");
+            require (startIdx + count <= withdrawChain.length, "INVALID_WITHDRAWREQUEST_RANGE");
 
-            WithdrawBlock storage withdrawBlock = withdrawBlocks[numWithdrawBlocksCommitted];
-            bytes32 withdrawBlockHash = withdrawBlock.hash;
+            bytes32 startingHash = withdrawChain[startIdx - 1].accumulatedHash;
+            bytes32 endingHash = withdrawChain[startIdx + count - 1].accumulatedHash;
             // Pad the block so it's full
-            for (uint i = withdrawBlock.numWithdrawals; i < NUM_WITHDRAWALS_IN_BLOCK; i++) {
-                withdrawBlockHash = sha256(
+            for (uint i = count; i < NUM_WITHDRAWALS_IN_BLOCK; i++) {
+                endingHash = sha256(
                     abi.encodePacked(
-                        withdrawBlockHash,
+                        endingHash,
                         uint24(0),
                         uint16(0),
                         uint96(0)
@@ -586,9 +644,10 @@ contract BlockManagement is IBlockManagement, AccountManagement
                 );
             }
             assembly {
-                mstore(add(data, 103), withdrawBlockHash)
+                mstore(add(data, 103), startingHash)
+                mstore(add(data, 135), endingHash)
             }
-            numWithdrawBlocksCommitted++;
+            numWithdrawRequestsCommitted = uint32(startIdx + count);
         }
 
         bytes32 publicDataHash = sha256(data);
@@ -600,7 +659,8 @@ contract BlockManagement is IBlockManagement, AccountManagement
             BlockState.COMMITTED,
             uint32(now),
             numDepositRequestsCommitted,
-            numWithdrawBlocksCommitted,
+            numWithdrawRequestsCommitted,
+            false,
             (blockType == uint(BlockType.ONCHAIN_WITHDRAW) ||
              blockType == uint(BlockType.OFFCHAIN_WITHDRAW)) ? data : new bytes(0)
         );
@@ -663,103 +723,18 @@ contract BlockManagement is IBlockManagement, AccountManagement
         }
     }
 
-    function isActiveWithdrawBlockClosed()
-        internal
-        view
-        returns (bool)
-    {
-        WithdrawBlock storage withdrawBlock = withdrawBlocks[numWithdrawBlocks - 1];
-        return isActiveOnchainBlockClosed(
-            withdrawBlock.numWithdrawals,
-            NUM_WITHDRAWALS_IN_BLOCK,
-            withdrawBlock.timestampOpened
-        );
-    }
-
-    function isWithdrawBlockCommittable(
-        uint32 withdrawBlockIdx
+    function isWithdrawRequestForced(
+        uint32 withdrawRequestIdx
         )
         internal
         view
         returns (bool)
     {
-        assert(withdrawBlockIdx < numWithdrawBlocks);
-        WithdrawBlock storage withdrawBlock = withdrawBlocks[withdrawBlockIdx];
-        return isOnchainBlockCommittable(
-            withdrawBlock.numWithdrawals,
-            NUM_WITHDRAWALS_IN_BLOCK,
-            withdrawBlock.timestampOpened,
-            withdrawBlock.timestampFilled
-        );
-    }
-
-    function isWithdrawBlockForced(
-        uint32 withdrawBlockIdx
-        )
-        internal
-        view
-        returns (bool)
-    {
-        assert(withdrawBlockIdx <= numWithdrawBlocks);
-        WithdrawBlock storage withdrawBlock = withdrawBlocks[withdrawBlockIdx];
-        return isOnchainBlockForced(
-            withdrawBlock.numWithdrawals,
-            NUM_WITHDRAWALS_IN_BLOCK,
-            withdrawBlock.timestampOpened,
-            withdrawBlock.timestampFilled
-        );
-    }
-
-    function isActiveOnchainBlockClosed(
-        uint count,
-        uint maxCount,
-        uint32 timestampOpened
-        )
-        internal
-        view
-        returns (bool)
-    {
-        if ((count == maxCount && now > timestampOpened + MIN_TIME_BLOCK_OPEN) ||
-                (count > 0 && now > timestampOpened + MAX_TIME_BLOCK_OPEN)) {
-            return true;
+        if (withdrawRequestIdx < withdrawChain.length) {
+            return withdrawChain[withdrawRequestIdx].timestamp < now.sub(MAX_AGE_REQUEST_UNTIL_FORCED);
         } else {
             return false;
         }
     }
 
-    function isOnchainBlockCommittable(
-        uint count,
-        uint maxCount,
-        uint timestampOpened,
-        uint timestampFilled
-        )
-        internal
-        view
-        returns (bool)
-    {
-        if ((count == maxCount && now > timestampFilled + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE) ||
-                (count > 0 && now > timestampOpened + MAX_TIME_BLOCK_OPEN + MIN_TIME_BLOCK_CLOSED_UNTIL_COMMITTABLE)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function isOnchainBlockForced(
-        uint count,
-        uint maxCount,
-        uint timestampOpened,
-        uint timestampFilled
-        )
-        internal
-        view
-        returns (bool)
-    {
-        if ((count == maxCount && now > timestampFilled + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED) ||
-                (count > 0 && now > timestampOpened + MAX_TIME_BLOCK_OPEN + MAX_TIME_BLOCK_CLOSED_UNTIL_FORCED)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
 }
