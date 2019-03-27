@@ -154,12 +154,12 @@ export class Simulator {
       accountB.balances[ring.orderB.tokenIdS].tradeHistory[ring.orderB.orderID].filled.add(fillAmountSB);
 
     // Update walletA
-    const walletA = newRealm.accounts[ring.orderA.dualAuthAccountID];
+    const walletA = newRealm.accounts[ring.orderA.walletAccountID];
     walletA.balances[ring.orderA.tokenIdF].balance =
       walletA.balances[ring.orderA.tokenIdF].balance.add(walletFeeA);
 
     // Update walletB
-    const walletB = newRealm.accounts[ring.orderB.dualAuthAccountID];
+    const walletB = newRealm.accounts[ring.orderB.walletAccountID];
     walletB.balances[ring.orderB.tokenIdF].balance =
       walletB.balances[ring.orderB.tokenIdF].balance.add(walletFeeB);
 
@@ -283,7 +283,7 @@ export class Simulator {
       description: "Wallet@" + order.walletSplitPercentage + "%",
       token: order.tokenIdF,
       from: order.accountID,
-      to: order.dualAuthAccountID,
+      to: order.walletAccountID,
       amount: walletFee,
       subPayments: [],
     };

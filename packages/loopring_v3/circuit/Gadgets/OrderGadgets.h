@@ -23,7 +23,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> realmID;
     VariableArrayT orderID;
     libsnark::dual_variable_gadget<FieldT> accountID;
-    VariableArrayT dualAuthAccountID;
+    VariableArrayT walletAccountID;
     libsnark::dual_variable_gadget<FieldT> tokenS;
     libsnark::dual_variable_gadget<FieldT> tokenB;
     libsnark::dual_variable_gadget<FieldT> tokenF;
@@ -66,7 +66,7 @@ public:
         realmID(pb, 32, FMT(prefix, ".realmID")),
         orderID(make_var_array(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".orderID"))),
         accountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID")),
-        dualAuthAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID"))),
+        walletAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletAccountID"))),
         tokenS(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenS")),
         tokenB(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenB")),
         tokenF(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenF")),
@@ -93,7 +93,7 @@ public:
         balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
         signatureVerifier(pb, params, publicKey,
-                          flatten({realmID.bits, orderID, accountID.bits, dualAuthAccountID,
+                          flatten({realmID.bits, orderID, accountID.bits, walletAccountID,
                           tokenS.bits, tokenB.bits, tokenF.bits,
                           amountS.bits, amountB.bits, amountF.bits,
                           allOrNone.bits, validSince.bits, validUntil.bits,
@@ -119,7 +119,7 @@ public:
         orderID.fill_with_bits_of_field_element(pb, order.orderID);
         accountID.bits.fill_with_bits_of_field_element(pb, order.accountID);
         accountID.generate_r1cs_witness_from_bits();
-        dualAuthAccountID.fill_with_bits_of_field_element(pb, order.dualAuthAccountID);
+        walletAccountID.fill_with_bits_of_field_element(pb, order.walletAccountID);
         tokenS.bits.fill_with_bits_of_field_element(pb, order.tokenS);
         tokenS.generate_r1cs_witness_from_bits();
         tokenB.bits.fill_with_bits_of_field_element(pb, order.tokenB);

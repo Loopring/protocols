@@ -41,7 +41,7 @@ public:
     VariableArrayT tokenID;
     libsnark::dual_variable_gadget<FieldT> amountRequested;
     libsnark::dual_variable_gadget<FieldT> amountWithdrawn;
-    VariableArrayT dualAuthAccountID;
+    VariableArrayT walletAccountID;
     VariableArrayT feeTokenID;
     libsnark::dual_variable_gadget<FieldT> fee;
     libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
@@ -112,7 +112,7 @@ public:
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
         amountRequested(pb, 96, FMT(prefix, ".amountRequested")),
-        dualAuthAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID"))),
+        walletAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletAccountID"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
         fee(pb, 96, FMT(prefix, ".fee")),
         walletSplitPercentage(pb, 7, FMT(prefix, ".walletSplitPercentage")),
@@ -166,7 +166,7 @@ public:
                          {feePaymentWallet.Y, emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_W")),
 
-        updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountID,
+        updateAccount_W(pb, updateAccount_A.result(), walletAccountID,
                         {walletPublicKey.x, walletPublicKey.y, nonce_W, balancesRoot_W_before},
                         {walletPublicKey.x, walletPublicKey.y, nonce_W, updateBalanceF_W.getNewRoot()},
                         FMT(prefix, ".updateAccount_W")),
@@ -178,7 +178,7 @@ public:
                          FMT(prefix, ".updateBalanceF_O")),
 
 
-        message(flatten({_realmID, accountID, tokenID, amountRequested.bits, dualAuthAccountID,
+        message(flatten({_realmID, accountID, tokenID, amountRequested.bits, walletAccountID,
                          feeTokenID, fee.bits, walletSplitPercentage.bits, nonce_before.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
         walletSignatureVerifier(pb, params, walletPublicKey, message, FMT(prefix, ".walletSignatureVerifier"))
@@ -203,7 +203,7 @@ public:
 
     const std::vector<VariableArrayT> getPublicDataOffchain() const
     {
-        return {dualAuthAccountID, uint16_padding, feeTokenID, fee.bits, percentage_padding, walletSplitPercentage.bits};
+        return {walletAccountID, uint16_padding, feeTokenID, fee.bits, percentage_padding, walletSplitPercentage.bits};
     }
 
     const std::vector<VariableArrayT> getOnchainData() const
@@ -223,7 +223,7 @@ public:
 
         accountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_A.accountID);
         tokenID.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateW_A.tokenID);
-        dualAuthAccountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_W.accountID);
+        walletAccountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_W.accountID);
         feeTokenID.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateF_A.tokenID);
         fee.bits.fill_with_bits_of_field_element(pb, withdrawal.fee);
         fee.generate_r1cs_witness_from_bits();

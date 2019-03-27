@@ -13,7 +13,7 @@ export interface OrderInfo {
   realmID?: number;
   accountID?: number;
   orderID?: number;
-  dualAuthAccountID?: number;
+  walletAccountID?: number;
 
   dualAuthPublicKeyX?: string;
   dualAuthPublicKeyY?: string;
@@ -89,7 +89,7 @@ export interface WithdrawalRequest {
   tokenID: number;
   amount: BN;
 
-  dualAuthAccountID: number;
+  walletAccountID: number;
   feeTokenID: number;
   fee: BN;
   walletSplitPercentage: number;
@@ -118,7 +118,7 @@ export interface Cancel {
   accountID: number;
   orderTokenID: number;
   orderID: number;
-  dualAuthAccountID: number;
+  walletAccountID: number;
   feeTokenID: number;
   fee: BN;
   walletSplitPercentage: number;

@@ -271,7 +271,7 @@ class Order(object):
     def __init__(self,
                  publicKey, walletPublicKey,
                  dualAuthPublicKey, dualAuthSecretKey,
-                 realmID, orderID, accountID, dualAuthAccountID,
+                 realmID, orderID, accountID, walletAccountID,
                  tokenS, tokenB, tokenF,
                  amountS, amountB, amountF,
                  allOrNone, validSince, validUntil,
@@ -287,7 +287,7 @@ class Order(object):
         self.realmID = int(realmID)
         self.orderID = int(orderID)
         self.accountID = int(accountID)
-        self.dualAuthAccountID = int(dualAuthAccountID)
+        self.walletAccountID = int(walletAccountID)
 
         self.amountS = str(amountS)
         self.amountB = str(amountB)
@@ -307,7 +307,7 @@ class Order(object):
     def message(self):
         msg_parts = [
                         FQ(int(self.realmID), 1<<32), FQ(int(self.orderID), 1<<16),
-                        FQ(int(self.accountID), 1<<24), FQ(int(self.dualAuthAccountID), 1<<24),
+                        FQ(int(self.accountID), 1<<24), FQ(int(self.walletAccountID), 1<<24),
                         FQ(int(self.tokenS), 1<<12), FQ(int(self.tokenB), 1<<12), FQ(int(self.tokenF), 1<<12),
                         FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96),
                         FQ(int(self.allOrNone), 1<<1), FQ(int(self.validSince), 1<<32), FQ(int(self.validUntil), 1<<32),
@@ -433,7 +433,7 @@ class Withdrawal(object):
                  walletPublicKey,
                  realmID,
                  accountID, tokenID, amount,
-                 dualAuthAccountID,
+                 walletAccountID,
                  operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                  nonce,
                  amountWithdrawn,
@@ -448,7 +448,7 @@ class Withdrawal(object):
         self.accountID = accountID
         self.tokenID = tokenID
         self.amount = str(amount)
-        self.dualAuthAccountID = dualAuthAccountID
+        self.walletAccountID = walletAccountID
         self.operatorAccountID = operatorAccountID
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
@@ -468,7 +468,7 @@ class Withdrawal(object):
     def message(self):
         msg_parts = [FQ(int(self.realmID), 1<<32),
                      FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.amount), 1<<96),
-                     FQ(int(self.dualAuthAccountID), 1<<24), FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
+                     FQ(int(self.walletAccountID), 1<<24), FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
                      FQ(int(self.nonce), 1<<32)]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -742,29 +742,29 @@ class State(object):
 
         # Update wallet A
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(ring.orderA.dualAuthAccountID))
-        proof = self._accountsTree.createProof(ring.orderA.dualAuthAccountID)
+        accountBefore = copyAccountInfo(self.getAccount(ring.orderA.walletAccountID))
+        proof = self._accountsTree.createProof(ring.orderA.walletAccountID)
 
-        balanceUpdateA_W = self.getAccount(ring.orderA.dualAuthAccountID).updateBalance(ring.orderA.tokenF, walletFee_A)
+        balanceUpdateA_W = self.getAccount(ring.orderA.walletAccountID).updateBalance(ring.orderA.tokenF, walletFee_A)
 
-        self.updateAccountTree(ring.orderA.dualAuthAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(ring.orderA.dualAuthAccountID))
+        self.updateAccountTree(ring.orderA.walletAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(ring.orderA.walletAccountID))
         rootAfter = self._accountsTree._root
-        accountUpdateA_W = AccountUpdateData(ring.orderA.dualAuthAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdateA_W = AccountUpdateData(ring.orderA.walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
 
         # Update wallet B
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(ring.orderB.dualAuthAccountID))
-        proof = self._accountsTree.createProof(ring.orderB.dualAuthAccountID)
+        accountBefore = copyAccountInfo(self.getAccount(ring.orderB.walletAccountID))
+        proof = self._accountsTree.createProof(ring.orderB.walletAccountID)
 
-        balanceUpdateB_W = self.getAccount(ring.orderB.dualAuthAccountID).updateBalance(ring.orderB.tokenF, walletFee_B)
+        balanceUpdateB_W = self.getAccount(ring.orderB.walletAccountID).updateBalance(ring.orderB.tokenF, walletFee_B)
 
-        self.updateAccountTree(ring.orderB.dualAuthAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(ring.orderB.dualAuthAccountID))
+        self.updateAccountTree(ring.orderB.walletAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(ring.orderB.walletAccountID))
         rootAfter = self._accountsTree._root
-        accountUpdateB_W = AccountUpdateData(ring.orderB.dualAuthAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdateB_W = AccountUpdateData(ring.orderB.walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
 
@@ -853,7 +853,7 @@ class State(object):
     def withdraw(self,
                  onchain,
                  realmID, accountID, tokenID, amount,
-                 operatorAccountID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage):
+                 operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage):
 
         feeToWallet = int(fee) * walletSplitPercentage // 100
         feeToOperator = int(fee) - feeToWallet
@@ -881,27 +881,27 @@ class State(object):
 
         # Update wallet
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(dualAuthAccountID))
-        proof = self._accountsTree.createProof(dualAuthAccountID)
+        accountBefore = copyAccountInfo(self.getAccount(duAccountID))
+        proof = self._accountsTree.createProof(walletAccountID)
 
-        balanceUpdateF_W = self.getAccount(dualAuthAccountID).updateBalance(feeTokenID, feeToWallet)
+        balanceUpdateF_W = self.getAccount(walletAccountID).updateBalance(feeTokenID, feeToWallet)
 
-        self.updateAccountTree(dualAuthAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(dualAuthAccountID))
+        self.updateAccountTree(walletAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(walletAccountID))
         rootAfter = self._accountsTree._root
-        accountUpdate_W = AccountUpdateData(dualAuthAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdate_W = AccountUpdateData(walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
         # Operator payment
         balanceUpdateF_O = self.getAccount(operatorAccountID).updateBalance(feeTokenID, feeToOperator)
 
         account = self.getAccount(accountID)
-        walletAccount = self.getAccount(dualAuthAccountID)
+        walletAccount = self.getAccount(walletAccountID)
         withdrawal = Withdrawal(Point(int(account.publicKeyX), int(account.publicKeyY)),
                                 Point(int(walletAccount.publicKeyX), int(walletAccount.publicKeyY)),
                                 realmID,
                                 accountID, tokenID, amount,
-                                dualAuthAccountID,
+                                walletAccountID,
                                 operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                                 nonce,
                                 amountWithdrawn,
@@ -912,7 +912,7 @@ class State(object):
         return withdrawal
 
     def cancelOrder(self,
-                    realmID, accountID, orderTokenID, orderID, dualAuthAccountID,
+                    realmID, accountID, orderTokenID, orderID, walletAccountID,
                     operatorAccountID, feeTokenID, fee, walletSplitPercentage):
 
         feeToWallet = int(fee) * walletSplitPercentage // 100
@@ -936,26 +936,26 @@ class State(object):
 
         # Update wallet
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(dualAuthAccountID))
-        proof = self._accountsTree.createProof(dualAuthAccountID)
+        accountBefore = copyAccountInfo(self.getAccount(walletAccountID))
+        proof = self._accountsTree.createProof(walletAccountID)
 
-        balanceUpdateF_W = self.getAccount(dualAuthAccountID).updateBalance(feeTokenID, feeToWallet)
+        balanceUpdateF_W = self.getAccount(walletAccountID).updateBalance(feeTokenID, feeToWallet)
 
-        self.updateAccountTree(dualAuthAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(dualAuthAccountID))
+        self.updateAccountTree(walletAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(walletAccountID))
         rootAfter = self._accountsTree._root
-        accountUpdate_W = AccountUpdateData(dualAuthAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdate_W = AccountUpdateData(walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
         # Operator payment
         balanceUpdateF_O = self.getAccount(operatorAccountID).updateBalance(feeTokenID, feeToOperator)
 
         account = self.getAccount(accountID)
-        walletAccount = self.getAccount(dualAuthAccountID)
+        walletAccount = self.getAccount(walletAccountID)
         cancellation = Cancellation(Point(int(account.publicKeyX), int(account.publicKeyY)),
                                     Point(int(walletAccount.publicKeyX), int(walletAccount.publicKeyY)),
                                     realmID,
-                                    accountID, orderTokenID, orderID, dualAuthAccountID,
+                                    accountID, orderTokenID, orderID, walletAccountID,
                                     operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                                     nonce,
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,

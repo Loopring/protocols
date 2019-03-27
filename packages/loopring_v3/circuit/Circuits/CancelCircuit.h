@@ -35,7 +35,7 @@ public:
     VariableArrayT accountID;
     VariableArrayT orderTokenID;
     VariableArrayT orderID;
-    VariableArrayT dualAuthAccountID;
+    VariableArrayT walletAccountID;
     VariableArrayT feeTokenID;
     libsnark::dual_variable_gadget<FieldT> fee;
     libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
@@ -104,7 +104,7 @@ public:
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
         orderTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".orderTokenID"))),
         orderID(make_var_array(pb, 16, FMT(prefix, ".orderID"))),
-        dualAuthAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID"))),
+        walletAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletAccountID"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
         fee(pb, 96, FMT(prefix, ".fee")),
         walletSplitPercentage(pb, 7, FMT(prefix, ".walletSplitPercentage")),
@@ -160,7 +160,7 @@ public:
                          {feePaymentWallet.Y, emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_W")),
 
-        updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountID,
+        updateAccount_W(pb, updateAccount_A.result(), walletAccountID,
                         {walletPublicKey.x, walletPublicKey.y, nonce_W, balancesRoot_W_before},
                         {walletPublicKey.x, walletPublicKey.y, nonce_W, updateBalanceF_W.getNewRoot()},
                         FMT(prefix, ".updateAccount_W")),
@@ -171,7 +171,7 @@ public:
                          {feePaymentOperator.Y, tradingHistoryRootF_O},
                          FMT(prefix, ".updateBalanceF_O")),
 
-        message(flatten({_realmID, accountID, orderTokenID, orderID, dualAuthAccountID,
+        message(flatten({_realmID, accountID, orderTokenID, orderID, walletAccountID,
                          feeTokenID, fee.bits, walletSplitPercentage.bits,
                          nonce_before.bits, padding.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
@@ -192,7 +192,7 @@ public:
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {accountID, uint16_padding, orderTokenID, orderID, dualAuthAccountID,
+        return {accountID, uint16_padding, orderTokenID, orderID, walletAccountID,
                 uint16_padding, feeTokenID, fee.bits, percentage_padding, walletSplitPercentage.bits};
     }
 
@@ -212,7 +212,7 @@ public:
         accountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_A.accountID);
         orderTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateT_A.tokenID);
         orderID.fill_with_bits_of_field_element(pb, cancellation.tradeHistoryUpdate_A.orderID);
-        dualAuthAccountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_W.accountID);
+        walletAccountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_W.accountID);
         feeTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateF_A.tokenID);
         fee.bits.fill_with_bits_of_field_element(pb, cancellation.fee);
         fee.generate_r1cs_witness_from_bits();

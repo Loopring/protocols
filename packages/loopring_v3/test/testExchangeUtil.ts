@@ -285,8 +285,8 @@ export class ExchangeTestUtil {
     order.waiveFeePercentage = (order.waiveFeePercentage !== undefined) ? order.waiveFeePercentage : 50;
 
     const walletIndex = index % this.testContext.wallets.length;
-    order.dualAuthAccountID = (order.dualAuthAccountID !== undefined) ?
-                              order.dualAuthAccountID : this.wallets[order.realmID][walletIndex].walletAccountID;
+    order.walletAccountID = (order.walletAccountID !== undefined) ?
+                              order.walletAccountID : this.wallets[order.realmID][walletIndex].walletAccountID;
 
     order.orderID = (order.orderID !== undefined) ? order.orderID : index;
 
@@ -330,9 +330,9 @@ export class ExchangeTestUtil {
     };
     const bIndex = index !== undefined;
     addAccount(addressBook, ring.orderA.accountID, "OwnerA" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.orderA.dualAuthAccountID, "WalletA" + (bIndex ? "[" + index + "]" : ""));
+    addAccount(addressBook, ring.orderA.walletAccountID, "WalletA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderB.accountID, "OwnerB" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.orderB.dualAuthAccountID, "WalletB" + (bIndex ? "[" + index + "]" : ""));
+    addAccount(addressBook, ring.orderB.walletAccountID, "WalletB" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.minerAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.feeRecipientAccountID, "FeeRecipient" + (bIndex ? "[" + index + "]" : ""));
     return addressBook;
@@ -460,7 +460,7 @@ export class ExchangeTestUtil {
 
   public async requestWithdrawalOffchain(realmID: number, accountID: number, token: string, amount: BN,
                                          feeToken: string, fee: BN, walletSplitPercentage: number,
-                                         dualAuthAccountID: number) {
+                                         walletAccountID: number) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
@@ -470,7 +470,7 @@ export class ExchangeTestUtil {
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
     this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[realmID], accountID, tokenID, amount,
-                              dualAuthAccountID, feeTokenID, fee, walletSplitPercentage);
+                              walletAccountID, feeTokenID, fee, walletSplitPercentage);
     return this.pendingOffchainWithdrawalRequests[realmID][this.pendingOffchainWithdrawalRequests[realmID].length - 1];
   }
 
@@ -520,15 +520,15 @@ export class ExchangeTestUtil {
   }
 
   public addCancel(cancels: Cancel[], accountID: number, orderTokenID: number, orderID: number,
-                   dualAuthAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number) {
-    cancels.push({accountID, orderTokenID, orderID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage});
+                   walletAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number) {
+    cancels.push({accountID, orderTokenID, orderID, walletAccountID, feeTokenID, fee, walletSplitPercentage});
   }
 
   public cancelOrderID(realmID: number, accountID: number,
                        orderTokenID: number, orderID: number,
-                       dualAuthAccountID: number,
+                       walletAccountID: number,
                        feeTokenID: number, fee: BN, walletSplitPercentage: number) {
-    this.addCancel(this.pendingCancels[realmID], accountID, orderTokenID, orderID, dualAuthAccountID,
+    this.addCancel(this.pendingCancels[realmID], accountID, orderTokenID, orderID, walletAccountID,
                                                  feeTokenID, fee, walletSplitPercentage);
   }
 
@@ -537,15 +537,15 @@ export class ExchangeTestUtil {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.cancelOrderID(order.realmID, order.accountID, order.tokenIdS, order.orderID, order.dualAuthAccountID,
+    this.cancelOrderID(order.realmID, order.accountID, order.tokenIdS, order.orderID, order.walletAccountID,
                        feeTokenID, fee, 50);
   }
 
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
                               accountID: number, tokenID: number, amount: BN,
-                              dualAuthAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number,
+                              walletAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number,
                               withdrawBlockIdx?: number, slotIdx?: number) {
-    withdrawalRequests.push({accountID, tokenID, amount, dualAuthAccountID,
+    withdrawalRequests.push({accountID, tokenID, amount, walletAccountID,
                              feeTokenID, fee, walletSplitPercentage, withdrawBlockIdx, slotIdx});
   }
 
@@ -841,7 +841,7 @@ export class ExchangeTestUtil {
             accountID: 0,
             tokenID: 0,
             amount: new BN(0),
-            dualAuthAccountID: 1,
+            walletAccountID: 1,
             feeTokenID: 0,
             fee: new BN(0),
             walletSplitPercentage: 0,
@@ -896,7 +896,7 @@ export class ExchangeTestUtil {
       }
       if (!onchain) {
         for (const withdrawal of block.withdrawals) {
-          bs.addNumber(withdrawal.dualAuthAccountID, 3);
+          bs.addNumber(withdrawal.walletAccountID, 3);
           bs.addNumber(withdrawal.feeTokenID, 2);
           bs.addBN(web3.utils.toBN(withdrawal.fee), 12);
           bs.addNumber(withdrawal.walletSplitPercentage, 1);
@@ -983,7 +983,7 @@ export class ExchangeTestUtil {
                 realmID,
                 orderID: 0,
                 accountID: 0,
-                dualAuthAccountID: 0,
+                walletAccountID: 0,
 
                 dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
                 dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
@@ -1008,7 +1008,7 @@ export class ExchangeTestUtil {
                 realmID,
                 orderID: 0,
                 accountID: 0,
-                dualAuthAccountID: 0,
+                walletAccountID: 0,
 
                 dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
                 dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
@@ -1081,7 +1081,7 @@ export class ExchangeTestUtil {
         let index = 0;
         for (const order of [orderA, orderB]) {
           bs.addNumber(order.accountID, 3);
-          bs.addNumber(order.dualAuthAccountID, 3);
+          bs.addNumber(order.walletAccountID, 3);
           bs.addNumber(order.tokenS, 2);
           bs.addNumber(order.tokenF, 2);
           bs.addNumber(order.orderID, 2);
@@ -1123,7 +1123,7 @@ export class ExchangeTestUtil {
             accountID: 0,
             orderTokenID: 0,
             orderID: 0,
-            dualAuthAccountID: 1,
+            walletAccountID: 1,
             feeTokenID: 0,
             fee: new BN(0),
             walletSplitPercentage: 0,
@@ -1154,7 +1154,7 @@ export class ExchangeTestUtil {
         bs.addNumber(cancel.accountID, 3);
         bs.addNumber(cancel.orderTokenID, 2);
         bs.addNumber(cancel.orderID, 2);
-        bs.addNumber(cancel.dualAuthAccountID, 3);
+        bs.addNumber(cancel.walletAccountID, 3);
         bs.addNumber(cancel.feeTokenID, 2);
         bs.addBN(cancel.fee, 12);
         bs.addNumber(cancel.walletSplitPercentage, 1);

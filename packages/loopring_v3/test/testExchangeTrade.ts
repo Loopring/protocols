@@ -19,7 +19,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Trade", function() {
     this.timeout(0);
 
-    it.only("Perfect match", async () => {
+    it("Perfect match", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -51,7 +51,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
     });
 
     it("Matchable (orderA < orderB)", async () => {
@@ -386,7 +386,7 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
-            dualAuthAccountID: wallet.walletAccountID,
+            walletAccountID: wallet.walletAccountID,
           },
         orderB:
           {
@@ -395,7 +395,7 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
-            dualAuthAccountID: wallet.walletAccountID,
+            walletAccountID: wallet.walletAccountID,
           },
         expected: {
           orderA: { filledFraction: 0.5, margin: new BN(web3.utils.toWei("5", "ether")) },
@@ -618,7 +618,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
 
       ring.orderB.accountID = ring.orderA.accountID;
-      ring.orderB.dualAuthAccountID = ring.orderA.dualAuthAccountID;
+      ring.orderB.walletAccountID = ring.orderA.walletAccountID;
 
       await exchangeTestUtil.sendRing(realmID, ring);
 
@@ -660,7 +660,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
 
       ring.orderB.accountID = ring.orderA.accountID;
-      ring.orderB.dualAuthAccountID = ring.orderA.dualAuthAccountID;
+      ring.orderB.walletAccountID = ring.orderA.walletAccountID;
 
       await exchangeTestUtil.sendRing(realmID, ring);
 

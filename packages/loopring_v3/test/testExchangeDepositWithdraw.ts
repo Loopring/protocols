@@ -492,7 +492,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("110", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
             amountF: new BN(web3.utils.toWei("1.5", "ether")),
-            dualAuthAccountID: walletA.walletAccountID,
+            walletAccountID: walletA.walletAccountID,
           },
         orderB:
           {
@@ -503,7 +503,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("200", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
             amountF: new BN(web3.utils.toWei("90", "ether")),
-            dualAuthAccountID: walletB.walletAccountID,
+            walletAccountID: walletB.walletAccountID,
           },
       };
 
@@ -514,12 +514,12 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitRings(realmID);
 
       const witdrawalRequestA = await exchangeTestUtil.requestWithdrawalOnchain(
-        realmID, ring.orderA.dualAuthAccountID,
+        realmID, ring.orderA.walletAccountID,
         ring.orderA.tokenF, ring.orderA.amountF.mul(new BN(2)),
         ring.orderA.owner,
       );
       const witdrawalRequestB = await exchangeTestUtil.requestWithdrawalOnchain(
-        realmID, ring.orderB.dualAuthAccountID,
+        realmID, ring.orderB.walletAccountID,
         ring.orderB.tokenF, ring.orderB.amountF.mul(new BN(2)),
         ring.orderB.owner,
       );
@@ -532,10 +532,10 @@ contract("Exchange", (accounts: string[]) => {
       // Withdraw
       const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
       await withdrawChecked(blockIdx, witdrawalRequestA.slotIdx,
-                            ring.orderA.dualAuthAccountID, ring.orderA.tokenF,
+                            ring.orderA.walletAccountID, ring.orderA.tokenF,
                             walletA.owner, walletFeeA, true);
       await withdrawChecked(blockIdx, witdrawalRequestB.slotIdx,
-                            ring.orderB.dualAuthAccountID, ring.orderB.tokenF,
+                            ring.orderB.walletAccountID, ring.orderB.tokenF,
                             walletB.owner, walletFeeB, true);
     });
 

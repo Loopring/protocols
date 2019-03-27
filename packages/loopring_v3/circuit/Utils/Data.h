@@ -228,7 +228,7 @@ public:
     ethsnarks::FieldT realmID;
     ethsnarks::FieldT orderID;
     ethsnarks::FieldT accountID;
-    ethsnarks::FieldT dualAuthAccountID;
+    ethsnarks::FieldT walletAccountID;
     ethsnarks::FieldT tokenS;
     ethsnarks::FieldT tokenB;
     ethsnarks::FieldT tokenF;
@@ -266,7 +266,7 @@ void from_json(const json& j, Order& order)
     order.realmID = ethsnarks::FieldT(j.at("realmID"));
     order.orderID = ethsnarks::FieldT(j.at("orderID"));
     order.accountID = ethsnarks::FieldT(j.at("accountID"));
-    order.dualAuthAccountID = ethsnarks::FieldT(j.at("dualAuthAccountID"));
+    order.walletAccountID = ethsnarks::FieldT(j.at("walletAccountID"));
     order.tokenS = ethsnarks::FieldT(j.at("tokenS"));
     order.tokenB = ethsnarks::FieldT(j.at("tokenB"));
     order.tokenF = ethsnarks::FieldT(j.at("tokenF"));

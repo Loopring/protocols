@@ -54,7 +54,7 @@ def orderFromJSON(jOrder, state):
     realmID = int(jOrder["realmID"])
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
-    dualAuthAccountID = int(jOrder["dualAuthAccountID"])
+    walletAccountID = int(jOrder["walletAccountID"])
     dualAuthPublicKeyX = int(jOrder["dualAuthPublicKeyX"])
     dualAuthPublicKeyY = int(jOrder["dualAuthPublicKeyY"])
     dualAuthSecretKey = int(jOrder["dualAuthSecretKey"])
@@ -71,12 +71,12 @@ def orderFromJSON(jOrder, state):
     waiveFeePercentage = int(jOrder["waiveFeePercentage"])
 
     account = state.getAccount(accountID)
-    walletAccount = state.getAccount(dualAuthAccountID)
+    walletAccount = state.getAccount(walletAccountID)
 
     order = Order(Point(account.publicKeyX, account.publicKeyY),
                   Point(walletAccount.publicKeyX, walletAccount.publicKeyY),
                   Point(dualAuthPublicKeyX, dualAuthPublicKeyY), dualAuthSecretKey,
-                  realmID, orderID, accountID, dualAuthAccountID,
+                  realmID, orderID, accountID, walletAccountID,
                   tokenS, tokenB, tokenF,
                   amountS, amountB, amountF,
                   allOrNone, validSince, validUntil,
@@ -145,13 +145,13 @@ def withdraw(onchain, state, data):
         accountID = int(withdrawalInfo["accountID"])
         tokenID = int(withdrawalInfo["tokenID"])
         amount = int(withdrawalInfo["amount"])
-        dualAuthAccountID = int(withdrawalInfo["dualAuthAccountID"])
+        walletAccountID = int(withdrawalInfo["walletAccountID"])
         feeTokenID = int(withdrawalInfo["feeTokenID"])
         fee = int(withdrawalInfo["fee"])
         walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
 
         withdrawal = state.withdraw(onchain, export.realmID, accountID, tokenID, amount,
-                                             export.operatorAccountID, dualAuthAccountID, feeTokenID, fee, walletSplitPercentage)
+                                             export.operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage)
         export.withdrawals.append(withdrawal)
 
     # Operator payment
@@ -179,13 +179,13 @@ def cancel(state, data):
         accountID = int(cancelInfo["accountID"])
         orderTokenID = int(cancelInfo["orderTokenID"])
         orderID = int(cancelInfo["orderID"])
-        dualAuthAccountID = int(cancelInfo["dualAuthAccountID"])
+        walletAccountID = int(cancelInfo["walletAccountID"])
         feeTokenID = int(cancelInfo["feeTokenID"])
         fee = int(cancelInfo["fee"])
         walletSplitPercentage = int(cancelInfo["walletSplitPercentage"])
 
         export.cancels.append(state.cancelOrder(export.realmID, accountID, orderTokenID, orderID,
-                                                dualAuthAccountID, export.operatorAccountID, feeTokenID, fee, walletSplitPercentage))
+                                                walletAccountID, export.operatorAccountID, feeTokenID, fee, walletSplitPercentage))
 
     # Operator payment
     proof = state._accountsTree.createProof(export.operatorAccountID)
