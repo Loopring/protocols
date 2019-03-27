@@ -323,7 +323,8 @@ contract BlockManagement is IBlockManagement, AccountManagement
         require(lastBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
 
         Account storage account = getAccount(accountID);
-        require(account.withdrawn == false, "WITHDRAWN_ALREADY");
+        address token = getTokenAddress(tokenID);
+        require(withdrawnInWithdrawMode[account.owner][token] == false, "WITHDRAWN_ALREADY");
 
         verifyAccountBalance(
             lastBlock.merkleRoot,
@@ -338,7 +339,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
         );
 
         // Make sure the balance can only be withdrawn once
-        account.withdrawn = true;
+        withdrawnInWithdrawMode[account.owner][token] = true;
 
         // Transfer the tokens
         withdrawAndBurn(account.owner, tokenID, balance, isFeeRecipientAccount(account));

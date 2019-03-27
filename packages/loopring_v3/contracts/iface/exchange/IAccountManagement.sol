@@ -47,7 +47,6 @@ contract IAccountManagement
     struct Account
     {
         address owner;
-        bool   withdrawn;
         uint   publicKeyX;
         uint   publicKeyY;
     }
@@ -58,6 +57,9 @@ contract IAccountManagement
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
     uint public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
     uint public constant DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935;
+
+    // A map from an account owner to a token to if the balance is withdrawn
+    mapping (address => mapping (address => bool)) public withdrawnInWithdrawMode;
 
     // == Internal Functions ==
 

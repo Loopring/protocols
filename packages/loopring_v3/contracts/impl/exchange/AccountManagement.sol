@@ -69,7 +69,6 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
 
         Account memory account = Account(
             msg.sender,
-            false,
             publicKeyX,
             publicKeyY
         );
@@ -276,7 +275,6 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         // Reserve default account slot at accountID 0
         Account memory defaultAccount = Account(
             address(0),
-            false,
             DEFAULT_ACCOUNT_PUBLICKEY_X,
             DEFAULT_ACCOUNT_PUBLICKEY_Y
         );
