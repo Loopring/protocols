@@ -512,7 +512,6 @@ public:
     ethsnarks::FieldT fee;
     ethsnarks::FieldT walletSplitPercentage;
     Signature signature;
-    Signature walletSignature;
 
     BalanceUpdate balanceUpdateF_A;
     BalanceUpdate balanceUpdateW_A;
@@ -539,7 +538,6 @@ void from_json(const json& j, Withdrawal& withdrawal)
     withdrawal.balanceUpdateF_W = j.at("balanceUpdateF_W").get<BalanceUpdate>();
     withdrawal.accountUpdate_W = j.at("accountUpdate_W").get<AccountUpdate>();
     withdrawal.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
-    withdrawal.walletSignature = j.at("walletSignature").get<Signature>();
 }
 
 class WithdrawContext
@@ -601,7 +599,6 @@ public:
     AccountUpdate accountUpdate_W;
     BalanceUpdate balanceUpdateF_O;
     Signature signature;
-    Signature walletSignature;
 };
 
 void from_json(const json& j, Cancellation& cancellation)
@@ -620,7 +617,6 @@ void from_json(const json& j, Cancellation& cancellation)
     cancellation.accountUpdate_W = j.at("accountUpdate_W").get<AccountUpdate>();
     cancellation.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
     cancellation.signature = j.at("signature").get<Signature>();
-    cancellation.walletSignature = j.at("walletSignature").get<Signature>();
 }
 
 class CancelContext

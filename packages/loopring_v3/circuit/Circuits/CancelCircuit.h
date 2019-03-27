@@ -79,7 +79,6 @@ public:
 
     const VariableArrayT message;
     SignatureVerifier signatureVerifier;
-    SignatureVerifier walletSignatureVerifier;
 
     CancelGadget(
         ProtoboardT& pb,
@@ -174,8 +173,7 @@ public:
         message(flatten({_realmID, accountID, orderTokenID, orderID, walletAccountID,
                          feeTokenID, fee.bits, walletSplitPercentage.bits,
                          nonce_before.bits, padding.bits})),
-        signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
-        walletSignatureVerifier(pb, params, walletPublicKey, message, FMT(prefix, ".walletSignatureVerifier"))
+        signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier"))
     {
 
     }
@@ -258,7 +256,6 @@ public:
         updateBalanceF_O.generate_r1cs_witness(cancellation.balanceUpdateF_O.proof);
 
         signatureVerifier.generate_r1cs_witness(cancellation.signature);
-        walletSignatureVerifier.generate_r1cs_witness(cancellation.walletSignature);
     }
 
     void generate_r1cs_constraints()
@@ -283,7 +280,6 @@ public:
         updateBalanceF_O.generate_r1cs_constraints();
 
         signatureVerifier.generate_r1cs_constraints();
-        walletSignatureVerifier.generate_r1cs_constraints();
 
         pb.add_r1cs_constraint(ConstraintT(cancelled_after, FieldT::one(), FieldT::one()), "cancelled_after == 1");
         pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");

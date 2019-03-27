@@ -84,7 +84,6 @@ public:
 
     const VariableArrayT message;
     SignatureVerifier signatureVerifier;
-    SignatureVerifier walletSignatureVerifier;
 
     WithdrawGadget(
         ProtoboardT& pb,
@@ -180,8 +179,7 @@ public:
 
         message(flatten({_realmID, accountID, tokenID, amountRequested.bits, walletAccountID,
                          feeTokenID, fee.bits, walletSplitPercentage.bits, nonce_before.bits})),
-        signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier")),
-        walletSignatureVerifier(pb, params, walletPublicKey, message, FMT(prefix, ".walletSignatureVerifier"))
+        signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier"))
     {
 
     }
@@ -279,7 +277,6 @@ public:
         if (!onchain)
         {
             signatureVerifier.generate_r1cs_witness(withdrawal.signature);
-            walletSignatureVerifier.generate_r1cs_witness(withdrawal.walletSignature);
         }
     }
 
@@ -314,7 +311,6 @@ public:
             updateBalanceF_O.generate_r1cs_constraints();
 
             signatureVerifier.generate_r1cs_constraints();
-            walletSignatureVerifier.generate_r1cs_constraints();
             pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
         }
         else
