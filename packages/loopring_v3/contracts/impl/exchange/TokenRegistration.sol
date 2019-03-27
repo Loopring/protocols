@@ -64,6 +64,7 @@ contract TokenRegistration is ITokenRegistration, BlockManagement
         view
         returns (address)
     {
+        require(tokenID < numTokensRegistered, "INVALID_TOKEN_ID");
         return tokenIdToToken[tokenID + 1];
     }
 

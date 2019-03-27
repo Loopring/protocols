@@ -128,14 +128,18 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
             require(amount == 0, "CANNOT_DEPOSIT_TO_FEE_RECIPIENT_ACCOUNTS");
         }
 
-        // Check expected ETH value sent, can be larger than the minimum depos
-        uint depositFee = 0;
+        // Check ETH value sent, can be larger than the expected deposit fee
+        uint feeSurplus = 0;
         if (tokenID != 0) {
-            require(msg.value >= minimumDepositFee, "INVALID_VALUE");
-            depositFee = msg.value;
+            require(msg.value >= depositFee, "INVALID_VALUE");
+            feeSurplus = msg.value.sub(depositFee);
         } else {
-            require(msg.value >= (minimumDepositFee.add(amount)), "INVALID_VALUE");
-            depositFee = msg.value - amount;
+            require(msg.value >= (depositFee.add(amount)), "INVALID_VALUE");
+            feeSurplus = msg.value.sub(depositFee.add(amount));
+        }
+        // Send surplus of ETH back to the sender
+        if (feeSurplus > 0) {
+            msg.sender.transfer(feeSurplus);
         }
 
         // Add the request to the deposit chain
@@ -194,8 +198,12 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         require(getNumAvailableWithdrawSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
         require(amount > 0, "INVALID_VALUE");
 
-        // Check expected ETH value sent
-        require(msg.value >= minimumWithdrawFee, "INVALID_VALUE");
+        // Check ETH value sent, can be larger than the expected withdraw fee
+        require(msg.value >= withdrawFee, "INVALID_VALUE");
+        // Send surplus of ETH back to the sender
+        if (msg.value > withdrawFee) {
+            msg.sender.transfer(msg.value.sub(withdrawFee));
+        }
 
         uint24 accountID = getAccountID();
         Account storage account = getAccount(accountID);
@@ -216,7 +224,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
                     amount
                 )
             ),
-            previousRequest.accumulatedFee.add(msg.value),
+            previousRequest.accumulatedFee.add(withdrawFee),
             uint32(now)
         );
         withdrawChain.push(request);

@@ -83,7 +83,7 @@ export class ExchangeTestUtil {
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
       new BN(0),
-      new BN(0),
+      new BN(web3.utils.toWei("0.02", "ether")),
       {from: this.testContext.deployer},
     );
 
@@ -1182,8 +1182,8 @@ export class ExchangeTestUtil {
   public async createExchange(
       owner: string,
       bSetupTestState: boolean = true,
-      minDepositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
-      minWithdrawFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
+      depositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
+      withdrawFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
     ) {
 
     const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
@@ -1208,6 +1208,8 @@ export class ExchangeTestUtil {
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
 
     await this.registerTokens();
+
+    await this.exchange.setFees(depositFeeInETH, withdrawFeeInETH);
 
     if (bSetupTestState) {
       await this.setupTestState(realmID);
