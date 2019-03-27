@@ -294,7 +294,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
         returns (bool)
     {
         return withdrawFromMerkleTreeForAccount(
-            getAccountID(),
+            getAccountID(msg.sender),
             tokenID,
             accountPath,
             balancePath,

@@ -80,7 +80,9 @@ contract IAccountManagement
 
     // == Public Functions ==
 
-    function getAccountID()
+    function getAccountID(
+        address owner
+        )
         public
         view
         returns (uint24 accountID);
@@ -101,7 +103,7 @@ contract IAccountManagement
         address token,
         uint96 amount
         )
-        public
+        external
         payable;
 
     function deposit(
@@ -109,6 +111,14 @@ contract IAccountManagement
         uint96 amount
         )
         external
+        payable;
+
+    function depositTo(
+        address recipient,
+        address token,
+        uint96 amount
+        )
+        public
         payable;
 
     function withdraw(

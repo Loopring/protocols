@@ -43,12 +43,14 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
 
     // == Public Functions ==
 
-    function getAccountID()
+    function getAccountID(
+        address owner
+        )
         public
         view
         returns (uint24 accountID)
     {
-        accountID = ownerToAccountId[msg.sender];
+        accountID = ownerToAccountId[owner];
         // Default account is at ID 0, which cannot be used
         require(accountID != 0, "SENDER_HAS_NO_ACCOUNT");
     }
@@ -78,7 +80,8 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         require(ownerToAccountId[msg.sender] == 0, "SENDER_ALREADY_HAS_AN_ACCOUNT");
         ownerToAccountId[msg.sender] = accountID;
 
-        updateAccount(
+        updateAccountInternal(
+            accountID,
             publicKeyX,
             publicKeyY,
             token,
@@ -95,8 +98,21 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         external
         payable
     {
-        Account storage account = getAccount(getAccountID());
-        updateAccount(
+        depositTo(msg.sender, token, amount);
+    }
+
+    function depositTo(
+        address recipient,
+        address token,
+        uint96 amount
+        )
+        public
+        payable
+    {
+        uint24 accountID = getAccountID(recipient);
+        Account storage account = getAccount(accountID);
+        updateAccountInternal(
+            accountID,
             account.publicKeyX,
             account.publicKeyY,
             token,
@@ -110,7 +126,27 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         address token,
         uint96 amount
         )
-        public
+        external
+        payable
+    {
+        uint24 accountID = getAccountID(msg.sender);
+        updateAccountInternal(
+            accountID,
+            publicKeyX,
+            publicKeyY,
+            token,
+            amount
+        );
+    }
+
+    function updateAccountInternal(
+        uint24 accountID,
+        uint publicKeyX,
+        uint publicKeyY,
+        address token,
+        uint96 amount
+        )
+        public      // cannot be internal because the function isn't payable in that case
         payable
     {
         // Realm cannot be in withdraw mode
@@ -118,7 +154,6 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = getTokenID(token);
-        uint24 accountID = getAccountID();
         Account storage account = getAccount(accountID);
 
         // Update account info
@@ -206,7 +241,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         }
 
         uint16 tokenID = getTokenID(token);
-        uint24 accountID = getAccountID();
+        uint24 accountID = getAccountID(msg.sender);
         Account storage account = getAccount(accountID);
 
         // Allow anyone to withdraw from fee accounts
