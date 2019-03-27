@@ -16,6 +16,10 @@ export interface OrderInfo {
   walletID?: number;
   dualAuthAccountID?: number;
 
+  dualAuthPublicKeyX?: string;
+  dualAuthPublicKeyY?: string;
+  dualAuthSecretKey?: string;
+
   tokenIdS?: number;
   tokenIdB?: number;
   tokenIdF?: number;

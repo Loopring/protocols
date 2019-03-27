@@ -147,8 +147,8 @@ public:
 
     const VariableArrayT message;
     SignatureVerifier minerSignatureVerifier;
-    SignatureVerifier walletASignatureVerifier;
-    SignatureVerifier walletBSignatureVerifier;
+    SignatureVerifier dualAuthASignatureVerifier;
+    SignatureVerifier dualAuthBSignatureVerifier;
 
     RingSettlementGadget(
         ProtoboardT& pb,
@@ -351,8 +351,8 @@ public:
                          feeRecipientAccountID.bits,
                          nonce_before.bits})),
         minerSignatureVerifier(pb, params, publicKey, message, FMT(prefix, ".minerSignatureVerifier")),
-        walletASignatureVerifier(pb, params, orderA.walletPublicKey, message, FMT(prefix, ".walletASignatureVerifier")),
-        walletBSignatureVerifier(pb, params, orderB.walletPublicKey, message, FMT(prefix, ".walletBSignatureVerifier"))
+        dualAuthASignatureVerifier(pb, params, orderA.dualAuthPublicKey, message, FMT(prefix, ".dualAuthASignatureVerifier")),
+        dualAuthBSignatureVerifier(pb, params, orderB.dualAuthPublicKey, message, FMT(prefix, ".dualAuthBSignatureVerifier"))
     {
 
     }
@@ -532,8 +532,8 @@ public:
         updateBalanceF_O.generate_r1cs_witness(ringSettlement.balanceUpdateF_O.proof);
 
         minerSignatureVerifier.generate_r1cs_witness(ringSettlement.ring.minerSignature);
-        walletASignatureVerifier.generate_r1cs_witness(ringSettlement.ring.walletASignature);
-        walletBSignatureVerifier.generate_r1cs_witness(ringSettlement.ring.walletBSignature);
+        dualAuthASignatureVerifier.generate_r1cs_witness(ringSettlement.ring.dualAuthASignature);
+        dualAuthBSignatureVerifier.generate_r1cs_witness(ringSettlement.ring.dualAuthBSignature);
     }
 
 
@@ -628,8 +628,8 @@ public:
         //
 
         minerSignatureVerifier.generate_r1cs_constraints();
-        walletASignatureVerifier.generate_r1cs_constraints();
-        walletBSignatureVerifier.generate_r1cs_constraints();
+        dualAuthASignatureVerifier.generate_r1cs_constraints();
+        dualAuthBSignatureVerifier.generate_r1cs_constraints();
 
         pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
     }

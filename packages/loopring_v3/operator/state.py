@@ -272,6 +272,7 @@ class WithdrawProof(object):
 class Order(object):
     def __init__(self,
                  publicKey, walletPublicKey,
+                 dualAuthPublicKey, dualAuthSecretKey,
                  realmID, walletID, orderID, accountID, dualAuthAccountID,
                  tokenS, tokenB, tokenF,
                  amountS, amountB, amountF,
@@ -281,6 +282,9 @@ class Order(object):
         self.publicKeyY = str(publicKey.y)
         self.walletPublicKeyX = str(walletPublicKey.x)
         self.walletPublicKeyY = str(walletPublicKey.y)
+        self.dualAuthPublicKeyX = str(dualAuthPublicKey.x)
+        self.dualAuthPublicKeyY = str(dualAuthPublicKey.y)
+        self.dualAuthSecretKey = str(dualAuthSecretKey)
 
         self.realmID = int(realmID)
         self.walletID = int(walletID)
@@ -367,10 +371,10 @@ class Ring(object):
         self.minerSignature = Signature(signedMessage.sig)
         # walletA
         signedMessage = PureEdDSA.sign(msg, walletA_k)
-        self.walletASignature = Signature(signedMessage.sig)
+        self.dualAuthASignature = Signature(signedMessage.sig)
         # walletB
         signedMessage = PureEdDSA.sign(msg, walletB_k)
-        self.walletBSignature = Signature(signedMessage.sig)
+        self.dualAuthBSignature = Signature(signedMessage.sig)
 
 class RingSettlement(object):
     def __init__(self,

@@ -70,9 +70,13 @@ export class ExchangeTestUtil {
 
   private orderIDGenerator: number = 0;
 
+  private dualAuthKeyPair: any;
+
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
+
+    this.dualAuthKeyPair = this.getKeyPairEDDSA();
 
     // Initialize Loopring
     await this.loopringV3.updateSettings(
@@ -263,6 +267,12 @@ export class ExchangeTestUtil {
       // Set the order validUntil time to a bit after the current timestamp;
       const blockNumber = await web3.eth.getBlockNumber();
       order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 25000;
+    }
+    if (!order.dualAuthPublicKeyX || !order.dualAuthPublicKeyY) {
+      const keyPair = this.getKeyPairEDDSA();
+      order.dualAuthPublicKeyX = keyPair.publicKeyX;
+      order.dualAuthPublicKeyY = keyPair.publicKeyY;
+      order.dualAuthSecretKey = keyPair.secretKey;
     }
 
     // Fill in defaults
@@ -978,6 +988,10 @@ export class ExchangeTestUtil {
                 accountID: 0,
                 dualAuthAccountID: 0,
 
+                dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
+                dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
+                dualAuthSecretKey: this.dualAuthKeyPair.secretKey,
+
                 tokenIdS: 0,
                 tokenIdB: 0,
                 tokenIdF: 0,
@@ -999,6 +1013,10 @@ export class ExchangeTestUtil {
                 orderID: 0,
                 accountID: 0,
                 dualAuthAccountID: 0,
+
+                dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
+                dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
+                dualAuthSecretKey: this.dualAuthKeyPair.secretKey,
 
                 tokenIdS: 0,
                 tokenIdB: 0,

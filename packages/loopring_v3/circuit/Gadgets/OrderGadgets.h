@@ -40,6 +40,7 @@ public:
 
     const jubjub::VariablePointT publicKey;
     const jubjub::VariablePointT walletPublicKey;
+    const jubjub::VariablePointT dualAuthPublicKey;
 
     VariableT filledBefore;
     VariableT cancelled;
@@ -85,6 +86,7 @@ public:
 
         publicKey(pb, FMT(prefix, ".publicKey")),
         walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
+        dualAuthPublicKey(pb, FMT(prefix, ".dualAuthPublicKey")),
 
         filledBefore(make_variable(pb, FMT(prefix, ".filledBefore"))),
         cancelled(make_variable(pb, FMT(prefix, ".cancelled"))),
@@ -165,6 +167,9 @@ public:
 
         pb.val(walletPublicKey.x) = order.walletPublicKey.x;
         pb.val(walletPublicKey.y) = order.walletPublicKey.y;
+
+        pb.val(dualAuthPublicKey.x) = order.dualAuthPublicKey.x;
+        pb.val(dualAuthPublicKey.y) = order.dualAuthPublicKey.y;
 
         signatureVerifier.generate_r1cs_witness(order.signature);
     }

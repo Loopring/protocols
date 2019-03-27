@@ -226,6 +226,7 @@ class Order
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::jubjub::EdwardsPoint walletPublicKey;
+    ethsnarks::jubjub::EdwardsPoint dualAuthPublicKey;
     ethsnarks::FieldT realmID;
     ethsnarks::FieldT walletID;
     ethsnarks::FieldT orderID;
@@ -262,6 +263,8 @@ void from_json(const json& j, Order& order)
     order.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     order.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
     order.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
+    order.dualAuthPublicKey.x = ethsnarks::FieldT(j.at("dualAuthPublicKeyX").get<std::string>().c_str());
+    order.dualAuthPublicKey.y = ethsnarks::FieldT(j.at("dualAuthPublicKeyY").get<std::string>().c_str());
 
     order.realmID = ethsnarks::FieldT(j.at("realmID"));
     order.walletID = ethsnarks::FieldT(j.at("walletID"));
@@ -316,8 +319,8 @@ public:
     ethsnarks::FieldT nonce;
 
     Signature minerSignature;
-    Signature walletASignature;
-    Signature walletBSignature;
+    Signature dualAuthASignature;
+    Signature dualAuthBSignature;
 };
 
 void from_json(const json& j, Ring& ring)
@@ -342,8 +345,8 @@ void from_json(const json& j, Ring& ring)
     ring.nonce = ethsnarks::FieldT(j.at("nonce"));
 
     ring.minerSignature = j.at("minerSignature").get<Signature>();
-    ring.walletASignature = j.at("walletASignature").get<Signature>();
-    ring.walletBSignature = j.at("walletBSignature").get<Signature>();
+    ring.dualAuthASignature = j.at("dualAuthASignature").get<Signature>();
+    ring.dualAuthBSignature = j.at("dualAuthBSignature").get<Signature>();
 }
 
 class RingSettlement

@@ -56,6 +56,9 @@ def orderFromJSON(jOrder, state):
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
     dualAuthAccountID = int(jOrder["dualAuthAccountID"])
+    dualAuthPublicKeyX = int(jOrder["dualAuthPublicKeyX"])
+    dualAuthPublicKeyY = int(jOrder["dualAuthPublicKeyY"])
+    dualAuthSecretKey = int(jOrder["dualAuthSecretKey"])
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
     tokenF = int(jOrder["tokenIdF"])
@@ -73,6 +76,7 @@ def orderFromJSON(jOrder, state):
 
     order = Order(Point(account.publicKeyX, account.publicKeyY),
                   Point(walletAccount.publicKeyX, walletAccount.publicKeyY),
+                  Point(dualAuthPublicKeyX, dualAuthPublicKeyY), dualAuthSecretKey,
                   realmID, walletID, orderID, accountID, dualAuthAccountID,
                   tokenS, tokenB, tokenF,
                   amountS, amountB, amountF,
@@ -93,12 +97,10 @@ def ringFromJSON(jRing, state):
     fee = int(jRing["fee"])
 
     minerAccount = state.getAccount(minerAccountID)
-    dualAuthA = state.getAccount(orderA.dualAuthAccountID)
-    dualAuthB = state.getAccount(orderB.dualAuthAccountID)
 
     ring = Ring(orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fee, minerAccount.nonce)
 
-    ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(dualAuthA.secretKey)), FQ(int(dualAuthB.secretKey)))
+    ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(orderA.dualAuthSecretKey)), FQ(int(orderB.dualAuthSecretKey)))
 
     return ring
 
