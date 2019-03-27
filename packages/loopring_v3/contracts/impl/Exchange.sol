@@ -29,11 +29,7 @@ contract Exchange is IExchange, StakeQuery
         uint    _id,
         address _loopringAddress,
         address _owner,
-        address payable _operator,
-        address _lrcAddress,
-        address _wethAddress,
-        address _exchangeHelperAddress,
-        address _blockVerifierAddress
+        address payable _operator
         )
         public
     {
@@ -42,20 +38,19 @@ contract Exchange is IExchange, StakeQuery
         require(address(0) != _owner, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
 
-        // We can't call functions on the loopring contract here
-        loopring = ILoopringV3(loopringAddress);
-
         id = _id;
         loopringAddress = _loopringAddress;
         owner = _owner;
         operator = _operator;
 
-        lrcAddress = _lrcAddress;
-        exchangeHelperAddress = _exchangeHelperAddress;
-        blockVerifierAddress = _blockVerifierAddress;
+        loopring = ILoopringV3(loopringAddress);
+
+        lrcAddress = loopring.lrcAddress();
+        exchangeHelperAddress = loopring.exchangeHelperAddress();
+        blockVerifierAddress = loopring.blockVerifierAddress();
 
         registerToken(address(0));
-        registerToken(_wethAddress);
+        registerToken(loopring.wethAddress());
         registerToken(lrcAddress);
 
         Block memory genesisBlock = Block(

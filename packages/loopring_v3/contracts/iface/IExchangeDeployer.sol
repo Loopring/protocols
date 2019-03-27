@@ -26,11 +26,7 @@ contract IExchangeDeployer
         uint    exchangeId,
         address loopringAddress,
         address owner,
-        address payable operator,
-        address lrcAddress,
-        address wethAddress,
-        address exchangeHelperAddress,
-        address blockVerifierAddress
+        address payable operator
         )
         external
         returns (address);

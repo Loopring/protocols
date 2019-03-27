@@ -30,11 +30,7 @@ contract ExchangeDeployer is IExchangeDeployer
         uint    exchangeId,
         address loopringAddress,
         address owner,
-        address payable operator,
-        address lrcAddress,
-        address wethAddress,
-        address exchangeHelperAddress,
-        address blockVerifierAddress
+        address payable operator
         )
         external
         returns (address)
@@ -43,11 +39,7 @@ contract ExchangeDeployer is IExchangeDeployer
             exchangeId,
             loopringAddress,
             owner,
-            operator,
-            lrcAddress,
-            wethAddress,
-            exchangeHelperAddress,
-            blockVerifierAddress
+            operator
         );
         return address(exchange);
     }

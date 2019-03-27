@@ -107,11 +107,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeId,
             address(this),
             msg.sender,
-            operator,
-            lrcAddress,
-            wethAddress,
-            exchangeHelperAddress,
-            blockVerifierAddress
+            operator
         );
         exchanges.push(exchangeAddress);
 
