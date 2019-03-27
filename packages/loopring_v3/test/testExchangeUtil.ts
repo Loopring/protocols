@@ -496,7 +496,7 @@ export class ExchangeTestUtil {
 
     // Submit the withdraw request
     const tx = await this.exchange.withdraw(
-      web3.utils.toBN(tokenID),
+      token,
       web3.utils.toBN(amount),
       {from: owner, value: withdrawFee},
     );
@@ -1197,6 +1197,11 @@ export class ExchangeTestUtil {
     return tokenID;
   }
 
+  public async getAccountID(owner: string) {
+    const accountID = await this.exchange.getAccountID(owner);
+    return accountID;
+  }
+
   public async createExchange(
       owner: string,
       bSetupTestState: boolean = true,
@@ -1260,10 +1265,13 @@ export class ExchangeTestUtil {
     this.pendingBlocks[realmID] = [];
   }
 
-  public async withdrawFromMerkleTree(realmID: number, accountID: number, token: string) {
+  public async withdrawFromMerkleTree(owner: string, token: string) {
+    const accountID = await this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
-    const blockIdx = (await this.exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+    const realmID = 1;
+
+    const blockIdx = (await this.exchange.getBlockIdx()).toNumber();
     const filename = "withdraw_proof.json";
     const result = childProcess.spawnSync(
       "python3",
@@ -1277,10 +1285,9 @@ export class ExchangeTestUtil {
     const data = JSON.parse(fs.readFileSync(filename, "ascii"));
     // console.log(data);
 
-    const tx = await this.exchange.withdrawFromMerkleTree(
-      web3.utils.toBN(realmID),
-      web3.utils.toBN(accountID),
-      web3.utils.toBN(tokenID),
+    const tx = await this.exchange.withdrawFromMerkleTreeFor(
+      owner,
+      token,
       data.proof.accountProof,
       data.proof.balanceProof,
       web3.utils.toBN(data.proof.account.nonce),

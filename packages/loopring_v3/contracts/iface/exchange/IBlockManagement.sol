@@ -162,7 +162,7 @@ contract IBlockManagement is IAccountManagement
         returns (bool);
 
     function withdrawFromMerkleTree(
-        uint16 tokenID,
+        address token,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
         uint32 nonce,
@@ -172,9 +172,9 @@ contract IBlockManagement is IAccountManagement
         external
         returns (bool);
 
-    function withdrawFromMerkleTreeForAccount(
-        uint24 accountID,
-        uint16 tokenID,
+    function withdrawFromMerkleTreeFor(
+        address owner,
+        address token,
         uint256[24] memory accountPath,
         uint256[12] memory balancePath,
         uint32 nonce,

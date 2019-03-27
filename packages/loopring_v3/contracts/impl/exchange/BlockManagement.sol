@@ -164,7 +164,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
         // The specified block needs to be the first block not finalized
         // (this way we always revert to a guaranteed valid block and don't need to revert multiple times)
         Block storage previousBlock = blocks[uint(blockIdx).sub(1)];
-        require(previousBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
+        require(previousBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
         // Check if this block is verified too late
         require(
@@ -283,7 +283,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
     }
 
     function withdrawFromMerkleTree(
-        uint16 tokenID,
+        address token,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
         uint32 nonce,
@@ -293,9 +293,9 @@ contract BlockManagement is IBlockManagement, AccountManagement
         external
         returns (bool)
     {
-        return withdrawFromMerkleTreeForAccount(
-            getAccountID(msg.sender),
-            tokenID,
+        return withdrawFromMerkleTreeFor(
+            msg.sender,
+            token,
             accountPath,
             balancePath,
             nonce,
@@ -305,9 +305,9 @@ contract BlockManagement is IBlockManagement, AccountManagement
     }
 
     // We still alow anyone to withdraw these funds for the account owner
-    function withdrawFromMerkleTreeForAccount(
-        uint24 accountID,
-        uint16 tokenID,
+    function withdrawFromMerkleTreeFor(
+        address owner,
+        address token,
         uint256[24] memory accountPath,
         uint256[12] memory balancePath,
         uint32 nonce,
@@ -320,10 +320,11 @@ contract BlockManagement is IBlockManagement, AccountManagement
         require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
 
         Block storage lastBlock = blocks[blocks.length - 1];
-        require(lastBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
+        require(lastBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
+        uint24 accountID = getAccountID(owner);
         Account storage account = getAccount(accountID);
-        address token = getTokenAddress(tokenID);
+        uint16 tokenID = getTokenID(token);
         require(withdrawnInWithdrawMode[account.owner][token] == false, "WITHDRAWN_ALREADY");
 
         verifyAccountBalance(
@@ -339,10 +340,10 @@ contract BlockManagement is IBlockManagement, AccountManagement
         );
 
         // Make sure the balance can only be withdrawn once
-        withdrawnInWithdrawMode[account.owner][token] = true;
+        withdrawnInWithdrawMode[owner][token] = true;
 
         // Transfer the tokens
-        withdrawAndBurn(account.owner, tokenID, balance, isFeeRecipientAccount(account));
+        withdrawAndBurn(owner, tokenID, balance, isFeeRecipientAccount(account));
 
         return true;
     }
@@ -384,7 +385,7 @@ contract BlockManagement is IBlockManagement, AccountManagement
         require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
 
         Block storage lastBlock = blocks[blocks.length - 1];
-        require(lastBlock.state == BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
+        require(lastBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
         require (depositRequestIdx < lastBlock.numDepositRequestsCommitted, "REQUEST_COMMITTED_ALREADY");
 

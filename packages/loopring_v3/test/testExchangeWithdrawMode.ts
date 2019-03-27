@@ -13,18 +13,17 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
   });
 
-  const withdrawFromMerkleTreeChecked = async (realmID: number, accountID: number, token: string,
-                                               owner: string, expectedAmount: BN) => {
+  const withdrawFromMerkleTreeChecked = async (owner: string, token: string, expectedAmount: BN) => {
     const balanceBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
-    await exchangeTestUtil.withdrawFromMerkleTree(realmID, accountID, token);
+    await exchangeTestUtil.withdrawFromMerkleTree(owner, token);
     const balanceAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     assert(balanceAfter.eq(balanceBefore.add(expectedAmount)), "Balance withdrawn in withdraw mode incorrect");
   };
 
-  const withdrawFromPendingDepositChecked = async (realmID: number, depositBlockIdx: number, slotIdx: number,
+  const withdrawFromPendingDepositChecked = async (depositBlockIdx: number, slotIdx: number,
                                                    owner: string, token: string, expectedAmount: BN) => {
     const balanceBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
-    await exchangeTestUtil.withdrawFromPendingDeposit(realmID, depositBlockIdx, slotIdx);
+    await exchangeTestUtil.withdrawFromPendingDeposit(1, depositBlockIdx, slotIdx);
     const balanceAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     assert(balanceAfter.eq(balanceBefore.add(expectedAmount)), "Balance withdrawn in withdraw mode incorrect");
   };
@@ -33,12 +32,12 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("ERC20: withdraw from merkle tree", async () => {
-      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0]);
+      // const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0]);
+      const realmID = 1;
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const wallet = exchangeTestUtil.wallets[realmID][0];
       const balance = new BN(web3.utils.toWei("7.1", "ether"));
-      const token = "LRC";
+      const token = exchangeTestUtil.getTokenAddress("LRC");
 
       const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
@@ -49,7 +48,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(realmID, accountID, token),
+        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
         "NOT_IN_WITHDRAW_MODE",
       );
 
@@ -60,23 +59,23 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE + 1);
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
-      await withdrawFromMerkleTreeChecked(realmID, accountID, token,
-                                          owner, balance);
+      await withdrawFromMerkleTreeChecked(owner, token, balance);
 
       // Try to withdraw again
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(realmID, accountID, token),
+        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
         "WITHDRAWN_ALREADY",
       );
     });
 
     it("ETH: withdraw from merkle tree", async () => {
-      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0]);
+      // const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0]);
+      const realmID = 1;
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const wallet = exchangeTestUtil.wallets[realmID][0];
       const balance = new BN(web3.utils.toWei("1.7", "ether"));
-      const token = "ETH";
+      const token = exchangeTestUtil.getTokenAddress("ETH");
 
       const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
@@ -87,7 +86,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(realmID, accountID, token),
+        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
         "NOT_IN_WITHDRAW_MODE",
       );
 
@@ -98,12 +97,11 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE + 1);
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
-      await withdrawFromMerkleTreeChecked(realmID, accountID, token,
-                                          owner, balance);
+      await withdrawFromMerkleTreeChecked(owner, token, balance);
 
       // Try to withdraw again
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(realmID, accountID, token),
+        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
         "WITHDRAWN_ALREADY",
       );
     });
@@ -159,13 +157,13 @@ contract("Exchange", (accounts: string[]) => {
       // Try to withdraw a deposit on a non-finalized block
       await expectThrow(
         exchangeTestUtil.withdrawFromPendingDeposit(realmID, depositInfoC.depositBlockIdx, depositInfoC.slotIdx),
-        "PREV_BLOCK_NOT_FINALIZED",
+        "BLOCK_NOT_FINALIZED",
       );
 
       // Cannot revert to a non-finalized block
       await expectThrow(
         exchangeTestUtil.revertBlock(realmID, finalizedBlockIdx + 2),
-        "PREV_BLOCK_NOT_FINALIZED",
+        "BLOCK_NOT_FINALIZED",
       );
 
       // Revert back to finalized state
@@ -180,11 +178,11 @@ contract("Exchange", (accounts: string[]) => {
         "BLOCK_COMMITTED_ALREADY",
       );
       // We should be in withdrawal mode and able to withdraw from the pending deposits
-      await withdrawFromPendingDepositChecked(realmID, depositInfoB.depositBlockIdx, depositInfoB.slotIdx,
+      await withdrawFromPendingDepositChecked(depositInfoB.depositBlockIdx, depositInfoB.slotIdx,
                                               owner, tokenB, balanceB);
-      await withdrawFromPendingDepositChecked(realmID, depositInfoC.depositBlockIdx, depositInfoC.slotIdx,
+      await withdrawFromPendingDepositChecked(depositInfoC.depositBlockIdx, depositInfoC.slotIdx,
                                               owner, tokenC, balanceC);
-      await withdrawFromPendingDepositChecked(realmID, depositInfoD.depositBlockIdx, depositInfoD.slotIdx,
+      await withdrawFromPendingDepositChecked(depositInfoD.depositBlockIdx, depositInfoD.slotIdx,
                                               owner, tokenD, balanceD);
 
       // Try to withdraw again
