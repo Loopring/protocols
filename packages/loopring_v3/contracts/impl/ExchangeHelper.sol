@@ -38,7 +38,6 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         uint256[12] calldata balancePath,
         uint256 publicKeyX,
         uint256 publicKeyY,
-        uint24  walletID,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot
@@ -56,7 +55,6 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
             accountID,
             publicKeyX,
             publicKeyY,
-            walletID,
             nonce,
             calculatedRoot,
             accountPath
@@ -99,7 +97,6 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         uint24 accountID,
         uint256 publicKeyX,
         uint256 publicKeyY,
-        uint24 walletID,
         uint nonce,
         uint balancesRoot,
         uint256[24] memory accountPath
@@ -111,12 +108,11 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         uint256[29] memory IVs;
         fillLevelIVs(IVs);
 
-        uint256[] memory accountLeafElements = new uint256[](5);
+        uint256[] memory accountLeafElements = new uint256[](4);
         accountLeafElements[0] = publicKeyX;
         accountLeafElements[1] = publicKeyY;
-        accountLeafElements[2] = walletID;
-        accountLeafElements[3] = nonce;
-        accountLeafElements[4] = balancesRoot;
+        accountLeafElements[2] = nonce;
+        accountLeafElements[3] = balancesRoot;
         uint256 accountItem = MiMC.Hash(accountLeafElements, 1);
 
         uint accountAddress = accountID;

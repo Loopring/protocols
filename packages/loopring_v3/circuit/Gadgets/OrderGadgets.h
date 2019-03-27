@@ -21,7 +21,6 @@ public:
     libsnark::dual_variable_gadget<FieldT> padding;
 
     libsnark::dual_variable_gadget<FieldT> realmID;
-    VariableT walletID;
     VariableArrayT orderID;
     libsnark::dual_variable_gadget<FieldT> accountID;
     VariableArrayT dualAuthAccountID;
@@ -46,8 +45,6 @@ public:
     VariableT cancelled;
     VariableT nonce;
 
-    VariableT dualAuthorWalletID;
-
     VariableT balanceS;
     VariableT balanceB;
     VariableT balanceF;
@@ -67,7 +64,6 @@ public:
         padding(pb, 2, FMT(prefix, ".padding")),
 
         realmID(pb, 32, FMT(prefix, ".realmID")),
-        walletID(make_variable(pb, FMT(prefix, ".walletID"))),
         orderID(make_var_array(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".orderID"))),
         accountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID")),
         dualAuthAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".dualAuthAccountID"))),
@@ -91,8 +87,6 @@ public:
         filledBefore(make_variable(pb, FMT(prefix, ".filledBefore"))),
         cancelled(make_variable(pb, FMT(prefix, ".cancelled"))),
         nonce(make_variable(pb, FMT(prefix, ".nonce"))),
-
-        dualAuthorWalletID(make_variable(pb, FMT(prefix, ".dualAuthorWalletID"))),
 
         balanceS(make_variable(pb, FMT(prefix, ".balanceS"))),
         balanceB(make_variable(pb, FMT(prefix, ".balanceB"))),
@@ -122,7 +116,6 @@ public:
 
         realmID.bits.fill_with_bits_of_field_element(pb, order.realmID);
         realmID.generate_r1cs_witness_from_bits();
-        pb.val(walletID) = order.walletID;
         orderID.fill_with_bits_of_field_element(pb, order.orderID);
         accountID.bits.fill_with_bits_of_field_element(pb, order.accountID);
         accountID.generate_r1cs_witness_from_bits();
@@ -155,8 +148,6 @@ public:
         pb.val(filledBefore) = order.filledBefore;
         pb.val(cancelled) = order.cancelled;
         pb.val(nonce) = order.nonce;
-
-        pb.val(dualAuthorWalletID) = 0;
 
         pb.val(balanceS) = order.balanceS;
         pb.val(balanceB) = order.balanceB;
@@ -199,9 +190,6 @@ public:
         waiveFeePercentage.generate_r1cs_constraints(true);
 
         signatureVerifier.generate_r1cs_constraints();
-
-        /*pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
-                               FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));*/
     }
 };
 

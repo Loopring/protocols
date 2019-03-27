@@ -58,7 +58,6 @@ class Account
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::FieldT walletID;
     ethsnarks::FieldT nonce;
     ethsnarks::FieldT balancesRoot;
 };
@@ -67,7 +66,6 @@ void from_json(const json& j, Account& account)
 {
     account.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     account.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    account.walletID = ethsnarks::FieldT(j.at("walletID"));
     account.nonce = ethsnarks::FieldT(j.at("nonce"));
     account.balancesRoot = ethsnarks::FieldT(j.at("balancesRoot").get<std::string>().c_str());
 }
@@ -228,7 +226,6 @@ public:
     ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::jubjub::EdwardsPoint dualAuthPublicKey;
     ethsnarks::FieldT realmID;
-    ethsnarks::FieldT walletID;
     ethsnarks::FieldT orderID;
     ethsnarks::FieldT accountID;
     ethsnarks::FieldT dualAuthAccountID;
@@ -267,7 +264,6 @@ void from_json(const json& j, Order& order)
     order.dualAuthPublicKey.y = ethsnarks::FieldT(j.at("dualAuthPublicKeyY").get<std::string>().c_str());
 
     order.realmID = ethsnarks::FieldT(j.at("realmID"));
-    order.walletID = ethsnarks::FieldT(j.at("walletID"));
     order.orderID = ethsnarks::FieldT(j.at("orderID"));
     order.accountID = ethsnarks::FieldT(j.at("accountID"));
     order.dualAuthAccountID = ethsnarks::FieldT(j.at("dualAuthAccountID"));

@@ -285,7 +285,6 @@ export class ExchangeTestUtil {
     order.waiveFeePercentage = (order.waiveFeePercentage !== undefined) ? order.waiveFeePercentage : 50;
 
     const walletIndex = index % this.testContext.wallets.length;
-    order.walletID = 0;
     order.dualAuthAccountID = (order.dualAuthAccountID !== undefined) ?
                               order.dualAuthAccountID : this.wallets[order.realmID][walletIndex].walletAccountID;
 
@@ -517,7 +516,7 @@ export class ExchangeTestUtil {
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
                     secretKey: string, publicKeyX: string, publicKeyY: string,
                     tokenID: number, amount: BN) {
-    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, walletID: 0, tokenID, amount});
+    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, tokenID, amount});
   }
 
   public addCancel(cancels: Cancel[], accountID: number, orderTokenID: number, orderID: number,
@@ -695,7 +694,6 @@ export class ExchangeTestUtil {
               secretKey: (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
               publicKeyX: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
               publicKeyY: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
-              walletID: 0,
               tokenID: 0,
               amount: new BN(0),
             };
@@ -983,7 +981,6 @@ export class ExchangeTestUtil {
             orderA:
               {
                 realmID,
-                walletID: 0,
                 orderID: 0,
                 accountID: 0,
                 dualAuthAccountID: 0,
@@ -1009,7 +1006,6 @@ export class ExchangeTestUtil {
             orderB:
               {
                 realmID,
-                walletID: 0,
                 orderID: 0,
                 accountID: 0,
                 dualAuthAccountID: 0,

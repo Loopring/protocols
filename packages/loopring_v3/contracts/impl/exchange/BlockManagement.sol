@@ -369,7 +369,6 @@ contract BlockManagement is IBlockManagement, AccountManagement
             balancePath,
             account.publicKeyX,
             account.publicKeyY,
-            0,
             nonce,
             balance,
             tradeHistoryRoot
@@ -610,7 +609,6 @@ contract BlockManagement is IBlockManagement, AccountManagement
                         uint24(0),
                         DEFAULT_ACCOUNT_PUBLICKEY_X,
                         DEFAULT_ACCOUNT_PUBLICKEY_Y,
-                        uint24(0),
                         uint16(0),
                         uint96(0)
                     )

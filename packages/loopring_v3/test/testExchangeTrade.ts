@@ -19,7 +19,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Trade", function() {
     this.timeout(0);
 
-    it("Perfect match", async () => {
+    it.only("Perfect match", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -618,7 +618,6 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
 
       ring.orderB.accountID = ring.orderA.accountID;
-      ring.orderB.walletID = ring.orderA.walletID;
       ring.orderB.dualAuthAccountID = ring.orderA.dualAuthAccountID;
 
       await exchangeTestUtil.sendRing(realmID, ring);
@@ -661,7 +660,6 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
 
       ring.orderB.accountID = ring.orderA.accountID;
-      ring.orderB.walletID = ring.orderA.walletID;
       ring.orderB.dualAuthAccountID = ring.orderA.dualAuthAccountID;
 
       await exchangeTestUtil.sendRing(realmID, ring);

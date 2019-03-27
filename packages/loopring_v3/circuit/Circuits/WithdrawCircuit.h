@@ -46,8 +46,6 @@ public:
     libsnark::dual_variable_gadget<FieldT> fee;
     libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
 
-    VariableT walletID;
-
     libsnark::dual_variable_gadget<FieldT> nonce_before;
     VariableT nonce_after;
 
@@ -63,12 +61,6 @@ public:
     VariableT balancesRoot_W_before;
     VariableT balanceF_W_before;
     VariableT nonce_W;
-    VariableT dualAuthorWalletID;
-
-    VariableT maxNumWallets;
-    LeqGadget walletID_lt_MaxNumWallets;
-    VariableT dualAuthorWalletID_T;
-    TernaryGadget expectedDualAuthorWalletID;
 
     VariableT tradingHistoryRootF_O;
     VariableT balanceF_O_before;
@@ -125,8 +117,6 @@ public:
         fee(pb, 96, FMT(prefix, ".fee")),
         walletSplitPercentage(pb, 7, FMT(prefix, ".walletSplitPercentage")),
 
-        walletID(make_variable(pb, FMT(prefix, ".walletID"))),
-
         nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, FMT(prefix, ".nonce_after"))),
 
@@ -142,12 +132,6 @@ public:
         balancesRoot_W_before(make_variable(pb, FMT(prefix, ".balancesRoot_W_before"))),
         balanceF_W_before(make_variable(pb, FMT(prefix, ".balanceF_W_before"))),
         nonce_W(make_variable(pb, FMT(prefix, ".nonce_W"))),
-
-        dualAuthorWalletID(make_variable(pb, FMT(prefix, ".dualAuthorWalletID"))),
-        maxNumWallets(make_variable(pb, 0, FMT(prefix, ".maxNumWallets"))),
-        walletID_lt_MaxNumWallets(pb, walletID, maxNumWallets, FMT(prefix, ".walletID < MAX_NUM_WALLETS")),
-        dualAuthorWalletID_T(make_variable(pb, FMT(prefix, ".dualAuthorWalletID_T"))),
-        expectedDualAuthorWalletID(pb, walletID_lt_MaxNumWallets.lt(), dualAuthorWalletID_T, walletID, FMT(prefix, ".expectedDualAuthorWalletID")),
 
         tradingHistoryRootF_O(make_variable(pb, FMT(prefix, ".tradingHistoryRootF_O"))),
         balanceF_O_before(make_variable(pb, FMT(prefix, ".balanceF_O_before"))),
@@ -172,8 +156,8 @@ public:
                          FMT(prefix, ".updateBalanceW_A")),
 
         updateAccount_A(pb, _accountsMerkleRoot, accountID,
-                        {publicKey.x, publicKey.y, walletID, nonce_before.packed, balancesRoot_before},
-                        {publicKey.x, publicKey.y, walletID, nonce_after, updateBalanceW_A.getNewRoot()},
+                        {publicKey.x, publicKey.y, nonce_before.packed, balancesRoot_before},
+                        {publicKey.x, publicKey.y, nonce_after, updateBalanceW_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
 
 
@@ -183,8 +167,8 @@ public:
                          FMT(prefix, ".updateBalanceF_W")),
 
         updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountID,
-                        {walletPublicKey.x, walletPublicKey.y, dualAuthorWalletID, nonce_W, balancesRoot_W_before},
-                        {walletPublicKey.x, walletPublicKey.y, dualAuthorWalletID, nonce_W, updateBalanceF_W.getNewRoot()},
+                        {walletPublicKey.x, walletPublicKey.y, nonce_W, balancesRoot_W_before},
+                        {walletPublicKey.x, walletPublicKey.y, nonce_W, updateBalanceF_W.getNewRoot()},
                         FMT(prefix, ".updateAccount_W")),
 
 
@@ -252,8 +236,6 @@ public:
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        pb.val(walletID) = withdrawal.accountUpdate_A.before.walletID;
-
         nonce_before.bits.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_A.before.nonce);
         nonce_before.generate_r1cs_witness_from_bits();
         pb.val(nonce_after) = withdrawal.accountUpdate_A.after.nonce;
@@ -270,11 +252,6 @@ public:
         pb.val(balancesRoot_W_before) = withdrawal.accountUpdate_W.before.balancesRoot;
         pb.val(balanceF_W_before) = withdrawal.balanceUpdateF_W.before.balance;
         pb.val(nonce_W) = withdrawal.accountUpdate_W.before.nonce;
-
-        pb.val(dualAuthorWalletID) = withdrawal.accountUpdate_W.before.walletID;
-        walletID_lt_MaxNumWallets.generate_r1cs_witness();
-        pb.val(dualAuthorWalletID_T) = 0;
-        expectedDualAuthorWalletID.generate_r1cs_witness();
 
         pb.val(tradingHistoryRootF_O) = withdrawal.balanceUpdateF_O.before.tradingHistoryRoot;
         pb.val(balanceF_O_before) = withdrawal.balanceUpdateF_O.before.balance;
@@ -339,11 +316,6 @@ public:
             signatureVerifier.generate_r1cs_constraints();
             walletSignatureVerifier.generate_r1cs_constraints();
             pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
-
-            /*walletID_lt_MaxNumWallets.generate_r1cs_constraints();
-            pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID_T), "feeToWallet + feeToOperator == dualAuthorWalletID_T");
-            expectedDualAuthorWalletID.generate_r1cs_constraints();
-            pb.add_r1cs_constraint(ConstraintT(dualAuthorWalletID, FieldT::one(), expectedDualAuthorWalletID.result()), "dualAuthorWalletID == expectedDualAuthorWalletID");*/
         }
         else
         {
@@ -472,8 +444,8 @@ public:
             publicData.add(count.bits);
 
             updateAccount_O = new UpdateAccountGadget(pb, withdrawals.back().getNewAccountsRoot(), operatorAccountID.bits,
-                {publicKey.x, publicKey.y, constant0, nonce, balancesRoot_before},
-                {publicKey.x, publicKey.y, constant0, nonce, withdrawals.back().getNewOperatorBalancesRoot()},
+                {publicKey.x, publicKey.y, nonce, balancesRoot_before},
+                {publicKey.x, publicKey.y, nonce, withdrawals.back().getNewOperatorBalancesRoot()},
                 FMT(annotation_prefix, ".updateAccount_O"));
             updateAccount_O->generate_r1cs_constraints();
         }

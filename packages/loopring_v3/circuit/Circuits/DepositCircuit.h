@@ -31,7 +31,6 @@ public:
 
     const VariableT publicKeyX_before;
     const VariableT publicKeyY_before;
-    const VariableT walletID_before;
     const VariableT nonce;
 
     const VariableT tradingHistoryRoot_before;
@@ -39,7 +38,6 @@ public:
 
     libsnark::dual_variable_gadget<FieldT> publicKeyX_after;
     libsnark::dual_variable_gadget<FieldT> publicKeyY_after;
-    libsnark::dual_variable_gadget<FieldT> walletID_after;
 
     const VariableT tradingHistoryRoot_after;
     const VariableT balancesRoot_after;
@@ -69,14 +67,12 @@ public:
 
         publicKeyX_before(make_variable(pb, 0, FMT(prefix, ".publicKeyX_before"))),
         publicKeyY_before(make_variable(pb, 0, FMT(prefix, ".publicKeyY_before"))),
-        walletID_before(make_variable(pb, 0, FMT(prefix, ".walletID_before"))),
 
         tradingHistoryRoot_before(make_variable(pb, 0, FMT(prefix, ".tradingHistoryRoot_before"))),
         balancesRoot_before(make_variable(pb, 0, FMT(prefix, ".balancesRoot_before"))),
 
         publicKeyX_after(pb, 256, FMT(prefix, ".publicKeyX_after")),
         publicKeyY_after(pb, 256, FMT(prefix, ".publicKeyY_after")),
-        walletID_after(pb, NUM_BITS_WALLETID, FMT(prefix, ".walletID_after")),
 
         tradingHistoryRoot_after(make_variable(pb, 0, FMT(prefix, ".tradingHistoryRoot_after"))),
         balancesRoot_after(make_variable(pb, 0, FMT(prefix, ".balancesRoot_after"))),
@@ -89,8 +85,8 @@ public:
                       FMT(prefix, ".updateBalance")),
 
         updateAccount(pb, root, accountID,
-                      {publicKeyX_before, publicKeyY_before, walletID_before, nonce, balancesRoot_before},
-                      {publicKeyX_after.packed, publicKeyY_after.packed, walletID_after.packed, nonce, updateBalance.getNewRoot()},
+                      {publicKeyX_before, publicKeyY_before, nonce, balancesRoot_before},
+                      {publicKeyX_after.packed, publicKeyY_after.packed, nonce, updateBalance.getNewRoot()},
                       FMT(prefix, ".updateAccount"))
     {
 
@@ -104,7 +100,7 @@ public:
     const std::vector<VariableArrayT> getOnchainData() const
     {
         return {accountID, publicKeyX_after.bits, publicKeyY_after.bits,
-                walletID_after.bits, uint16_padding, tokenID,
+                uint16_padding, tokenID,
                 amount.bits};
     }
 
@@ -123,14 +119,11 @@ public:
 
         pb.val(publicKeyX_before) = deposit.accountUpdate.before.publicKey.x;
         pb.val(publicKeyY_before) = deposit.accountUpdate.before.publicKey.y;
-        pb.val(walletID_before) = deposit.accountUpdate.before.walletID;
 
         publicKeyX_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.x);
         publicKeyX_after.generate_r1cs_witness_from_bits();
         publicKeyY_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.y);
         publicKeyY_after.generate_r1cs_witness_from_bits();
-        walletID_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.walletID);
-        walletID_after.generate_r1cs_witness_from_bits();
         pb.val(balance_after) = deposit.balanceUpdate.after.balance;
         pb.val(tradingHistoryRoot_after) = deposit.balanceUpdate.after.tradingHistoryRoot;
         pb.val(balancesRoot_after) = deposit.accountUpdate.after.balancesRoot;
@@ -146,7 +139,6 @@ public:
     {
         publicKeyX_after.generate_r1cs_constraints(true);
         publicKeyY_after.generate_r1cs_constraints(true);
-        walletID_after.generate_r1cs_constraints(true);
 
         amount.generate_r1cs_constraints(true);
 

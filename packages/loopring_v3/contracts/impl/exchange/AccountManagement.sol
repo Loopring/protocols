@@ -186,7 +186,6 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
                     accountID,
                     publicKeyX,
                     publicKeyY,
-                    uint24(0),
                     tokenID,
                     amount
                 )

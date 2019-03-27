@@ -53,12 +53,10 @@ public:
     VariableT balancesRoot_W_before;
     VariableT balanceF_W_before;
     VariableT nonce_W;
-    VariableT dualAuthorWalletID;
 
     VariableT balanceF_O_before;
     VariableT tradingHistoryRootF_O;
 
-    VariableT walletID;
     libsnark::dual_variable_gadget<FieldT> nonce_before;
     VariableT nonce_after;
     VariableT balancesRoot_before;
@@ -124,12 +122,10 @@ public:
         balancesRoot_W_before(make_variable(pb, FMT(prefix, ".balancesRoot_W_before"))),
         balanceF_W_before(make_variable(pb, FMT(prefix, ".balanceF_W_before"))),
         nonce_W(make_variable(pb, FMT(prefix, ".nonce_W"))),
-        dualAuthorWalletID(make_variable(pb, FMT(prefix, ".dualAuthorWalletID"))),
 
         balanceF_O_before(make_variable(pb, FMT(prefix, ".balanceF_O_before"))),
         tradingHistoryRootF_O(make_variable(pb, FMT(prefix, ".tradingHistoryRootF_O"))),
 
-        walletID(make_variable(pb, FMT(prefix, ".walletID"))),
         nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, 1, FMT(prefix, ".cancelled_after"))),
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
@@ -154,8 +150,8 @@ public:
                          FMT(prefix, ".updateBalanceF_A")),
 
         updateAccount_A(pb, _accountsMerkleRoot, accountID,
-                        {publicKey.x, publicKey.y, walletID, nonce_before.packed, balancesRoot_before},
-                        {publicKey.x, publicKey.y, walletID, nonce_after, updateBalanceF_A.getNewRoot()},
+                        {publicKey.x, publicKey.y, nonce_before.packed, balancesRoot_before},
+                        {publicKey.x, publicKey.y, nonce_after, updateBalanceF_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
 
 
@@ -165,8 +161,8 @@ public:
                          FMT(prefix, ".updateBalanceF_W")),
 
         updateAccount_W(pb, updateAccount_A.result(), dualAuthAccountID,
-                        {walletPublicKey.x, walletPublicKey.y, dualAuthorWalletID, nonce_W, balancesRoot_W_before},
-                        {walletPublicKey.x, walletPublicKey.y, dualAuthorWalletID, nonce_W, updateBalanceF_W.getNewRoot()},
+                        {walletPublicKey.x, walletPublicKey.y, nonce_W, balancesRoot_W_before},
+                        {walletPublicKey.x, walletPublicKey.y, nonce_W, updateBalanceF_W.getNewRoot()},
                         FMT(prefix, ".updateAccount_W")),
 
 
@@ -236,12 +232,10 @@ public:
         pb.val(balancesRoot_W_before) = cancellation.accountUpdate_W.before.balancesRoot;
         pb.val(balanceF_W_before) = cancellation.balanceUpdateF_W.before.balance;
         pb.val(nonce_W) = cancellation.accountUpdate_W.before.nonce;
-        pb.val(dualAuthorWalletID) = cancellation.accountUpdate_W.before.walletID;
 
         pb.val(balanceF_O_before) = cancellation.balanceUpdateF_O.before.balance;
         pb.val(tradingHistoryRootF_O) = cancellation.balanceUpdateF_O.before.tradingHistoryRoot;
 
-        pb.val(walletID) = cancellation.accountUpdate_A.before.walletID;
         nonce_before.bits.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_A.before.nonce);
         nonce_before.generate_r1cs_witness_from_bits();
         pb.val(nonce_after) = cancellation.accountUpdate_A.after.nonce;
@@ -293,9 +287,6 @@ public:
 
         pb.add_r1cs_constraint(ConstraintT(cancelled_after, FieldT::one(), FieldT::one()), "cancelled_after == 1");
         pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
-
-        /*pb.add_r1cs_constraint(ConstraintT(walletID + MAX_NUM_WALLETS, FieldT::one(), dualAuthorWalletID),
-                               FMT(annotation_prefix, ".walletID + MAX_NUM_WALLETS = dualAuthorWalletID"));*/
     }
 };
 
@@ -374,8 +365,8 @@ public:
 
         operatorAccountID.generate_r1cs_constraints(true);
         updateAccount_O = new UpdateAccountGadget(pb, cancels.back().getNewAccountsRoot(), operatorAccountID.bits,
-                {publicKey.x, publicKey.y, constant0, nonce, balancesRoot_before},
-                {publicKey.x, publicKey.y, constant0, nonce, cancels.back().getNewOperatorBalancesRoot()},
+                {publicKey.x, publicKey.y, nonce, balancesRoot_before},
+                {publicKey.x, publicKey.y, nonce, cancels.back().getNewOperatorBalancesRoot()},
                 FMT(annotation_prefix, ".updateAccount_O"));
         updateAccount_O->generate_r1cs_constraints();
 

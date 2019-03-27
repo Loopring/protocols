@@ -54,7 +54,7 @@ contract Exchange is IExchange, StakeQuery
         registerToken(lrcAddress);
 
         Block memory genesisBlock = Block(
-            0x1325726ba90231a978b9ab8b6b232f27d419333c8098fbd57b3ddc7378c0d9ed,
+            0x052a665459ab63c26cccff7e4f5b70727ecda24f2d398695fc3943e62b4b1901,
             0x0,
             BlockState.FINALIZED,
             uint32(now),

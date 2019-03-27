@@ -52,7 +52,6 @@ class CancelExport(object):
 
 def orderFromJSON(jOrder, state):
     realmID = int(jOrder["realmID"])
-    walletID = int(jOrder["walletID"])
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
     dualAuthAccountID = int(jOrder["dualAuthAccountID"])
@@ -77,7 +76,7 @@ def orderFromJSON(jOrder, state):
     order = Order(Point(account.publicKeyX, account.publicKeyY),
                   Point(walletAccount.publicKeyX, walletAccount.publicKeyY),
                   Point(dualAuthPublicKeyX, dualAuthPublicKeyY), dualAuthSecretKey,
-                  realmID, walletID, orderID, accountID, dualAuthAccountID,
+                  realmID, orderID, accountID, dualAuthAccountID,
                   tokenS, tokenB, tokenF,
                   amountS, amountB, amountF,
                   allOrNone, validSince, validUntil,
@@ -118,11 +117,10 @@ def deposit(state, data):
         secretKey = int(depositInfo["secretKey"])
         publicKeyX = int(depositInfo["publicKeyX"])
         publicKeyY = int(depositInfo["publicKeyY"])
-        walletID = int(depositInfo["walletID"])
         token = int(depositInfo["tokenID"])
         amount = int(depositInfo["amount"])
 
-        deposit = state.deposit(accountID, secretKey, publicKeyX, publicKeyY, walletID, token, amount)
+        deposit = state.deposit(accountID, secretKey, publicKeyX, publicKeyY, token, amount)
 
         export.deposits.append(deposit)
 

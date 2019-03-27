@@ -30,7 +30,6 @@ contract IExchangeHelper
         uint256[12] calldata balancePath,
         uint256 publicKeyX,
         uint256 publicKeyY,
-        uint24  walletID,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot

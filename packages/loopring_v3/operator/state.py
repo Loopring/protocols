@@ -35,7 +35,7 @@ def copyAccountInfo(account):
     return c
 
 def getDefaultAccount():
-    return Account(DEFAULT_ACCOUNT_SECRETKEY, Point(DEFAULT_ACCOUNT_PUBLICKEY_X, DEFAULT_ACCOUNT_PUBLICKEY_Y), 0)
+    return Account(DEFAULT_ACCOUNT_SECRETKEY, Point(DEFAULT_ACCOUNT_PUBLICKEY_X, DEFAULT_ACCOUNT_PUBLICKEY_Y))
 
 class Context(object):
     def __init__(self, operatorAccountID, timestamp):
@@ -111,11 +111,10 @@ class TradeHistoryLeaf(object):
 
 
 class Account(object):
-    def __init__(self, secretKey, publicKey, walletID):
+    def __init__(self, secretKey, publicKey):
         self.secretKey = str(secretKey)
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.walletID = walletID
         self.nonce = 0
         # Balances
         self._balancesTree = SparseMerkleTree(TREE_DEPTH_TOKENS)
@@ -124,13 +123,12 @@ class Account(object):
         #print("Empty balances tree: " + str(self._balancesTree._root))
 
     def hash(self):
-        return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.walletID), int(self.nonce), int(self._balancesTree._root)], 1)
+        return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], 1)
 
     def fromJSON(self, jAccount):
         self.secretKey = jAccount["secretKey"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
-        self.walletID = int(jAccount["walletID"])
         self.nonce = int(jAccount["nonce"])
         # Balances
         balancesLeafsDict = jAccount["_balancesLeafs"]
@@ -273,7 +271,7 @@ class Order(object):
     def __init__(self,
                  publicKey, walletPublicKey,
                  dualAuthPublicKey, dualAuthSecretKey,
-                 realmID, walletID, orderID, accountID, dualAuthAccountID,
+                 realmID, orderID, accountID, dualAuthAccountID,
                  tokenS, tokenB, tokenF,
                  amountS, amountB, amountF,
                  allOrNone, validSince, validUntil,
@@ -287,7 +285,6 @@ class Order(object):
         self.dualAuthSecretKey = str(dualAuthSecretKey)
 
         self.realmID = int(realmID)
-        self.walletID = int(walletID)
         self.orderID = int(orderID)
         self.accountID = int(accountID)
         self.dualAuthAccountID = int(dualAuthAccountID)
@@ -436,7 +433,7 @@ class Withdrawal(object):
                  walletPublicKey,
                  realmID,
                  accountID, tokenID, amount,
-                 walletID, dualAuthAccountID,
+                 dualAuthAccountID,
                  operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                  nonce,
                  amountWithdrawn,
@@ -451,7 +448,6 @@ class Withdrawal(object):
         self.accountID = accountID
         self.tokenID = tokenID
         self.amount = str(amount)
-        self.walletID = walletID
         self.dualAuthAccountID = dualAuthAccountID
         self.operatorAccountID = operatorAccountID
         self.feeTokenID = feeTokenID
@@ -491,7 +487,7 @@ class Cancellation(object):
                  publicKey,
                  walletPublicKey,
                  realmID,
-                 accountID, orderTokenID, orderID, walletID, dualAuthorAccountID,
+                 accountID, orderTokenID, orderID, dualAuthorAccountID,
                  operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                  nonce,
                  tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
@@ -505,7 +501,6 @@ class Cancellation(object):
         self.accountID = accountID
         self.orderTokenID = orderTokenID
         self.orderID = orderID
-        self.walletID = walletID
         self.dualAuthorAccountID = dualAuthorAccountID
         self.operatorAccountID = operatorAccountID
         self.feeTokenID = feeTokenID
@@ -823,7 +818,7 @@ class State(object):
                               walletFee_B, matchingFee_B)
 
 
-    def deposit(self, accountID, secretKey, publicKeyX, publicKeyY, walletID, token, amount):
+    def deposit(self, accountID, secretKey, publicKeyX, publicKeyY, token, amount):
         # Copy the initial merkle root
         rootBefore = self._accountsTree._root
 
@@ -836,7 +831,7 @@ class State(object):
 
         # Create the account if necessary
         if not(str(accountID) in self._accounts):
-            self._accounts[str(accountID)] = Account(secretKey, Point(publicKeyX, publicKeyY), walletID)
+            self._accounts[str(accountID)] = Account(secretKey, Point(publicKeyX, publicKeyY))
 
         account = self.getAccount(accountID)
         balanceUpdate = account.updateBalance(token, amount)
@@ -906,7 +901,7 @@ class State(object):
                                 Point(int(walletAccount.publicKeyX), int(walletAccount.publicKeyY)),
                                 realmID,
                                 accountID, tokenID, amount,
-                                walletAccount.walletID, dualAuthAccountID,
+                                dualAuthAccountID,
                                 operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                                 nonce,
                                 amountWithdrawn,
@@ -960,7 +955,7 @@ class State(object):
         cancellation = Cancellation(Point(int(account.publicKeyX), int(account.publicKeyY)),
                                     Point(int(walletAccount.publicKeyX), int(walletAccount.publicKeyY)),
                                     realmID,
-                                    accountID, orderTokenID, orderID, walletAccount.walletID, dualAuthAccountID,
+                                    accountID, orderTokenID, orderID, dualAuthAccountID,
                                     operatorAccountID, feeTokenID, fee, walletSplitPercentage,
                                     nonce,
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,

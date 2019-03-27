@@ -13,7 +13,6 @@ export interface OrderInfo {
   realmID?: number;
   accountID?: number;
   orderID?: number;
-  walletID?: number;
   dualAuthAccountID?: number;
 
   dualAuthPublicKeyX?: string;
@@ -73,7 +72,6 @@ export interface Deposit {
   secretKey: string;
   publicKeyX: string;
   publicKeyY: string;
-  walletID: number;
   tokenID: number;
   amount: BN;
 }

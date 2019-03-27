@@ -59,9 +59,6 @@ public:
     VariableT nonce_after;
 
     VariableT feeRecipientNonce;
-    VariableT feeRecipientWalletID;
-
-    ForceLeqGadget maxNumWallets_leq_feeRecipientWalletID;
 
     OrderGadget orderA;
     OrderGadget orderB;
@@ -178,9 +175,6 @@ public:
         nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, FMT(prefix, ".nonce_after"))),
         feeRecipientNonce(make_variable(pb, FMT(prefix, ".feeRecipientNonce"))),
-        feeRecipientWalletID(make_variable(pb, FMT(prefix, ".feeRecipientWalletID"))),
-
-        maxNumWallets_leq_feeRecipientWalletID(pb, maxNumWallets, feeRecipientWalletID, FMT(prefix, ".maxNumWallets <= feeRecipientWalletID")),
 
         orderA(pb, params, _realmID, FMT(prefix, ".orderA")),
         orderB(pb, params, _realmID, FMT(prefix, ".orderB")),
@@ -270,8 +264,8 @@ public:
                          {balanceF_MA.X, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
         updateAccount_A(pb, _accountsRoot, orderA.accountID.bits,
-                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID, orderA.nonce, balancesRootA},
-                        {orderA.publicKey.x, orderA.publicKey.y, orderA.walletID, orderA.nonce, updateBalanceF_A.getNewRoot()},
+                        {orderA.publicKey.x, orderA.publicKey.y, orderA.nonce, balancesRootA},
+                        {orderA.publicKey.x, orderA.publicKey.y, orderA.nonce, updateBalanceF_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
 
         updateBalanceS_B(pb, balancesRootB, orderB.tokenS.bits,
@@ -287,8 +281,8 @@ public:
                          {balanceF_MB.X, tradingHistoryRootF_B},
                          FMT(prefix, ".updateBalanceF_B")),
         updateAccount_B(pb, updateAccount_A.result(), orderB.accountID.bits,
-                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID, orderB.nonce, balancesRootB},
-                        {orderB.publicKey.x, orderB.publicKey.y, orderB.walletID, orderB.nonce, updateBalanceF_B.getNewRoot()},
+                        {orderB.publicKey.x, orderB.publicKey.y, orderB.nonce, balancesRootB},
+                        {orderB.publicKey.x, orderB.publicKey.y, orderB.nonce, updateBalanceF_B.getNewRoot()},
                         FMT(prefix, ".updateAccount_B")),
 
 
@@ -299,8 +293,8 @@ public:
                         {balanceF_WA.Y, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceA_W")),
         updateAccountA_W(pb, updateAccount_B.result(), orderA.dualAuthAccountID,
-                         {orderA.walletPublicKey.x, orderA.walletPublicKey.y, orderA.dualAuthorWalletID, nonce_WA, balancesRoot_WA},
-                         {orderA.walletPublicKey.x, orderA.walletPublicKey.y, orderA.dualAuthorWalletID, nonce_WA, updateBalanceA_W.getNewRoot()},
+                         {orderA.walletPublicKey.x, orderA.walletPublicKey.y, nonce_WA, balancesRoot_WA},
+                         {orderA.walletPublicKey.x, orderA.walletPublicKey.y, nonce_WA, updateBalanceA_W.getNewRoot()},
                          FMT(prefix, ".updateAccountA_W")),
 
         nonce_WB(make_variable(pb, FMT(prefix, ".nonce_WB"))),
@@ -310,8 +304,8 @@ public:
                         {balanceF_WB.Y, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceB_W")),
         updateAccountB_W(pb, updateAccountA_W.result(), orderB.dualAuthAccountID,
-                         {orderB.walletPublicKey.x, orderB.walletPublicKey.y, orderB.dualAuthorWalletID, nonce_WB, balancesRoot_WB},
-                         {orderB.walletPublicKey.x, orderB.walletPublicKey.y, orderB.dualAuthorWalletID, nonce_WB, updateBalanceB_W.getNewRoot()},
+                         {orderB.walletPublicKey.x, orderB.walletPublicKey.y, nonce_WB, balancesRoot_WB},
+                         {orderB.walletPublicKey.x, orderB.walletPublicKey.y, nonce_WB, updateBalanceB_W.getNewRoot()},
                          FMT(prefix, ".updateAccountB_W")),
 
         updateBalanceA_F(pb, balancesRootF, orderA.tokenF.bits,
@@ -323,8 +317,8 @@ public:
                         {balanceF_MB.Y, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceB_F")),
         updateAccount_F(pb, updateAccountB_W.result(), feeRecipientAccountID.bits,
-                        {feeRecipientPublicKey.x, feeRecipientPublicKey.y, feeRecipientWalletID, feeRecipientNonce, balancesRootF},
-                        {feeRecipientPublicKey.x, feeRecipientPublicKey.y, feeRecipientWalletID, feeRecipientNonce, updateBalanceB_F.getNewRoot()},
+                        {feeRecipientPublicKey.x, feeRecipientPublicKey.y, feeRecipientNonce, balancesRootF},
+                        {feeRecipientPublicKey.x, feeRecipientPublicKey.y, feeRecipientNonce, updateBalanceB_F.getNewRoot()},
                         FMT(prefix, ".updateAccount_M")),
 
         updateBalanceM_M(pb, balancesRootM, orderA.tokenS.bits,
@@ -336,8 +330,8 @@ public:
                         {balance_M.X, emptyTradeHistory},
                         FMT(prefix, ".updateBalanceO_M")),
         updateAccount_M(pb, updateAccount_F.result(), minerAccountID.bits,
-                        {publicKey.x, publicKey.y, constant0, nonce_before.packed, balancesRootM},
-                        {publicKey.x, publicKey.y, constant0, nonce_after, updateBalanceO_M.getNewRoot()},
+                        {publicKey.x, publicKey.y, nonce_before.packed, balancesRootM},
+                        {publicKey.x, publicKey.y, nonce_after, updateBalanceO_M.getNewRoot()},
                         FMT(prefix, ".updateAccount_M")),
 
         updateBalanceF_O(pb, _operatorBalancesRoot, tokenID,
@@ -419,9 +413,6 @@ public:
         nonce_before.generate_r1cs_witness_from_bits();
         pb.val(nonce_after) = ringSettlement.ring.nonce + 1;
         pb.val(feeRecipientNonce) = ringSettlement.accountUpdate_F.before.nonce;
-        pb.val(feeRecipientWalletID) = ringSettlement.accountUpdate_F.before.walletID;
-
-        maxNumWallets_leq_feeRecipientWalletID.generate_r1cs_witness();
 
         orderA.generate_r1cs_witness(ringSettlement.ring.orderA);
         orderB.generate_r1cs_witness(ringSettlement.ring.orderB);
@@ -543,8 +534,6 @@ public:
         feeRecipientAccountID.generate_r1cs_constraints(true);
         fee.generate_r1cs_constraints(true);
         nonce_before.generate_r1cs_constraints(true);
-
-        // maxNumWallets_leq_feeRecipientWalletID.generate_r1cs_constraints();
 
         orderA.generate_r1cs_constraints();
         orderB.generate_r1cs_constraints();
@@ -734,8 +723,8 @@ public:
 
         // Pay the operator
         updateAccount_O = new UpdateAccountGadget(pb, ringSettlements.back()->getNewAccountsRoot(), operatorAccountID.bits,
-                      {publicKey.x, publicKey.y, constant0, constant0, balancesRoot_before},
-                      {publicKey.x, publicKey.y, constant0, constant0, ringSettlements.back()->getNewOperatorBalancesRoot()},
+                      {publicKey.x, publicKey.y, constant0, balancesRoot_before},
+                      {publicKey.x, publicKey.y, constant0, ringSettlements.back()->getNewOperatorBalancesRoot()},
                       FMT(annotation_prefix, ".updateAccount_O"));
         updateAccount_O->generate_r1cs_constraints();
 
