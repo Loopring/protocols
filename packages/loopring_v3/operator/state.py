@@ -308,10 +308,11 @@ class Order(object):
         msg_parts = [
                         FQ(int(self.realmID), 1<<32), FQ(int(self.orderID), 1<<16),
                         FQ(int(self.accountID), 1<<24), FQ(int(self.walletAccountID), 1<<24),
+                        FQ(int(self.dualAuthPublicKeyX), 1<<254), FQ(int(self.dualAuthPublicKeyY), 1<<254),
                         FQ(int(self.tokenS), 1<<12), FQ(int(self.tokenB), 1<<12), FQ(int(self.tokenF), 1<<12),
                         FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96),
                         FQ(int(self.allOrNone), 1<<1), FQ(int(self.validSince), 1<<32), FQ(int(self.validUntil), 1<<32),
-                        FQ(int(self.walletSplitPercentage), 1<<7), FQ(int(0), 1<<2)
+                        FQ(int(self.walletSplitPercentage), 1<<7), FQ(int(0), 1<<1)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 

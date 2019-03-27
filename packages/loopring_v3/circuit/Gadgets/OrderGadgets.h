@@ -39,6 +39,9 @@ public:
 
     const jubjub::VariablePointT publicKey;
     const jubjub::VariablePointT walletPublicKey;
+
+    libsnark::dual_variable_gadget<FieldT> dualAuthPublicKeyX;
+    libsnark::dual_variable_gadget<FieldT> dualAuthPublicKeyY;
     const jubjub::VariablePointT dualAuthPublicKey;
 
     VariableT filledBefore;
@@ -61,7 +64,7 @@ public:
 
         blockRealmID(_blockRealmID),
 
-        padding(pb, 2, FMT(prefix, ".padding")),
+        padding(pb, 1, FMT(prefix, ".padding")),
 
         realmID(pb, 32, FMT(prefix, ".realmID")),
         orderID(make_var_array(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".orderID"))),
@@ -82,7 +85,10 @@ public:
 
         publicKey(pb, FMT(prefix, ".publicKey")),
         walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
-        dualAuthPublicKey(pb, FMT(prefix, ".dualAuthPublicKey")),
+
+        dualAuthPublicKeyX(pb, 254, FMT(prefix, ".dualAuthPublicKeyX")),
+        dualAuthPublicKeyY(pb, 254, FMT(prefix, ".dualAuthPublicKeyY")),
+        dualAuthPublicKey(dualAuthPublicKeyX.packed, dualAuthPublicKeyY.packed),
 
         filledBefore(make_variable(pb, FMT(prefix, ".filledBefore"))),
         cancelled(make_variable(pb, FMT(prefix, ".cancelled"))),
@@ -94,6 +100,7 @@ public:
 
         signatureVerifier(pb, params, publicKey,
                           flatten({realmID.bits, orderID, accountID.bits, walletAccountID,
+                          dualAuthPublicKeyX.bits, dualAuthPublicKeyY.bits,
                           tokenS.bits, tokenB.bits, tokenF.bits,
                           amountS.bits, amountB.bits, amountF.bits,
                           allOrNone.bits, validSince.bits, validUntil.bits,
@@ -159,8 +166,10 @@ public:
         pb.val(walletPublicKey.x) = order.walletPublicKey.x;
         pb.val(walletPublicKey.y) = order.walletPublicKey.y;
 
-        pb.val(dualAuthPublicKey.x) = order.dualAuthPublicKey.x;
-        pb.val(dualAuthPublicKey.y) = order.dualAuthPublicKey.y;
+        dualAuthPublicKeyX.bits.fill_with_bits_of_field_element(pb, order.dualAuthPublicKey.x);
+        dualAuthPublicKeyX.generate_r1cs_witness_from_bits();
+        dualAuthPublicKeyY.bits.fill_with_bits_of_field_element(pb, order.dualAuthPublicKey.y);
+        dualAuthPublicKeyY.generate_r1cs_witness_from_bits();
 
         signatureVerifier.generate_r1cs_witness(order.signature);
     }
