@@ -88,7 +88,7 @@ contract IAccountManagement
     function createAccount(
         uint publicKeyX,
         uint publicKeyY,
-        uint16 tokenID,
+        address token,
         uint96 amount
         )
         public
@@ -98,21 +98,21 @@ contract IAccountManagement
     function updateAccount(
         uint publicKeyX,
         uint publicKeyY,
-        uint16 tokenID,
+        address token,
         uint96 amount
         )
         public
         payable;
 
     function deposit(
-        uint16 tokenID,
+        address token,
         uint96 amount
         )
         external
         payable;
 
     function withdraw(
-        uint16 tokenID,
+        address token,
         uint96 amount
         )
         external

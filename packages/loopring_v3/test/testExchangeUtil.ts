@@ -416,7 +416,7 @@ export class ExchangeTestUtil {
       const tx = await this.exchange.updateAccount(
         new BN(publicKeyX),
         new BN(publicKeyY),
-        tokenID,
+        token,
         web3.utils.toBN(amount),
         {from: owner, value: ethToSend},
       );
@@ -425,7 +425,7 @@ export class ExchangeTestUtil {
       const tx = await this.exchange.createAccount(
         new BN(publicKeyX),
         new BN(publicKeyY),
-        tokenID,
+        token,
         web3.utils.toBN(amount),
         {from: owner, value: ethToSend},
       );
@@ -1216,6 +1216,13 @@ export class ExchangeTestUtil {
     }
 
     return realmID;
+  }
+
+  public getTokenAddress(token: string) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    return token;
   }
 
   public getTokenIdFromNameOrAddress(token: string) {

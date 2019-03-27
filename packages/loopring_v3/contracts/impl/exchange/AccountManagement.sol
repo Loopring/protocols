@@ -56,7 +56,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
     function createAccount(
         uint publicKeyX,
         uint publicKeyY,
-        uint16 tokenID,
+        address token,
         uint96 amount
         )
         public
@@ -81,7 +81,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         updateAccount(
             publicKeyX,
             publicKeyY,
-            tokenID,
+            token,
             amount
         );
 
@@ -89,7 +89,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
     }
 
     function deposit(
-        uint16 tokenID,
+        address token,
         uint96 amount
         )
         external
@@ -99,7 +99,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         updateAccount(
             account.publicKeyX,
             account.publicKeyY,
-            tokenID,
+            token,
             amount
         );
     }
@@ -107,7 +107,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
     function updateAccount(
         uint publicKeyX,
         uint publicKeyY,
-        uint16 tokenID,
+        address token,
         uint96 amount
         )
         public
@@ -117,6 +117,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
         require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
+        uint16 tokenID = getTokenID(token);
         uint24 accountID = getAccountID();
         Account storage account = getAccount(accountID);
 
@@ -162,10 +163,9 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
         depositChain.push(request);
 
         // Transfer the tokens from the owner into this contract
-        address tokenAddress = getTokenAddress(tokenID);
         if (amount > 0 && tokenID != 0) {
             require(
-                tokenAddress.safeTransferFrom(
+                token.safeTransferFrom(
                     account.owner,
                     address(this),
                     amount
@@ -187,7 +187,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
 
     // Set the large value for amount to withdraw the complete balance
     function withdraw(
-        uint16 tokenID,
+        address token,
         uint96 amount
         )
         external
@@ -205,6 +205,7 @@ contract AccountManagement is IAccountManagement, ITokenRegistration, Base
             msg.sender.transfer(msg.value.sub(withdrawFee));
         }
 
+        uint16 tokenID = getTokenID(token);
         uint24 accountID = getAccountID();
         Account storage account = getAccount(accountID);
 
