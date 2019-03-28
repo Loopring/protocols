@@ -72,9 +72,9 @@ contract LoopringV3 is ILoopringV3, Ownable
         maxWithdrawalFee = _maxWithdrawalFee;
         downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
 
-        tokens[lrcAddress]  = Token(lrcAddress,  1, 0xFFFFFFFF);
+        tokens[lrcAddress] = Token(lrcAddress, 1, 0xFFFFFFFF);
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
-        tokens[address(0)]  = Token(address(0),  3, 0xFFFFFFFF);    // ETH
+        tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);    // ETH
 
         emit SettingsUpdated(now);
     }

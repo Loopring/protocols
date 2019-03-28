@@ -83,10 +83,10 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
             // update an existing account
             require(msg.value >= accountUpdateFeeETH, "INSUFFICIENT_FEE");
             accountID = ownerToAccountId[msg.sender];
-             Account storage account = accounts[accountID];
+            Account storage account = accounts[accountID];
 
             require(!isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
-            require(pubKeyX != 0 || pubKeyY !=0, "INVALID_PUBKEY");
+            require(pubKeyX != 0 || pubKeyY != 0, "INVALID_PUBKEY");
 
             account.pubKeyX = pubKeyX;
             account.pubKeyY = pubKeyY;

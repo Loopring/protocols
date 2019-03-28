@@ -73,5 +73,4 @@ contract IManagingDeposits is IManagingTokens
         )
         public
         payable;
-
 }
