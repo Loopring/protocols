@@ -58,7 +58,7 @@ contract Exchange is IExchange, ManagingOperations
         registerToken(lrcAddress);
 
         Block memory genesisBlock = Block(
-            0x052a665459ab63c26cccff7e4f5b70727ecda24f2d398695fc3943e62b4b1901,
+            0x2fb632af61a9ffb71034df05d1d62e8fb6112095bd28cddf56d5f2e4b57064be,
             0x0,
             BlockState.FINALIZED,
             uint32(now),

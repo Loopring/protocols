@@ -76,6 +76,20 @@ const VariableArrayT flattenReverse( const std::vector<VariableArrayT> &in_scala
     return result;
 }
 
+const VariableArrayT subArray(const VariableArrayT& bits, unsigned int start, unsigned int length)
+{
+    VariableArrayT result;
+    result.resize(length);
+
+    unsigned int index = 0;
+    for (int i = start; i < start + length; i++)
+    {
+        result[index++].index = bits[i].index;
+    }
+
+    return result;
+}
+
 BigInt toBigInt(ethsnarks::FieldT value)
 {
     BigInt bi = 0;

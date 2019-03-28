@@ -19,8 +19,6 @@ namespace Loopring
 class DepositGadget : public GadgetT
 {
 public:
-    VariableT constant0;
-
     VariableArrayT accountID;
     VariableArrayT tokenID;
 
@@ -54,7 +52,6 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
@@ -275,7 +272,7 @@ public:
         {
             hasher.generate_r1cs_witness();
         }
-        printBits("DepositBlockHash: 0x", flattenReverse({hashers.back().result().bits}).get_bits(pb), true);
+        printBits("DepositBlockHash: 0x", hashers.back().result().bits.get_bits(pb));
 
         publicData.generate_r1cs_witness();
 

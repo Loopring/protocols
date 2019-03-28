@@ -100,7 +100,7 @@ public:
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("6534726031924637156958436868622484975370199861911592821911265735257245326584"), FMT(prefix, ".emptyTradeHistory"))),
+        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("20873493930479413702173406318080544943433811476627345625793184813275733379280"), FMT(prefix, ".emptyTradeHistory"))),
         padding(pb, 1, FMT(prefix, ".padding")),
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
         percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),

@@ -303,10 +303,12 @@ export class ExchangeTestUtil {
   public async setOrderBalances(order: OrderInfo) {
     const keyPair = this.getKeyPairEDDSA();
 
+    const accountID = await this.getAccountID(order.owner);
+
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
     const depositInfo = await this.deposit(order.realmID, order.owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                           order.tokenS, balanceS);
+                                           order.tokenS, balanceS, accountID);
     order.accountID = depositInfo.accountID;
 
     const balanceF = (order.balanceF !== undefined) ? order.balanceF : order.amountF;
@@ -1194,8 +1196,11 @@ export class ExchangeTestUtil {
   }
 
   public async getAccountID(owner: string) {
-    const accountID = await this.exchange.getAccountID(owner);
-    return accountID;
+    try {
+      return await this.exchange.getAccountID(owner);
+    } catch {
+      return undefined;
+    }
   }
 
   public async createExchange(
