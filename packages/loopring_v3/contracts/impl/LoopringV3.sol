@@ -44,7 +44,8 @@ contract LoopringV3 is ILoopringV3, Ownable
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
-        uint    _maxWithdrawalFee
+        uint    _maxWithdrawalFee,
+        uint    _downtimePriceLRCPerDay
         )
         external
         onlyOwner
@@ -69,10 +70,11 @@ contract LoopringV3 is ILoopringV3, Ownable
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         tierUpgradeCostBips = _tierUpgradeCostBips;
         maxWithdrawalFee = _maxWithdrawalFee;
+        downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
 
-        tokens[lrcAddress]  = Token(lrcAddress, 1, 0xFFFFFFFF);
+        tokens[lrcAddress]  = Token(lrcAddress,  1, 0xFFFFFFFF);
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
-        tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);    // ETH
+        tokens[address(0)]  = Token(address(0),  3, 0xFFFFFFFF);    // ETH
 
         emit SettingsUpdated(now);
     }
@@ -135,26 +137,40 @@ contract LoopringV3 is ILoopringV3, Ownable
         return exchangeStakes[exchangeId - 1];
     }
 
-    function burnStake(
+    function burnAllStake(
         uint exchangeId
         )
         external
-        returns (uint stakedLRC)
+        returns (uint burnedLRC)
+    {
+        burnedLRC = getStake(exchangeId);
+        burnStake(exchangeId, burnedLRC);
+    }
+
+    function burnStake(
+        uint exchangeId,
+        uint amount
+        )
+        public
+        returns (uint burnedLRC)
     {
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
-        stakedLRC = getStake(exchangeId);
-        if (stakedLRC > 0) {
+        burnedLRC = getStake(exchangeId);
+
+        if (amount < burnedLRC) {
+            burnedLRC = amount;
+        }
+        if (burnedLRC > 0) {
             require(
-                BurnableERC20(lrcAddress).burn(stakedLRC),
+                BurnableERC20(lrcAddress).burn(burnedLRC),
                 "BURN_FAILURE"
             );
-            delete exchangeStakes[exchangeId];
-            totalStake -= stakedLRC;
-
-            emit StakeBurned(exchangeId, stakedLRC);
+            exchangeStakes[exchangeId] -= burnedLRC;
+            totalStake -= burnedLRC;
         }
+        emit StakeBurned(exchangeId, burnedLRC);
     }
 
     function depositStake(
@@ -202,11 +218,10 @@ contract LoopringV3 is ILoopringV3, Ownable
                 ),
                 "WITHDRAWAL_FAILURE"
             );
-            delete exchangeStakes[exchangeId];
+            exchangeStakes[exchangeId] = 0;
             totalStake -= stakedLRC;
-
-            emit StakeWithdrawn(exchangeId, stakedLRC);
         }
+        emit StakeWithdrawn(exchangeId, stakedLRC);
     }
 
     function getTokenBurnRate(

@@ -35,7 +35,7 @@ import "./Data.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ManagingBlocks is IManagingBlocks, Data
 {
-    function isInWithdrawMode()
+    function isInWithdrawalMode()
         public
         view
         returns (bool result)
@@ -44,12 +44,16 @@ contract ManagingBlocks is IManagingBlocks, Data
         Block storage currentBlock = blocks[blocks.length - 1];
 
         if (currentBlock.numDepositRequestsCommitted < depositChain.length) {
-            uint32 requestTimestamp = depositChain[currentBlock.numDepositRequestsCommitted].timestamp;
+            uint32 requestTimestamp =
+                depositChain[currentBlock.numDepositRequestsCommitted].timestamp;
+
             result = requestTimestamp < now.sub(MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE);
         }
 
         if (result == false && currentBlock.numWithdrawRequestsCommitted < withdrawalChain.length) {
-            uint32 requestTimestamp = withdrawalChain[currentBlock.numWithdrawRequestsCommitted].timestamp;
+            uint32 requestTimestamp =
+                withdrawalChain[currentBlock.numWithdrawRequestsCommitted].timestamp;
+
             result = requestTimestamp < now.sub(MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE);
         }
     }
@@ -88,7 +92,7 @@ contract ManagingBlocks is IManagingBlocks, Data
         // TODO: Check if this exchange has a minimal amount of LRC staked?
 
         // Exchange cannot be in withdraw mode
-        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
+        require(!isInWithdrawalMode(), "INVALID_MODE");
 
         // Get the current block
         Block storage currentBlock = blocks[blocks.length - 1];
@@ -214,7 +218,7 @@ contract ManagingBlocks is IManagingBlocks, Data
         onlyOperator
     {
         // Exchange cannot be in withdraw mode
-        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
+        require(!isInWithdrawalMode(), "INVALID_MODE");
 
         require(blockIdx < blocks.length, "INVALID_BLOCK_IDX");
         Block storage specifiedBlock = blocks[blockIdx];

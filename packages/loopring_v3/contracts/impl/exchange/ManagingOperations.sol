@@ -46,26 +46,26 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
     }
 
     function setFees(
-        uint _accountCreationFee,
-        uint _accountUpdateFee,
-        uint _depositFee,
-        uint _withdrawalFee
+        uint _accountCreationFeeETH,
+        uint _accountUpdateFeeETH,
+        uint _depositFeeETH,
+        uint _withdrawalFeeETH
         )
         external
         onlyOperator
     {
-        require(_withdrawalFee <= loopring.maxWithdrawalFee(), "TOO_LARGE_AMOUNT");
+        require(_withdrawalFeeETH <= loopring.maxWithdrawalFee(), "TOO_LARGE_AMOUNT");
 
-        accountCreationFee = _accountCreationFee;
-        accountUpdateFee = _accountUpdateFee;
-        depositFee = _depositFee;
-        withdrawalFee = _withdrawalFee;
+        accountCreationFeeETH = _accountCreationFeeETH;
+        accountUpdateFeeETH = _accountUpdateFeeETH;
+        depositFeeETH = _depositFeeETH;
+        withdrawalFeeETH = _withdrawalFeeETH;
 
         emit FeesUpdated(
-            accountCreationFee,
-            accountUpdateFee,
-            depositFee,
-            withdrawalFee
+            accountCreationFeeETH,
+            accountUpdateFeeETH,
+            depositFeeETH,
+            withdrawalFeeETH
         );
     }
 
@@ -73,15 +73,60 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
         external
         view
         returns (
-            uint _accountCreationFee,
-            uint _accountUpdateFee,
-            uint _depositFee,
-            uint _withdrawalFee
+            uint _accountCreationFeeETH,
+            uint _accountUpdateFeeETH,
+            uint _depositFeeETH,
+            uint _withdrawalFeeETH
         )
     {
-        _accountCreationFee = accountCreationFee;
-        _accountUpdateFee = accountUpdateFee;
-        _depositFee = depositFee;
-        _withdrawalFee = withdrawalFee;
+        _accountCreationFeeETH = accountCreationFeeETH;
+        _accountUpdateFeeETH = accountUpdateFeeETH;
+        _depositFeeETH = depositFeeETH;
+        _withdrawalFeeETH = withdrawalFeeETH;
+    }
+
+    function purchaseDowntime(
+        uint durationSeconds
+        )
+        external
+        onlyOperator
+    {
+        require(!isInWithdrawalMode(), "INVALID_MODE");
+
+        uint costLRC = getDowntimeCostLRC(durationSeconds);
+        if (costLRC > 0) {
+           require(
+                BurnableERC20(lrcAddress).burnFrom(msg.sender, costLRC),
+                "BURN_FAILURE"
+            );
+        }
+
+        if (now < disableUserRequestsUntil) {
+            disableUserRequestsUntil = now;
+        }
+        disableUserRequestsUntil += durationSeconds;
+    }
+
+    function getRemainingDowntime()
+        public
+        view
+        returns (uint duration)
+    {
+        if (now <= disableUserRequestsUntil) {
+            duration = 0;
+        } else {
+            duration = disableUserRequestsUntil - now;
+        }
+    }
+
+    function getDowntimeCostLRC(
+        uint durationSeconds
+        )
+        public
+        view
+        returns (uint)
+    {
+        require(!isInWithdrawalMode(), "INVALID_MODE");
+        return durationSeconds.mul(loopring.downtimePriceLRCPerDay()) / (1 days);
     }
 }

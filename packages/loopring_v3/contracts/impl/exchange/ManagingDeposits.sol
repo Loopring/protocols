@@ -94,7 +94,8 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         payable
     {
         require(recipient != address(0), "ZERO_ADDRESS");
-        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
+        require(!isInWithdrawalMode(), "INVALID_MODE");
+        require(now >= disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = getTokenID(tokenAddress);
@@ -107,11 +108,11 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         // Check ETH value sent, can be larger than the expected deposit fee
         uint feeSurplus = 0;
         if (tokenID != 0) {
-            require(msg.value >= depositFee, "INSUFFICIENT_FEE");
-            feeSurplus = msg.value.sub(depositFee);
+            require(msg.value >= depositFeeETH, "INSUFFICIENT_FEE");
+            feeSurplus = msg.value.sub(depositFeeETH);
         } else {
-            require(msg.value >= (depositFee.add(amount)), "INSUFFICIENT_FEE");
-            feeSurplus = msg.value.sub(depositFee.add(amount));
+            require(msg.value >= (depositFeeETH.add(amount)), "INSUFFICIENT_FEE");
+            feeSurplus = msg.value.sub(depositFeeETH.add(amount));
         }
         // Send surplus of ETH back to the sender
         if (feeSurplus > 0) {
@@ -131,7 +132,7 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
                     amount
                 )
             ),
-            prevRequest.accumulatedFee.add(depositFee),
+            prevRequest.accumulatedFee.add(depositFeeETH),
             uint32(now)
         );
         depositChain.push(request);

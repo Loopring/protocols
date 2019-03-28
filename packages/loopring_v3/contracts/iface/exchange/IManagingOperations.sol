@@ -32,10 +32,10 @@ contract IManagingOperations is IManagingStakes
         );
 
     function setFees(
-        uint _accountCreationFee,
-        uint _accountUpdateFee,
-        uint _depositFee,
-        uint _withdrawalFee
+        uint _accountCreationFeeETH,
+        uint _accountUpdateFeeETH,
+        uint _depositFeeETH,
+        uint _withdrawalFeeETH
         )
         external;
 
@@ -43,9 +43,26 @@ contract IManagingOperations is IManagingStakes
         external
         view
         returns (
-            uint _accountCreationFee,
-            uint _accountUpdateFee,
-            uint _depositFee,
-            uint _withdrawalFee
+            uint _accountCreationFeeETH,
+            uint _accountUpdateFeeETH,
+            uint _depositFeeETH,
+            uint _withdrawalFeeETH
         );
+
+    function purchaseDowntime(
+        uint durationSeconds
+        )
+        external;
+
+    function getRemainingDowntime()
+        public
+        view
+        returns (uint duration);
+
+    function getDowntimeCostLRC(
+        uint durationSeconds
+        )
+        public
+        view
+        returns (uint);
 }

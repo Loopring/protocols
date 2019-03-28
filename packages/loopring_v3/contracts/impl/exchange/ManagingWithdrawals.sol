@@ -71,7 +71,8 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         payable
     {
         require(amount > 0, "ZERO_VALUE");
-        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
+        require(!isInWithdrawalMode(), "INVALID_MODE");
+        require(now >= disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
         require(getNumAvailableWithdrawalSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = getTokenID(token);
@@ -79,10 +80,10 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         Account storage account = accounts[accountID];
 
         // Check ETH value sent, can be larger than the expected withdraw fee
-        require(msg.value >= withdrawalFee, "INVALID_VALUE");
+        require(msg.value >= withdrawalFeeETH, "INVALID_VALUE");
         // Send surplus of ETH back to the sender
-        if (msg.value > withdrawalFee) {
-            msg.sender.transfer(msg.value.sub(withdrawalFee));
+        if (msg.value > withdrawalFeeETH) {
+            msg.sender.transfer(msg.value.sub(withdrawalFeeETH));
         }
 
         // Allow anyone to withdraw from fee accounts
@@ -99,7 +100,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
                     amount
                 )
             ),
-            prevRequest.accumulatedFee.add(withdrawalFee),
+            prevRequest.accumulatedFee.add(withdrawalFeeETH),
             uint32(now)
         );
         withdrawalChain.push(request);
@@ -146,7 +147,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         )
         public
     {
-        require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
+        require(isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
         Block storage lastBlock = blocks[blocks.length - 1];
         require(lastBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
@@ -180,7 +181,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         )
         external
     {
-        require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
+        require(isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
         Block storage lastBlock = blocks[blocks.length - 1];
         require(lastBlock.state == BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
@@ -214,7 +215,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         // TODO: special case if slotIdx == 0 to search in byte array
         //       (maybe not needed anymore with automatic transferring in normal cases)
 
-        // require(isInWithdrawMode(), "NOT_IN_WITHDRAW_MODE");
+        // require(isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
         require(blockIdx < blocks.length, "INVALID_BLOCK_IDX");
         Block storage withdrawBlock = blocks[blockIdx];

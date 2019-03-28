@@ -81,14 +81,15 @@ contract ILoopringV3
 
     mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
 
-    uint    public totalStake                = 0 ether;
+    uint    public totalStake                = 0;
     address public lrcAddress                = address(0);
     address public wethAddress               = address(0);
     address public exchangeDeployerAddress   = address(0);
     address public exchangeHelperAddress     = address(0);
     address public blockVerifierAddress      = address(0);
-    uint    public exchangeCreationCostLRC   = 0 ether;
-    uint    public maxWithdrawalFee            = 0 ether;
+    uint    public exchangeCreationCostLRC   = 0;
+    uint    public maxWithdrawalFee          = 0;
+    uint    public downtimePriceLRCPerDay    = 0;
 
      // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
     uint16  public  tierUpgradeCostBips  =  0; // 0.01% or 130K LRC
@@ -125,11 +126,18 @@ contract ILoopringV3
         view
         returns (uint stakedLRC);
 
-    function burnStake(
+    function burnAllStake(
         uint exchangeId
         )
         external
-        returns (uint stakedLRC);
+        returns (uint burnedLRC);
+
+    function burnStake(
+        uint exchangeId,
+        uint amount
+        )
+        public
+        returns (uint burnedLRC);
 
     function depositStake(
         uint exchangeId,
