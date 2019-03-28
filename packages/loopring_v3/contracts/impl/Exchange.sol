@@ -86,7 +86,7 @@ contract Exchange is IExchange, ManagingOperations
         );
 
         accounts.push(defaultAccount);
-        ownerToAccountId[address(0)] = 0;
+        ownerToAccountId[address(0)] = 0;  //TODO(brecht): Do we need this line
 
         emit AccountUpdated(
             address(0),
