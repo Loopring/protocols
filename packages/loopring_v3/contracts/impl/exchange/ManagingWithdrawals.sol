@@ -20,6 +20,7 @@ import "../../iface/exchange/IManagingWithdrawals.sol";
 
 import "./ManagingDeposits.sol";
 
+
 /// @title An Implementation of IDEX.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>

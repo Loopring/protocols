@@ -20,6 +20,7 @@ import "../../iface/exchange/IManagingStakes.sol";
 
 import "./ManagingWithdrawals.sol";
 
+
 /// @title An Implementation of IManagingStakes.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
