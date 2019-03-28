@@ -62,12 +62,12 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
         payable
         returns (uint24 accountID)
     {
-        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
+        require(isInNormalMode(), "INVALID_MODE");
 
         if (ownerToAccountId[msg.sender] == 0) {
             // create a new account
             require(accounts.length < 2 ** 24, "TOO_MANY_ACCOUNTS");
-            require(msg.value >= accountCreationFee, "INSUFFICIENT_FEE");
+            require(msg.value >= accountCreationFeeETH, "INSUFFICIENT_FEE");
 
             accountID = uint24(accounts.length);
             Account memory account = Account(
@@ -80,7 +80,7 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
             ownerToAccountId[msg.sender] = accountID;
         } else {
             // update an existing account
-            require(msg.value >= accountUpdateFee, "INSUFFICIENT_FEE");
+            require(msg.value >= accountUpdateFeeETH, "INSUFFICIENT_FEE");
             accountID = ownerToAccountId[msg.sender];
              Account storage account = accounts[accountID];
 

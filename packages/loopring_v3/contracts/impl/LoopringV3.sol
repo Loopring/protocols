@@ -135,25 +135,40 @@ contract LoopringV3 is ILoopringV3, Ownable
         return exchangeStakes[exchangeId - 1];
     }
 
-    function burnStake(
+    function burnAllStake(
         uint exchangeId
         )
         external
-        returns (uint stakedLRC)
+        returns (uint burnedLRC)
+    {
+        burnedLRC = getStake(exchangeId);
+        burnStake(exchangeId, burnedLRC);
+    }
+
+    function burnStake(
+        uint exchangeId,
+        uint amount
+        )
+        public
+        returns (uint burnedLRC)
     {
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
-        stakedLRC = getStake(exchangeId);
-        if (stakedLRC > 0) {
+        burnedLRC = getStake(exchangeId);
+
+        if (amount < burnedLRC) {
+            burnedLRC = amount;
+        }
+        if (burnedLRC > 0) {
             require(
-                BurnableERC20(lrcAddress).burn(stakedLRC),
+                BurnableERC20(lrcAddress).burn(burnedLRC),
                 "BURN_FAILURE"
             );
-            delete exchangeStakes[exchangeId];
-            totalStake -= stakedLRC;
+            exchangeStakes[exchangeId] -= burnedLRC;
+            totalStake -= burnedLRC;
 
-            emit StakeBurned(exchangeId, stakedLRC);
+            emit StakeBurned(exchangeId, burnedLRC);
         }
     }
 

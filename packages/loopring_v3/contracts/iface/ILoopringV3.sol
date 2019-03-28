@@ -125,11 +125,18 @@ contract ILoopringV3
         view
         returns (uint stakedLRC);
 
-    function burnStake(
+    function burnAllStake(
         uint exchangeId
         )
         external
-        returns (uint stakedLRC);
+        returns (uint burnedLRC);
+
+    function burnStake(
+        uint exchangeId,
+        uint amount
+        )
+        public
+        returns (uint burnedLRC);
 
     function depositStake(
         uint exchangeId,

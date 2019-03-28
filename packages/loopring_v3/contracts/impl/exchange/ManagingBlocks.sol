@@ -35,7 +35,7 @@ import "./Data.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ManagingBlocks is IManagingBlocks, Data
 {
-    function isInWithdrawMode()
+    function isInWithdrawalMode()
         public
         view
         returns (bool result)
@@ -52,6 +52,22 @@ contract ManagingBlocks is IManagingBlocks, Data
             uint32 requestTimestamp = withdrawalChain[currentBlock.numWithdrawRequestsCommitted].timestamp;
             result = requestTimestamp < now.sub(MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE);
         }
+    }
+
+    function isInSuspensionMode()
+        public
+        view
+        returns (bool)
+    {
+        return suspendedSince != 0;
+    }
+
+    function isInNormalMode()
+        public
+        view
+        returns (bool)
+    {
+        return !isInWithdrawalMode() && !isInSuspensionMode();
     }
 
     function getBlockHeight()
@@ -88,7 +104,7 @@ contract ManagingBlocks is IManagingBlocks, Data
         // TODO: Check if this exchange has a minimal amount of LRC staked?
 
         // Exchange cannot be in withdraw mode
-        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
+        require(isInNormalMode(), "INVALID_MODE");
 
         // Get the current block
         Block storage currentBlock = blocks[blocks.length - 1];
@@ -214,7 +230,7 @@ contract ManagingBlocks is IManagingBlocks, Data
         onlyOperator
     {
         // Exchange cannot be in withdraw mode
-        require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
+        require(isInNormalMode(), "INVALID_MODE");
 
         require(blockIdx < blocks.length, "INVALID_BLOCK_IDX");
         Block storage specifiedBlock = blocks[blockIdx];

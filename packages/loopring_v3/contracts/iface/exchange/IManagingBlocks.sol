@@ -24,7 +24,17 @@ import "./IData.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IManagingBlocks is IData
 {
-    function isInWithdrawMode()
+    function isInWithdrawalMode()
+        public
+        view
+        returns (bool);
+
+    function isInSuspensionMode()
+        public
+        view
+        returns (bool);
+
+    function isInNormalMode()
         public
         view
         returns (bool);

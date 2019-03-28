@@ -32,10 +32,11 @@ contract IManagingOperations is IManagingStakes
         );
 
     function setFees(
-        uint _accountCreationFee,
-        uint _accountUpdateFee,
-        uint _depositFee,
-        uint _withdrawalFee
+        uint _accountCreationFeeETH,
+        uint _accountUpdateFeeETH,
+        uint _depositFeeETH,
+        uint _withdrawalFeeETH,
+        uint _suspensionFeePerDayLRC
         )
         external;
 
@@ -43,9 +44,17 @@ contract IManagingOperations is IManagingStakes
         external
         view
         returns (
-            uint _accountCreationFee,
-            uint _accountUpdateFee,
-            uint _depositFee,
-            uint _withdrawalFee
+            uint _accountCreationFeeETH,
+            uint _accountUpdateFeeETH,
+            uint _depositFeeETH,
+            uint _withdrawalFeeETH,
+            uint _suspensionFeePerDayLRC
         );
+
+    function suspendExchange()
+        external;
+
+    function resumeExchange()
+        external
+        returns (uint burnedLRC);
 }

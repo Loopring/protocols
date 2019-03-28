@@ -108,10 +108,14 @@ contract IData
     address public blockVerifierAddress     = address(0);
 
     uint public id = 0;
-    uint public accountCreationFee  = 0 ether;
-    uint public accountUpdateFee    = 0 ether;
-    uint public depositFee          = 0 ether;
-    uint public withdrawalFee       = 0 ether;
+    uint suspendedSince = 0;
+
+    uint public accountCreationFeeETH       = 0 ether;
+    uint public accountUpdateFeeETH         = 0 ether;
+    uint public depositFeeETH               = 0 ether;
+    uint public withdrawalFeeETH            = 0 ether;
+    uint public suspensionFeePerDayLRC      = 10000 ether;
+
 
     Block[]     public blocks;
     Token[]     public tokens;
@@ -185,9 +189,10 @@ contract IData
     );
 
     event FeesUpdated(
-        uint accountCreationFee,
-        uint accountUpdateFee,
-        uint depositFee,
-        uint withdrawalFee
+        uint accountCreationFeeETH,
+        uint accountUpdateFeeETH,
+        uint depositFeeETH,
+        uint withdrawalFeeETH,
+        uint suspensionFeePerDayLRC
     );
 }

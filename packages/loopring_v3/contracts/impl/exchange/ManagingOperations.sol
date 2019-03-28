@@ -46,26 +46,29 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
     }
 
     function setFees(
-        uint _accountCreationFee,
-        uint _accountUpdateFee,
-        uint _depositFee,
-        uint _withdrawalFee
+        uint _accountCreationFeeETH,
+        uint _accountUpdateFeeETH,
+        uint _depositFeeETH,
+        uint _withdrawalFeeETH,
+        uint _suspensionFeePerDayLRC
         )
         external
         onlyOperator
     {
-        require(_withdrawalFee <= loopring.maxWithdrawalFee(), "TOO_LARGE_AMOUNT");
+        require(_withdrawalFeeETH <= loopring.maxWithdrawalFee(), "TOO_LARGE_AMOUNT");
 
-        accountCreationFee = _accountCreationFee;
-        accountUpdateFee = _accountUpdateFee;
-        depositFee = _depositFee;
-        withdrawalFee = _withdrawalFee;
+        accountCreationFeeETH = _accountCreationFeeETH;
+        accountUpdateFeeETH = _accountUpdateFeeETH;
+        depositFeeETH = _depositFeeETH;
+        withdrawalFeeETH = _withdrawalFeeETH;
+        suspensionFeePerDayLRC = _suspensionFeePerDayLRC;
 
         emit FeesUpdated(
-            accountCreationFee,
-            accountUpdateFee,
-            depositFee,
-            withdrawalFee
+            accountCreationFeeETH,
+            accountUpdateFeeETH,
+            depositFeeETH,
+            withdrawalFeeETH,
+            suspensionFeePerDayLRC
         );
     }
 
@@ -73,15 +76,38 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
         external
         view
         returns (
-            uint _accountCreationFee,
-            uint _accountUpdateFee,
-            uint _depositFee,
-            uint _withdrawalFee
+            uint _accountCreationFeeETH,
+            uint _accountUpdateFeeETH,
+            uint _depositFeeETH,
+            uint _withdrawalFeeETH,
+            uint _suspensionFeePerDayLRC
         )
     {
-        _accountCreationFee = accountCreationFee;
-        _accountUpdateFee = accountUpdateFee;
-        _depositFee = depositFee;
-        _withdrawalFee = withdrawalFee;
+        _accountCreationFeeETH = accountCreationFeeETH;
+        _accountUpdateFeeETH = accountUpdateFeeETH;
+        _depositFeeETH = depositFeeETH;
+        _withdrawalFeeETH = withdrawalFeeETH;
+        _suspensionFeePerDayLRC = suspensionFeePerDayLRC;
+    }
+
+    function suspendExchange()
+        external
+    {
+        require(isInNormalMode(), "INVALID_MODE");
+        suspendedSince = now;
+    }
+
+    function resumeExchange()
+        external
+        returns (uint burnedLRC)
+    {
+        require(isInSuspensionMode() && !isInWithdrawalMode(), "INVALID_MODE");
+        uint requiredLRCToBurn = (now - suspendedSince).mul(suspensionFeePerDayLRC) / (1 days);
+
+        if (requiredLRCToBurn > 0) {
+            require(requiredLRCToBurn <= loopring.getStake(id), "INSUFFCIENT_LRC_STAKE");
+            burnedLRC = loopring.burnStake(id, requiredLRCToBurn);
+        }
+        suspendedSince = 0;
     }
 }
