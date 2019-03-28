@@ -95,7 +95,7 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
 
         uint costLRC = getDowntimeCostLRC(durationSeconds);
         if (costLRC > 0) {
-           require(
+            require(
                 BurnableERC20(lrcAddress).burnFrom(msg.sender, costLRC),
                 "BURN_FAILURE"
             );

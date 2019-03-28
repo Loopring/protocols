@@ -71,10 +71,10 @@ contract ManagingTokens is IManagingTokens, ManagingAccounts
         )
         external
     {
-      uint16 tokenID = getTokenID(tokenAddress);
-      Token storage token = tokens[tokenID - 1];
-      require(!token.depositDisabled, "TOKEN_DEPOSIT_ALREADY_DISABLED");
-      token.depositDisabled = true;
+        uint16 tokenID = getTokenID(tokenAddress);
+        Token storage token = tokens[tokenID - 1];
+        require(!token.depositDisabled, "TOKEN_DEPOSIT_ALREADY_DISABLED");
+        token.depositDisabled = true;
     }
 
     function enableTokenDeposit(
@@ -82,9 +82,9 @@ contract ManagingTokens is IManagingTokens, ManagingAccounts
         )
         external
     {
-      uint16 tokenID = getTokenID(tokenAddress);
-      Token storage token = tokens[tokenID - 1];
-      require(token.depositDisabled, "TOKEN_DEPOSIT_ALREADY_ENABLED");
-      token.depositDisabled = false;
+        uint16 tokenID = getTokenID(tokenAddress);
+        Token storage token = tokens[tokenID - 1];
+        require(token.depositDisabled, "TOKEN_DEPOSIT_ALREADY_ENABLED");
+        token.depositDisabled = false;
     }
 }

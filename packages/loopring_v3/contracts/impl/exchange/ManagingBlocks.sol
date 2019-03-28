@@ -44,15 +44,13 @@ contract ManagingBlocks is IManagingBlocks, Data
         Block storage currentBlock = blocks[blocks.length - 1];
 
         if (currentBlock.numDepositRequestsCommitted < depositChain.length) {
-            uint32 requestTimestamp =
-                depositChain[currentBlock.numDepositRequestsCommitted].timestamp;
+            uint32 requestTimestamp = depositChain[currentBlock.numDepositRequestsCommitted].timestamp;
 
             result = requestTimestamp < now.sub(MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE);
         }
 
         if (result == false && currentBlock.numWithdrawRequestsCommitted < withdrawalChain.length) {
-            uint32 requestTimestamp =
-                withdrawalChain[currentBlock.numWithdrawRequestsCommitted].timestamp;
+            uint32 requestTimestamp = withdrawalChain[currentBlock.numWithdrawRequestsCommitted].timestamp;
 
             result = requestTimestamp < now.sub(MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE);
         }
@@ -131,7 +129,7 @@ contract ManagingBlocks is IManagingBlocks, Data
         } else if (blockType == uint(BlockType.DEPOSIT)) {
             uint startIdx = 0;
             uint count = 0;
-             assembly {
+            assembly {
                 startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
@@ -162,7 +160,7 @@ contract ManagingBlocks is IManagingBlocks, Data
         } else if (blockType == uint(BlockType.ONCHAIN_WITHDRAW)) {
             uint startIdx = 0;
             uint count = 0;
-             assembly {
+            assembly {
                 startIdx := and(mload(add(data, 139)), 0xFFFFFFFF)
                 count := and(mload(add(data, 143)), 0xFFFFFFFF)
             }

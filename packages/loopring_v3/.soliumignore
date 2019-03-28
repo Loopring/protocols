@@ -1,5 +1,4 @@
 node_modules
-deploy
-test
-transpiled
-build
+contracts/Migrations.sol
+contracts/thirdparty/MiMC.sol
+contracts/thirdparty/MerkleTree.sol
