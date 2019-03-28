@@ -124,8 +124,8 @@ contract ManagingBlocks is IManagingBlocks, Data
                 inputTimestamp := and(mload(add(data, 75)), 0xFFFFFFFF)
             }
             require(
-                inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
-                inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS,
+                inputTimestamp > now - TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS &&
+                inputTimestamp < now + TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
                 "INVALID_TIMESTAMP"
             );
         } else if (blockType == uint(BlockType.DEPOSIT)) {

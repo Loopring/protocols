@@ -89,10 +89,11 @@ contract IData
 
     uint32  public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS        = 1 hours;
 
+    uint32  public constant MAX_OPEN_REQUESTS                           = 256;
     uint32  public constant MAX_AGE_REQUEST_UNTIL_FORCED                = /*15 minutes*/ 1 days;     // TESTING
     uint32  public constant MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE         = 1 days;
 
-    uint32  public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS            = /*1 minutes*/ 1 days;        // TESTING
+    uint32  public constant TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS       = /*1 minutes*/ 1 days;      // TESTING
 
     uint16  public constant NUM_DEPOSITS_IN_BLOCK                       = 8;
     uint16  public constant NUM_WITHDRAWALS_IN_BLOCK                    = 8;

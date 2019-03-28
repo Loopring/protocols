@@ -26,7 +26,7 @@ import "./ManagingTokens.sol";
 contract ManagingDeposits is IManagingDeposits, ManagingTokens
 {
     function getFirstUnprocessedDepositRequestIndex()
-        external
+        public
         view
         returns (uint)
     {
@@ -39,8 +39,8 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         view
         returns (uint)
     {
-        // TODO
-        return 1024;
+        uint numOpenRequests = depositChain.length - getFirstUnprocessedDepositRequestIndex();
+        return MAX_OPEN_REQUESTS - numOpenRequests;
     }
 
     function getDepositRequest(

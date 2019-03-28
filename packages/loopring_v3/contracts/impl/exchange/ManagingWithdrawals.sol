@@ -27,7 +27,7 @@ import "./ManagingDeposits.sol";
 contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
 {
     function getFirstUnprocessedWithdrawalRequestIndex()
-        external
+        public
         view
         returns (uint)
     {
@@ -40,8 +40,8 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         view
         returns (uint)
     {
-        // TODO
-        return 1024;
+        uint numOpenRequests = withdrawalChain.length - getFirstUnprocessedWithdrawalRequestIndex();
+        return MAX_OPEN_REQUESTS - numOpenRequests;
     }
 
     function getWithdrawRequest(

@@ -25,11 +25,10 @@ import "./IManagingDeposits.sol";
 contract IManagingWithdrawals is IManagingDeposits
 {
     function getFirstUnprocessedWithdrawalRequestIndex()
-        external
+        public
         view
         returns (uint);
 
-    // TODO(brecht): not implemented yet
     function getNumAvailableWithdrawalSlots()
         public
         view

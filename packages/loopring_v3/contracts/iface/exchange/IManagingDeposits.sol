@@ -28,11 +28,10 @@ contract IManagingDeposits is IManagingTokens
     // This can be used by operator contracts to have additional logic for onchain requests
     // (more strict deadlines, ...)
     function getFirstUnprocessedDepositRequestIndex()
-        external
+        public
         view
         returns (uint);
 
-    // TODO(brecht): not implemented yet
     function getNumAvailableDepositSlots()
         public
         view
