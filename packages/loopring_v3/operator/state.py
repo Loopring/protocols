@@ -317,7 +317,7 @@ class Order(object):
                         FQ(int(self.tokenS), 1<<12), FQ(int(self.tokenB), 1<<12), FQ(int(self.tokenF), 1<<12),
                         FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96),
                         FQ(int(self.allOrNone), 1<<1), FQ(int(self.validSince), 1<<32), FQ(int(self.validUntil), 1<<32),
-                        FQ(int(self.walletSplitPercentage), 1<<7)#, FQ(int(0), 1<<1)
+                        FQ(int(self.walletSplitPercentage), 1<<7)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 

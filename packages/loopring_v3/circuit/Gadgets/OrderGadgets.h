@@ -19,8 +19,6 @@ public:
 
     VariableT blockRealmID;
 
-    libsnark::dual_variable_gadget<FieldT> padding;
-
     libsnark::dual_variable_gadget<FieldT> realmID;
     libsnark::dual_variable_gadget<FieldT> orderID;
     libsnark::dual_variable_gadget<FieldT> accountID;
@@ -69,8 +67,6 @@ public:
 
         blockRealmID(_blockRealmID),
 
-        padding(pb, 1, FMT(prefix, ".padding")),
-
         realmID(pb, 32, FMT(prefix, ".realmID")),
         orderID(pb, 32, FMT(prefix, ".orderID")),
         accountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID")),
@@ -113,7 +109,7 @@ public:
                           tokenS.bits, tokenB.bits, tokenF.bits,
                           amountS.bits, amountB.bits, amountF.bits,
                           allOrNone.bits, validSince.bits, validUntil.bits,
-                          walletSplitPercentage.bits/*, padding.bits*/}),
+                          walletSplitPercentage.bits}),
                           FMT(prefix, ".signatureVerifier"))
     {
 
@@ -127,9 +123,6 @@ public:
 
     void generate_r1cs_witness(const Order& order)
     {
-        padding.bits.fill_with_bits_of_field_element(pb, 0);
-        padding.generate_r1cs_witness_from_bits();
-
         realmID.bits.fill_with_bits_of_field_element(pb, order.realmID);
         realmID.generate_r1cs_witness_from_bits();
         orderID.bits.fill_with_bits_of_field_element(pb, order.orderID);
@@ -191,8 +184,6 @@ public:
     void generate_r1cs_constraints()
     {
         forceEqual(pb, blockRealmID, realmID.packed, FMT(annotation_prefix, ".blockRealmID == realmID"));
-
-        padding.generate_r1cs_constraints(true);
 
         realmID.generate_r1cs_constraints(true);
 
