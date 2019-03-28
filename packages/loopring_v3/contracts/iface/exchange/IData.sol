@@ -52,6 +52,7 @@ contract IData
         address token;
         bool    depositDisabled;
     }
+
     struct Block
     {
         bytes32 merkleRoot;
