@@ -106,7 +106,8 @@ contract ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
-        uint    _maxWithdrawalFee
+        uint    _maxWithdrawalFee,
+        uint    _downtimePriceLRCPerDay
         )
         external;
 
