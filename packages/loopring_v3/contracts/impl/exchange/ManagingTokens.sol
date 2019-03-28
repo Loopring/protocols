@@ -16,47 +16,53 @@
 */
 pragma solidity 0.5.2;
 
-import "./IBlockManagement.sol";
+import "../../iface/exchange/IManagingTokens.sol";
+
+import "./ManagingAccounts.sol";
 
 
-/// @title An Implementation of IDEX.
+/// @title An Implementation of IManagingTokens.
+/// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ITokenRegistration is IBlockManagement
+contract ManagingTokens is IManagingTokens, ManagingAccounts
 {
-    // == Events ==
-
-    event TokenRegistered(
-        address token,
-        uint16 tokenId
-    );
-
-    // == Public Constants ==
-
-    uint    public constant MAX_NUM_TOKENS = 2 ** 12; // =4096
-
-    mapping (address => uint16) public tokenToTokenId;
-    mapping (uint16 => address) public tokenIdToToken;
-    uint16  public numTokensRegistered  = 0;
-
-    // == Public Functions ==
-
     function registerToken(
         address token
         )
         public
-        returns (uint16 tokenId);
+        onlyOperator
+        returns (uint16 tokenID)
+    {
+        require(tokenToTokenId[token] == 0, "TOKEN_ALREADY_EXIST");
+        require(tokens.length < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
+
+        tokens.push(token);
+        tokenID = uint16(tokens.length);
+        tokenToTokenId[token] = tokenID;
+
+        emit TokenRegistered(token, tokenID);
+    }
 
     function getTokenID(
         address tokenAddress
         )
         public
         view
-        returns (uint16);
+        returns (uint16 tokenID)
+    {
+        tokenID = tokenToTokenId[tokenAddress];
+        require(tokenID != 0, "TOKEN_NOT_FOUND");
+    }
 
     function getTokenAddress(
         uint16 tokenID
         )
         public
         view
-        returns (address);
+        returns (address)
+    {
+        require(tokenID < tokens.length, "INVALID_TOKEN_ID");
+        return tokens[tokenID - 1];
+    }
+
 }

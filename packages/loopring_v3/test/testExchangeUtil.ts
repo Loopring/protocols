@@ -45,7 +45,7 @@ export class ExchangeTestUtil {
   public wallets: Wallet[][] = [];
 
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
-  public MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE: number;
+  public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
   public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
 
@@ -122,7 +122,7 @@ export class ExchangeTestUtil {
     );
 
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE = (await this.exchange.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE()).toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = (await this.exchange.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE()).toNumber();
     this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
   }
@@ -483,23 +483,23 @@ export class ExchangeTestUtil {
     }
     const tokenID = this.tokenAddressToIDMap.get(token);
 
-    let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawSlots()).toNumber();
+    let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
     // console.log("numAvailableSlots: " + numAvailableSlots);
     if (numAvailableSlots === 0) {
         const timeToWait = (await this.exchange.MIN_TIME_BLOCK_OPEN()).toNumber();
         await this.advanceBlockTimestamp(timeToWait);
-        numAvailableSlots = (await this.exchange.getNumAvailableWithdrawSlots()).toNumber();
+        numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
         // console.log("numAvailableSlots: " + numAvailableSlots);
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
-    const withdrawFee = await this.exchange.getWithdrawFee();
+    const withdrawalFee = await this.exchange.getWithdrawalFee();
 
     // Submit the withdraw request
     const tx = await this.exchange.withdraw(
       token,
       web3.utils.toBN(amount),
-      {from: owner, value: withdrawFee},
+      {from: owner, value: withdrawalFee},
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
 
@@ -565,7 +565,7 @@ export class ExchangeTestUtil {
   }
 
   public async createBlock(realmID: number, blockType: number, data: string) {
-    const nextBlockIdx = (await this.exchange.getBlockIdx()).toNumber() + 1;
+    const nextBlockIdx = (await this.exchange.getBlockHeight()).toNumber() + 1;
     const inputFilename = "./blocks/block_" + realmID + "_" + nextBlockIdx + "_info.json";
     const outputFilename = "./blocks/block_" + realmID + "_" + nextBlockIdx + ".json";
 
@@ -596,7 +596,7 @@ export class ExchangeTestUtil {
     );
     // pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
-    const blockIdx = (await this.exchange.getBlockIdx()).toNumber();
+    const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     const block: Block = {
       blockIdx,
       filename,
@@ -719,7 +719,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.exchange.getBlockIdx()).toNumber();
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
       const stateBefore = await this.loadRealm(realmID, currentBlockIdx);
 
       const [blockIdx, blockFilename] = await this.createBlock(realmID, 1, JSON.stringify(depositBlock, replacer, 4));
@@ -755,7 +755,7 @@ export class ExchangeTestUtil {
   public async loadRealm(realmID: number, blockIdx?: number) {
     // Read in the state
     if (blockIdx === undefined) {
-      blockIdx = (await this.exchange.getBlockIdx()).toNumber();
+      blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     }
     const accounts: {[key: number]: Account} = {};
     if (blockIdx > 0) {
@@ -853,7 +853,7 @@ export class ExchangeTestUtil {
       }
       assert(withdrawalRequests.length === numWithdrawsPerBlock);
 
-      const startIndex = (await this.exchange.getLastUnprocessedWithdrawRequestIndex()).toNumber();
+      const startIndex = (await this.exchange.getLastUnprocessedWithdrawalRequestIndex()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
       const requestData = await this.exchange.getWithdrawRequestInfo(startIndex - 1);
@@ -869,7 +869,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.exchange.getBlockIdx()).toNumber();
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
       const stateBefore = await this.loadRealm(realmID, currentBlockIdx);
 
       const jWithdrawalsInfo = JSON.stringify(withdrawalBlock, replacer, 4);
@@ -1049,7 +1049,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.exchange.getBlockIdx()).toNumber();
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
       const stateBefore = await this.loadRealmForRingBlock(realmID, currentBlockIdx, ringBlock);
 
       // Create the block
@@ -1207,7 +1207,7 @@ export class ExchangeTestUtil {
       owner: string,
       bSetupTestState: boolean = true,
       depositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
-      withdrawFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
+      withdrawalFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
     ) {
 
     const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
@@ -1233,7 +1233,7 @@ export class ExchangeTestUtil {
 
     await this.registerTokens();
 
-    await this.exchange.setFees(depositFeeInETH, withdrawFeeInETH);
+    await this.exchange.setFees(depositFeeInETH, withdrawalFeeInETH);
 
     if (bSetupTestState) {
       await this.setupTestState(realmID);
@@ -1272,7 +1272,7 @@ export class ExchangeTestUtil {
 
     const realmID = 1;
 
-    const blockIdx = (await this.exchange.getBlockIdx()).toNumber();
+    const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     const filename = "withdraw_proof.json";
     const result = childProcess.spawnSync(
       "python3",

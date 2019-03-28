@@ -16,15 +16,38 @@
 */
 pragma solidity 0.5.2;
 
-import "./ITokenRegistration.sol";
+import "./IData.sol";
 
 
-/// @title An Implementation of IDEX.
+/// @title IManagingBlocks.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IStakeQuery is ITokenRegistration
+/// @author Brecht Devos - <brecht@loopring.org>
+contract IManagingBlocks is IData
 {
-    function getStake()
+    function isInWithdrawMode()
+        public
+        view
+        returns (bool);
+
+    function getBlockHeight()
         external
         view
         returns (uint);
+
+    function commitBlock(
+        uint blockType,
+        bytes calldata data
+        )
+        external;
+
+    function verifyBlock(
+        uint blockIdx,
+        uint256[8] calldata proof
+        )
+        external;
+
+    function revertBlock(
+        uint32 blockIdx
+        )
+        external;
 }

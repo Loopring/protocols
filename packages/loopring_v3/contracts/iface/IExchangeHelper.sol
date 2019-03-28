@@ -28,8 +28,8 @@ contract IExchangeHelper
         uint16  tokenID,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
-        uint256 publicKeyX,
-        uint256 publicKeyY,
+        uint256 pubKeyX,
+        uint256 pubKeyY,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot

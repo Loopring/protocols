@@ -88,7 +88,7 @@ contract ILoopringV3
     address public exchangeHelperAddress     = address(0);
     address public blockVerifierAddress      = address(0);
     uint    public exchangeCreationCostLRC   = 0 ether;
-    uint    public maxWithdrawFee            = 0 ether;
+    uint    public maxWithdrawalFee            = 0 ether;
 
      // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
     uint16  public  tierUpgradeCostBips  =  0; // 0.01% or 130K LRC
@@ -105,7 +105,7 @@ contract ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
-        uint    _maxWithdrawFee
+        uint    _maxWithdrawalFee
         )
         external;
 

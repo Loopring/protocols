@@ -10,13 +10,13 @@ contract("Exchange", (accounts: string[]) => {
   const revertBlockChecked = async (realmID: number, block: Block) => {
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
 
-    const blockIdxBefore = (await exchangeTestUtil.exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+    const blockIdxBefore = (await exchangeTestUtil.exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
     const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
     const lrcSupplyBefore = await LRC.totalSupply();
 
     await exchangeTestUtil.revertBlock(realmID, block.blockIdx);
 
-    const blockIdxAfter = (await exchangeTestUtil.exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+    const blockIdxAfter = (await exchangeTestUtil.exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
     const lrcBalanceAfter = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
     const lrcSupplyAfter = await LRC.totalSupply();
 

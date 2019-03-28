@@ -320,7 +320,7 @@ contract("Exchange", (accounts: string[]) => {
       const accountID = depositInfo.accountID;
       await exchangeTestUtil.commitDeposits(realmID);
 
-      const withdrawFee = await exchange.getWithdrawFee(realmID);
+      const withdrawalFee = await exchange.getWithdrawalFee(realmID);
 
       // No ETH sent
       await expectThrow(
@@ -329,19 +329,19 @@ contract("Exchange", (accounts: string[]) => {
       );
       // Not enough ETH sent
       await expectThrow(
-        exchange.withdraw(token, toWithdraw, {from: ownerA, value: withdrawFee.sub(one)}),
+        exchange.withdraw(token, toWithdraw, {from: ownerA, value: withdrawalFee.sub(one)}),
         "INVALID_VALUE",
       );
 
       // Only the account owner can request a withdrawal
       await expectThrow(
-        exchange.withdraw(token, toWithdraw, {from: ownerB, value: withdrawFee}),
+        exchange.withdraw(token, toWithdraw, {from: ownerB, value: withdrawalFee}),
         "UNAUTHORIZED",
       );
 
       // Try to withdraw nothing
       await expectThrow(
-        exchange.withdraw(token, new BN(0), {from: ownerB, value: withdrawFee}),
+        exchange.withdraw(token, new BN(0), {from: ownerB, value: withdrawalFee}),
         "INVALID_VALUE",
       );
 
@@ -356,7 +356,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+      const blockIdx = (await exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
       await withdrawChecked(blockIdx, witdrawalRequest.slotIdx,
                             accountID, token,
                             ownerA, toWithdraw);
@@ -388,7 +388,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+      const blockIdx = (await exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
       await withdrawChecked(blockIdx, 0,
                             accountID, token,
                             owner, balance.sub(fee));
@@ -426,7 +426,7 @@ contract("Exchange", (accounts: string[]) => {
       );*/
 
       // Try to withdraw before the block is committed
-      const nextBlockIdx1 = (await exchange.getBlockIdx()).toNumber() + 1;
+      const nextBlockIdx1 = (await exchange.getBlockHeight()).toNumber() + 1;
       /*await expectThrow(
         exchange.withdrawFromApprovedWithdrawal(nextBlockIdx, witdrawalRequestA.slotIdx),
         "INVALID_BLOCKIDX",
@@ -454,7 +454,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Try to withdraw before the block is committed
-      const nextBlockIdx2 = (await exchange.getBlockIdx()).toNumber() + 1;
+      const nextBlockIdx2 = (await exchange.getBlockHeight()).toNumber() + 1;
       /*await expectThrow(
         exchange.withdrawFromApprovedWithdrawal(nextBlockIdx, witdrawalRequestA.slotIdx),
         "INVALID_BLOCKIDX",
@@ -530,7 +530,7 @@ contract("Exchange", (accounts: string[]) => {
       const walletFeeB = ring.orderB.amountF.mul(new BN(ring.orderB.walletSplitPercentage)).div(new BN(100));
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+      const blockIdx = (await exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
       await withdrawChecked(blockIdx, witdrawalRequestA.slotIdx,
                             ring.orderA.walletAccountID, ring.orderA.tokenF,
                             walletA.owner, walletFeeA, true);
