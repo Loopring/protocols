@@ -16,14 +16,21 @@
 */
 pragma solidity 0.5.2;
 
-import "./exchange/IManagingOperations.sol";
+import "../../iface/exchange/IManagingStakes.sol";
+
+import "./ManagingWithdrawals.sol";
 
 
-/// @title IExchange
+/// @title An Implementation of IManagingStakes.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-
-/// Inheritance: IManagingBlocks -> IManagingAccounts -> IManagingTokens -> IManagingDeposits ->
-/// IManagingWithdrawals -> IManagingStakes -> IManagingOperations
-contract IExchange is IManagingOperations {
+contract ManagingStakes is IManagingStakes, ManagingWithdrawals
+{
+    function getStake()
+        external
+        view
+        returns (uint)
+    {
+        return loopring.getStake(id);
+    }
 }

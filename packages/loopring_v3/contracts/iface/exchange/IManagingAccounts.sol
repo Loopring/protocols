@@ -16,20 +16,30 @@
 */
 pragma solidity 0.5.2;
 
-import "../../iface/exchange/IStakeQuery.sol";
+import "./IManagingBlocks.sol";
 
-import "./TokenRegistration.sol";
 
-/// @title An Implementation of IDEX.
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title IManagingAccounts.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract StakeQuery is IStakeQuery, TokenRegistration
+/// @author Brecht Devos - <brecht@loopring.org>
+contract IManagingAccounts is IManagingBlocks
 {
-    function getStake()
-        external
+    function getAccount(
+        address owner
+        )
+        public
         view
-        returns (uint)
-    {
-        return loopring.getStake(id);
-    }
+        returns (
+            uint24 accountID,
+            uint   pubKeyX,
+            uint   pubKeyY
+        );
+
+    function createOrUpdateAccount(
+        uint pubKeyX,
+        uint pubKeyY
+        )
+        public
+        payable
+        returns (uint24 accountID);
 }

@@ -36,8 +36,8 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         uint16  tokenID,
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath,
-        uint256 publicKeyX,
-        uint256 publicKeyY,
+        uint256 pubKeyX,
+        uint256 pubKeyY,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot
@@ -51,10 +51,10 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
             tradeHistoryRoot,
             balancePath
         );
-        calculatedRoot = getAccountsRoot(
+        calculatedRoot = getAccountInternalsRoot(
             accountID,
-            publicKeyX,
-            publicKeyY,
+            pubKeyX,
+            pubKeyY,
             nonce,
             calculatedRoot,
             accountPath
@@ -93,10 +93,10 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         return balanceItem;
     }
 
-    function getAccountsRoot(
+    function getAccountInternalsRoot(
         uint24 accountID,
-        uint256 publicKeyX,
-        uint256 publicKeyY,
+        uint256 pubKeyX,
+        uint256 pubKeyY,
         uint nonce,
         uint balancesRoot,
         uint256[24] memory accountPath
@@ -109,8 +109,8 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         fillLevelIVs(IVs);
 
         uint256[] memory accountLeafElements = new uint256[](4);
-        accountLeafElements[0] = publicKeyX;
-        accountLeafElements[1] = publicKeyY;
+        accountLeafElements[0] = pubKeyX;
+        accountLeafElements[1] = pubKeyY;
         accountLeafElements[2] = nonce;
         accountLeafElements[3] = balancesRoot;
         uint256 accountItem = MiMC.Hash(accountLeafElements, 1);

@@ -16,56 +16,30 @@
 */
 pragma solidity 0.5.2;
 
-import "../../iface/exchange/ITokenRegistration.sol";
-import "./BlockManagement.sol";
+import "./IManagingAccounts.sol";
+
 
 /// @title An Implementation of IDEX.
-/// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract TokenRegistration is ITokenRegistration, BlockManagement
+contract IManagingTokens is IManagingAccounts
 {
     function registerToken(
         address token
         )
         public
-        // onlyOwner
-        returns (uint16 tokenId)
-    {
-        require(tokenToTokenId[token] == 0, "TOKEN_ALREADY_EXIST");
-        require(numTokensRegistered < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
-
-        tokenId = numTokensRegistered + 1;
-
-        tokenToTokenId[token] = tokenId;
-        tokenIdToToken[tokenId] = token;
-        numTokensRegistered += 1;
-
-        emit TokenRegistered(
-            token,
-            tokenId
-        );
-    }
+        returns (uint16 tokenId);
 
     function getTokenID(
         address tokenAddress
         )
         public
         view
-        returns (uint16)
-    {
-        require(tokenToTokenId[tokenAddress] != 0, "TOKEN_NOT_FOUND");
-        return tokenToTokenId[tokenAddress] - 1;
-    }
+        returns (uint16);
 
     function getTokenAddress(
         uint16 tokenID
         )
         public
         view
-        returns (address)
-    {
-        require(tokenID < numTokensRegistered, "INVALID_TOKEN_ID");
-        return tokenIdToToken[tokenID + 1];
-    }
-
+        returns (address);
 }

@@ -56,7 +56,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.requestWithdrawalOnchain(realmID, accountID, token, balance, owner);
 
       // Operator doesn't do anything for a long time
-      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE + 1);
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
       await withdrawFromMerkleTreeChecked(owner, token, balance);
@@ -94,7 +94,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.requestWithdrawalOnchain(realmID, accountID, token, balance, owner);
 
       // Operator doesn't do anything for a long time
-      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE + 1);
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
       await withdrawFromMerkleTreeChecked(owner, token, balance);
@@ -128,7 +128,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.verifyPendingBlocks(realmID);
 
-      const finalizedBlockIdx = (await exchangeTestUtil.exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+      const finalizedBlockIdx = (await exchangeTestUtil.exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
 
       const depositInfoB = await exchangeTestUtil.deposit(realmID, owner,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
@@ -152,7 +152,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Operator doesn't do anything for a long time
-      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAWMODE + 1);
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);
 
       // Try to withdraw a deposit on a non-finalized block
       await expectThrow(
@@ -169,7 +169,7 @@ contract("Exchange", (accounts: string[]) => {
       // Revert back to finalized state
       await exchangeTestUtil.revertBlock(realmID, finalizedBlockIdx + 1);
 
-      const blockIdxAfterRevert = (await exchangeTestUtil.exchange.getBlockIdx(web3.utils.toBN(realmID))).toNumber();
+      const blockIdxAfterRevert = (await exchangeTestUtil.exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
       assert(blockIdxAfterRevert === finalizedBlockIdx, "Should have reverted to finalized block");
 
       // Cannot withdraw from deposit blocks that are included in a block

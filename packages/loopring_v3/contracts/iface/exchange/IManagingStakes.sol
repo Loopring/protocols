@@ -16,14 +16,15 @@
 */
 pragma solidity 0.5.2;
 
-import "./exchange/IManagingOperations.sol";
+import "./IManagingWithdrawals.sol";
 
 
-/// @title IExchange
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title An Implementation of IDEX.
 /// @author Daniel Wang  - <daniel@loopring.org>
-
-/// Inheritance: IManagingBlocks -> IManagingAccounts -> IManagingTokens -> IManagingDeposits ->
-/// IManagingWithdrawals -> IManagingStakes -> IManagingOperations
-contract IExchange is IManagingOperations {
+contract IManagingStakes is IManagingWithdrawals
+{
+    function getStake()
+        external
+        view
+        returns (uint);
 }

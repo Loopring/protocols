@@ -16,14 +16,36 @@
 */
 pragma solidity 0.5.2;
 
-import "./exchange/IManagingOperations.sol";
+import "./IManagingStakes.sol";
 
 
-/// @title IExchange
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title An Implementation of IDEX.
 /// @author Daniel Wang  - <daniel@loopring.org>
+contract IManagingOperations is IManagingStakes
+{
+    function setOperator(
+        address payable _operator
+        )
+        external
+        returns (
+            address payable oldOperator
+        );
 
-/// Inheritance: IManagingBlocks -> IManagingAccounts -> IManagingTokens -> IManagingDeposits ->
-/// IManagingWithdrawals -> IManagingStakes -> IManagingOperations
-contract IExchange is IManagingOperations {
+    function setFees(
+        uint _accountCreationFee,
+        uint _accountUpdateFee,
+        uint _depositFee,
+        uint _withdrawalFee
+        )
+        external;
+
+    function getFees()
+        external
+        view
+        returns (
+            uint _accountCreationFee,
+            uint _accountUpdateFee,
+            uint _depositFee,
+            uint _withdrawalFee
+        );
 }
