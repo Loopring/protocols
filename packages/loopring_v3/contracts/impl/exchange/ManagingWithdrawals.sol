@@ -112,6 +112,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         );
     }
 
+/*
     function withdrawFromMerkleTree(
         address token,
         uint32  nonce,
@@ -257,7 +258,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
             uint96(amount)
         );
     }
-
+*/
 
     function withdrawBlockFee(
         uint32 blockIdx

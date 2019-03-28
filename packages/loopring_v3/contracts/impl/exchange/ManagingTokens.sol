@@ -26,11 +26,32 @@ import "./ManagingAccounts.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ManagingTokens is IManagingTokens, ManagingAccounts
 {
+    constructor(
+        address _loopringAddress
+        )
+        public
+    {
+        ILoopringV3 loopring = ILoopringV3(_loopringAddress);
+
+        registerTokenInternal(address(0));
+        registerTokenInternal(loopring.wethAddress());
+        registerTokenInternal(loopring.lrcAddress());
+    }
+
     function registerToken(
         address tokenAddress
         )
         public
         onlyOperator
+        returns (uint16 tokenID)
+    {
+        return registerTokenInternal(tokenAddress);
+    }
+
+    function registerTokenInternal(
+        address tokenAddress
+        )
+        internal
         returns (uint16 tokenID)
     {
         require(tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");

@@ -37,6 +37,8 @@ export class ExchangeTestUtil {
   public wethAddress: string;
 
   public exchange: any;
+  public exchangeOwner: string;
+  public exchangeOperator: string;
 
   public minerAccountID: number[] = [];
   public feeRecipientAccountID: number[] = [];
@@ -230,7 +232,7 @@ export class ExchangeTestUtil {
   public async setupRing(ring: RingInfo, bSetupOrderA: boolean = true, bSetupOrderB: boolean = true) {
     ring.minerAccountID = this.minerAccountID[ring.orderA.realmID];
     ring.feeRecipientAccountID = this.feeRecipientAccountID[ring.orderA.realmID];
-    ring.tokenID = ring.tokenID ? ring.tokenID : 2;
+    ring.tokenID = ring.tokenID ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
     if (bSetupOrderA) {
       await this.setupOrder(ring.orderA, this.orderIDGenerator++);
@@ -402,9 +404,9 @@ export class ExchangeTestUtil {
         // console.log("numAvailableSlots: " + numAvailableSlots);
     }
 
-    const depositFee = await this.exchange.getDepositFee();
+    const fees = await this.exchange.getFees();
 
-    let ethToSend = depositFee;
+    let ethToSend = fees._depositFee.add(fees._accountCreationFee).add(fees._accountUpdateFee);
     if (amount.gt(0)) {
       if (token !== this.zeroAddress) {
         const Token = this.testContext.tokenAddrInstanceMap.get(token);
@@ -424,7 +426,7 @@ export class ExchangeTestUtil {
 
     // Do the deposit
     if (accountID !== undefined) {
-      const tx = await this.exchange.updateAccount(
+      const tx = await this.exchange.updateAccountAndDeposit(
         new BN(publicKeyX),
         new BN(publicKeyY),
         token,
@@ -433,7 +435,7 @@ export class ExchangeTestUtil {
       );
       // pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
     } else {
-      const tx = await this.exchange.createAccount(
+      const tx = await this.exchange.updateAccountAndDeposit(
         new BN(publicKeyX),
         new BN(publicKeyY),
         token,
@@ -443,14 +445,14 @@ export class ExchangeTestUtil {
       // pjs.logInfo("\x1b[46m%s\x1b[0m", "[DepositAndCreate] Gas used: " + tx.receipt.gasUsed);
     }
 
-    const eventArr: any = await this.getEventsFromContract(this.exchange, "Deposit", web3.eth.blockNumber);
+    const eventArr: any = await this.getEventsFromContract(this.exchange, "DepositRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.accountID, eventObj.args.depositIdx];
+      return [eventObj.args.accountID];
     });
 
     const depositInfo: DepositInfo = {
       accountID: items[0][0].toNumber(),
-      depositBlockIdx: items[0][1].toNumber(),
+      depositBlockIdx: 0,
       slotIdx: 0,
     };
 
@@ -592,7 +594,7 @@ export class ExchangeTestUtil {
     const tx = await this.exchange.commitBlock(
       web3.utils.toBN(blockType),
       web3.utils.hexToBytes(data),
-      {from: operator.owner},
+      {from: this.exchangeOperator},
     );
     // pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
@@ -646,6 +648,7 @@ export class ExchangeTestUtil {
     const tx = await this.exchange.verifyBlock(
       web3.utils.toBN(blockIdx),
       proofFlattened,
+      {from: this.exchangeOperator},
     );
     // pjs.logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
 
@@ -705,10 +708,10 @@ export class ExchangeTestUtil {
       }
       assert(deposits.length === numDepositsPerBlock);
 
-      const startIndex = (await this.exchange.getLastUnprocessedDepositRequestIndex()).toNumber();
+      const startIndex = (await this.exchange.getFirstUnprocessedDepositRequestIndex()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
-      const requestData = await this.exchange.getDepositRequestInfo(startIndex - 1);
+      const requestData = await this.exchange.getDepositRequest(startIndex - 1);
       // console.log(requestData);
 
       const depositBlock: DepositBlock = {
@@ -853,10 +856,10 @@ export class ExchangeTestUtil {
       }
       assert(withdrawalRequests.length === numWithdrawsPerBlock);
 
-      const startIndex = (await this.exchange.getLastUnprocessedWithdrawalRequestIndex()).toNumber();
+      const startIndex = (await this.exchange.getFirstUnprocessedWithdrawalRequestIndex()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
-      const requestData = await this.exchange.getWithdrawRequestInfo(startIndex - 1);
+      const requestData = await this.exchange.getWithdrawRequest(startIndex - 1);
       // console.log(requestData);
 
       const operator = await this.getActiveOperator(realmID);
@@ -1086,7 +1089,7 @@ export class ExchangeTestUtil {
           bs.addNumber(order.walletAccountID, 3);
           bs.addNumber(order.tokenS, 2);
           bs.addNumber(order.tokenF, 2);
-          bs.addNumber(order.orderID, 2);
+          bs.addNumber(order.orderID, 4);
           bs.addBN(new BN(index === 0 ? ring.fillS_A : ring.fillS_B, 10), 12);
           bs.addBN(new BN(index === 0 ? ring.fillF_A : ring.fillF_B, 10), 12);
           bs.addNumber(order.walletSplitPercentage, 1);
@@ -1179,7 +1182,7 @@ export class ExchangeTestUtil {
       // console.log(symbol + ": " + tokenAddress);
 
       if (symbol !== "ETH" && symbol !== "WETH" && symbol !== "LRC") {
-        const tx = await this.exchange.registerToken(tokenAddress, {from: this.testContext.orderOwners[0]});
+        const tx = await this.exchange.registerToken(tokenAddress, {from: this.exchangeOwner});
         // pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
       }
 
@@ -1206,6 +1209,8 @@ export class ExchangeTestUtil {
   public async createExchange(
       owner: string,
       bSetupTestState: boolean = true,
+      accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
+      accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
       depositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
       withdrawalFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
     ) {
@@ -1230,10 +1235,18 @@ export class ExchangeTestUtil {
     const realmID = 1;
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
+    this.exchangeOwner = owner;
+    this.exchangeOperator = owner;
 
     await this.registerTokens();
 
-    await this.exchange.setFees(depositFeeInETH, withdrawalFeeInETH);
+    await this.exchange.setFees(
+      accountCreationFeeInETH,
+      accountUpdateFeeInETH,
+      depositFeeInETH,
+      withdrawalFeeInETH,
+      {from: this.exchangeOwner},
+    );
 
     if (bSetupTestState) {
       await this.setupTestState(realmID);

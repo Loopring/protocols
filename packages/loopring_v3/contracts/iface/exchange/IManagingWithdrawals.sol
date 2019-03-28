@@ -54,6 +54,7 @@ contract IManagingWithdrawals is IManagingDeposits
         external
         payable;
 
+/*
     function withdrawFromMerkleTree(
         address token,
         uint32  nonce,
@@ -85,6 +86,7 @@ contract IManagingWithdrawals is IManagingDeposits
         uint slotIdx
         )
         external;
+*/
 
     function withdrawBlockFee(
         uint32 blockIdx

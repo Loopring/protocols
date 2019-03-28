@@ -49,7 +49,7 @@ contract IManagingDeposits is IManagingTokens
             uint32  timestamp
         );
 
-    function deposit(
+    function updateAccountAndDeposit(
         uint    pubKeyX,
         uint    pubKeyY,
         address token,

@@ -61,7 +61,7 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         timestamp = request.timestamp;
     }
 
-    function deposit(
+    function updateAccountAndDeposit(
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
@@ -94,7 +94,6 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         payable
     {
         require(recipient != address(0), "ZERO_ADDRESS");
-        require(amount > 0, "ZERO_VALUE");
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
         require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
