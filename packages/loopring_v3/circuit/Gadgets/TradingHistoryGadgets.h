@@ -167,12 +167,12 @@ public:
         cancelled.generate_r1cs_witness();
         orderIDToStore.generate_r1cs_witness();
 
-        print(pb, "bNew", bNew.lt());
+        /*print(pb, "bNew", bNew.lt());
         print(pb, "bTrim", bTrim.Not());
         print(pb, "filled", filled.result());
         print(pb, "cancelledToStore", cancelledToStore.result());
         print(pb, "cancelled", cancelled.result());
-        print(pb, "orderIDToStore", orderIDToStore.result());
+        print(pb, "orderIDToStore", orderIDToStore.result());*/
     }
 
     void generate_r1cs_constraints()

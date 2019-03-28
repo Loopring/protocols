@@ -108,12 +108,12 @@ public:
         balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
         signatureVerifier(pb, params, publicKey,
-                          flatten({realmID.bits, subArray(orderID.bits, 0, 16), accountID.bits, walletAccountID,
+                          flatten({realmID.bits, orderID.bits, accountID.bits, walletAccountID,
                           dualAuthPublicKeyX.bits, dualAuthPublicKeyY.bits,
                           tokenS.bits, tokenB.bits, tokenF.bits,
                           amountS.bits, amountB.bits, amountF.bits,
                           allOrNone.bits, validSince.bits, validUntil.bits,
-                          walletSplitPercentage.bits, padding.bits}),
+                          walletSplitPercentage.bits/*, padding.bits*/}),
                           FMT(prefix, ".signatureVerifier"))
     {
 
