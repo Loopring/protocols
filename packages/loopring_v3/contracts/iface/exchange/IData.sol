@@ -52,6 +52,7 @@ contract IData
         address token;
         bool    depositDisabled;
     }
+
     struct Block
     {
         bytes32 merkleRoot;
@@ -82,9 +83,9 @@ contract IData
 
 
     // == Public Constants ==
-    uint public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
-    uint public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
-    uint public constant DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935;
+    uint    public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
+    uint    public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
+    uint    public constant DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935;
 
     uint32  public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS        = 1 hours;
 
@@ -107,10 +108,12 @@ contract IData
     address public blockVerifierAddress     = address(0);
 
     uint public id = 0;
-    uint public accountCreationFee  = 0 ether;
-    uint public accountUpdateFee    = 0 ether;
-    uint public depositFee          = 0 ether;
-    uint public withdrawalFee       = 0 ether;
+    uint public disableUserRequestsUntil    = 0;
+
+    uint public accountCreationFeeETH       = 0 ether;
+    uint public accountUpdateFeeETH         = 0 ether;
+    uint public depositFeeETH               = 0 ether;
+    uint public withdrawalFeeETH            = 0 ether;
 
     Block[]     public blocks;
     Token[]     public tokens;
@@ -184,9 +187,9 @@ contract IData
     );
 
     event FeesUpdated(
-        uint accountCreationFee,
-        uint accountUpdateFee,
-        uint depositFee,
-        uint withdrawalFee
+        uint accountCreationFeeETH,
+        uint accountUpdateFeeETH,
+        uint depositFeeETH,
+        uint withdrawalFeeETH
     );
 }

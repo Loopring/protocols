@@ -27,13 +27,13 @@ contract Killable is Claimable
 
     modifier notSuspended()
     {
-        require(!suspended, "INVALID_STATE");
+        require(!suspended, "INVALID_MODE");
         _;
     }
 
     modifier isSuspended()
     {
-        require(suspended, "INVALID_STATE");
+        require(suspended, "INVALID_MODE");
         _;
     }
 
