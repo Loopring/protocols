@@ -56,7 +56,8 @@ contract IManagingDeposits is IManagingTokens
         uint96  amount
         )
         external
-        payable;
+        payable
+        returns (uint24 accountID);
 
     function deposit(
         address token,
