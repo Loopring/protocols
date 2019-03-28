@@ -163,7 +163,7 @@ public:
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("6534726031924637156958436868622484975370199861911592821911265735257245326584"), FMT(prefix, ".emptyTradeHistory"))),
+        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("20873493930479413702173406318080544943433811476627345625793184813275733379280"), FMT(prefix, ".emptyTradeHistory"))),
         maxNumWallets(make_variable(pb, 0, FMT(prefix, ".maxNumWallets"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
@@ -244,10 +244,14 @@ public:
         balancesRootM(make_variable(pb, FMT(prefix, ".balancesRootM"))),
 
 
-        updateTradeHistoryA(pb, tradingHistoryRootS_A, orderA.orderID,
-                            orderA.filledBefore, orderA.cancelled, filledAfterA, orderA.cancelled, FMT(prefix, ".updateTradeHistoryA")),
-        updateTradeHistoryB(pb, tradingHistoryRootS_B, orderB.orderID,
-                            orderB.filledBefore, orderB.cancelled, filledAfterB, orderB.cancelled, FMT(prefix, ".updateTradeHistoryB")),
+        updateTradeHistoryA(pb, tradingHistoryRootS_A, subArray(orderA.orderID.bits, 0, TREE_DEPTH_TRADING_HISTORY),
+                            {orderA.tradeHistoryFilled, orderA.tradeHistoryCancelled, orderA.tradeHistoryOrderID},
+                            {filledAfterA, orderA.tradeHistory.getCancelledToStore(), orderA.tradeHistory.getOrderIDToStore()},
+                            FMT(prefix, ".updateTradeHistoryA")),
+        updateTradeHistoryB(pb, tradingHistoryRootS_B, subArray(orderB.orderID.bits, 0, TREE_DEPTH_TRADING_HISTORY),
+                            {orderB.tradeHistoryFilled, orderB.tradeHistoryCancelled, orderB.tradeHistoryOrderID},
+                            {filledAfterB, orderB.tradeHistory.getCancelledToStore(), orderB.tradeHistory.getOrderIDToStore()},
+                            FMT(prefix, ".updateTradeHistoryB")),
 
         accountsRoot(_accountsRoot),
 
@@ -376,7 +380,7 @@ public:
             orderA.walletAccountID,
             uint16_padding, orderA.tokenS.bits,
             uint16_padding, orderA.tokenF.bits,
-            orderA.orderID,
+            subArray(orderA.orderID.bits, 0, 16),
             fillS_A.bits,
             fillF_A.bits,
             percentage_padding, orderA.walletSplitPercentage.bits,
@@ -386,7 +390,7 @@ public:
             orderB.walletAccountID,
             uint16_padding, orderB.tokenS.bits,
             uint16_padding, orderB.tokenF.bits,
-            orderB.orderID,
+            subArray(orderB.orderID.bits, 0, 16),
             fillS_B.bits,
             fillF_B.bits,
             percentage_padding, orderB.walletSplitPercentage.bits,
@@ -434,8 +438,8 @@ public:
         margin.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.margin);
         margin.generate_r1cs_witness_from_bits();
 
-        pb.val(filledAfterA) = pb.val(orderA.filledBefore) + pb.val(fillS_A.packed);
-        pb.val(filledAfterB) = pb.val(orderB.filledBefore) + pb.val(fillS_B.packed);
+        pb.val(filledAfterA) = pb.val(orderA.tradeHistory.getFilled()) + pb.val(fillS_A.packed);
+        pb.val(filledAfterB) = pb.val(orderB.tradeHistory.getFilled()) + pb.val(fillS_B.packed);
 
         feePaymentA.generate_r1cs_witness();
         feePaymentB.generate_r1cs_witness();
@@ -556,8 +560,8 @@ public:
         fillF_B.generate_r1cs_constraints(true);
         margin.generate_r1cs_constraints(true);
 
-        pb.add_r1cs_constraint(ConstraintT(orderA.filledBefore + fillS_A.packed, 1, filledAfterA), "filledBeforeA + fillA = filledAfterA");
-        pb.add_r1cs_constraint(ConstraintT(orderB.filledBefore + fillS_B.packed, 1, filledAfterB), "filledBeforeB + fillB = filledAfterB");
+        pb.add_r1cs_constraint(ConstraintT(orderA.tradeHistory.getFilled() + fillS_A.packed, 1, filledAfterA), "filledBeforeA + fillA = filledAfterA");
+        pb.add_r1cs_constraint(ConstraintT(orderB.tradeHistory.getFilled() + fillS_B.packed, 1, filledAfterB), "filledBeforeB + fillB = filledAfterB");
 
         balanceSB_A.generate_r1cs_constraints();
         balanceSB_B.generate_r1cs_constraints();
@@ -620,6 +624,7 @@ public:
         dualAuthASignatureVerifier.generate_r1cs_constraints();
         dualAuthBSignatureVerifier.generate_r1cs_constraints();
 
+        // Update the nonce of the ring-matcher
         pb.add_r1cs_constraint(ConstraintT(nonce_before.packed + FieldT::one(), FieldT::one(), nonce_after), "nonce_before + 1 == nonce_after");
     }
 };

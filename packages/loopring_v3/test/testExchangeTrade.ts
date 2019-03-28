@@ -51,7 +51,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      // await exchangeTestUtil.verifyPendingBlocks(realmID);
     });
 
     it("Matchable (orderA < orderB)", async () => {
@@ -978,6 +978,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("3", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
             amountF: new BN(web3.utils.toWei("90", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[0],
           },
         orderB:
           {
@@ -987,6 +988,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("2", "ether")),
             amountF: new BN(web3.utils.toWei("20", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[1],
           },
         expected: {
           orderA: { filledFraction: 1.0, margin: new BN(web3.utils.toWei("1", "ether")) },
@@ -1002,6 +1004,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("110", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
             amountF: new BN(web3.utils.toWei("100", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[2],
           },
         orderB:
           {
@@ -1011,6 +1014,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("200", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
             amountF: new BN(web3.utils.toWei("90", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[3],
           },
         expected: {
           orderA: { filledFraction: 1.0, margin: new BN(web3.utils.toWei("10", "ether")) },
@@ -1037,6 +1041,7 @@ contract("Exchange", (accounts: string[]) => {
         amountS: new BN(web3.utils.toWei("10", "ether")),
         amountB: new BN(web3.utils.toWei("100", "ether")),
         amountF: new BN(web3.utils.toWei("50", "ether")),
+        owner: exchangeTestUtil.testContext.orderOwners[0],
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
@@ -1049,6 +1054,7 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("60", "ether")),
             amountB: new BN(web3.utils.toWei("6", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[1],
           },
         expected: {
           orderA: { filledFraction: 0.6, margin: new BN(web3.utils.toWei("0", "ether")) },
@@ -1064,6 +1070,7 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("120", "ether")),
             amountB: new BN(web3.utils.toWei("12", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[2],
           },
         expected: {
           orderA: { filledFraction: 0.4, margin: new BN(web3.utils.toWei("0", "ether")) },
@@ -1073,6 +1080,69 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, false, true);
+      await exchangeTestUtil.sendRing(realmID, ringA);
+      await exchangeTestUtil.sendRing(realmID, ringB);
+
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitRings(realmID);
+
+      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+    });
+
+    it("Trimmed OrderID", async () => {
+      const ringA: RingInfo = {
+        orderA:
+          {
+            realmID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[0],
+            orderID: 8,
+          },
+        orderB:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[1],
+          },
+        expected: {
+          orderA: { filledFraction: 1.0, margin: new BN(0) },
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+      const ringB: RingInfo = {
+        orderA:
+          {
+            realmID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[0],
+            orderID: 8 + 2 ** 16,
+          },
+        orderB:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[3],
+          },
+        expected: {
+          orderA: { filledFraction: 1.0, margin: new BN(0) },
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ringA);
+      await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(realmID, ringA);
       await exchangeTestUtil.sendRing(realmID, ringB);
 

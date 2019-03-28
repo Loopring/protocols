@@ -186,11 +186,10 @@ public:
         fillAmountS_leq_amountS.generate_r1cs_constraints();
 
         checkRoundingError.generate_r1cs_constraints();
-
-        fillAmountS_leq_amountS.generate_r1cs_constraints();
-
         pb.add_r1cs_constraint(ConstraintT(order.allOrNone.packed, fillAmountS_leq_amountS.lt(), FieldT::one() - validAllOrNone),
                                "allOrNone * (fillAmountS < amountS) = !validAllOrNone");
+        zero_lt_fillAmountS.generate_r1cs_constraints();
+        zero_lt_fillAmountB.generate_r1cs_constraints();
 
         pb.add_r1cs_constraint(ConstraintT(valid_T, FieldT::one(), FieldT::one()), "valid_T == true");
 
@@ -307,8 +306,8 @@ public:
 
     void generate_r1cs_witness()
     {
-        pb.val(remainingSBeforeCancelled) = pb.val(order.amountS.packed) - pb.val(order.filledBefore);
-        pb.val(remainingS) = (FieldT::one() - pb.val(order.cancelled)) * pb.val(remainingSBeforeCancelled);
+        pb.val(remainingSBeforeCancelled) = pb.val(order.amountS.packed) - pb.val(order.tradeHistory.getFilled());
+        pb.val(remainingS) = (FieldT::one() - pb.val(order.tradeHistory.getCancelled())) * pb.val(remainingSBeforeCancelled);
         fillAmountS_1.generate_r1cs_witness();
 
         fillAmountF.generate_r1cs_witness();
@@ -346,9 +345,9 @@ public:
 
     void generate_r1cs_constraints()
     {
-        pb.add_r1cs_constraint(ConstraintT(order.filledBefore + remainingSBeforeCancelled, 1, order.amountS.packed),
+        pb.add_r1cs_constraint(ConstraintT(order.tradeHistory.getFilled() + remainingSBeforeCancelled, 1, order.amountS.packed),
                                "filledBefore + remainingSBeforeCancelled = amountS");
-        pb.add_r1cs_constraint(ConstraintT(remainingSBeforeCancelled, 1 - order.cancelled, remainingS),
+        pb.add_r1cs_constraint(ConstraintT(remainingSBeforeCancelled, 1 - order.tradeHistory.getCancelled(), remainingS),
                                "remainingSBeforeCancelled * cancelled = remainingS");
 
         fillAmountS_1.generate_r1cs_constraints();

@@ -34,7 +34,7 @@ public:
 
     VariableArrayT accountID;
     VariableArrayT orderTokenID;
-    VariableArrayT orderID;
+    libsnark::dual_variable_gadget<FieldT> orderID;
     VariableArrayT walletAccountID;
     VariableArrayT feeTokenID;
     libsnark::dual_variable_gadget<FieldT> fee;
@@ -92,7 +92,7 @@ public:
 
         constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("6534726031924637156958436868622484975370199861911592821911265735257245326584"), FMT(prefix, ".emptyTradeHistory"))),
+        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("20873493930479413702173406318080544943433811476627345625793184813275733379280"), FMT(prefix, ".emptyTradeHistory"))),
         padding(pb, 2, FMT(prefix, ".padding")),
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
         percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
@@ -102,7 +102,7 @@ public:
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
         orderTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".orderTokenID"))),
-        orderID(make_var_array(pb, 16, FMT(prefix, ".orderID"))),
+        orderID(pb, 16, FMT(prefix, ".orderID")),
         walletAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletAccountID"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
         fee(pb, 96, FMT(prefix, ".fee")),
@@ -135,8 +135,10 @@ public:
         feePaymentWallet(pb, 96, balanceF_A_before, balanceF_W_before, feeToWallet.result(), FMT(prefix, ".feePaymentWallet")),
         feePaymentOperator(pb, 96, feePaymentWallet.X, balanceF_O_before, feeToOperator, FMT(prefix, ".feePaymentOperator")),
 
-        updateTradeHistory_A(pb, tradingHistoryRootT_A_before, orderID,
-                             filled, cancelled_before, filled, cancelled_after, FMT(prefix, ".updateTradeHistory_A")),
+        updateTradeHistory_A(pb, tradingHistoryRootT_A_before, orderID.bits,
+                             {filled, cancelled_before, orderID.packed},
+                             {filled, cancelled_after, orderID.packed},
+                             FMT(prefix, ".updateTradeHistory_A")),
 
         updateBalanceT_A(pb, balancesRoot_before, orderTokenID,
                          {balanceT_A, tradingHistoryRootT_A_before},
@@ -170,7 +172,7 @@ public:
                          {feePaymentOperator.Y, tradingHistoryRootF_O},
                          FMT(prefix, ".updateBalanceF_O")),
 
-        message(flatten({_realmID, accountID, orderTokenID, orderID, walletAccountID,
+        message(flatten({_realmID, accountID, orderTokenID, orderID.bits, walletAccountID,
                          feeTokenID, fee.bits, walletSplitPercentage.bits,
                          nonce_before.bits, padding.bits})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier"))
@@ -190,7 +192,7 @@ public:
 
     const std::vector<VariableArrayT> getPublicData() const
     {
-        return {accountID, uint16_padding, orderTokenID, orderID, walletAccountID,
+        return {accountID, uint16_padding, orderTokenID, orderID.bits, walletAccountID,
                 uint16_padding, feeTokenID, fee.bits, percentage_padding, walletSplitPercentage.bits};
     }
 
@@ -209,7 +211,8 @@ public:
 
         accountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_A.accountID);
         orderTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateT_A.tokenID);
-        orderID.fill_with_bits_of_field_element(pb, cancellation.tradeHistoryUpdate_A.orderID);
+        orderID.bits.fill_with_bits_of_field_element(pb, cancellation.tradeHistoryUpdate_A.orderID);
+        orderID.generate_r1cs_witness_from_bits();
         walletAccountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_W.accountID);
         feeTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateF_A.tokenID);
         fee.bits.fill_with_bits_of_field_element(pb, cancellation.fee);

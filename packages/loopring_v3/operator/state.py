@@ -76,16 +76,18 @@ class BalanceLeaf(object):
         else:
             return self._tradeHistoryLeafs[str(address)]
 
-    def updateTradeHistory(self, address, fill, cancelled):
+    def updateTradeHistory(self, orderID, filled, cancelled, orderIDToStore):
+        address = int(orderID) % (2 ** TREE_DEPTH_TRADING_HISTORY)
         # Make sure the leaf exist in our map
         if not(str(address) in self._tradeHistoryLeafs):
-            self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0)
+            self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0, 0)
 
         leafBefore = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
         rootBefore = self._tradingHistoryTree._root
         #print("leafBefore: " + str(leafBefore))
-        self._tradeHistoryLeafs[str(address)].filled = str(int(self._tradeHistoryLeafs[str(address)].filled) + int(fill))
+        self._tradeHistoryLeafs[str(address)].filled = str(filled)
         self._tradeHistoryLeafs[str(address)].cancelled = cancelled
+        self._tradeHistoryLeafs[str(address)].orderID = int(orderIDToStore)
         leafAfter = copy.deepcopy(self._tradeHistoryLeafs[str(address)])
         #print("leafAfter: " + str(leafAfter))
         proof = self._tradingHistoryTree.createProof(address)
@@ -98,16 +100,18 @@ class BalanceLeaf(object):
 
 
 class TradeHistoryLeaf(object):
-    def __init__(self, filled = 0, cancelled = 0):
+    def __init__(self, filled = 0, cancelled = 0, orderID = 0):
         self.filled = str(filled)
         self.cancelled = cancelled
+        self.orderID = orderID
 
     def hash(self):
-        return mimc_hash([int(self.filled), int(self.cancelled)], 1)
+        return mimc_hash([int(self.filled), int(self.cancelled), int(self.orderID)], 1)
 
     def fromJSON(self, jAccount):
         self.filled = jAccount["filled"]
         self.cancelled = int(jAccount["cancelled"])
+        self.orderID = int(jAccount["orderID"])
 
 
 class Account(object):
@@ -165,7 +169,7 @@ class Account(object):
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter)
 
-    def updateBalanceAndTradeHistory(self, tokenID, orderID, amount):
+    def updateBalanceAndTradeHistory(self, tokenID, orderID, amount, filled, cancelledToStore, orderIDToStore):
         # Make sure the leaf exist in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -174,8 +178,7 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         # Update filled amounts
-        tradeHistory = self._balancesLeafs[str(tokenID)].getTradeHistory(orderID)
-        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, -amount, tradeHistory.cancelled)
+        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, filled, cancelledToStore, orderIDToStore)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
@@ -197,7 +200,8 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         # Update cancelled state
-        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, 0, 1)
+        filled = int(self._balancesLeafs[str(tokenID)].getTradeHistory(orderID).filled)
+        tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, filled, 1, orderID)
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)
@@ -575,18 +579,35 @@ class State(object):
 
     def getMaxFillAmounts(self, order):
         account = self.getAccount(order.accountID)
-        tradeHistory = account._balancesLeafs[str(order.tokenS)].getTradeHistory(order.orderID)
-        order.filledBefore = str(tradeHistory.filled)
-        order.cancelled = int(tradeHistory.cancelled)
+        tradeHistory = account._balancesLeafs[str(order.tokenS)].getTradeHistory(int(order.orderID))
+        order.tradeHistoryFilled = str(tradeHistory.filled)
+        order.tradeHistoryCancelled = int(tradeHistory.cancelled)
+        order.tradeHistoryOrderID = int(tradeHistory.orderID)
         order.nonce = int(account.nonce)
         order.balanceS = str(account.getBalance(order.tokenS))
         order.balanceB = str(account.getBalance(order.tokenB))
         order.balanceF = str(account.getBalance(order.tokenF))
 
+        # Trade history trimming
+        bNew = tradeHistory.orderID < order.orderID
+        bTrim = not (tradeHistory.orderID <= order.orderID)
+        filled = 0 if bNew else int(tradeHistory.filled)
+        cancelledToStore = 0 if bNew else int(tradeHistory.cancelled)
+        cancelled = 1 if bTrim else cancelledToStore
+        orderIDToStore = int(order.orderID) if bNew else tradeHistory.orderID
+
+        print("bNew: " + str(bNew))
+        print("bTrim: " + str(bTrim))
+        print("filled: " + str(filled))
+        print("cancelledToStore: " + str(cancelledToStore))
+        print("cancelled: " + str(cancelled))
+        print("orderIDToStore: " + str(orderIDToStore))
+
+        # Scale the order
         balanceS = int(account.getBalance(order.tokenS))
         balanceF = int(account.getBalance(order.tokenF))
-        remainingS = int(order.amountS) - int(order.filledBefore)
-        if order.cancelled == 1:
+        remainingS = int(order.amountS) - filled
+        if cancelled == 1:
             remainingS = 0
         fillAmountS = balanceS if (balanceS < remainingS) else remainingS
 
@@ -607,13 +628,13 @@ class State(object):
             fillAmountS = balanceS if (balanceS < remainingS) else remainingS
 
         fillAmountB = (fillAmountS * int(order.amountB)) // int(order.amountS)
-        return (fillAmountS, fillAmountB)
+        return (fillAmountS, fillAmountB, filled, cancelledToStore, orderIDToStore)
 
     def settleRing(self, context, ring):
         #print("State update ring: ")
 
-        (fillAmountS_A, fillAmountB_A) = self.getMaxFillAmounts(ring.orderA)
-        (fillAmountS_B, fillAmountB_B) = self.getMaxFillAmounts(ring.orderB)
+        (fillAmountS_A, fillAmountB_A, filled_A, cancelledToStore_A, orderIDToStore_A) = self.getMaxFillAmounts(ring.orderA)
+        (fillAmountS_B, fillAmountB_B, filled_B, cancelledToStore_B, orderIDToStore_B) = self.getMaxFillAmounts(ring.orderB)
 
         '''
         print("fillAmountS_A: " + str(fillAmountS_A))
@@ -704,7 +725,10 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(ring.orderA.accountID))
         proof = self._accountsTree.createProof(ring.orderA.accountID)
 
-        (balanceUpdateS_A, tradeHistoryUpdate_A) = accountA.updateBalanceAndTradeHistory(ring.orderA.tokenS, ring.orderA.orderID, -int(ring.fillS_A))
+        (balanceUpdateS_A, tradeHistoryUpdate_A) = accountA.updateBalanceAndTradeHistory(
+            ring.orderA.tokenS, ring.orderA.orderID, -int(ring.fillS_B),
+            filled_A + int(ring.fillS_A), cancelledToStore_A, orderIDToStore_A
+        )
         balanceUpdateB_A = accountA.updateBalance(ring.orderA.tokenB, int(ring.fillB_A))
         balanceUpdateF_A = accountA.updateBalance(ring.orderA.tokenF, -(walletFee_A + matchingFee_A))
 
@@ -725,7 +749,10 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(ring.orderB.accountID))
         proof = self._accountsTree.createProof(ring.orderB.accountID)
 
-        (balanceUpdateS_B, tradeHistoryUpdate_B) = accountB.updateBalanceAndTradeHistory(ring.orderB.tokenS, ring.orderB.orderID, -int(ring.fillS_B))
+        (balanceUpdateS_B, tradeHistoryUpdate_B) = accountB.updateBalanceAndTradeHistory(
+            ring.orderB.tokenS, ring.orderB.orderID, -int(ring.fillS_B),
+            filled_B + int(ring.fillS_B), cancelledToStore_B, orderIDToStore_B
+        )
         balanceUpdateB_B = accountB.updateBalance(ring.orderB.tokenB, int(ring.fillB_B))
         balanceUpdateF_B = accountB.updateBalance(ring.orderB.tokenF, -(walletFee_B + matchingFee_B))
 
@@ -877,7 +904,7 @@ class State(object):
 
         # Update wallet
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(duAccountID))
+        accountBefore = copyAccountInfo(self.getAccount(walletAccountID))
         proof = self._accountsTree.createProof(walletAccountID)
 
         balanceUpdateF_W = self.getAccount(walletAccountID).updateBalance(feeTokenID, feeToWallet)
@@ -904,7 +931,7 @@ class State(object):
                                 balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                 balanceUpdateF_W, accountUpdate_W,
                                 balanceUpdateF_O)
-        withdrawal.sign(FQ(int(account.secretKey)), FQ(int(walletAccount.secretKey)))
+        withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal
 
     def cancelOrder(self,
@@ -957,7 +984,7 @@ class State(object):
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                                     balanceUpdateF_W, accountUpdate_W,
                                     balanceUpdateF_O)
-        cancellation.sign(FQ(int(account.secretKey)), FQ(int(walletAccount.secretKey)))
+        cancellation.sign(FQ(int(account.secretKey)))
         return cancellation
 
     def createWithdrawProof(self, realmID, accountID, tokenID):

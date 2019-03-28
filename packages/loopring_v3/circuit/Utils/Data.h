@@ -33,12 +33,14 @@ class TradeHistoryLeaf
 public:
     ethsnarks::FieldT filled;
     ethsnarks::FieldT cancelled;
+    ethsnarks::FieldT orderID;
 };
 
 void from_json(const json& j, TradeHistoryLeaf& leaf)
 {
     leaf.filled = ethsnarks::FieldT(j.at("filled").get<std::string>().c_str());
     leaf.cancelled = ethsnarks::FieldT(j.at("cancelled"));
+    leaf.orderID = ethsnarks::FieldT(j.at("orderID"));
 }
 
 class BalanceLeaf
@@ -242,8 +244,10 @@ public:
     ethsnarks::FieldT walletSplitPercentage;
     ethsnarks::FieldT waiveFeePercentage;
 
-    ethsnarks::FieldT filledBefore;
-    ethsnarks::FieldT cancelled;
+    ethsnarks::FieldT tradeHistoryFilled;
+    ethsnarks::FieldT tradeHistoryCancelled;
+    ethsnarks::FieldT tradeHistoryOrderID;
+
     ethsnarks::FieldT nonce;
 
     ethsnarks::FieldT balanceS;
@@ -280,8 +284,10 @@ void from_json(const json& j, Order& order)
     order.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     order.waiveFeePercentage = ethsnarks::FieldT(j.at("waiveFeePercentage"));
 
-    order.filledBefore = ethsnarks::FieldT(j.at("filledBefore").get<std::string>().c_str());
-    order.cancelled = ethsnarks::FieldT(j.at("cancelled"));
+    order.tradeHistoryFilled = ethsnarks::FieldT(j.at("tradeHistoryFilled").get<std::string>().c_str());
+    order.tradeHistoryCancelled = ethsnarks::FieldT(j.at("tradeHistoryCancelled"));
+    order.tradeHistoryOrderID = ethsnarks::FieldT(j.at("tradeHistoryOrderID"));
+
     order.nonce = ethsnarks::FieldT(j.at("nonce"));
 
     order.balanceS = ethsnarks::FieldT(j.at("balanceS").get<std::string>().c_str());

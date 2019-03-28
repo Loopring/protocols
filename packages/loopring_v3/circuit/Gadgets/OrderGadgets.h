@@ -1,6 +1,7 @@
 #ifndef _ORDERGADGETS_H_
 #define _ORDERGADGETS_H_
 
+#include "TradingHistoryGadgets.h"
 #include "../Utils/Constants.h"
 #include "../Utils/Data.h"
 
@@ -21,7 +22,7 @@ public:
     libsnark::dual_variable_gadget<FieldT> padding;
 
     libsnark::dual_variable_gadget<FieldT> realmID;
-    VariableArrayT orderID;
+    libsnark::dual_variable_gadget<FieldT> orderID;
     libsnark::dual_variable_gadget<FieldT> accountID;
     VariableArrayT walletAccountID;
     libsnark::dual_variable_gadget<FieldT> tokenS;
@@ -44,8 +45,12 @@ public:
     libsnark::dual_variable_gadget<FieldT> dualAuthPublicKeyY;
     const jubjub::VariablePointT dualAuthPublicKey;
 
-    VariableT filledBefore;
-    VariableT cancelled;
+    VariableT tradeHistoryFilled;
+    VariableT tradeHistoryCancelled;
+    VariableT tradeHistoryOrderID;
+
+    TradeHistoryTrimmingGadget tradeHistory;
+
     VariableT nonce;
 
     VariableT balanceS;
@@ -67,7 +72,7 @@ public:
         padding(pb, 1, FMT(prefix, ".padding")),
 
         realmID(pb, 32, FMT(prefix, ".realmID")),
-        orderID(make_var_array(pb, TREE_DEPTH_TRADING_HISTORY, FMT(prefix, ".orderID"))),
+        orderID(pb, 32, FMT(prefix, ".orderID")),
         accountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID")),
         walletAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletAccountID"))),
         tokenS(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenS")),
@@ -90,8 +95,12 @@ public:
         dualAuthPublicKeyY(pb, 254, FMT(prefix, ".dualAuthPublicKeyY")),
         dualAuthPublicKey(dualAuthPublicKeyX.packed, dualAuthPublicKeyY.packed),
 
-        filledBefore(make_variable(pb, FMT(prefix, ".filledBefore"))),
-        cancelled(make_variable(pb, FMT(prefix, ".cancelled"))),
+        tradeHistoryFilled(make_variable(pb, FMT(prefix, ".tradeHistoryFilled"))),
+        tradeHistoryCancelled(make_variable(pb, FMT(prefix, ".tradeHistoryCancelled"))),
+        tradeHistoryOrderID(make_variable(pb, FMT(prefix, ".tradeHistoryOrderID"))),
+
+        tradeHistory(pb, tradeHistoryFilled, tradeHistoryCancelled, tradeHistoryOrderID, orderID.packed, FMT(prefix, ".tradeHistory")),
+
         nonce(make_variable(pb, FMT(prefix, ".nonce"))),
 
         balanceS(make_variable(pb, FMT(prefix, ".balanceS"))),
@@ -99,7 +108,7 @@ public:
         balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
         signatureVerifier(pb, params, publicKey,
-                          flatten({realmID.bits, orderID, accountID.bits, walletAccountID,
+                          flatten({realmID.bits, subArray(orderID.bits, 0, 16), accountID.bits, walletAccountID,
                           dualAuthPublicKeyX.bits, dualAuthPublicKeyY.bits,
                           tokenS.bits, tokenB.bits, tokenF.bits,
                           amountS.bits, amountB.bits, amountF.bits,
@@ -123,7 +132,8 @@ public:
 
         realmID.bits.fill_with_bits_of_field_element(pb, order.realmID);
         realmID.generate_r1cs_witness_from_bits();
-        orderID.fill_with_bits_of_field_element(pb, order.orderID);
+        orderID.bits.fill_with_bits_of_field_element(pb, order.orderID);
+        orderID.generate_r1cs_witness_from_bits();
         accountID.bits.fill_with_bits_of_field_element(pb, order.accountID);
         accountID.generate_r1cs_witness_from_bits();
         walletAccountID.fill_with_bits_of_field_element(pb, order.walletAccountID);
@@ -152,8 +162,12 @@ public:
         waiveFeePercentage.bits.fill_with_bits_of_field_element(pb, order.waiveFeePercentage);
         waiveFeePercentage.generate_r1cs_witness_from_bits();
 
-        pb.val(filledBefore) = order.filledBefore;
-        pb.val(cancelled) = order.cancelled;
+        pb.val(tradeHistoryFilled) = order.tradeHistoryFilled;
+        pb.val(tradeHistoryCancelled) = order.tradeHistoryCancelled;
+        pb.val(tradeHistoryOrderID) = order.tradeHistoryOrderID;
+
+        tradeHistory.generate_r1cs_witness();
+
         pb.val(nonce) = order.nonce;
 
         pb.val(balanceS) = order.balanceS;
@@ -197,6 +211,8 @@ public:
         validUntil.generate_r1cs_constraints(true);
         walletSplitPercentage.generate_r1cs_constraints(true);
         waiveFeePercentage.generate_r1cs_constraints(true);
+
+        tradeHistory.generate_r1cs_constraints();
 
         signatureVerifier.generate_r1cs_constraints();
     }
