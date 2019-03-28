@@ -316,7 +316,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         } else {
             // ERC20 token
             uint balance = ERC20(token).balanceOf(address(this));
-            require(token.safeTransfer(owner, balance), "TRANSFER_FAILURE");
+            require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
         }
         return true;
     }
