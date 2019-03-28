@@ -342,9 +342,19 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
             amountToOwner = amount;
         }
 
-        // Increase the burn balance
+        // Fee-burning
         if (amountToBurn > 0) {
-            // TODO: send to LoopringV3 contract for burning / burn LRC directly
+            if (token == address(0x0)) {
+                // ETH
+                address payable payableLoopringAddress = address(uint160(loopringAddress));
+                payableLoopringAddress.transfer(amountToOwner);
+            } else if (token == lrcAddress) {
+                // LRC: burn LRC directly
+                require(BurnableERC20(lrcAddress).burn(amountToBurn), "BURN_FAILURE");
+            } else {
+                // ERC20 token (not LRC)
+                require(token.safeTransfer(loopringAddress, amountToBurn), "TRANSFER_FAILURE");
+            }
         }
 
         // Transfer the tokens from the contract to the owner

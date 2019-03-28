@@ -24,7 +24,6 @@ import "./IManagingDeposits.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IManagingWithdrawals is IManagingDeposits
 {
-    // TODO(brecht): please explain to Daniel :)
     function getFirstUnprocessedWithdrawalRequestIndex()
         external
         view

@@ -167,7 +167,7 @@ contract ILoopringV3
 
     function withdrawBurned(
         address token,
-        address recipient
+        address payable recipient
         )
         external
         returns (bool);
