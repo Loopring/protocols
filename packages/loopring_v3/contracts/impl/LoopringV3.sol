@@ -167,9 +167,8 @@ contract LoopringV3 is ILoopringV3, Ownable
             );
             exchangeStakes[exchangeId] -= burnedLRC;
             totalStake -= burnedLRC;
-
-            emit StakeBurned(exchangeId, burnedLRC);
         }
+        emit StakeBurned(exchangeId, burnedLRC);
     }
 
     function depositStake(
@@ -217,11 +216,10 @@ contract LoopringV3 is ILoopringV3, Ownable
                 ),
                 "WITHDRAWAL_FAILURE"
             );
-            delete exchangeStakes[exchangeId];
+            exchangeStakes[exchangeId] = 0;
             totalStake -= stakedLRC;
-
-            emit StakeWithdrawn(exchangeId, stakedLRC);
         }
+        emit StakeWithdrawn(exchangeId, stakedLRC);
     }
 
     function getTokenBurnRate(
