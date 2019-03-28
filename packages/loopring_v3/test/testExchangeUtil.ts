@@ -90,6 +90,7 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("1000", "ether")),
       new BN(0),
       new BN(web3.utils.toWei("0.02", "ether")),
+      new BN(web3.utils.toWei("10000", "ether")),
       {from: this.testContext.deployer},
     );
 
@@ -405,8 +406,7 @@ export class ExchangeTestUtil {
     }
 
     const fees = await this.exchange.getFees();
-
-    let ethToSend = fees._depositFee.add(fees._accountCreationFee).add(fees._accountUpdateFee);
+    let ethToSend = fees._depositFeeETH.add(fees._accountCreationFeeETH);
     if (amount.gt(0)) {
       if (token !== this.zeroAddress) {
         const Token = this.testContext.tokenAddrInstanceMap.get(token);
