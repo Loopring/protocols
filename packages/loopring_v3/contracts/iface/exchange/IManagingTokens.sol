@@ -24,7 +24,7 @@ import "./IManagingAccounts.sol";
 contract IManagingTokens is IManagingAccounts
 {
     function registerToken(
-        address token
+        address tokenAddress
         )
         public
         returns (uint16 tokenId);
@@ -42,4 +42,14 @@ contract IManagingTokens is IManagingAccounts
         public
         view
         returns (address);
+
+    function disableTokenDeposit(
+        address tokenAddress
+        )
+        external;
+
+    function enableTokenDeposit(
+        address tokenAddress
+        )
+        external;
 }

@@ -27,20 +27,21 @@ import "./ManagingAccounts.sol";
 contract ManagingTokens is IManagingTokens, ManagingAccounts
 {
     function registerToken(
-        address token
+        address tokenAddress
         )
         public
         onlyOperator
         returns (uint16 tokenID)
     {
-        require(tokenToTokenId[token] == 0, "TOKEN_ALREADY_EXIST");
+        require(tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");
         require(tokens.length < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
+        Token memory token = Token(tokenAddress, false);
         tokens.push(token);
         tokenID = uint16(tokens.length);
-        tokenToTokenId[token] = tokenID;
+        tokenToTokenId[tokenAddress] = tokenID;
 
-        emit TokenRegistered(token, tokenID);
+        emit TokenRegistered(tokenAddress, tokenID);
     }
 
     function getTokenID(
@@ -62,7 +63,28 @@ contract ManagingTokens is IManagingTokens, ManagingAccounts
         returns (address)
     {
         require(tokenID < tokens.length, "INVALID_TOKEN_ID");
-        return tokens[tokenID - 1];
+        return tokens[tokenID - 1].token;
     }
 
+    function disableTokenDeposit(
+        address tokenAddress
+        )
+        external
+    {
+      uint16 tokenID = getTokenID(tokenAddress);
+      Token storage token = tokens[tokenID - 1];
+      require(!token.depositDisabled, "TOKEN_DEPOSIT_ALREADY_DISABLED");
+      token.depositDisabled = true;
+    }
+
+    function enableTokenDeposit(
+        address tokenAddress
+        )
+        external
+    {
+      uint16 tokenID = getTokenID(tokenAddress);
+      Token storage token = tokens[tokenID - 1];
+      require(token.depositDisabled, "TOKEN_DEPOSIT_ALREADY_ENABLED");
+      token.depositDisabled = false;
+    }
 }

@@ -47,6 +47,11 @@ contract IData
         uint    pubKeyY;
     }
 
+    struct Token
+    {
+        address token;
+        bool    depositDisabled;
+    }
     struct Block
     {
         bytes32 merkleRoot;
@@ -108,7 +113,7 @@ contract IData
     uint public withdrawalFee       = 0 ether;
 
     Block[]     public blocks;
-    address[]   public tokens;
+    Token[]     public tokens;
     Account[]   public accounts;
     Deposit[]   public deposits;
     Request[]   public depositChain;

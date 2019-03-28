@@ -69,8 +69,9 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         )
         external
         payable
+        returns (uint24 accountID)
     {
-        createOrUpdateAccount(pubKeyX, pubKeyY);
+        accountID = createOrUpdateAccount(pubKeyX, pubKeyY);
         depositTo(msg.sender, token, amount);
     }
 
@@ -86,7 +87,7 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
 
     function depositTo(
         address recipient,
-        address token,
+        address tokenAddress,
         uint96  amount
         )
         public
@@ -97,7 +98,10 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
         require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
-        uint16 tokenID = getTokenID(token);
+        uint16 tokenID = getTokenID(tokenAddress);
+        Token storage token = tokens[tokenID - 1];
+        require(!token.depositDisabled, "TOKEN_DEPOSIT_DISABLED");
+
         uint24 accountID = getAccountID(recipient);
         Account storage account = accounts[accountID];
 
@@ -136,7 +140,7 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         // Transfer the tokens from the owner into this contract
         if (tokenID != 0) {
             require(
-                token.safeTransferFrom(
+                tokenAddress.safeTransferFrom(
                     account.owner,
                     address(this),
                     amount
