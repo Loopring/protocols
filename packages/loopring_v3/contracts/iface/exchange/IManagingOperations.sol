@@ -23,9 +23,13 @@ import "./IManagingStakes.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IManagingOperations is IManagingStakes
 {
-    function setOperator(address payable _operator)
+    function setOperator(
+        address payable _operator
+        )
         external
-        returns (address payable oldOperator);
+        returns (
+            address payable oldOperator
+        );
 
     function setFees(
         uint _accountCreationFee,

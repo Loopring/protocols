@@ -43,7 +43,7 @@ contract ManagingBlocks is IManagingBlocks, Data
         result = false;
         Block storage currentBlock = blocks[blocks.length - 1];
 
-        // Q(daniel): need to figure out the logic.
+        // TODO(brecht): Please review the logic change.
         if (currentBlock.numDepositRequestsCommitted < depositChain.length) {
             uint32 requestTimestamp = depositChain[currentBlock.numDepositRequestsCommitted].timestamp;
             result = requestTimestamp < now.sub(MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE);
@@ -279,7 +279,6 @@ contract ManagingBlocks is IManagingBlocks, Data
 
         emit Revert(blockIdx);
     }
-
 
     // == Internal Functions ==
     function isDepositRequestForced(

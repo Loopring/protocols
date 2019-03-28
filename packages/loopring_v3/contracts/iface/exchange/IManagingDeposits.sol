@@ -24,11 +24,13 @@ import "./IManagingTokens.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IManagingDeposits is IManagingTokens
 {
+    // TODO(brecht): please explain to Daniel :)
     function getLastUnprocessedDepositRequestIndex()
         external
         view
         returns (uint);
 
+    // TODO(brecht): not implemented yet
     function getNumAvailableDepositSlots()
         public
         view
@@ -47,7 +49,7 @@ contract IManagingDeposits is IManagingTokens
 
     function deposit(
         address token,
-        uint96 amount
+        uint96  amount
         )
         external
         payable;
@@ -55,7 +57,7 @@ contract IManagingDeposits is IManagingTokens
     function depositTo(
         address recipient,
         address token,
-        uint96 amount
+        uint96  amount
         )
         public
         payable;

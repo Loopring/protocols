@@ -26,7 +26,9 @@ import "./ManagingStakes.sol";
 contract ManagingOperations is IManagingOperations, ManagingStakes
 {
 
-    function setOperator(address payable _operator)
+    function setOperator(
+        address payable _operator
+        )
         external
         onlyOwner
         returns (address payable oldOperator)

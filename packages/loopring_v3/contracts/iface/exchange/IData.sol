@@ -19,6 +19,7 @@ pragma solidity 0.5.2;
 
 /// @title IData
 /// @author Daniel Wang  - <daniel@loopring.org>
+/// @author Brecht Devos - <brecht@loopring.org>
 contract IData
 {
     // -- Enums --
@@ -171,6 +172,7 @@ contract IData
         uint96  amount
     );
 
+    // TODO(brecht): this event is not used at all.
     event WithdrawBurned(
         address token,
         uint amount

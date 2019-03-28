@@ -53,7 +53,8 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
         pubKeyY = account.pubKeyY;
     }
 
-    // TODO(Bretch): should we allow keys to be 0?
+    // TODO(Bretch): should we allow keys to be 0 for new accounts, how about update
+    // existing keys to 0?
     function createOrUpdateAccount(
         uint pubKeyX,
         uint pubKeyY
