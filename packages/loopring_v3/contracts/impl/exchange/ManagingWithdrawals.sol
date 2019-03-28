@@ -347,7 +347,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
             if (token == address(0x0)) {
                 // ETH
                 address payable payableLoopringAddress = address(uint160(loopringAddress));
-                payableLoopringAddress.transfer(amountToOwner);
+                payableLoopringAddress.transfer(amountToBurn);
             } else if (token == lrcAddress) {
                 // LRC: burn LRC directly
                 require(BurnableERC20(lrcAddress).burn(amountToBurn), "BURN_FAILURE");
