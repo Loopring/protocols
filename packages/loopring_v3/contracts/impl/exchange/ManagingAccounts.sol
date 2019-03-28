@@ -53,18 +53,15 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
         pubKeyY = account.pubKeyY;
     }
 
-    // TODO(Bretch): should we allow keys to be 0 for new accounts, how about update
-    // existing keys to 0?
+    // We do allow pubkeyX and/or pubkeyY to be 0.
     function createOrUpdateAccount(
         uint pubKeyX,
         uint pubKeyY
         )
-        external
+        public
         payable
         returns (uint24 accountID)
     {
-        // require(pubKeyX != 0 && pubKeyY !=0, "INVALID_PUBKEY");
-
         require(!isInWithdrawMode(), "IN_WITHDRAW_MODE");
 
         if (ownerToAccountId[msg.sender] == 0) {
@@ -88,7 +85,7 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
              Account storage account = accounts[accountID];
 
             require(!isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
-            require(pubKeyX != 0 && pubKeyY !=0, "INVALID_PUBKEY");
+            require(pubKeyX != 0 || pubKeyY !=0, "INVALID_PUBKEY");
 
             account.pubKeyX = pubKeyX;
             account.pubKeyY = pubKeyY;

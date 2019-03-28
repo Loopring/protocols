@@ -25,7 +25,7 @@ import "./ManagingTokens.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ManagingDeposits is IManagingDeposits, ManagingTokens
 {
-    function getLastUnprocessedDepositRequestIndex()
+    function getFirstUnprocessedDepositRequestIndex()
         external
         view
         returns (uint)
@@ -59,6 +59,19 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         accumulatedHash = request.accumulatedHash;
         accumulatedFee = request.accumulatedFee;
         timestamp = request.timestamp;
+    }
+
+    function deposit(
+        uint    pubKeyX,
+        uint    pubKeyY,
+        address token,
+        uint96  amount
+        )
+        external
+        payable
+    {
+        createOrUpdateAccount(pubKeyX, pubKeyY);
+        depositTo(msg.sender, token, amount);
     }
 
     function deposit(

@@ -77,8 +77,12 @@ contract Exchange is IExchange, ManagingOperations
         depositChain.push(genesisRequest);
         withdrawalChain.push(genesisRequest);
 
-        // TODO(brecht): why we need this?
-        // Reserve default account slot at accountID 0
+        // This account is used for padding deposits and onchain withdrawal requests so this might
+        // be a bit confusing otherwise.  Because the private key is known by anyone it can also
+        // be used to create dummy offhcain withdrawals/dummy orders to fill blocks when needed.
+        // Because this account is all zeros it is also the most gas efficient one to use in terms
+        // of calldata.
+
         Account memory defaultAccount = Account(
             address(0),
             DEFAULT_ACCOUNT_PUBLICKEY_X,
@@ -86,7 +90,6 @@ contract Exchange is IExchange, ManagingOperations
         );
 
         accounts.push(defaultAccount);
-        ownerToAccountId[address(0)] = 0;  //TODO(brecht): Do we need this line
 
         emit AccountUpdated(
             address(0),

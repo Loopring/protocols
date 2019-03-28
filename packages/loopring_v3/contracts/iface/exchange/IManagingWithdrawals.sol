@@ -25,7 +25,7 @@ import "./IManagingDeposits.sol";
 contract IManagingWithdrawals is IManagingDeposits
 {
     // TODO(brecht): please explain to Daniel :)
-    function getLastUnprocessedWithdrawalRequestIndex()
+    function getFirstUnprocessedWithdrawalRequestIndex()
         external
         view
         returns (uint);

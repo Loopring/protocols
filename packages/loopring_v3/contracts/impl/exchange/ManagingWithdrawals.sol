@@ -25,7 +25,7 @@ import "./ManagingDeposits.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
 {
-    function getLastUnprocessedWithdrawalRequestIndex()
+    function getFirstUnprocessedWithdrawalRequestIndex()
         external
         view
         returns (uint)

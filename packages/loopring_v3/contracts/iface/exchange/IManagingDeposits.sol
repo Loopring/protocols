@@ -24,8 +24,10 @@ import "./IManagingTokens.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IManagingDeposits is IManagingTokens
 {
-    // TODO(brecht): please explain to Daniel :)
-    function getLastUnprocessedDepositRequestIndex()
+    // Returns the index of the first onchain request that wasn't committed in a block yet.
+    // This can be used by operator contracts to have additional logic for onchain requests
+    // (more strict deadlines, ...)
+    function getFirstUnprocessedDepositRequestIndex()
         external
         view
         returns (uint);
@@ -46,6 +48,15 @@ contract IManagingDeposits is IManagingTokens
             uint256 accumulatedFee,
             uint32  timestamp
         );
+
+    function deposit(
+        uint    pubKeyX,
+        uint    pubKeyY,
+        address token,
+        uint96  amount
+        )
+        external
+        payable;
 
     function deposit(
         address token,

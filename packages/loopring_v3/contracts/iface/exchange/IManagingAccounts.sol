@@ -39,7 +39,7 @@ contract IManagingAccounts is IManagingBlocks
         uint pubKeyX,
         uint pubKeyY
         )
-        external
+        public
         payable
         returns (uint24 accountID);
 }

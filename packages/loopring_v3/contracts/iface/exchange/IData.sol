@@ -172,12 +172,6 @@ contract IData
         uint96  amount
     );
 
-    // TODO(brecht): this event is not used at all.
-    event WithdrawBurned(
-        address token,
-        uint amount
-    );
-
     event OperatorChanged(
         uint exchangeId,
         address oldOperator,
