@@ -22,7 +22,17 @@ pragma solidity 0.5.2;
 contract IBlockVerifier
 {
 
+    function canVerify(
+        uint8 blockType,
+        uint16 numElements
+        )
+        external
+        view
+        returns (bool);
+
     function verifyProof(
+        uint8 blockType,
+        uint16 numElements,
         bytes32 publicDataHash,
         uint256[8] calldata proof
         )

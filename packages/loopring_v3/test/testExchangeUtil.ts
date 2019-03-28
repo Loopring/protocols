@@ -584,7 +584,8 @@ export class ExchangeTestUtil {
     return [nextBlockIdx, outputFilename];
   }
 
-  public async commitBlock(operator: Operator, blockType: number, data: string, filename: string) {
+  public async commitBlock(operator: Operator, blockType: number, numElements: number,
+                           data: string, filename: string) {
     const bitstream = new pjs.Bitstream(data);
     const realmID = bitstream.extractUint32(0);
 
@@ -593,6 +594,7 @@ export class ExchangeTestUtil {
     // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
     const tx = await this.exchange.commitBlock(
       web3.utils.toBN(blockType),
+      web3.utils.toBN(numElements),
       web3.utils.hexToBytes(data),
       {from: this.exchangeOperator},
     );
@@ -680,7 +682,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const numDepositsPerBlock = (await this.exchange.NUM_DEPOSITS_IN_BLOCK()).toNumber();
+    const numDepositsPerBlock = 8;
     const numBlocks = Math.floor((pendingDeposits.length + numDepositsPerBlock - 1) / numDepositsPerBlock);
     for (let i = 0; i < numBlocks; i++) {
       const deposits: Deposit[] = [];
@@ -745,7 +747,7 @@ export class ExchangeTestUtil {
 
       // Commit the block
       const operator = await this.getActiveOperator(realmID);
-      const blockInfo = await this.commitBlock(operator, 1, bs.getData(), blockFilename);
+      const blockInfo = await this.commitBlock(operator, 1, numDepositsPerBlock, bs.getData(), blockFilename);
 
       blockInfos.push(blockInfo);
     }
@@ -831,7 +833,7 @@ export class ExchangeTestUtil {
 
     const blockType = onchain ? 2 : 3;
 
-    const numWithdrawsPerBlock = (await this.exchange.NUM_WITHDRAWALS_IN_BLOCK()).toNumber();
+    const numWithdrawsPerBlock = 8;
     const numBlocks = Math.floor((pendingWithdrawals.length + numWithdrawsPerBlock - 1) / numWithdrawsPerBlock);
     for (let i = 0; i < numBlocks; i++) {
       const withdrawalRequests: WithdrawalRequest[] = [];
@@ -909,7 +911,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(operator, blockType, bs.getData(), blockFilename);
+      await this.commitBlock(operator, blockType, numWithdrawsPerBlock, bs.getData(), blockFilename);
 
       // Add as a pending withdrawal
       let withdrawalIdx = 0;
@@ -1099,7 +1101,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(operator, 0, bs.getData(), blockFilename);
+      await this.commitBlock(operator, 0, 2, bs.getData(), blockFilename);
     }
 
     this.pendingRings[realmID] = [];
@@ -1166,7 +1168,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(operator, 4, bs.getData(), blockFilename);
+      await this.commitBlock(operator, 4, 8, bs.getData(), blockFilename);
     }
 
     this.pendingCancels[realmID] = [];

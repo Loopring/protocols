@@ -30,7 +30,21 @@ contract BlockVerifier is IBlockVerifier, NoDefaultFunc
     uint256[14] vk;
     uint256[] gammaABC;
 
+    function canVerify(
+        uint8/* blockType*/,
+        uint16/* numElements*/
+        )
+        external
+        view
+        returns (bool)
+    {
+        // TODO
+        return true;
+    }
+
     function verifyProof(
+        uint8/* blockType*/,
+        uint16/* numElements*/,
         bytes32 publicDataHash,
         uint256[8] calldata proof
         )

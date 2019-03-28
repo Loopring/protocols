@@ -35,7 +35,8 @@ contract IManagingBlocks is IData
         returns (uint);
 
     function commitBlock(
-        uint blockType,
+        uint8 blockType,
+        uint16 numElements,
         bytes calldata data
         )
         external;

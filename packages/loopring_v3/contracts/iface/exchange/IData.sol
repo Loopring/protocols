@@ -60,6 +60,8 @@ contract IData
 
         BlockState state;
 
+        uint8 blockType;
+        uint16 numElements;
         uint32 timestamp;
         uint32 numDepositRequestsCommitted;
         uint32 numWithdrawRequestsCommitted;
@@ -95,8 +97,6 @@ contract IData
 
     uint32  public constant TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS       = /*1 minutes*/ 1 days;      // TESTING
 
-    uint16  public constant NUM_DEPOSITS_IN_BLOCK                       = 8;
-    uint16  public constant NUM_WITHDRAWALS_IN_BLOCK                    = 8;
     uint    public constant MAX_NUM_TOKENS                              = 2 ** 12; // = 4096
 
     // == State Variables ==
