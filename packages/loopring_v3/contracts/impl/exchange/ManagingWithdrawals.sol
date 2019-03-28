@@ -71,7 +71,8 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         payable
     {
         require(amount > 0, "ZERO_VALUE");
-        require(isInNormalMode(), "INVALID_MODE");
+        require(!isInWithdrawalMode(), "INVALID_MODE");
+        require(now >= disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
         require(getNumAvailableWithdrawalSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = getTokenID(token);

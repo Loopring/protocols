@@ -50,7 +50,7 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
         uint _withdrawalFeeETH,
-        uint _suspensionFeePerDayLRC
+        uint _downtimePricePerDayLRC
         )
         external
         onlyOperator
@@ -61,14 +61,14 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
         accountUpdateFeeETH = _accountUpdateFeeETH;
         depositFeeETH = _depositFeeETH;
         withdrawalFeeETH = _withdrawalFeeETH;
-        suspensionFeePerDayLRC = _suspensionFeePerDayLRC;
+        downtimePricePerDayLRC = _downtimePricePerDayLRC;
 
         emit FeesUpdated(
             accountCreationFeeETH,
             accountUpdateFeeETH,
             depositFeeETH,
             withdrawalFeeETH,
-            suspensionFeePerDayLRC
+            downtimePricePerDayLRC
         );
     }
 
@@ -80,51 +80,58 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
             uint _accountUpdateFeeETH,
             uint _depositFeeETH,
             uint _withdrawalFeeETH,
-            uint _suspensionFeePerDayLRC
+            uint _downtimePricePerDayLRC
         )
     {
         _accountCreationFeeETH = accountCreationFeeETH;
         _accountUpdateFeeETH = accountUpdateFeeETH;
         _depositFeeETH = depositFeeETH;
         _withdrawalFeeETH = withdrawalFeeETH;
-        _suspensionFeePerDayLRC = suspensionFeePerDayLRC;
+        _downtimePricePerDayLRC = downtimePricePerDayLRC;
     }
 
-    function suspendExchange()
+    function purchaseDowntime(
+        uint durationSeconds
+        )
         external
         onlyOperator
     {
-        require(isInNormalMode(), "INVALID_MODE");
-        suspendedSince = now;
-    }
+        require(!isInWithdrawalMode(), "INVALID_MODE");
 
-    function resumeExchange()
-        external
-        returns (uint burnedLRC)
-        onlyOperator
-    {
-        require(isInSuspensionMode(), "INVALID_MODE");
-        uint requiredLRCToBurn = (now - suspendedSince).mul(suspensionFeePerDayLRC) / (1 days);
-
-        if (requiredLRCToBurn > 0) {
-            require(requiredLRCToBurn <= loopring.getStake(id), "INSUFFCIENT_LRC_STAKE");
-            burnedLRC = loopring.burnStake(id, requiredLRCToBurn);
+        uint costLRC = getDowntimeCostLRC(durationSeconds);
+        if (costLRC > 0) {
+           require(
+                BurnableERC20(lrcAddress).burnFrom(msg.sender, costLRC),
+                "BURN_FAILURE"
+            );
         }
-        suspendedSince = 0;
+
+        if (now < disableUserRequestsUntil) {
+            disableUserRequestsUntil = now;
+        }
+        disableUserRequestsUntil += durationSeconds;
     }
 
-    function getAdditionLRCRequiredToResumeExchange()
-        external
+    function getRemainingDowntime()
+        public
+        view
+        returns (uint duration)
+    {
+        if (now <= disableUserRequestsUntil) {
+            duration = 0;
+        } else {
+            duration = disableUserRequestsUntil -now;
+        }
+    }
+
+    function getDowntimeCostLRC(
+        uint durationSeconds
+        )
+        public
+        view
         returns (uint amount)
     {
-        require(isInSuspensionMode(), "INVALID_MODE");
-        uint requiredLRCToBurn = (now + (5 minutes)- suspendedSince)
-            .mul(suspensionFeePerDayLRC) / (1 days);
-
-        uint stakedLRC = loopring.getStake(id);
-
-        if (requiredLRCToBurn > stakedLRC) {
-            amount = requiredLRCToBurn - stakedLRC;
-        }
+        require(!isInWithdrawalMode(), "INVALID_MODE");
+        amount = durationSeconds.mul(downtimePricePerDayLRC) / (1 days);
     }
 }

@@ -58,22 +58,6 @@ contract ManagingBlocks is IManagingBlocks, Data
         }
     }
 
-    function isInSuspensionMode()
-        public
-        view
-        returns (bool)
-    {
-        return suspendedSince != 0 && !isInWithdrawalMode();
-    }
-
-    function isInNormalMode()
-        public
-        view
-        returns (bool)
-    {
-        return !isInWithdrawalMode() && suspendedSince == 0;
-    }
-
     function getBlockHeight()
         external
         view

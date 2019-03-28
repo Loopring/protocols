@@ -62,7 +62,8 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
         payable
         returns (uint24 accountID)
     {
-        require(isInNormalMode(), "INVALID_MODE");
+        require(!isInWithdrawalMode(), "INVALID_MODE");
+        require(now >= disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
 
         if (ownerToAccountId[msg.sender] == 0) {
             // create a new account

@@ -108,13 +108,13 @@ contract IData
     address public blockVerifierAddress     = address(0);
 
     uint public id = 0;
-    uint suspendedSince = 0;
+    uint public disableUserRequestsUntil    = 0;
 
     uint public accountCreationFeeETH       = 0 ether;
     uint public accountUpdateFeeETH         = 0 ether;
     uint public depositFeeETH               = 0 ether;
     uint public withdrawalFeeETH            = 0 ether;
-    uint public suspensionFeePerDayLRC      = 10000 ether;
+    uint public downtimePricePerDayLRC      = 10000 ether;
 
 
     Block[]     public blocks;
@@ -193,6 +193,6 @@ contract IData
         uint accountUpdateFeeETH,
         uint depositFeeETH,
         uint withdrawalFeeETH,
-        uint suspensionFeePerDayLRC
+        uint downtimePricePerDayLRC
     );
 }

@@ -36,7 +36,7 @@ contract IManagingOperations is IManagingStakes
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
         uint _withdrawalFeeETH,
-        uint _suspensionFeePerDayLRC
+        uint _downtimePricePerDayLRC
         )
         external;
 
@@ -48,17 +48,23 @@ contract IManagingOperations is IManagingStakes
             uint _accountUpdateFeeETH,
             uint _depositFeeETH,
             uint _withdrawalFeeETH,
-            uint _suspensionFeePerDayLRC
+            uint _downtimePricePerDayLRC
         );
 
-    function suspendExchange()
+    function purchaseDowntime(
+        uint durationSeconds
+        )
         external;
 
-    function resumeExchange()
-        external
-        returns (uint burnedLRC);
+    function getRemainingDowntime()
+        public
+        view
+        returns (uint duration);
 
-    function getAdditionLRCRequiredToResumeExchange()
-        external
+    function getDowntimeCostLRC(
+        uint durationSeconds
+        )
+        public
+        view
         returns (uint amount);
 }

@@ -29,16 +29,6 @@ contract IManagingBlocks is IData
         view
         returns (bool);
 
-    function isInSuspensionMode()
-        public
-        view
-        returns (bool);
-
-    function isInNormalMode()
-        public
-        view
-        returns (bool);
-
     function getBlockHeight()
         external
         view

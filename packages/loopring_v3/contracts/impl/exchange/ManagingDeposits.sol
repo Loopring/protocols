@@ -95,7 +95,8 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
     {
         require(recipient != address(0), "ZERO_ADDRESS");
         require(amount > 0, "ZERO_VALUE");
-        require(isInNormalMode(), "INVALID_MODE");
+        require(!isInWithdrawalMode(), "INVALID_MODE");
+        require(now >= disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = getTokenID(tokenAddress);
