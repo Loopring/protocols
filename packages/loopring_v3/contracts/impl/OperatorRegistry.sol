@@ -305,7 +305,7 @@ contract OperatorRegistry is IOperatorRegistry, NoDefaultFunc
         view
         returns (Realm storage realm)
     {
-        require(realmID < realms.length, "INVALID_STATE_ID");
+        require(realmID < realms.length, "INVALID_MODE_ID");
         realm = realms[realmID];
     }
 }

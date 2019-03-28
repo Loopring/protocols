@@ -92,6 +92,7 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
 
     function suspendExchange()
         external
+        onlyOperator
     {
         require(isInNormalMode(), "INVALID_MODE");
         suspendedSince = now;
@@ -100,8 +101,9 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
     function resumeExchange()
         external
         returns (uint burnedLRC)
+        onlyOperator
     {
-        require(isInSuspensionMode() && !isInWithdrawalMode(), "INVALID_MODE");
+        require(isInSuspensionMode(), "INVALID_MODE");
         uint requiredLRCToBurn = (now - suspendedSince).mul(suspensionFeePerDayLRC) / (1 days);
 
         if (requiredLRCToBurn > 0) {
@@ -109,5 +111,20 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
             burnedLRC = loopring.burnStake(id, requiredLRCToBurn);
         }
         suspendedSince = 0;
+    }
+
+    function getAdditionLRCRequiredToResumeExchange()
+        external
+        returns (uint amount)
+    {
+        require(isInSuspensionMode(), "INVALID_MODE");
+        uint requiredLRCToBurn = (now + (5 minutes)- suspendedSince)
+            .mul(suspensionFeePerDayLRC) / (1 days);
+
+        uint stakedLRC = loopring.getStake(id);
+
+        if (requiredLRCToBurn > stakedLRC) {
+            amount = requiredLRCToBurn - stakedLRC;
+        }
     }
 }

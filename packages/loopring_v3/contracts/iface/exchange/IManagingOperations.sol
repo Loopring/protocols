@@ -57,4 +57,8 @@ contract IManagingOperations is IManagingStakes
     function resumeExchange()
         external
         returns (uint burnedLRC);
+
+    function getAdditionLRCRequiredToResumeExchange()
+        external
+        returns (uint amount);
 }
