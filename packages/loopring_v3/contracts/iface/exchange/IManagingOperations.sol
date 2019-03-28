@@ -35,8 +35,7 @@ contract IManagingOperations is IManagingStakes
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
-        uint _withdrawalFeeETH,
-        uint _downtimePricePerDayLRC
+        uint _withdrawalFeeETH
         )
         external;
 
@@ -47,8 +46,7 @@ contract IManagingOperations is IManagingStakes
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
             uint _depositFeeETH,
-            uint _withdrawalFeeETH,
-            uint _downtimePricePerDayLRC
+            uint _withdrawalFeeETH
         );
 
     function purchaseDowntime(
@@ -66,5 +64,5 @@ contract IManagingOperations is IManagingStakes
         )
         public
         view
-        returns (uint amount);
+        returns (uint);
 }

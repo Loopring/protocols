@@ -44,7 +44,8 @@ contract LoopringV3 is ILoopringV3, Ownable
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
-        uint    _maxWithdrawalFee
+        uint    _maxWithdrawalFee,
+        uint    _downtimePriceLRCPerDay
         )
         external
         onlyOwner
@@ -69,10 +70,11 @@ contract LoopringV3 is ILoopringV3, Ownable
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         tierUpgradeCostBips = _tierUpgradeCostBips;
         maxWithdrawalFee = _maxWithdrawalFee;
+        downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
 
-        tokens[lrcAddress]  = Token(lrcAddress, 1, 0xFFFFFFFF);
+        tokens[lrcAddress]  = Token(lrcAddress,  1, 0xFFFFFFFF);
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
-        tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);    // ETH
+        tokens[address(0)]  = Token(address(0),  3, 0xFFFFFFFF);    // ETH
 
         emit SettingsUpdated(now);
     }

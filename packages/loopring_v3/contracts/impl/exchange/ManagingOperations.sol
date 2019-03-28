@@ -49,8 +49,7 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
-        uint _withdrawalFeeETH,
-        uint _downtimePricePerDayLRC
+        uint _withdrawalFeeETH
         )
         external
         onlyOperator
@@ -61,14 +60,12 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
         accountUpdateFeeETH = _accountUpdateFeeETH;
         depositFeeETH = _depositFeeETH;
         withdrawalFeeETH = _withdrawalFeeETH;
-        downtimePricePerDayLRC = _downtimePricePerDayLRC;
 
         emit FeesUpdated(
             accountCreationFeeETH,
             accountUpdateFeeETH,
             depositFeeETH,
-            withdrawalFeeETH,
-            downtimePricePerDayLRC
+            withdrawalFeeETH
         );
     }
 
@@ -79,15 +76,13 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
             uint _depositFeeETH,
-            uint _withdrawalFeeETH,
-            uint _downtimePricePerDayLRC
+            uint _withdrawalFeeETH
         )
     {
         _accountCreationFeeETH = accountCreationFeeETH;
         _accountUpdateFeeETH = accountUpdateFeeETH;
         _depositFeeETH = depositFeeETH;
         _withdrawalFeeETH = withdrawalFeeETH;
-        _downtimePricePerDayLRC = downtimePricePerDayLRC;
     }
 
     function purchaseDowntime(
@@ -120,7 +115,7 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
         if (now <= disableUserRequestsUntil) {
             duration = 0;
         } else {
-            duration = disableUserRequestsUntil -now;
+            duration = disableUserRequestsUntil - now;
         }
     }
 
@@ -129,9 +124,9 @@ contract ManagingOperations is IManagingOperations, ManagingStakes
         )
         public
         view
-        returns (uint amount)
+        returns (uint)
     {
         require(!isInWithdrawalMode(), "INVALID_MODE");
-        amount = durationSeconds.mul(downtimePricePerDayLRC) / (1 days);
+        return durationSeconds.mul(loopring.downtimePriceLRCPerDay()) / (1 days);
     }
 }
