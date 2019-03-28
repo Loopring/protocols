@@ -16,34 +16,30 @@
 */
 pragma solidity 0.5.2;
 
-import "../../iface/exchange/ITokenRegistration.sol";
-import "./BlockManagement.sol";
+import "../../iface/exchange/IManagingTokens.sol";
 
-/// @title An Implementation of IDEX.
+import "./ManagingAccounts.sol";
+
+/// @title An Implementation of IManagingTokens.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract TokenRegistration is ITokenRegistration, BlockManagement
+contract ManagingTokens is IManagingTokens, ManagingAccounts
 {
     function registerToken(
         address token
         )
         public
-        // onlyOwner
-        returns (uint16 tokenId)
+        onlyOperator
+        returns (uint16 tokenID)
     {
         require(tokenToTokenId[token] == 0, "TOKEN_ALREADY_EXIST");
-        require(numTokensRegistered < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
+        require(tokens.length < MAX_NUM_TOKENS, "TOKEN_REGISTRY_FULL");
 
-        tokenId = numTokensRegistered + 1;
+        tokens.push(token);
+        tokenID = uint16(tokens.length);
+        tokenToTokenId[token] = tokenID;
 
-        tokenToTokenId[token] = tokenId;
-        tokenIdToToken[tokenId] = token;
-        numTokensRegistered += 1;
-
-        emit TokenRegistered(
-            token,
-            tokenId
-        );
+        emit TokenRegistered(token, tokenID);
     }
 
     function getTokenID(
@@ -51,10 +47,10 @@ contract TokenRegistration is ITokenRegistration, BlockManagement
         )
         public
         view
-        returns (uint16)
+        returns (uint16 tokenID)
     {
-        require(tokenToTokenId[tokenAddress] != 0, "TOKEN_NOT_FOUND");
-        return tokenToTokenId[tokenAddress] - 1;
+        tokenID = tokenToTokenId[tokenAddress];
+        require(tokenID != 0, "TOKEN_NOT_FOUND");
     }
 
     function getTokenAddress(
@@ -64,8 +60,8 @@ contract TokenRegistration is ITokenRegistration, BlockManagement
         view
         returns (address)
     {
-        require(tokenID < numTokensRegistered, "INVALID_TOKEN_ID");
-        return tokenIdToToken[tokenID + 1];
+        require(tokenID < tokens.length, "INVALID_TOKEN_ID");
+        return tokens[tokenID - 1];
     }
 
 }

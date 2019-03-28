@@ -130,7 +130,7 @@ The nonce of the account is increased after the cancel is processed.
 
 A user calls `requestWithdraw` and the request is added to a withdraw block. See [here](#depositwithdraw-block-handling) how blocks are handled.
 
-A maximum withdrawal fee for a state is specified when the state is created. The state owner is allowed to change the withdrawal fee in the [0, state.maxWithdrawFeeInETH] range. This is to make sure the state owner cannot change the fee to something unreasonable.
+A maximum withdrawal fee for a state is specified when the state is created. The state owner is allowed to change the withdrawal fee in the [0, state.maxWithdrawalFeeInETH] range. This is to make sure the state owner cannot change the fee to something unreasonable.
 
 ## Ring settlement
 

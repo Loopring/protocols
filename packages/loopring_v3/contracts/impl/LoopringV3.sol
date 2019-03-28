@@ -44,7 +44,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
-        uint    _maxWithdrawFee
+        uint    _maxWithdrawalFee
         )
         external
         onlyOwner
@@ -68,7 +68,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         tierUpgradeCostBips = _tierUpgradeCostBips;
-        maxWithdrawFee = _maxWithdrawFee;
+        maxWithdrawalFee = _maxWithdrawalFee;
 
         tokens[lrcAddress]  = Token(lrcAddress, 1, 0xFFFFFFFF);
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);

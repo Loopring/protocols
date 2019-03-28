@@ -16,14 +16,14 @@
 */
 pragma solidity 0.5.2;
 
-import "../../iface/exchange/IStakeQuery.sol";
+import "../../iface/exchange/IManagingStakes.sol";
 
-import "./TokenRegistration.sol";
+import "./ManagingWithdrawals.sol";
 
-/// @title An Implementation of IDEX.
+/// @title An Implementation of IManagingStakes.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract StakeQuery is IStakeQuery, TokenRegistration
+contract ManagingStakes is IManagingStakes, ManagingWithdrawals
 {
     function getStake()
         external

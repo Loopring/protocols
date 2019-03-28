@@ -17,13 +17,17 @@
 pragma solidity 0.5.2;
 
 import "../iface/IExchange.sol";
-import "./exchange/StakeQuery.sol";
+
+import "./exchange/ManagingOperations.sol";
 
 
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange is IExchange, StakeQuery
+
+/// Inheritance: IManagingBlocks -> IManagingAccounts -> IManagingTokens -> IManagingDeposits ->
+/// IManagingWithdrawals -> IManagingStakes -> IManagingOperations
+contract Exchange is IExchange, ManagingOperations
 {
     constructor(
         uint    _id,
@@ -71,8 +75,24 @@ contract Exchange is IExchange, StakeQuery
             0xFFFFFFFF
         );
         depositChain.push(genesisRequest);
-        withdrawChain.push(genesisRequest);
+        withdrawalChain.push(genesisRequest);
 
-        createDefaultAccount();
+        // TODO(brecht): why we need this?
+        // Reserve default account slot at accountID 0
+        Account memory defaultAccount = Account(
+            address(0),
+            DEFAULT_ACCOUNT_PUBLICKEY_X,
+            DEFAULT_ACCOUNT_PUBLICKEY_Y
+        );
+
+        accounts.push(defaultAccount);
+        ownerToAccountId[address(0)] = 0;
+
+        emit AccountUpdated(
+            address(0),
+            uint24(0),
+            DEFAULT_ACCOUNT_PUBLICKEY_X,
+            DEFAULT_ACCOUNT_PUBLICKEY_Y
+        );
     }
 }
