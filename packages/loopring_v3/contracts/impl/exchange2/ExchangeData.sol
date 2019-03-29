@@ -113,7 +113,6 @@ library ExchangeData
     {
         address payable operator;
 
-        address loopringAddress;
         address lrcAddress;
         address exchangeHelperAddress;
         address blockVerifierAddress;

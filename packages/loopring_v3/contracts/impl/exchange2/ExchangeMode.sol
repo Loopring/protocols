@@ -26,7 +26,9 @@ library ExchangeMode
 {
     using MathUint  for uint;
 
-    function isInWithdrawalMode(ExchangeData.State storage S)
+    function isInWithdrawalMode(
+        ExchangeData.State storage S
+        )
         internal // reduce gas as this function is used by many other functions.
         view
         returns (bool result)

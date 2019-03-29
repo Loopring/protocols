@@ -21,30 +21,52 @@ import "../iface/ILoopringV3.sol";
 
 import "./exchange2/ExchangeData.sol";
 import "./exchange2/ExchangeMode.sol";
+import "./exchange2/ExchangeGenesis.sol";
 import "./exchange2/ExchangeAccounts.sol";
 import "./exchange2/ExchangeTokens.sol";
 import "./exchange2/ExchangeBlocks.sol";
 import "./exchange2/ExchangeDeposits.sol";
 import "./exchange2/ExchangeWithdrawals.sol";
+import "./exchange2/ExchangeOperations.sol";
 
 
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-
-/// Inheritance: IManagingBlocks -> IManagingAccounts -> IManagingTokens -> IManagingDeposits ->
-/// IManagingWithdrawals -> IManagingStakes -> IManagingOperations
 contract Exchange2
 {
     using ExchangeMode          for ExchangeData.State;
+    using ExchangeGenesis       for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeBlocks        for ExchangeData.State;
     using ExchangeDeposits      for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
+    using ExchangeOperations    for ExchangeData.State;
 
     ExchangeData.State public state;
     ILoopringV3 private loopring;
+
+    // -- Constructor --
+    constructor(
+        address _loopringAddress,
+        uint    _id,
+        address _owner,
+        address payable _operator
+        )
+        public
+        payable
+    {
+        require(address(0) != _loopringAddress, "ZERO_ADDRESS");
+        loopring = ILoopringV3(_loopringAddress);
+
+        state.initializeAndCreateGenesisBlock(
+            loopring,
+            _id,
+            _owner,
+            _operator
+        );
+    }
 
     // -- Mode --
     function isInWithdrawalMode()
@@ -234,73 +256,201 @@ contract Exchange2
     {
         state.depositTo(recipient, tokenAddress, amount);
     }
-    // constructor(
-    //     uint    _id,
-    //     address _loopringAddress,
-    //     address _owner,
-    //     address payable _operator
-    //     )
-    //     public
-    // {
-    //     require(0 != _id, "INVALID_ID");
-    //     require(address(0) != _loopringAddress, "ZERO_ADDRESS");
-    //     require(address(0) != _owner, "ZERO_ADDRESS");
-    //     require(address(0) != _operator, "ZERO_ADDRESS");
 
-    //     id = _id;
-    //     loopringAddress = _loopringAddress;
-    //     owner = _owner;
-    //     operator = _operator;
+    // -- Withdrawals --
+    function getFirstUnprocessedWithdrawalRequestIndex()
+        external
+        view
+        returns (uint)
+    {
+        return state.getFirstUnprocessedWithdrawalRequestIndex();
+    }
 
-    //     loopring = ILoopringV3(loopringAddress);
+    function getNumAvailableWithdrawalSlots(
+        )
+        external
+        view
+        returns (uint)
+    {
+        return state.getNumAvailableWithdrawalSlots();
+    }
 
-    //     lrcAddress = loopring.lrcAddress();
-    //     exchangeHelperAddress = loopring.exchangeHelperAddress();
-    //     blockVerifierAddress = loopring.blockVerifierAddress();
+    function getWithdrawRequest(
+        uint index
+        )
+        external
+        view
+        returns (
+            bytes32 accumulatedHash,
+            uint256 accumulatedFee,
+            uint32 timestamp
+        )
+    {
+        (accumulatedHash, accumulatedFee, timestamp) = state.getWithdrawRequest(index);
+    }
 
-    //     registerToken(address(0));
-    //     registerToken(loopring.wethAddress());
-    //     registerToken(lrcAddress);
+    // Set the large value for amount to withdraw the complete balance
+    function withdraw(
+        address token,
+        uint96 amount
+        )
+        external
+    {
+        state.withdraw(token, amount);
+    }
 
-    //     Block memory genesisBlock = Block(
-    //         0x2fb632af61a9ffb71034df05d1d62e8fb6112095bd28cddf56d5f2e4b57064be,
-    //         0x0,
-    //         BlockState.FINALIZED,
-    //         uint32(now),
-    //         1,
-    //         1,
-    //         true,
-    //         new bytes(0)
-    //     );
-    //     blocks.push(genesisBlock);
+    function withdrawFromMerkleTree(
+        address token,
+        uint32  nonce,
+        uint96  balance,
+        uint256 tradeHistoryRoot,
+        uint256[24] calldata accountPath,
+        uint256[12] calldata balancePath
+        )
+        external
+    {
+        state.withdrawFromMerkleTreeFor(
+            loopring,
+            msg.sender,
+            token,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountPath,
+            balancePath
+        );
+    }
 
-    //     Request memory genesisRequest = Request(
-    //         0,
-    //         0,
-    //         0xFFFFFFFF
-    //     );
-    //     depositChain.push(genesisRequest);
-    //     withdrawalChain.push(genesisRequest);
+    // We still alow anyone to withdraw these funds for the account owner
+    function withdrawFromMerkleTreeFor(
+        address owner,
+        address token,
+        uint32  nonce,
+        uint96  balance,
+        uint256 tradeHistoryRoot,
+        uint256[24] calldata accountPath,
+        uint256[12] calldata balancePath
+        )
+        external
+    {
+        state.withdrawFromMerkleTreeFor(
+            loopring,
+            owner,
+            token,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountPath,
+            balancePath
+        );
+    }
 
-    //     // This account is used for padding deposits and onchain withdrawal requests so this might
-    //     // be a bit confusing otherwise.  Because the private key is known by anyone it can also
-    //     // be used to create dummy offhcain withdrawals/dummy orders to fill blocks when needed.
-    //     // Because this account is all zeros it is also the most gas efficient one to use in terms
-    //     // of calldata.
+    function withdrawFromDepositRequest(
+        uint depositRequestIdx
+        )
+        external
+    {
+        state.withdrawFromDepositRequest(loopring, depositRequestIdx);
+    }
 
-    //     Account memory defaultAccount = Account(
-    //         address(0),
-    //         DEFAULT_ACCOUNT_PUBLICKEY_X,
-    //         DEFAULT_ACCOUNT_PUBLICKEY_Y
-    //     );
+    function withdrawFromApprovedWithdrawal(
+        uint blockIdx,
+        uint slotIdx
+        )
+        external
+    {
+        state.withdrawFromApprovedWithdrawal(
+            loopring,
+            blockIdx,
+            slotIdx
+        );
+    }
 
-    //     accounts.push(defaultAccount);
 
-    //     emit AccountUpdated(
-    //         address(0),
-    //         uint24(0),
-    //         DEFAULT_ACCOUNT_PUBLICKEY_X,
-    //         DEFAULT_ACCOUNT_PUBLICKEY_Y
-    //     );
-    // }
+    function withdrawBlockFee(
+        uint32 blockIdx
+        )
+        external
+        returns (uint feeAmount)
+    {
+        feeAmount = state.withdrawBlockFee(blockIdx);
+    }
+
+    function distributeWithdrawals(
+        uint blockIdx
+        )
+        external
+    {
+        state.distributeWithdrawals(blockIdx);
+    }
+
+    // -- Operations --
+
+    function setOperator(
+        address payable _operator
+        )
+        external
+        returns (address payable oldOperator)
+    {
+        oldOperator = state.setOperator(_operator);
+    }
+
+    function setFees(
+        uint _accountCreationFeeETH,
+        uint _accountUpdateFeeETH,
+        uint _depositFeeETH,
+        uint _withdrawalFeeETH
+        )
+        external
+    {
+       state.setFees(
+            loopring,
+            _accountCreationFeeETH,
+            _accountUpdateFeeETH,
+            _depositFeeETH,
+            _withdrawalFeeETH
+        );
+    }
+
+    function getFees()
+        external
+        view
+        returns (
+            uint _accountCreationFeeETH,
+            uint _accountUpdateFeeETH,
+            uint _depositFeeETH,
+            uint _withdrawalFeeETH
+        )
+    {
+        _accountCreationFeeETH = state.accountCreationFeeETH;
+        _accountUpdateFeeETH = state.accountUpdateFeeETH;
+        _depositFeeETH = state.depositFeeETH;
+        _withdrawalFeeETH = state.withdrawalFeeETH;
+    }
+
+    function purchaseDowntime(
+        uint durationSeconds
+        )
+        external
+    {
+        state.purchaseDowntime(loopring, durationSeconds);
+    }
+
+    function getRemainingDowntime()
+        external
+        view
+        returns (uint durationSeconds)
+    {
+        durationSeconds = state.getRemainingDowntime();
+    }
+
+    function getDowntimeCostLRC(
+        uint durationSeconds
+        )
+        external
+        view
+        returns (uint costLRC)
+    {
+        costLRC = state.getDowntimeCostLRC(loopring, durationSeconds);
+    }
 }

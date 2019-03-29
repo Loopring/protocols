@@ -94,24 +94,6 @@ library ExchangeOperations
         );
     }
 
-    function getFees(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (
-            uint _accountCreationFeeETH,
-            uint _accountUpdateFeeETH,
-            uint _depositFeeETH,
-            uint _withdrawalFeeETH
-        )
-    {
-        _accountCreationFeeETH = S.accountCreationFeeETH;
-        _accountUpdateFeeETH = S.accountUpdateFeeETH;
-        _depositFeeETH = S.depositFeeETH;
-        _withdrawalFeeETH = S.withdrawalFeeETH;
-    }
-
     function purchaseDowntime(
         ExchangeData.State storage S,
         ILoopringV3 loopring,

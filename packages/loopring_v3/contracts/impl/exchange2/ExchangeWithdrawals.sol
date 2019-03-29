@@ -152,31 +152,6 @@ library ExchangeWithdrawals
         );
     }
 
-    function withdrawFromMerkleTree(
-        ExchangeData.State storage S,
-        ILoopringV3 loopring,
-        address token,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[24] memory accountPath,
-        uint256[12] memory balancePath
-        )
-        public
-    {
-        withdrawFromMerkleTreeFor(
-            S,
-            loopring,
-            msg.sender,
-            token,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountPath,
-            balancePath
-        );
-    }
-
     // We still alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTreeFor(
         ExchangeData.State storage S,
