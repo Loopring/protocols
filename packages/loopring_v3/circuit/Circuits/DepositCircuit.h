@@ -29,14 +29,10 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicKeyY;
 
     BalanceState balanceBefore;
-    BalanceState balanceAfter;
-
     AccountState accountBefore;
-
+    BalanceState balanceAfter;
     UpdateBalanceGadget updateBalance;
-
     AccountState accountAfter;
-
     UpdateAccountGadget updateAccount;
 
     DepositGadget(
@@ -60,27 +56,23 @@ public:
             make_variable(pb, FMT(prefix, ".before.balance")),
             make_variable(pb, FMT(prefix, ".tradingHistoryRoot"))
         }),
-        balanceAfter({
-            make_variable(pb, FMT(prefix, ".after.balance")),
-            balanceBefore.tradingHistory
-        }),
-
         accountBefore({
             make_variable(pb, FMT(prefix, ".publicKeyX_before")),
             make_variable(pb, FMT(prefix, ".publicKeyY_before")),
             make_variable(pb, FMT(prefix, ".nonce")),
             make_variable(pb, FMT(prefix, ".balancesRoot_before"))
         }),
-
+        balanceAfter({
+            make_variable(pb, FMT(prefix, ".after.balance")),
+            balanceBefore.tradingHistory
+        }),
         updateBalance(pb, accountBefore.balancesRoot, tokenID, balanceBefore, balanceAfter, FMT(prefix, ".updateBalance")),
-
         accountAfter({
             publicKeyX.packed,
             publicKeyY.packed,
             accountBefore.nonce,
             updateBalance.getNewRoot()
         }),
-
         updateAccount(pb, root, accountID, accountBefore, accountAfter, FMT(prefix, ".updateAccount"))
     {
 

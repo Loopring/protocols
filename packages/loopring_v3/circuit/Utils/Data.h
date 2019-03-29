@@ -509,7 +509,6 @@ void from_json(const json& j, DepositContext& context)
 class Withdrawal
 {
 public:
-    ethsnarks::jubjub::EdwardsPoint publicKey;
     ethsnarks::FieldT amount;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT walletSplitPercentage;
@@ -525,8 +524,6 @@ public:
 
 void from_json(const json& j, Withdrawal& withdrawal)
 {
-    withdrawal.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
-    withdrawal.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
     withdrawal.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
     withdrawal.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     withdrawal.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
