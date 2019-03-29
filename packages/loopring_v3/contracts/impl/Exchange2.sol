@@ -18,19 +18,18 @@ pragma solidity 0.5.2;
 
 import "../lib/Ownable.sol";
 
-import "../iface/IExchange.sol";
 import "../iface/ILoopringV3.sol";
 
-import "./exchange2/ExchangeAccounts.sol";
-import "./exchange2/ExchangeAdmins.sol";
-import "./exchange2/ExchangeBalances.sol";
-import "./exchange2/ExchangeBlocks.sol";
-import "./exchange2/ExchangeData.sol";
-import "./exchange2/ExchangeDeposits.sol";
-import "./exchange2/ExchangeGenesis.sol";
-import "./exchange2/ExchangeMode.sol";
-import "./exchange2/ExchangeTokens.sol";
-import "./exchange2/ExchangeWithdrawals.sol";
+import "./libexchange/ExchangeAccounts.sol";
+import "./libexchange/ExchangeAdmins.sol";
+import "./libexchange/ExchangeBalances.sol";
+import "./libexchange/ExchangeBlocks.sol";
+import "./libexchange/ExchangeData.sol";
+import "./libexchange/ExchangeDeposits.sol";
+import "./libexchange/ExchangeGenesis.sol";
+import "./libexchange/ExchangeMode.sol";
+import "./libexchange/ExchangeTokens.sol";
+import "./libexchange/ExchangeWithdrawals.sol";
 
 
 /// @title An Implementation of IExchange.
