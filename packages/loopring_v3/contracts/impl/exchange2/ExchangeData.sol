@@ -16,10 +16,13 @@
 */
 pragma solidity 0.5.2;
 
+import "../../iface/ILoopringV3.sol";
+
 
 /// @title ExchangeData
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
+
 library ExchangeData
 {
     // -- Enums --
@@ -109,7 +112,8 @@ library ExchangeData
         uint    id;
         address payable operator;
 
-        address loopring3Address;
+        ILoopringV3 loopring;
+
         address lrcAddress;
         address exchangeHelperAddress;
         address blockVerifierAddress;

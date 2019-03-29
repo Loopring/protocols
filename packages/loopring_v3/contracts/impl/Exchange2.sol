@@ -169,7 +169,7 @@ contract Exchange2 is Ownable
         view
         returns (uint)
     {
-        return ILoopringV3(state.loopring3Address).getStake(state.id);
+        return state.loopring.getStake(state.id);
     }
 
     // -- Blocks --

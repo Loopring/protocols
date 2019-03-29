@@ -79,7 +79,7 @@ library ExchangeAdmins
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(
-            _withdrawalFeeETH <= ILoopringV3(S.loopring3Address).maxWithdrawalFee(),
+            _withdrawalFeeETH <= S.loopring.maxWithdrawalFee(),
             "AMOUNT_TOO_LARGE"
         );
 
@@ -142,7 +142,7 @@ library ExchangeAdmins
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         return durationSeconds
-            .mul(ILoopringV3(S.loopring3Address)
+            .mul(S.loopring
             .downtimePriceLRCPerDay()) / (1 days);
     }
 }

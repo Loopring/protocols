@@ -374,7 +374,7 @@ library ExchangeWithdrawals
         uint amountToBurn = 0;
         uint amountToOwner = 0;
         if (bBurn) {
-            uint burnRate = ILoopringV3(S.loopring3Address).getTokenBurnRate(token);
+            uint burnRate = S.loopring.getTokenBurnRate(token);
             amountToBurn = amount.mul(burnRate) / 10000;
             amountToOwner = amount - amountToBurn;
         } else {

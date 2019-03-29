@@ -46,7 +46,7 @@ library ExchangeGenesis
         require(address(0) != _operator, "ZERO_ADDRESS");
 
         S.id = _id;
-        S.loopring3Address = _loopring3Address;
+        S.loopring = ILoopringV3(_loopring3Address);
         S.operator = _operator;
 
         ILoopringV3 loopring = ILoopringV3(_loopring3Address);
