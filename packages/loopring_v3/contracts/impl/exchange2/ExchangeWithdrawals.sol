@@ -19,12 +19,13 @@ pragma solidity 0.5.2;
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 
+import "../../iface/ILoopringV3.sol";
+
+import "./ExchangeAccounts.sol";
+import "./ExchangeBalances.sol";
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
-import "./ExchangeAccounts.sol";
 import "./ExchangeTokens.sol";
-
-import "../../iface/ILoopringV3.sol";
 
 
 /// @title ExchangeAccounts.
@@ -34,9 +35,10 @@ library ExchangeWithdrawals
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
+    using ExchangeAccounts  for ExchangeData.State;
+    using ExchangeBalances  for ExchangeData.State;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
-    using ExchangeAccounts  for ExchangeData.State;
 
     event BlockFeeWithdraw(
         uint32 blockIdx,
@@ -173,18 +175,20 @@ library ExchangeWithdrawals
         uint24 accountID = S.getAccountID(owner);
         ExchangeData.Account storage account = S.accounts[accountID];
         uint16 tokenID = S.getTokenID(token);
-        require(S.withdrawnInWithdrawMode[account.owner][token] == false, "WITHDRAWN_ALREADY");
+        require(S.withdrawnInWithdrawMode[owner][token] == false, "WITHDRAWN_ALREADY");
 
+        // TODO(daniel): Stack too deep error if uncomment this.
         // S.verifyAccountBalance(
-        //     lastBlock.merkleRoot,
+        //     uint256(lastBlock.merkleRoot),
         //     accountID,
         //     tokenID,
-        //     accountPath,
-        //     balancePath,
-        //     account,
+        //     account.pubKeyX,
+        //     account.pubKeyY,
         //     nonce,
         //     balance,
-        //     tradeHistoryRoot
+        //     tradeHistoryRoot,
+        //     accountPath,
+        //     balancePath
         // );
 
         // Make sure the balance can only be withdrawn once

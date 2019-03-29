@@ -19,12 +19,13 @@ pragma solidity 0.5.2;
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 
+import "../../iface/ILoopringV3.sol";
+
+import "./ExchangeAccounts.sol";
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
-import "./ExchangeAccounts.sol";
 import "./ExchangeTokens.sol";
 
-import "../../iface/ILoopringV3.sol";
 
 /// @title ExchangeAccounts.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -33,8 +34,8 @@ library ExchangeDeposits
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
-    using ExchangeMode      for ExchangeData.State;
     using ExchangeAccounts  for ExchangeData.State;
+    using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
 
     event DepositRequested(

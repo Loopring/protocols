@@ -16,21 +16,22 @@
 */
 pragma solidity 0.5.2;
 
-import "./ExchangeData.sol";
-import "./ExchangeAccounts.sol";
-import "./ExchangeTokens.sol";
-
 import "../../lib/MathUint.sol";
 
 import "../../iface/ILoopringV3.sol";
+
+import "./ExchangeAccounts.sol";
+import "./ExchangeData.sol";
+import "./ExchangeTokens.sol";
+
 
 /// @title IManagingMode.
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeGenesis
 {
-    using ExchangeTokens    for ExchangeData.State;
     using ExchangeAccounts  for ExchangeData.State;
+    using ExchangeTokens    for ExchangeData.State;
 
     function initializeGenesisBlock(
         ExchangeData.State storage S,

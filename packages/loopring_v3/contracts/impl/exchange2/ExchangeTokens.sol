@@ -16,13 +16,15 @@
 */
 pragma solidity 0.5.2;
 
-import "./ExchangeData.sol";
-import "./ExchangeMode.sol";
 
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/NoDefaultFunc.sol";
+
+import "./ExchangeData.sol";
+import "./ExchangeMode.sol";
+
 
 /// @title ExchangeAccounts.
 /// @author Daniel Wang  - <daniel@loopring.org>

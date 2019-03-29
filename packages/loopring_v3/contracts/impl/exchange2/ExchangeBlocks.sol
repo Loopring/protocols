@@ -16,12 +16,13 @@
 */
 pragma solidity 0.5.2;
 
-import "./ExchangeData.sol";
-import "./ExchangeMode.sol";
-
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+
+import "./ExchangeData.sol";
+import "./ExchangeMode.sol";
+
 
 /// @title ExchangeAccounts.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -49,7 +50,7 @@ library ExchangeBlocks
         uint blockType,
         bytes memory data
         )
-        public
+        internal  // inline call
     {
         commitBlockInternal(S, blockType, data);
     }
@@ -60,7 +61,7 @@ library ExchangeBlocks
         uint blockIdx,
         uint256[8] memory proof
         )
-        public
+        internal  // inline call
     {
         // Exchange cannot be in withdraw mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");

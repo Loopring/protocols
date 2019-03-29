@@ -81,21 +81,6 @@ library ExchangeData
         uint96 amount;
     }
 
-    // uint    public constant DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165;
-    // uint    public constant DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667;
-    // uint    public constant DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935;
-
-    // uint32  public constant MAX_PROOF_GENERATION_TIME_IN_SECONDS        = 1 hours;
-
-    // uint32  public constant MAX_AGE_REQUEST_UNTIL_FORCED                = /*15 minutes*/ 1 days;     // TESTING
-    // uint32  public constant MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE         = 1 days;
-
-    // uint32  public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS            = /*1 minutes*/ 1 days;        // TESTING
-
-    // uint16  public constant NUM_DEPOSITS_IN_BLOCK                       = 8;
-    // uint16  public constant NUM_WITHDRAWALS_IN_BLOCK                    = 8;
-    // uint    public constant MAX_NUM_TOKENS                              = 2 ** 12; // = 4096
-
     function DEFAULT_ACCOUNT_PUBLICKEY_X() public pure returns (uint) { return 2760979366321990647384327991146539505488430080750363450053902718557853404165; }
     function DEFAULT_ACCOUNT_PUBLICKEY_Y() public pure returns (uint) { return 10771439851340068599303586501499035409517957710739943668636844002715618931667; }
     function DEFAULT_ACCOUNT_SECRETKEY() public pure returns (uint) { return 531595266505639429282323989096889429445309320547115026296307576144623272935; }
@@ -108,10 +93,9 @@ library ExchangeData
     function NUM_WITHDRAWALS_IN_BLOCK() public pure returns (uint16) { return 8; }
     function MAX_NUM_TOKENS() public pure returns (uint) { return 2 **12; }
 
-
     struct State
     {
-        uint id;
+        uint    id;
         address payable operator;
 
         address loopring3Address;
@@ -119,12 +103,11 @@ library ExchangeData
         address exchangeHelperAddress;
         address blockVerifierAddress;
 
-        uint disableUserRequestsUntil;
-
-        uint accountCreationFeeETH;
-        uint accountUpdateFeeETH;
-        uint depositFeeETH;
-        uint withdrawalFeeETH;
+        uint    disableUserRequestsUntil;
+        uint    accountCreationFeeETH;
+        uint    accountUpdateFeeETH;
+        uint    depositFeeETH;
+        uint    withdrawalFeeETH;
 
         Block[]     blocks;
         Token[]     tokens;

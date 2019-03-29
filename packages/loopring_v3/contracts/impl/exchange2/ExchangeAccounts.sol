@@ -16,13 +16,15 @@
 */
 pragma solidity 0.5.2;
 
-import "./ExchangeData.sol";
-import "./ExchangeMode.sol";
-import "./ExchangeAccounts.sol";
-
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+
+import "./ExchangeAccounts.sol";
+import "./ExchangeBalances.sol";
+import "./ExchangeData.sol";
+import "./ExchangeMode.sol";
+
 
 /// @title ExchangeAccounts.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -31,7 +33,7 @@ library ExchangeAccounts
 {
     using MathUint          for uint;
     using ExchangeMode      for ExchangeData.State;
-    // using ExchangeAccounts  for ExchangeData.State;
+    using ExchangeBalances  for ExchangeData.State;
 
     event AccountUpdated(
         address owner,
@@ -123,30 +125,30 @@ library ExchangeAccounts
 
     function verifyAccountBalance(
         ExchangeData.State storage S,
+        ExchangeData.Account storage account,
         bytes32 merkleRoot,
         uint24 accountID,
         uint16 tokenID,
-        uint256[24] memory accountPath,
-        uint256[12] memory balancePath,
-        ExchangeData.Account storage account,
         uint32 nonce,
         uint96 balance,
-        uint256 tradeHistoryRoot
+        uint256 tradeHistoryRoot,
+        uint256[24] memory accountPath,
+        uint256[12] memory balancePath
         )
-        internal
+        public
     {
-        // IExchangeHelper(S.exchangeHelperAddress).verifyAccountBalance(
-        //     uint256(merkleRoot),
-        //     accountID,
-        //     tokenID,
-        //     accountPath,
-        //     balancePath,
-        //     account.pubKeyX,
-        //     account.pubKeyY,
-        //     nonce,
-        //     balance,
-        //     tradeHistoryRoot
-        // );
+        S.verifyAccountBalance(
+            uint256(merkleRoot),
+            accountID,
+            tokenID,
+            account.pubKeyX,
+            account.pubKeyY,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountPath,
+            balancePath
+        );
     }
 
     function isFeeRecipientAccount(

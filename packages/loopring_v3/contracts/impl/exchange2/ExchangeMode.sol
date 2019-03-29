@@ -16,8 +16,10 @@
 */
 pragma solidity 0.5.2;
 
-import "./ExchangeData.sol";
 import "../../lib/MathUint.sol";
+
+import "./ExchangeData.sol";
+
 
 /// @title IManagingMode.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -29,7 +31,7 @@ library ExchangeMode
     function isInWithdrawalMode(
         ExchangeData.State storage S
         )
-        internal // reduce gas as this function is used by many other functions.
+        internal // inline call
         view
         returns (bool result)
     {

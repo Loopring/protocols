@@ -21,16 +21,16 @@ import "../lib/Ownable.sol";
 import "../iface/IExchange.sol";
 import "../iface/ILoopringV3.sol";
 
-import "./exchange2/ExchangeData.sol";
-import "./exchange2/ExchangeMode.sol";
-import "./exchange2/ExchangeGenesis.sol";
 import "./exchange2/ExchangeAccounts.sol";
-import "./exchange2/ExchangeTokens.sol";
+// import "./exchange2/ExchangeBalances.sol";
 import "./exchange2/ExchangeBlocks.sol";
+import "./exchange2/ExchangeData.sol";
 import "./exchange2/ExchangeDeposits.sol";
-import "./exchange2/ExchangeWithdrawals.sol";
+import "./exchange2/ExchangeGenesis.sol";
+import "./exchange2/ExchangeMode.sol";
 import "./exchange2/ExchangeOperations.sol";
-
+import "./exchange2/ExchangeTokens.sol";
+import "./exchange2/ExchangeWithdrawals.sol";
 
 
 /// @title An Implementation of IExchange.
@@ -38,14 +38,15 @@ import "./exchange2/ExchangeOperations.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Exchange2 is Ownable
 {
-    using ExchangeMode          for ExchangeData.State;
-    using ExchangeGenesis       for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
-    using ExchangeTokens        for ExchangeData.State;
+    // using ExchangeBalances      for ExchangeData.State;
     using ExchangeBlocks        for ExchangeData.State;
     using ExchangeDeposits      for ExchangeData.State;
-    using ExchangeWithdrawals   for ExchangeData.State;
+    using ExchangeGenesis       for ExchangeData.State;
+    using ExchangeMode          for ExchangeData.State;
     using ExchangeOperations    for ExchangeData.State;
+    using ExchangeTokens        for ExchangeData.State;
+    using ExchangeWithdrawals   for ExchangeData.State;
 
     ExchangeData.State public state;
 
@@ -74,6 +75,7 @@ contract Exchange2 is Ownable
         require(msg.sender == state.operator, "UNAUTHORIZED");
         _;
     }
+
     // -- Mode --
     function isInWithdrawalMode()
         external
@@ -114,6 +116,7 @@ contract Exchange2 is Ownable
         address tokenAddress
         )
         external
+        payable
         onlyOperator
         returns (uint16 tokenID)
     {
@@ -143,8 +146,9 @@ contract Exchange2 is Ownable
     function disableTokenDeposit(
         address tokenAddress
         )
-        onlyOperator
         external
+        payable
+        onlyOperator
     {
        state.disableTokenDeposit(tokenAddress);
     }
@@ -152,8 +156,9 @@ contract Exchange2 is Ownable
     function enableTokenDeposit(
         address tokenAddress
         )
-        onlyOperator
         external
+        payable
+        onlyOperator
     {
         state.enableTokenDeposit(tokenAddress);
     }
@@ -181,6 +186,7 @@ contract Exchange2 is Ownable
         bytes calldata data
         )
         external
+        payable
         onlyOperator
     {
         state.commitBlock(blockType, data);
@@ -191,6 +197,7 @@ contract Exchange2 is Ownable
         uint256[8] calldata proof
         )
         external
+        payable
         onlyOperator
     {
         state.verifyBlock(blockIdx, proof);
@@ -200,6 +207,7 @@ contract Exchange2 is Ownable
         uint32 blockIdx
         )
         external
+        payable
         onlyOperator
     {
         state.revertBlock(blockIdx);
@@ -244,6 +252,7 @@ contract Exchange2 is Ownable
         uint96  amount
         )
         external
+        payable
         returns (uint24 accountID)
     {
         accountID = state.createOrUpdateAccount(pubKeyX, pubKeyY);
@@ -255,6 +264,7 @@ contract Exchange2 is Ownable
         uint96  amount
         )
         external
+        payable
     {
         state.depositTo(msg.sender, token, amount);
     }
@@ -265,6 +275,7 @@ contract Exchange2 is Ownable
         uint96  amount
         )
         external
+        payable
     {
         state.depositTo(recipient, tokenAddress, amount);
     }
@@ -307,6 +318,7 @@ contract Exchange2 is Ownable
         uint96 amount
         )
         external
+        payable
     {
         state.withdraw(token, amount);
     }
@@ -320,6 +332,7 @@ contract Exchange2 is Ownable
         uint256[12] calldata balancePath
         )
         external
+        payable
     {
         state.withdrawFromMerkleTreeFor(
             msg.sender,
@@ -343,6 +356,7 @@ contract Exchange2 is Ownable
         uint256[12] calldata balancePath
         )
         external
+        payable
     {
         state.withdrawFromMerkleTreeFor(
             owner,
@@ -359,6 +373,7 @@ contract Exchange2 is Ownable
         uint depositRequestIdx
         )
         external
+        payable
     {
         state.withdrawFromDepositRequest(depositRequestIdx);
     }
@@ -368,6 +383,7 @@ contract Exchange2 is Ownable
         uint slotIdx
         )
         external
+        payable
     {
         state.withdrawFromApprovedWithdrawal(
             blockIdx,
@@ -379,6 +395,7 @@ contract Exchange2 is Ownable
         uint32 blockIdx
         )
         external
+        payable
         returns (uint feeAmount)
     {
         feeAmount = state.withdrawBlockFee(blockIdx);
@@ -388,6 +405,7 @@ contract Exchange2 is Ownable
         uint blockIdx
         )
         external
+        payable
         onlyOperator
     {
         state.distributeWithdrawals(blockIdx);
@@ -411,8 +429,8 @@ contract Exchange2 is Ownable
         uint _depositFeeETH,
         uint _withdrawalFeeETH
         )
-        onlyOperator
         external
+        onlyOwner
     {
        state.setFees(
             _accountCreationFeeETH,
@@ -442,6 +460,7 @@ contract Exchange2 is Ownable
         uint durationSeconds
         )
         external
+        payable
         onlyOperator
     {
         state.purchaseDowntime(durationSeconds);

@@ -21,10 +21,10 @@ import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/NoDefaultFunc.sol";
 
+import "../../iface/ILoopringV3.sol";
+
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
-
-import "../../iface/ILoopringV3.sol";
 
 
 /// @title ExchangeAccounts.
