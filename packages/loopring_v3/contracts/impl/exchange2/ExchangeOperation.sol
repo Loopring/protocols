@@ -24,7 +24,7 @@ import "../../lib/NoDefaultFunc.sol";
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
-import "../ILoopringV3.sol";
+import "../../iface/ILoopringV3.sol";
 
 
 /// @title ExchangeAccounts.

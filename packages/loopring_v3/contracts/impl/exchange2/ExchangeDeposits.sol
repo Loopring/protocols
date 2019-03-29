@@ -24,7 +24,7 @@ import "./ExchangeMode.sol";
 import "./ExchangeAccounts.sol";
 import "./ExchangeTokens.sol";
 
-import "../ILoopringV3.sol";
+import "../../iface/ILoopringV3.sol";
 
 /// @title ExchangeAccounts.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -83,30 +83,6 @@ library ExchangeDeposits
         accumulatedHash = request.accumulatedHash;
         accumulatedFee = request.accumulatedFee;
         timestamp = request.timestamp;
-    }
-
-    function deposit(
-        ExchangeData.State storage S,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        address token,
-        uint96  amount
-        )
-        public
-        returns (uint24 accountID)
-    {
-        accountID = S.createOrUpdateAccount(pubKeyX, pubKeyY);
-        depositTo(S, msg.sender, token, amount);
-    }
-
-    function deposit(
-        ExchangeData.State storage S,
-        address token,
-        uint96  amount
-        )
-        public
-    {
-        depositTo(S, msg.sender, token, amount);
     }
 
     function depositTo(

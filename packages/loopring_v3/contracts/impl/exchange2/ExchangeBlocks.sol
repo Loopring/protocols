@@ -44,16 +44,6 @@ library ExchangeBlocks
         uint blockIdx
     );
 
-    function getBlockHeight(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        return S.blocks.length - 1;
-    }
-
     function commitBlock(
         ExchangeData.State storage S,
         uint blockType,
@@ -64,7 +54,82 @@ library ExchangeBlocks
         commitBlockInternal(S, blockType, data);
     }
 
-    function commitBlockInternal(
+
+    function verifyBlock(
+        ExchangeData.State storage S,
+        uint blockIdx,
+        uint256[8] memory proof
+        )
+        public
+    {
+        // Exchange cannot be in withdraw mode
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+
+        require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
+        ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
+        require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "BLOCK_VERIFIED_ALREADY");
+
+        // require(
+        //     IBlockVerifier(blockVerifierAddress).verifyProof(
+        //         specifiedBlock.publicDataHash, proof
+        //     ),
+        //     "INVALID_PROOF"
+        // );
+
+        // Update state of this block and potentially the following blocks
+        ExchangeData.Block storage previousBlock = S.blocks[blockIdx - 1];
+        if (previousBlock.state == ExchangeData.BlockState.FINALIZED) {
+            specifiedBlock.state = ExchangeData.BlockState.FINALIZED;
+            emit BlockFinalized(blockIdx);
+            // The next blocks could become finalized as well so check this now
+            // The number of blocks after the specified block index is limited
+            // so we don't have to worry about running out of gas in this loop
+            uint nextBlockIdx = blockIdx + 1;
+            while (nextBlockIdx < S.blocks.length &&
+                S.blocks[nextBlockIdx].state == ExchangeData.BlockState.VERIFIED) {
+
+                S.blocks[nextBlockIdx].state = ExchangeData.BlockState.FINALIZED;
+                emit BlockFinalized(nextBlockIdx);
+                nextBlockIdx++;
+            }
+        } else {
+            specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
+        }
+    }
+
+    function revertBlock(
+        ExchangeData.State storage S,
+        uint32 blockIdx
+        )
+        public
+    {
+        require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
+        ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
+        require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "INVALID_BLOCK_STATE");
+
+        // The specified block needs to be the first block not finalized
+        // (this way we always revert to a guaranteed valid block and don't need to revert multiple times)
+        ExchangeData.Block storage previousBlock = S.blocks[uint(blockIdx).sub(1)];
+        require(previousBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+
+        // Check if this block is verified too late
+        require(
+            now > specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
+            "TOO_LATE_PROOF"
+        );
+
+        // TODO: - burn stake amount of Exchange
+        //       - store info somewhere in Exchange contract what block was reverted so
+        //       - the ExchangeOwner can punish the operator that submitted the block
+
+        // Remove all blocks after and including blockIdx
+        S.blocks.length = blockIdx;
+
+        emit Revert(blockIdx);
+    }
+
+    // == Internal Functions ==
+function commitBlockInternal(
         ExchangeData.State storage S,
         uint blockType,
         bytes memory data
@@ -199,80 +264,6 @@ library ExchangeBlocks
         emit BlockCommitted(S.blocks.length - 1, publicDataHash);
     }
 
-    function verifyBlock(
-        ExchangeData.State storage S,
-        uint blockIdx,
-        uint256[8] memory proof
-        )
-        public
-    {
-        // Exchange cannot be in withdraw mode
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-
-        require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
-        ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
-        require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "BLOCK_VERIFIED_ALREADY");
-
-        // require(
-        //     IBlockVerifier(blockVerifierAddress).verifyProof(
-        //         specifiedBlock.publicDataHash, proof
-        //     ),
-        //     "INVALID_PROOF"
-        // );
-
-        // Update state of this block and potentially the following blocks
-        ExchangeData.Block storage previousBlock = S.blocks[blockIdx - 1];
-        if (previousBlock.state == ExchangeData.BlockState.FINALIZED) {
-            specifiedBlock.state = ExchangeData.BlockState.FINALIZED;
-            emit BlockFinalized(blockIdx);
-            // The next blocks could become finalized as well so check this now
-            // The number of blocks after the specified block index is limited
-            // so we don't have to worry about running out of gas in this loop
-            uint nextBlockIdx = blockIdx + 1;
-            while (nextBlockIdx < S.blocks.length &&
-                S.blocks[nextBlockIdx].state == ExchangeData.BlockState.VERIFIED) {
-
-                S.blocks[nextBlockIdx].state = ExchangeData.BlockState.FINALIZED;
-                emit BlockFinalized(nextBlockIdx);
-                nextBlockIdx++;
-            }
-        } else {
-            specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
-        }
-    }
-
-    function revertBlock(
-        ExchangeData.State storage S,
-        uint32 blockIdx
-        )
-        public
-    {
-        require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
-        ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
-        require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "INVALID_BLOCK_STATE");
-
-        // The specified block needs to be the first block not finalized
-        // (this way we always revert to a guaranteed valid block and don't need to revert multiple times)
-        ExchangeData.Block storage previousBlock = S.blocks[uint(blockIdx).sub(1)];
-        require(previousBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
-
-        // Check if this block is verified too late
-        require(
-            now > specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            "TOO_LATE_PROOF"
-        );
-
-        // TODO: - burn stake amount of Exchange
-        //       - store info somewhere in Exchange contract what block was reverted so
-        //       - the ExchangeOwner can punish the operator that submitted the block
-
-        // Remove all blocks after and including blockIdx
-        S.blocks.length = blockIdx;
-
-        emit Revert(blockIdx);
-    }
-
-    // == Internal Functions ==
     function isDepositRequestForced(
         ExchangeData.State storage S,
         uint32 depositRequestIdx

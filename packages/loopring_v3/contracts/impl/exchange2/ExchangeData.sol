@@ -144,26 +144,6 @@ library ExchangeData
     // -- Events --
 
 
-    event BlockFeeWithdraw(
-        uint32 blockIdx,
-        uint amount
-    );
-
-
-
-    event WithdrawalRequested(
-        uint32 withdrawalIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
-    );
-
-    event WithdrawalCompleted(
-        uint24  accountID,
-        uint16  tokenID,
-        address to,
-        uint96  amount
-    );
 
 
 }
