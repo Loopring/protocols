@@ -225,7 +225,6 @@ class Order
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::jubjub::EdwardsPoint dualAuthPublicKey;
     ethsnarks::FieldT realmID;
     ethsnarks::FieldT orderID;
@@ -262,8 +261,6 @@ void from_json(const json& j, Order& order)
 {
     order.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     order.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    order.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
-    order.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
     order.dualAuthPublicKey.x = ethsnarks::FieldT(j.at("dualAuthPublicKeyX").get<std::string>().c_str());
     order.dualAuthPublicKey.y = ethsnarks::FieldT(j.at("dualAuthPublicKeyY").get<std::string>().c_str());
 

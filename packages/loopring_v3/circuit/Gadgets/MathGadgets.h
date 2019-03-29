@@ -601,6 +601,40 @@ public:
     }
 };
 
+class Constants : public GadgetT
+{
+public:
+
+    const VariableT zero;
+    const VariableT one;
+    const VariableT emptyTradeHistory;
+
+    Constants(
+        ProtoboardT& pb,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        zero(make_variable(pb, 0, FMT(prefix, ".zero"))),
+        one(make_variable(pb, 1, FMT(prefix, ".one"))),
+        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyTradeHistory")))
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+
+    }
+
+    void generate_r1cs_constraints()
+    {
+        pb.add_r1cs_constraint(ConstraintT(FieldT::one() + zero, FieldT::one(), FieldT::one()), ".zero");
+        pb.add_r1cs_constraint(ConstraintT(one, FieldT::one(), FieldT::one()), ".one");
+        pb.add_r1cs_constraint(ConstraintT(ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyTradeHistory");
+    }
+};
+
 }
 
 #endif

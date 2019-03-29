@@ -23,6 +23,9 @@ namespace Loopring
 class RingSettlementGadget : public GadgetT
 {
 public:
+
+    const Constants constants;
+
     const VariableT accountsRoot;
 
     VariableArrayT uint16_padding;
@@ -42,15 +45,9 @@ public:
     const VariableT balancesRootF;
     const VariableT balancesRootM;
 
-    VariableT constant0;
-    VariableT constant1;
-    VariableT emptyTradeHistory;
-    VariableT maxNumWallets;
-
     VariableT blockRealmID;
 
     const jubjub::VariablePointT publicKey;
-    const jubjub::VariablePointT feeRecipientPublicKey;
     libsnark::dual_variable_gadget<FieldT> minerAccountID;
     libsnark::dual_variable_gadget<FieldT> feeRecipientAccountID;
     VariableArrayT tokenID;
@@ -150,6 +147,7 @@ public:
     RingSettlementGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
+        const Constants& _constants,
         const VariableT& _realmID,
         const VariableT& _accountsRoot,
         const VariableT& _timestamp,
@@ -158,16 +156,12 @@ public:
     ) :
         GadgetT(pb, prefix),
 
+        constants(_constants),
+
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
         percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
 
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("20873493930479413702173406318080544943433811476627345625793184813275733379280"), FMT(prefix, ".emptyTradeHistory"))),
-        maxNumWallets(make_variable(pb, 0, FMT(prefix, ".maxNumWallets"))),
-
         publicKey(pb, FMT(prefix, ".publicKey")),
-        feeRecipientPublicKey(pb, FMT(prefix, ".feeRecipientPublicKey")),
         minerAccountID(pb, 24, FMT(prefix, ".minerAccountID")),
         feeRecipientAccountID(pb, 24, FMT(prefix, ".feeRecipientAccountID")),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
@@ -293,45 +287,45 @@ public:
         nonce_WA(make_variable(pb, FMT(prefix, ".nonce_WA"))),
         balancesRoot_WA(make_variable(pb, FMT(prefix, ".balancesRoot_WA"))),
         updateBalanceA_W(pb, balancesRootAW, orderA.tokenF.bits,
-                        {balanceA_W_before, emptyTradeHistory},
-                        {balanceF_WA.Y, emptyTradeHistory},
+                        {balanceA_W_before, constants.emptyTradeHistory},
+                        {balanceF_WA.Y, constants.emptyTradeHistory},
                         FMT(prefix, ".updateBalanceA_W")),
         updateAccountA_W(pb, updateAccount_B.result(), orderA.walletAccountID,
-                         {orderA.walletPublicKey.x, orderA.walletPublicKey.y, nonce_WA, balancesRoot_WA},
-                         {orderA.walletPublicKey.x, orderA.walletPublicKey.y, nonce_WA, updateBalanceA_W.getNewRoot()},
+                         {constants.zero, constants.zero, nonce_WA, balancesRoot_WA},
+                         {constants.zero, constants.zero, nonce_WA, updateBalanceA_W.getNewRoot()},
                          FMT(prefix, ".updateAccountA_W")),
 
         nonce_WB(make_variable(pb, FMT(prefix, ".nonce_WB"))),
         balancesRoot_WB(make_variable(pb, FMT(prefix, ".balancesRoot_WB"))),
         updateBalanceB_W(pb, balancesRootBW, orderB.tokenF.bits,
-                        {balanceB_W_before, emptyTradeHistory},
-                        {balanceF_WB.Y, emptyTradeHistory},
+                        {balanceB_W_before, constants.emptyTradeHistory},
+                        {balanceF_WB.Y, constants.emptyTradeHistory},
                         FMT(prefix, ".updateBalanceB_W")),
         updateAccountB_W(pb, updateAccountA_W.result(), orderB.walletAccountID,
-                         {orderB.walletPublicKey.x, orderB.walletPublicKey.y, nonce_WB, balancesRoot_WB},
-                         {orderB.walletPublicKey.x, orderB.walletPublicKey.y, nonce_WB, updateBalanceB_W.getNewRoot()},
+                         {constants.zero, constants.zero, nonce_WB, balancesRoot_WB},
+                         {constants.zero, constants.zero, nonce_WB, updateBalanceB_W.getNewRoot()},
                          FMT(prefix, ".updateAccountB_W")),
 
         updateBalanceA_F(pb, balancesRootF, orderA.tokenF.bits,
-                        {balanceA_F_before, emptyTradeHistory},
-                        {balanceF_MA.Y, emptyTradeHistory},
+                        {balanceA_F_before, constants.emptyTradeHistory},
+                        {balanceF_MA.Y, constants.emptyTradeHistory},
                         FMT(prefix, ".updateBalanceA_F")),
         updateBalanceB_F(pb, updateBalanceA_F.getNewRoot(), orderB.tokenF.bits,
-                        {balanceB_F_before, emptyTradeHistory},
-                        {balanceF_MB.Y, emptyTradeHistory},
+                        {balanceB_F_before, constants.emptyTradeHistory},
+                        {balanceF_MB.Y, constants.emptyTradeHistory},
                         FMT(prefix, ".updateBalanceB_F")),
         updateAccount_F(pb, updateAccountB_W.result(), feeRecipientAccountID.bits,
-                        {feeRecipientPublicKey.x, feeRecipientPublicKey.y, feeRecipientNonce, balancesRootF},
-                        {feeRecipientPublicKey.x, feeRecipientPublicKey.y, feeRecipientNonce, updateBalanceB_F.getNewRoot()},
+                        {constants.zero, constants.zero, feeRecipientNonce, balancesRootF},
+                        {constants.zero, constants.zero, feeRecipientNonce, updateBalanceB_F.getNewRoot()},
                         FMT(prefix, ".updateAccount_M")),
 
         updateBalanceM_M(pb, balancesRootM, orderA.tokenS.bits,
-                        {balanceM_M_before, emptyTradeHistory},
-                        {balanceS_MA.Y, emptyTradeHistory},
+                        {balanceM_M_before, constants.emptyTradeHistory},
+                        {balanceS_MA.Y, constants.emptyTradeHistory},
                         FMT(prefix, ".updateBalanceF_M")),
         updateBalanceO_M(pb, updateBalanceM_M.getNewRoot(), tokenID,
-                        {balanceO_M_before, emptyTradeHistory},
-                        {balance_M.X, emptyTradeHistory},
+                        {balanceO_M_before, constants.emptyTradeHistory},
+                        {balance_M.X, constants.emptyTradeHistory},
                         FMT(prefix, ".updateBalanceO_M")),
         updateAccount_M(pb, updateAccount_F.result(), minerAccountID.bits,
                         {publicKey.x, publicKey.y, nonce_before.packed, balancesRootM},
@@ -339,8 +333,8 @@ public:
                         FMT(prefix, ".updateAccount_M")),
 
         updateBalanceF_O(pb, _operatorBalancesRoot, tokenID,
-                         {balanceF_O_before, emptyTradeHistory},
-                         {balance_M.Y, emptyTradeHistory},
+                         {balanceF_O_before, constants.emptyTradeHistory},
+                         {balance_M.Y, constants.emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_O")),
 
         message(flatten({orderA.getHash(), orderB.getHash(),
@@ -402,9 +396,6 @@ public:
     {
         pb.val(publicKey.x) = ringSettlement.accountUpdate_M.before.publicKey.x;
         pb.val(publicKey.y) = ringSettlement.accountUpdate_M.before.publicKey.y;
-
-        pb.val(feeRecipientPublicKey.x) = ringSettlement.accountUpdate_F.before.publicKey.x;
-        pb.val(feeRecipientPublicKey.y) = ringSettlement.accountUpdate_F.before.publicKey.y;
 
         minerAccountID.bits.fill_with_bits_of_field_element(pb, ringSettlement.ring.minerAccountID);
         minerAccountID.generate_r1cs_witness_from_bits();
@@ -640,14 +631,12 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
+    Constants constants;
+
     libsnark::dual_variable_gadget<FieldT> realmID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
     libsnark::dual_variable_gadget<FieldT> timestamp;
-
-    VariableArrayT lrcTokenID;
-    VariableT constant0;
-    VariableT constant1;
 
     const jubjub::VariablePointT publicKey;
     libsnark::dual_variable_gadget<FieldT> operatorAccountID;
@@ -661,14 +650,12 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
+        constants(pb, FMT(prefix, ".constants")),
+
         realmID(pb, 32, FMT(prefix, ".realmID")),
 
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
-
-        lrcTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".lrcTokenID"))),
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
         operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountID")),
@@ -697,6 +684,8 @@ public:
 
         pb.set_input_sizes(1);
 
+        constants.generate_r1cs_constraints();
+
         realmID.generate_r1cs_constraints(true);
         merkleRootBefore.generate_r1cs_constraints(true);
         merkleRootAfter.generate_r1cs_constraints(true);
@@ -714,6 +703,7 @@ public:
             ringSettlements.push_back(new RingSettlementGadget(
                 pb,
                 params,
+                constants,
                 realmID.packed,
                 ringAccountsRoot,
                 timestamp.packed,
@@ -728,8 +718,8 @@ public:
 
         // Pay the operator
         updateAccount_O = new UpdateAccountGadget(pb, ringSettlements.back()->getNewAccountsRoot(), operatorAccountID.bits,
-                      {publicKey.x, publicKey.y, constant0, balancesRoot_before},
-                      {publicKey.x, publicKey.y, constant0, ringSettlements.back()->getNewOperatorBalancesRoot()},
+                      {publicKey.x, publicKey.y, constants.zero, balancesRoot_before},
+                      {publicKey.x, publicKey.y, constants.zero, ringSettlements.back()->getNewOperatorBalancesRoot()},
                       FMT(annotation_prefix, ".updateAccount_O"));
         updateAccount_O->generate_r1cs_constraints();
 
@@ -754,7 +744,7 @@ public:
             return false;
         }
 
-        lrcTokenID.fill_with_bits_of_ulong(pb, 1);
+        constants.generate_r1cs_witness();
 
         realmID.bits.fill_with_bits_of_field_element(pb, context.realmID);
         realmID.generate_r1cs_witness_from_bits();

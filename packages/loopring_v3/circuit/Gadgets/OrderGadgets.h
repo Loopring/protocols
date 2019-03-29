@@ -37,7 +37,6 @@ public:
     libsnark::dual_variable_gadget<FieldT> waiveFeePercentage;
 
     const jubjub::VariablePointT publicKey;
-    const jubjub::VariablePointT walletPublicKey;
 
     libsnark::dual_variable_gadget<FieldT> dualAuthPublicKeyX;
     libsnark::dual_variable_gadget<FieldT> dualAuthPublicKeyY;
@@ -85,7 +84,6 @@ public:
         waiveFeePercentage(pb, 7, FMT(prefix, ".waiveFeePercentage")),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
-        walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
 
         dualAuthPublicKeyX(pb, 254, FMT(prefix, ".dualAuthPublicKeyX")),
         dualAuthPublicKeyY(pb, 254, FMT(prefix, ".dualAuthPublicKeyY")),
@@ -169,9 +167,6 @@ public:
 
         pb.val(publicKey.x) = order.publicKey.x;
         pb.val(publicKey.y) = order.publicKey.y;
-
-        pb.val(walletPublicKey.x) = order.walletPublicKey.x;
-        pb.val(walletPublicKey.y) = order.walletPublicKey.y;
 
         dualAuthPublicKeyX.bits.fill_with_bits_of_field_element(pb, order.dualAuthPublicKey.x);
         dualAuthPublicKeyX.generate_r1cs_witness_from_bits();

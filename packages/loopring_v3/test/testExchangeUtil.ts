@@ -85,7 +85,6 @@ export class ExchangeTestUtil {
       this.lrcAddress,
       this.wethAddress,
       this.exchangeDeployer.address,
-      this.exchangeHelper.address,
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
       new BN(0),
@@ -161,9 +160,8 @@ export class ExchangeTestUtil {
 
   public async createWallet(realmID: number, owner: string) {
     // Make a dual author account for the wallet
-    const keyPair = this.getKeyPairEDDSA();
     const walletDeposit = await this.deposit(realmID, owner,
-                                             keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                             "0", "0", "0",
                                              this.zeroAddress, new BN(0));
     const wallet: Wallet = {
       owner,
@@ -984,13 +982,14 @@ export class ExchangeTestUtil {
         if (b < pendingRings.length) {
           rings.push(pendingRings[b]);
         } else {
+          const walletAccountID = this.wallets[realmID][0].walletAccountID;
           const dummyRing: RingInfo = {
             orderA:
               {
                 realmID,
                 orderID: 0,
                 accountID: 0,
-                walletAccountID: 0,
+                walletAccountID,
 
                 dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
                 dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
@@ -1015,7 +1014,7 @@ export class ExchangeTestUtil {
                 realmID,
                 orderID: 0,
                 accountID: 0,
-                walletAccountID: 0,
+                walletAccountID,
 
                 dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
                 dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
