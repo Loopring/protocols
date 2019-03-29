@@ -105,7 +105,6 @@ contract IData
 
     address public loopringAddress          = address(0);
     address public lrcAddress               = address(0);
-    address public exchangeHelperAddress    = address(0);
     address public blockVerifierAddress     = address(0);
 
     uint public id = 0;

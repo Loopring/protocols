@@ -26,4 +26,5 @@ import "./exchange/IManagingOperations.sol";
 /// Inheritance: IManagingBlocks -> IManagingAccounts -> IManagingTokens -> IManagingDeposits ->
 /// IManagingWithdrawals -> IManagingStakes -> IManagingOperations
 contract IExchange is IManagingOperations {
+    string version = "3.0-alpha";
 }

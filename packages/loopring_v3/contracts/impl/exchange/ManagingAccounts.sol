@@ -19,7 +19,6 @@ pragma solidity 0.5.2;
 import "../../iface/exchange/IManagingAccounts.sol";
 
 import "../../iface/IBlockVerifier.sol";
-import "../../iface/IExchangeHelper.sol";
 import "../../iface/ILoopringV3.sol";
 
 import "../../lib/BurnableERC20.sol";
@@ -27,6 +26,7 @@ import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/NoDefaultFunc.sol";
 
+import "./BalanceVerifier.sol";
 import "./ManagingBlocks.sol";
 
 
@@ -83,10 +83,10 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
             // update an existing account
             require(msg.value >= accountUpdateFeeETH, "INSUFFICIENT_FEE");
             accountID = ownerToAccountId[msg.sender];
-             Account storage account = accounts[accountID];
+            Account storage account = accounts[accountID];
 
             require(!isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
-            require(pubKeyX != 0 || pubKeyY !=0, "INVALID_PUBKEY");
+            require(pubKeyX != 0 || pubKeyY != 0, "INVALID_PUBKEY");
 
             account.pubKeyX = pubKeyX;
             account.pubKeyY = pubKeyY;
@@ -126,8 +126,9 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
         uint256 tradeHistoryRoot
         )
         internal
+        view
     {
-        IExchangeHelper(exchangeHelperAddress).verifyAccountBalance(
+        BalanceVerifier.verifyAccountBalance(
             uint256(merkleRoot),
             accountID,
             tokenID,

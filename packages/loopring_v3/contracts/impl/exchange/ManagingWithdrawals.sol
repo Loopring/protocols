@@ -176,7 +176,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         withdrawAndBurn(owner, tokenID, balance, isFeeRecipientAccount(account));
     }
 
-     function withdrawFromDepositRequest(
+    function withdrawFromDepositRequest(
         uint depositRequestIdx
         )
         external

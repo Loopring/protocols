@@ -52,7 +52,6 @@ contract Exchange is IExchange, ManagingOperations
         loopring = ILoopringV3(loopringAddress);
 
         lrcAddress = loopring.lrcAddress();
-        exchangeHelperAddress = loopring.exchangeHelperAddress();
         blockVerifierAddress = loopring.blockVerifierAddress();
 
         Block memory genesisBlock = Block(
