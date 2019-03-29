@@ -20,8 +20,7 @@ class FeePaymentCalculator : public GadgetT
 {
 public:
 
-    VariableT constant1000;
-    VariableT constant100;
+    const Constants& constants;
 
     VariableT fee;
     VariableT walletSplitPercentage;
@@ -34,6 +33,7 @@ public:
 
     FeePaymentCalculator(
         ProtoboardT& pb,
+        const Constants& _constants,
         const VariableT& _fee,
         const VariableT& _walletSplitPercentage,
         const VariableT& _waiveFeePercentage,
@@ -41,8 +41,7 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
-        constant1000(make_variable(pb, 1000, FMT(prefix, ".constant1000"))),
+        constants(_constants),
 
         fee(_fee),
         walletSplitPercentage(_walletSplitPercentage),
@@ -50,8 +49,8 @@ public:
 
         matchingFee(make_variable(pb, FMT(prefix, ".matchingFee"))),
 
-        walletFee(pb, fee, walletSplitPercentage, constant100, FMT(prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
-        matchingFeeAfterWaiving(pb, matchingFee, waiveFeePercentage, constant100, FMT(prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving"))
+        walletFee(pb, fee, walletSplitPercentage, constants._100, FMT(prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
+        matchingFeeAfterWaiving(pb, matchingFee, waiveFeePercentage, constants._100, FMT(prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving"))
     {
 
     }
@@ -84,7 +83,7 @@ public:
 class CheckValidGadget : public GadgetT
 {
 public:
-    VariableT constant0;
+    const Constants& constants;
 
     const OrderGadget& order;
 
@@ -112,6 +111,7 @@ public:
 
     CheckValidGadget(
         ProtoboardT& pb,
+        const Constants& _constants,
         const VariableT& timestamp,
         const OrderGadget& _order,
         const VariableT& _fillAmountS,
@@ -120,7 +120,7 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
+        constants(_constants),
 
         order(_order),
         fillAmountS(_fillAmountS),
@@ -133,8 +133,8 @@ public:
 
         checkRoundingError(pb, _fillAmountS, _order.amountB.packed, _order.amountS.packed, FMT(prefix, ".checkRoundingError")),
         validAllOrNone(make_variable(pb, FMT(prefix, ".validAllOrNone"))),
-        zero_lt_fillAmountS(pb, constant0, _fillAmountS, FMT(prefix, "0 < _fillAmountS")),
-        zero_lt_fillAmountB(pb, constant0, _fillAmountB, FMT(prefix, "0 < _fillAmountB")),
+        zero_lt_fillAmountS(pb, constants.zero, _fillAmountS, FMT(prefix, "0 < _fillAmountS")),
+        zero_lt_fillAmountB(pb, constants.zero, _fillAmountB, FMT(prefix, "0 < _fillAmountB")),
 
         valid_T(make_variable(pb, FMT(prefix, ".valid_T"))),
         valid_1(make_variable(pb, FMT(prefix, ".valid_1"))),
@@ -384,6 +384,8 @@ public:
 class OrderMatchingGadget : public GadgetT
 {
 public:
+    const Constants& constants;
+
     const OrderGadget& orderA;
     const OrderGadget& orderB;
 
@@ -426,12 +428,15 @@ public:
 
     OrderMatchingGadget(
         ProtoboardT& pb,
+        const Constants& _constants,
         const VariableT& timestamp,
         const OrderGadget& _orderA,
         const OrderGadget& _orderB,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
+
+        constants(_constants),
 
         orderA(_orderA),
         orderB(_orderB),
@@ -475,8 +480,8 @@ public:
         fillAmountS_A_lt_fillAmountB_B(pb, fillAmountS_A.result(), fillAmountB_B.result(),
                                        FMT(prefix, "fillAmountS_A < fillAmountB_B")),
 
-        checkValidA(pb, timestamp, orderA, fillAmountS_A.result(), fillAmountB_A.result(), FMT(prefix, ".checkValidA")),
-        checkValidB(pb, timestamp, orderB, fillAmountS_B.result(), fillAmountB_B.result(), FMT(prefix, ".checkValidB")),
+        checkValidA(pb, constants, timestamp, orderA, fillAmountS_A.result(), fillAmountB_A.result(), FMT(prefix, ".checkValidA")),
+        checkValidB(pb, constants, timestamp, orderB, fillAmountS_B.result(), fillAmountB_B.result(), FMT(prefix, ".checkValidB")),
 
         valid_1(make_variable(pb, FMT(prefix, ".valid_1"))),
         valid_2(make_variable(pb, FMT(prefix, ".valid_2"))),

@@ -91,8 +91,7 @@ class TradeHistoryTrimmingGadget : public GadgetT
 {
 public:
 
-    VariableT constant0;
-    VariableT constant1;
+    const Constants& constants;
 
     VariableT tradeHistoryFilled;
     VariableT tradeHistoryCancelled;
@@ -109,6 +108,7 @@ public:
 
     TradeHistoryTrimmingGadget(
         ProtoboardT& pb,
+        const Constants& _constants,
         const VariableT& _tradeHistoryFilled,
         const VariableT& _tradeHistoryCancelled,
         const VariableT& _tradeHistoryOrderID,
@@ -117,8 +117,7 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
+        constants(_constants),
 
         tradeHistoryFilled(_tradeHistoryFilled),
         tradeHistoryCancelled(_tradeHistoryCancelled),
@@ -129,9 +128,9 @@ public:
         bNew(pb, tradeHistoryOrderID, orderID, FMT(prefix, ".tradeHistoryOrderID <(=) orderID")),
         bTrim(pb, bNew.leq(), FMT(prefix, ".!bNew")),
 
-        filled(pb, bNew.lt(), constant0, tradeHistoryFilled, FMT(prefix, ".filled")),
-        cancelledToStore(pb, bNew.lt(), constant0, tradeHistoryCancelled, FMT(prefix, ".cancelledToStore")),
-        cancelled(pb, bTrim.Not(), constant1, cancelledToStore.result(), FMT(prefix, ".cancelled")),
+        filled(pb, bNew.lt(), constants.zero, tradeHistoryFilled, FMT(prefix, ".filled")),
+        cancelledToStore(pb, bNew.lt(), constants.zero, tradeHistoryCancelled, FMT(prefix, ".cancelledToStore")),
+        cancelled(pb, bTrim.Not(), constants.one, cancelledToStore.result(), FMT(prefix, ".cancelled")),
         orderIDToStore(pb, bNew.lt(), orderID, tradeHistoryOrderID, FMT(prefix, ".orderIDToStore"))
     {
 

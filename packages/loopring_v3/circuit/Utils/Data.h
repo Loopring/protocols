@@ -510,7 +510,6 @@ class Withdrawal
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::FieldT amount;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT walletSplitPercentage;
@@ -528,8 +527,6 @@ void from_json(const json& j, Withdrawal& withdrawal)
 {
     withdrawal.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     withdrawal.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    withdrawal.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
-    withdrawal.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
     withdrawal.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
     withdrawal.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     withdrawal.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
@@ -591,7 +588,6 @@ class Cancellation
 {
 public:
     ethsnarks::jubjub::EdwardsPoint publicKey;
-    ethsnarks::jubjub::EdwardsPoint walletPublicKey;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT walletSplitPercentage;
     TradeHistoryUpdate tradeHistoryUpdate_A;
@@ -608,8 +604,6 @@ void from_json(const json& j, Cancellation& cancellation)
 {
     cancellation.publicKey.x = ethsnarks::FieldT(j.at("publicKeyX").get<std::string>().c_str());
     cancellation.publicKey.y = ethsnarks::FieldT(j.at("publicKeyY").get<std::string>().c_str());
-    cancellation.walletPublicKey.x = ethsnarks::FieldT(j.at("walletPublicKeyX").get<std::string>().c_str());
-    cancellation.walletPublicKey.y = ethsnarks::FieldT(j.at("walletPublicKeyY").get<std::string>().c_str());
     cancellation.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     cancellation.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     cancellation.tradeHistoryUpdate_A = j.at("tradeHistoryUpdate_A").get<TradeHistoryUpdate>();

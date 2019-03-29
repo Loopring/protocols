@@ -25,9 +25,8 @@ class WithdrawGadget : public GadgetT
 {
 public:
 
-    VariableT constant0;
-    VariableT constant100;
-    VariableT emptyTradeHistory;
+    const Constants& constants;
+
     libsnark::dual_variable_gadget<FieldT> padding;
     VariableArrayT uint16_padding;
     VariableArrayT percentage_padding;
@@ -35,7 +34,6 @@ public:
     bool onchain;
 
     const jubjub::VariablePointT publicKey;
-    const jubjub::VariablePointT walletPublicKey;
 
     VariableArrayT accountID;
     VariableArrayT tokenID;
@@ -89,6 +87,7 @@ public:
         ProtoboardT& pb,
         const jubjub::Params& params,
         bool _onchain,
+        const Constants& _constants,
         const VariableT& _accountsMerkleRoot,
         const VariableT& _operatorBalancesRoot,
         const VariableArrayT& _realmID,
@@ -98,15 +97,13 @@ public:
 
         onchain(_onchain),
 
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("20873493930479413702173406318080544943433811476627345625793184813275733379280"), FMT(prefix, ".emptyTradeHistory"))),
+        constants(_constants),
+
         padding(pb, 1, FMT(prefix, ".padding")),
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
         percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
-        walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
@@ -135,7 +132,7 @@ public:
         tradingHistoryRootF_O(make_variable(pb, FMT(prefix, ".tradingHistoryRootF_O"))),
         balanceF_O_before(make_variable(pb, FMT(prefix, ".balanceF_O_before"))),
 
-        feeToWallet(pb, fee.packed, walletSplitPercentage.packed, constant100, FMT(prefix, ".feeToWallet")),
+        feeToWallet(pb, fee.packed, walletSplitPercentage.packed, constants._100, FMT(prefix, ".feeToWallet")),
         feeToOperator(make_variable(pb, 1, FMT(prefix, ".feeToOperator"))),
 
         feePaymentWallet(pb, 96, balanceF_A_before, balanceF_W_before, feeToWallet.result(), FMT(prefix, ".feePaymentWallet")),
@@ -161,13 +158,13 @@ public:
 
 
         updateBalanceF_W(pb, balancesRoot_W_before, feeTokenID,
-                         {balanceF_W_before, emptyTradeHistory},
-                         {feePaymentWallet.Y, emptyTradeHistory},
+                         {balanceF_W_before, constants.emptyTradeHistory},
+                         {feePaymentWallet.Y, constants.emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_W")),
 
         updateAccount_W(pb, updateAccount_A.result(), walletAccountID,
-                        {walletPublicKey.x, walletPublicKey.y, nonce_W, balancesRoot_W_before},
-                        {walletPublicKey.x, walletPublicKey.y, nonce_W, updateBalanceF_W.getNewRoot()},
+                        {constants.zero, constants.zero, nonce_W, balancesRoot_W_before},
+                        {constants.zero, constants.zero, nonce_W, updateBalanceF_W.getNewRoot()},
                         FMT(prefix, ".updateAccount_W")),
 
 
@@ -215,9 +212,6 @@ public:
 
         pb.val(publicKey.x) = withdrawal.publicKey.x;
         pb.val(publicKey.y) = withdrawal.publicKey.y;
-
-        pb.val(walletPublicKey.x) = withdrawal.walletPublicKey.x;
-        pb.val(walletPublicKey.y) = withdrawal.walletPublicKey.y;
 
         accountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_A.accountID);
         tokenID.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateW_A.tokenID);
@@ -332,11 +326,12 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
+    Constants constants;
+
     libsnark::dual_variable_gadget<FieldT> realmID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
-    VariableT constant0;
     VariableT nonce;
 
     VariableArrayT withdrawalBlockHashStart;
@@ -360,11 +355,12 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
+        constants(pb, FMT(prefix, ".constants")),
+
         realmID(pb, 32, FMT(prefix, ".realmID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountID")),
         publicKey(pb, FMT(prefix, ".publicKey")),
         nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
@@ -392,6 +388,8 @@ public:
 
         pb.set_input_sizes(1);
 
+        constants.generate_r1cs_witness();
+
         realmID.generate_r1cs_constraints(true);
         merkleRootBefore.generate_r1cs_constraints(true);
         merkleRootAfter.generate_r1cs_constraints(true);
@@ -404,7 +402,16 @@ public:
         {
             VariableT withdrawalAccountsRoot = (j == 0) ? merkleRootBefore.packed : withdrawals.back().getNewAccountsRoot();
             VariableT withdrawalOperatorBalancesRoot = (j == 0) ? balancesRoot_before : withdrawals.back().getNewOperatorBalancesRoot();
-            withdrawals.emplace_back(pb, params, onchain, withdrawalAccountsRoot, withdrawalOperatorBalancesRoot, realmID.bits, std::string("withdrawals_") + std::to_string(j));
+            withdrawals.emplace_back(
+                pb,
+                params,
+                onchain,
+                constants,
+                withdrawalAccountsRoot,
+                withdrawalOperatorBalancesRoot,
+                realmID.bits,
+                std::string("withdrawals_") + std::to_string(j)
+            );
             withdrawals.back().generate_r1cs_constraints();
 
             if (onchain)
@@ -482,6 +489,8 @@ public:
 
     bool generateWitness(const WithdrawContext& context)
     {
+        constants.generate_r1cs_witness();
+
         realmID.bits.fill_with_bits_of_field_element(pb, context.realmID);
         realmID.generate_r1cs_witness_from_bits();
 

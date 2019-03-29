@@ -607,6 +607,7 @@ public:
 
     const VariableT zero;
     const VariableT one;
+    const VariableT _100;
     const VariableT emptyTradeHistory;
 
     Constants(
@@ -615,8 +616,9 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        zero(make_variable(pb, 0, FMT(prefix, ".zero"))),
-        one(make_variable(pb, 1, FMT(prefix, ".one"))),
+        zero(make_variable(pb, FieldT::zero(), FMT(prefix, ".zero"))),
+        one(make_variable(pb, FieldT::one(), FMT(prefix, ".one"))),
+        _100(make_variable(pb, ethsnarks::FieldT(100), FMT(prefix, "._100"))),
         emptyTradeHistory(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyTradeHistory")))
     {
 
@@ -631,7 +633,8 @@ public:
     {
         pb.add_r1cs_constraint(ConstraintT(FieldT::one() + zero, FieldT::one(), FieldT::one()), ".zero");
         pb.add_r1cs_constraint(ConstraintT(one, FieldT::one(), FieldT::one()), ".one");
-        pb.add_r1cs_constraint(ConstraintT(ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyTradeHistory");
+        pb.add_r1cs_constraint(ConstraintT(_100, FieldT::one(), ethsnarks::FieldT(100)), "._100");
+        pb.add_r1cs_constraint(ConstraintT(emptyTradeHistory, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyTradeHistory");
     }
 };
 

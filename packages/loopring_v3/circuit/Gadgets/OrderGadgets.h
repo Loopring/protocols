@@ -59,6 +59,7 @@ public:
     OrderGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
+        const Constants& constants,
         const VariableT& _blockRealmID,
         const std::string& prefix
     ) :
@@ -93,7 +94,7 @@ public:
         tradeHistoryCancelled(make_variable(pb, FMT(prefix, ".tradeHistoryCancelled"))),
         tradeHistoryOrderID(make_variable(pb, FMT(prefix, ".tradeHistoryOrderID"))),
 
-        tradeHistory(pb, tradeHistoryFilled, tradeHistoryCancelled, tradeHistoryOrderID, orderID.packed, FMT(prefix, ".tradeHistory")),
+        tradeHistory(pb, constants, tradeHistoryFilled, tradeHistoryCancelled, tradeHistoryOrderID, orderID.packed, FMT(prefix, ".tradeHistory")),
 
         nonce(make_variable(pb, FMT(prefix, ".nonce"))),
 

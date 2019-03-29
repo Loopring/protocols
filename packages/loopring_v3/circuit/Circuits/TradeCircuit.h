@@ -24,7 +24,7 @@ class RingSettlementGadget : public GadgetT
 {
 public:
 
-    const Constants constants;
+    const Constants& constants;
 
     const VariableT accountsRoot;
 
@@ -170,10 +170,10 @@ public:
         nonce_after(make_variable(pb, FMT(prefix, ".nonce_after"))),
         feeRecipientNonce(make_variable(pb, FMT(prefix, ".feeRecipientNonce"))),
 
-        orderA(pb, params, _realmID, FMT(prefix, ".orderA")),
-        orderB(pb, params, _realmID, FMT(prefix, ".orderB")),
+        orderA(pb, params, constants, _realmID, FMT(prefix, ".orderA")),
+        orderB(pb, params, constants, _realmID, FMT(prefix, ".orderB")),
 
-        orderMatching(pb, _timestamp, orderA, orderB, FMT(prefix, ".orderMatching")),
+        orderMatching(pb, constants, _timestamp, orderA, orderB, FMT(prefix, ".orderMatching")),
 
         fillS_A(pb, 96, FMT(prefix, ".fillS_A")),
         fillB_A(pb, 96, FMT(prefix, ".fillB_A")),
@@ -186,8 +186,8 @@ public:
         filledAfterA(make_variable(pb, FMT(prefix, ".filledAfterA"))),
         filledAfterB(make_variable(pb, FMT(prefix, ".filledAfterB"))),
 
-        feePaymentA(pb, fillF_A.packed, orderA.walletSplitPercentage.packed, orderA.waiveFeePercentage.packed, FMT(prefix, "feePaymentA")),
-        feePaymentB(pb, fillF_B.packed, orderB.walletSplitPercentage.packed, orderB.waiveFeePercentage.packed, FMT(prefix, "feePaymentB")),
+        feePaymentA(pb, constants, fillF_A.packed, orderA.walletSplitPercentage.packed, orderA.waiveFeePercentage.packed, FMT(prefix, "feePaymentA")),
+        feePaymentB(pb, constants, fillF_B.packed, orderB.walletSplitPercentage.packed, orderB.waiveFeePercentage.packed, FMT(prefix, "feePaymentB")),
 
         balanceS_A_before(make_variable(pb, FMT(prefix, ".balanceS_A_before"))),
         balanceB_A_before(make_variable(pb, FMT(prefix, ".balanceB_A_before"))),

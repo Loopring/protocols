@@ -47,6 +47,7 @@ public:
 
     DepositGadget(
         ProtoboardT& pb,
+        const Constants& constants,
         const VariableT& root,
         const std::string& prefix
     ) :
@@ -156,6 +157,8 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
+    Constants constants;
+
     libsnark::dual_variable_gadget<FieldT> realmID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
@@ -172,6 +175,8 @@ public:
 
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
+
+        constants(pb, FMT(prefix, ".constants")),
 
         realmID(pb, 32, FMT(prefix, ".realmID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
@@ -196,6 +201,8 @@ public:
 
         pb.set_input_sizes(1);
 
+        constants.generate_r1cs_constraints();
+
         realmID.generate_r1cs_constraints(true);
         merkleRootBefore.generate_r1cs_constraints(true);
         merkleRootAfter.generate_r1cs_constraints(true);
@@ -207,7 +214,12 @@ public:
         for (size_t j = 0; j < numAccounts; j++)
         {
             VariableT depositAccountsRoot = (j == 0) ? merkleRootBefore.packed : deposits.back().getNewAccountsRoot();
-            deposits.emplace_back(pb, depositAccountsRoot, std::string("deposit_") + std::to_string(j));
+            deposits.emplace_back(
+                pb,
+                constants,
+                depositAccountsRoot,
+                std::string("deposit_") + std::to_string(j)
+            );
             deposits.back().generate_r1cs_constraints();
 
             VariableArrayT depositBlockHash = (j == 0) ? depositBlockHashStart : hashers.back().result().bits;
@@ -242,6 +254,8 @@ public:
 
     bool generateWitness(const DepositContext& context)
     {
+        constants.generate_r1cs_witness();
+
         realmID.bits.fill_with_bits_of_field_element(pb, context.realmID);
         realmID.generate_r1cs_witness_from_bits();
 
