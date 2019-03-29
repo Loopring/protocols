@@ -24,25 +24,19 @@ public:
 
     VariableArrayT uint16_padding;
 
-    const VariableT balance_before;
-    const VariableT balance_after;
-
-    const VariableT publicKeyX_before;
-    const VariableT publicKeyY_before;
-    const VariableT nonce;
-
-    const VariableT tradingHistoryRoot_before;
-    const VariableT balancesRoot_before;
-
+    libsnark::dual_variable_gadget<FieldT> amount;
     libsnark::dual_variable_gadget<FieldT> publicKeyX_after;
     libsnark::dual_variable_gadget<FieldT> publicKeyY_after;
 
-    const VariableT tradingHistoryRoot_after;
-    const VariableT balancesRoot_after;
+    BalanceState balanceBefore;
+    BalanceState balanceAfter;
 
-    libsnark::dual_variable_gadget<FieldT> amount;
+    AccountState accountBefore;
 
     UpdateBalanceGadget updateBalance;
+
+    AccountState accountAfter;
+
     UpdateAccountGadget updateAccount;
 
     DepositGadget(
@@ -58,34 +52,36 @@ public:
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
 
-        nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
-
-        balance_before(make_variable(pb, 0, FMT(prefix, ".balance_before"))),
-        balance_after(make_variable(pb, 0, FMT(prefix, ".balance_after"))),
-
-        publicKeyX_before(make_variable(pb, 0, FMT(prefix, ".publicKeyX_before"))),
-        publicKeyY_before(make_variable(pb, 0, FMT(prefix, ".publicKeyY_before"))),
-
-        tradingHistoryRoot_before(make_variable(pb, 0, FMT(prefix, ".tradingHistoryRoot_before"))),
-        balancesRoot_before(make_variable(pb, 0, FMT(prefix, ".balancesRoot_before"))),
-
+        amount(pb, 96, FMT(prefix, ".amount")),
         publicKeyX_after(pb, 256, FMT(prefix, ".publicKeyX_after")),
         publicKeyY_after(pb, 256, FMT(prefix, ".publicKeyY_after")),
 
-        tradingHistoryRoot_after(make_variable(pb, 0, FMT(prefix, ".tradingHistoryRoot_after"))),
-        balancesRoot_after(make_variable(pb, 0, FMT(prefix, ".balancesRoot_after"))),
+        balanceBefore({
+            make_variable(pb, FMT(prefix, ".before.balance")),
+            make_variable(pb, FMT(prefix, ".tradingHistoryRoot"))
+        }),
+        balanceAfter({
+            make_variable(pb, FMT(prefix, ".after.balance")),
+            balanceBefore.tradingHistory
+        }),
 
-        amount(pb, 96, FMT(prefix, ".amount")),
+        accountBefore({
+            make_variable(pb, FMT(prefix, ".publicKeyX_before")),
+            make_variable(pb, FMT(prefix, ".publicKeyY_before")),
+            make_variable(pb, FMT(prefix, ".nonce")),
+            make_variable(pb, FMT(prefix, ".balancesRoot_before"))
+        }),
 
-        updateBalance(pb, balancesRoot_before, tokenID,
-                      {balance_before, tradingHistoryRoot_before},
-                      {balance_after, tradingHistoryRoot_after},
-                      FMT(prefix, ".updateBalance")),
+        updateBalance(pb, accountBefore.balancesRoot, tokenID, balanceBefore, balanceAfter, FMT(prefix, ".updateBalance")),
 
-        updateAccount(pb, root, accountID,
-                      {publicKeyX_before, publicKeyY_before, nonce, balancesRoot_before},
-                      {publicKeyX_after.packed, publicKeyY_after.packed, nonce, updateBalance.getNewRoot()},
-                      FMT(prefix, ".updateAccount"))
+        accountAfter({
+            publicKeyX_after.packed,
+            publicKeyY_after.packed,
+            accountBefore.nonce,
+            updateBalance.getNewRoot()
+        }),
+
+        updateAccount(pb, root, accountID, accountBefore, accountAfter, FMT(prefix, ".updateAccount"))
     {
 
     }
@@ -109,25 +105,21 @@ public:
         accountID.fill_with_bits_of_field_element(pb, deposit.accountUpdate.accountID);
         tokenID.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.tokenID);
 
-        pb.val(nonce) = deposit.accountUpdate.before.nonce;
-
-        pb.val(balance_before) = deposit.balanceUpdate.before.balance;
-        pb.val(tradingHistoryRoot_before) = deposit.balanceUpdate.before.tradingHistoryRoot;
-        pb.val(balancesRoot_before) = deposit.accountUpdate.before.balancesRoot;
-
-        pb.val(publicKeyX_before) = deposit.accountUpdate.before.publicKey.x;
-        pb.val(publicKeyY_before) = deposit.accountUpdate.before.publicKey.y;
-
+        amount.bits.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.after.balance - deposit.balanceUpdate.before.balance);
+        amount.generate_r1cs_witness_from_bits();
         publicKeyX_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.x);
         publicKeyX_after.generate_r1cs_witness_from_bits();
         publicKeyY_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.y);
         publicKeyY_after.generate_r1cs_witness_from_bits();
-        pb.val(balance_after) = deposit.balanceUpdate.after.balance;
-        pb.val(tradingHistoryRoot_after) = deposit.balanceUpdate.after.tradingHistoryRoot;
-        pb.val(balancesRoot_after) = deposit.accountUpdate.after.balancesRoot;
 
-        amount.bits.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.after.balance - deposit.balanceUpdate.before.balance);
-        amount.generate_r1cs_witness_from_bits();
+        pb.val(balanceBefore.balance) = deposit.balanceUpdate.before.balance;
+        pb.val(balanceBefore.tradingHistory) = deposit.balanceUpdate.before.tradingHistoryRoot;
+        pb.val(balanceAfter.balance) = deposit.balanceUpdate.after.balance;
+
+        pb.val(accountBefore.publicKeyX) = deposit.accountUpdate.before.publicKey.x;
+        pb.val(accountBefore.publicKeyY) = deposit.accountUpdate.before.publicKey.y;
+        pb.val(accountBefore.nonce) = deposit.accountUpdate.before.nonce;
+        pb.val(accountBefore.balancesRoot) = deposit.accountUpdate.before.balancesRoot;
 
         updateBalance.generate_r1cs_witness(deposit.balanceUpdate.proof);
         updateAccount.generate_r1cs_witness(deposit.accountUpdate.proof);
@@ -135,12 +127,11 @@ public:
 
     void generate_r1cs_constraints()
     {
+        amount.generate_r1cs_constraints(true);
         publicKeyX_after.generate_r1cs_constraints(true);
         publicKeyY_after.generate_r1cs_constraints(true);
 
-        amount.generate_r1cs_constraints(true);
-
-        pb.add_r1cs_constraint(ConstraintT(balance_before + amount.packed, 1, balance_after), "balance_before + amount == balance_after");
+        pb.add_r1cs_constraint(ConstraintT(balanceBefore.balance + amount.packed, 1, balanceAfter.balance), "balanceBefore + amount == balanceAfter");
 
         updateBalance.generate_r1cs_constraints();
         updateAccount.generate_r1cs_constraints();
@@ -273,7 +264,6 @@ public:
 
         startIndex.bits.fill_with_bits_of_field_element(pb, context.startIndex);
         startIndex.generate_r1cs_witness_from_bits();
-
         count.bits.fill_with_bits_of_field_element(pb, context.count);
         count.generate_r1cs_witness_from_bits();
 
