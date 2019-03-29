@@ -107,7 +107,7 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
 
         // Check ETH value sent, can be larger than the expected deposit fee
         uint feeSurplus = 0;
-        if (tokenID != 0) {
+        if (tokenAddress != address(0)) {
             require(msg.value >= depositFeeETH, "INSUFFICIENT_FEE");
             feeSurplus = msg.value.sub(depositFeeETH);
         } else {
@@ -138,7 +138,7 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         depositChain.push(request);
 
         // Transfer the tokens from the owner into this contract
-        if (tokenID != 0) {
+        if (tokenAddress != address(0)) {
             require(
                 tokenAddress.safeTransferFrom(
                     account.owner,

@@ -492,7 +492,7 @@ export class ExchangeTestUtil {
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
-    const withdrawalFee = await this.exchange.getWithdrawalFee();
+    const withdrawalFee = (await this.exchange.getFees())._withdrawalFeeETH;
 
     // Submit the withdraw request
     const tx = await this.exchange.withdraw(
@@ -502,15 +502,17 @@ export class ExchangeTestUtil {
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
 
-    const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawRequest", web3.eth.blockNumber);
+    const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawalRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.requestIdx];
+      return [eventObj.args.withdrawalIdx];
     });
     const withdrawBlockIdx = items[0][0].toNumber();
     const slotIdx = 0;
 
+    const walletAccountID = this.wallets[realmID][0].walletAccountID;
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
-                              accountID, tokenID, amount, 0, tokenID, new BN(0), 0, withdrawBlockIdx, slotIdx);
+                              accountID, tokenID, amount, walletAccountID, tokenID, new BN(0),
+                              0, withdrawBlockIdx, slotIdx);
     return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
   }
 
@@ -841,11 +843,12 @@ export class ExchangeTestUtil {
           withdrawalRequests.push(pendingWithdrawals[b]);
           numRequestsProcessed++;
         } else {
+          const walletAccountID = this.wallets[realmID][0].walletAccountID;
           const dummyWithdrawalRequest: WithdrawalRequest = {
             accountID: 0,
             tokenID: 0,
             amount: new BN(0),
-            walletAccountID: 1,
+            walletAccountID,
             feeTokenID: 0,
             fee: new BN(0),
             walletSplitPercentage: 0,
