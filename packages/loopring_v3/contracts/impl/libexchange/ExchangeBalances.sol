@@ -45,6 +45,38 @@ library ExchangeBalances
         )
         public
     {
+        bool isCorrect = isAccountBalanceCorrect(
+            S,
+            merkleRoot,
+            accountID,
+            tokenID,
+            pubKeyX,
+            pubKeyY,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountPath,
+            balancePath
+        );
+        require(isCorrect, "INVALID_MERKLE_TREE_DATA");
+    }
+
+    function isAccountBalanceCorrect(
+        ExchangeData.State storage S,
+        uint256 merkleRoot,
+        uint24  accountID,
+        uint16  tokenID,
+        uint256 pubKeyX,
+        uint256 pubKeyY,
+        uint32  nonce,
+        uint96  balance,
+        uint256 tradeHistoryRoot,
+        uint256[24] memory accountPath,
+        uint256[12] memory balancePath
+        )
+        public
+        returns (bool isCorrect)
+    {
         // Verify data
         uint256 calculatedRoot = getBalancesRoot(
             tokenID,
@@ -60,7 +92,7 @@ library ExchangeBalances
             calculatedRoot,
             accountPath
         );
-        require(calculatedRoot == merkleRoot, "INVALID_MERKLE_TREE_DATA");
+        isCorrect = (calculatedRoot == merkleRoot);
     }
 
     function getBalancesRoot(
@@ -147,7 +179,7 @@ library ExchangeBalances
     function fillLevelIVs (
         uint256[29] memory IVs
         )
-        internal
+        public
         pure
     {
         IVs[0] = 149674538925118052205057075966660054952481571156186698930522557832224430770;

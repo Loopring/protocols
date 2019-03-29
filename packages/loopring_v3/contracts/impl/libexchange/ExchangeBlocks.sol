@@ -135,7 +135,7 @@ library ExchangeBlocks
         uint blockType,
         bytes memory data
         )
-        internal
+        private
     {
         // Extract the exchange ID from the data
         uint32 exchangeIdInData = 0;
@@ -269,7 +269,7 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         uint32 depositRequestIdx
         )
-        internal
+        private
         view
         returns (bool)
     {
@@ -284,7 +284,7 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         uint32 withdrawRequestIdx
         )
-        internal
+        private
         view
         returns (bool)
     {

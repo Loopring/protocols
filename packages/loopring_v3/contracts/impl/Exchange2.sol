@@ -110,6 +110,36 @@ contract Exchange2 is Ownable
         accountID = state.createOrUpdateAccount(pubKeyX, pubKeyY);
     }
 
+    // -- Balances --
+    function isAccountBalanceCorrect(
+        uint256 merkleRoot,
+        uint24  accountID,
+        uint16  tokenID,
+        uint256 pubKeyX,
+        uint256 pubKeyY,
+        uint32  nonce,
+        uint96  balance,
+        uint256 tradeHistoryRoot,
+        uint256[24] calldata accountPath,
+        uint256[12] calldata balancePath
+        )
+        external
+        returns (bool)
+    {
+        return state.isAccountBalanceCorrect(
+            merkleRoot,
+            accountID,
+            tokenID,
+            pubKeyX,
+            pubKeyY,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountPath,
+            balancePath
+        );
+    }
+
     // -- Tokens --
     function registerToken(
         address tokenAddress

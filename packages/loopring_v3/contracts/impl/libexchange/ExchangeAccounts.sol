@@ -123,7 +123,7 @@ library ExchangeAccounts
         require(accountID != 0, "SENDER_HAS_NO_ACCOUNT");
     }
 
-    function verifyAccountBalance(
+    function isAccountBalanceCorrect(
         ExchangeData.State storage S,
         ExchangeData.Account storage account,
         bytes32 merkleRoot,
@@ -137,7 +137,7 @@ library ExchangeAccounts
         )
         public
     {
-        S.verifyAccountBalance(
+        S.isAccountBalanceCorrect(
             uint256(merkleRoot),
             accountID,
             tokenID,
