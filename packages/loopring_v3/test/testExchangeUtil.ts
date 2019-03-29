@@ -31,7 +31,6 @@ export class ExchangeTestUtil {
   public loopringV3: any;
   public exchangeDeployer: any;
   public blockVerifier: any;
-  public exchangeHelper: any;
 
   public lrcAddress: string;
   public wethAddress: string;
@@ -1560,10 +1559,9 @@ export class ExchangeTestUtil {
 
   // private functions:
   private async createContractContext() {
-    const [loopringV3, exchangeDeployer, exchangeHelper, blockVerifier, lrcToken, wethToken] = await Promise.all([
+    const [loopringV3, exchangeDeployer, blockVerifier, lrcToken, wethToken] = await Promise.all([
         this.contracts.LoopringV3.deployed(),
         this.contracts.ExchangeDeployer.deployed(),
-        this.contracts.ExchangeHelper.deployed(),
         this.contracts.BlockVerifier.deployed(),
         this.contracts.LRCToken.deployed(),
         this.contracts.WETHToken.deployed(),
@@ -1571,7 +1569,6 @@ export class ExchangeTestUtil {
 
     this.loopringV3 = loopringV3;
     this.exchangeDeployer = exchangeDeployer;
-    this.exchangeHelper = exchangeHelper;
     this.blockVerifier = blockVerifier;
 
     this.lrcAddress = lrcToken.address;
