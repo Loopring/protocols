@@ -130,7 +130,7 @@ library ExchangeBlocks
     }
 
     // == Internal Functions ==
-function commitBlockInternal(
+    function commitBlockInternal(
         ExchangeData.State storage S,
         uint blockType,
         bytes memory data

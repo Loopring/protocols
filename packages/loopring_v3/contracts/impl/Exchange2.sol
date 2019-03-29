@@ -22,13 +22,13 @@ import "../iface/IExchange.sol";
 import "../iface/ILoopringV3.sol";
 
 import "./exchange2/ExchangeAccounts.sol";
-// import "./exchange2/ExchangeBalances.sol";
+import "./exchange2/ExchangeAdmins.sol";
+import "./exchange2/ExchangeBalances.sol";
 import "./exchange2/ExchangeBlocks.sol";
 import "./exchange2/ExchangeData.sol";
 import "./exchange2/ExchangeDeposits.sol";
 import "./exchange2/ExchangeGenesis.sol";
 import "./exchange2/ExchangeMode.sol";
-import "./exchange2/ExchangeOperations.sol";
 import "./exchange2/ExchangeTokens.sol";
 import "./exchange2/ExchangeWithdrawals.sol";
 
@@ -38,13 +38,13 @@ import "./exchange2/ExchangeWithdrawals.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Exchange2 is Ownable
 {
+    using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
-    // using ExchangeBalances      for ExchangeData.State;
+    using ExchangeBalances      for ExchangeData.State;
     using ExchangeBlocks        for ExchangeData.State;
     using ExchangeDeposits      for ExchangeData.State;
     using ExchangeGenesis       for ExchangeData.State;
     using ExchangeMode          for ExchangeData.State;
-    using ExchangeOperations    for ExchangeData.State;
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
@@ -97,7 +97,7 @@ contract Exchange2 is Ownable
             uint   pubKeyY
         )
     {
-       (accountID, pubKeyX, pubKeyY) = state.getAccount(owner);
+        (accountID, pubKeyX, pubKeyY) = state.getAccount(owner);
     }
 
     function createOrUpdateAccount(
@@ -120,7 +120,7 @@ contract Exchange2 is Ownable
         onlyOperator
         returns (uint16 tokenID)
     {
-       tokenID = state.registerToken(tokenAddress);
+        tokenID = state.registerToken(tokenAddress);
     }
 
     function getTokenID(
@@ -150,7 +150,7 @@ contract Exchange2 is Ownable
         payable
         onlyOperator
     {
-       state.disableTokenDeposit(tokenAddress);
+        state.disableTokenDeposit(tokenAddress);
     }
 
     function enableTokenDeposit(
@@ -214,7 +214,7 @@ contract Exchange2 is Ownable
     }
 
     // -- Deposits --
-   function getFirstUnprocessedDepositRequestIndex()
+    function getFirstUnprocessedDepositRequestIndex()
         external
         view
         returns (uint)
@@ -411,8 +411,7 @@ contract Exchange2 is Ownable
         state.distributeWithdrawals(blockIdx);
     }
 
-    // -- Operations --
-
+    // -- Admins --
     function setOperator(
         address payable _operator
         )
@@ -432,7 +431,7 @@ contract Exchange2 is Ownable
         external
         onlyOwner
     {
-       state.setFees(
+        state.setFees(
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,

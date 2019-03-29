@@ -30,7 +30,7 @@ import "./ExchangeMode.sol";
 /// @title ExchangeAccounts.
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
-library ExchangeOperations
+library ExchangeAdmins
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
