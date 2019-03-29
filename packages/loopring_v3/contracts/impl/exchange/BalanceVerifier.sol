@@ -16,17 +16,15 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/IExchangeHelper.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/NoDefaultFunc.sol";
 
-import "../lib/MathUint.sol";
-import "../lib/NoDefaultFunc.sol";
-
-import "../thirdparty/MiMC.sol";
+import "../../thirdparty/MiMC.sol";
 
 
-/// @title An Implementation of IExchangeHelper.
+/// @title BalanceVerifier
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
+library BalanceVerifier
 {
     using MathUint for uint;
 
@@ -43,6 +41,7 @@ contract ExchangeHelper is IExchangeHelper, NoDefaultFunc
         uint256 tradeHistoryRoot
         )
         external
+        pure
     {
         // Verify data
         uint256 calculatedRoot = getBalancesRoot(
