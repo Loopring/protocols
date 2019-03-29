@@ -32,23 +32,20 @@ library ExchangeGenesis
     using ExchangeTokens    for ExchangeData.State;
     using ExchangeAccounts  for ExchangeData.State;
 
-    function initializeAndCreateGenesisBlock(
+    function initializeGenesisBlock(
         ExchangeData.State storage S,
         uint    _id,
         address _loopring3Address,
-        address _owner,
         address payable _operator
         )
         public
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopring3Address, "ZERO_ADDRESS");
-        require(address(0) != _owner, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
 
         S.id = _id;
         S.loopring3Address = _loopring3Address;
-        S.owner = _owner;
         S.operator = _operator;
 
         ILoopringV3 loopring = ILoopringV3(_loopring3Address);

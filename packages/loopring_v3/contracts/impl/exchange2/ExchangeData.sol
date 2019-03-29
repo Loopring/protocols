@@ -112,7 +112,6 @@ library ExchangeData
     struct State
     {
         uint id;
-        address owner;
         address payable operator;
 
         address loopring3Address;

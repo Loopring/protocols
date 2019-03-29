@@ -16,6 +16,8 @@
 */
 pragma solidity 0.5.2;
 
+import "../lib/Ownable.sol";
+
 import "../iface/IExchange.sol";
 import "../iface/ILoopringV3.sol";
 
@@ -30,10 +32,11 @@ import "./exchange2/ExchangeWithdrawals.sol";
 import "./exchange2/ExchangeOperations.sol";
 
 
+
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange2
+contract Exchange2 is Ownable
 {
     using ExchangeMode          for ExchangeData.State;
     using ExchangeGenesis       for ExchangeData.State;
@@ -56,10 +59,12 @@ contract Exchange2
         public
         payable
     {
-        state.initializeAndCreateGenesisBlock(
+        require(address(0) != _owner, "ZERO_ADDRESS");
+        owner = _owner;
+
+        state.initializeGenesisBlock(
             _id,
             _loopring3Address,
-            _owner,
             _operator
         );
     }
@@ -394,7 +399,7 @@ contract Exchange2
         address payable _operator
         )
         external
-        //onlyOwner
+        onlyOwner
         returns (address payable oldOperator)
     {
         oldOperator = state.setOperator(_operator);

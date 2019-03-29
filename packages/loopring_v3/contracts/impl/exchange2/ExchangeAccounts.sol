@@ -115,7 +115,7 @@ library ExchangeAccounts
         view
         returns (uint24 accountID)
     {
-        require(S.owner != address(0), "ZERO_ADDRESS");
+        require(owner != address(0), "ZERO_ADDRESS");
 
         accountID = S.ownerToAccountId[owner];
         require(accountID != 0, "SENDER_HAS_NO_ACCOUNT");
