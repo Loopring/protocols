@@ -149,13 +149,6 @@ library ExchangeData
         uint    pubKeyY
     );
 
-    event TokenRegistered(
-        address token,
-        uint16 tokenId
-    );
-
-
-
     event BlockFeeWithdraw(
         uint32 blockIdx,
         uint amount
@@ -182,16 +175,5 @@ library ExchangeData
         uint96  amount
     );
 
-    event OperatorChanged(
-        uint exchangeId,
-        address oldOperator,
-        address newOperator
-    );
 
-    event FeesUpdated(
-        uint accountCreationFeeETH,
-        uint accountUpdateFeeETH,
-        uint depositFeeETH,
-        uint withdrawalFeeETH
-    );
 }

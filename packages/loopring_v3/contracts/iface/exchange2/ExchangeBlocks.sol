@@ -22,7 +22,6 @@ import "./ExchangeMode.sol";
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/NoDefaultFunc.sol";
 
 /// @title ExchangeAccounts.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -48,7 +47,7 @@ library ExchangeBlocks
     function getBlockHeight(
         ExchangeData.State storage S
         )
-        external
+        public
         view
         returns (uint)
     {
@@ -58,9 +57,9 @@ library ExchangeBlocks
     function commitBlock(
         ExchangeData.State storage S,
         uint blockType,
-        bytes calldata data
+        bytes memory data
         )
-        external
+        public
     {
         commitBlockInternal(S, blockType, data);
     }
@@ -203,9 +202,9 @@ library ExchangeBlocks
     function verifyBlock(
         ExchangeData.State storage S,
         uint blockIdx,
-        uint256[8] calldata proof
+        uint256[8] memory proof
         )
-        external
+        public
     {
         // Exchange cannot be in withdraw mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -246,7 +245,7 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         uint32 blockIdx
         )
-        external
+        public
     {
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];

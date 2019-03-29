@@ -24,9 +24,10 @@ import "../../lib/MathUint.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeMode
 {
-    using MathUint          for uint;
+    using MathUint  for uint;
+
     function isInWithdrawalMode(ExchangeData.State storage S)
-        public
+        internal // reduce gas as this function is used by many other functions.
         view
         returns (bool result)
     {
