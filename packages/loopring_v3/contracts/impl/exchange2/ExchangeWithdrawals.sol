@@ -155,7 +155,6 @@ library ExchangeWithdrawals
     // We still alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTreeFor(
         ExchangeData.State storage S,
-        ILoopringV3 loopring,
         address owner,
         address token,
         uint32  nonce,
@@ -194,7 +193,6 @@ library ExchangeWithdrawals
         // Transfer the tokens
         withdrawAndBurn(
             S,
-            loopring,
             owner,
             tokenID,
             balance,
@@ -204,7 +202,6 @@ library ExchangeWithdrawals
 
     function withdrawFromDepositRequest(
         ExchangeData.State storage S,
-        ILoopringV3 loopring,
         uint depositRequestIdx
         )
         public
@@ -228,7 +225,6 @@ library ExchangeWithdrawals
         ExchangeData.Account storage account = S.accounts[_deposit.accountID];
         withdrawAndBurn(
             S,
-            loopring,
             account.owner,
             _deposit.tokenID,
             amount,
@@ -238,7 +234,6 @@ library ExchangeWithdrawals
 
     function withdrawFromApprovedWithdrawal(
         ExchangeData.State storage S,
-        ILoopringV3 loopring,
         uint blockIdx,
         uint slotIdx
         )
@@ -283,7 +278,6 @@ library ExchangeWithdrawals
             // Transfer the tokens
             withdrawAndBurn(
                 S,
-                loopring,
                 account.owner,
                 tokenID,
                 amount,
@@ -362,7 +356,6 @@ library ExchangeWithdrawals
     // == Internal Functions ==
     function withdrawAndBurn(
         ExchangeData.State storage S,
-        ILoopringV3 loopring,
         address accountOwner,
         uint16 tokenID,
         uint amount,
@@ -377,7 +370,7 @@ library ExchangeWithdrawals
         uint amountToBurn = 0;
         uint amountToOwner = 0;
         if (bBurn) {
-            uint burnRate = loopring.getTokenBurnRate(token);
+            uint burnRate = ILoopringV3(S.loopring3Address).getTokenBurnRate(token);
             amountToBurn = amount.mul(burnRate) / 10000;
             amountToOwner = amount - amountToBurn;
         } else {

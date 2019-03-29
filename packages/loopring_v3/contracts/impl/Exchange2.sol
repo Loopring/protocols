@@ -45,29 +45,30 @@ contract Exchange2
     using ExchangeOperations    for ExchangeData.State;
 
     ExchangeData.State public state;
-    ILoopringV3 private loopring;
 
     // -- Constructor --
     constructor(
-        address _loopringAddress,
         uint    _id,
+        address _loopring3Address,
         address _owner,
         address payable _operator
         )
         public
         payable
     {
-        require(address(0) != _loopringAddress, "ZERO_ADDRESS");
-        loopring = ILoopringV3(_loopringAddress);
-
         state.initializeAndCreateGenesisBlock(
-            loopring,
             _id,
+            _loopring3Address,
             _owner,
             _operator
         );
     }
 
+    modifier onlyOperator()
+    {
+        require(msg.sender == state.operator, "UNAUTHORIZED");
+        _;
+    }
     // -- Mode --
     function isInWithdrawalMode()
         external
@@ -108,6 +109,7 @@ contract Exchange2
         address tokenAddress
         )
         external
+        onlyOperator
         returns (uint16 tokenID)
     {
        tokenID = state.registerToken(tokenAddress);
@@ -136,6 +138,7 @@ contract Exchange2
     function disableTokenDeposit(
         address tokenAddress
         )
+        onlyOperator
         external
     {
        state.disableTokenDeposit(tokenAddress);
@@ -144,6 +147,7 @@ contract Exchange2
     function enableTokenDeposit(
         address tokenAddress
         )
+        onlyOperator
         external
     {
         state.enableTokenDeposit(tokenAddress);
@@ -155,7 +159,7 @@ contract Exchange2
         view
         returns (uint)
     {
-        return loopring.getStake(state.id);
+        return ILoopringV3(state.loopring3Address).getStake(state.id);
     }
 
     // -- Blocks --
@@ -172,6 +176,7 @@ contract Exchange2
         bytes calldata data
         )
         external
+        onlyOperator
     {
         state.commitBlock(blockType, data);
     }
@@ -181,6 +186,7 @@ contract Exchange2
         uint256[8] calldata proof
         )
         external
+        onlyOperator
     {
         state.verifyBlock(blockIdx, proof);
     }
@@ -189,6 +195,7 @@ contract Exchange2
         uint32 blockIdx
         )
         external
+        onlyOperator
     {
         state.revertBlock(blockIdx);
     }
@@ -310,7 +317,6 @@ contract Exchange2
         external
     {
         state.withdrawFromMerkleTreeFor(
-            loopring,
             msg.sender,
             token,
             nonce,
@@ -334,7 +340,6 @@ contract Exchange2
         external
     {
         state.withdrawFromMerkleTreeFor(
-            loopring,
             owner,
             token,
             nonce,
@@ -350,7 +355,7 @@ contract Exchange2
         )
         external
     {
-        state.withdrawFromDepositRequest(loopring, depositRequestIdx);
+        state.withdrawFromDepositRequest(depositRequestIdx);
     }
 
     function withdrawFromApprovedWithdrawal(
@@ -360,12 +365,10 @@ contract Exchange2
         external
     {
         state.withdrawFromApprovedWithdrawal(
-            loopring,
             blockIdx,
             slotIdx
         );
     }
-
 
     function withdrawBlockFee(
         uint32 blockIdx
@@ -380,6 +383,7 @@ contract Exchange2
         uint blockIdx
         )
         external
+        onlyOperator
     {
         state.distributeWithdrawals(blockIdx);
     }
@@ -390,6 +394,7 @@ contract Exchange2
         address payable _operator
         )
         external
+        //onlyOwner
         returns (address payable oldOperator)
     {
         oldOperator = state.setOperator(_operator);
@@ -401,10 +406,10 @@ contract Exchange2
         uint _depositFeeETH,
         uint _withdrawalFeeETH
         )
+        onlyOperator
         external
     {
        state.setFees(
-            loopring,
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,
@@ -432,8 +437,9 @@ contract Exchange2
         uint durationSeconds
         )
         external
+        onlyOperator
     {
-        state.purchaseDowntime(loopring, durationSeconds);
+        state.purchaseDowntime(durationSeconds);
     }
 
     function getRemainingDowntime()
@@ -451,6 +457,6 @@ contract Exchange2
         view
         returns (uint costLRC)
     {
-        costLRC = state.getDowntimeCostLRC(loopring, durationSeconds);
+        costLRC = state.getDowntimeCostLRC(durationSeconds);
     }
 }

@@ -34,21 +34,24 @@ library ExchangeGenesis
 
     function initializeAndCreateGenesisBlock(
         ExchangeData.State storage S,
-        ILoopringV3 loopring,
         uint    _id,
+        address _loopring3Address,
         address _owner,
         address payable _operator
         )
         public
     {
         require(0 != _id, "INVALID_ID");
+        require(address(0) != _loopring3Address, "ZERO_ADDRESS");
         require(address(0) != _owner, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
 
         S.id = _id;
+        S.loopring3Address = _loopring3Address;
         S.owner = _owner;
         S.operator = _operator;
 
+        ILoopringV3 loopring = ILoopringV3(_loopring3Address);
         S.lrcAddress = loopring.lrcAddress();
         S.exchangeHelperAddress = loopring.exchangeHelperAddress();
         S.blockVerifierAddress = loopring.blockVerifierAddress();

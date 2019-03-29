@@ -70,7 +70,6 @@ library ExchangeOperations
 
     function setFees(
         ExchangeData.State storage S,
-        ILoopringV3 loopring,
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
@@ -79,7 +78,10 @@ library ExchangeOperations
         public
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(_withdrawalFeeETH <= loopring.maxWithdrawalFee(), "TOO_LARGE_AMOUNT");
+        require(
+            _withdrawalFeeETH <= ILoopringV3(S.loopring3Address).maxWithdrawalFee(),
+            "AMOUNT_TOO_LARGE"
+        );
 
         S.accountCreationFeeETH = _accountCreationFeeETH;
         S.accountUpdateFeeETH = _accountUpdateFeeETH;
@@ -96,14 +98,13 @@ library ExchangeOperations
 
     function purchaseDowntime(
         ExchangeData.State storage S,
-        ILoopringV3 loopring,
         uint durationSeconds
         )
         public
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
-        uint costLRC = getDowntimeCostLRC(S, loopring, durationSeconds);
+        uint costLRC = getDowntimeCostLRC(S, durationSeconds);
         if (costLRC > 0) {
             require(
                 BurnableERC20(S.lrcAddress).burnFrom(msg.sender, costLRC),
@@ -133,7 +134,6 @@ library ExchangeOperations
 
     function getDowntimeCostLRC(
         ExchangeData.State storage S,
-        ILoopringV3 loopring,
         uint durationSeconds
         )
         public
@@ -141,6 +141,8 @@ library ExchangeOperations
         returns (uint)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        return durationSeconds.mul(loopring.downtimePriceLRCPerDay()) / (1 days);
+        return durationSeconds
+            .mul(ILoopringV3(S.loopring3Address)
+            .downtimePriceLRCPerDay()) / (1 days);
     }
 }

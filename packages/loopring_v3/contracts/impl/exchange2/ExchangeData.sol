@@ -111,14 +111,15 @@ library ExchangeData
 
     struct State
     {
+        uint id;
+        address owner;
         address payable operator;
 
+        address loopring3Address;
         address lrcAddress;
         address exchangeHelperAddress;
         address blockVerifierAddress;
 
-        uint id;
-        address owner;
         uint disableUserRequestsUntil;
 
         uint accountCreationFeeETH;
@@ -139,10 +140,5 @@ library ExchangeData
         // A map from an account owner to a token to if the balance is withdrawn
         mapping (address => mapping (address => bool)) withdrawnInWithdrawMode;
     }
-
-    // -- Events --
-
-
-
 
 }
