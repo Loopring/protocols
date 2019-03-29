@@ -19,6 +19,43 @@ void forceEqual(ProtoboardT& pb, const VariableT& A, const VariableT& B, const s
     pb.add_r1cs_constraint(ConstraintT(A, FieldT::one(), B), FMT(annotation_prefix, ".forceEqual"));
 }
 
+class Constants : public GadgetT
+{
+public:
+
+    const VariableT zero;
+    const VariableT one;
+    const VariableT _100;
+    const VariableT emptyTradeHistory;
+
+    Constants(
+        ProtoboardT& pb,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+
+        zero(make_variable(pb, FieldT::zero(), FMT(prefix, ".zero"))),
+        one(make_variable(pb, FieldT::one(), FMT(prefix, ".one"))),
+        _100(make_variable(pb, ethsnarks::FieldT(100), FMT(prefix, "._100"))),
+        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyTradeHistory")))
+    {
+
+    }
+
+    void generate_r1cs_witness()
+    {
+
+    }
+
+    void generate_r1cs_constraints()
+    {
+        pb.add_r1cs_constraint(ConstraintT(FieldT::one() + zero, FieldT::one(), FieldT::one()), ".zero");
+        pb.add_r1cs_constraint(ConstraintT(one, FieldT::one(), FieldT::one()), ".one");
+        pb.add_r1cs_constraint(ConstraintT(_100, FieldT::one(), ethsnarks::FieldT(100)), "._100");
+        pb.add_r1cs_constraint(ConstraintT(emptyTradeHistory, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyTradeHistory");
+    }
+};
+
 class TernaryGadget : public GadgetT
 {
 public:
@@ -88,13 +125,14 @@ public:
         ProtoboardT& pb,
         const VariableT& A,
         const VariableT& B,
+        const size_t n,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
         _lt(make_variable(pb, 1, FMT(prefix, ".lt"))),
         _leq(make_variable(pb, 1, FMT(prefix, ".leq"))),
-        comparison(pb, 2*96, A, B, _lt, _leq, FMT(prefix, ".A <(=) B"))
+        comparison(pb, n, A, B, _lt, _leq, FMT(prefix, ".A <(=) B"))
     {
 
     }
@@ -246,11 +284,12 @@ public:
         ProtoboardT& pb,
         const VariableT& A,
         const VariableT& B,
+        const size_t n,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
-        leq(pb, A, B, FMT(prefix, ".A <(=) B")),
+        leq(pb, A, B, n, FMT(prefix, ".A <(=) B")),
         NOTLt(pb, leq.lt(), FMT(prefix, ".!(A<B)")),
         NOTltANDleq(pb, NOTLt.Not(), leq.leq(), FMT(prefix, ".!(A<B) && (A<=B)"))
     {
@@ -288,11 +327,12 @@ public:
         ProtoboardT& pb,
         const VariableT& A,
         const VariableT& B,
+        const size_t n,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
-        A_lt_B(pb, A, B, FMT(prefix, ".(A < B)")),
+        A_lt_B(pb, A, B, n, FMT(prefix, ".(A < B)")),
         minimum(pb, A_lt_B.lt(), A, B, FMT(prefix, ".minimum = (A < B) ? A : B"))
     {
 
@@ -325,11 +365,12 @@ public:
         ProtoboardT& pb,
         const VariableT& A,
         const VariableT& B,
+        const size_t n,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
-        leqGadget(pb, A, B, FMT(prefix, ".leq"))
+        leqGadget(pb, A, B, n, FMT(prefix, ".leq"))
     {
 
     }
@@ -349,8 +390,6 @@ public:
 class MulDivGadget : public GadgetT
 {
 public:
-    const VariableT const0;
-
     const VariableT A;
     const VariableT B;
     const VariableT C;
@@ -367,14 +406,13 @@ public:
     // (A * B) / C = D
     MulDivGadget(
         ProtoboardT& pb,
+        const Constants& constants,
         const VariableT& _A,
         const VariableT& _B,
         const VariableT& _C,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
-
-        const0(make_variable(pb, 0, FMT(prefix, ".const0"))),
 
         A(_A),
         B(_B),
@@ -386,8 +424,8 @@ public:
         Y(make_variable(pb, FMT(prefix, ".Y"))),
         remainder(make_variable(pb, FMT(prefix, ".remainder"))),
 
-        remainder_lt_C(pb, remainder, C, FMT(prefix, ".remainder <(=) C")),
-        remainder_eq_0(pb, remainder, const0, FMT(prefix, ".remainder == 0")),
+        remainder_lt_C(pb, remainder, C, 2 * NUM_BITS_AMOUNT, FMT(prefix, ".remainder <(=) C")),
+        remainder_eq_0(pb, remainder, constants.zero, NUM_BITS_AMOUNT, FMT(prefix, ".remainder == 0")),
         remainder_lt_C_OR_remainder_eq_0(pb, remainder_lt_C.lt(), remainder_eq_0.eq(), FMT(prefix, ".(remainder < C) || (remainder == 0)"))
     {
 
@@ -446,6 +484,7 @@ public:
 
     RoundingErrorGadget(
         ProtoboardT& pb,
+        const Constants& constants,
         const VariableT& _value,
         const VariableT& _numerator,
         const VariableT& _denominator,
@@ -453,9 +492,9 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        mulDiv(pb, _value, _numerator, _denominator, FMT(prefix, ".multiplied")),
+        mulDiv(pb, constants, _value, _numerator, _denominator, FMT(prefix, ".multiplied")),
         remainderx100(make_variable(pb, FMT(prefix, ".remainderx100"))),
-        multiplied_lt_remainderx100(pb, mulDiv.multiplied(), remainderx100, FMT(prefix, ".multiplied_lt_remainderx100")),
+        multiplied_lt_remainderx100(pb, mulDiv.multiplied(), remainderx100, NUM_BITS_AMOUNT * 2, FMT(prefix, ".multiplied_lt_remainderx100")),
         valid(make_variable(pb, FMT(prefix, ".valid")))
     {
 
@@ -598,43 +637,6 @@ public:
         {
             pb.add_r1cs_constraint(ConstraintT(hasher->result().bits[255-i], 1, inputHash.bits[i]), "publicData.check()");
         }
-    }
-};
-
-class Constants : public GadgetT
-{
-public:
-
-    const VariableT zero;
-    const VariableT one;
-    const VariableT _100;
-    const VariableT emptyTradeHistory;
-
-    Constants(
-        ProtoboardT& pb,
-        const std::string& prefix
-    ) :
-        GadgetT(pb, prefix),
-
-        zero(make_variable(pb, FieldT::zero(), FMT(prefix, ".zero"))),
-        one(make_variable(pb, FieldT::one(), FMT(prefix, ".one"))),
-        _100(make_variable(pb, ethsnarks::FieldT(100), FMT(prefix, "._100"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyTradeHistory")))
-    {
-
-    }
-
-    void generate_r1cs_witness()
-    {
-
-    }
-
-    void generate_r1cs_constraints()
-    {
-        pb.add_r1cs_constraint(ConstraintT(FieldT::one() + zero, FieldT::one(), FieldT::one()), ".zero");
-        pb.add_r1cs_constraint(ConstraintT(one, FieldT::one(), FieldT::one()), ".one");
-        pb.add_r1cs_constraint(ConstraintT(_100, FieldT::one(), ethsnarks::FieldT(100)), "._100");
-        pb.add_r1cs_constraint(ConstraintT(emptyTradeHistory, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyTradeHistory");
     }
 };
 

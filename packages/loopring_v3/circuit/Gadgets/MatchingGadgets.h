@@ -49,8 +49,8 @@ public:
 
         matchingFee(make_variable(pb, FMT(prefix, ".matchingFee"))),
 
-        walletFee(pb, fee, walletSplitPercentage, constants._100, FMT(prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
-        matchingFeeAfterWaiving(pb, matchingFee, waiveFeePercentage, constants._100, FMT(prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving"))
+        walletFee(pb, _constants, fee, walletSplitPercentage, constants._100, FMT(prefix, "(amount * walletSplitPercentage) / 100 == walletFee")),
+        matchingFeeAfterWaiving(pb, _constants, matchingFee, waiveFeePercentage, constants._100, FMT(prefix, "(matchingFee * waiveFeePercentage) / 100 == matchingFeeAfterWaiving"))
     {
 
     }
@@ -126,15 +126,15 @@ public:
         fillAmountS(_fillAmountS),
         fillAmountB(_fillAmountB),
 
-        fillAmountS_leq_amountS(pb, fillAmountS, order.amountS.packed, FMT(prefix, ".fillAmountS_eq_amountS")),
+        fillAmountS_leq_amountS(pb, fillAmountS, order.amountS.packed, NUM_BITS_AMOUNT * 2, FMT(prefix, ".fillAmountS_eq_amountS")),
 
-        validSince_leq_timestamp(pb, order.validSince.packed, timestamp, FMT(prefix, "validSince <= timestamp")),
-        timestamp_leq_validUntil(pb, timestamp, order.validUntil.packed, FMT(prefix, "timestamp <= validUntil")),
+        validSince_leq_timestamp(pb, order.validSince.packed, timestamp, NUM_BITS_AMOUNT * 2, FMT(prefix, "validSince <= timestamp")),
+        timestamp_leq_validUntil(pb, timestamp, order.validUntil.packed, NUM_BITS_TIMESTAMP, FMT(prefix, "timestamp <= validUntil")),
 
-        checkRoundingError(pb, _fillAmountS, _order.amountB.packed, _order.amountS.packed, FMT(prefix, ".checkRoundingError")),
+        checkRoundingError(pb, _constants, _fillAmountS, _order.amountB.packed, _order.amountS.packed, FMT(prefix, ".checkRoundingError")),
         validAllOrNone(make_variable(pb, FMT(prefix, ".validAllOrNone"))),
-        zero_lt_fillAmountS(pb, constants.zero, _fillAmountS, FMT(prefix, "0 < _fillAmountS")),
-        zero_lt_fillAmountB(pb, constants.zero, _fillAmountB, FMT(prefix, "0 < _fillAmountB")),
+        zero_lt_fillAmountS(pb, constants.zero, _fillAmountS, NUM_BITS_AMOUNT, FMT(prefix, "0 < _fillAmountS")),
+        zero_lt_fillAmountB(pb, constants.zero, _fillAmountB, NUM_BITS_AMOUNT, FMT(prefix, "0 < _fillAmountB")),
 
         valid_T(make_variable(pb, FMT(prefix, ".valid_T"))),
         valid_1(make_variable(pb, FMT(prefix, ".valid_1"))),
@@ -246,6 +246,7 @@ public:
 
     MaxFillAmountsGadget(
         ProtoboardT& pb,
+        const Constants& constants,
         const OrderGadget& _order,
         const std::string& prefix
     ) :
@@ -255,29 +256,29 @@ public:
 
         remainingSBeforeCancelled(make_variable(pb, FMT(prefix, ".remainingSBeforeCancelled"))),
         remainingS(make_variable(pb, FMT(prefix, ".remainingS"))),
-        fillAmountS_1(pb, order.balanceS, remainingS, FMT(prefix, ".min(balanceS, remainingS)")),
+        fillAmountS_1(pb, order.balanceS, remainingS, NUM_BITS_AMOUNT, FMT(prefix, ".min(balanceS, remainingS)")),
 
-        fillAmountF(pb, order.amountF.packed, fillAmountS_1.result(), order.amountS.packed,
+        fillAmountF(pb, constants, order.amountF.packed, fillAmountS_1.result(), order.amountS.packed,
                     FMT(prefix, ".(amountF * fillAmountS) / amountS")),
         fillAmountS_plus_fillAmountF(make_variable(pb, FMT(prefix, ".fillAmountS_plus_fillAmountF"))),
 
         amountS_plus_amountF(make_variable(pb, FMT(prefix, ".amountS_plus_amountF"))),
-        tokenS_eq_tokenF(pb, order.tokenS.packed, order.tokenF.packed, FMT(prefix, ".tokenS == tokenF")),
-        balanceS_LT_fillAmountS_plus_fillAmountF(pb, order.balanceS, fillAmountS_plus_fillAmountF, FMT(prefix, ".balanceS < totalAmount")),
+        tokenS_eq_tokenF(pb, order.tokenS.packed, order.tokenF.packed, NUM_BITS_TOKEN, FMT(prefix, ".tokenS == tokenF")),
+        balanceS_LT_fillAmountS_plus_fillAmountF(pb, order.balanceS, fillAmountS_plus_fillAmountF, NUM_BITS_AMOUNT + 1, FMT(prefix, ".balanceS < totalAmount")),
         tokenS_eq_tokenF_AND_balanceS_lt_fillAmountS_plus_fillAmountF(pb, tokenS_eq_tokenF.eq(), balanceS_LT_fillAmountS_plus_fillAmountF.lt(),
                                                                       FMT(prefix, ".fillAmountS_plus_fillAmountF")),
-        fillAmountS_eq(pb, order.balanceS, order.amountS.packed, amountS_plus_amountF,
+        fillAmountS_eq(pb, constants, order.balanceS, order.amountS.packed, amountS_plus_amountF,
                        FMT(prefix, ".balanceS * amountS / (amountS + amountF)")),
 
         tokenS_neq_tokenF(pb, tokenS_eq_tokenF.eq(), FMT(prefix, ".tokenS != tokenF")),
-        balanceF_lt_fillAmountF(pb, order.balanceF, fillAmountF.result(), FMT(prefix, ".balanceF < fillAmountF")),
+        balanceF_lt_fillAmountF(pb, order.balanceF, fillAmountF.result(), NUM_BITS_AMOUNT, FMT(prefix, ".balanceF < fillAmountF")),
         tokenS_neq_tokenF_AND_balanceF_lt_fillAmountF(pb, tokenS_neq_tokenF.Not(), balanceF_lt_fillAmountF.lt(),
                                                       FMT(prefix, ".tokenS_neq_tokenF AND balanceF_lt_fillAmountF")),
-        fillAmountS_neq(pb, order.balanceF, order.amountS.packed, order.amountF.packed,
+        fillAmountS_neq(pb, constants, order.balanceF, order.amountS.packed, order.amountF.packed,
                         FMT(prefix, ".balanceF * amountS / amountF")),
 
-        tokenB_eq_tokenF(pb, order.tokenB.packed, order.tokenF.packed, FMT(prefix, ".tokenB == tokenF")),
-        amountF_leq_amountB(pb, order.amountF.packed, order.amountB.packed, FMT(prefix, ".amountF <= amountB")),
+        tokenB_eq_tokenF(pb, order.tokenB.packed, order.tokenF.packed, NUM_BITS_TOKEN, FMT(prefix, ".tokenB == tokenF")),
+        amountF_leq_amountB(pb, order.amountF.packed, order.amountB.packed, NUM_BITS_AMOUNT, FMT(prefix, ".amountF <= amountB")),
         tokenB_eq_tokenF_AND_amountF_leq_amountB(pb, tokenB_eq_tokenF.eq(), amountF_leq_amountB.leq(),
                                                       FMT(prefix, ".tokenB_eq_tokenF AND amountF_leq_amountB")),
 
@@ -288,8 +289,7 @@ public:
         fillAmountS(pb, tokenB_eq_tokenF_AND_amountF_leq_amountB.And(),
                       fillAmountS_1.result(), fillAmountS_3.result(), FMT(prefix, ".fillAmountS")),
 
-
-        fillAmountB(pb, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(prefix, ".(fillAmountS * amountB) / amountS"))
+        fillAmountB(pb, constants, fillAmountS.result(), order.amountB.packed, order.amountS.packed, FMT(prefix, ".(fillAmountS * amountB) / amountS"))
     {
 
     }
@@ -441,18 +441,18 @@ public:
         orderA(_orderA),
         orderB(_orderB),
 
-        maxFillAmountA(pb, orderA, FMT(prefix, ".maxFillAmountA")),
-        maxFillAmountB(pb, orderB, FMT(prefix, ".maxFillAmountB")),
+        maxFillAmountA(pb, constants, orderA, FMT(prefix, ".maxFillAmountA")),
+        maxFillAmountB(pb, constants, orderB, FMT(prefix, ".maxFillAmountB")),
 
-        fillAmountB_A_lt_fillAmountS_B(pb, maxFillAmountA.getAmountB(), maxFillAmountB.getAmountS(),
+        fillAmountB_A_lt_fillAmountS_B(pb, maxFillAmountA.getAmountB(), maxFillAmountB.getAmountS(), NUM_BITS_AMOUNT * 2,
                                        FMT(prefix, "fillAmountB_A < fillAmountS_B")),
 
         fillAmountS_B_T(maxFillAmountA.getAmountB()),
-        fillAmountB_B_T(pb, fillAmountS_B_T, orderB.amountB.packed, orderB.amountS.packed,
+        fillAmountB_B_T(pb, constants, fillAmountS_B_T, orderB.amountB.packed, orderB.amountS.packed,
                         FMT(prefix, "fillAmountB_B = (fillAmountS_B * orderB.amountB) // orderB.amountS")),
 
         fillAmountB_A_F(maxFillAmountB.getAmountS()),
-        fillAmountS_A_F(pb, fillAmountB_A_F, orderA.amountS.packed, orderA.amountB.packed,
+        fillAmountS_A_F(pb, constants, fillAmountB_A_F, orderA.amountS.packed, orderA.amountB.packed,
                         FMT(prefix, "fillAmountS_A = (fillAmountB_A * orderA.amountS) // orderA.amountB")),
 
         fillAmountS_A(pb, fillAmountB_A_lt_fillAmountS_B.lt(), maxFillAmountA.getAmountS(), fillAmountS_A_F.result(), FMT(prefix, "fillAmountS_A")),
@@ -462,22 +462,22 @@ public:
 
         margin(make_variable(pb, FMT(prefix, ".margin"))),
 
-        fillAmountF_A(pb, orderA.amountF.packed, fillAmountS_A.result(), orderA.amountS.packed,
+        fillAmountF_A(pb, constants, orderA.amountF.packed, fillAmountS_A.result(), orderA.amountS.packed,
                       FMT(prefix, "fillAmountF_A = (orderA.amountF * fillAmountS_A) // orderA.amountS")),
-        fillAmountF_B(pb, orderB.amountF.packed, fillAmountS_B.result(), orderB.amountS.packed,
+        fillAmountF_B(pb, constants, orderB.amountF.packed, fillAmountS_B.result(), orderB.amountS.packed,
                       FMT(prefix, "fillAmountF_B = (orderB.amountF * fillAmountS_B) // orderB.amountS")),
 
         totalFee(make_variable(pb, FMT(prefix, ".totalFee"))),
-        accountsEqual(pb, orderA.accountID.packed, orderB.accountID.packed,
+        accountsEqual(pb, orderA.accountID.packed, orderB.accountID.packed, NUM_BITS_ACCOUNT,
                       FMT(prefix, "orderA.accountID == orderB.accountID")),
-        feeTokensEqual(pb, orderA.tokenF.packed, orderB.tokenF.packed,
+        feeTokensEqual(pb, orderA.tokenF.packed, orderB.tokenF.packed, NUM_BITS_TOKEN,
                       FMT(prefix, "orderA.tokenF == orderB.tokenF")),
-        balanceF_lt_totalFee(pb, orderA.balanceF, totalFee,
+        balanceF_lt_totalFee(pb, orderA.balanceF, totalFee, NUM_BITS_AMOUNT,
                              FMT(prefix, ".balanceF < totalFee")),
         accounts_and_feeTokensEqual(pb, accountsEqual.eq(), feeTokensEqual.eq(), FMT(prefix, ".accountsEqual && feeTokensEqual")),
         selfTradingCheckValid(pb, accounts_and_feeTokensEqual.And(), balanceF_lt_totalFee.lt(), FMT(prefix, ".accountsEqual && feeTokensEqual")),
 
-        fillAmountS_A_lt_fillAmountB_B(pb, fillAmountS_A.result(), fillAmountB_B.result(),
+        fillAmountS_A_lt_fillAmountB_B(pb, fillAmountS_A.result(), fillAmountB_B.result(), NUM_BITS_AMOUNT,
                                        FMT(prefix, "fillAmountS_A < fillAmountB_B")),
 
         checkValidA(pb, constants, timestamp, orderA, fillAmountS_A.result(), fillAmountB_A.result(), FMT(prefix, ".checkValidA")),

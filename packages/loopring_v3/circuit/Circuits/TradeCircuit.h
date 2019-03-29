@@ -165,8 +165,8 @@ public:
         minerAccountID(pb, 24, FMT(prefix, ".minerAccountID")),
         feeRecipientAccountID(pb, 24, FMT(prefix, ".feeRecipientAccountID")),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
-        fee(pb, 96, FMT(prefix, ".fee")),
-        nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
+        fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
+        nonce_before(pb, NUM_BITS_NONCE, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, FMT(prefix, ".nonce_after"))),
         feeRecipientNonce(make_variable(pb, FMT(prefix, ".feeRecipientNonce"))),
 
@@ -175,13 +175,13 @@ public:
 
         orderMatching(pb, constants, _timestamp, orderA, orderB, FMT(prefix, ".orderMatching")),
 
-        fillS_A(pb, 96, FMT(prefix, ".fillS_A")),
-        fillB_A(pb, 96, FMT(prefix, ".fillB_A")),
-        fillF_A(pb, 96, FMT(prefix, ".fillF_A")),
-        fillS_B(pb, 96, FMT(prefix, ".fillS_B")),
-        fillB_B(pb, 96, FMT(prefix, ".fillB_B")),
-        fillF_B(pb, 96, FMT(prefix, ".fillF_B")),
-        margin(pb, 96, FMT(prefix, ".margin")),
+        fillS_A(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fillS_A")),
+        fillB_A(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fillB_A")),
+        fillF_A(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fillF_A")),
+        fillS_B(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fillS_B")),
+        fillB_B(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fillB_B")),
+        fillF_B(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fillF_B")),
+        margin(pb, NUM_BITS_AMOUNT, FMT(prefix, ".margin")),
 
         filledAfterA(make_variable(pb, FMT(prefix, ".filledAfterA"))),
         filledAfterB(make_variable(pb, FMT(prefix, ".filledAfterB"))),
@@ -209,18 +209,18 @@ public:
         balanceF_O_before(make_variable(pb, FMT(prefix, ".balanceF_O_before"))),
 
         // fillB_B == fillS_A - margin
-        balanceSB_A(pb, 96, balanceS_A_before, balanceB_B_before, fillB_B.packed, FMT(prefix, ".balanceSB_A")),
-        balanceSB_B(pb, 96, balanceS_B_before, balanceB_A_before, fillS_B.packed, FMT(prefix, ".balanceSB_B")),
+        balanceSB_A(pb, NUM_BITS_AMOUNT, balanceS_A_before, balanceB_B_before, fillB_B.packed, FMT(prefix, ".balanceSB_A")),
+        balanceSB_B(pb, NUM_BITS_AMOUNT, balanceS_B_before, balanceB_A_before, fillS_B.packed, FMT(prefix, ".balanceSB_B")),
 
-        balanceF_WA(pb, 96, balanceF_A_before, balanceA_W_before, feePaymentA.getWalletFee(), FMT(prefix, ".balanceF_WA")),
-        balanceF_WB(pb, 96, balanceF_B_before, balanceB_W_before, feePaymentB.getWalletFee(), FMT(prefix, ".balanceF_WB")),
+        balanceF_WA(pb, NUM_BITS_AMOUNT, balanceF_A_before, balanceA_W_before, feePaymentA.getWalletFee(), FMT(prefix, ".balanceF_WA")),
+        balanceF_WB(pb, NUM_BITS_AMOUNT, balanceF_B_before, balanceB_W_before, feePaymentB.getWalletFee(), FMT(prefix, ".balanceF_WB")),
 
-        balanceF_MA(pb, 96, balanceF_WA.X, balanceA_F_before, feePaymentA.getMatchingFee(), FMT(prefix, ".balanceA_F")),
-        balanceF_MB(pb, 96, balanceF_WB.X, balanceB_F_before, feePaymentB.getMatchingFee(), FMT(prefix, ".balanceB_F")),
+        balanceF_MA(pb, NUM_BITS_AMOUNT, balanceF_WA.X, balanceA_F_before, feePaymentA.getMatchingFee(), FMT(prefix, ".balanceA_F")),
+        balanceF_MB(pb, NUM_BITS_AMOUNT, balanceF_WB.X, balanceB_F_before, feePaymentB.getMatchingFee(), FMT(prefix, ".balanceB_F")),
 
-        balanceS_MA(pb, 96, balanceSB_A.X, balanceM_M_before, margin.packed, FMT(prefix, ".balanceS_MA")),
+        balanceS_MA(pb, NUM_BITS_AMOUNT, balanceSB_A.X, balanceM_M_before, margin.packed, FMT(prefix, ".balanceS_MA")),
 
-        balance_M(pb, 96, balanceO_M_before, balanceF_O_before, fee.packed, FMT(prefix, ".balance_M")),
+        balance_M(pb, NUM_BITS_AMOUNT, balanceO_M_before, balanceF_O_before, fee.packed, FMT(prefix, ".balance_M")),
 
         tradingHistoryRootS_A(make_variable(pb, FMT(prefix, ".tradingHistoryRootS_A"))),
         tradingHistoryRootB_A(make_variable(pb, FMT(prefix, ".tradingHistoryRootB_A"))),
@@ -660,7 +660,7 @@ public:
         publicKey(pb, FMT(prefix, ".publicKey")),
         operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountID")),
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
-        timestamp(pb, 32, FMT(prefix, ".timestamp"))
+        timestamp(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".timestamp"))
     {
         this->updateAccount_O = nullptr;
     }

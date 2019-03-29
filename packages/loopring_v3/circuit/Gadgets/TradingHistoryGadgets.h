@@ -50,7 +50,7 @@ public:
 
         merkleRootBefore(_merkleRoot),
 
-        fill(pb, 96, FMT(prefix, ".fill")),
+        fill(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fill")),
 
         leafBefore(pb, libsnark::ONE, {before.filled, before.cancelled, before.orderID}, FMT(prefix, ".leafBefore")),
         leafAfter(pb, libsnark::ONE, {after.filled, after.cancelled, after.orderID}, FMT(prefix, ".leafAfter")),
@@ -125,7 +125,7 @@ public:
 
         orderID(_orderID),
 
-        bNew(pb, tradeHistoryOrderID, orderID, FMT(prefix, ".tradeHistoryOrderID <(=) orderID")),
+        bNew(pb, tradeHistoryOrderID, orderID, NUM_BITS_ORDERID, FMT(prefix, ".tradeHistoryOrderID <(=) orderID")),
         bTrim(pb, bNew.leq(), FMT(prefix, ".!bNew")),
 
         filled(pb, bNew.lt(), constants.zero, tradeHistoryFilled, FMT(prefix, ".filled")),

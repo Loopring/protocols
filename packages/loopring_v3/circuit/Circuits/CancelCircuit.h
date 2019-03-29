@@ -91,7 +91,7 @@ public:
 
         constants(_constants),
 
-        padding(pb, 2, FMT(prefix, ".padding")),
+        padding(pb, 1, FMT(prefix, ".padding")),
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
         percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
 
@@ -99,10 +99,10 @@ public:
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
         orderTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".orderTokenID"))),
-        orderID(pb, 16, FMT(prefix, ".orderID")),
+        orderID(pb, NUM_BITS_ORDERID, FMT(prefix, ".orderID")),
         walletAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletAccountID"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
-        fee(pb, 96, FMT(prefix, ".fee")),
+        fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         walletSplitPercentage(pb, 7, FMT(prefix, ".walletSplitPercentage")),
 
         filled(make_variable(pb, 0, FMT(prefix, ".filled"))),
@@ -122,17 +122,17 @@ public:
         balanceF_O_before(make_variable(pb, FMT(prefix, ".balanceF_O_before"))),
         tradingHistoryRootF_O(make_variable(pb, FMT(prefix, ".tradingHistoryRootF_O"))),
 
-        nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
+        nonce_before(pb, NUM_BITS_NONCE, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, 1, FMT(prefix, ".cancelled_after"))),
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
 
-        feeToWallet(pb, fee.packed, walletSplitPercentage.packed, constants._100, FMT(prefix, ".feeToWallet")),
+        feeToWallet(pb, constants, fee.packed, walletSplitPercentage.packed, constants._100, FMT(prefix, ".feeToWallet")),
         feeToOperator(make_variable(pb, 1, FMT(prefix, ".feeToOperator"))),
 
-        feePaymentWallet(pb, 96, balanceF_A_before, balanceF_W_before, feeToWallet.result(), FMT(prefix, ".feePaymentWallet")),
-        feePaymentOperator(pb, 96, feePaymentWallet.X, balanceF_O_before, feeToOperator, FMT(prefix, ".feePaymentOperator")),
+        feePaymentWallet(pb, NUM_BITS_AMOUNT, balanceF_A_before, balanceF_W_before, feeToWallet.result(), FMT(prefix, ".feePaymentWallet")),
+        feePaymentOperator(pb, NUM_BITS_AMOUNT, feePaymentWallet.X, balanceF_O_before, feeToOperator, FMT(prefix, ".feePaymentOperator")),
 
-        updateTradeHistory_A(pb, tradingHistoryRootT_A_before, orderID.bits,
+        updateTradeHistory_A(pb, tradingHistoryRootT_A_before, subArray(orderID.bits, 0, TREE_DEPTH_TRADING_HISTORY),
                              {filled, cancelled_before, orderID.packed},
                              {filled, cancelled_after, orderID.packed},
                              FMT(prefix, ".updateTradeHistory_A")),

@@ -525,9 +525,9 @@ class Cancellation(object):
 
     def message(self):
         msg_parts = [FQ(int(self.realmID), 1<<32), FQ(int(self.accountID), 1<<24),
-                     FQ(int(self.orderTokenID), 1<<12), FQ(int(self.orderID), 1<<16), FQ(int(self.dualAuthorAccountID), 1<<24),
+                     FQ(int(self.orderTokenID), 1<<12), FQ(int(self.orderID), 1<<32), FQ(int(self.dualAuthorAccountID), 1<<24),
                      FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<2)]
+                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<1)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):

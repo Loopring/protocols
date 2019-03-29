@@ -1124,11 +1124,12 @@ export class ExchangeTestUtil {
         if (b < pendingCancels.length) {
           cancels.push(pendingCancels[b]);
         } else {
+          const walletAccountID = this.wallets[realmID][0].walletAccountID;
           const dummyCancel: Cancel = {
             accountID: 0,
             orderTokenID: 0,
             orderID: 0,
-            walletAccountID: 1,
+            walletAccountID,
             feeTokenID: 0,
             fee: new BN(0),
             walletSplitPercentage: 0,

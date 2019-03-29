@@ -25,8 +25,8 @@ public:
     VariableArrayT uint16_padding;
 
     libsnark::dual_variable_gadget<FieldT> amount;
-    libsnark::dual_variable_gadget<FieldT> publicKeyX_after;
-    libsnark::dual_variable_gadget<FieldT> publicKeyY_after;
+    libsnark::dual_variable_gadget<FieldT> publicKeyX;
+    libsnark::dual_variable_gadget<FieldT> publicKeyY;
 
     BalanceState balanceBefore;
     BalanceState balanceAfter;
@@ -52,9 +52,9 @@ public:
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
 
-        amount(pb, 96, FMT(prefix, ".amount")),
-        publicKeyX_after(pb, 256, FMT(prefix, ".publicKeyX_after")),
-        publicKeyY_after(pb, 256, FMT(prefix, ".publicKeyY_after")),
+        amount(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amount")),
+        publicKeyX(pb, 256, FMT(prefix, ".publicKeyX")),
+        publicKeyY(pb, 256, FMT(prefix, ".publicKeyY")),
 
         balanceBefore({
             make_variable(pb, FMT(prefix, ".before.balance")),
@@ -75,8 +75,8 @@ public:
         updateBalance(pb, accountBefore.balancesRoot, tokenID, balanceBefore, balanceAfter, FMT(prefix, ".updateBalance")),
 
         accountAfter({
-            publicKeyX_after.packed,
-            publicKeyY_after.packed,
+            publicKeyX.packed,
+            publicKeyY.packed,
             accountBefore.nonce,
             updateBalance.getNewRoot()
         }),
@@ -93,7 +93,7 @@ public:
 
     const std::vector<VariableArrayT> getOnchainData() const
     {
-        return {accountID, publicKeyX_after.bits, publicKeyY_after.bits,
+        return {accountID, publicKeyX.bits, publicKeyY.bits,
                 uint16_padding, tokenID,
                 amount.bits};
     }
@@ -107,10 +107,10 @@ public:
 
         amount.bits.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.after.balance - deposit.balanceUpdate.before.balance);
         amount.generate_r1cs_witness_from_bits();
-        publicKeyX_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.x);
-        publicKeyX_after.generate_r1cs_witness_from_bits();
-        publicKeyY_after.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.y);
-        publicKeyY_after.generate_r1cs_witness_from_bits();
+        publicKeyX.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.x);
+        publicKeyX.generate_r1cs_witness_from_bits();
+        publicKeyY.bits.fill_with_bits_of_field_element(pb, deposit.accountUpdate.after.publicKey.y);
+        publicKeyY.generate_r1cs_witness_from_bits();
 
         pb.val(balanceBefore.balance) = deposit.balanceUpdate.before.balance;
         pb.val(balanceBefore.tradingHistory) = deposit.balanceUpdate.before.tradingHistoryRoot;
@@ -128,8 +128,8 @@ public:
     void generate_r1cs_constraints()
     {
         amount.generate_r1cs_constraints(true);
-        publicKeyX_after.generate_r1cs_constraints(true);
-        publicKeyY_after.generate_r1cs_constraints(true);
+        publicKeyX.generate_r1cs_constraints(true);
+        publicKeyY.generate_r1cs_constraints(true);
 
         pb.add_r1cs_constraint(ConstraintT(balanceBefore.balance + amount.packed, 1, balanceAfter.balance), "balanceBefore + amount == balanceAfter");
 

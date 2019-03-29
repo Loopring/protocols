@@ -107,13 +107,13 @@ public:
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
-        amountRequested(pb, 96, FMT(prefix, ".amountRequested")),
+        amountRequested(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amountRequested")),
         walletAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletAccountID"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
-        fee(pb, 96, FMT(prefix, ".fee")),
+        fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         walletSplitPercentage(pb, 7, FMT(prefix, ".walletSplitPercentage")),
 
-        nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
+        nonce_before(pb, NUM_BITS_NONCE, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, FMT(prefix, ".nonce_after"))),
 
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
@@ -132,14 +132,14 @@ public:
         tradingHistoryRootF_O(make_variable(pb, FMT(prefix, ".tradingHistoryRootF_O"))),
         balanceF_O_before(make_variable(pb, FMT(prefix, ".balanceF_O_before"))),
 
-        feeToWallet(pb, fee.packed, walletSplitPercentage.packed, constants._100, FMT(prefix, ".feeToWallet")),
+        feeToWallet(pb, constants, fee.packed, walletSplitPercentage.packed, constants._100, FMT(prefix, ".feeToWallet")),
         feeToOperator(make_variable(pb, 1, FMT(prefix, ".feeToOperator"))),
 
-        feePaymentWallet(pb, 96, balanceF_A_before, balanceF_W_before, feeToWallet.result(), FMT(prefix, ".feePaymentWallet")),
-        feePaymentOperator(pb, 96, feePaymentWallet.X, balanceF_O_before, feeToOperator, FMT(prefix, ".feePaymentOperator")),
+        feePaymentWallet(pb, NUM_BITS_AMOUNT, balanceF_A_before, balanceF_W_before, feeToWallet.result(), FMT(prefix, ".feePaymentWallet")),
+        feePaymentOperator(pb, NUM_BITS_AMOUNT, feePaymentWallet.X, balanceF_O_before, feeToOperator, FMT(prefix, ".feePaymentOperator")),
 
-        amountToWithdraw(pb, amountRequested.packed, balanceW_A_before, FMT(prefix, ".min(amountRequested, balance)")),
-        amountWithdrawn(pb, 96, FMT(prefix, ".amountWithdrawn")),
+        amountToWithdraw(pb, amountRequested.packed, balanceW_A_before, NUM_BITS_AMOUNT, FMT(prefix, ".min(amountRequested, balance)")),
+        amountWithdrawn(pb, NUM_BITS_AMOUNT, FMT(prefix, ".amountWithdrawn")),
 
         updateBalanceF_A(pb, balancesRoot_before, tokenID,
                          {balanceF_A_before, tradingHistoryRootF_A},
