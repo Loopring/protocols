@@ -19,7 +19,6 @@ pragma solidity 0.5.2;
 import "../../iface/exchange/IManagingBlocks.sol";
 
 import "../../iface/IBlockVerifier.sol";
-import "../../iface/IExchangeHelper.sol";
 import "../../iface/ILoopringV3.sol";
 
 import "../../lib/BurnableERC20.sol";
