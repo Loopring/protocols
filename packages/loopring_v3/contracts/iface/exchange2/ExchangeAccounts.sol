@@ -18,6 +18,7 @@ pragma solidity 0.5.2;
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
+import "./ExchangeAccounts.sol";
 
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
@@ -30,6 +31,14 @@ library ExchangeAccounts
 {
     using MathUint          for uint;
     using ExchangeMode      for ExchangeData.State;
+    // using ExchangeAccounts  for ExchangeData.State;
+
+    event AccountUpdated(
+        address owner,
+        uint24  id,
+        uint    pubKeyX,
+        uint    pubKeyY
+    );
 
     // == Public Functions ==
     function getAccount(
@@ -51,52 +60,51 @@ library ExchangeAccounts
     }
 
     // We do allow pubkeyX and/or pubkeyY to be 0.
-    // function createOrUpdateAccount(
-    //     ExchangeData.State storage S,
-    //     uint pubKeyX,
-    //     uint pubKeyY
-    //     )
-    //     public
-    //     payable
-    //     returns (uint24 accountID)
-    // {
-    //     require(!S.isInWithdrawalMode(), "INVALID_MODE");
-    //     require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
+    function createOrUpdateAccount(
+        ExchangeData.State storage S,
+        uint pubKeyX,
+        uint pubKeyY
+        )
+        public
+        returns (uint24 accountID)
+    {
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
 
-    //     if (S.ownerToAccountId[msg.sender] == 0) {
-    //         // create a new account
-    //         require(S.accounts.length < 2 ** 24, "TOO_MANY_ACCOUNTS");
-    //         require(msg.value >= S.accountCreationFeeETH, "INSUFFICIENT_FEE");
+        if (S.ownerToAccountId[msg.sender] == 0) {
+            // create a new account
+            require(S.accounts.length < 2 ** 24, "TOO_MANY_ACCOUNTS");
+            require(msg.value >= S.accountCreationFeeETH, "INSUFFICIENT_FEE");
 
-    //         accountID = uint24(S.accounts.length);
-    //         ExchangeData.Account memory account = ExchangeData.Account(
-    //             msg.sender,
-    //             pubKeyX,
-    //             pubKeyY
-    //         );
+            accountID = uint24(S.accounts.length);
+            ExchangeData.Account memory account = ExchangeData.Account(
+                msg.sender,
+                pubKeyX,
+                pubKeyY
+            );
 
-    //         S.accounts.push(account);
-    //         S.ownerToAccountId[msg.sender] = accountID;
-    //     } else {
-    //         // update an existing account
-    //         require(msg.value >= S.accountUpdateFeeETH, "INSUFFICIENT_FEE");
-    //         accountID = S.ownerToAccountId[msg.sender];
-    //         ExchangeData.Account storage account = S.accounts[accountID];
+            S.accounts.push(account);
+            S.ownerToAccountId[msg.sender] = accountID;
+        } else {
+            // update an existing account
+            require(msg.value >= S.accountUpdateFeeETH, "INSUFFICIENT_FEE");
+            accountID = S.ownerToAccountId[msg.sender];
+            ExchangeData.Account storage account = S.accounts[accountID];
 
-    //         require(!S.isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
-    //         require(pubKeyX != 0 || pubKeyY != 0, "INVALID_PUBKEY");
+            require(!isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
+            require(pubKeyX != 0 || pubKeyY != 0, "INVALID_PUBKEY");
 
-    //         account.pubKeyX = pubKeyX;
-    //         account.pubKeyY = pubKeyY;
-    //     }
+            account.pubKeyX = pubKeyX;
+            account.pubKeyY = pubKeyY;
+        }
 
-    //     emit ExchangeData.AccountUpdated(
-    //         msg.sender,
-    //         accountID,
-    //         pubKeyX,
-    //         pubKeyY
-    //     );
-    // }
+        emit AccountUpdated(
+            msg.sender,
+            accountID,
+            pubKeyX,
+            pubKeyY
+        );
+    }
 
     // == Internal Functions ==
     function getAccountID(

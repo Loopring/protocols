@@ -142,24 +142,14 @@ library ExchangeData
     }
 
     // -- Events --
-    event AccountUpdated(
-        address owner,
-        uint24  id,
-        uint    pubKeyX,
-        uint    pubKeyY
-    );
+
 
     event BlockFeeWithdraw(
         uint32 blockIdx,
         uint amount
     );
 
-    event DepositRequested(
-        uint32 depositIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
-    );
+
 
     event WithdrawalRequested(
         uint32 withdrawalIdx,
