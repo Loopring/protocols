@@ -19,7 +19,6 @@ pragma solidity 0.5.2;
 import "../../iface/exchange/IManagingAccounts.sol";
 
 import "../../iface/IBlockVerifier.sol";
-import "../../iface/IExchangeHelper.sol";
 import "../../iface/ILoopringV3.sol";
 
 import "../../lib/BurnableERC20.sol";
@@ -27,6 +26,7 @@ import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/NoDefaultFunc.sol";
 
+import "./BalanceVerifier.sol";
 import "./ManagingBlocks.sol";
 
 
@@ -126,8 +126,9 @@ contract ManagingAccounts is IManagingAccounts, ManagingBlocks
         uint256 tradeHistoryRoot
         )
         internal
+        view
     {
-        IExchangeHelper(exchangeHelperAddress).verifyAccountBalance(
+        BalanceVerifier.verifyAccountBalance(
             uint256(merkleRoot),
             accountID,
             tokenID,

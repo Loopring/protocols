@@ -40,7 +40,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         address _lrcAddress,
         address _wethAddress,
         address _exchangeDeployerAddress,
-        address _exchangeHelperAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
@@ -53,7 +52,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
         require(address(0) != _exchangeDeployerAddress, "ZERO_ADDRESS");
-        require(address(0) != _exchangeHelperAddress, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
         require(0 != _exchangeCreationCostLRC, "ZERO_VALUE");
         require(10 >= _tierUpgradeCostBips, "VALUE_TOO_LARGE");
@@ -65,7 +63,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
         exchangeDeployerAddress = _exchangeDeployerAddress;
-        exchangeHelperAddress = _exchangeHelperAddress;
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         tierUpgradeCostBips = _tierUpgradeCostBips;
