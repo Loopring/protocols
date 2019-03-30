@@ -24,6 +24,8 @@ import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/Ownable.sol";
 
+import "./libloopring/ExchangeDeployer.sol";
+
 import "./Exchange.sol";
 
 
@@ -99,13 +101,12 @@ contract LoopringV3 is ILoopringV3, Ownable
             operator = _operator;
         }
 
-        IExchange exchange = new Exchange(
+        exchangeAddress = ExchangeDeployer.deployExchange(
             exchangeId,
             address(this),
             msg.sender,
             operator
         );
-        exchangeAddress = address(exchange);
         exchanges.push(exchangeAddress);
 
         emit ExchangeCreated(
