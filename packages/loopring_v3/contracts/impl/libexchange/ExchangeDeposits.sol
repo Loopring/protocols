@@ -63,8 +63,8 @@ library ExchangeDeposits
         view
         returns (uint)
     {
-        uint numOpenRequests = S.depositChain.length - getFirstUnprocessedDepositRequestIndex(S);
-        return ExchangeData.MAX_OPEN_REQUESTS() - numOpenRequests;
+        // TODO
+        return 1024;
     }
 
     function getDepositRequest(
@@ -90,11 +90,13 @@ library ExchangeDeposits
         ExchangeData.State storage S,
         address recipient,
         address tokenAddress,
-        uint96  amount
+        uint96  amount,
+        uint    additionalFeeETH
         )
         public
     {
         require(recipient != address(0), "ZERO_ADDRESS");
+        require(amount > 0, "ZERO_VALUE");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
@@ -106,19 +108,7 @@ library ExchangeDeposits
         uint24 accountID = S.getAccountID(recipient);
         ExchangeData.Account storage account = S.accounts[accountID];
 
-        // Check ETH value sent, can be larger than the expected deposit fee
-        uint feeSurplus = 0;
-        if (tokenAddress != address(0)) {
-            require(msg.value >= S.depositFeeETH, "INSUFFICIENT_FEE");
-            feeSurplus = msg.value.sub(S.depositFeeETH);
-        } else {
-            require(msg.value >= (S.depositFeeETH.add(amount)), "INSUFFICIENT_FEE");
-            feeSurplus = msg.value.sub(S.depositFeeETH.add(amount));
-        }
-        // Send surplus of ETH back to the sender
-        if (feeSurplus > 0) {
-            msg.sender.transfer(feeSurplus);
-        }
+        transferDeposit(S, account.owner, tokenAddress, amount, additionalFeeETH);
 
         // Add the request to the deposit chain
         ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];
@@ -138,18 +128,6 @@ library ExchangeDeposits
         );
         S.depositChain.push(request);
 
-        // Transfer the tokens from the owner into this contract
-        if (tokenAddress != address(0)) {
-            require(
-                tokenAddress.safeTransferFrom(
-                    account.owner,
-                    address(this),
-                    amount
-                ),
-                "INSUFFICIENT_FUND"
-            );
-        }
-
         // Store deposit info onchain so we can withdraw from uncommitted deposit blocks
         ExchangeData.Deposit memory _deposit = ExchangeData.Deposit(
             accountID,
@@ -164,5 +142,39 @@ library ExchangeDeposits
             tokenID,
             amount
         );
+    }
+
+    function transferDeposit(
+        ExchangeData.State storage S,
+        address accountOwner,
+        address tokenAddress,
+        uint    amount,
+        uint    additionalFeeETH
+        )
+        private
+    {
+        uint totalRequiredETH = additionalFeeETH.add(S.depositFeeETH);
+        if (tokenAddress == address(0)) {
+            totalRequiredETH = totalRequiredETH.add(amount);
+        }
+
+        require(msg.value >= totalRequiredETH, "INSUFFICIENT_FEE");
+        uint feeSurplus = msg.value.sub(totalRequiredETH);
+
+        if (feeSurplus > 0) {
+            msg.sender.transfer(feeSurplus);
+        }
+
+        // Transfer the tokens from the owner into this contract
+        if (tokenAddress != address(0)) {
+            require(
+                tokenAddress.safeTransferFrom(
+                    accountOwner,
+                    address(this),
+                    amount
+                ),
+                "INSUFFICIENT_FUND"
+            );
+        }
     }
 }
