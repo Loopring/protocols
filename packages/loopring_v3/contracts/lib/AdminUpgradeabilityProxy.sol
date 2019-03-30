@@ -316,9 +316,3 @@ contract AdminUpgradeabilityProxy is BaseAdminUpgradeabilityProxy, Upgradeabilit
     _setAdmin(_admin);
   }
 }
-
-contract LoopringAdminUpgradeabilityProxy is AdminUpgradeabilityProxy {
-    constructor(address _implementation, address _admin, bytes memory _data) public
-        AdminUpgradeabilityProxy(_implementation, _admin, _data) {
-    }
-}
