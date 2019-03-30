@@ -17,12 +17,13 @@
 pragma solidity 0.5.2;
 
 import "../iface/ILoopringV3.sol";
-import "../iface/IExchangeDeployer.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/Ownable.sol";
+
+import "./ExchangeDeployer.sol";
 
 
 /// @title An Implementation of ILoopringV3.
@@ -39,7 +40,6 @@ contract LoopringV3 is ILoopringV3, Ownable
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
-        address _exchangeDeployerAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
@@ -51,7 +51,6 @@ contract LoopringV3 is ILoopringV3, Ownable
     {
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
-        require(address(0) != _exchangeDeployerAddress, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
         require(0 != _exchangeCreationCostLRC, "ZERO_VALUE");
         require(10 >= _tierUpgradeCostBips, "VALUE_TOO_LARGE");
@@ -62,7 +61,6 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
-        exchangeDeployerAddress = _exchangeDeployerAddress;
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         tierUpgradeCostBips = _tierUpgradeCostBips;
@@ -102,7 +100,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             operator = _operator;
         }
 
-        exchangeAddress = IExchangeDeployer(exchangeDeployerAddress).deployExchange(
+        exchangeAddress = ExchangeDeployer.deployExchange(
             exchangeId,
             address(this),
             msg.sender,

@@ -16,15 +16,13 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/IExchangeDeployer.sol";
-
 import "./Exchange2.sol";
 
 
 /// @title An Implementation of IExchangeDeployer.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeDeployer is IExchangeDeployer
+library ExchangeDeployer
 {
     function deployExchange(
         uint    exchangeId,
