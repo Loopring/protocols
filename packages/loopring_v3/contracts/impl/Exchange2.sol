@@ -49,6 +49,14 @@ contract Exchange2 is Ownable
 
     ExchangeData.State public state;
 
+    // -- Events --
+    event DepositRequested(
+        uint32 depositIdx,
+        uint24 accountID,
+        uint16 tokenID,
+        uint96 amount
+    );
+
     // -- Constructor --
     constructor(
         uint    _id,
@@ -212,6 +220,7 @@ contract Exchange2 is Ownable
 
     function commitBlock(
         uint  blockType,
+        uint  numElements,
         bytes calldata data
         )
         external
@@ -274,7 +283,7 @@ contract Exchange2 is Ownable
         (accumulatedHash, accumulatedFee, timestamp) = state.getDepositRequest(index);
     }
 
-    function deposit(
+    function updateAccountAndDeposit(
         uint    pubKeyX,
         uint    pubKeyY,
         address token,

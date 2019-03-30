@@ -115,7 +115,7 @@ library ExchangeData
         ILoopringV3 loopring;
 
         address lrcAddress;
-        address exchangeHelperAddress;
+        // address exchangeHelperAddress;
         address blockVerifierAddress;
 
         uint    disableUserRequestsUntil;

@@ -18,7 +18,7 @@ pragma solidity 0.5.2;
 
 import "../iface/IExchangeDeployer.sol";
 
-import "./Exchange.sol";
+import "./Exchange2.sol";
 
 
 /// @title An Implementation of IExchangeDeployer.
@@ -35,7 +35,7 @@ contract ExchangeDeployer is IExchangeDeployer
         external
         returns (address)
     {
-        Exchange exchange = new Exchange(
+        Exchange2 exchange = new Exchange2(
             exchangeId,
             loopringAddress,
             owner,

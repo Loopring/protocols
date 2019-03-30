@@ -122,8 +122,10 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether")),
     );
 
+    /*
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
     this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = (await this.exchange.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE()).toNumber();
+    */
     this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
   }
@@ -149,7 +151,6 @@ export class ExchangeTestUtil {
     const depositInfo = await this.deposit(realmID, owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                            this.zeroAddress, new BN(0));
-
     const operator: Operator = {
       owner,
       accountID: depositInfo.accountID,
@@ -697,9 +698,12 @@ export class ExchangeTestUtil {
             const dummyDeposit: Deposit = {
               depositBlockIdx: deposits[0].depositBlockIdx,
               accountID: 0,
-              secretKey: (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
-              publicKeyX: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
-              publicKeyY: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
+              // secretKey: (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
+              // publicKeyX: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
+              // publicKeyY: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
+              secretKey: "531595266505639429282323989096889429445309320547115026296307576144623272935",
+              publicKeyX: "2760979366321990647384327991146539505488430080750363450053902718557853404165",
+              publicKeyY: "10771439851340068599303586501499035409517957710739943668636844002715618931667",
               tokenID: 0,
               amount: new BN(0),
             };
