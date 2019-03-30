@@ -116,14 +116,6 @@ contract Exchange2 is Ownable
 
     ExchangeData.State public state;
 
-    // -- Events --
-    event DepositRequested(
-        uint32 depositIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
-    );
-
     // -- Constructor --
     constructor(
         uint    _id,
