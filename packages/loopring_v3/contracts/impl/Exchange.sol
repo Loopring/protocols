@@ -16,85 +16,540 @@
 */
 pragma solidity 0.5.2;
 
-import "../iface/IExchange.sol";
+import "../lib/Ownable.sol";
 
-import "./exchange/ManagingOperations.sol";
-import "./exchange/ManagingTokens.sol";
+import "../iface/IExchange.sol";
+import "../iface/ILoopringV3.sol";
+
+import "./exchange/ExchangeAccounts.sol";
+import "./exchange/ExchangeAdmins.sol";
+import "./exchange/ExchangeBalances.sol";
+import "./exchange/ExchangeBlocks.sol";
+import "./exchange/ExchangeData.sol";
+import "./exchange/ExchangeDeposits.sol";
+import "./exchange/ExchangeGenesis.sol";
+import "./exchange/ExchangeMode.sol";
+import "./exchange/ExchangeTokens.sol";
+import "./exchange/ExchangeWithdrawals.sol";
 
 
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-
-/// Inheritance: IManagingBlocks -> IManagingAccounts -> IManagingTokens -> IManagingDeposits ->
-/// IManagingWithdrawals -> IManagingStakes -> IManagingOperations
-contract Exchange is IExchange, ManagingOperations
+contract Exchange is IExchange, Ownable
 {
+    using ExchangeAdmins        for ExchangeData.State;
+    using ExchangeAccounts      for ExchangeData.State;
+    using ExchangeBalances      for ExchangeData.State;
+    using ExchangeBlocks        for ExchangeData.State;
+    using ExchangeDeposits      for ExchangeData.State;
+    using ExchangeGenesis       for ExchangeData.State;
+    using ExchangeMode          for ExchangeData.State;
+    using ExchangeTokens        for ExchangeData.State;
+    using ExchangeWithdrawals   for ExchangeData.State;
+
+    ExchangeData.State public state;
+    // -- Constructor --
     constructor(
         uint    _id,
-        address _loopringAddress,
+        address _loopring3Address,
         address _owner,
         address payable _operator
         )
-        ManagingTokens(_loopringAddress)
         public
+        payable
     {
-        require(0 != _id, "INVALID_ID");
-        require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _owner, "ZERO_ADDRESS");
-        require(address(0) != _operator, "ZERO_ADDRESS");
-
-        id = _id;
-        loopringAddress = _loopringAddress;
         owner = _owner;
-        operator = _operator;
 
-        loopring = ILoopringV3(loopringAddress);
-
-        lrcAddress = loopring.lrcAddress();
-        blockVerifierAddress = loopring.blockVerifierAddress();
-
-        Block memory genesisBlock = Block(
-            0x2fb632af61a9ffb71034df05d1d62e8fb6112095bd28cddf56d5f2e4b57064be,
-            0x0,
-            BlockState.FINALIZED,
-            0xFF,
-            0,
-            uint32(now),
-            1,
-            1,
-            true,
-            new bytes(0)
+        state.initializeGenesisBlock(
+            _id,
+            _loopring3Address,
+            _operator
         );
-        blocks.push(genesisBlock);
+    }
 
-        Request memory genesisRequest = Request(
-            0,
-            0,
-            0xFFFFFFFF
+    modifier onlyOperator()
+    {
+        require(msg.sender == state.operator, "UNAUTHORIZED");
+        _;
+    }
+
+    // -- Settings --
+    function getGlobalSettings()
+        public
+        pure
+        returns (
+            uint   DEFAULT_ACCOUNT_PUBLICKEY_X,
+            uint   DEFAULT_ACCOUNT_PUBLICKEY_Y,
+            uint   DEFAULT_ACCOUNT_SECRETKEY,
+            uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
+            uint16 MAX_OPEN_REQUESTS,
+            uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
+            uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
+            uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
+            uint   MAX_NUM_TOKENS
+        )
+    {
+        return (
+            ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_X(),
+            ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_Y(),
+            ExchangeData.DEFAULT_ACCOUNT_SECRETKEY(),
+            ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
+            ExchangeData.MAX_OPEN_REQUESTS(),
+            ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED(),
+            ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(),
+            ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
+            ExchangeData.MAX_NUM_TOKENS()
         );
-        depositChain.push(genesisRequest);
-        withdrawalChain.push(genesisRequest);
+    }
 
-        // This account is used for padding deposits and onchain withdrawal requests so this might
-        // be a bit confusing otherwise.  Because the private key is known by anyone it can also
-        // be used to create dummy offhcain withdrawals/dummy orders to fill blocks when needed.
-        // Because this account is all zeros it is also the most gas efficient one to use in terms
-        // of calldata.
+    // -- Mode --
+    function isInWithdrawalMode()
+        external
+        view
+        returns (bool result)
+    {
+        result = state.isInWithdrawalMode();
+    }
 
-        Account memory defaultAccount = Account(
-            address(0),
-            DEFAULT_ACCOUNT_PUBLICKEY_X,
-            DEFAULT_ACCOUNT_PUBLICKEY_Y
+    // -- Accounts --
+    function getAccount(
+        address owner
+        )
+        external
+        view
+        returns (
+            uint24 accountID,
+            uint   pubKeyX,
+            uint   pubKeyY
+        )
+    {
+        (accountID, pubKeyX, pubKeyY) = state.getAccount(owner);
+    }
+
+    function createOrUpdateAccount(
+        uint pubKeyX,
+        uint pubKeyY
+        )
+        external
+        payable
+        returns (
+            uint24 accountID,
+            bool   isAccountNew
+        )
+    {
+        (accountID, isAccountNew) = state.createOrUpdateAccount(pubKeyX, pubKeyY);
+    }
+
+    // -- Balances --
+    function isAccountBalanceCorrect(
+        uint256 merkleRoot,
+        uint24  accountID,
+        uint16  tokenID,
+        uint256 pubKeyX,
+        uint256 pubKeyY,
+        uint32  nonce,
+        uint96  balance,
+        uint256 tradeHistoryRoot,
+        uint256[24] calldata accountPath,
+        uint256[12] calldata balancePath
+        )
+        external
+        returns (bool)
+    {
+        return ExchangeBalances.isAccountBalanceCorrect(
+            merkleRoot,
+            accountID,
+            tokenID,
+            pubKeyX,
+            pubKeyY,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountPath,
+            balancePath
         );
+    }
 
-        accounts.push(defaultAccount);
+    // -- Tokens --
+    function registerToken(
+        address tokenAddress
+        )
+        external
+        payable
+        onlyOperator
+        returns (uint16 tokenID)
+    {
+        tokenID = state.registerToken(tokenAddress);
+    }
 
-        emit AccountUpdated(
-            address(0),
-            uint24(0),
-            DEFAULT_ACCOUNT_PUBLICKEY_X,
-            DEFAULT_ACCOUNT_PUBLICKEY_Y
+    function getTokenID(
+        address tokenAddress
+        )
+        external
+        view
+        returns (uint16 tokenID)
+    {
+        tokenID = state.getTokenID(tokenAddress);
+    }
+
+    function getTokenAddress(
+        uint16 tokenID
+        )
+        external
+        view
+        returns (address tokenAddress)
+    {
+        tokenAddress = state.getTokenAddress(tokenID);
+    }
+
+    function disableTokenDeposit(
+        address tokenAddress
+        )
+        external
+        payable
+        onlyOperator
+    {
+        state.disableTokenDeposit(tokenAddress);
+    }
+
+    function enableTokenDeposit(
+        address tokenAddress
+        )
+        external
+        payable
+        onlyOperator
+    {
+        state.enableTokenDeposit(tokenAddress);
+    }
+
+    // -- Stakes --
+    function getStake()
+        external
+        view
+        returns (uint)
+    {
+        return state.loopring.getStake(state.id);
+    }
+
+    // -- Blocks --
+    function getBlockHeight()
+        external
+        view
+        returns (uint)
+    {
+        return state.blocks.length - 1;
+    }
+
+    function commitBlock(
+        uint8 blockType,
+        uint16 numElements,
+        bytes calldata data
+        )
+        external
+        payable
+        onlyOperator
+    {
+        state.commitBlock(blockType, numElements, data);
+    }
+
+    function verifyBlock(
+        uint blockIdx,
+        uint256[8] calldata proof
+        )
+        external
+        payable
+        onlyOperator
+    {
+        state.verifyBlock(blockIdx, proof);
+    }
+
+    function revertBlock(
+        uint32 blockIdx
+        )
+        external
+        payable
+        onlyOperator
+    {
+        state.revertBlock(blockIdx);
+    }
+
+    // -- Deposits --
+    function getFirstUnprocessedDepositRequestIndex()
+        external
+        view
+        returns (uint)
+    {
+        return state.getFirstUnprocessedDepositRequestIndex();
+    }
+
+    function getNumAvailableDepositSlots()
+        external
+        view
+        returns (uint)
+    {
+        return state.getNumAvailableDepositSlots();
+    }
+
+    function getDepositRequest(
+        uint index
+        )
+        external
+        view
+        returns (
+          bytes32 accumulatedHash,
+          uint256 accumulatedFee,
+          uint32  timestamp
+        )
+    {
+        (accumulatedHash, accumulatedFee, timestamp) = state.getDepositRequest(index);
+    }
+
+    function updateAccountAndDeposit(
+        uint    pubKeyX,
+        uint    pubKeyY,
+        address token,
+        uint96  amount
+        )
+        external
+        payable
+        returns (
+            uint24 accountID,
+            bool   isAccountNew
+        )
+    {
+        (accountID, isAccountNew) = state.createOrUpdateAccount(pubKeyX, pubKeyY);
+        uint additionalFeeETH;
+        if (isAccountNew) {
+            additionalFeeETH = state.accountCreationFeeETH;
+        } else {
+            additionalFeeETH = state.accountUpdateFeeETH;
+        }
+        state.depositTo(msg.sender, token, amount, additionalFeeETH);
+    }
+
+    function deposit(
+        address token,
+        uint96  amount
+        )
+        external
+        payable
+    {
+        state.depositTo(msg.sender, token, amount, 0);
+    }
+
+    function depositTo(
+        address recipient,
+        address tokenAddress,
+        uint96  amount
+        )
+        external
+        payable
+    {
+        state.depositTo(recipient, tokenAddress, amount, 0);
+    }
+
+    // -- Withdrawals --
+    function getFirstUnprocessedWithdrawalRequestIndex()
+        external
+        view
+        returns (uint)
+    {
+        return state.getFirstUnprocessedWithdrawalRequestIndex();
+    }
+
+    function getNumAvailableWithdrawalSlots(
+        )
+        external
+        view
+        returns (uint)
+    {
+        return state.getNumAvailableWithdrawalSlots();
+    }
+
+    function getWithdrawRequest(
+        uint index
+        )
+        external
+        view
+        returns (
+            bytes32 accumulatedHash,
+            uint256 accumulatedFee,
+            uint32 timestamp
+        )
+    {
+        (accumulatedHash, accumulatedFee, timestamp) = state.getWithdrawRequest(index);
+    }
+
+    // Set the large value for amount to withdraw the complete balance
+    function withdraw(
+        address token,
+        uint96 amount
+        )
+        external
+        payable
+    {
+        state.withdraw(token, amount);
+    }
+
+    function withdrawFromMerkleTree(
+        address token,
+        uint32  nonce,
+        uint96  balance,
+        uint256 tradeHistoryRoot,
+        uint256[24] calldata accountPath,
+        uint256[12] calldata balancePath
+        )
+        external
+        payable
+    {
+        state.withdrawFromMerkleTreeFor(
+            msg.sender,
+            token,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountPath,
+            balancePath
         );
+    }
+
+    // We still alow anyone to withdraw these funds for the account owner
+    function withdrawFromMerkleTreeFor(
+        address owner,
+        address token,
+        uint32  nonce,
+        uint96  balance,
+        uint256 tradeHistoryRoot,
+        uint256[24] calldata accountPath,
+        uint256[12] calldata balancePath
+        )
+        external
+        payable
+    {
+        state.withdrawFromMerkleTreeFor(
+            owner,
+            token,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountPath,
+            balancePath
+        );
+    }
+
+    function withdrawFromDepositRequest(
+        uint depositRequestIdx
+        )
+        external
+        payable
+    {
+        state.withdrawFromDepositRequest(depositRequestIdx);
+    }
+
+    function withdrawFromApprovedWithdrawal(
+        uint blockIdx,
+        uint slotIdx
+        )
+        external
+        payable
+    {
+        state.withdrawFromApprovedWithdrawal(
+            blockIdx,
+            slotIdx
+        );
+    }
+
+    function withdrawBlockFee(
+        uint32 blockIdx
+        )
+        external
+        payable
+        returns (uint feeAmount)
+    {
+        feeAmount = state.withdrawBlockFee(blockIdx);
+    }
+
+    function distributeWithdrawals(
+        uint blockIdx
+        )
+        external
+        payable
+        onlyOperator
+    {
+        state.distributeWithdrawals(blockIdx);
+    }
+
+    // -- Admins --
+    function setOperator(
+        address payable _operator
+        )
+        external
+        onlyOwner
+        returns (address payable oldOperator)
+    {
+        oldOperator = state.setOperator(_operator);
+    }
+
+    function setFees(
+        uint _accountCreationFeeETH,
+        uint _accountUpdateFeeETH,
+        uint _depositFeeETH,
+        uint _withdrawalFeeETH
+        )
+        external
+        onlyOwner
+    {
+        state.setFees(
+            _accountCreationFeeETH,
+            _accountUpdateFeeETH,
+            _depositFeeETH,
+            _withdrawalFeeETH
+        );
+    }
+
+    function getFees()
+        external
+        view
+        returns (
+            uint _accountCreationFeeETH,
+            uint _accountUpdateFeeETH,
+            uint _depositFeeETH,
+            uint _withdrawalFeeETH
+        )
+    {
+        _accountCreationFeeETH = state.accountCreationFeeETH;
+        _accountUpdateFeeETH = state.accountUpdateFeeETH;
+        _depositFeeETH = state.depositFeeETH;
+        _withdrawalFeeETH = state.withdrawalFeeETH;
+    }
+
+    function purchaseDowntime(
+        uint durationSeconds
+        )
+        external
+        payable
+        onlyOperator
+    {
+        state.purchaseDowntime(durationSeconds);
+    }
+
+    function getRemainingDowntime()
+        external
+        view
+        returns (uint durationSeconds)
+    {
+        durationSeconds = state.getRemainingDowntime();
+    }
+
+    function getDowntimeCostLRC(
+        uint durationSeconds
+        )
+        external
+        view
+        returns (uint costLRC)
+    {
+        costLRC = state.getDowntimeCostLRC(durationSeconds);
     }
 }

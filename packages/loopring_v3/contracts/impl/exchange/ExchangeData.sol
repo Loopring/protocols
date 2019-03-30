@@ -137,5 +137,4 @@ library ExchangeData
         // A map from an account owner to a token to if the balance is withdrawn
         mapping (address => mapping (address => bool)) withdrawnInWithdrawMode;
     }
-
 }

@@ -16,6 +16,7 @@
 */
 pragma solidity 0.5.2;
 
+import "../iface/IExchange.sol";
 import "../iface/ILoopringV3.sol";
 
 import "../lib/BurnableERC20.sol";
@@ -23,7 +24,7 @@ import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/Ownable.sol";
 
-import "./ExchangeDeployer.sol";
+import "./Exchange.sol";
 
 
 /// @title An Implementation of ILoopringV3.
@@ -34,9 +35,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-
     // == Public Functions ==
-
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
@@ -100,12 +99,13 @@ contract LoopringV3 is ILoopringV3, Ownable
             operator = _operator;
         }
 
-        exchangeAddress = ExchangeDeployer.deployExchange(
+        IExchange exchange = new Exchange(
             exchangeId,
             address(this),
             msg.sender,
             operator
         );
+        exchangeAddress = address(exchange);
         exchanges.push(exchangeAddress);
 
         emit ExchangeCreated(

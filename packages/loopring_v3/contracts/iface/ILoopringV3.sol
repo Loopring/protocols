@@ -23,7 +23,6 @@ pragma solidity 0.5.2;
 contract ILoopringV3
 {
     // == Structs ==
-
     struct Token
     {
         address tokenAddress;
@@ -32,7 +31,6 @@ contract ILoopringV3
     }
 
     // == Events ==
-
     event ExchangeCreated(
         uint    exchangeId,
         address exchangeAddress,
@@ -76,7 +74,6 @@ contract ILoopringV3
     uint   public constant TIER_UPGRADE_DURATION  = 365 days;
 
     // == Public Variables ==
-
     address[] public exchanges;
 
     mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
