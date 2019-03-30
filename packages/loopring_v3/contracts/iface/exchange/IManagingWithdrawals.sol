@@ -24,13 +24,11 @@ import "./IManagingDeposits.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IManagingWithdrawals is IManagingDeposits
 {
-    // TODO(brecht): please explain to Daniel :)
     function getFirstUnprocessedWithdrawalRequestIndex()
-        external
+        public
         view
         returns (uint);
 
-    // TODO(brecht): not implemented yet
     function getNumAvailableWithdrawalSlots()
         public
         view
@@ -54,6 +52,7 @@ contract IManagingWithdrawals is IManagingDeposits
         external
         payable;
 
+/*
     function withdrawFromMerkleTree(
         address token,
         uint32  nonce,
@@ -85,6 +84,7 @@ contract IManagingWithdrawals is IManagingDeposits
         uint slotIdx
         )
         external;
+*/
 
     function withdrawBlockFee(
         uint32 blockIdx

@@ -23,7 +23,7 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("Cancel", async () => {
-      const realmID = 0;
+      const realmID = 1;
       const ring: RingInfo = {
         orderA:
           {

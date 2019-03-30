@@ -69,7 +69,8 @@ class BalanceLeaf(object):
         self._tradingHistoryTree._root = jBalance["_tradingHistoryTree"]["_root"]
         self._tradingHistoryTree._db.kv = jBalance["_tradingHistoryTree"]["_db"]["kv"]
 
-    def getTradeHistory(self, address):
+    def getTradeHistory(self, orderID):
+        address = int(orderID) % (2 ** TREE_DEPTH_TRADING_HISTORY)
         # Make sure the leaf exist in our map
         if not(str(address) in self._tradeHistoryLeafs):
             return TradeHistoryLeaf()
@@ -310,13 +311,13 @@ class Order(object):
 
     def message(self):
         msg_parts = [
-                        FQ(int(self.realmID), 1<<32), FQ(int(self.orderID), 1<<16),
+                        FQ(int(self.realmID), 1<<32), FQ(int(self.orderID), 1<<32),
                         FQ(int(self.accountID), 1<<24), FQ(int(self.walletAccountID), 1<<24),
                         FQ(int(self.dualAuthPublicKeyX), 1<<254), FQ(int(self.dualAuthPublicKeyY), 1<<254),
                         FQ(int(self.tokenS), 1<<12), FQ(int(self.tokenB), 1<<12), FQ(int(self.tokenF), 1<<12),
                         FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96),
                         FQ(int(self.allOrNone), 1<<1), FQ(int(self.validSince), 1<<32), FQ(int(self.validUntil), 1<<32),
-                        FQ(int(self.walletSplitPercentage), 1<<7), FQ(int(0), 1<<1)
+                        FQ(int(self.walletSplitPercentage), 1<<7)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -524,9 +525,9 @@ class Cancellation(object):
 
     def message(self):
         msg_parts = [FQ(int(self.realmID), 1<<32), FQ(int(self.accountID), 1<<24),
-                     FQ(int(self.orderTokenID), 1<<12), FQ(int(self.orderID), 1<<16), FQ(int(self.dualAuthorAccountID), 1<<24),
+                     FQ(int(self.orderTokenID), 1<<12), FQ(int(self.orderID), 1<<32), FQ(int(self.dualAuthorAccountID), 1<<24),
                      FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<2)]
+                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<1)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
@@ -596,12 +597,14 @@ class State(object):
         cancelled = 1 if bTrim else cancelledToStore
         orderIDToStore = int(order.orderID) if bNew else tradeHistory.orderID
 
+        """
         print("bNew: " + str(bNew))
         print("bTrim: " + str(bTrim))
         print("filled: " + str(filled))
         print("cancelledToStore: " + str(cancelledToStore))
         print("cancelled: " + str(cancelled))
         print("orderIDToStore: " + str(orderIDToStore))
+        """
 
         # Scale the order
         balanceS = int(account.getBalance(order.tokenS))
@@ -726,7 +729,7 @@ class State(object):
         proof = self._accountsTree.createProof(ring.orderA.accountID)
 
         (balanceUpdateS_A, tradeHistoryUpdate_A) = accountA.updateBalanceAndTradeHistory(
-            ring.orderA.tokenS, ring.orderA.orderID, -int(ring.fillS_B),
+            ring.orderA.tokenS, ring.orderA.orderID, -int(ring.fillS_A),
             filled_A + int(ring.fillS_A), cancelledToStore_A, orderIDToStore_A
         )
         balanceUpdateB_A = accountA.updateBalance(ring.orderA.tokenB, int(ring.fillB_A))

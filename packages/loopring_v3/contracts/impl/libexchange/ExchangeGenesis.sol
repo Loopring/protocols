@@ -53,14 +53,12 @@ library ExchangeGenesis
         S.lrcAddress = loopring.lrcAddress();
         S.blockVerifierAddress = loopring.blockVerifierAddress();
 
-        S.registerToken(address(0));
-        S.registerToken(loopring.wethAddress());
-        S.registerToken(S.lrcAddress);
-
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
             0x2fb632af61a9ffb71034df05d1d62e8fb6112095bd28cddf56d5f2e4b57064be,
             0x0,
             ExchangeData.BlockState.FINALIZED,
+            0xFF,
+            0,
             uint32(now),
             1,
             1,
@@ -97,5 +95,10 @@ library ExchangeGenesis
         //     DEFAULT_ACCOUNT_PUBLICKEY_X,
         //     DEFAULT_ACCOUNT_PUBLICKEY_Y
         // );
+
+        // Call these after the main state has been set up
+        S.registerToken(address(0));
+        S.registerToken(loopring.wethAddress());
+        S.registerToken(S.lrcAddress);
     }
 }

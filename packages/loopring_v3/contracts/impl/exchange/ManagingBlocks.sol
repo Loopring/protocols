@@ -64,21 +64,25 @@ contract ManagingBlocks is IManagingBlocks, Data
     }
 
     function commitBlock(
-        uint blockType,
+        uint8 blockType,
+        uint16 numElements,
         bytes calldata data
         )
         external
         onlyOperator
     {
-        commitBlockInternal(blockType, data);
+        commitBlockInternal(blockType, numElements, data);
     }
 
     function commitBlockInternal(
-        uint blockType,
+        uint8 blockType,
+        uint16 numElements,
         bytes memory data
         )
         internal
     {
+        require(IBlockVerifier(blockVerifierAddress).canVerify(blockType, numElements), "CANNOT_VERIFY_BLOCK");
+
         // Extract the exchange ID from the data
         uint32 exchangeIdInData = 0;
         assembly {
@@ -121,8 +125,8 @@ contract ManagingBlocks is IManagingBlocks, Data
                 inputTimestamp := and(mload(add(data, 75)), 0xFFFFFFFF)
             }
             require(
-                inputTimestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
-                inputTimestamp < now + TIMESTAMP_WINDOW_SIZE_IN_SECONDS,
+                inputTimestamp > now - TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS &&
+                inputTimestamp < now + TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
                 "INVALID_TIMESTAMP"
             );
         } else if (blockType == uint(BlockType.DEPOSIT)) {
@@ -133,13 +137,13 @@ contract ManagingBlocks is IManagingBlocks, Data
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
             require (startIdx == numDepositRequestsCommitted, "INVALID_DEPOSITREQUEST_RANGE");
-            require (count <= NUM_DEPOSITS_IN_BLOCK, "INVALID_DEPOSITREQUEST_RANGE");
+            require (count <= numElements, "INVALID_DEPOSITREQUEST_RANGE");
             require (startIdx + count <= depositChain.length, "INVALID_DEPOSITREQUEST_RANGE");
 
             bytes32 startingHash = depositChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = depositChain[startIdx + count - 1].accumulatedHash;
             // Pad the block so it's full
-            for (uint i = count; i < NUM_DEPOSITS_IN_BLOCK; i++) {
+            for (uint i = count; i < numElements; i++) {
                 endingHash = sha256(
                     abi.encodePacked(
                         endingHash,
@@ -164,13 +168,13 @@ contract ManagingBlocks is IManagingBlocks, Data
                 count := and(mload(add(data, 143)), 0xFFFFFFFF)
             }
             require (startIdx == numWithdrawRequestsCommitted, "INVALID_WITHDRAWREQUEST_RANGE");
-            require (count <= NUM_WITHDRAWALS_IN_BLOCK, "INVALID_WITHDRAWREQUEST_RANGE");
+            require (count <= numElements, "INVALID_WITHDRAWREQUEST_RANGE");
             require (startIdx + count <= withdrawalChain.length, "INVALID_WITHDRAWREQUEST_RANGE");
 
             bytes32 startingHash = withdrawalChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = withdrawalChain[startIdx + count - 1].accumulatedHash;
             // Pad the block so it's full
-            for (uint i = count; i < NUM_WITHDRAWALS_IN_BLOCK; i++) {
+            for (uint i = count; i < numElements; i++) {
                 endingHash = sha256(
                     abi.encodePacked(
                         endingHash,
@@ -194,6 +198,8 @@ contract ManagingBlocks is IManagingBlocks, Data
             merkleRootAfter,
             publicDataHash,
             BlockState.COMMITTED,
+            blockType,
+            numElements,
             uint32(now),
             numDepositRequestsCommitted,
             numWithdrawRequestsCommitted,
@@ -223,7 +229,10 @@ contract ManagingBlocks is IManagingBlocks, Data
 
         require(
             IBlockVerifier(blockVerifierAddress).verifyProof(
-                specifiedBlock.publicDataHash, proof
+                specifiedBlock.blockType,
+                specifiedBlock.numElements,
+                specifiedBlock.publicDataHash,
+                proof
             ),
             "INVALID_PROOF"
         );

@@ -19,6 +19,7 @@ pragma solidity 0.5.2;
 import "../iface/IExchange.sol";
 
 import "./exchange/ManagingOperations.sol";
+import "./exchange/ManagingTokens.sol";
 
 
 /// @title An Implementation of IExchange.
@@ -35,6 +36,7 @@ contract Exchange is IExchange, ManagingOperations
         address _owner,
         address payable _operator
         )
+        ManagingTokens(_loopringAddress)
         public
     {
         require(0 != _id, "INVALID_ID");
@@ -52,14 +54,12 @@ contract Exchange is IExchange, ManagingOperations
         lrcAddress = loopring.lrcAddress();
         blockVerifierAddress = loopring.blockVerifierAddress();
 
-        registerToken(address(0));
-        registerToken(loopring.wethAddress());
-        registerToken(lrcAddress);
-
         Block memory genesisBlock = Block(
             0x2fb632af61a9ffb71034df05d1d62e8fb6112095bd28cddf56d5f2e4b57064be,
             0x0,
             BlockState.FINALIZED,
+            0xFF,
+            0,
             uint32(now),
             1,
             1,

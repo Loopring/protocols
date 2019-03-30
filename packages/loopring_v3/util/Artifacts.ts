@@ -3,7 +3,6 @@ export class Artifacts {
   public LoopringV3: any;
   public Exchange: any;
   public ExchangeDeployer: any;
-  public ExchangeHelper: any;
   public BlockVerifier: any;
   public DummyToken: any;
   public LRCToken: any;
@@ -16,9 +15,8 @@ export class Artifacts {
   public TESTToken: any;
   constructor(artifacts: any) {
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
-    this.Exchange = artifacts.require("impl/Exchange");
+    this.Exchange = artifacts.require("impl/Exchange2");
     this.ExchangeDeployer = artifacts.require("impl/ExchangeDeployer");
-    this.ExchangeHelper = artifacts.require("impl/ExchangeHelper");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");

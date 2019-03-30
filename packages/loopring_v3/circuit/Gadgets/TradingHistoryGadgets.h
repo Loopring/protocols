@@ -50,7 +50,7 @@ public:
 
         merkleRootBefore(_merkleRoot),
 
-        fill(pb, 96, FMT(prefix, ".fill")),
+        fill(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fill")),
 
         leafBefore(pb, libsnark::ONE, {before.filled, before.cancelled, before.orderID}, FMT(prefix, ".leafBefore")),
         leafAfter(pb, libsnark::ONE, {after.filled, after.cancelled, after.orderID}, FMT(prefix, ".leafAfter")),
@@ -91,8 +91,7 @@ class TradeHistoryTrimmingGadget : public GadgetT
 {
 public:
 
-    VariableT constant0;
-    VariableT constant1;
+    const Constants& constants;
 
     VariableT tradeHistoryFilled;
     VariableT tradeHistoryCancelled;
@@ -109,6 +108,7 @@ public:
 
     TradeHistoryTrimmingGadget(
         ProtoboardT& pb,
+        const Constants& _constants,
         const VariableT& _tradeHistoryFilled,
         const VariableT& _tradeHistoryCancelled,
         const VariableT& _tradeHistoryOrderID,
@@ -117,8 +117,7 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        constant1(make_variable(pb, 1, FMT(prefix, ".constant1"))),
+        constants(_constants),
 
         tradeHistoryFilled(_tradeHistoryFilled),
         tradeHistoryCancelled(_tradeHistoryCancelled),
@@ -126,12 +125,12 @@ public:
 
         orderID(_orderID),
 
-        bNew(pb, tradeHistoryOrderID, orderID, FMT(prefix, ".tradeHistoryOrderID <(=) orderID")),
+        bNew(pb, tradeHistoryOrderID, orderID, NUM_BITS_ORDERID, FMT(prefix, ".tradeHistoryOrderID <(=) orderID")),
         bTrim(pb, bNew.leq(), FMT(prefix, ".!bNew")),
 
-        filled(pb, bNew.lt(), constant0, tradeHistoryFilled, FMT(prefix, ".filled")),
-        cancelledToStore(pb, bNew.lt(), constant0, tradeHistoryCancelled, FMT(prefix, ".cancelledToStore")),
-        cancelled(pb, bTrim.Not(), constant1, cancelledToStore.result(), FMT(prefix, ".cancelled")),
+        filled(pb, bNew.lt(), constants.zero, tradeHistoryFilled, FMT(prefix, ".filled")),
+        cancelledToStore(pb, bNew.lt(), constants.zero, tradeHistoryCancelled, FMT(prefix, ".cancelledToStore")),
+        cancelled(pb, bTrim.Not(), constants.one, cancelledToStore.result(), FMT(prefix, ".cancelled")),
         orderIDToStore(pb, bNew.lt(), orderID, tradeHistoryOrderID, FMT(prefix, ".orderIDToStore"))
     {
 
@@ -167,12 +166,12 @@ public:
         cancelled.generate_r1cs_witness();
         orderIDToStore.generate_r1cs_witness();
 
-        print(pb, "bNew", bNew.lt());
+        /*print(pb, "bNew", bNew.lt());
         print(pb, "bTrim", bTrim.Not());
         print(pb, "filled", filled.result());
         print(pb, "cancelledToStore", cancelledToStore.result());
         print(pb, "cancelled", cancelled.result());
-        print(pb, "orderIDToStore", orderIDToStore.result());
+        print(pb, "orderIDToStore", orderIDToStore.result());*/
     }
 
     void generate_r1cs_constraints()

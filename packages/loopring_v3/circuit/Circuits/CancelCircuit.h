@@ -22,15 +22,13 @@ class CancelGadget : public GadgetT
 {
 public:
 
-    VariableT constant0;
-    VariableT constant100;
-    VariableT emptyTradeHistory;
+    const Constants& constants;
+
     libsnark::dual_variable_gadget<FieldT> padding;
     VariableArrayT uint16_padding;
     VariableArrayT percentage_padding;
 
     const jubjub::VariablePointT publicKey;
-    const jubjub::VariablePointT walletPublicKey;
 
     VariableArrayT accountID;
     VariableArrayT orderTokenID;
@@ -83,6 +81,7 @@ public:
     CancelGadget(
         ProtoboardT& pb,
         const jubjub::Params& params,
+        const Constants& _constants,
         const VariableT& _accountsMerkleRoot,
         const VariableT& _operatorBalancesRoot,
         const VariableArrayT& _realmID,
@@ -90,22 +89,20 @@ public:
     ) :
         GadgetT(pb, prefix),
 
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
-        constant100(make_variable(pb, 100, FMT(prefix, ".constant100"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT("20873493930479413702173406318080544943433811476627345625793184813275733379280"), FMT(prefix, ".emptyTradeHistory"))),
-        padding(pb, 2, FMT(prefix, ".padding")),
+        constants(_constants),
+
+        padding(pb, 1, FMT(prefix, ".padding")),
         uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
         percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
-        walletPublicKey(pb, FMT(prefix, ".walletPublicKey")),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".account"))),
         orderTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".orderTokenID"))),
-        orderID(pb, 16, FMT(prefix, ".orderID")),
+        orderID(pb, NUM_BITS_ORDERID, FMT(prefix, ".orderID")),
         walletAccountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".walletAccountID"))),
         feeTokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".feeTokenID"))),
-        fee(pb, 96, FMT(prefix, ".fee")),
+        fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         walletSplitPercentage(pb, 7, FMT(prefix, ".walletSplitPercentage")),
 
         filled(make_variable(pb, 0, FMT(prefix, ".filled"))),
@@ -125,17 +122,17 @@ public:
         balanceF_O_before(make_variable(pb, FMT(prefix, ".balanceF_O_before"))),
         tradingHistoryRootF_O(make_variable(pb, FMT(prefix, ".tradingHistoryRootF_O"))),
 
-        nonce_before(pb, 32, FMT(prefix, ".nonce_before")),
+        nonce_before(pb, NUM_BITS_NONCE, FMT(prefix, ".nonce_before")),
         nonce_after(make_variable(pb, 1, FMT(prefix, ".cancelled_after"))),
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
 
-        feeToWallet(pb, fee.packed, walletSplitPercentage.packed, constant100, FMT(prefix, ".feeToWallet")),
+        feeToWallet(pb, constants, fee.packed, walletSplitPercentage.packed, constants._100, FMT(prefix, ".feeToWallet")),
         feeToOperator(make_variable(pb, 1, FMT(prefix, ".feeToOperator"))),
 
-        feePaymentWallet(pb, 96, balanceF_A_before, balanceF_W_before, feeToWallet.result(), FMT(prefix, ".feePaymentWallet")),
-        feePaymentOperator(pb, 96, feePaymentWallet.X, balanceF_O_before, feeToOperator, FMT(prefix, ".feePaymentOperator")),
+        feePaymentWallet(pb, NUM_BITS_AMOUNT, balanceF_A_before, balanceF_W_before, feeToWallet.result(), FMT(prefix, ".feePaymentWallet")),
+        feePaymentOperator(pb, NUM_BITS_AMOUNT, feePaymentWallet.X, balanceF_O_before, feeToOperator, FMT(prefix, ".feePaymentOperator")),
 
-        updateTradeHistory_A(pb, tradingHistoryRootT_A_before, orderID.bits,
+        updateTradeHistory_A(pb, tradingHistoryRootT_A_before, subArray(orderID.bits, 0, TREE_DEPTH_TRADING_HISTORY),
                              {filled, cancelled_before, orderID.packed},
                              {filled, cancelled_after, orderID.packed},
                              FMT(prefix, ".updateTradeHistory_A")),
@@ -157,13 +154,13 @@ public:
 
 
         updateBalanceF_W(pb, balancesRoot_W_before, feeTokenID,
-                         {balanceF_W_before, emptyTradeHistory},
-                         {feePaymentWallet.Y, emptyTradeHistory},
+                         {balanceF_W_before, constants.emptyTradeHistory},
+                         {feePaymentWallet.Y, constants.emptyTradeHistory},
                          FMT(prefix, ".updateBalanceF_W")),
 
         updateAccount_W(pb, updateAccount_A.result(), walletAccountID,
-                        {walletPublicKey.x, walletPublicKey.y, nonce_W, balancesRoot_W_before},
-                        {walletPublicKey.x, walletPublicKey.y, nonce_W, updateBalanceF_W.getNewRoot()},
+                        {constants.zero, constants.zero, nonce_W, balancesRoot_W_before},
+                        {constants.zero, constants.zero, nonce_W, updateBalanceF_W.getNewRoot()},
                         FMT(prefix, ".updateAccount_W")),
 
 
@@ -205,9 +202,6 @@ public:
 
         pb.val(publicKey.x) = cancellation.publicKey.x;
         pb.val(publicKey.y) = cancellation.publicKey.y;
-
-        pb.val(walletPublicKey.x) = cancellation.walletPublicKey.x;
-        pb.val(walletPublicKey.y) = cancellation.walletPublicKey.y;
 
         accountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_A.accountID);
         orderTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateT_A.tokenID);
@@ -300,11 +294,12 @@ public:
     libsnark::dual_variable_gadget<FieldT> publicDataHash;
     PublicDataGadget publicData;
 
+    Constants constants;
+
     libsnark::dual_variable_gadget<FieldT> realmID;
     libsnark::dual_variable_gadget<FieldT> merkleRootBefore;
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
 
-    VariableT constant0;
     VariableT nonce;
 
     const jubjub::VariablePointT publicKey;
@@ -319,11 +314,12 @@ public:
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
         publicData(pb, publicDataHash, FMT(prefix, ".publicData")),
 
+        constants(pb, FMT(prefix, ".constants")),
+
         realmID(pb, 32, FMT(prefix, ".realmID")),
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
-        constant0(make_variable(pb, 0, FMT(prefix, ".constant0"))),
         operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountID")),
         publicKey(pb, FMT(prefix, ".publicKey")),
         nonce(make_variable(pb, 0, FMT(prefix, ".nonce"))),
@@ -346,6 +342,8 @@ public:
 
         pb.set_input_sizes(1);
 
+        constants.generate_r1cs_constraints();
+
         publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
@@ -354,7 +352,15 @@ public:
         {
             VariableT cancelAccountsRoot = (j == 0) ? merkleRootBefore.packed : cancels.back().getNewAccountsRoot();
             VariableT cancelOperatorBalancesRoot = (j == 0) ? balancesRoot_before : cancels.back().getNewOperatorBalancesRoot();
-            cancels.emplace_back(pb, params, cancelAccountsRoot, cancelOperatorBalancesRoot, realmID.bits, std::string("cancels_") + std::to_string(j));
+            cancels.emplace_back(
+                pb,
+                params,
+                constants,
+                cancelAccountsRoot,
+                cancelOperatorBalancesRoot,
+                realmID.bits,
+                std::string("cancels_") + std::to_string(j)
+            );
             cancels.back().generate_r1cs_constraints();
 
             // Store data from withdrawal
@@ -384,6 +390,8 @@ public:
 
     bool generateWitness(const Loopring::CancelContext& context)
     {
+        constants.generate_r1cs_witness();
+
         realmID.bits.fill_with_bits_of_field_element(pb, context.realmID);
         realmID.generate_r1cs_witness_from_bits();
 

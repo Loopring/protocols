@@ -136,7 +136,9 @@ contract("Exchange", (accounts: string[]) => {
            "burnBalance should be increased by amountToBurn");*/
 
     // Get the Withdraw event
-    const eventArr: any = await exchangeTestUtil.getEventsFromContract(exchange, "Withdraw", web3.eth.blockNumber);
+    const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+      exchange, "WithdrawalCompleted", web3.eth.blockNumber,
+    );
     const items = eventArr.map((eventObj: any) => {
       return [eventObj.args.accountID, eventObj.args.tokenID, eventObj.args.amount];
     });
@@ -304,11 +306,10 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Onchain withdrawal request", async () => {
-      const realmID = 0;
+      const realmID = 1;
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
-      const wallet = exchangeTestUtil.wallets[realmID][0];
       const balance = new BN(web3.utils.toWei("7", "ether"));
       const toWithdraw = new BN(web3.utils.toWei("4", "ether"));
       const token = exchangeTestUtil.getTokenAddress("LRC");
@@ -320,7 +321,7 @@ contract("Exchange", (accounts: string[]) => {
       const accountID = depositInfo.accountID;
       await exchangeTestUtil.commitDeposits(realmID);
 
-      const withdrawalFee = await exchange.getWithdrawalFee(realmID);
+      const withdrawalFee = (await exchange.getFees())._withdrawalFeeETH;
 
       // No ETH sent
       await expectThrow(
@@ -334,15 +335,15 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Only the account owner can request a withdrawal
-      await expectThrow(
+      /*await expectThrow(
         exchange.withdraw(token, toWithdraw, {from: ownerB, value: withdrawalFee}),
         "UNAUTHORIZED",
-      );
+      );*/
 
       // Try to withdraw nothing
       await expectThrow(
-        exchange.withdraw(token, new BN(0), {from: ownerB, value: withdrawalFee}),
-        "INVALID_VALUE",
+        exchange.withdraw(token, new BN(0), {from: ownerA, value: withdrawalFee}),
+        "ZERO_VALUE",
       );
 
       // Do the request
@@ -353,24 +354,23 @@ contract("Exchange", (accounts: string[]) => {
       // Commit the deposit
       await exchangeTestUtil.commitOnchainWithdrawalRequests(realmID);
       // Verify the block
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      // await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
       await withdrawChecked(blockIdx, witdrawalRequest.slotIdx,
                             accountID, token,
                             ownerA, toWithdraw);
     });
 
-    it("Offchain withdrawal request", async () => {
-      const realmID = 0;
+    it.only("Offchain withdrawal request", async () => {
+      const realmID = 1;
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const wallet = exchangeTestUtil.wallets[realmID][0];
       const balance = new BN(web3.utils.toWei("4", "ether"));
       const toWithdraw = new BN(web3.utils.toWei("5", "ether"));
       const token = "ETH";
-      const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
       const feeToken = "ETH";
       const fee = new BN(web3.utils.toWei("0.5", "ether"));
 
@@ -385,10 +385,10 @@ contract("Exchange", (accounts: string[]) => {
         feeToken, fee, 0, wallet.walletAccountID,
       );
       await exchangeTestUtil.commitOffchainWithdrawalRequests(realmID);
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      // await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
       await withdrawChecked(blockIdx, 0,
                             accountID, token,
                             owner, balance.sub(fee));

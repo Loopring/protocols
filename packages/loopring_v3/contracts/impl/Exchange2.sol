@@ -151,11 +151,10 @@ contract Exchange2 is Ownable
             uint   DEFAULT_ACCOUNT_PUBLICKEY_Y,
             uint   DEFAULT_ACCOUNT_SECRETKEY,
             uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
+            uint16 MAX_OPEN_REQUESTS,
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
-            uint32 TIMESTAMP_WINDOW_SIZE_IN_SECONDS,
-            uint16 NUM_DEPOSITS_IN_BLOCK,
-            uint16 NUM_WITHDRAWALS_IN_BLOCK,
+            uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
             uint   MAX_NUM_TOKENS
         )
     {
@@ -164,11 +163,10 @@ contract Exchange2 is Ownable
             ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_Y(),
             ExchangeData.DEFAULT_ACCOUNT_SECRETKEY(),
             ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
+            ExchangeData.MAX_OPEN_REQUESTS(),
             ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED(),
             ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(),
-            ExchangeData.TIMESTAMP_WINDOW_SIZE_IN_SECONDS(),
-            ExchangeData.NUM_DEPOSITS_IN_BLOCK(),
-            ExchangeData.NUM_WITHDRAWALS_IN_BLOCK(),
+            ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
             ExchangeData.MAX_NUM_TOKENS()
         );
     }
@@ -309,14 +307,15 @@ contract Exchange2 is Ownable
     }
 
     function commitBlock(
-        uint  blockType,
+        uint8 blockType,
+        uint16 numElements,
         bytes calldata data
         )
         external
         payable
         onlyOperator
     {
-        state.commitBlock(blockType, data);
+        state.commitBlock(blockType, numElements, data);
     }
 
     function verifyBlock(
@@ -354,8 +353,7 @@ contract Exchange2 is Ownable
         view
         returns (uint)
     {
-        // TODO
-        return 1024;
+        return state.getNumAvailableDepositSlots();
     }
 
     function getDepositRequest(
@@ -372,7 +370,7 @@ contract Exchange2 is Ownable
         (accumulatedHash, accumulatedFee, timestamp) = state.getDepositRequest(index);
     }
 
-    function deposit(
+    function updateAccountAndDeposit(
         uint    pubKeyX,
         uint    pubKeyY,
         address token,

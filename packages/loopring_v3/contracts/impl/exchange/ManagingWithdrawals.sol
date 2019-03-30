@@ -27,7 +27,7 @@ import "./ManagingDeposits.sol";
 contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
 {
     function getFirstUnprocessedWithdrawalRequestIndex()
-        external
+        public
         view
         returns (uint)
     {
@@ -40,8 +40,8 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         view
         returns (uint)
     {
-        // TODO
-        return 1024;
+        uint numOpenRequests = withdrawalChain.length - getFirstUnprocessedWithdrawalRequestIndex();
+        return MAX_OPEN_REQUESTS - numOpenRequests;
     }
 
     function getWithdrawRequest(
@@ -113,6 +113,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
         );
     }
 
+/*
     function withdrawFromMerkleTree(
         address token,
         uint32  nonce,
@@ -258,7 +259,7 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
             uint96(amount)
         );
     }
-
+*/
 
     function withdrawBlockFee(
         uint32 blockIdx
@@ -341,9 +342,19 @@ contract ManagingWithdrawals is IManagingWithdrawals, ManagingDeposits
             amountToOwner = amount;
         }
 
-        // Increase the burn balance
+        // Fee-burning
         if (amountToBurn > 0) {
-            // TODO: send to LoopringV3 contract for burning / burn LRC directly
+            if (token == address(0x0)) {
+                // ETH
+                address payable payableLoopringAddress = address(uint160(loopringAddress));
+                payableLoopringAddress.transfer(amountToBurn);
+            } else if (token == lrcAddress) {
+                // LRC: burn LRC directly
+                require(BurnableERC20(lrcAddress).burn(amountToBurn), "BURN_FAILURE");
+            } else {
+                // ERC20 token (not LRC)
+                require(token.safeTransfer(loopringAddress, amountToBurn), "TRANSFER_FAILURE");
+            }
         }
 
         // Transfer the tokens from the contract to the owner

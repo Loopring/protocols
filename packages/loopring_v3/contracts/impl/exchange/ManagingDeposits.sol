@@ -26,7 +26,7 @@ import "./ManagingTokens.sol";
 contract ManagingDeposits is IManagingDeposits, ManagingTokens
 {
     function getFirstUnprocessedDepositRequestIndex()
-        external
+        public
         view
         returns (uint)
     {
@@ -39,8 +39,8 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         view
         returns (uint)
     {
-        // TODO
-        return 1024;
+        uint numOpenRequests = depositChain.length - getFirstUnprocessedDepositRequestIndex();
+        return MAX_OPEN_REQUESTS - numOpenRequests;
     }
 
     function getDepositRequest(
@@ -61,7 +61,7 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         timestamp = request.timestamp;
     }
 
-    function deposit(
+    function updateAccountAndDeposit(
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
@@ -94,7 +94,6 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         payable
     {
         require(recipient != address(0), "ZERO_ADDRESS");
-        require(amount > 0, "ZERO_VALUE");
         require(!isInWithdrawalMode(), "INVALID_MODE");
         require(now >= disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
@@ -108,7 +107,7 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
 
         // Check ETH value sent, can be larger than the expected deposit fee
         uint feeSurplus = 0;
-        if (tokenID != 0) {
+        if (tokenAddress != address(0)) {
             require(msg.value >= depositFeeETH, "INSUFFICIENT_FEE");
             feeSurplus = msg.value.sub(depositFeeETH);
         } else {
@@ -139,7 +138,7 @@ contract ManagingDeposits is IManagingDeposits, ManagingTokens
         depositChain.push(request);
 
         // Transfer the tokens from the owner into this contract
-        if (tokenID != 0) {
+        if (tokenAddress != address(0)) {
             require(
                 tokenAddress.safeTransferFrom(
                     account.owner,

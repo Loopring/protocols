@@ -104,7 +104,8 @@ contract ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
-        uint    _maxWithdrawalFee
+        uint    _maxWithdrawalFee,
+        uint    _downtimePriceLRCPerDay
         )
         external;
 
@@ -164,7 +165,7 @@ contract ILoopringV3
 
     function withdrawBurned(
         address token,
-        address recipient
+        address payable recipient
         )
         external
         returns (bool);

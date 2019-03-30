@@ -63,8 +63,8 @@ library ExchangeDeposits
         view
         returns (uint)
     {
-        // TODO
-        return 1024;
+        uint numOpenRequests = S.depositChain.length - getFirstUnprocessedDepositRequestIndex(S);
+        return ExchangeData.MAX_OPEN_REQUESTS() - numOpenRequests;
     }
 
     function getDepositRequest(
@@ -95,7 +95,6 @@ library ExchangeDeposits
         public
     {
         require(recipient != address(0), "ZERO_ADDRESS");
-        require(amount > 0, "ZERO_VALUE");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
@@ -109,7 +108,7 @@ library ExchangeDeposits
 
         // Check ETH value sent, can be larger than the expected deposit fee
         uint feeSurplus = 0;
-        if (tokenID != 0) {
+        if (tokenAddress != address(0)) {
             require(msg.value >= S.depositFeeETH, "INSUFFICIENT_FEE");
             feeSurplus = msg.value.sub(S.depositFeeETH);
         } else {
@@ -140,7 +139,7 @@ library ExchangeDeposits
         S.depositChain.push(request);
 
         // Transfer the tokens from the owner into this contract
-        if (tokenID != 0) {
+        if (tokenAddress != address(0)) {
             require(
                 tokenAddress.safeTransferFrom(
                     account.owner,
