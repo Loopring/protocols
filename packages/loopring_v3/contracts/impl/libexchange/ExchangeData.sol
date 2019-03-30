@@ -63,6 +63,8 @@ library ExchangeData
 
         BlockState state;
 
+        uint8 blockType;
+        uint16 numElements;
         uint32 timestamp;
         uint32 numDepositRequestsCommitted;
         uint32 numWithdrawRequestsCommitted;
@@ -93,18 +95,17 @@ library ExchangeData
     {
         return 10771439851340068599303586501499035409517957710739943668636844002715618931667;
     }
- 
+
     function DEFAULT_ACCOUNT_SECRETKEY() internal pure returns (uint)
     {
         return 531595266505639429282323989096889429445309320547115026296307576144623272935;
     }
 
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
+    function MAX_OPEN_REQUESTS() internal pure returns (uint16) { return 1024; }
     function MAX_AGE_REQUEST_UNTIL_FORCED() internal pure returns (uint32) { return 1 days; }
     function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
-    function TIMESTAMP_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
-    function NUM_DEPOSITS_IN_BLOCK() internal pure returns (uint16) { return 8; }
-    function NUM_WITHDRAWALS_IN_BLOCK() internal pure returns (uint16) { return 8; }
+    function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
 
     struct State
@@ -115,7 +116,6 @@ library ExchangeData
         ILoopringV3 loopring;
 
         address lrcAddress;
-        // address exchangeHelperAddress;
         address blockVerifierAddress;
 
         uint    disableUserRequestsUntil;

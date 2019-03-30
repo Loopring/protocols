@@ -47,12 +47,13 @@ library ExchangeBlocks
 
     function commitBlock(
         ExchangeData.State storage S,
-        uint blockType,
+        uint8 blockType,
+        uint16 numElements,
         bytes memory data
         )
         internal  // inline call
     {
-        commitBlockInternal(S, blockType, data);
+        commitBlockInternal(S, blockType, numElements, data);
     }
 
 
@@ -72,7 +73,10 @@ library ExchangeBlocks
 
         // require(
         //     IBlockVerifier(blockVerifierAddress).verifyProof(
-        //         specifiedBlock.publicDataHash, proof
+        //         specifiedBlock.blockType,
+        //         specifiedBlock.numElements,
+        //         specifiedBlock.publicDataHash,
+        //         proof
         //     ),
         //     "INVALID_PROOF"
         // );
@@ -132,11 +136,14 @@ library ExchangeBlocks
     // == Internal Functions ==
     function commitBlockInternal(
         ExchangeData.State storage S,
-        uint blockType,
+        uint8 blockType,
+        uint16 numElements,
         bytes memory data
         )
         private
     {
+        // require(IBlockVerifier(blockVerifierAddress).canVerify(blockType, numElements), "CANNOT_VERIFY_BLOCK");
+
         // Extract the exchange ID from the data
         uint32 exchangeIdInData = 0;
         assembly {
@@ -179,8 +186,8 @@ library ExchangeBlocks
                 inputTimestamp := and(mload(add(data, 75)), 0xFFFFFFFF)
             }
             require(
-                inputTimestamp > now - ExchangeData.TIMESTAMP_WINDOW_SIZE_IN_SECONDS() &&
-                inputTimestamp < now + ExchangeData.TIMESTAMP_WINDOW_SIZE_IN_SECONDS(),
+                inputTimestamp > now - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
+                inputTimestamp < now + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
                 "INVALID_TIMESTAMP"
             );
         } else if (blockType == uint(ExchangeData.BlockType.DEPOSIT)) {
@@ -191,13 +198,13 @@ library ExchangeBlocks
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
             require (startIdx == numDepositRequestsCommitted, "INVALID_DEPOSITREQUEST_RANGE");
-            require (count <= ExchangeData.NUM_DEPOSITS_IN_BLOCK(), "INVALID_DEPOSITREQUEST_RANGE");
+            require (count <= numElements, "INVALID_DEPOSITREQUEST_RANGE");
             require (startIdx + count <= S.depositChain.length, "INVALID_DEPOSITREQUEST_RANGE");
 
             bytes32 startingHash = S.depositChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = S.depositChain[startIdx + count - 1].accumulatedHash;
             // Pad the block so it's full
-            for (uint i = count; i < ExchangeData.NUM_DEPOSITS_IN_BLOCK(); i++) {
+            for (uint i = count; i < numElements; i++) {
                 endingHash = sha256(
                     abi.encodePacked(
                         endingHash,
@@ -222,13 +229,13 @@ library ExchangeBlocks
                 count := and(mload(add(data, 143)), 0xFFFFFFFF)
             }
             require (startIdx == numWithdrawRequestsCommitted, "INVALID_WITHDRAWREQUEST_RANGE");
-            require (count <= ExchangeData.NUM_WITHDRAWALS_IN_BLOCK(), "INVALID_WITHDRAWREQUEST_RANGE");
+            require (count <= numElements, "INVALID_WITHDRAWREQUEST_RANGE");
             require (startIdx + count <= S.withdrawalChain.length, "INVALID_WITHDRAWREQUEST_RANGE");
 
             bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
             // Pad the block so it's full
-            for (uint i = count; i < ExchangeData.NUM_WITHDRAWALS_IN_BLOCK(); i++) {
+            for (uint i = count; i < numElements; i++) {
                 endingHash = sha256(
                     abi.encodePacked(
                         endingHash,
@@ -252,6 +259,8 @@ library ExchangeBlocks
             merkleRootAfter,
             publicDataHash,
             ExchangeData.BlockState.COMMITTED,
+            blockType,
+            numElements,
             uint32(now),
             numDepositRequestsCommitted,
             numWithdrawRequestsCommitted,

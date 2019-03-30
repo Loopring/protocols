@@ -77,8 +77,8 @@ library ExchangeWithdrawals
         view
         returns (uint)
     {
-        // TODO
-        return 1024;
+        uint numOpenRequests = S.withdrawalChain.length - getFirstUnprocessedWithdrawalRequestIndex(S);
+        return ExchangeData.MAX_OPEN_REQUESTS() - numOpenRequests;
     }
 
     function getWithdrawRequest(
@@ -384,7 +384,17 @@ library ExchangeWithdrawals
 
         // Increase the burn balance
         if (amountToBurn > 0) {
-            // TODO: send to LoopringV3 contract for burning / burn LRC directly
+            if (token == address(0x0)) {
+                // ETH
+                address payable payableLoopringAddress = address(uint160(address(S.loopring)));
+                payableLoopringAddress.transfer(amountToBurn);
+            } else if (token == S.lrcAddress) {
+                // LRC: burn LRC directly
+                require(BurnableERC20(S.lrcAddress).burn(amountToBurn), "BURN_FAILURE");
+            } else {
+                // ERC20 token (not LRC)
+                require(token.safeTransfer(address(S.loopring), amountToBurn), "TRANSFER_FAILURE");
+            }
         }
 
         // Transfer the tokens from the contract to the owner
