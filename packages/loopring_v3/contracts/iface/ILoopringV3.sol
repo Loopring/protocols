@@ -64,7 +64,6 @@ contract ILoopringV3
     );
 
     // == Constants ==
-
     // Burn rates (in bips -- 100bips == 1%)
     uint16 public constant BURNRATE_TIER1 =  250;  // 2.5%
     uint16 public constant BURNRATE_TIER2 = 1500; //  15%
@@ -93,7 +92,6 @@ contract ILoopringV3
     mapping (address => Token) public tokens;
 
     // == Public Functions ==
-
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
