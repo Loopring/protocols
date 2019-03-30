@@ -266,6 +266,7 @@ library ExchangeBlocks
             numDepositRequestsCommitted,
             numWithdrawRequestsCommitted,
             false,
+            0,
             (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
              blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAW)) ? data : new bytes(0)
         );

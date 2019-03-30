@@ -242,11 +242,6 @@ library ExchangeWithdrawals
         )
         public
     {
-        // TODO: special case if slotIdx == 0 to search in byte array
-        //       (maybe not needed anymore with automatic transferring in normal cases)
-
-        // require(isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
-
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
 
@@ -345,14 +340,30 @@ library ExchangeWithdrawals
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
 
+        // Check if this is a withdraw block
+        require(withdrawBlock.blockType == uint8(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
+                withdrawBlock.blockType == uint8(ExchangeData.BlockType.OFFCHAIN_WITHDRAW), "BLOCK_NOT_FINALIZED");
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        // Check if the witdrawals were already completely distributed
+        require(withdrawBlock.numWithdrawalsDistributed < withdrawBlock.numElements, "WITHDRAWALS_ALREADY_DISTRIBUTED");
 
-        // TODO: Check if transfers still need to be done + do all tranfers + update necessary state
-        //       Make sure to zero out this data when done, this will not only make sure it cannot be withdrawn again
-        //       it will also save on gas for the operator because he will get a rebate for reverting storage data to 0
-        // Maybe we can even allow doing the withdrawals in parts so we don't have a single very large transaction?
-        // We should allow the transfer to fail in here, in that case the user could maybe retry manually later?
+        // Only allow the operator to distibute withdrawals at first, if he doesn't do it in time
+        // anyone can do it and get paid a part of the operator stake
+        if (now < withdrawBlock.timestamp + ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS()) {
+            require(msg.sender == S.operator, "UNAUTHORIZED");
+        } else {
+            // Award msg.sender with some LRC
+            uint totalFine = S.loopring.withdrawalFineLRC() * withdrawBlock.numElements;
+            S.loopring.withdrawStakeTo(S.id, msg.sender, totalFine);
+        }
+
+        // Possible enhancement: allow withdrawing in parts
+        for (uint i = 0; i < withdrawBlock.numElements; i++) {
+            withdrawFromApprovedWithdrawal(S, blockIdx, i);
+        }
+
+        withdrawBlock.numWithdrawalsDistributed = withdrawBlock.numElements;
     }
 
 

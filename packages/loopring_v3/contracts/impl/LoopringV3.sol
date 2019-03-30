@@ -44,7 +44,8 @@ contract LoopringV3 is ILoopringV3, Ownable
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerDay
+        uint    _downtimePriceLRCPerDay,
+        uint    _withdrawalFineLRC
         )
         external
         onlyOwner
@@ -68,6 +69,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         tierUpgradeCostBips = _tierUpgradeCostBips;
         maxWithdrawalFee = _maxWithdrawalFee;
         downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
+        withdrawalFineLRC = _withdrawalFineLRC;
 
         tokens[lrcAddress] = Token(lrcAddress, 1, 0xFFFFFFFF);
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
@@ -199,26 +201,36 @@ contract LoopringV3 is ILoopringV3, Ownable
         external
         returns (uint stakedLRC)
     {
-        // TODO: Only allow withdrawing after ~1 day, otherwise the exchange can withdraw immediatly
-        //       when something goes, which isn't helpful as 'reputation'
+        stakedLRC = getStake(exchangeId);
+        withdrawStakeTo(exchangeId, msg.sender, stakedLRC);
+    }
 
+    function withdrawStakeTo(
+        uint exchangeId,
+        address recipient,
+        uint requestedAmount
+        )
+        public
+        returns (uint amount)
+    {
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
-        stakedLRC = getStake(exchangeId);
-        if (stakedLRC > 0) {
+        uint stakedLRC = getStake(exchangeId);
+        amount = (stakedLRC > requestedAmount) ? requestedAmount : stakedLRC;
+        if (amount > 0) {
             require(
                 lrcAddress.safeTransferFrom(
                     address(this),
-                    msg.sender,
-                    stakedLRC
+                    recipient,
+                    amount
                 ),
                 "WITHDRAWAL_FAILURE"
             );
-            exchangeStakes[exchangeId] = 0;
-            totalStake -= stakedLRC;
+            exchangeStakes[exchangeId] -= amount;
+            totalStake -= amount;
         }
-        emit StakeWithdrawn(exchangeId, stakedLRC);
+        emit StakeWithdrawn(exchangeId, amount);
     }
 
     function getTokenBurnRate(

@@ -531,8 +531,6 @@ contract Exchange2 is Ownable
         uint blockIdx
         )
         external
-        payable
-        onlyOperator
     {
         state.distributeWithdrawals(blockIdx);
     }

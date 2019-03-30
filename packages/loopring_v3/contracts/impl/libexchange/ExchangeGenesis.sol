@@ -63,6 +63,7 @@ library ExchangeGenesis
             1,
             1,
             true,
+            0,
             new bytes(0)
         );
         S.blocks.push(genesisBlock);

@@ -69,6 +69,7 @@ library ExchangeData
         uint32 numDepositRequestsCommitted;
         uint32 numWithdrawRequestsCommitted;
         bool   blockFeeWithdrawn;
+        uint16 numWithdrawalsDistributed;
         bytes  withdrawals;
     }
 
@@ -107,6 +108,7 @@ library ExchangeData
     function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
+    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
 
     struct State
     {
