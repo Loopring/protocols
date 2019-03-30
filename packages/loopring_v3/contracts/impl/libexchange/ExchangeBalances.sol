@@ -20,8 +20,6 @@ import "../../lib/MathUint.sol";
 
 import "../../thirdparty/MiMC.sol";
 
-import "./ExchangeData.sol";
-
 
 /// @title IManagingMode.
 /// @author Daniel Wang  - <daniel@loopring.org>
