@@ -309,6 +309,7 @@ contract Exchange2 is Ownable
 
     function commitBlock(
         uint8 blockType,
+        bool onchainDataAvailability,
         uint16 numElements,
         bytes calldata data
         )
@@ -316,7 +317,7 @@ contract Exchange2 is Ownable
         payable
         onlyOperator
     {
-        state.commitBlock(blockType, numElements, data);
+        state.commitBlock(blockType, onchainDataAvailability, numElements, data);
     }
 
     function verifyBlock(
@@ -334,8 +335,6 @@ contract Exchange2 is Ownable
         uint32 blockIdx
         )
         external
-        payable
-        onlyOperator
     {
         state.revertBlock(blockIdx);
     }

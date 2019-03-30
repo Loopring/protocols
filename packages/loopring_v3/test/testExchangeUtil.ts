@@ -600,6 +600,7 @@ export class ExchangeTestUtil {
     // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
     const tx = await this.exchange.commitBlock(
       web3.utils.toBN(blockType),
+      true,
       web3.utils.toBN(numElements),
       web3.utils.hexToBytes(data),
       {from: this.exchangeOperator},

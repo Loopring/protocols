@@ -64,6 +64,7 @@ library ExchangeData
         BlockState state;
 
         uint8 blockType;
+        bool onchainDataAvailability;
         uint16 numElements;
         uint32 timestamp;
         uint32 numDepositRequestsCommitted;

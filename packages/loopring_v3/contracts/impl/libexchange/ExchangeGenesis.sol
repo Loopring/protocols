@@ -58,6 +58,7 @@ library ExchangeGenesis
             0x0,
             ExchangeData.BlockState.FINALIZED,
             0xFF,
+            true,
             0,
             uint32(now),
             1,

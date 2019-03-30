@@ -24,6 +24,7 @@ contract IBlockVerifier
 
     function canVerify(
         uint8 blockType,
+        bool onchainDataAvailability,
         uint16 numElements
         )
         external
@@ -32,6 +33,7 @@ contract IBlockVerifier
 
     function verifyProof(
         uint8 blockType,
+        bool onchainDataAvailability,
         uint16 numElements,
         bytes32 publicDataHash,
         uint256[8] calldata proof

@@ -81,7 +81,7 @@ contract ManagingBlocks is IManagingBlocks, Data
         )
         internal
     {
-        require(IBlockVerifier(blockVerifierAddress).canVerify(blockType, numElements), "CANNOT_VERIFY_BLOCK");
+        require(IBlockVerifier(blockVerifierAddress).canVerify(blockType, true, numElements), "UNSUPPORTED_BLOCK");
 
         // Extract the exchange ID from the data
         uint32 exchangeIdInData = 0;
@@ -230,6 +230,7 @@ contract ManagingBlocks is IManagingBlocks, Data
         require(
             IBlockVerifier(blockVerifierAddress).verifyProof(
                 specifiedBlock.blockType,
+                true,
                 specifiedBlock.numElements,
                 specifiedBlock.publicDataHash,
                 proof

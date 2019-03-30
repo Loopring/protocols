@@ -49,12 +49,13 @@ library ExchangeBlocks
     function commitBlock(
         ExchangeData.State storage S,
         uint8 blockType,
+        bool onchainDataAvailability,
         uint16 numElements,
         bytes memory data
         )
         internal  // inline call
     {
-        commitBlockInternal(S, blockType, numElements, data);
+        commitBlockInternal(S, blockType, onchainDataAvailability, numElements, data);
     }
 
 
@@ -75,6 +76,7 @@ library ExchangeBlocks
         require(
             IBlockVerifier(S.blockVerifierAddress).verifyProof(
                 specifiedBlock.blockType,
+                specifiedBlock.onchainDataAvailability,
                 specifiedBlock.numElements,
                 specifiedBlock.publicDataHash,
                 proof
@@ -138,12 +140,16 @@ library ExchangeBlocks
     function commitBlockInternal(
         ExchangeData.State storage S,
         uint8 blockType,
+        bool onchainDataAvailability,
         uint16 numElements,
         bytes memory data
         )
         private
     {
-        require(IBlockVerifier(S.blockVerifierAddress).canVerify(blockType, numElements), "CANNOT_VERIFY_BLOCK");
+        require(
+            IBlockVerifier(S.blockVerifierAddress).canVerify(blockType, onchainDataAvailability, numElements),
+            "CANNOT_VERIFY_BLOCK"
+        );
 
         // Extract the exchange ID from the data
         uint32 exchangeIdInData = 0;
@@ -261,6 +267,7 @@ library ExchangeBlocks
             publicDataHash,
             ExchangeData.BlockState.COMMITTED,
             blockType,
+            onchainDataAvailability,
             numElements,
             uint32(now),
             numDepositRequestsCommitted,
