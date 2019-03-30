@@ -118,7 +118,6 @@ library ExchangeData
         IBlockVerifier blockVerifier;
 
         address lrcAddress;
-        address blockVerifierAddress;
 
         uint    disableUserRequestsUntil;
         uint    accountCreationFeeETH;

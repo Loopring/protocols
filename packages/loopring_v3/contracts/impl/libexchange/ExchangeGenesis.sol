@@ -53,7 +53,6 @@ library ExchangeGenesis
         ILoopringV3 loopring = ILoopringV3(_loopring3Address);
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
         S.lrcAddress = loopring.lrcAddress();
-        S.blockVerifierAddress = loopring.blockVerifierAddress();
 
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
             0x2fb632af61a9ffb71034df05d1d62e8fb6112095bd28cddf56d5f2e4b57064be,
