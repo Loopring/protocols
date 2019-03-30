@@ -220,6 +220,7 @@ contract Exchange2 is Ownable
         uint256[12] calldata balancePath
         )
         external
+        pure
         returns (bool)
     {
         return ExchangeBalances.isAccountBalanceCorrect(

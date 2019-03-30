@@ -49,6 +49,9 @@ export class ExchangeTestUtil {
   public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
   public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
+  public DEFAULT_ACCOUNT_SECRETKEY: string;
+  public DEFAULT_ACCOUNT_PUBLICKEY_X: string;
+  public DEFAULT_ACCOUNT_PUBLICKEY_Y: string;
 
   public MAX_NUM_STATES: number = 64;
 
@@ -122,10 +125,12 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether")),
     );
 
-    /*
-    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = (await this.exchange.MAX_PROOF_GENERATION_TIME_IN_SECONDS()).toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = (await this.exchange.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE()).toNumber();
-    */
+    const settings = (await this.exchange.getGlobalSettings());
+    this.DEFAULT_ACCOUNT_SECRETKEY = settings.DEFAULT_ACCOUNT_SECRETKEY.toString(),
+    this.DEFAULT_ACCOUNT_PUBLICKEY_X = settings.DEFAULT_ACCOUNT_PUBLICKEY_X.toString(),
+    this.DEFAULT_ACCOUNT_PUBLICKEY_Y = settings.DEFAULT_ACCOUNT_PUBLICKEY_Y.toString(),
+    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
     this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
   }
@@ -700,9 +705,9 @@ export class ExchangeTestUtil {
             const dummyDeposit: Deposit = {
               depositBlockIdx: deposits[0].depositBlockIdx,
               accountID: 0,
-              secretKey: settings.DEFAULT_ACCOUNT_SECRETKEY.toString(),
-              publicKeyX: settings.DEFAULT_ACCOUNT_PUBLICKEY_X.toString(),
-              publicKeyY: settings.DEFAULT_ACCOUNT_PUBLICKEY_Y.toString(),
+              secretKey: this.DEFAULT_ACCOUNT_SECRETKEY,
+              publicKeyX: this.DEFAULT_ACCOUNT_PUBLICKEY_X,
+              publicKeyY: this.DEFAULT_ACCOUNT_PUBLICKEY_Y,
               tokenID: 0,
               amount: new BN(0),
             };
@@ -1207,7 +1212,8 @@ export class ExchangeTestUtil {
 
   public async getAccountID(owner: string) {
     try {
-      return await this.exchange.getAccountID(owner);
+      const result = await this.exchange.getAccount(owner);
+      return result.accountID.toNumber();
     } catch {
       return undefined;
     }
@@ -1305,15 +1311,14 @@ export class ExchangeTestUtil {
     // Read in the proof
     const data = JSON.parse(fs.readFileSync(filename, "ascii"));
     // console.log(data);
-
     const tx = await this.exchange.withdrawFromMerkleTreeFor(
       owner,
       token,
-      data.proof.accountProof,
-      data.proof.balanceProof,
       web3.utils.toBN(data.proof.account.nonce),
       web3.utils.toBN(data.proof.balance.balance),
       web3.utils.toBN(data.proof.balance.tradingHistoryRoot),
+      data.proof.accountProof,
+      data.proof.balanceProof,
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawFromMerkleTree] Gas used: " + tx.receipt.gasUsed);
   }

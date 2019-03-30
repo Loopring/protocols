@@ -177,19 +177,18 @@ library ExchangeWithdrawals
         uint16 tokenID = S.getTokenID(token);
         require(S.withdrawnInWithdrawMode[owner][token] == false, "WITHDRAWN_ALREADY");
 
-        // TODO(daniel): Stack too deep error if uncomment this.
-        // S.verifyAccountBalance(
-        //     uint256(lastBlock.merkleRoot),
-        //     accountID,
-        //     tokenID,
-        //     account.pubKeyX,
-        //     account.pubKeyY,
-        //     nonce,
-        //     balance,
-        //     tradeHistoryRoot,
-        //     accountPath,
-        //     balancePath
-        // );
+        ExchangeBalances.verifyAccountBalance(
+            uint256(lastBlock.merkleRoot),
+            accountID,
+            tokenID,
+            account.pubKeyX,
+            account.pubKeyY,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountPath,
+            balancePath
+        );
 
         // Make sure the balance can only be withdrawn once
         S.withdrawnInWithdrawMode[owner][token] = true;

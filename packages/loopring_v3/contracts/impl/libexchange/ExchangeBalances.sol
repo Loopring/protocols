@@ -43,6 +43,7 @@ library ExchangeBalances
         uint256[12] memory balancePath
         )
         public
+        pure
     {
         bool isCorrect = isAccountBalanceCorrect(
             merkleRoot,
@@ -72,6 +73,7 @@ library ExchangeBalances
         uint256[12] memory balancePath
         )
         public
+        pure
         returns (bool isCorrect)
     {
         // Verify data
