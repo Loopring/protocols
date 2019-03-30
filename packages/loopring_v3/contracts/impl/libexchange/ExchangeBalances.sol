@@ -31,7 +31,6 @@ library ExchangeBalances
     using MathUint  for uint;
 
     function verifyAccountBalance(
-        ExchangeData.State storage S,
         uint256 merkleRoot,
         uint24  accountID,
         uint16  tokenID,
@@ -46,7 +45,6 @@ library ExchangeBalances
         public
     {
         bool isCorrect = isAccountBalanceCorrect(
-            S,
             merkleRoot,
             accountID,
             tokenID,
@@ -62,7 +60,6 @@ library ExchangeBalances
     }
 
     function isAccountBalanceCorrect(
-        ExchangeData.State storage S,
         uint256 merkleRoot,
         uint24  accountID,
         uint16  tokenID,

@@ -75,6 +75,37 @@ contract Exchange2 is Ownable
         _;
     }
 
+    // -- Settings --
+    function getGlobalSettings()
+        public
+        pure
+        returns (
+            uint   DEFAULT_ACCOUNT_PUBLICKEY_X,
+            uint   DEFAULT_ACCOUNT_PUBLICKEY_Y,
+            uint   DEFAULT_ACCOUNT_SECRETKEY,
+            uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
+            uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
+            uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
+            uint32 TIMESTAMP_WINDOW_SIZE_IN_SECONDS,
+            uint16 NUM_DEPOSITS_IN_BLOCK,
+            uint16 NUM_WITHDRAWALS_IN_BLOCK,
+            uint   MAX_NUM_TOKENS
+        )
+    {
+        return (
+            ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_X(),
+            ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_Y(),
+            ExchangeData.DEFAULT_ACCOUNT_SECRETKEY(),
+            ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
+            ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED(),
+            ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(),
+            ExchangeData.TIMESTAMP_WINDOW_SIZE_IN_SECONDS(),
+            ExchangeData.NUM_DEPOSITS_IN_BLOCK(),
+            ExchangeData.NUM_WITHDRAWALS_IN_BLOCK(),
+            ExchangeData.MAX_NUM_TOKENS()
+        );
+    }
+
     // -- Mode --
     function isInWithdrawalMode()
         external
@@ -126,7 +157,7 @@ contract Exchange2 is Ownable
         external
         returns (bool)
     {
-        return state.isAccountBalanceCorrect(
+        return ExchangeBalances.isAccountBalanceCorrect(
             merkleRoot,
             accountID,
             tokenID,

@@ -124,7 +124,6 @@ library ExchangeAccounts
     }
 
     function isAccountBalanceCorrect(
-        ExchangeData.State storage S,
         ExchangeData.Account storage account,
         bytes32 merkleRoot,
         uint24 accountID,
@@ -137,7 +136,7 @@ library ExchangeAccounts
         )
         public
     {
-        S.isAccountBalanceCorrect(
+        ExchangeBalances.isAccountBalanceCorrect(
             uint256(merkleRoot),
             accountID,
             tokenID,
