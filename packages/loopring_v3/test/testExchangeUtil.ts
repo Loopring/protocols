@@ -689,6 +689,8 @@ export class ExchangeTestUtil {
       let isFull = true;
       let numRequestsProcessed = 0;
 
+      const settings = (await this.exchange.getGlobalSettings());
+
       // Get all deposits for the block
       for (let b = i * numDepositsPerBlock; b < (i + 1) * numDepositsPerBlock; b++) {
           if (b < pendingDeposits.length) {
@@ -698,12 +700,9 @@ export class ExchangeTestUtil {
             const dummyDeposit: Deposit = {
               depositBlockIdx: deposits[0].depositBlockIdx,
               accountID: 0,
-              // secretKey: (await this.exchange.DEFAULT_ACCOUNT_SECRETKEY()).toString(),
-              // publicKeyX: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_X()).toString(),
-              // publicKeyY: (await this.exchange.DEFAULT_ACCOUNT_PUBLICKEY_Y()).toString(),
-              secretKey: "531595266505639429282323989096889429445309320547115026296307576144623272935",
-              publicKeyX: "2760979366321990647384327991146539505488430080750363450053902718557853404165",
-              publicKeyY: "10771439851340068599303586501499035409517957710739943668636844002715618931667",
+              secretKey: settings.DEFAULT_ACCOUNT_SECRETKEY.toString(),
+              publicKeyX: settings.DEFAULT_ACCOUNT_PUBLICKEY_X.toString(),
+              publicKeyY: settings.DEFAULT_ACCOUNT_PUBLICKEY_Y.toString(),
               tokenID: 0,
               amount: new BN(0),
             };
