@@ -34,7 +34,6 @@ library ExchangeTokens
     using MathUint          for uint;
     using ExchangeMode      for ExchangeData.State;
 
-
     event TokenRegistered(
         address token,
         uint16 tokenId
