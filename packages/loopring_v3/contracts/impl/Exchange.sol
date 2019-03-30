@@ -21,16 +21,16 @@ import "../lib/Ownable.sol";
 import "../iface/IExchange.sol";
 import "../iface/ILoopringV3.sol";
 
-import "./exchange/ExchangeAccounts.sol";
-import "./exchange/ExchangeAdmins.sol";
-import "./exchange/ExchangeBalances.sol";
-import "./exchange/ExchangeBlocks.sol";
-import "./exchange/ExchangeData.sol";
-import "./exchange/ExchangeDeposits.sol";
-import "./exchange/ExchangeGenesis.sol";
-import "./exchange/ExchangeMode.sol";
-import "./exchange/ExchangeTokens.sol";
-import "./exchange/ExchangeWithdrawals.sol";
+import "./libexchange/ExchangeAccounts.sol";
+import "./libexchange/ExchangeAdmins.sol";
+import "./libexchange/ExchangeBalances.sol";
+import "./libexchange/ExchangeBlocks.sol";
+import "./libexchange/ExchangeData.sol";
+import "./libexchange/ExchangeDeposits.sol";
+import "./libexchange/ExchangeGenesis.sol";
+import "./libexchange/ExchangeMode.sol";
+import "./libexchange/ExchangeTokens.sol";
+import "./libexchange/ExchangeWithdrawals.sol";
 
 
 /// @title An Implementation of IExchange.
