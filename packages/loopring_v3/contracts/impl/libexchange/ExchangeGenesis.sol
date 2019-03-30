@@ -18,6 +18,7 @@ pragma solidity 0.5.2;
 
 import "../../lib/MathUint.sol";
 
+import "../../iface/IBlockVerifier.sol";
 import "../../iface/ILoopringV3.sol";
 
 import "./ExchangeAccounts.sol";
@@ -50,6 +51,7 @@ library ExchangeGenesis
         S.operator = _operator;
 
         ILoopringV3 loopring = ILoopringV3(_loopring3Address);
+        S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
         S.lrcAddress = loopring.lrcAddress();
         S.blockVerifierAddress = loopring.blockVerifierAddress();
 
