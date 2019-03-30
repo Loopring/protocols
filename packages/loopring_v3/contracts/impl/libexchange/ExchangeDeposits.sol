@@ -63,8 +63,8 @@ library ExchangeDeposits
         view
         returns (uint)
     {
-        // TODO
-        return 1024;
+        uint numOpenRequests = S.depositChain.length - getFirstUnprocessedDepositRequestIndex(S);
+        return ExchangeData.MAX_OPEN_REQUESTS() - numOpenRequests;
     }
 
     function getDepositRequest(
