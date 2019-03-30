@@ -84,28 +84,28 @@ library ExchangeData
         uint96 amount;
     }
 
-    function DEFAULT_ACCOUNT_PUBLICKEY_X() public pure returns (uint)
+    function DEFAULT_ACCOUNT_PUBLICKEY_X() internal pure returns (uint)
     {
         return 2760979366321990647384327991146539505488430080750363450053902718557853404165;
     }
 
-    function DEFAULT_ACCOUNT_PUBLICKEY_Y() public pure returns (uint)
+    function DEFAULT_ACCOUNT_PUBLICKEY_Y() internal pure returns (uint)
     {
         return 10771439851340068599303586501499035409517957710739943668636844002715618931667;
     }
-
-    function DEFAULT_ACCOUNT_SECRETKEY() public pure returns (uint)
+ 
+    function DEFAULT_ACCOUNT_SECRETKEY() internal pure returns (uint)
     {
         return 531595266505639429282323989096889429445309320547115026296307576144623272935;
     }
 
-    function MAX_PROOF_GENERATION_TIME_IN_SECONDS() public pure returns (uint32) { return 1 hours; }
-    function MAX_AGE_REQUEST_UNTIL_FORCED() public pure returns (uint32) { return 1 days; }
-    function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() public pure returns (uint32) { return 1 days; }
-    function TIMESTAMP_WINDOW_SIZE_IN_SECONDS() public pure returns (uint32) { return 1 days; }
-    function NUM_DEPOSITS_IN_BLOCK() public pure returns (uint16) { return 8; }
-    function NUM_WITHDRAWALS_IN_BLOCK() public pure returns (uint16) { return 8; }
-    function MAX_NUM_TOKENS() public pure returns (uint) { return 2 ** 12; }
+    function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
+    function MAX_AGE_REQUEST_UNTIL_FORCED() internal pure returns (uint32) { return 1 days; }
+    function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
+    function TIMESTAMP_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
+    function NUM_DEPOSITS_IN_BLOCK() internal pure returns (uint16) { return 8; }
+    function NUM_WITHDRAWALS_IN_BLOCK() internal pure returns (uint16) { return 8; }
+    function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
 
     struct State
     {

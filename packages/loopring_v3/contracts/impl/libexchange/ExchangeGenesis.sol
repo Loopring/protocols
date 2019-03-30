@@ -51,7 +51,6 @@ library ExchangeGenesis
 
         ILoopringV3 loopring = ILoopringV3(_loopring3Address);
         S.lrcAddress = loopring.lrcAddress();
-        S.exchangeHelperAddress = loopring.exchangeHelperAddress();
         S.blockVerifierAddress = loopring.blockVerifierAddress();
 
         S.registerToken(address(0));
