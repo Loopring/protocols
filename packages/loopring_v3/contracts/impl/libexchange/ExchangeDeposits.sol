@@ -37,10 +37,10 @@ library ExchangeDeposits
     using ExchangeTokens    for ExchangeData.State;
 
     event DepositRequested(
-        uint32 depositIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
+        uint32  indexed depositIdx,
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        uint96          amount
     );
 
     function getFirstUnprocessedDepositRequestIndex(

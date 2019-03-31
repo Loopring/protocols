@@ -529,7 +529,7 @@ contract Exchange2 is IExchange2, Ownable
         )
         external
         payable
-        onlyOperator
+        onlyOwner
     {
         state.purchaseDowntime(durationSeconds);
     }

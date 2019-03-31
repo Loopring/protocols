@@ -32,35 +32,36 @@ contract ILoopringV3
 
     // == Events ==
     event ExchangeCreated(
-        uint    exchangeId,
-        address exchangeAddress,
-        address owner,
-        address operator,
-        uint    burnedLRC
+        uint    indexed exchangeId,
+        address indexed exchangeAddress,
+        address indexed owner,
+        address         operator,
+        uint            burnedLRC
     );
 
     event StakeDeposited(
-        uint exchangeId,
-        uint amount
+        uint    indexed exchangeId,
+        uint            amount
     );
 
     event StakeBurned(
-        uint exchangeId,
-        uint amount
+        uint    indexed exchangeId,
+        uint            amount
     );
 
     event StakeWithdrawn(
-        uint exchangeId,
-        uint amount
+        uint    indexed exchangeId,
+        uint            amount
     );
 
     event SettingsUpdated(
-        uint time
+        uint            time
     );
 
     event TokenBurnRateDown(
         address indexed token,
-        uint            tier
+        uint    indexed tier,
+        uint            time
     );
 
     // == Constants ==
