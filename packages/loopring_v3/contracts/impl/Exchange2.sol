@@ -40,6 +40,13 @@ contract Exchange2 is Ownable
     // -- Events --
     // We need to make sure all events defined in libexchange/*.sol
     // are aggregrated here.
+    event AccountCreated(
+        address owner,
+        uint24  id,
+        uint    pubKeyX,
+        uint    pubKeyY
+    );
+
     event AccountUpdated(
         address owner,
         uint24  id,
@@ -201,9 +208,12 @@ contract Exchange2 is Ownable
         )
         external
         payable
-        returns (uint24 accountID)
+        returns (
+            uint24 accountID,
+            bool   isAccountNew
+        )
     {
-        accountID = state.createOrUpdateAccount(pubKeyX, pubKeyY);
+        (accountID, isAccountNew) = state.createOrUpdateAccount(pubKeyX, pubKeyY);
     }
 
     // -- Balances --
@@ -378,10 +388,19 @@ contract Exchange2 is Ownable
         )
         external
         payable
-        returns (uint24 accountID)
+        returns (
+            uint24 accountID,
+            bool   isAccountNew
+        )
     {
-        accountID = state.createOrUpdateAccount(pubKeyX, pubKeyY);
-        state.depositTo(msg.sender, token, amount);
+        (accountID, isAccountNew) = state.createOrUpdateAccount(pubKeyX, pubKeyY);
+        uint additionalFeeETH;
+        if (isAccountNew) {
+            additionalFeeETH = state.accountCreationFeeETH;
+        } else {
+            additionalFeeETH = state.accountUpdateFeeETH;
+        }
+        state.depositTo(msg.sender, token, amount, additionalFeeETH);
     }
 
     function deposit(
@@ -391,7 +410,7 @@ contract Exchange2 is Ownable
         external
         payable
     {
-        state.depositTo(msg.sender, token, amount);
+        state.depositTo(msg.sender, token, amount, 0);
     }
 
     function depositTo(
@@ -402,7 +421,7 @@ contract Exchange2 is Ownable
         external
         payable
     {
-        state.depositTo(recipient, tokenAddress, amount);
+        state.depositTo(recipient, tokenAddress, amount, 0);
     }
 
     // -- Withdrawals --

@@ -35,6 +35,13 @@ library ExchangeAccounts
     using ExchangeMode      for ExchangeData.State;
     using ExchangeBalances  for ExchangeData.State;
 
+    event AccountCreated(
+        address owner,
+        uint24  id,
+        uint    pubKeyX,
+        uint    pubKeyY
+    );
+
     event AccountUpdated(
         address owner,
         uint24  id,
@@ -68,37 +75,75 @@ library ExchangeAccounts
         uint pubKeyY
         )
         public
+        returns (
+            uint24 accountID,
+            bool   isAccountNew
+        )
+    {
+        isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
+        if (isAccountNew) {
+            accountID = createAccount(S, pubKeyX, pubKeyY);
+        } else {
+            accountID = updateAccount(S, pubKeyX, pubKeyY);
+        }
+    }
+
+    function createAccount(
+        ExchangeData.State storage S,
+        uint pubKeyX,
+        uint pubKeyY
+        )
+        internal
         returns (uint24 accountID)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
 
-        if (S.ownerToAccountId[msg.sender] == 0) {
-            // create a new account
-            require(S.accounts.length < 2 ** 24, "TOO_MANY_ACCOUNTS");
-            require(msg.value >= S.accountCreationFeeETH, "INSUFFICIENT_FEE");
+        require(S.ownerToAccountId[msg.sender] == 0, "ACCOUNT_EXISTS");
 
-            accountID = uint24(S.accounts.length);
-            ExchangeData.Account memory account = ExchangeData.Account(
-                msg.sender,
-                pubKeyX,
-                pubKeyY
-            );
+        require(S.accounts.length < 2 ** 24, "TOO_MANY_ACCOUNTS");
+        require(msg.value >= S.accountCreationFeeETH, "INSUFFICIENT_FEE");
 
-            S.accounts.push(account);
-            S.ownerToAccountId[msg.sender] = accountID;
-        } else {
-            // update an existing account
-            require(msg.value >= S.accountUpdateFeeETH, "INSUFFICIENT_FEE");
-            accountID = S.ownerToAccountId[msg.sender];
-            ExchangeData.Account storage account = S.accounts[accountID];
+        accountID = uint24(S.accounts.length);
+        ExchangeData.Account memory account = ExchangeData.Account(
+            msg.sender,
+            pubKeyX,
+            pubKeyY
+        );
 
-            require(!isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
-            require(pubKeyX != 0 || pubKeyY != 0, "INVALID_PUBKEY");
+        S.accounts.push(account);
+        S.ownerToAccountId[msg.sender] = accountID;
 
-            account.pubKeyX = pubKeyX;
-            account.pubKeyY = pubKeyY;
-        }
+        emit AccountCreated(
+            msg.sender,
+            accountID,
+            pubKeyX,
+            pubKeyY
+        );
+    }
+
+    function updateAccount(
+        ExchangeData.State storage S,
+        uint pubKeyX,
+        uint pubKeyY
+        )
+        internal
+        returns (uint24 accountID)
+    {
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
+
+        require(S.ownerToAccountId[msg.sender] != 0, "ACCOUNT_NOT_EXIST");
+
+        require(msg.value >= S.accountUpdateFeeETH, "INSUFFICIENT_FEE");
+        accountID = S.ownerToAccountId[msg.sender];
+        ExchangeData.Account storage account = S.accounts[accountID];
+
+        require(!isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
+        require(pubKeyX != 0 || pubKeyY != 0, "INVALID_PUBKEY");
+
+        account.pubKeyX = pubKeyX;
+        account.pubKeyY = pubKeyY;
 
         emit AccountUpdated(
             msg.sender,

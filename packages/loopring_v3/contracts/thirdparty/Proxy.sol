@@ -1,3 +1,8 @@
+// This code is taken from zeppelinos
+// https://github.com/zeppelinos/zos
+// Copyright (c) 2018 ZeppelinOS Global Limited.
+// License: MIT License
+
 pragma solidity 0.5.2;
 
 /**
@@ -315,10 +320,4 @@ contract AdminUpgradeabilityProxy is BaseAdminUpgradeabilityProxy, Upgradeabilit
     assert(ADMIN_SLOT == keccak256("org.loopring.proxy.admin"));
     _setAdmin(_admin);
   }
-}
-
-contract LoopringAdminUpgradeabilityProxy is AdminUpgradeabilityProxy {
-    constructor(address _implementation, address _admin, bytes memory _data) public
-        AdminUpgradeabilityProxy(_implementation, _admin, _data) {
-    }
 }
