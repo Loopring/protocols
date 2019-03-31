@@ -300,7 +300,7 @@ contract Exchange2 is Ownable
     }
 
     // -- Stakes --
-    function getExchangeStakedLRC()
+    function getStake()
         external
         view
         returns (uint)
