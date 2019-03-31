@@ -72,6 +72,7 @@ library ExchangeBalances
         uint256[12] memory balancePath
         )
         public
+        pure
         returns (bool isCorrect)
     {
         // Verify data

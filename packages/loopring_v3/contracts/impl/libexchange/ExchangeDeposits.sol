@@ -19,8 +19,6 @@ pragma solidity 0.5.2;
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 
-import "../../iface/ILoopringV3.sol";
-
 import "./ExchangeAccounts.sol";
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
@@ -166,7 +164,7 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens from the owner into this contract
-        if (tokenAddress != address(0)) {
+        if (amount > 0 && tokenAddress != address(0)) {
             require(
                 tokenAddress.safeTransferFrom(
                     accountOwner,

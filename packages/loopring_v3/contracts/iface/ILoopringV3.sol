@@ -23,7 +23,6 @@ pragma solidity 0.5.2;
 contract ILoopringV3
 {
     // == Structs ==
-
     struct Token
     {
         address tokenAddress;
@@ -32,7 +31,6 @@ contract ILoopringV3
     }
 
     // == Events ==
-
     event ExchangeCreated(
         uint    indexed exchangeId,
         address indexed exchangeAddress,
@@ -67,7 +65,6 @@ contract ILoopringV3
     );
 
     // == Constants ==
-
     // Burn rates (in bips -- 100bips == 1%)
     uint16 public constant BURNRATE_TIER1 =  250;  // 2.5%
     uint16 public constant BURNRATE_TIER2 = 1500; //  15%
@@ -77,7 +74,6 @@ contract ILoopringV3
     uint   public constant TIER_UPGRADE_DURATION  = 365 days;
 
     // == Public Variables ==
-
     address[] public exchanges;
 
     mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
@@ -97,7 +93,6 @@ contract ILoopringV3
     mapping (address => Token) public tokens;
 
     // == Public Functions ==
-
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,

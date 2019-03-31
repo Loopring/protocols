@@ -16,6 +16,7 @@
 */
 pragma solidity 0.5.2;
 
+import "../../iface/IBlockVerifier.sol";
 import "../../iface/ILoopringV3.sol";
 
 
@@ -31,14 +32,20 @@ library ExchangeData
         SETTLEMENT,
         DEPOSIT,
         ONCHAIN_WITHDRAW,
-        OFFCHAIN_WITHDRAW,
-        CANCEL
+        OFFCHAIN_WITHDRAW
     }
 
     enum BlockState
     {
+        // The default state when a new block is included onchain.
         COMMITTED,
+
+        // A valid ZK proof has been submitted for this block.
         VERIFIED,
+
+        // A block's state will become FINALIZED when and only when this block is VERIFIED
+        // and all previous block in the chain has become FINAZLIED. The genesis block is
+        // FINAZLIED by default.
         FINALIZED
     }
 
@@ -46,6 +53,15 @@ library ExchangeData
     struct Account
     {
         address owner;
+
+        // pubKeyX and pubKeyY put together is the EdDSA public trading key. Users or their
+        // wallet software are supposed to manage the corresponding private key for signing
+        // orders and offchain requests.
+        //
+        // We use EdDSA because it is more circuit friendly than ECDSA. In later versionsk
+        // we may switch back to ECDSA, then we will not need such a dedicated tradig key-pair.
+        //
+        // We split the public key into two uint to make it more circuit friendly.
         uint    pubKeyX;
         uint    pubKeyY;
     }
@@ -56,14 +72,19 @@ library ExchangeData
         bool    depositDisabled;
     }
 
+
+    // This is the (virtual) block an operator needs to submit onchain to maitain the
+    // per-exchange (virtual) blockchain.
+
+    // TODO(Brecht): please document each field.
     struct Block
     {
         bytes32 merkleRoot;
-        bytes32 publicDataHash;
+        bytes32 publicDataHash;  // TODO(brecht): what is this?
 
-        BlockState state;
+        BlockState state;  // TODO(brecht): should we also use uint8 as for blockType?
 
-        uint8 blockType;
+        uint8  blockType;
         uint16 numElements;
         uint32 timestamp;
         uint32 numDepositRequestsCommitted;
@@ -72,6 +93,9 @@ library ExchangeData
         bytes  withdrawals;
     }
 
+    // Represents the post-state of an onchain deposit/withdrawal request. We can visualize
+    // a deposit request -chain and a withdrawal request-chain, each of which is
+    // composed of such Request objects. Please refer to the design doc for more details.
     struct Request
     {
         bytes32 accumulatedHash;
@@ -79,6 +103,7 @@ library ExchangeData
         uint32  timestamp;
     }
 
+    // Represents an onchain deposit request.  `tokenID` being `0x0` means depositing Ether.
     struct Deposit
     {
         uint24 accountID;
@@ -86,16 +111,19 @@ library ExchangeData
         uint96 amount;
     }
 
+    /// TODO(Brecht): please document this.
     function DEFAULT_ACCOUNT_PUBLICKEY_X() internal pure returns (uint)
     {
         return 2760979366321990647384327991146539505488430080750363450053902718557853404165;
     }
 
+    /// TODO(Brecht): please document this.
     function DEFAULT_ACCOUNT_PUBLICKEY_Y() internal pure returns (uint)
     {
         return 10771439851340068599303586501499035409517957710739943668636844002715618931667;
     }
 
+    /// TODO(Brecht): please document this.
     function DEFAULT_ACCOUNT_SECRETKEY() internal pure returns (uint)
     {
         return 531595266505639429282323989096889429445309320547115026296307576144623272935;
@@ -108,15 +136,16 @@ library ExchangeData
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
 
+    // Represents the entire exchange state except the owner of the exchange.
     struct State
     {
         uint    id;
-        address payable operator;
+        address payable operator; // The only address that can submit new blocks.
 
-        ILoopringV3 loopring;
+        ILoopringV3    loopring;
+        IBlockVerifier blockVerifier;
 
         address lrcAddress;
-        address blockVerifierAddress;
 
         uint    disableUserRequestsUntil;
         uint    accountCreationFeeETH;
@@ -137,5 +166,4 @@ library ExchangeData
         // A map from an account owner to a token to if the balance is withdrawn
         mapping (address => mapping (address => bool)) withdrawnInWithdrawMode;
     }
-
 }
