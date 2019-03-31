@@ -17,7 +17,7 @@
 pragma solidity 0.5.2;
 
 import "../../iface/IBlockVerifier.sol";
-import "../../iface/ILoopringV3.sol";
+import "../../iface/ILoopring.sol";
 
 
 /// @title ExchangeData
@@ -114,7 +114,7 @@ library ExchangeData
         uint    id;
         address payable operator;
 
-        ILoopringV3    loopring;
+        ILoopring    loopring;
         IBlockVerifier blockVerifier;
 
         address lrcAddress;

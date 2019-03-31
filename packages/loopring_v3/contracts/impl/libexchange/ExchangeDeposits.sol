@@ -19,7 +19,7 @@ pragma solidity 0.5.2;
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 
-import "../../iface/ILoopringV3.sol";
+import "../../iface/ILoopring.sol";
 
 import "./ExchangeAccounts.sol";
 import "./ExchangeData.sol";
