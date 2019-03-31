@@ -353,9 +353,13 @@ library ExchangeWithdrawals
         if (now < withdrawBlock.timestamp + ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS()) {
             require(msg.sender == S.operator, "UNAUTHORIZED");
         } else {
-            // Award msg.sender with some LRC
-            uint totalFine = S.loopring.withdrawalFineLRC() * withdrawBlock.numElements;
-            S.loopring.withdrawStakeTo(S.id, msg.sender, totalFine);
+            // We use the stake of the exchange to punish withdrawals that are distributed too late
+            uint totalFine = S.loopring.withdrawalFineLRC().mul(withdrawBlock.numElements);
+            // Burn 50% of the fine, reward the distributer the rest
+            uint amountToBurn = totalFine / 2;
+            uint amountToDistributer = totalFine - amountToBurn;
+            S.loopring.burnStake(S.id, amountToBurn);
+            S.loopring.withdrawStakeTo(S.id, msg.sender, amountToDistributer);
         }
 
         // Possible enhancement: allow withdrawing in parts
