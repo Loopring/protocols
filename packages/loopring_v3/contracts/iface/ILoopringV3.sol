@@ -20,7 +20,7 @@ pragma solidity 0.5.2;
 /// @title ILoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopring30
+contract ILoopringV3
 {
     // == Structs ==
     struct Token

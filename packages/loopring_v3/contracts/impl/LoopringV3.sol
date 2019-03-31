@@ -17,7 +17,7 @@
 pragma solidity 0.5.2;
 
 import "../iface/IExchange.sol";
-import "../iface/ILoopring30.sol";
+import "../iface/ILoopringV3.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -30,7 +30,7 @@ import "./ExchangeDeployer.sol";
 /// @title An Implementation of ILoopring.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Loopring30 is ILoopring30, Ownable
+contract LoopringV3 is ILoopringV3, Ownable
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
