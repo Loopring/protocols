@@ -37,15 +37,15 @@ library ExchangeData
 
     enum BlockState
     {
-        /// @dev The default state when a new block is included onchain.
+        // The default state when a new block is included onchain.
         COMMITTED,
 
-        /// @dev A valid ZK proof has been submitted for this block.
+        // A valid ZK proof has been submitted for this block.
         VERIFIED,
 
-        /// @dev A block's state will become FINALIZED when and only when this block is VERIFIED
-        ///      and all previous block in the chain has become FINAZLIED. The genesis block is
-        ///      FINAZLIED by default.
+        // A block's state will become FINALIZED when and only when this block is VERIFIED
+        // and all previous block in the chain has become FINAZLIED. The genesis block is
+        // FINAZLIED by default.
         FINALIZED
     }
 
@@ -54,14 +54,14 @@ library ExchangeData
     {
         address owner;
 
-        /// @dev pubKeyX and pubKeyY put together is the EdDSA public trading key. Users or their
-        ///      wallet software are supposed to manage the corresponding private key for signing
-        ///      orders and offchain requests.
-        ///
-        ///      We use EdDSA because it is more circuit friendly than ECDSA. In later versionsk
-        ///      we may switch back to ECDSA, then we will not need such a dedicated tradig key-pair.
-        ///
-        ///      We split the public key into two uint to make it more circuit friendly.
+        // pubKeyX and pubKeyY put together is the EdDSA public trading key. Users or their
+        // wallet software are supposed to manage the corresponding private key for signing
+        // orders and offchain requests.
+        //
+        // We use EdDSA because it is more circuit friendly than ECDSA. In later versionsk
+        // we may switch back to ECDSA, then we will not need such a dedicated tradig key-pair.
+        //
+        // We split the public key into two uint to make it more circuit friendly.
         uint    pubKeyX;
         uint    pubKeyY;
     }
@@ -73,9 +73,10 @@ library ExchangeData
     }
 
 
-    /// @dev This is the (virtual) block an operator needs to submit onchain to maitain the
-    ///      per-exchange (virtual) blockchain.
-    /// TODO(Brecht): please document each field.
+    // This is the (virtual) block an operator needs to submit onchain to maitain the
+    // per-exchange (virtual) blockchain.
+
+    // TODO(Brecht): please document each field.
     struct Block
     {
         bytes32 merkleRoot;
@@ -92,9 +93,9 @@ library ExchangeData
         bytes  withdrawals;
     }
 
-    /// @dev Represents the post-state of an onchain deposit/withdrawal request. We can visualize
-    ///      a virtual deposit blockchain and a virtual withdrawal blockchain, each of which is
-    ///      composed of such Request objects. Please refer to the design doc for more details.
+    // Represents the post-state of an onchain deposit/withdrawal request. We can visualize
+    // a deposit request -chain and a withdrawal request-chain, each of which is
+    // composed of such Request objects. Please refer to the design doc for more details.
     struct Request
     {
         bytes32 accumulatedHash;
@@ -102,7 +103,7 @@ library ExchangeData
         uint32  timestamp;
     }
 
-    // @dev Represents an onchain deposit request.  `tokenID` being `0x0` means depositing Ether.
+    // Represents an onchain deposit request.  `tokenID` being `0x0` means depositing Ether.
     struct Deposit
     {
         uint24 accountID;
@@ -135,11 +136,11 @@ library ExchangeData
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
 
-    /// @dev Represents the entire exchange state except the owner of the exchange.
+    // Represents the entire exchange state except the owner of the exchange.
     struct State
     {
         uint    id;
-        address payable operator;
+        address payable operator; // The only address that can submit new blocks.
 
         ILoopringV3    loopring;
         IBlockVerifier blockVerifier;

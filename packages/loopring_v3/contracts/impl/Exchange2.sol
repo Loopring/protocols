@@ -177,7 +177,7 @@ contract Exchange2 is IExchange2, Ownable
         )
         external
         payable
-        onlyOperator
+        onlyOwner
         returns (uint16 tokenID)
     {
         tokenID = state.registerToken(tokenAddress);
@@ -208,7 +208,7 @@ contract Exchange2 is IExchange2, Ownable
         )
         external
         payable
-        onlyOperator
+        onlyOwner
     {
         state.disableTokenDeposit(tokenAddress);
     }
@@ -218,7 +218,7 @@ contract Exchange2 is IExchange2, Ownable
         )
         external
         payable
-        onlyOperator
+        onlyOwner
     {
         state.enableTokenDeposit(tokenAddress);
     }
