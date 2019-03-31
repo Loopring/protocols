@@ -41,74 +41,75 @@ contract Exchange2 is Ownable
     // We need to make sure all events defined in libexchange/*.sol
     // are aggregrated here.
     event AccountCreated(
-        address owner,
-        uint24  id,
-        uint    pubKeyX,
-        uint    pubKeyY
+        address indexed owner,
+        uint24  indexed id,
+        uint            pubKeyX,
+        uint            pubKeyY
     );
 
     event AccountUpdated(
-        address owner,
-        uint24  id,
-        uint    pubKeyX,
-        uint    pubKeyY
+        address indexed owner,
+        uint24  indexed id,
+        uint            pubKeyX,
+        uint            pubKeyY
     );
 
     event TokenRegistered(
-        address token,
-        uint16 tokenId
+        address indexed token,
+        uint16  indexed tokenId
     );
 
     event OperatorChanged(
-        uint exchangeId,
-        address oldOperator,
-        address newOperator
+        uint    indexed exchangeId,
+        address         oldOperator,
+        address         newOperator
     );
 
-    event FeesUpdated(
-        uint accountCreationFeeETH,
-        uint accountUpdateFeeETH,
-        uint depositFeeETH,
-        uint withdrawalFeeETH
+   event FeesUpdated(
+        uint    indexed exchangeId,
+        uint            accountCreationFeeETH,
+        uint            accountUpdateFeeETH,
+        uint            depositFeeETH,
+        uint            withdrawalFeeETH
     );
 
     event BlockCommitted(
-        uint blockIdx,
-        bytes32 publicDataHash
+        uint    indexed blockIdx,
+        bytes32 indexed publicDataHash
     );
 
     event BlockFinalized(
-        uint blockIdx
+        uint    indexed blockIdx
     );
 
     event Revert(
-        uint blockIdx
+        uint    indexed blockIdx
     );
 
     event DepositRequested(
-        uint32 depositIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
+        uint32  indexed depositIdx,
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        uint96          amount
     );
 
-    event BlockFeeWithdraw(
-        uint32 blockIdx,
-        uint amount
+    event BlockFeeWithdrawn(
+        uint32  indexed blockIdx,
+        uint            amount
     );
 
     event WithdrawalRequested(
-        uint32 withdrawalIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
+        uint32  indexed withdrawalIdx,
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        uint96          amount
     );
 
     event WithdrawalCompleted(
-        uint24  accountID,
-        uint16  tokenID,
-        address to,
-        uint96  amount
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        address         to,
+        uint96          amount
     );
 
     using ExchangeAdmins        for ExchangeData.State;
@@ -604,7 +605,7 @@ contract Exchange2 is Ownable
         )
         external
         payable
-        onlyOperator
+        onlyOwner
     {
         state.purchaseDowntime(durationSeconds);
     }
