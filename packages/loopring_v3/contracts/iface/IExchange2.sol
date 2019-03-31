@@ -123,7 +123,7 @@ contract IExchange2
     /// @param  owner The owning address of the account
     /// @return accountID The account's ID
     /// @return pubKeyX The first part of the account's trading EdDSA public key
-    /// @return pubKeyR The second part of the account's trading EdDSA public key
+    /// @return pubKeyY The second part of the account's trading EdDSA public key
     function getAccount(
         address owner
         )
@@ -138,7 +138,7 @@ contract IExchange2
     /// @dev Submit an onchain request to create a new account for msg.sender or
     ///      update its existing account by replacing its trading public key.
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
-    /// @param  pubKeyR The second part of the account's trading EdDSA public key
+    /// @param  pubKeyY The second part of the account's trading EdDSA public key
     /// @return accountID The account's ID
     /// @return isAccountNew True if this account is newly created, false if the account existed
     function createOrUpdateAccount(
@@ -200,7 +200,7 @@ contract IExchange2
         returns (uint16 tokenID);
 
     /// @dev Returns the address of a registered token.
-    /// @param  stokenID The token's ID in this exchanges.
+    /// @param  tokenID The token's ID in this exchanges.
     /// @return tokenAddress The token's address
     function getTokenAddress(
         uint16 tokenID
@@ -336,7 +336,7 @@ contract IExchange2
     ///      and create the deposit to the offchain account.
     ///
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
-    /// @param  pubKeyR The second part of the account's trading EdDSA public key
+    /// @param  pubKeyY The second part of the account's trading EdDSA public key
     /// @param  tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param  amount The amount of tokens to deposit
     /// @return accountID The id of the account
