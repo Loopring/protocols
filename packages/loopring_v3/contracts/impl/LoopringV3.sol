@@ -292,7 +292,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             token.tierValidUntil += TIER_UPGRADE_DURATION;
         }
 
-        emit TokenBurnRateDown(_token, token.tier);
+        emit TokenBurnRateDown(_token, token.tier, now);
     }
 
     function withdrawBurned(

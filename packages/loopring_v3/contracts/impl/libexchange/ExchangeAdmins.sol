@@ -37,16 +37,17 @@ library ExchangeAdmins
     using ExchangeMode      for ExchangeData.State;
 
     event OperatorChanged(
-        uint exchangeId,
-        address oldOperator,
-        address newOperator
+        uint    indexed exchangeId,
+        address         oldOperator,
+        address         newOperator
     );
 
     event FeesUpdated(
-        uint accountCreationFeeETH,
-        uint accountUpdateFeeETH,
-        uint depositFeeETH,
-        uint withdrawalFeeETH
+        uint    indexed exchangeId,
+        uint            accountCreationFeeETH,
+        uint            accountUpdateFeeETH,
+        uint            depositFeeETH,
+        uint            withdrawalFeeETH
     );
 
     function setOperator(
@@ -89,6 +90,7 @@ library ExchangeAdmins
         S.withdrawalFeeETH = _withdrawalFeeETH;
 
         emit FeesUpdated(
+            S.id,
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,

@@ -33,16 +33,16 @@ library ExchangeBlocks
     using ExchangeMode      for ExchangeData.State;
 
     event BlockCommitted(
-        uint blockIdx,
-        bytes32 publicDataHash
+        uint    indexed blockIdx,
+        bytes32 indexed publicDataHash
     );
 
     event BlockFinalized(
-        uint blockIdx
+        uint    indexed blockIdx
     );
 
     event Revert(
-        uint blockIdx
+        uint    indexed blockIdx
     );
 
     function commitBlock(
