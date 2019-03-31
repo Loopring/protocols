@@ -19,7 +19,7 @@ pragma solidity 0.5.2;
 import "../../lib/MathUint.sol";
 
 import "../../iface/IBlockVerifier.sol";
-import "../../iface/ILoopring.sol";
+import "../../iface/ILoopring30.sol";
 
 import "./ExchangeAccounts.sol";
 import "./ExchangeData.sol";
@@ -47,10 +47,10 @@ library ExchangeGenesis
         require(address(0) != _operator, "ZERO_ADDRESS");
 
         S.id = _id;
-        S.loopring = ILoopring(_loopringAddress);
+        S.loopring = ILoopring30(_loopringAddress);
         S.operator = _operator;
 
-        ILoopring loopring = ILoopring(_loopringAddress);
+        ILoopring30 loopring = ILoopring30(_loopringAddress);
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
         S.lrcAddress = loopring.lrcAddress();
 

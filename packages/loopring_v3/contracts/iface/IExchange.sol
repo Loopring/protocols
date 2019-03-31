@@ -19,7 +19,7 @@ pragma solidity 0.5.2;
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchange30
+contract IExchange
 {
     // -- Events --
     // We need to make sure all events defined in exchange/*.sol

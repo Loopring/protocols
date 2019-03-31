@@ -16,13 +16,13 @@
 */
 pragma solidity 0.5.2;
 
-import "../Exchange30.sol";
+import "./Exchange.sol";
 
 
-/// @title An Implementation of IExchange30Deployer.
+/// @title An Implementation of IExchangeDeployer.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-library Exchange30Deployer
+library ExchangeDeployer
 {
     function deployExchange(
         uint    exchangeId,
@@ -33,7 +33,7 @@ library Exchange30Deployer
         external
         returns (address)
     {
-        Exchange30 exchange = new Exchange30(
+        Exchange exchange = new Exchange(
             exchangeId,
             loopringAddress,
             owner,

@@ -21,8 +21,6 @@ import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/NoDefaultFunc.sol";
 
-import "../../iface/ILoopring.sol";
-
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
