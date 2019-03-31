@@ -94,7 +94,6 @@ library ExchangeDeposits
         public
     {
         require(recipient != address(0), "ZERO_ADDRESS");
-        require(amount > 0, "ZERO_VALUE");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
@@ -164,7 +163,7 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens from the owner into this contract
-        if (tokenAddress != address(0)) {
+        if (amount > 0 && tokenAddress != address(0)) {
             require(
                 tokenAddress.safeTransferFrom(
                     accountOwner,
