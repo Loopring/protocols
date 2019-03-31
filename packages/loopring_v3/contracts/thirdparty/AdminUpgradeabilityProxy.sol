@@ -1,3 +1,8 @@
+// This code is taken from zeppelinos
+// https://github.com/zeppelinos/zos
+// Copyright (c) 2018 ZeppelinOS Global Limited.
+// License: MIT License
+
 pragma solidity 0.5.2;
 
 /**
