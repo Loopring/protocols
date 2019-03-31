@@ -330,6 +330,11 @@ contract IExchange2
     ///      This function will create a new account if such no account exists
     ///      for msg.sender, or update the existing account with the given trading
     ///      public key when the account exists.
+    ///
+    ///      Note that after such an operation, it will take the operator some
+    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
+    ///      and create the deposit to the offchain account.
+    ///
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyR The second part of the account's trading EdDSA public key
     /// @param  tokenAddress The adderss of the token, use `0x0` for Ether.
@@ -350,6 +355,11 @@ contract IExchange2
         );
 
     /// @dev Deposit Ether or ERC20 tokens to the sender's account.
+    ///
+    ///      Note that after such an operation, it will take the operator some
+    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
+    ///      and create the deposit to the offchain account.
+    ///
     /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     function deposit(
@@ -360,6 +370,11 @@ contract IExchange2
         payable;
 
     /// @dev Deposit Ether or ERC20 tokens to a recipient account.
+    ///
+    ///      Note that after such an operation, it will take the operator some
+    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
+    ///      and create the deposit to the offchain account.
+    ///
     /// @param recipient The address of the recipient
     /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
@@ -403,13 +418,23 @@ contract IExchange2
         );
 
     // Set the large value for amount to withdraw the complete balance
+    /// @dev Submit an onchain request to withdraw Ether or ERC20 tokens. To withdraw
+    ///      all the balance, use a very large number for `amount`.
+    ///
+    ///      Note that after such an operation, it will take the operator some
+    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
+    ///      and create the deposit to the offchain account.
+    ///
+    /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
+    /// @param amount The amount of tokens to deposit
     function withdraw(
-        address token,
+        address tokenAddress,
         uint96 amount
         )
         external
         payable;
 
+    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
     function withdrawFromMerkleTree(
         address token,
         uint32  nonce,
@@ -422,6 +447,7 @@ contract IExchange2
         payable;
 
     // We still alow anyone to withdraw these funds for the account owner
+    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
     function withdrawFromMerkleTreeFor(
         address owner,
         address token,
@@ -434,12 +460,14 @@ contract IExchange2
         external
         payable;
 
+    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
     function withdrawFromDepositRequest(
         uint depositRequestIdx
         )
         external
         payable;
 
+    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
     function withdrawFromApprovedWithdrawal(
         uint blockIdx,
         uint slotIdx
@@ -447,6 +475,7 @@ contract IExchange2
         external
         payable;
 
+    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
     function withdrawBlockFee(
         uint32 blockIdx
         )
@@ -454,6 +483,7 @@ contract IExchange2
         payable
         returns (uint feeAmount);
 
+    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
     function distributeWithdrawals(
         uint blockIdx
         )
@@ -461,12 +491,22 @@ contract IExchange2
         payable;
 
     // -- Admins --
+
+    /// @dev Set the operator address.
+    /// @param _operator The new operator's address
+    /// @return oldOperator The old operator's address
     function setOperator(
         address payable _operator
         )
         external
         returns (address payable oldOperator);
 
+    /// @dev Update fee settings.
+    ///      This function is only callable by the exchange owner.
+    /// @param _accountCreationFeeETH The fee in ETH for account creation
+    /// @param _accountUpdateFeeETH The fee in ETH for account update
+    /// @param _depositFeeETH The fee in ETH for deposits
+    /// @param _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
     function setFees(
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
@@ -475,6 +515,11 @@ contract IExchange2
         )
         external;
 
+    /// @dev Get current fee settings.
+    /// @return _accountCreationFeeETH The fee in ETH for account creation
+    /// @return _accountUpdateFeeETH The fee in ETH for account update
+    /// @return _depositFeeETH The fee in ETH for deposits
+    /// @return _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
     function getFees()
         external
         view
@@ -485,17 +530,45 @@ contract IExchange2
             uint _withdrawalFeeETH
         );
 
+    /// @dev Purchase downtime by burning LRC and enter the maintaince mode.
+    ///      In the maintainance mode,  all onchain user requests, including account creation,
+    ///      account update, deposits, and withdrawal requests are disabled.
+    ///
+    ///      If the remaining downtime is non-zero, calling this function will extend the
+    ///      remaining downtime by `durationSeconds`.
+    ///
+    ///      The only way to get out of the maintaince mode is waiting for the
+    ///      remaining downtime to reduce to 0. Therefore, exchange owner should be very
+    ///      cautious not to purchae too much downtime.
+    ///
+    ///      Once entering the maintainance mode, the operator should still fulfill his duty
+    ///      by submitting blocks and proofs until all pending user requests have been taken
+    ///      care of within the required timeouts. Then the operator can stop his servers and go
+    ///      completly offline.
+    ///
+    ///      TODO(brecht): after all pending onchain requests have been handled, can the operator
+    ///                    stop submitting any blocks (even empty blocks)? Ideally, the operator
+    ///                    should be able to stop all servers and go completely offchain.
+    ///
+    ///      This function is only callable by the exchange owner.
+    ///
+    /// @param durationSeconds The duration in seconds that this exchange will remain in
+    ///                        the maintaince mode.
     function purchaseDowntime(
         uint durationSeconds
         )
         external
         payable;
 
+    /// @dev Get the remaining downtime.
+    /// @return durationSeconds Remaining downtime in second.
     function getRemainingDowntime()
         external
         view
         returns (uint durationSeconds);
 
+    /// @dev Get the amount of LRC to burn for buying the downtime.
+    /// @return costLRC The amount of LRC to burn
     function getDowntimeCostLRC(
         uint durationSeconds
         )
