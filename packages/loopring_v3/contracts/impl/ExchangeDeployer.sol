@@ -16,7 +16,7 @@
 */
 pragma solidity 0.5.2;
 
-import "./Exchange.sol";
+import "./Exchange2.sol";
 
 
 /// @title An Implementation of IExchangeDeployer.
@@ -33,7 +33,7 @@ library ExchangeDeployer
         external
         returns (address)
     {
-        Exchange exchange = new Exchange(
+        Exchange2 exchange = new Exchange2(
             exchangeId,
             loopringAddress,
             owner,
