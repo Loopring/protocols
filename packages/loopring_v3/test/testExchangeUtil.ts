@@ -86,7 +86,6 @@ export class ExchangeTestUtil {
     await this.loopringV3.updateSettings(
       this.lrcAddress,
       this.wethAddress,
-      this.exchangeDeployer.address,
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
       new BN(0),
@@ -156,7 +155,7 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const depositInfo = await this.deposit(realmID, owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                           this.zeroAddress, new BN(0));
+                                           this.zeroAddress, new BN(1));
     const operator: Operator = {
       owner,
       accountID: depositInfo.accountID,
@@ -168,7 +167,7 @@ export class ExchangeTestUtil {
     // Make a dual author account for the wallet
     const walletDeposit = await this.deposit(realmID, owner,
                                              "0", "0", "0",
-                                             this.zeroAddress, new BN(0));
+                                             this.zeroAddress, new BN(1));
     const wallet: Wallet = {
       owner,
       walletAccountID: walletDeposit.accountID,
@@ -192,7 +191,7 @@ export class ExchangeTestUtil {
     // Make an account to receive fees
     const feeRecipientDeposit = await this.deposit(realmID, feeRecipient,
                                                    "0", "0", "0",
-                                                   lrcAddress, new BN(0));
+                                                   this.zeroAddress, new BN(1));
 
     return [minerDeposit.accountID, feeRecipientDeposit.accountID];
   }
@@ -319,14 +318,14 @@ export class ExchangeTestUtil {
     order.accountID = depositInfo.accountID;
 
     const balanceF = (order.balanceF !== undefined) ? order.balanceF : order.amountF;
-    if (balanceF.gt(0)) {
+    if (balanceF.gt(new BN(0))) {
       await this.deposit(order.realmID, order.owner,
                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                          order.tokenF, balanceF, order.accountID);
     }
 
     const balanceB = (order.balanceB !== undefined) ? order.balanceB : new BN(0);
-    if (balanceB.gt(0)) {
+    if (balanceB.gt(new BN(0))) {
       await this.deposit(order.realmID, order.owner,
                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                          order.tokenB, balanceB, order.accountID);

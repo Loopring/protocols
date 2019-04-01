@@ -97,7 +97,6 @@ contract ILoopringV3
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
-        address _exchangeDeployerAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
@@ -108,7 +107,8 @@ contract ILoopringV3
         external;
 
     function createExchange(
-        address payable _operator
+        address payable _operator,
+        bool onchainDataAvailability
         )
         external
         returns (
