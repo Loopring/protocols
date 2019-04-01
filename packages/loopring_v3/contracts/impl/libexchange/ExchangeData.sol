@@ -73,23 +73,49 @@ library ExchangeData
     }
 
 
-    // This is the (virtual) block an operator needs to submit onchain to maitain the
+    // This is the (virtual) block an operator needs to submit onchain to maintain the
     // per-exchange (virtual) blockchain.
-
-    // TODO(Brecht): please document each field.
     struct Block
     {
+        // The merkle root of the offchain data stored in a merkle tree. The merkle tree
+        // stores balances for users using an account model.
         bytes32 merkleRoot;
-        bytes32 publicDataHash;  // TODO(brecht): what is this?
+        // The hash of all the public data sent in commitBlock. Committing a block
+        // is decoupled from the verification of a block, but we don't want to send
+        // the (often) large amount of data (certainly with onchain data availability) again
+        // when verifying the proof so, we hash all that data onchain in commitBlock so that we
+        // can use it in verifyBlock to verify the block. This also makes the verification cheaper
+        // onchain because we only have this single public input.
+        bytes32 publicDataHash;
 
+        // The current state of the block. See @BlockState for more information.
         BlockState state;  // TODO(brecht): should we also use uint8 as for blockType?
+                           // Brecht: Checked the solidity docs, this will use the smallest
+                           //         data type needed, so uint8 will be used, so no need actually.
+                           //         Enum is more readible.
 
+        // The type of the block (i.e. what kind of requests were processed).
+        // See @BlockType for more information.
         uint8  blockType;
+        // The number of requests processed in the block. Only a limited number of permutations
+        // are available for each block type (because each will need a different circuit
+        // and thus different verification key onchain). Use IBlockVerifier.canVerify to find out if
+        // the block is supported.
         uint16 numElements;
+        // The time the block was created.
         uint32 timestamp;
+        // The number of onchain deposit requests that are processed
+        // up to and including this block
         uint32 numDepositRequestsCommitted;
+        // The number of onchain withdrawal requests that are processed
+        // up to and including this block
         uint32 numWithdrawRequestsCommitted;
+        // Stores whether the fee earned by the operator for processing onchain requests
+        // is withdrawn or not.
         bool   blockFeeWithdrawn;
+        // The approved withdrawal data. Needs to be stored onchain so this data is available
+        // once the block is finalized and the funds can be withdrawn using the info stored
+        // in this data.
         bytes  withdrawals;
     }
 
@@ -111,19 +137,20 @@ library ExchangeData
         uint96 amount;
     }
 
-    /// TODO(Brecht): please document this.
+    // I'm going to remove this, it's not worth it and cleaner if removed.
+    // TODO(brecht): remove
     function DEFAULT_ACCOUNT_PUBLICKEY_X() internal pure returns (uint)
     {
         return 2760979366321990647384327991146539505488430080750363450053902718557853404165;
     }
 
-    /// TODO(Brecht): please document this.
+    // TODO(brecht): remove
     function DEFAULT_ACCOUNT_PUBLICKEY_Y() internal pure returns (uint)
     {
         return 10771439851340068599303586501499035409517957710739943668636844002715618931667;
     }
 
-    /// TODO(Brecht): please document this.
+    // TODO(brecht): remove
     function DEFAULT_ACCOUNT_SECRETKEY() internal pure returns (uint)
     {
         return 531595266505639429282323989096889429445309320547115026296307576144623272935;
