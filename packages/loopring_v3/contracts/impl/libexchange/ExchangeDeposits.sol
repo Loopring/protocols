@@ -62,7 +62,7 @@ library ExchangeDeposits
         returns (uint)
     {
         uint numOpenRequests = S.depositChain.length - getNumDepositRequestsProcessed(S);
-        return ExchangeData.MAX_OPEN_REQUESTS() - numOpenRequests;
+        return ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS() - numOpenRequests;
     }
 
     function getDepositRequest(
@@ -106,7 +106,13 @@ library ExchangeDeposits
         uint24 accountID = S.getAccountID(recipient);
         ExchangeData.Account storage account = S.accounts[accountID];
 
-        transferDeposit(S, account.owner, tokenAddress, amount, additionalFeeETH);
+        transferDeposit(
+            S,
+            account.owner,
+            tokenAddress,
+            amount,
+            additionalFeeETH
+        );
 
         // Add the request to the deposit chain
         ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];
@@ -115,7 +121,10 @@ library ExchangeDeposits
                 abi.encodePacked(
                     prevRequest.accumulatedHash,
                     accountID,
-                    account.pubKeyX,
+                    account.pubKeyX,  // Include the pubKey to allow using the same circuit for
+                                      // account creation, account updating and depositing.
+                                      // In the circuit we always overwrite the public keys in
+                                      // the Account leaf with the data given onchain.
                     account.pubKeyY,
                     tokenID,
                     amount

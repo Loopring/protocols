@@ -51,7 +51,7 @@ contract BlockVerifier is IBlockVerifier, Ownable
         view
         returns (bool)
     {
-        // TODO
+        // TODO(brecht)
         return true;
     }
 

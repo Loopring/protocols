@@ -75,7 +75,7 @@ library ExchangeBlocks
         // Check if we still accept a proof for this block
         require(
             now <= specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            "TOO_LATE_PROOF"
+            "PROOF_TOO_LATE"
         );
 
         require(
@@ -133,7 +133,7 @@ library ExchangeBlocks
         // Check if this block is verified too late
         require(
             now > specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            "TOO_LATE_PROOF"
+            "PROOF_TOO_LATE"
         );
 
         // Burn the complete stake of the exchange
@@ -215,9 +215,9 @@ library ExchangeBlocks
                 startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
-            require (startIdx == numDepositRequestsCommitted, "INVALID_DEPOSITREQUEST_RANGE");
-            require (count <= numElements, "INVALID_DEPOSITREQUEST_RANGE");
-            require (startIdx + count <= S.depositChain.length, "INVALID_DEPOSITREQUEST_RANGE");
+            require (startIdx == numDepositRequestsCommitted, "INVALID_REQUEST_RANGE");
+            require (count <= numElements, "INVALID_REQUEST_RANGE");
+            require (startIdx + count <= S.depositChain.length, "INVALID_REQUEST_RANGE");
 
             bytes32 startingHash = S.depositChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = S.depositChain[startIdx + count - 1].accumulatedHash;
@@ -246,9 +246,9 @@ library ExchangeBlocks
                 startIdx := and(mload(add(data, 139)), 0xFFFFFFFF)
                 count := and(mload(add(data, 143)), 0xFFFFFFFF)
             }
-            require (startIdx == numWithdrawalRequestsCommitted, "INVALID_WITHDRAWREQUEST_RANGE");
-            require (count <= numElements, "INVALID_WITHDRAWREQUEST_RANGE");
-            require (startIdx + count <= S.withdrawalChain.length, "INVALID_WITHDRAWREQUEST_RANGE");
+            require (startIdx == numWithdrawalRequestsCommitted, "INVALID_REQUEST_RANGE");
+            require (count <= numElements, "INVALID_REQUEST_RANGE");
+            require (startIdx + count <= S.withdrawalChain.length, "INVALID_REQUEST_RANGE");
 
             bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
