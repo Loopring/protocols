@@ -101,9 +101,6 @@ contract IExchange
         public
         pure
         returns (
-            uint   DEFAULT_ACCOUNT_PUBLICKEY_X,
-            uint   DEFAULT_ACCOUNT_PUBLICKEY_Y,
-            uint   DEFAULT_ACCOUNT_SECRETKEY,
             uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
             uint16 MAX_OPEN_REQUESTS,
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,

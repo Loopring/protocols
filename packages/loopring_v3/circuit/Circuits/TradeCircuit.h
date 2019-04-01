@@ -300,8 +300,8 @@ public:
                         {balanceF_WA.Y, constants.emptyTradeHistory},
                         FMT(prefix, ".updateBalanceA_W")),
         updateAccountA_W(pb, updateAccount_B.result(), orderA.walletAccountID,
-                         {constants.zero, constants.zero, nonce_WA, balancesRoot_WA},
-                         {constants.zero, constants.zero, nonce_WA, updateBalanceA_W.getNewRoot()},
+                         {constants.one, constants.one, nonce_WA, balancesRoot_WA},
+                         {constants.one, constants.one, nonce_WA, updateBalanceA_W.getNewRoot()},
                          FMT(prefix, ".updateAccountA_W")),
 
         // Update WalletB
@@ -312,8 +312,8 @@ public:
                         {balanceF_WB.Y, constants.emptyTradeHistory},
                         FMT(prefix, ".updateBalanceB_W")),
         updateAccountB_W(pb, updateAccountA_W.result(), orderB.walletAccountID,
-                         {constants.zero, constants.zero, nonce_WB, balancesRoot_WB},
-                         {constants.zero, constants.zero, nonce_WB, updateBalanceB_W.getNewRoot()},
+                         {constants.one, constants.one, nonce_WB, balancesRoot_WB},
+                         {constants.one, constants.one, nonce_WB, updateBalanceB_W.getNewRoot()},
                          FMT(prefix, ".updateAccountB_W")),
 
         // Update FeeRecipient
@@ -326,8 +326,8 @@ public:
                         {balanceF_MB.Y, constants.emptyTradeHistory},
                         FMT(prefix, ".updateBalanceB_F")),
         updateAccount_F(pb, updateAccountB_W.result(), feeRecipientAccountID.bits,
-                        {constants.zero, constants.zero, feeRecipientNonce, balancesRootF},
-                        {constants.zero, constants.zero, feeRecipientNonce, updateBalanceB_F.getNewRoot()},
+                        {constants.one, constants.one, feeRecipientNonce, balancesRootF},
+                        {constants.one, constants.one, feeRecipientNonce, updateBalanceB_F.getNewRoot()},
                         FMT(prefix, ".updateAccount_M")),
 
         // Update Ring-Matcher

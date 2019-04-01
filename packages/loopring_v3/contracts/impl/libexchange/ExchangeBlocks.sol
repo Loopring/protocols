@@ -217,8 +217,8 @@ library ExchangeBlocks
                     abi.encodePacked(
                         endingHash,
                         uint24(0),
-                        ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_X(),
-                        ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_Y(),
+                        uint256(0),
+                        uint256(0),
                         uint16(0),
                         uint96(0)
                     )
