@@ -57,7 +57,7 @@ library ExchangeGenesis
         S.lrcAddress = loopring.lrcAddress();
 
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
-            0x2fb632af61a9ffb71034df05d1d62e8fb6112095bd28cddf56d5f2e4b57064be,
+            0x035cfa8f3dc9086ce9e24bc8b49d757b03fb830ee2902084e213849b05dd708f,
             0x0,
             ExchangeData.BlockState.FINALIZED,
             0xFF,
@@ -79,16 +79,15 @@ library ExchangeGenesis
         S.depositChain.push(genesisRequest);
         S.withdrawalChain.push(genesisRequest);
 
-        // This account is used for padding deposits and onchain withdrawal requests so this might
-        // be a bit confusing otherwise.  Because the private key is known by anyone it can also
-        // be used to create dummy offhcain withdrawals/dummy orders to fill blocks when needed.
-        // Because this account is all zeros it is also the most gas efficient one to use in terms
-        // of calldata.
-
+        // This account is used for padding deposits and onchain withdrawal requests. While we do
+        // do not necessarily need a special account for this (we could use the data of the first account
+        // to do the padding) it's easier and more efficient if this data remains the same.
+        // The account owner of account ID 0 would also see many deposit/withdrawal events for his account
+        // that should simply be ignored.
         ExchangeData.Account memory defaultAccount = ExchangeData.Account(
             address(0),
-            ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_X(),
-            ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_Y()
+            uint256(0),
+            uint256(0)
         );
 
         S.accounts.push(defaultAccount);
@@ -96,8 +95,8 @@ library ExchangeGenesis
         // emit AccountUpdated(
         //     address(0),
         //     uint24(0),
-        //     DEFAULT_ACCOUNT_PUBLICKEY_X,
-        //     DEFAULT_ACCOUNT_PUBLICKEY_Y
+        //     uint256(0),
+        //     uint256(0)
         // );
 
         // Call these after the main state has been set up

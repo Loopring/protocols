@@ -49,9 +49,9 @@ export class ExchangeTestUtil {
   public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
   public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
-  public DEFAULT_ACCOUNT_SECRETKEY: string;
-  public DEFAULT_ACCOUNT_PUBLICKEY_X: string;
-  public DEFAULT_ACCOUNT_PUBLICKEY_Y: string;
+
+  public dummyAccountId: number;
+  public dummyAccountKeyPair: any;
 
   public MAX_NUM_STATES: number = 64;
 
@@ -126,9 +126,6 @@ export class ExchangeTestUtil {
     );
 
     const settings = (await this.exchange.getGlobalSettings());
-    this.DEFAULT_ACCOUNT_SECRETKEY = settings.DEFAULT_ACCOUNT_SECRETKEY.toString(),
-    this.DEFAULT_ACCOUNT_PUBLICKEY_X = settings.DEFAULT_ACCOUNT_PUBLICKEY_X.toString(),
-    this.DEFAULT_ACCOUNT_PUBLICKEY_Y = settings.DEFAULT_ACCOUNT_PUBLICKEY_Y.toString(),
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
     this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
     this.STAKE_AMOUNT_IN_LRC = new BN(0);
@@ -136,6 +133,14 @@ export class ExchangeTestUtil {
   }
 
   public async setupTestState(realmID: number) {
+
+    const keyPair = this.getKeyPairEDDSA();
+    const depositInfo = await this.deposit(realmID, this.testContext.deployer,
+                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                           this.zeroAddress, new BN(1));
+    this.dummyAccountId = depositInfo.accountID;
+    this.dummyAccountKeyPair = keyPair;
+
     this.operators[realmID] = await this.createOperator(realmID, this.testContext.operators[0]);
 
     [this.minerAccountID[realmID], this.feeRecipientAccountID[realmID]] = await this.createRingMatcher(
@@ -705,9 +710,9 @@ export class ExchangeTestUtil {
             const dummyDeposit: Deposit = {
               depositBlockIdx: deposits[0].depositBlockIdx,
               accountID: 0,
-              secretKey: this.DEFAULT_ACCOUNT_SECRETKEY,
-              publicKeyX: this.DEFAULT_ACCOUNT_PUBLICKEY_X,
-              publicKeyY: this.DEFAULT_ACCOUNT_PUBLICKEY_Y,
+              secretKey: "0",
+              publicKeyX: "0",
+              publicKeyY: "0",
               tokenID: 0,
               amount: new BN(0),
             };
@@ -853,7 +858,7 @@ export class ExchangeTestUtil {
         } else {
           const walletAccountID = this.wallets[realmID][0].walletAccountID;
           const dummyWithdrawalRequest: WithdrawalRequest = {
-            accountID: 0,
+            accountID: onchain ? 0 : this.dummyAccountId,
             tokenID: 0,
             amount: new BN(0),
             walletAccountID,
@@ -998,7 +1003,7 @@ export class ExchangeTestUtil {
               {
                 realmID,
                 orderID: 0,
-                accountID: 0,
+                accountID: this.dummyAccountId,
                 walletAccountID,
 
                 dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
@@ -1006,7 +1011,7 @@ export class ExchangeTestUtil {
                 dualAuthSecretKey: this.dualAuthKeyPair.secretKey,
 
                 tokenIdS: 0,
-                tokenIdB: 0,
+                tokenIdB: 1,
                 tokenIdF: 0,
 
                 allOrNone: false,
@@ -1023,14 +1028,14 @@ export class ExchangeTestUtil {
               {
                 realmID,
                 orderID: 0,
-                accountID: 0,
+                accountID: this.dummyAccountId,
                 walletAccountID,
 
                 dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
                 dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
                 dualAuthSecretKey: this.dualAuthKeyPair.secretKey,
 
-                tokenIdS: 0,
+                tokenIdS: 1,
                 tokenIdB: 0,
                 tokenIdF: 0,
 

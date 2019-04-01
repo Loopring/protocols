@@ -15,11 +15,6 @@ TREE_DEPTH_TRADING_HISTORY = 16
 TREE_DEPTH_ACCOUNTS = 24
 TREE_DEPTH_TOKENS = 12
 
-DEFAULT_ACCOUNT_PUBLICKEY_X = 2760979366321990647384327991146539505488430080750363450053902718557853404165
-DEFAULT_ACCOUNT_PUBLICKEY_Y = 10771439851340068599303586501499035409517957710739943668636844002715618931667
-DEFAULT_ACCOUNT_SECRETKEY   = 531595266505639429282323989096889429445309320547115026296307576144623272935
-
-
 def copyBalanceInfo(leaf):
     c = copy.deepcopy(leaf)
     c.tradingHistoryRoot = str(leaf._tradingHistoryTree._root)
@@ -35,7 +30,7 @@ def copyAccountInfo(account):
     return c
 
 def getDefaultAccount():
-    return Account(DEFAULT_ACCOUNT_SECRETKEY, Point(DEFAULT_ACCOUNT_PUBLICKEY_X, DEFAULT_ACCOUNT_PUBLICKEY_Y))
+    return Account(0, Point(0, 0))
 
 class Context(object):
     def __init__(self, operatorAccountID, timestamp):
@@ -144,12 +139,15 @@ class Account(object):
         self._balancesTree._root = jAccount["_balancesTree"]["_root"]
         self._balancesTree._db.kv = jAccount["_balancesTree"]["_db"]["kv"]
 
-    def getBalance(self, address):
+    def getBalanceLeaf(self, address):
         # Make sure the leaf exist in our map
         if not(str(address) in self._balancesLeafs):
-            return int(0)
+            return BalanceLeaf()
         else:
-            return self._balancesLeafs[str(address)].balance
+            return self._balancesLeafs[str(address)]
+
+    def getBalance(self, address):
+        return self.getBalanceLeaf(address).balance
 
     def updateBalance(self, tokenID, amount):
         # Make sure the leaf exist in our map
@@ -580,7 +578,7 @@ class State(object):
 
     def getMaxFillAmounts(self, order):
         account = self.getAccount(order.accountID)
-        tradeHistory = account._balancesLeafs[str(order.tokenS)].getTradeHistory(int(order.orderID))
+        tradeHistory = account.getBalanceLeaf(order.tokenS).getTradeHistory(int(order.orderID))
         order.tradeHistoryFilled = str(tradeHistory.filled)
         order.tradeHistoryCancelled = int(tradeHistory.cancelled)
         order.tradeHistoryOrderID = int(tradeHistory.orderID)
