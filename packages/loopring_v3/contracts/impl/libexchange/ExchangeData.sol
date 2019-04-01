@@ -146,6 +146,7 @@ library ExchangeData
 
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
     function MAX_OPEN_REQUESTS() internal pure returns (uint16) { return 1024; }
+    function MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
     function MAX_AGE_REQUEST_UNTIL_FORCED() internal pure returns (uint32) { return 1 days; }
     function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
@@ -182,5 +183,7 @@ library ExchangeData
 
         // A map from an account owner to a token to if the balance is withdrawn
         mapping (address => mapping (address => bool)) withdrawnInWithdrawMode;
+
+        uint numBlocksFinalized;
     }
 }

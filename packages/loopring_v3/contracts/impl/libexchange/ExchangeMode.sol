@@ -38,16 +38,38 @@ library ExchangeMode
         result = false;
         ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
 
+        // Check if there's a deposit request that's too old
         if (currentBlock.numDepositRequestsCommitted < S.depositChain.length) {
             uint32 requestTimestamp = S.depositChain[currentBlock.numDepositRequestsCommitted].timestamp;
 
             result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
         }
 
+        // Check if there's a withdrawal request that's too old
         if (result == false && currentBlock.numWithdrawalRequestsCommitted < S.withdrawalChain.length) {
             uint32 requestTimestamp = S.withdrawalChain[currentBlock.numWithdrawalRequestsCommitted].timestamp;
 
             result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
+        }
+
+        // Check if there's an unfinalized block that's too old
+        if (result == false) {
+            result = isAnyUnfinalizedBlockTooOld(S);
+        }
+    }
+
+    function isAnyUnfinalizedBlockTooOld(
+        ExchangeData.State storage S
+        )
+        internal // inline call
+        view
+        returns (bool)
+    {
+        if (S.numBlocksFinalized < S.blocks.length) {
+            uint32 blockTimestamp = S.blocks[S.numBlocksFinalized].timestamp;
+            return blockTimestamp < now.sub(ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE());
+        } else {
+            return false;
         }
     }
 }

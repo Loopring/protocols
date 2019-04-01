@@ -83,6 +83,7 @@ contract Exchange is IExchange, Ownable
         returns (
             uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
             uint16 MAX_OPEN_REQUESTS,
+            uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
             uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
@@ -92,6 +93,7 @@ contract Exchange is IExchange, Ownable
         return (
             ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
             ExchangeData.MAX_OPEN_REQUESTS(),
+            ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE(),
             ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED(),
             ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(),
             ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
@@ -233,6 +235,15 @@ contract Exchange is IExchange, Ownable
         return state.loopring.getStake(state.id);
     }
 
+    function burnStake()
+        external
+    {
+        if(state.isAnyUnfinalizedBlockTooOld()) {
+            // Burn the complete stake of the exchange
+            state.loopring.burnAllStake(state.id);
+        }
+    }
+
     // -- Blocks --
     function getBlockHeight()
         external
@@ -240,6 +251,14 @@ contract Exchange is IExchange, Ownable
         returns (uint)
     {
         return state.blocks.length - 1;
+    }
+
+    function getNumBlocksFinalized()
+        external
+        view
+        returns (uint)
+    {
+        return state.numBlocksFinalized;
     }
 
     function commitBlock(
@@ -269,6 +288,7 @@ contract Exchange is IExchange, Ownable
         uint32 blockIdx
         )
         external
+        onlyOperator
     {
         state.revertBlock(blockIdx);
     }
