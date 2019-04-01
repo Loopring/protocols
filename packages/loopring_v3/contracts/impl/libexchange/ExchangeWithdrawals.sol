@@ -167,8 +167,8 @@ library ExchangeWithdrawals
     {
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
-        ExchangeData.Block storage lastBlock = S.blocks[S.blocks.length - 1];
-        require(lastBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        ExchangeData.Block storage lastFinalizedBlock = S.blocks[S.numBlocksFinalized - 1];
+        assert(lastFinalizedBlock.state == ExchangeData.BlockState.FINALIZED);
 
         uint24 accountID = S.getAccountID(owner);
         ExchangeData.Account storage account = S.accounts[accountID];
@@ -176,7 +176,7 @@ library ExchangeWithdrawals
         require(S.withdrawnInWithdrawMode[owner][token] == false, "WITHDRAWN_ALREADY");
 
         ExchangeBalances.verifyAccountBalance(
-            uint256(lastBlock.merkleRoot),
+            uint256(lastFinalizedBlock.merkleRoot),
             accountID,
             tokenID,
             account.pubKeyX,
@@ -209,10 +209,10 @@ library ExchangeWithdrawals
     {
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
-        ExchangeData.Block storage lastBlock = S.blocks[S.blocks.length - 1];
-        require(lastBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        ExchangeData.Block storage lastFinalizedBlock = S.blocks[S.numBlocksFinalized - 1];
+        assert(lastFinalizedBlock.state == ExchangeData.BlockState.FINALIZED);
 
-        require (depositRequestIdx < lastBlock.numDepositRequestsCommitted, "REQUEST_COMMITTED_ALREADY");
+        require (depositRequestIdx < lastFinalizedBlock.numDepositRequestsCommitted, "REQUEST_COMMITTED_ALREADY");
 
         ExchangeData.Deposit storage _deposit = S.deposits[depositRequestIdx];
 
@@ -341,7 +341,7 @@ library ExchangeWithdrawals
 
         // Check if this is a withdraw block
         require(withdrawBlock.blockType == uint8(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
-                withdrawBlock.blockType == uint8(ExchangeData.BlockType.OFFCHAIN_WITHDRAW), "BLOCK_NOT_FINALIZED");
+                withdrawBlock.blockType == uint8(ExchangeData.BlockType.OFFCHAIN_WITHDRAW), "INVALID_BLOCK_TYPE");
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
         // Check if the witdrawals were already completely distributed

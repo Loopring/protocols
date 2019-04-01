@@ -70,6 +70,7 @@ library ExchangeGenesis
             new bytes(0)
         );
         S.blocks.push(genesisBlock);
+        S.numBlocksFinalized = 1;
 
         ExchangeData.Request memory genesisRequest = ExchangeData.Request(
             0,
