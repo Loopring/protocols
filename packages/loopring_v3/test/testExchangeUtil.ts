@@ -1142,7 +1142,7 @@ export class ExchangeTestUtil {
         } else {
           const walletAccountID = this.wallets[realmID][0].walletAccountID;
           const dummyCancel: Cancel = {
-            accountID: 0,
+            accountID: this.dummyAccountId,
             orderTokenID: 0,
             orderID: 0,
             walletAccountID,
