@@ -199,15 +199,16 @@ library ExchangeBlocks
                 "INVALID_TIMESTAMP"
             );
         } else if (blockType == uint(ExchangeData.BlockType.DEPOSIT)) {
+            // TODO(brecht): We need to document the data layout.
             uint startIdx = 0;
             uint count = 0;
             assembly {
                 startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
-            require (startIdx == numDepositRequestsCommitted, "INVALID_DEPOSITREQUEST_RANGE");
-            require (count <= numElements, "INVALID_DEPOSITREQUEST_RANGE");
-            require (startIdx + count <= S.depositChain.length, "INVALID_DEPOSITREQUEST_RANGE");
+            require (startIdx == numDepositRequestsCommitted, "INVALID_DEPOSIT_REQUEST_RANGE");
+            require (count <= numElements, "INVALID_DEPOSIT_REQUEST_RANGE");
+            require (startIdx + count <= S.depositChain.length, "INVALID_DEPOSIT_REQUEST_RANGE");
 
             bytes32 startingHash = S.depositChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = S.depositChain[startIdx + count - 1].accumulatedHash;
@@ -230,6 +231,7 @@ library ExchangeBlocks
             }
             numDepositRequestsCommitted = uint32(startIdx + count);
         } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW)) {
+            // TODO(brecht): We need to document the data layout.
             uint startIdx = 0;
             uint count = 0;
             assembly {
