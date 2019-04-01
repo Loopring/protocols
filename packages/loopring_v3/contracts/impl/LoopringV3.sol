@@ -75,7 +75,8 @@ contract LoopringV3 is ILoopringV3, Ownable
     }
 
     function createExchange(
-        address payable _operator
+        address payable _operator,
+        bool onchainDataAvailability
         )
         external
         returns (
@@ -104,7 +105,8 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeId,
             address(this),
             msg.sender,
-            operator
+            operator,
+            onchainDataAvailability
         );
         exchanges.push(exchangeAddress);
 

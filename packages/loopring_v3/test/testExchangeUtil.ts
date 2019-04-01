@@ -600,7 +600,6 @@ export class ExchangeTestUtil {
     // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
     const tx = await this.exchange.commitBlock(
       web3.utils.toBN(blockType),
-      true,
       web3.utils.toBN(numElements),
       web3.utils.hexToBytes(data),
       {from: this.exchangeOperator},
@@ -1239,7 +1238,7 @@ export class ExchangeTestUtil {
     await LRC.approve(this.loopringV3.address, exchangeCreationCostLRC, {from: owner});
 
     // Create the new exchange
-    const tx = await this.loopringV3.createExchange(owner, {from: owner});
+    const tx = await this.loopringV3.createExchange(owner, true, {from: owner});
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.loopringV3, "ExchangeCreated", web3.eth.blockNumber);

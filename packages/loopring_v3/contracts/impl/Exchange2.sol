@@ -53,7 +53,8 @@ contract Exchange2 is IExchange2, Ownable
         uint    _id,
         address _loopringAddress,
         address _owner,
-        address payable _operator
+        address payable _operator,
+        bool    _onchainDataAvailability
         )
         public
         payable
@@ -64,7 +65,8 @@ contract Exchange2 is IExchange2, Ownable
         state.initializeGenesisBlock(
             _id,
             _loopringAddress,
-            _operator
+            _operator,
+            _onchainDataAvailability
         );
     }
 
@@ -251,7 +253,7 @@ contract Exchange2 is IExchange2, Ownable
         payable
         onlyOperator
     {
-        state.commitBlock(blockType, true, numElements, data);
+        state.commitBlock(blockType, numElements, data);
     }
 
     function verifyBlock(

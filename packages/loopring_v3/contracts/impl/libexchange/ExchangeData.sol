@@ -97,7 +97,6 @@ library ExchangeData
         // The type of the block (i.e. what kind of requests were processed).
         // See @BlockType for more information.
         uint8  blockType;
-        bool   onchainDataAvailability;
         // The number of requests processed in the block. Only a limited number of permutations
         // are available for each block type (because each will need a different circuit
         // and thus different verification key onchain). Use IBlockVerifier.canVerify to find out if
@@ -114,6 +113,7 @@ library ExchangeData
         // Stores whether the fee earned by the operator for processing onchain requests
         // is withdrawn or not.
         bool   blockFeeWithdrawn;
+        // Number of withdrawals distributed using distributeWithdrawals
         uint16 numWithdrawalsDistributed;
         // The approved withdrawal data. Needs to be stored onchain so this data is available
         // once the block is finalized and the funds can be withdrawn using the info stored
@@ -171,6 +171,7 @@ library ExchangeData
     {
         uint    id;
         address payable operator; // The only address that can submit new blocks.
+        bool    onchainDataAvailability;
 
         ILoopringV3    loopring;
         IBlockVerifier blockVerifier;

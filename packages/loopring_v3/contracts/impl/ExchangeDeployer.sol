@@ -31,7 +31,8 @@ library ExchangeDeployer
         uint    exchangeId,
         address loopringAddress,
         address owner,
-        address payable operator
+        address payable operator,
+        bool    onchainDataAvailability
         )
         external
         returns (address)
@@ -40,7 +41,8 @@ library ExchangeDeployer
             exchangeId,
             loopringAddress,
             owner,
-            operator
+            operator,
+            onchainDataAvailability
         );
         return address(exchange);
     }
