@@ -65,7 +65,7 @@ library ExchangeWithdrawals
         returns (uint)
     {
         ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
-        return currentBlock.numWithdrawRequestsCommitted;
+        return currentBlock.numWithdrawalRequestsCommitted;
     }
 
     function getNumAvailableWithdrawalSlots(
@@ -311,9 +311,9 @@ library ExchangeWithdrawals
             feeAmount = S.depositChain[requestedBlock.numDepositRequestsCommitted - 1].accumulatedFee.sub(
                 S.depositChain[previousBlock.numDepositRequestsCommitted - 1].accumulatedFee
             );
-        } else if(requestedBlock.numWithdrawRequestsCommitted > previousBlock.numWithdrawRequestsCommitted) {
-            feeAmount = S.withdrawalChain[requestedBlock.numWithdrawRequestsCommitted - 1].accumulatedFee.sub(
-                S.withdrawalChain[previousBlock.numWithdrawRequestsCommitted - 1].accumulatedFee
+        } else if(requestedBlock.numWithdrawalRequestsCommitted > previousBlock.numWithdrawalRequestsCommitted) {
+            feeAmount = S.withdrawalChain[requestedBlock.numWithdrawalRequestsCommitted - 1].accumulatedFee.sub(
+                S.withdrawalChain[previousBlock.numWithdrawalRequestsCommitted - 1].accumulatedFee
             );
         } else {
             revert("BLOCK_HAS_NO_OPERATOR_FEE");
