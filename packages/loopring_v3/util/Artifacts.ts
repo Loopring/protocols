@@ -15,7 +15,7 @@ export class Artifacts {
   public TESTToken: any;
   constructor(artifacts: any) {
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
-    this.Exchange = artifacts.require("impl/Exchange2");
+    this.Exchange = artifacts.require("impl/Exchange");
     this.ExchangeDeployer = artifacts.require("impl/ExchangeDeployer");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
     this.DummyToken = artifacts.require("test/DummyToken");
