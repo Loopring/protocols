@@ -153,7 +153,19 @@ contract IExchange2
         );
 
     // -- Balances --
-    // TODO(brecht): document this method
+    /// @dev Verifies that the given information is stored in the merkle tree with
+    ///      the specified merkle root.
+    /// @param  merkleRoot The merkle tree root of all account data
+    /// @param  accountID The ID of the account the balance is verified for
+    /// @param  tokenID The ID of the token the balance is verified for
+    /// @param  pubKeyX The first part of the public key of the account
+    /// @param  pubKeyY The second part of the public key of the account
+    /// @param  nonce The nonce of the account
+    /// @param  balance The balance of the account for the given token
+    /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
+    /// @param  accountPath The merkle proof for the account
+    /// @param  accountPath The merkle proof for the balance of the token for the account
+    /// @return True if the given information is stored in the merkle tree, false otherwise
     function isAccountBalanceCorrect(
         uint256 merkleRoot,
         uint24  accountID,
@@ -297,7 +309,11 @@ contract IExchange2
         payable;
 
     // -- Deposits --
-    /// TODO(brecht): document this
+    /// @dev Returns the index of the first deposit request that wasn't yet included
+    ///      in a block. Can be used to check if a deposit with a given depositIdx
+    ///      (as specified in the @DepositRequested event) was processed by the operator.
+    /// @return The index of the first unprocessed deposit request
+    /// TODO(daniel): Maybe a better name for this would be getNumDepositRequestsProcessed?
     function getFirstUnprocessedDepositRequestIndex()
         external
         view
@@ -387,7 +403,11 @@ contract IExchange2
         payable;
 
     // -- Withdrawals --
-    /// TODO(brecht): document this
+    /// @dev Returns the index of the first withdrawal request that wasn't yet included
+    ///      in a block. Can be used to check if a withdrawal with a given withdrawalIdx
+    ///      (as specified in the @WithdrawalRequested event) was processed by the operator.
+    /// @return The index of the first unprocessed withdrawal request
+    /// TODO(daniel): Maybe a better name for this would be getNumWithdrawalRequestsProcessed?
     function getFirstUnprocessedWithdrawalRequestIndex()
         external
         view
@@ -434,7 +454,22 @@ contract IExchange2
         external
         payable;
 
-    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
+    /// @dev Allows an account owner to withdraw his funds using the balances stored
+    ///      in the merkle tree. The funds will be sent to the owner of the acount.
+    ///
+    ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
+    ///      committing blocks and is not able to commit anymore blocks).
+    ///
+    ///      This will NOT modify the onchain merkle root! The merkle root stored
+    ///      onchain will remain the same after the withdrawal. We store if the user
+    ///      has withdrawn the balance in State.withdrawnInWithdrawMode.
+    ///
+    /// @param  token The address of the token to withdraw the tokens for
+    /// @param  nonce The nonce of the account
+    /// @param  balance The balance of the account for the given token
+    /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
+    /// @param  accountPath The merkle proof for the account
+    /// @param  accountPath The merkle proof for the balance of the token
     function withdrawFromMerkleTree(
         address token,
         uint32  nonce,
@@ -446,8 +481,23 @@ contract IExchange2
         external
         payable;
 
-    // We still alow anyone to withdraw these funds for the account owner
-    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
+    /// @dev Allows anyone to withdraw funds for a specified user using the balances stored
+    ///      in the merkle tree. The funds will be sent to the owner of the acount.
+    ///
+    ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
+    ///      committing blocks and is not able to commit anymore blocks).
+    ///
+    ///      This will NOT modify the onchain merkle root! The merkle root stored
+    ///      onchain will remain the same after the withdrawal. We store if the user
+    ///      has withdrawn the balance in State.withdrawnInWithdrawMode.
+    ///
+    /// @param  owner The owner of the account to withdraw the funds for.
+    /// @param  token The address of the token to withdraw the tokens for
+    /// @param  nonce The nonce of the account
+    /// @param  balance The balance of the account for the given token
+    /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
+    /// @param  accountPath The merkle proof for the account
+    /// @param  accountPath The merkle proof for the balance of the token
     function withdrawFromMerkleTreeFor(
         address owner,
         address token,
@@ -460,14 +510,43 @@ contract IExchange2
         external
         payable;
 
-    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
+    /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
+    ///      it was never committed in a block (so the balance in the merkle tree was
+    ///      not updated).
+    ///
+    ///      Can be called by anyone. The deposited tokens will be sent back to
+    ///      the owner of the account they were deposited in.
+    ///
+    ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
+    ///      committing blocks and is not able to commit anymore blocks).
+    ///
+    /// @param  depositRequestIdx The index of the deposit request (as given in the
+    ///                           depositIdx field in the @DepositRequested event)
     function withdrawFromDepositRequest(
         uint depositRequestIdx
         )
         external
         payable;
 
-    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
+    /// @dev Allows withdrawing funds after a withdrawal request (either onchain
+    ///      or offchain) was committed in a block by the operator.
+    ///
+    ///      Can be called by anyone. The deposited tokens will be sent to
+    ///      the owner of the account they were withdrawn out.
+    ///
+    ///      Normally is should not be needed for users to call this manually.
+    ///      Funds from withdrawal requests will be sent to the account owner
+    ///      by the operator in distributeWithdrawals. The user can however
+    ///      choose to withdraw earlier if he wants, or will need to call this
+    ///      manually if the nobody calls distributeWithdrawals.
+    ///
+    ///      Funds can only be withdrawn from requests processed in a
+    ///      finalized block (i.e. a block that can never be reverted).
+    ///
+    /// @param  blockIdx The block the withdrawal requests was committed in
+    /// @param  slotIdx The index in the list of withdrawals that were processed
+    ///                 by the operator. It is not possible for users to know
+    ///                 what this index will be for their withdrawal request.
     function withdrawFromApprovedWithdrawal(
         uint blockIdx,
         uint slotIdx
@@ -475,7 +554,16 @@ contract IExchange2
         external
         payable;
 
-    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
+    /// @dev Allows the operator to withdraw the fees he earned by processing the
+    ///      deposit and onchain withdrawal requests.
+    ///
+    ///      Can be called by anyone. The funds will be sent to the operator.
+    ///
+    ///      The block fee can only be withdrawn from finalized blocks
+    ///      (i.e. blocks that can never be reverted).
+    ///
+    /// @param  blockIdx The block index to withdraw the funds for
+    /// @return feeAmount The amount of ETH earned in the block and sent to the operator
     function withdrawBlockFee(
         uint32 blockIdx
         )
@@ -483,7 +571,22 @@ contract IExchange2
         payable
         returns (uint feeAmount);
 
-    /// TODO(Brecht): document this function. Need more info regarding when this method will be used.
+    /// @dev Distributes the the funds to the account owners after their withdrawal
+    ///      requests were processed by the operator.
+    ///
+    ///      Needs to be called by the operator after submitting a block processing
+    ///      withdrawal requests (either onchain or offchain requests) after the block
+    ///      is finalized and before the block is MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS seconds old.
+    ///      If the operator fails to do so anyone will be able to call this function
+    ///      and the stake of the exchange will be used to reward the caller of this function.
+    ///      The amount of stake withdrawn is calculated as follows:
+    ///      totalFine = withdrawalFineLRC * numWithdrawalRequestsInBlock
+    ///      The caller of the function will be rewarded half this amount,
+    ///      the other half is burned.
+    ///
+    ///      Only withdrawals processed in finalized blocks can be distributed.
+    ///
+    /// @param  blockIdx The block index to distribute the funds from the withdrawal requests for
     function distributeWithdrawals(
         uint blockIdx
         )
@@ -549,6 +652,12 @@ contract IExchange2
     ///      TODO(brecht): after all pending onchain requests have been handled, can the operator
     ///                    stop submitting any blocks (even empty blocks)? Ideally, the operator
     ///                    should be able to stop all servers and go completely offchain.
+    ///      Brecht: Yes, the operator is only forced to do onchain requests. If there are no onchain
+    ///              requests the operator does not need to do anything.
+    //               Now that I think about this,
+    ///              we should stop the operator of committing any other type of block. He could abuse
+    ///              this mechanism to keep submitting ring settlements using funds users may want to
+    ///              withdraw.
     ///
     ///      This function is only callable by the exchange owner.
     ///
