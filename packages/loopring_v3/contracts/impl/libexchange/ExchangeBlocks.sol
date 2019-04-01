@@ -72,6 +72,12 @@ library ExchangeBlocks
         ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
         require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "BLOCK_VERIFIED_ALREADY");
 
+        // Check if we still accept a proof for this block
+        require(
+            now <= specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
+            "TOO_LATE_PROOF"
+        );
+
         require(
             S.blockVerifier.verifyProof(
                 specifiedBlock.blockType,
@@ -87,6 +93,7 @@ library ExchangeBlocks
         ExchangeData.Block storage previousBlock = S.blocks[blockIdx - 1];
         if (previousBlock.state == ExchangeData.BlockState.FINALIZED) {
             specifiedBlock.state = ExchangeData.BlockState.FINALIZED;
+            S.numBlocksFinalized = blockIdx + 1;
             emit BlockFinalized(blockIdx);
             // The next blocks could become finalized as well so check this now
             // The number of blocks after the specified block index is limited
@@ -96,6 +103,7 @@ library ExchangeBlocks
                 S.blocks[nextBlockIdx].state == ExchangeData.BlockState.VERIFIED) {
 
                 S.blocks[nextBlockIdx].state = ExchangeData.BlockState.FINALIZED;
+                S.numBlocksFinalized = nextBlockIdx + 1;
                 emit BlockFinalized(nextBlockIdx);
                 nextBlockIdx++;
             }
@@ -110,6 +118,9 @@ library ExchangeBlocks
         )
         public
     {
+        // Exchange cannot be in withdraw mode
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
         require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "INVALID_BLOCK_STATE");
@@ -117,7 +128,7 @@ library ExchangeBlocks
         // The specified block needs to be the first block not finalized
         // (this way we always revert to a guaranteed valid block and don't need to revert multiple times)
         ExchangeData.Block storage previousBlock = S.blocks[uint(blockIdx).sub(1)];
-        require(previousBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        require(previousBlock.state == ExchangeData.BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
 
         // Check if this block is verified too late
         require(
@@ -125,9 +136,8 @@ library ExchangeBlocks
             "TOO_LATE_PROOF"
         );
 
-        // TODO(brecht): - burn stake amount of Exchange
-        //       - store info somewhere in Exchange contract what block was reverted so
-        //       - the ExchangeOwner can punish the operator that submitted the block
+        // Burn the complete stake of the exchange
+        S.loopring.burnAllStake(S.id);
 
         // Remove all blocks after and including blockIdx
         S.blocks.length = blockIdx;
@@ -144,6 +154,11 @@ library ExchangeBlocks
         )
         private
     {
+        // Exchange cannot be in withdraw mode
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+
+        // TODO: Check if this exchange has a minimal amount of LRC staked?
+
         require(
             S.blockVerifier.canVerify(blockType, S.onchainDataAvailability, numElements),
             "CANNOT_VERIFY_BLOCK"
@@ -155,11 +170,6 @@ library ExchangeBlocks
             exchangeIdInData := and(mload(add(data, 4)), 0xFFFFFFFF)
         }
         require(exchangeIdInData == S.id, "INVALID_ID");
-
-        // TODO: Check if this exchange has a minimal amount of LRC staked?
-
-        // Exchange cannot be in withdraw mode
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
         // Get the current block
         ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
@@ -218,8 +228,8 @@ library ExchangeBlocks
                     abi.encodePacked(
                         endingHash,
                         uint24(0),
-                        ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_X(),
-                        ExchangeData.DEFAULT_ACCOUNT_PUBLICKEY_Y(),
+                        uint256(0),
+                        uint256(0),
                         uint16(0),
                         uint96(0)
                     )

@@ -159,8 +159,8 @@ public:
                          FMT(prefix, ".updateBalanceF_W")),
 
         updateAccount_W(pb, updateAccount_A.result(), walletAccountID,
-                        {constants.zero, constants.zero, nonce_W, balancesRoot_W_before},
-                        {constants.zero, constants.zero, nonce_W, updateBalanceF_W.getNewRoot()},
+                        {constants.one, constants.one, nonce_W, balancesRoot_W_before},
+                        {constants.one, constants.one, nonce_W, updateBalanceF_W.getNewRoot()},
                         FMT(prefix, ".updateAccount_W")),
 
 

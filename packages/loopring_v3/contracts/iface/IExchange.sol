@@ -25,74 +25,75 @@ contract IExchange
     // We need to make sure all events defined in exchange/*.sol
     // are aggregrated here.
     event AccountCreated(
-        address owner,
-        uint24  id,
-        uint    pubKeyX,
-        uint    pubKeyY
+        address indexed owner,
+        uint24  indexed id,
+        uint            pubKeyX,
+        uint            pubKeyY
     );
 
     event AccountUpdated(
-        address owner,
-        uint24  id,
-        uint    pubKeyX,
-        uint    pubKeyY
+        address indexed owner,
+        uint24  indexed id,
+        uint            pubKeyX,
+        uint            pubKeyY
     );
 
     event TokenRegistered(
-        address token,
-        uint16 tokenId
+        address indexed token,
+        uint16  indexed tokenId
     );
 
     event OperatorChanged(
-        uint exchangeId,
-        address oldOperator,
-        address newOperator
+        uint    indexed exchangeId,
+        address         oldOperator,
+        address         newOperator
     );
 
     event FeesUpdated(
-        uint accountCreationFeeETH,
-        uint accountUpdateFeeETH,
-        uint depositFeeETH,
-        uint withdrawalFeeETH
+        uint    indexed exchangeId,
+        uint            accountCreationFeeETH,
+        uint            accountUpdateFeeETH,
+        uint            depositFeeETH,
+        uint            withdrawalFeeETH
     );
 
     event BlockCommitted(
-        uint blockIdx,
-        bytes32 publicDataHash
+        uint    indexed blockIdx,
+        bytes32 indexed publicDataHash
     );
 
     event BlockFinalized(
-        uint blockIdx
+        uint    indexed blockIdx
     );
 
     event Revert(
-        uint blockIdx
+        uint    indexed blockIdx
     );
 
     event DepositRequested(
-        uint32 depositIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
+        uint32  indexed depositIdx,
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        uint96          amount
     );
 
-    event BlockFeeWithdraw(
-        uint32 blockIdx,
-        uint amount
+    event BlockFeeWithdrawn(
+        uint32  indexed blockIdx,
+        uint            amount
     );
 
     event WithdrawalRequested(
-        uint32 withdrawalIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
+        uint32  indexed withdrawalIdx,
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        uint96          amount
     );
 
     event WithdrawalCompleted(
-        uint24  accountID,
-        uint16  tokenID,
-        address to,
-        uint96  amount
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        address         to,
+        uint96          amount
     );
 
     // -- Settings --
@@ -100,12 +101,10 @@ contract IExchange
         public
         pure
         returns (
-            uint   DEFAULT_ACCOUNT_PUBLICKEY_X,
-            uint   DEFAULT_ACCOUNT_PUBLICKEY_Y,
-            uint   DEFAULT_ACCOUNT_SECRETKEY,
             uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
             uint16 MAX_OPEN_DEPOSIT_REQUESTS,
             uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
+            uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
             uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
@@ -245,13 +244,21 @@ contract IExchange
     /// @dev Get the amount of LRC the owner has staked onchain for this exchange.
     ///      The stake will be burned if the exchange does not fulfill its duty by
     ///      processing user requests in time. Please note that order matching may potentially
-    ///      performaed by another party and is not part of the exchagne's duty.
+    ///      performed by another party and is not part of the exchange's duty.
     ///
     /// @return The amount of LRC staked
     function getStake()
         external
         view
         returns (uint);
+
+    /// @dev Can by called by anyone to burn the stake of the exchange when certain
+    ///      conditions are fulfilled.
+    ///
+    ///      Currently this will only burn the stake of the exchange if there are
+    ///      unfinalized blocks and the exchange is in withdrawal mode.
+    function burnStake()
+        external;
 
     // -- Blocks --
     /// @dev Get the height of this exchange's virtual blockchain. The block height for a
@@ -294,13 +301,16 @@ contract IExchange
 
     /// @dev Revert the exchange's virtual blockchain until a specific block index.
     ///      After MAX_PROOF_GENERATION_TIME_IN_SECONDS seconds (the timeout), if a valid
-    ///      proof is still not submitted onchain, anyone can call this method to trigger
+    ///      proof is still not submitted onchain, the operator can call this method to trigger
     ///      the blockchain to revert.
     ///
     ///      If more than one blocks (A, B) are missing proofs after the required timeout,
     ///      one can only trigger the blockchain to revert until A.
     ///
-    ///      This method can be called by anyone.
+    ///      This method can only be called by the operator when not in withdrawal mode.
+    ///
+    ///      In withdrawal mode anyone can call burnStake so the exchange still gets punished
+    ///      for committing blocks it does not prove.
     ///
     /// @param blockIdx The 0-based index of the block that does not have a valid proof within
     ///        MAX_PROOF_GENERATION_TIME_IN_SECONDS seconds.

@@ -126,8 +126,8 @@ public:
             constants.emptyTradeHistory
         }),
         accountWalletBefore({
-            constants.zero,
-            constants.zero,
+            constants.one,
+            constants.one,
             make_variable(pb, FMT(prefix, ".nonce")),
             make_variable(pb, FMT(prefix, ".before.balancesRoot"))
         }),
