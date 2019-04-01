@@ -255,7 +255,7 @@ contract IExchange
     ///      conditions are fulfilled.
     ///
     ///      Currently this will only burn the stake of the exchange if there are
-    ///      unfinalized blocks and is in withdrawal mode.
+    ///      unfinalized blocks and the exchange is in withdrawal mode.
     function burnStake()
         external;
 
