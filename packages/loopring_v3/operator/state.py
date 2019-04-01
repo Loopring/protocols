@@ -39,9 +39,14 @@ class Context(object):
 
 class Signature(object):
     def __init__(self, sig):
-        self.Rx = str(sig.R.x)
-        self.Ry = str(sig.R.y)
-        self.s = str(sig.s)
+        if sig != None:
+            self.Rx = str(sig.R.x)
+            self.Ry = str(sig.R.y)
+            self.s = str(sig.s)
+        else:
+            self.Rx = "0"
+            self.Ry = "0"
+            self.s = "0"
 
 class BalanceLeaf(object):
     def __init__(self, balance = 0):
@@ -932,7 +937,10 @@ class State(object):
                                 balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                 balanceUpdateF_W, accountUpdate_W,
                                 balanceUpdateF_O)
-        withdrawal.sign(FQ(int(account.secretKey)))
+        if not onchain:
+            withdrawal.sign(FQ(int(account.secretKey)))
+        else:
+            withdrawal.signature = Signature(None)
         return withdrawal
 
     def cancelOrder(self,
