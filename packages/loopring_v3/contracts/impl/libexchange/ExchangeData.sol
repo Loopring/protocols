@@ -123,6 +123,7 @@ library ExchangeData
         // The approved withdrawal data. Needs to be stored onchain so this data is available
         // once the block is finalized and the funds can be withdrawn using the info stored
         // in this data.
+        // TODO(brecht): document the layout in this byte array.
         bytes  withdrawals;
     }
 
@@ -164,7 +165,8 @@ library ExchangeData
     }
 
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
-    function MAX_OPEN_REQUESTS() internal pure returns (uint16) { return 1024; }
+    function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }
+    function MAX_OPEN_WITHDRAWAL_REQUESTS() internal pure returns (uint16) { return 1024; }
     function MAX_AGE_REQUEST_UNTIL_FORCED() internal pure returns (uint32) { return 1 days; }
     function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }

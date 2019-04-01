@@ -76,7 +76,7 @@ library ExchangeWithdrawals
         returns (uint)
     {
         uint numOpenRequests = S.withdrawalChain.length - getNumWithdrawalRequestsProcessed(S);
-        return ExchangeData.MAX_OPEN_REQUESTS() - numOpenRequests;
+        return ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS() - numOpenRequests;
     }
 
     function getWithdrawRequest(
@@ -280,14 +280,14 @@ library ExchangeWithdrawals
                 amount,
                 ExchangeAccounts.isFeeRecipientAccount(account)
             );
-        }
 
-        emit WithdrawalCompleted(
-            accountID,
-            tokenID,
-            account.owner,
-            uint96(amount)
-        );
+            emit WithdrawalCompleted(
+                accountID,
+                tokenID,
+                account.owner,
+                uint96(amount)
+            );
+        }
     }
 
 

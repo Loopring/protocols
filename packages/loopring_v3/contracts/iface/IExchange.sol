@@ -104,7 +104,8 @@ contract IExchange
             uint   DEFAULT_ACCOUNT_PUBLICKEY_Y,
             uint   DEFAULT_ACCOUNT_SECRETKEY,
             uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
-            uint16 MAX_OPEN_REQUESTS,
+            uint16 MAX_OPEN_DEPOSIT_REQUESTS,
+            uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
             uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
@@ -529,14 +530,14 @@ contract IExchange
     /// @dev Allows withdrawing funds after a withdrawal request (either onchain
     ///      or offchain) was committed in a block by the operator.
     ///
-    ///      Can be called by anyone. The deposited tokens will be sent to
+    ///      Can be called by anyone. The withdrawan tokens will be sent to
     ///      the owner of the account they were withdrawn out.
     ///
-    ///      Normally is should not be needed for users to call this manually.
+    ///      Normally it is should not be needed for users to call this manually.
     ///      Funds from withdrawal requests will be sent to the account owner
     ///      by the operator in distributeWithdrawals. The user can however
     ///      choose to withdraw earlier if he wants, or will need to call this
-    ///      manually if the nobody calls distributeWithdrawals.
+    ///      manually if nobody calls distributeWithdrawals.
     ///
     ///      Funds can only be withdrawn from requests processed in a
     ///      finalized block (i.e. a block that can never be reverted).
@@ -574,9 +575,11 @@ contract IExchange
     ///      Needs to be called by the operator after submitting a block processing
     ///      withdrawal requests (either onchain or offchain requests) after the block
     ///      is finalized and before the block is MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS seconds old.
+    ///
     ///      If the operator fails to do so anyone will be able to call this function
     ///      and the stake of the exchange will be used to reward the caller of this function.
-    ///      The amount of stake withdrawn is calculated as follows:
+    ///      The amount of staked LRC withdrawn is calculated as follows:
+    ///
     ///      totalFine = withdrawalFineLRC * numWithdrawalRequestsInBlock
     ///      The caller of the function will be rewarded half this amount,
     ///      the other half is burned.
