@@ -244,7 +244,6 @@ contract Exchange2 is IExchange2, Ownable
 
     function commitBlock(
         uint8 blockType,
-        bool onchainDataAvailability,
         uint16 numElements,
         bytes calldata data
         )
@@ -252,7 +251,7 @@ contract Exchange2 is IExchange2, Ownable
         payable
         onlyOperator
     {
-        state.commitBlock(blockType, onchainDataAvailability, numElements, data);
+        state.commitBlock(blockType, true, numElements, data);
     }
 
     function verifyBlock(
@@ -452,7 +451,6 @@ contract Exchange2 is IExchange2, Ownable
         uint slotIdx
         )
         external
-        payable
     {
         state.withdrawFromApprovedWithdrawal(
             blockIdx,

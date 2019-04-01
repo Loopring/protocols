@@ -74,7 +74,7 @@ library ExchangeBlocks
         require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "BLOCK_VERIFIED_ALREADY");
 
         require(
-            IBlockVerifier(S.blockVerifierAddress).verifyProof(
+            S.blockVerifier.verifyProof(
                 specifiedBlock.blockType,
                 specifiedBlock.onchainDataAvailability,
                 specifiedBlock.numElements,
@@ -147,7 +147,7 @@ library ExchangeBlocks
         private
     {
         require(
-            IBlockVerifier(S.blockVerifierAddress).canVerify(blockType, onchainDataAvailability, numElements),
+            S.blockVerifier.canVerify(blockType, onchainDataAvailability, numElements),
             "CANNOT_VERIFY_BLOCK"
         );
 
