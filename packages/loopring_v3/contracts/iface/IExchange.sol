@@ -643,7 +643,7 @@ contract IExchange
     ///      Once entering the maintainance mode, the operator should still fulfill his duty
     ///      by submitting blocks and proofs until all pending user requests have been taken
     ///      care of within the required timeouts. In the maintaince mode, operator can no longer
-    ///      submit settlement or account creation/update blocks.
+    ///      submit settlement blocks.
     ///
     ///      After all pending onchain requests have been handled, the operator can no longer
     ///      submit blocks of any type until the downtime times out.

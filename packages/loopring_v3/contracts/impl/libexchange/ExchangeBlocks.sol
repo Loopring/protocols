@@ -125,7 +125,7 @@ library ExchangeBlocks
             "TOO_LATE_PROOF"
         );
 
-        // TODO: - burn stake amount of Exchange
+        // TODO(brecht): - burn stake amount of Exchange
         //       - store info somewhere in Exchange contract what block was reverted so
         //       - the ExchangeOwner can punish the operator that submitted the block
 
