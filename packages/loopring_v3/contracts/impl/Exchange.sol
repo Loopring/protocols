@@ -276,12 +276,12 @@ contract Exchange is IExchange, Ownable
     }
 
     // -- Deposits --
-    function getFirstUnprocessedDepositRequestIndex()
+    function getNumDepositRequestsProcessed()
         external
         view
         returns (uint)
     {
-        return state.getFirstUnprocessedDepositRequestIndex();
+        return state.getNumDepositRequestsProcessed();
     }
 
     function getNumAvailableDepositSlots()
@@ -351,12 +351,12 @@ contract Exchange is IExchange, Ownable
     }
 
     // -- Withdrawals --
-    function getFirstUnprocessedWithdrawalRequestIndex()
+    function getNumWithdrawalRequestsProcessed()
         external
         view
         returns (uint)
     {
-        return state.getFirstUnprocessedWithdrawalRequestIndex();
+        return state.getNumWithdrawalRequestsProcessed();
     }
 
     function getNumAvailableWithdrawalSlots(

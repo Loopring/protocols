@@ -57,7 +57,7 @@ library ExchangeWithdrawals
         uint96          amount
     );
 
-    function getFirstUnprocessedWithdrawalRequestIndex(
+    function getNumWithdrawalRequestsProcessed(
         ExchangeData.State storage S
         )
         public
@@ -75,7 +75,7 @@ library ExchangeWithdrawals
         view
         returns (uint)
     {
-        uint numOpenRequests = S.withdrawalChain.length - getFirstUnprocessedWithdrawalRequestIndex(S);
+        uint numOpenRequests = S.withdrawalChain.length - getNumWithdrawalRequestsProcessed(S);
         return ExchangeData.MAX_OPEN_REQUESTS() - numOpenRequests;
     }
 
@@ -247,9 +247,10 @@ library ExchangeWithdrawals
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
         // Get the withdraw data of the given slot
-        // TODO: optimize
+        // TODO(brecht): optimize
         bytes memory withdrawals = withdrawBlock.withdrawals;
         uint offset = 4 + 32 + 32 + 3 + 32 + 32 + 4 + 4 + (3 + 2 + 12) * (slotIdx + 1);
+        // uint offset = 143+ 17 * (slotIdx + 1);
         require(offset < withdrawals.length + 32, "INVALID_SLOT_IDX");
         uint data;
         assembly {

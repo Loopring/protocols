@@ -43,7 +43,7 @@ library ExchangeDeposits
         uint96          amount
     );
 
-    function getFirstUnprocessedDepositRequestIndex(
+    function getNumDepositRequestsProcessed(
         ExchangeData.State storage S
       )
         public
@@ -61,7 +61,7 @@ library ExchangeDeposits
         view
         returns (uint)
     {
-        uint numOpenRequests = S.depositChain.length - getFirstUnprocessedDepositRequestIndex(S);
+        uint numOpenRequests = S.depositChain.length - getNumDepositRequestsProcessed(S);
         return ExchangeData.MAX_OPEN_REQUESTS() - numOpenRequests;
     }
 

@@ -80,6 +80,7 @@ library ExchangeData
         // The merkle root of the offchain data stored in a merkle tree. The merkle tree
         // stores balances for users using an account model.
         bytes32 merkleRoot;
+
         // The hash of all the public data sent in commitBlock. Committing a block
         // is decoupled from the verification of a block, but we don't want to send
         // the (often) large amount of data (certainly with onchain data availability) again
@@ -89,32 +90,36 @@ library ExchangeData
         bytes32 publicDataHash;
 
         // The current state of the block. See @BlockState for more information.
-        BlockState state;  // TODO(brecht): should we also use uint8 as for blockType?
-                           // Brecht: Checked the solidity docs, this will use the smallest
-                           //         data type needed, so uint8 will be used, so no need actually.
-                           //         Enum is more readible.
+        BlockState state;
 
         // The type of the block (i.e. what kind of requests were processed).
         // See @BlockType for more information.
         uint8  blockType;
+
         // The number of requests processed in the block. Only a limited number of permutations
         // are available for each block type (because each will need a different circuit
         // and thus different verification key onchain). Use IBlockVerifier.canVerify to find out if
         // the block is supported.
         uint16 numElements;
+
         // The time the block was created.
         uint32 timestamp;
+
         // The number of onchain deposit requests that are processed
         // up to and including this block
         uint32 numDepositRequestsCommitted;
+
         // The number of onchain withdrawal requests that are processed
         // up to and including this block
         uint32 numWithdrawRequestsCommitted;
+
         // Stores whether the fee earned by the operator for processing onchain requests
         // is withdrawn or not.
         bool   blockFeeWithdrawn;
+
         // Number of withdrawals distributed using distributeWithdrawals
         uint16 numWithdrawalsDistributed;
+
         // The approved withdrawal data. Needs to be stored onchain so this data is available
         // once the block is finalized and the funds can be withdrawn using the info stored
         // in this data.
