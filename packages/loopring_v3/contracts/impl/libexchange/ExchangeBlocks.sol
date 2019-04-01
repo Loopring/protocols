@@ -238,9 +238,9 @@ library ExchangeBlocks
                 startIdx := and(mload(add(data, 139)), 0xFFFFFFFF)
                 count := and(mload(add(data, 143)), 0xFFFFFFFF)
             }
-            require (startIdx == numWithdrawalRequestsCommitted, "INVALID_WITHDRAWREQUEST_RANGE");
-            require (count <= numElements, "INVALID_WITHDRAWREQUEST_RANGE");
-            require (startIdx + count <= S.withdrawalChain.length, "INVALID_WITHDRAWREQUEST_RANGE");
+            require (startIdx == numWithdrawalRequestsCommitted, "INVALID_WITHDRAW_REQUEST_RANGE");
+            require (count <= numElements, "INVALID_WITHDRAW_REQUEST_RANGE");
+            require (startIdx + count <= S.withdrawalChain.length, "INVALID_WITHDRAW_REQUEST_RANGE");
 
             bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
