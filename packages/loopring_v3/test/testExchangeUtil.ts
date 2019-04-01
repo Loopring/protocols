@@ -325,7 +325,6 @@ export class ExchangeTestUtil {
     }
 
     const balanceB = (order.balanceB !== undefined) ? order.balanceB : new BN(0);
-    console.log(balanceB.toString(10));
     if (balanceB.gt(new BN(0))) {
       await this.deposit(order.realmID, order.owner,
                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
