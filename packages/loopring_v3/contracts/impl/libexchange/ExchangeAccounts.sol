@@ -69,9 +69,6 @@ library ExchangeAccounts
     }
 
     // We do allow pubkeyX and/or pubkeyY to be 0.
-    // This is a minor known issue here: this method, as well as createAccount and
-    // updateAccount will not send back the fee surplus back to msg.sendeer, but
-    // the
     function createOrUpdateAccount(
         ExchangeData.State storage S,
         uint pubKeyX,
