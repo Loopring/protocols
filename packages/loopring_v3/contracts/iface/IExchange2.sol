@@ -179,6 +179,7 @@ contract IExchange2
         uint256[12] calldata balancePath
         )
         external
+        pure
         returns (bool);
 
     // -- Tokens --
@@ -305,13 +306,12 @@ contract IExchange2
     function revertBlock(
         uint32 blockIdx
         )
-        external
-        payable;
+        external;
 
     // -- Deposits --
     /// @dev Returns the index of the first deposit request that wasn't yet included
     ///      in a block. Can be used to check if a deposit with a given depositIdx
-    ///      (as specified in the @DepositRequested event) was processed by the operator.
+    ///      (as specified in the DepositRequested event) was processed by the operator.
     /// @return The index of the first unprocessed deposit request
     /// TODO(daniel): Maybe a better name for this would be getNumDepositRequestsProcessed?
     function getFirstUnprocessedDepositRequestIndex()
@@ -405,7 +405,7 @@ contract IExchange2
     // -- Withdrawals --
     /// @dev Returns the index of the first withdrawal request that wasn't yet included
     ///      in a block. Can be used to check if a withdrawal with a given withdrawalIdx
-    ///      (as specified in the @WithdrawalRequested event) was processed by the operator.
+    ///      (as specified in the WithdrawalRequested event) was processed by the operator.
     /// @return The index of the first unprocessed withdrawal request
     /// TODO(daniel): Maybe a better name for this would be getNumWithdrawalRequestsProcessed?
     function getFirstUnprocessedWithdrawalRequestIndex()
@@ -521,7 +521,7 @@ contract IExchange2
     ///      committing blocks and is not able to commit anymore blocks).
     ///
     /// @param  depositRequestIdx The index of the deposit request (as given in the
-    ///                           depositIdx field in the @DepositRequested event)
+    ///                           depositIdx field in the DepositRequested event)
     function withdrawFromDepositRequest(
         uint depositRequestIdx
         )
@@ -551,8 +551,7 @@ contract IExchange2
         uint blockIdx,
         uint slotIdx
         )
-        external
-        payable;
+        external;
 
     /// @dev Allows the operator to withdraw the fees he earned by processing the
     ///      deposit and onchain withdrawal requests.
@@ -590,8 +589,7 @@ contract IExchange2
     function distributeWithdrawals(
         uint blockIdx
         )
-        external
-        payable;
+        external;
 
     // -- Admins --
 

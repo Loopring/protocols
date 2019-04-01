@@ -180,6 +180,7 @@ library ExchangeAccounts
         uint256[12] memory balancePath
         )
         public
+        view
     {
         ExchangeBalances.isAccountBalanceCorrect(
             uint256(merkleRoot),

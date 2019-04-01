@@ -19,6 +19,7 @@ pragma solidity 0.5.2;
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+import "../../iface/IBlockVerifier.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
@@ -71,15 +72,16 @@ library ExchangeBlocks
         ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
         require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "BLOCK_VERIFIED_ALREADY");
 
-        // require(
-        //     IBlockVerifier(blockVerifierAddress).verifyProof(
-        //         specifiedBlock.blockType,
-        //         specifiedBlock.numElements,
-        //         specifiedBlock.publicDataHash,
-        //         proof
-        //     ),
-        //     "INVALID_PROOF"
-        // );
+        require(
+            S.blockVerifier.verifyProof(
+                specifiedBlock.blockType,
+                S.onchainDataAvailability,
+                specifiedBlock.numElements,
+                specifiedBlock.publicDataHash,
+                proof
+            ),
+            "INVALID_PROOF"
+        );
 
         // Update state of this block and potentially the following blocks
         ExchangeData.Block storage previousBlock = S.blocks[blockIdx - 1];
@@ -142,7 +144,10 @@ library ExchangeBlocks
         )
         private
     {
-        // require(IBlockVerifier(blockVerifierAddress).canVerify(blockType, numElements), "CANNOT_VERIFY_BLOCK");
+        require(
+            S.blockVerifier.canVerify(blockType, S.onchainDataAvailability, numElements),
+            "CANNOT_VERIFY_BLOCK"
+        );
 
         // Extract the exchange ID from the data
         uint32 exchangeIdInData = 0;
@@ -265,6 +270,7 @@ library ExchangeBlocks
             numDepositRequestsCommitted,
             numWithdrawRequestsCommitted,
             false,
+            0,
             (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
              blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAW)) ? data : new bytes(0)
         );

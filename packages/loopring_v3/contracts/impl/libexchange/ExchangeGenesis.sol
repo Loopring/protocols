@@ -38,7 +38,8 @@ library ExchangeGenesis
         ExchangeData.State storage S,
         uint    _id,
         address _loopringAddress,
-        address payable _operator
+        address payable _operator,
+        bool    _onchainDataAvailability
         )
         public
     {
@@ -49,6 +50,7 @@ library ExchangeGenesis
         S.id = _id;
         S.loopring = ILoopringV3(_loopringAddress);
         S.operator = _operator;
+        S.onchainDataAvailability = _onchainDataAvailability;
 
         ILoopringV3 loopring = ILoopringV3(_loopringAddress);
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
@@ -64,6 +66,7 @@ library ExchangeGenesis
             1,
             1,
             true,
+            0,
             new bytes(0)
         );
         S.blocks.push(genesisBlock);

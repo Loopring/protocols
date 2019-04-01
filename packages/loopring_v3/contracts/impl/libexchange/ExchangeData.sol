@@ -113,6 +113,8 @@ library ExchangeData
         // Stores whether the fee earned by the operator for processing onchain requests
         // is withdrawn or not.
         bool   blockFeeWithdrawn;
+        // Number of withdrawals distributed using distributeWithdrawals
+        uint16 numWithdrawalsDistributed;
         // The approved withdrawal data. Needs to be stored onchain so this data is available
         // once the block is finalized and the funds can be withdrawn using the info stored
         // in this data.
@@ -162,12 +164,14 @@ library ExchangeData
     function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
+    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State
     {
         uint    id;
         address payable operator; // The only address that can submit new blocks.
+        bool    onchainDataAvailability;
 
         ILoopringV3    loopring;
         IBlockVerifier blockVerifier;

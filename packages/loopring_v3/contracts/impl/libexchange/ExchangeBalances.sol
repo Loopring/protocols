@@ -20,8 +20,6 @@ import "../../lib/MathUint.sol";
 
 import "../../thirdparty/MiMC.sol";
 
-import "./ExchangeData.sol";
-
 
 /// @title IManagingMode.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -43,6 +41,7 @@ library ExchangeBalances
         uint256[12] memory balancePath
         )
         public
+        pure
     {
         bool isCorrect = isAccountBalanceCorrect(
             merkleRoot,

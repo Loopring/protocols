@@ -30,7 +30,7 @@ module.exports = function(deployer, network, accounts) {
         deployer.link(ExchangeData, [ExchangeAccounts, ExchangeAdmins, ExchangeBlocks,
                                      ExchangeDeposits, ExchangeTokens, ExchangeGenesis,
                                      ExchangeWithdrawals]),
-        deployer.link(ExchangeBalances, ExchangeAccounts),
+        deployer.link(ExchangeBalances, [ExchangeAccounts, ExchangeWithdrawals]),
       ]);
     }).then(() => {
       return Promise.all([

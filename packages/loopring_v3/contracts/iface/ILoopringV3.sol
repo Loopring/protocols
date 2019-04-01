@@ -86,6 +86,7 @@ contract ILoopringV3
     uint    public exchangeCreationCostLRC   = 0;
     uint    public maxWithdrawalFee          = 0;
     uint    public downtimePriceLRCPerDay    = 0;
+    uint    public withdrawalFineLRC         = 0;
 
      // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
     uint16  public  tierUpgradeCostBips  =  0; // 0.01% or 130K LRC
@@ -101,7 +102,8 @@ contract ILoopringV3
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerDay
+        uint    _downtimePriceLRCPerDay,
+        uint    _withdrawalFineLRC
         )
         external;
 
@@ -146,6 +148,14 @@ contract ILoopringV3
         )
         external
         returns (uint stakedLRC);
+
+    function withdrawStakeTo(
+        uint exchangeId,
+        address recipient,
+        uint requestedAmount
+        )
+        public
+        returns (uint amount);
 
     function getTokenBurnRate(
         address token

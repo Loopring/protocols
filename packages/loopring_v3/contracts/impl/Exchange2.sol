@@ -53,7 +53,8 @@ contract Exchange2 is IExchange2, Ownable
         uint    _id,
         address _loopringAddress,
         address _owner,
-        address payable _operator
+        address payable _operator,
+        bool    _onchainDataAvailability
         )
         public
         payable
@@ -64,7 +65,8 @@ contract Exchange2 is IExchange2, Ownable
         state.initializeGenesisBlock(
             _id,
             _loopringAddress,
-            _operator
+            _operator,
+            _onchainDataAvailability
         );
     }
 
@@ -155,6 +157,7 @@ contract Exchange2 is IExchange2, Ownable
         uint256[12] calldata balancePath
         )
         external
+        pure
         returns (bool)
     {
         return ExchangeBalances.isAccountBalanceCorrect(
@@ -268,8 +271,6 @@ contract Exchange2 is IExchange2, Ownable
         uint32 blockIdx
         )
         external
-        payable
-        onlyOperator
     {
         state.revertBlock(blockIdx);
     }
@@ -452,7 +453,6 @@ contract Exchange2 is IExchange2, Ownable
         uint slotIdx
         )
         external
-        payable
     {
         state.withdrawFromApprovedWithdrawal(
             blockIdx,
@@ -474,8 +474,6 @@ contract Exchange2 is IExchange2, Ownable
         uint blockIdx
         )
         external
-        payable
-        onlyOperator
     {
         state.distributeWithdrawals(blockIdx);
     }
