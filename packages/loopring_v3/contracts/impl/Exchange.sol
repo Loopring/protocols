@@ -551,4 +551,20 @@ contract Exchange is IExchange, Ownable
     {
         costLRC = state.getDowntimeCostLRC(durationSeconds);
     }
+
+    function getRequestStats()
+        external
+        view
+        returns(
+            uint numDepositRequestsProcessed,
+            uint numAvailableDepositSlots,
+            uint numWithdrawalRequestsProcessed,
+            uint numAvailableWithdrawalSlots
+        )
+    {
+        numDepositRequestsProcessed = state.getNumDepositRequestsProcessed();
+        numAvailableDepositSlots = state.getNumAvailableDepositSlots();
+        numWithdrawalRequestsProcessed = state.getNumWithdrawalRequestsProcessed();
+        numAvailableWithdrawalSlots = state.getNumAvailableWithdrawalSlots();
+    }
 }

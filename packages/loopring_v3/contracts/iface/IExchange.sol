@@ -313,14 +313,14 @@ contract IExchange
     /// @dev Returns the index of the first deposit request that wasn't yet included
     ///      in a block. Can be used to check if a deposit with a given depositIdx
     ///      (as specified in the DepositRequested event) was processed by the operator.
-    /// @return The index of the first unprocessed deposit request
+    /// @return The num of the processed deposit requests
     function getNumDepositRequestsProcessed()
         external
         view
         returns (uint);
 
     /// @dev Get the number of available onchain deposit slots.
-    /// @return The number of slots
+    /// @return The number of slots avalable for deposits.
     function getNumAvailableDepositSlots()
         external
         view
@@ -406,14 +406,14 @@ contract IExchange
     /// @dev Returns the index of the first withdrawal request that wasn't yet included
     ///      in a block. Can be used to check if a withdrawal with a given withdrawalIdx
     ///      (as specified in the WithdrawalRequested event) was processed by the operator.
-    /// @return The index of the first unprocessed withdrawal request
+    /// @return The num of processed withdrawal requests
     function getNumWithdrawalRequestsProcessed()
         external
         view
         returns (uint);
 
     /// @dev Get the number of available onchain withdrawal slots.
-    /// @return The number of slots
+    /// @return The number of slots available for withdrawals
     function getNumAvailableWithdrawalSlots(
         )
         external
@@ -676,4 +676,19 @@ contract IExchange
         external
         view
         returns (uint costLRC);
+
+    /// @dev Get number of available/processed deposits/withdrawals.
+    /// @return numDepositRequestsProcessed The num of the processed deposit requests
+    /// @return numAvailableDepositSlots The number of slots avalable for deposits
+    /// @return numWithdrawalRequestsProcessed The num of processed withdrawal requests
+    /// @return numAvailableWithdrawalSlots The number of slots avalable for withdrawals
+    function getRequestStats()
+        external
+        view
+        returns(
+            uint numDepositRequestsProcessed,
+            uint numAvailableDepositSlots,
+            uint numWithdrawalRequestsProcessed,
+            uint numAvailableWithdrawalSlots
+        );
 }
