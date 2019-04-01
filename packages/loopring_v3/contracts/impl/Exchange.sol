@@ -18,7 +18,7 @@ pragma solidity 0.5.2;
 
 import "../lib/Ownable.sol";
 
-import "../iface/IExchange2.sol";
+import "../iface/IExchange.sol";
 
 import "./libexchange/ExchangeAccounts.sol";
 import "./libexchange/ExchangeAdmins.sol";
@@ -35,7 +35,7 @@ import "./libexchange/ExchangeWithdrawals.sol";
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange2 is IExchange2, Ownable
+contract Exchange is IExchange, Ownable
 {
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
