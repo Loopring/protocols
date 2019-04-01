@@ -121,7 +121,10 @@ library ExchangeDeposits
                 abi.encodePacked(
                     prevRequest.accumulatedHash,
                     accountID,
-                    account.pubKeyX,
+                    account.pubKeyX,  // Include the pubKey to allow using the same circuit for
+                                      // account creation, account updating and depositing.
+                                      // In the circuit we always overwrite the public keys in
+                                      // the Account leaf with the data given onchain.
                     account.pubKeyY,
                     tokenID,
                     amount
