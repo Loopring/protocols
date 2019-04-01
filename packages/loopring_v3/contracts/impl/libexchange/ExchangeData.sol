@@ -44,7 +44,7 @@ library ExchangeData
         VERIFIED,
 
         // A block's state will become FINALIZED when and only when this block is VERIFIED
-        // and all previous block in the chain has become FINAZLIED. The genesis block is
+        // and all previous blocks in the chain have become FINAZLIED. The genesis block is
         // FINAZLIED by default.
         FINALIZED
     }
@@ -84,7 +84,7 @@ library ExchangeData
         // The hash of all the public data sent in commitBlock. Committing a block
         // is decoupled from the verification of a block, but we don't want to send
         // the (often) large amount of data (certainly with onchain data availability) again
-        // when verifying the proof so, we hash all that data onchain in commitBlock so that we
+        // when verifying the proof, so we hash all that data onchain in commitBlock so that we
         // can use it in verifyBlock to verify the block. This also makes the verification cheaper
         // onchain because we only have this single public input.
         bytes32 publicDataHash;
@@ -105,19 +105,19 @@ library ExchangeData
         // The time the block was created.
         uint32 timestamp;
 
-        // The number of onchain deposit requests that are processed
-        // up to and including this block
+        // The number of onchain deposit requests that have been processed
+        // up to and including this block.
         uint32 numDepositRequestsCommitted;
 
-        // The number of onchain withdrawal requests that are processed
-        // up to and including this block
+        // The number of onchain withdrawal requests that have been processed
+        // up to and including this block.
         uint32 numWithdrawalRequestsCommitted;
 
         // Stores whether the fee earned by the operator for processing onchain requests
         // is withdrawn or not.
         bool   blockFeeWithdrawn;
 
-        // Number of withdrawals distributed using distributeWithdrawals
+        // Number of withdrawals distributed using `distributeWithdrawals`
         uint16 numWithdrawalsDistributed;
 
         // The approved withdrawal data. Needs to be stored onchain so this data is available
@@ -127,7 +127,7 @@ library ExchangeData
     }
 
     // Represents the post-state of an onchain deposit/withdrawal request. We can visualize
-    // a deposit request -chain and a withdrawal request-chain, each of which is
+    // a deposit request-chain and a withdrawal request-chain, each of which is
     // composed of such Request objects. Please refer to the design doc for more details.
     struct Request
     {
