@@ -314,8 +314,7 @@ contract IExchange
     ///      in a block. Can be used to check if a deposit with a given depositIdx
     ///      (as specified in the DepositRequested event) was processed by the operator.
     /// @return The index of the first unprocessed deposit request
-    /// TODO(daniel): Maybe a better name for this would be getNumDepositRequestsProcessed?
-    function getFirstUnprocessedDepositRequestIndex()
+    function getNumDepositRequestsProcessed()
         external
         view
         returns (uint);
@@ -408,8 +407,7 @@ contract IExchange
     ///      in a block. Can be used to check if a withdrawal with a given withdrawalIdx
     ///      (as specified in the WithdrawalRequested event) was processed by the operator.
     /// @return The index of the first unprocessed withdrawal request
-    /// TODO(daniel): Maybe a better name for this would be getNumWithdrawalRequestsProcessed?
-    function getFirstUnprocessedWithdrawalRequestIndex()
+    function getNumWithdrawalRequestsProcessed()
         external
         view
         returns (uint);
@@ -645,18 +643,11 @@ contract IExchange
     ///
     ///      Once entering the maintainance mode, the operator should still fulfill his duty
     ///      by submitting blocks and proofs until all pending user requests have been taken
-    ///      care of within the required timeouts. Then the operator can stop his servers and go
-    ///      completly offline.
+    ///      care of within the required timeouts. In the maintaince mode, operator can no longer
+    ///      submit settlement blocks.
     ///
-    ///      TODO(brecht): after all pending onchain requests have been handled, can the operator
-    ///                    stop submitting any blocks (even empty blocks)? Ideally, the operator
-    ///                    should be able to stop all servers and go completely offchain.
-    ///      Brecht: Yes, the operator is only forced to do onchain requests. If there are no onchain
-    ///              requests the operator does not need to do anything.
-    //               Now that I think about this,
-    ///              we should stop the operator of committing any other type of block. He could abuse
-    ///              this mechanism to keep submitting ring settlements using funds users may want to
-    ///              withdraw.
+    ///      After all pending onchain requests have been handled, the operator can no longer
+    ///      submit blocks of any type until the downtime times out.
     ///
     ///      This function is only callable by the exchange owner.
     ///

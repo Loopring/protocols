@@ -72,7 +72,8 @@ library ExchangeAccounts
     function createOrUpdateAccount(
         ExchangeData.State storage S,
         uint pubKeyX,
-        uint pubKeyY
+        uint pubKeyY,
+        bool returnFeeSurplus
         )
         public
         returns (
@@ -81,17 +82,16 @@ library ExchangeAccounts
         )
     {
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
-        if (isAccountNew) {
-            accountID = createAccount(S, pubKeyX, pubKeyY);
-        } else {
-            accountID = updateAccount(S, pubKeyX, pubKeyY);
-        }
+        accountID =  isAccountNew ?
+            createAccount(S, pubKeyX, pubKeyY, returnFeeSurplus):
+            updateAccount(S, pubKeyX, pubKeyY, returnFeeSurplus);
     }
 
     function createAccount(
         ExchangeData.State storage S,
         uint pubKeyX,
-        uint pubKeyY
+        uint pubKeyY,
+        bool returnFeeSurplus
         )
         internal
         returns (uint24 accountID)
@@ -103,6 +103,13 @@ library ExchangeAccounts
 
         require(S.accounts.length < 2 ** 24, "TOO_MANY_ACCOUNTS");
         require(msg.value >= S.accountCreationFeeETH, "INSUFFICIENT_FEE");
+
+        if (returnFeeSurplus) {
+            uint feeSurplus = msg.value.sub(S.accountCreationFeeETH);
+            if (feeSurplus > 0) {
+                msg.sender.transfer(feeSurplus);
+            }
+        }
 
         accountID = uint24(S.accounts.length);
         ExchangeData.Account memory account = ExchangeData.Account(
@@ -125,7 +132,8 @@ library ExchangeAccounts
     function updateAccount(
         ExchangeData.State storage S,
         uint pubKeyX,
-        uint pubKeyY
+        uint pubKeyY,
+        bool returnFeeSurplus
         )
         internal
         returns (uint24 accountID)
@@ -136,6 +144,14 @@ library ExchangeAccounts
         require(S.ownerToAccountId[msg.sender] != 0, "ACCOUNT_NOT_EXIST");
 
         require(msg.value >= S.accountUpdateFeeETH, "INSUFFICIENT_FEE");
+
+        if (returnFeeSurplus) {
+            uint feeSurplus = msg.value.sub(S.accountUpdateFeeETH);
+            if (feeSurplus > 0) {
+                msg.sender.transfer(feeSurplus);
+            }
+        }
+
         accountID = S.ownerToAccountId[msg.sender];
         ExchangeData.Account storage account = S.accounts[accountID];
 

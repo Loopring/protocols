@@ -718,7 +718,7 @@ export class ExchangeTestUtil {
       }
       assert(deposits.length === numDepositsPerBlock);
 
-      const startIndex = (await this.exchange.getFirstUnprocessedDepositRequestIndex()).toNumber();
+      const startIndex = (await this.exchange.getNumDepositRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
       const requestData = await this.exchange.getDepositRequest(startIndex - 1);
@@ -867,7 +867,7 @@ export class ExchangeTestUtil {
       }
       assert(withdrawalRequests.length === numWithdrawsPerBlock);
 
-      const startIndex = (await this.exchange.getFirstUnprocessedWithdrawalRequestIndex()).toNumber();
+      const startIndex = (await this.exchange.getNumWithdrawalRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
       const requestData = await this.exchange.getWithdrawRequest(startIndex - 1);

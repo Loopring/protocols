@@ -125,7 +125,7 @@ library ExchangeBlocks
             "TOO_LATE_PROOF"
         );
 
-        // TODO: - burn stake amount of Exchange
+        // TODO(brecht): - burn stake amount of Exchange
         //       - store info somewhere in Exchange contract what block was reverted so
         //       - the ExchangeOwner can punish the operator that submitted the block
 
@@ -173,19 +173,22 @@ library ExchangeBlocks
         require(merkleRootBefore == currentBlock.merkleRoot, "INVALID_MERKLE_ROOT");
 
         uint32 numDepositRequestsCommitted = currentBlock.numDepositRequestsCommitted;
-        uint32 numWithdrawRequestsCommitted = currentBlock.numWithdrawRequestsCommitted;
+        uint32 numWithdrawalRequestsCommitted = currentBlock.numWithdrawalRequestsCommitted;
 
-        // TODO: double check this logic
+        // TODO(brecht): double check this logic
         // Check if the operator is forced to commit a deposit or withdraw block
         // We give priority to withdrawals. If a withdraw block is forced it needs to
         // be processed first, even if there is also a deposit block forced.
-        if (blockType != uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) && isWithdrawRequestForced(S, numWithdrawRequestsCommitted)) {
-            revert("BLOCK_COMMIT_FORCED");
-        } else if (blockType != uint(ExchangeData.BlockType.DEPOSIT) && isDepositRequestForced(S, numDepositRequestsCommitted)) {
-            revert("BLOCK_COMMIT_FORCED");
+        if (blockType != uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) &&
+            isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
+            revert("WITHDRAWAL_BLOCK_COMMIT_FORCED");
+        } else if (blockType != uint(ExchangeData.BlockType.DEPOSIT) &&
+            isDepositRequestForced(S, numDepositRequestsCommitted)) {
+            revert("DEPOSIT_BLOCK_COMMIT_FORCED");
         }
 
         if (blockType == uint(ExchangeData.BlockType.SETTLEMENT)) {
+            require(now >= S.disableUserRequestsUntil, "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
             assembly {
                 inputTimestamp := and(mload(add(data, 75)), 0xFFFFFFFF)
@@ -233,7 +236,7 @@ library ExchangeBlocks
                 startIdx := and(mload(add(data, 139)), 0xFFFFFFFF)
                 count := and(mload(add(data, 143)), 0xFFFFFFFF)
             }
-            require (startIdx == numWithdrawRequestsCommitted, "INVALID_WITHDRAWREQUEST_RANGE");
+            require (startIdx == numWithdrawalRequestsCommitted, "INVALID_WITHDRAWREQUEST_RANGE");
             require (count <= numElements, "INVALID_WITHDRAWREQUEST_RANGE");
             require (startIdx + count <= S.withdrawalChain.length, "INVALID_WITHDRAWREQUEST_RANGE");
 
@@ -254,7 +257,7 @@ library ExchangeBlocks
                 mstore(add(data, 103), startingHash)
                 mstore(add(data, 135), endingHash)
             }
-            numWithdrawRequestsCommitted = uint32(startIdx + count);
+            numWithdrawalRequestsCommitted = uint32(startIdx + count);
         }
 
         bytes32 publicDataHash = sha256(data);
@@ -268,7 +271,7 @@ library ExchangeBlocks
             numElements,
             uint32(now),
             numDepositRequestsCommitted,
-            numWithdrawRequestsCommitted,
+            numWithdrawalRequestsCommitted,
             false,
             0,
             (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
@@ -295,7 +298,7 @@ library ExchangeBlocks
         }
     }
 
-    function isWithdrawRequestForced(
+    function isWithdrawalRequestForced(
         ExchangeData.State storage S,
         uint32 withdrawRequestIdx
         )

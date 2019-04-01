@@ -44,8 +44,8 @@ library ExchangeMode
             result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
         }
 
-        if (result == false && currentBlock.numWithdrawRequestsCommitted < S.withdrawalChain.length) {
-            uint32 requestTimestamp = S.withdrawalChain[currentBlock.numWithdrawRequestsCommitted].timestamp;
+        if (result == false && currentBlock.numWithdrawalRequestsCommitted < S.withdrawalChain.length) {
+            uint32 requestTimestamp = S.withdrawalChain[currentBlock.numWithdrawalRequestsCommitted].timestamp;
 
             result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
         }
