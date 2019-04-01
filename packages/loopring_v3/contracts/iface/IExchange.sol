@@ -275,7 +275,7 @@ contract IExchange
     /// @param blockType The type of the new block
     /// @param numElements The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
-    /// @param data The data for this block
+    /// @param data The data for this block - TODO(brecht): We need to document the data layout.
     function commitBlock(
         uint8 blockType,
         uint16 numElements,

@@ -209,7 +209,6 @@ library ExchangeBlocks
                 "INVALID_TIMESTAMP"
             );
         } else if (blockType == uint(ExchangeData.BlockType.DEPOSIT)) {
-            // TODO(brecht): We need to document the data layout.
             uint startIdx = 0;
             uint count = 0;
             assembly {
@@ -241,7 +240,6 @@ library ExchangeBlocks
             }
             numDepositRequestsCommitted = uint32(startIdx + count);
         } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW)) {
-            // TODO(brecht): We need to document the data layout.
             uint startIdx = 0;
             uint count = 0;
             assembly {
