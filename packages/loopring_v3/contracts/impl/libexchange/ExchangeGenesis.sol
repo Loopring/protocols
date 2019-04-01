@@ -18,6 +18,7 @@ pragma solidity 0.5.2;
 
 import "../../lib/MathUint.sol";
 
+import "../../iface/IBlockVerifier.sol";
 import "../../iface/ILoopringV3.sol";
 
 import "./ExchangeAccounts.sol";
@@ -36,22 +37,22 @@ library ExchangeGenesis
     function initializeGenesisBlock(
         ExchangeData.State storage S,
         uint    _id,
-        address _loopring3Address,
+        address _loopringAddress,
         address payable _operator
         )
         public
     {
         require(0 != _id, "INVALID_ID");
-        require(address(0) != _loopring3Address, "ZERO_ADDRESS");
+        require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
 
         S.id = _id;
-        S.loopring = ILoopringV3(_loopring3Address);
+        S.loopring = ILoopringV3(_loopringAddress);
         S.operator = _operator;
 
-        ILoopringV3 loopring = ILoopringV3(_loopring3Address);
+        ILoopringV3 loopring = ILoopringV3(_loopringAddress);
+        S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
         S.lrcAddress = loopring.lrcAddress();
-        S.blockVerifierAddress = loopring.blockVerifierAddress();
 
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
             0x2fb632af61a9ffb71034df05d1d62e8fb6112095bd28cddf56d5f2e4b57064be,

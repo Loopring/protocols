@@ -36,17 +36,17 @@ library ExchangeAccounts
     using ExchangeBalances  for ExchangeData.State;
 
     event AccountCreated(
-        address owner,
-        uint24  id,
-        uint    pubKeyX,
-        uint    pubKeyY
+        address indexed owner,
+        uint24  indexed id,
+        uint            pubKeyX,
+        uint            pubKeyY
     );
 
     event AccountUpdated(
-        address owner,
-        uint24  id,
-        uint    pubKeyX,
-        uint    pubKeyY
+        address indexed owner,
+        uint24  indexed id,
+        uint            pubKeyX,
+        uint            pubKeyY
     );
 
     // == Public Functions ==

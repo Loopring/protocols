@@ -16,19 +16,31 @@
 */
 pragma solidity 0.5.2;
 
+
 import "../iface/IBlockVerifier.sol";
 
-import "../lib/NoDefaultFunc.sol";
+import "../lib/Ownable.sol";
 
 import "../thirdparty/Verifier.sol";
 
 
 /// @title An Implementation of IBlockVerifier.
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract BlockVerifier is IBlockVerifier, NoDefaultFunc
+contract BlockVerifier is IBlockVerifier, Ownable
 {
     uint256[14] vk;
     uint256[] gammaABC;
+
+    function setVerifyingKey(
+        uint256[14] calldata _vk,
+        uint256[] calldata _gammaABC
+        )
+        external
+        onlyOwner
+    {
+        vk = _vk;
+        gammaABC = _gammaABC;
+    }
 
     function canVerify(
         uint8/* blockType*/,
@@ -73,15 +85,4 @@ contract BlockVerifier is IBlockVerifier, NoDefaultFunc
         return (vk, gammaABC);
     }
 
-
-    // Q(dongw): should this be permissioned?
-    function setVerifyingKey(
-        uint256[14] memory _vk,
-        uint256[] memory _gammaABC
-        )
-        public
-    {
-        vk = _vk;
-        gammaABC = _gammaABC;
-    }
 }

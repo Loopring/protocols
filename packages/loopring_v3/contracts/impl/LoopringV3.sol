@@ -26,7 +26,7 @@ import "../lib/Ownable.sol";
 import "./ExchangeDeployer.sol";
 
 
-/// @title An Implementation of ILoopringV3.
+/// @title An Implementation of ILoopring.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3, Ownable
@@ -34,9 +34,7 @@ contract LoopringV3 is ILoopringV3, Ownable
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-
     // == Public Functions ==
-
     function updateSettings(
         address _lrcAddress,
         address _wethAddress,
@@ -304,7 +302,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             token.tierValidUntil += TIER_UPGRADE_DURATION;
         }
 
-        emit TokenBurnRateDown(_token, token.tier);
+        emit TokenBurnRateDown(_token, token.tier, now);
     }
 
     function withdrawBurned(

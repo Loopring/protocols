@@ -18,7 +18,7 @@ pragma solidity 0.5.2;
 
 import "../lib/Ownable.sol";
 
-import "../iface/ILoopringV3.sol";
+import "../iface/IExchange2.sol";
 
 import "./libexchange/ExchangeAccounts.sol";
 import "./libexchange/ExchangeAdmins.sol";
@@ -35,82 +35,8 @@ import "./libexchange/ExchangeWithdrawals.sol";
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange2 is Ownable
+contract Exchange2 is IExchange2, Ownable
 {
-    // -- Events --
-    // We need to make sure all events defined in libexchange/*.sol
-    // are aggregrated here.
-    event AccountCreated(
-        address owner,
-        uint24  id,
-        uint    pubKeyX,
-        uint    pubKeyY
-    );
-
-    event AccountUpdated(
-        address owner,
-        uint24  id,
-        uint    pubKeyX,
-        uint    pubKeyY
-    );
-
-    event TokenRegistered(
-        address token,
-        uint16 tokenId
-    );
-
-    event OperatorChanged(
-        uint exchangeId,
-        address oldOperator,
-        address newOperator
-    );
-
-    event FeesUpdated(
-        uint accountCreationFeeETH,
-        uint accountUpdateFeeETH,
-        uint depositFeeETH,
-        uint withdrawalFeeETH
-    );
-
-    event BlockCommitted(
-        uint blockIdx,
-        bytes32 publicDataHash
-    );
-
-    event BlockFinalized(
-        uint blockIdx
-    );
-
-    event Revert(
-        uint blockIdx
-    );
-
-    event DepositRequested(
-        uint32 depositIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
-    );
-
-    event BlockFeeWithdraw(
-        uint32 blockIdx,
-        uint amount
-    );
-
-    event WithdrawalRequested(
-        uint32 withdrawalIdx,
-        uint24 accountID,
-        uint16 tokenID,
-        uint96 amount
-    );
-
-    event WithdrawalCompleted(
-        uint24  accountID,
-        uint16  tokenID,
-        address to,
-        uint96  amount
-    );
-
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;
@@ -122,11 +48,10 @@ contract Exchange2 is Ownable
     using ExchangeWithdrawals   for ExchangeData.State;
 
     ExchangeData.State public state;
-
     // -- Constructor --
     constructor(
         uint    _id,
-        address _loopring3Address,
+        address _loopringAddress,
         address _owner,
         address payable _operator
         )
@@ -138,7 +63,7 @@ contract Exchange2 is Ownable
 
         state.initializeGenesisBlock(
             _id,
-            _loopring3Address,
+            _loopringAddress,
             _operator
         );
     }
@@ -253,7 +178,7 @@ contract Exchange2 is Ownable
         )
         external
         payable
-        onlyOperator
+        onlyOwner
         returns (uint16 tokenID)
     {
         tokenID = state.registerToken(tokenAddress);
@@ -284,7 +209,7 @@ contract Exchange2 is Ownable
         )
         external
         payable
-        onlyOperator
+        onlyOwner
     {
         state.disableTokenDeposit(tokenAddress);
     }
@@ -294,7 +219,7 @@ contract Exchange2 is Ownable
         )
         external
         payable
-        onlyOperator
+        onlyOwner
     {
         state.enableTokenDeposit(tokenAddress);
     }
@@ -602,7 +527,7 @@ contract Exchange2 is Ownable
         )
         external
         payable
-        onlyOperator
+        onlyOwner
     {
         state.purchaseDowntime(durationSeconds);
     }
