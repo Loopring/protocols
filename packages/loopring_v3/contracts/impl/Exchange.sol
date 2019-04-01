@@ -140,7 +140,11 @@ contract Exchange is IExchange, Ownable
             bool   isAccountNew
         )
     {
-        (accountID, isAccountNew) = state.createOrUpdateAccount(pubKeyX, pubKeyY);
+        (accountID, isAccountNew) = state.createOrUpdateAccount(
+            pubKeyX,
+            pubKeyY,
+            true
+        );
     }
 
     // -- Balances --
@@ -319,7 +323,11 @@ contract Exchange is IExchange, Ownable
             bool   isAccountNew
         )
     {
-        (accountID, isAccountNew) = state.createOrUpdateAccount(pubKeyX, pubKeyY);
+        (accountID, isAccountNew) = state.createOrUpdateAccount(
+            pubKeyX,
+            pubKeyY,
+            false
+        );
         uint additionalFeeETH;
         if (isAccountNew) {
             additionalFeeETH = state.accountCreationFeeETH;
