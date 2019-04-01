@@ -171,7 +171,7 @@ export class ExchangeTestUtil {
   public async createWallet(realmID: number, owner: string) {
     // Make a dual author account for the wallet
     const walletDeposit = await this.deposit(realmID, owner,
-                                             "0", "0", "0",
+                                             "1", "1", "1",
                                              this.zeroAddress, new BN(1));
     const wallet: Wallet = {
       owner,
@@ -195,7 +195,7 @@ export class ExchangeTestUtil {
 
     // Make an account to receive fees
     const feeRecipientDeposit = await this.deposit(realmID, feeRecipient,
-                                                   "0", "0", "0",
+                                                   "1", "1", "1",
                                                    this.zeroAddress, new BN(1));
 
     return [minerDeposit.accountID, feeRecipientDeposit.accountID];

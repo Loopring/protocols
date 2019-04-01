@@ -156,7 +156,7 @@ library ExchangeAccounts
         ExchangeData.Account storage account = S.accounts[accountID];
 
         require(!isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
-        require(pubKeyX != 0 || pubKeyY != 0, "INVALID_PUBKEY");
+        require(!(pubKeyX == 1 && pubKeyY == 1), "INVALID_PUBKEY");
 
         account.pubKeyX = pubKeyX;
         account.pubKeyY = pubKeyY;
@@ -219,6 +219,6 @@ library ExchangeAccounts
         view
         returns (bool)
     {
-        return account.pubKeyX == 0 && account.pubKeyY == 0;
+        return account.pubKeyX == 1 && account.pubKeyY == 1;
     }
 }
