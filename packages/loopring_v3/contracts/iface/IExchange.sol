@@ -186,6 +186,13 @@ contract IExchange
 
     // -- Tokens --
 
+    /// @dev Get the required amount of LRC to burn for registering one more token.
+    /// @return feeLRC The amount of LRC to burn.
+    function getLRCFeeForRegisteringOneMoreToken()
+        external
+        view
+        returns (uint feeLRC);
+
     /// @dev Register an ERC20 token for a token id. Note that different exchanges may have
     ///      different ids for the same ERC20 token.
     ///
