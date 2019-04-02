@@ -209,6 +209,20 @@ contract ILoopringV3
         view
         returns (uint16 burnRate);
 
+    /// @dev Get the amount of LRC to burn for lowering a token's burn rate for 365 days.
+    /// @param  token The address of the token. Use 0x0 for Ether
+    /// @return amountLRC The amount of LRC to burn
+    /// @return currentTier The current tier of the token
+    function getLRCCostToBuydownTokenBurnRate(
+        address token
+        )
+        public
+        view
+        returns (
+            uint amountLRC,
+            uint8 currentTier
+        );
+
     /// @dev Burn LRC to lower a token's burn rate for 365 days.
     ///      Initially all ERC20 tokens' burn rates are at tier-4, with the exception
     ///      that LRC's burn rate is at tier-1, and WETH's burn rate is at tier-3. Ether's burn
@@ -223,11 +237,17 @@ contract ILoopringV3
     ///      is expiering (restoring to tier-4) in 30 days, a successfull call of this
     ///      function will extend the tier-2 period to 395 (365+30) days.
     ///
-    /// @param  token The address of the token. Use 0x0 for Ether.
+    /// @param  token The address of the token. Use 0x0 for Ether
+    /// @return amountBurned The amount of LRC burned
+    /// @return currentTier The current tier of the token after the buydown
     function buydownTokenBurnRate(
         address token
         )
-        external;
+        external
+        returns (
+            uint amountBurned,
+            uint8 currentTier
+        );
 
     /// @dev Withdraw all non-LRC fees (called the Burn) to the designated address.
     ///      LRC fees have been burned already thanks to the new LRC contract's burn function;
