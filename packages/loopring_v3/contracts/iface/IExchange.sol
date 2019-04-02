@@ -154,6 +154,12 @@ contract IExchange
             bool   isAccountNew
         );
 
+    /// @dev Create a new fee receipient account.
+    /// @return accountID The account's ID
+    function createFeeRecipientAccount()
+        public
+        returns (uint24 accountID);
+
     // -- Balances --
     /// @dev Verifies that the given information is stored in the merkle tree with
     ///      the specified merkle root.

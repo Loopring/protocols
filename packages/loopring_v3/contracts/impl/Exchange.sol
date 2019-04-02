@@ -148,6 +148,13 @@ contract Exchange is IExchange, Ownable
         );
     }
 
+    function createFeeRecipientAccount()
+        public
+        returns (uint24 accountID)
+    {
+        accountID = state.createFeeRecipientAccount();
+    }
+
     // -- Balances --
     function isAccountBalanceCorrect(
         uint256 merkleRoot,

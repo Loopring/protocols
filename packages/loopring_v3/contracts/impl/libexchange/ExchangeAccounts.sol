@@ -81,10 +81,22 @@ library ExchangeAccounts
             bool   isAccountNew
         )
     {
+        require(pubKeyX != 0 && pubKeyY != 0, "INVALID_PUBKEY");
+
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
         accountID =  isAccountNew ?
             createAccount(S, pubKeyX, pubKeyY, returnFeeSurplus):
             updateAccount(S, pubKeyX, pubKeyY, returnFeeSurplus);
+    }
+
+    function createFeeRecipientAccount(
+        ExchangeData.State storage S
+        )
+        public
+        returns (uint24 accountID)
+    {
+        require(S.ownerToAccountId[msg.sender] == 0, "ACCOUNT_EXISTS");
+        accountID = createAccount(S, 0, 0, true);
     }
 
     function createAccount(
