@@ -43,7 +43,9 @@ contract LoopringV3 is ILoopringV3, Ownable
         uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC
+        uint    _withdrawalFineLRC,
+        uint    _tokenRegistrationFeeLRCBase,
+        uint    _tokenRegistrationFeeLRCDelta
         )
         external
         onlyOwner
@@ -66,6 +68,8 @@ contract LoopringV3 is ILoopringV3, Ownable
         maxWithdrawalFee = _maxWithdrawalFee;
         downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
         withdrawalFineLRC = _withdrawalFineLRC;
+        tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
+        tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
 
         tokens[lrcAddress] = Token(lrcAddress, 1, 0xFFFFFFFF);
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);

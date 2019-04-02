@@ -150,8 +150,6 @@ library ExchangeData
         uint96 amount;
     }
 
-    function TOKEN_REGISTRATION_FEE_IN_LRC_BASE() internal pure returns (uint) { return 1000 ether /* LRC */; }
-    function TOKEN_REGISTRATION_FEE_IN_LRC_DELTA() internal pure returns (uint) { return 500 ether /* LRC */; }
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
     function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }
     function MAX_OPEN_WITHDRAWAL_REQUESTS() internal pure returns (uint16) { return 1024; }

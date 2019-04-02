@@ -46,8 +46,8 @@ library ExchangeTokens
         view
         returns (uint feeLRC)
     {
-        return ExchangeData.TOKEN_REGISTRATION_FEE_IN_LRC_BASE().add(
-            ExchangeData.TOKEN_REGISTRATION_FEE_IN_LRC_DELTA().mul(S.tokens.length)
+        return S.loopring.tokenRegistrationFeeLRCBase().add(
+            S.loopring.tokenRegistrationFeeLRCDelta().mul(S.tokens.length)
         );
     }
 

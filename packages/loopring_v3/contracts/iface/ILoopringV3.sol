@@ -78,15 +78,17 @@ contract ILoopringV3
 
     mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
 
-    uint    public totalStake                = 0;
-    address public lrcAddress                = address(0);
-    address public wethAddress               = address(0);
-    address public exchangeDeployerAddress   = address(0);
-    address public blockVerifierAddress      = address(0);
-    uint    public exchangeCreationCostLRC   = 0;
-    uint    public maxWithdrawalFee          = 0;
-    uint    public downtimePriceLRCPerDay    = 0;
-    uint    public withdrawalFineLRC         = 0;
+    uint    public totalStake                   = 0;
+    address public lrcAddress                   = address(0);
+    address public wethAddress                  = address(0);
+    address public exchangeDeployerAddress      = address(0);
+    address public blockVerifierAddress         = address(0);
+    uint    public exchangeCreationCostLRC      = 0;
+    uint    public maxWithdrawalFee             = 0;
+    uint    public downtimePriceLRCPerDay       = 0;
+    uint    public withdrawalFineLRC            = 0;
+    uint    public tokenRegistrationFeeLRCBase  = 0;
+    uint    public tokenRegistrationFeeLRCDelta = 0;
 
      // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
     uint16  public  tierUpgradeCostBips  =  0; // 0.01% or 130K LRC
@@ -107,7 +109,9 @@ contract ILoopringV3
         uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC
+        uint    _withdrawalFineLRC,
+        uint    _tokenRegistrationFeeLRCBase,
+        uint    _tokenRegistrationFeeLRCDalta
         )
         external;
 

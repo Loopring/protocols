@@ -80,8 +80,6 @@ contract Exchange is IExchange, Ownable
         public
         pure
         returns (
-            uint   TOKEN_REGISTRATION_FEE_IN_LRC_BASE,
-            uint   TOKEN_REGISTRATION_FEE_IN_LRC_DELTA,
             uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
             uint16 MAX_OPEN_DEPOSIT_REQUESTS,
             uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
@@ -95,8 +93,6 @@ contract Exchange is IExchange, Ownable
         )
     {
         return (
-            ExchangeData.TOKEN_REGISTRATION_FEE_IN_LRC_BASE(),
-            ExchangeData.TOKEN_REGISTRATION_FEE_IN_LRC_DELTA(),
             ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
             ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS(),
             ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS(),
