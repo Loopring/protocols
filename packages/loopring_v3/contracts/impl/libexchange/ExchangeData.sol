@@ -154,6 +154,8 @@ library ExchangeData
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 12; }
     function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
+    function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
+    function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State

@@ -323,11 +323,16 @@ library ExchangeWithdrawals
         }
 
         // Calculate how much of the fee the operator gets for the block
+        // If there are many requests than lastRequestTimestamp ~= firstRequestTimestamp so
+        // all requests will need to be done in 5 minutes to get the complete fee.
+        // If there are very few requests than lastRequestTimestamp >> firstRequestTimestamp and we don't want
+        // to fine the operator for waiting until he can fill a complete block.
+        // This is why we use the timestamp of the last request included in the block.
         uint32 blockTimestamp = requestedBlock.timestamp;
-        uint32 startTime = lastRequestTimestamp + 5 minutes;
+        uint32 startTime = lastRequestTimestamp + ExchangeData.FEE_BLOCK_FINE_START_TIME();
         uint fine = 0;
         if (blockTimestamp > startTime) {
-            fine = feeAmount.mul(blockTimestamp - startTime) / 30 minutes;
+            fine = feeAmount.mul(blockTimestamp - startTime) / ExchangeData.FEE_BLOCK_FINE_MAX_DURATION();
         }
         uint feeAmountToBurn = (fine > feeAmount) ? feeAmount : fine;
         feeAmountToOperator = feeAmount - feeAmountToBurn;
