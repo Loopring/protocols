@@ -58,14 +58,14 @@ library ExchangeTokens
         public
         returns (uint16 tokenID)
     {
-        tokenID = registerTokenInternal(
+        tokenID = registerToken(
             S,
             tokenAddress,
             getLRCFeeForRegisteringOneMoreToken(S)
         );
     }
 
-    function registerTokenInternal(
+    function registerToken(
         ExchangeData.State storage S,
         address tokenAddress,
         uint    amountToBurn
