@@ -194,7 +194,7 @@ require(block.timestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
 
 Fees are stored in the wallet/dual-author accounts of the wallet/ringmatcher. These accounts are special as anyone can request a withdrawal onchain. In `withdraw` we check if the account is a wallet/dual-author account to see if we need to burn part of the balance.
 
-Once withdrawn from the merkle tree the balances are stored onchain in the Exchange contract so the BurnManager can withdraw them using `withdrawBurned`.
+Once withdrawn from the merkle tree the balances are stored onchain in the Exchange contract so the BurnManager can withdraw them using `withdrawTheBurn`.
 
 ## Brokers
 

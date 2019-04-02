@@ -22,6 +22,7 @@ pragma solidity 0.5.2;
 contract IBlockVerifier
 {
 
+    // TODO(brecht): document these two methods.
     function canVerify(
         uint8 blockType,
         bool onchainDataAvailability,
