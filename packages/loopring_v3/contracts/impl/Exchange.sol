@@ -185,7 +185,6 @@ contract Exchange is IExchange, Ownable
         address tokenAddress
         )
         external
-        payable
         onlyOwner
         returns (uint16 tokenID)
     {
@@ -216,7 +215,6 @@ contract Exchange is IExchange, Ownable
         address tokenAddress
         )
         external
-        payable
         onlyOwner
     {
         state.disableTokenDeposit(tokenAddress);
@@ -226,7 +224,6 @@ contract Exchange is IExchange, Ownable
         address tokenAddress
         )
         external
-        payable
         onlyOwner
     {
         state.enableTokenDeposit(tokenAddress);
@@ -273,7 +270,6 @@ contract Exchange is IExchange, Ownable
         bytes calldata data
         )
         external
-        payable
         onlyOperator
     {
         state.commitBlock(blockType, numElements, data);
@@ -284,7 +280,6 @@ contract Exchange is IExchange, Ownable
         uint256[8] calldata proof
         )
         external
-        payable
         onlyOperator
     {
         state.verifyBlock(blockIdx, proof);
@@ -430,7 +425,6 @@ contract Exchange is IExchange, Ownable
         uint256[12] calldata balancePath
         )
         external
-        payable
     {
         state.withdrawFromMerkleTreeFor(
             msg.sender,
@@ -454,7 +448,6 @@ contract Exchange is IExchange, Ownable
         uint256[12] calldata balancePath
         )
         external
-        payable
     {
         state.withdrawFromMerkleTreeFor(
             owner,
@@ -471,7 +464,6 @@ contract Exchange is IExchange, Ownable
         uint depositRequestIdx
         )
         external
-        payable
     {
         state.withdrawFromDepositRequest(depositRequestIdx);
     }
@@ -492,7 +484,6 @@ contract Exchange is IExchange, Ownable
         uint32 blockIdx
         )
         external
-        payable
         returns (uint feeAmount)
     {
         feeAmount = state.withdrawBlockFee(blockIdx);
@@ -554,7 +545,6 @@ contract Exchange is IExchange, Ownable
         uint durationSeconds
         )
         external
-        payable
         onlyOwner
     {
         state.purchaseDowntime(durationSeconds);

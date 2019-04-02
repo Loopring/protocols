@@ -192,7 +192,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         emit StakeDeposited(exchangeId, stakedLRC);
     }
 
-
     function withdrawStake(
         uint exchangeId
         )
@@ -307,13 +306,12 @@ contract LoopringV3 is ILoopringV3, Ownable
         emit TokenBurnRateDown(_token, token.tier, now);
     }
 
-    function withdrawBurned(
+    function withdrawTheBurn(
         address token,
         address payable recipient
         )
         external
         onlyOwner
-        returns (bool)
     {
         require(token != lrcAddress, "LRC_ALREADY_BURNED");
         if (token == address(0x0)) {
@@ -325,6 +323,5 @@ contract LoopringV3 is ILoopringV3, Ownable
             uint balance = ERC20(token).balanceOf(address(this));
             require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
         }
-        return true;
     }
 }
