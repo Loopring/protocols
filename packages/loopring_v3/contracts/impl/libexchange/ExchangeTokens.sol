@@ -39,6 +39,18 @@ library ExchangeTokens
         uint16  indexed tokenId
     );
 
+    function getTokenRegistrationFee(
+        ExchangeData.State storage S
+        )
+        public
+        view
+        returns (uint feeLRC)
+    {
+        return ExchangeData.TOKEN_REGISTRATION_FEE_IN_LRC_BASE().add(
+            ExchangeData.TOKEN_REGISTRATION_FEE_IN_LRC_DELTA().mul(S.tokens.length)
+        );
+    }
+
     function registerToken(
         ExchangeData.State storage S,
         address tokenAddress
@@ -49,6 +61,11 @@ library ExchangeTokens
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");
         require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
+
+        uint amountToBurn = getTokenRegistrationFee(S);
+        if (amountToBurn > 0) {
+            require(BurnableERC20(S.lrcAddress).burn(amountToBurn), "BURN_FAILURE");
+        }
 
         ExchangeData.Token memory token = ExchangeData.Token(tokenAddress, false);
         S.tokens.push(token);

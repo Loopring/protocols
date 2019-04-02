@@ -101,6 +101,8 @@ contract IExchange
         public
         pure
         returns (
+            uint   TOKEN_REGISTRATION_FEE_IN_LRC_BASE,
+            uint   TOKEN_REGISTRATION_FEE_IN_LRC_DELTA,
             uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
             uint16 MAX_OPEN_DEPOSIT_REQUESTS,
             uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
@@ -185,6 +187,13 @@ contract IExchange
         returns (bool);
 
     // -- Tokens --
+
+    /// @dev Get the required amount of LRC to burn for registering one more token.
+    /// @return feeLRC The amount of LRC to burn.
+    function getTokenRegistrationFee()
+        external
+        view
+        returns (uint feeLRC);
 
     /// @dev Register an ERC20 token for a token id. Note that different exchanges may have
     ///      different ids for the same ERC20 token.
