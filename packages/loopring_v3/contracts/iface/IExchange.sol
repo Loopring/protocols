@@ -190,7 +190,7 @@ contract IExchange
 
     /// @dev Get the required amount of LRC to burn for registering one more token.
     /// @return feeLRC The amount of LRC to burn.
-    function getTokenRegistrationFee()
+    function getLRCFeeForRegisteringOneMoreToken()
         external
         view
         returns (uint feeLRC);

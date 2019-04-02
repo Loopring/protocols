@@ -184,12 +184,12 @@ contract Exchange is IExchange, Ownable
     }
 
     // -- Tokens --
-    function getTokenRegistrationFee()
+    function getLRCFeeForRegisteringOneMoreToken()
         external
         view
         returns (uint feeLRC)
     {
-        feeLRC = state.getTokenRegistrationFee();
+        feeLRC = state.getLRCFeeForRegisteringOneMoreToken();
     }
 
     function registerToken(

@@ -39,7 +39,7 @@ library ExchangeTokens
         uint16  indexed tokenId
     );
 
-    function getTokenRegistrationFee(
+    function getLRCFeeForRegisteringOneMoreToken(
         ExchangeData.State storage S
         )
         public
@@ -62,7 +62,7 @@ library ExchangeTokens
         require(S.tokenToTokenId[tokenAddress] == 0, "TOKEN_ALREADY_EXIST");
         require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
 
-        uint amountToBurn = getTokenRegistrationFee(S);
+        uint amountToBurn = getLRCFeeForRegisteringOneMoreToken(S);
         if (amountToBurn > 0) {
             require(BurnableERC20(S.lrcAddress).burn(amountToBurn), "BURN_FAILURE");
         }

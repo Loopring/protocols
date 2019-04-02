@@ -53,7 +53,7 @@ To limit abuse, an amount of LRC needs to be burned. The more tokens are registe
 // Fee
 uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_BASE           = 100 ether;
 uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_DELTA          = 10 ether;
-function getTokenRegistrationFee() public view returns (uint)
+function getLRCFeeForRegisteringOneMoreToken() public view returns (uint)
 {
     // Increase the fee the more tokens are registered
     return TOKEN_REGISTRATION_FEE_IN_LRC_BASE.add(TOKEN_REGISTRATION_FEE_IN_LRC_DELTA.mul(tokens.length));
