@@ -298,7 +298,6 @@ library ExchangeWithdrawals
         public
         returns (uint feeAmountToOperator)
     {
-        // require(msg.sender == exchangeOwner, "UNAUTHORIZED");
         require(blockIdx > 0 && blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage requestedBlock = S.blocks[blockIdx];
         ExchangeData.Block storage previousBlock = S.blocks[blockIdx - 1];
@@ -308,23 +307,30 @@ library ExchangeWithdrawals
 
         uint feeAmount = 0;
         uint32 lastRequestTimestamp = 0;
-        if(requestedBlock.numDepositRequestsCommitted > previousBlock.numDepositRequestsCommitted) {
-            feeAmount = S.depositChain[requestedBlock.numDepositRequestsCommitted - 1].accumulatedFee.sub(
-                S.depositChain[previousBlock.numDepositRequestsCommitted - 1].accumulatedFee
+        uint startIndex = previousBlock.numDepositRequestsCommitted;
+        uint endIndex = requestedBlock.numDepositRequestsCommitted;
+        if(endIndex > startIndex) {
+            feeAmount = S.depositChain[endIndex - 1].accumulatedFee.sub(
+                S.depositChain[startIndex - 1].accumulatedFee
             );
-            lastRequestTimestamp = S.depositChain[requestedBlock.numDepositRequestsCommitted - 1].timestamp;
-        } else if(requestedBlock.numWithdrawalRequestsCommitted > previousBlock.numWithdrawalRequestsCommitted) {
-            feeAmount = S.withdrawalChain[requestedBlock.numWithdrawalRequestsCommitted - 1].accumulatedFee.sub(
-                S.withdrawalChain[previousBlock.numWithdrawalRequestsCommitted - 1].accumulatedFee
-            );
-            lastRequestTimestamp = S.withdrawalChain[requestedBlock.numWithdrawalRequestsCommitted - 1].timestamp;
+            lastRequestTimestamp = S.depositChain[endIndex - 1].timestamp;
         } else {
-            revert("BLOCK_HAS_NO_OPERATOR_FEE");
+            startIndex = previousBlock.numWithdrawalRequestsCommitted;
+            endIndex = requestedBlock.numWithdrawalRequestsCommitted;
+
+            if(endIndex > startIndex) {
+                feeAmount = S.withdrawalChain[endIndex - 1].accumulatedFee.sub(
+                    S.withdrawalChain[startIndex - 1].accumulatedFee
+                );
+                lastRequestTimestamp = S.withdrawalChain[endIndex - 1].timestamp;
+            } else {
+                revert("BLOCK_HAS_NO_OPERATOR_FEE");
+            }
         }
 
         // Calculate how much of the fee the operator gets for the block
         // If there are many requests than lastRequestTimestamp ~= firstRequestTimestamp so
-        // all requests will need to be done in 5 minutes to get the complete fee.
+        // all requests will need to be done in FEE_BLOCK_FINE_START_TIME minutes to get the complete fee.
         // If there are very few requests than lastRequestTimestamp >> firstRequestTimestamp and we don't want
         // to fine the operator for waiting until he can fill a complete block.
         // This is why we use the timestamp of the last request included in the block.
