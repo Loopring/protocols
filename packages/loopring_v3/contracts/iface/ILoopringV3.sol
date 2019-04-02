@@ -241,6 +241,5 @@ contract ILoopringV3
         address token,
         address payable recipient
         )
-        external
-        payable;
+        external;
 }

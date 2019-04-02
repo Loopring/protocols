@@ -201,7 +201,6 @@ contract IExchange
         address tokenAddress
         )
         external
-        payable
         returns (uint16 tokenID);
 
     /// @dev Returns the id of a registered token.
@@ -230,8 +229,7 @@ contract IExchange
     function disableTokenDeposit(
         address tokenAddress
         )
-        external
-        payable;
+        external;
 
     /// @dev Enable users to submit onchain deposit requests for a token.
     ///      This function is only callable by the exchange owner.
@@ -239,8 +237,7 @@ contract IExchange
     function enableTokenDeposit(
         address tokenAddress
         )
-        external
-        payable;
+        external;
 
     // -- Stakes --
     /// @dev Get the amount of LRC the owner has staked onchain for this exchange.
@@ -283,8 +280,7 @@ contract IExchange
         uint16 numElements,
         bytes calldata data
         )
-        external
-        payable;
+        external;
 
     /// @dev Submit a ZK proof onchain to verify a previouly committed block. Submitting an
     ///      invalid proof will not change the state of the exchange. Note that proofs can
@@ -298,8 +294,7 @@ contract IExchange
         uint blockIdx,
         uint256[8] calldata proof
         )
-        external
-        payable;
+        external;
 
     /// @dev Revert the exchange's virtual blockchain until a specific block index.
     ///      After MAX_PROOF_GENERATION_TIME_IN_SECONDS seconds (the timeout), if a valid
@@ -489,8 +484,7 @@ contract IExchange
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath
         )
-        external
-        payable;
+        external;
 
     /// @dev Allows anyone to withdraw funds for a specified user using the balances stored
     ///      in the merkle tree. The funds will be sent to the owner of the acount.
@@ -518,8 +512,7 @@ contract IExchange
         uint256[24] calldata accountPath,
         uint256[12] calldata balancePath
         )
-        external
-        payable;
+        external;
 
     /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
     ///      it was never committed in a block (so the balance in the merkle tree was
@@ -536,8 +529,7 @@ contract IExchange
     function withdrawFromDepositRequest(
         uint depositRequestIdx
         )
-        external
-        payable;
+        external;
 
     /// @dev Allows withdrawing funds after a withdrawal request (either onchain
     ///      or offchain) was committed in a block by the operator.
@@ -578,7 +570,6 @@ contract IExchange
         uint32 blockIdx
         )
         external
-        payable
         returns (uint feeAmount);
 
     /// @dev Distributes the the funds to the account owners after their withdrawal
@@ -670,8 +661,7 @@ contract IExchange
     function purchaseDowntime(
         uint durationSeconds
         )
-        external
-        payable;
+        external;
 
     /// @dev Get the remaining downtime.
     /// @return durationSeconds Remaining downtime in second.

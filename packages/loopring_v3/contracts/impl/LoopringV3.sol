@@ -311,7 +311,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         address payable recipient
         )
         external
-        payable
         onlyOwner
     {
         require(token != lrcAddress, "LRC_ALREADY_BURNED");
