@@ -1,87 +1,84 @@
 
-# Design Doc for Loopring Protocol 3.0
+# Loopring 3.0
 
-## Introduction
+## Intro
 
-For protocol 3 we want to greatly improve the throughput of the protocol. We do this by using zk-SNARKs. As much computation as possible is now done offchain while we only verify the work onchain.
+For protocol 3 we want to greatly improve the throughput of the protocol. We do this by using zk-SNARKs. As much work as possible is done offchain while we only verify the work onchain.
 
-To achieve the best performance as well as protocol simplicity, the initial version will only support offchain balances. These are balances that are stored in a Merkel tree. Users can deposit to and withdraw tokens from the smart contract and their balance will updated in the Merkel tree asynchronously. This approach allows us to transfer tokens between users just by updating the Merkel tree offchain then provide a valid proof, avoiding the need for expensive onchain token transfers.
+For the best performance we support offchain balances. These are balances that are stored in a merkle tree. Users can deposit and withdraw tokens to the smart contract and their balance is updated in the merkle tree. This way we can transfer tokens between users just by updating the merkle tree offchain, no need for expensive token transfers onchain.
 
-Mananing offchain balances using the Merkel tree requires onchain custody of user assets in smart contracts. In future releases, we may support onchain balances as well.
+In the future, we still want to support onchain transfers:
+- It may not be possible to deposit/withdraw security tokens to the smart contract
+- Users may prefer to keep funds in their normal wallet
 
-Data availability for all Merkel trees can be ensured if this feature is enabled. Anyone can recreate the Merkel trees just by using the data on the Ethereum blockchain. User assets will always be secure even if the operators of an exchange are evil actors.
+Note that there is never any risk of losing funds when depositing to the smart contract. Both options are non-custodial.
 
-## Zero-Knowledge Proof
+Data availability for all merkle trees is ensured. Anyone can recreate the merkle trees just by using the data available on the Ethereum blockchain.
 
-We decided to use zkSNARKs (SNARKs) for verification of offchain computation. One of the main drawbacks of SNARKs compared to zkTNARKs (STARKs) is the mendatory trusted setup. This seems to be largely solved by [Sonic: Nearly Trustless Setup](https://www.benthamsgaze.org/2019/02/07/introducing-sonic-a-practical-zk-snark-with-a-nearly-trustless-setup/). It remains to be seen if the better proving times of STARKs will be important for DEXex in the future or not, and we believe proving times for SNARKs may be a non-issue or could be also improved as well by the open source community.
+## New developments
 
-*Bellman* is also being used more and more instead of *libsnark* for creating the circuits. They work mostly the same (manually programming the constraints). We will use the library/framework with the best support and best features. Currently we are using the *libsnark* library.
+Things change quickly.
 
-## Trading using Offchain Balances
+One of the main drawbacks of SNARKS compared to STARKS is the trusted setup that is needed. This seems to be largely solved. ([Sonic: Nearly Trustless Setup](https://www.benthamsgaze.org/2019/02/07/introducing-sonic-a-practical-zk-snark-with-a-nearly-trustless-setup/)). It remains to be seen if the better proving times of STARKs will be important in the future or not (proving times for SNARKs may be a non-issue or could be improved as well).
 
-There are some benefits using offchain balances.
+Bellman is also being used more and more instead of libsnark for creating the circuits. They work mostly the same (manually programming the constraints). We should use the library/framework with the best support and best features. Currently I feel this is still libsnark.
 
-### Immediate Finality
-Offchain balances are guaranteed to be available for a short time in the future (until a withdrawal is processed). This allows a CEX like experience. A DEX can settle a ring (trade) offchain and immediately show the final results to the user without having to wait on the onchain settlement. When using onchain balances, users can modify their balances/allowances directly by interfacing with the Ethereum blockchain, finality, therefore, is only achieved when the ring settlement is confirmed on the Ethereum blockchain.
+## Trading using offchain balances
 
-### Higher Throughput and Lower Cost
-An offchain token transfer is strictly a small extra cost for generating the proof for updating the Merkel tree. The cost of a single onchain token transfer is ~20,000 gas. Checking the balance/allowance of the sender is an extra ~5,000 gas. These costs greatly limit the possible throughput and increases the cost of settling rings.
+### Immediate finality
+Offchain balances are guaranteed to be available for a short time in the future (until a withdrawal). This allows a CEX like experience. A DEX can settle a ring offchain and immediately show the final results to the user without having to wait on the onchain settlement. Using onchain balances, users can modify their balances/allowances directly by interfacing with the ethereum block chain. So finality is only achieved when the ring settlement is done on the ethereum blockchain.
 
-// TODO(brecht): please provide some numbers for 1) data availablility is enabled, 2)data availablity is disabled.
+### Higher throughput/Lower cost
+An offchain token transfer is strictly a small extra cost for generating the proof for updating a merkle tree. The cost of a single onchain token transfer is ~20,000 gas. Checking the balance/allowance of the sender is an extra ~5,000 gas. These costs greatly limit the possible the possible throughput and increases the cost of settling rings.
 
-### Concurrent Proof Generation
-If we don't perform onchain transfers there is no need for immediate proof submission, because we can easily revert the state back by restoring the Merkel tree roots. An DEX operator can just call `commitBlock` without a proof, but the operator has to stake some LRC. The operator then needs to submit the proof within some time limit (e.g. 120 seconds) or he loses his stake (which needs to be substantial). This allows:
+### Concurrent proof generation
+If we don't do onchain transfers we don't need the proof immediately when settling rings because we can easily revert the state back by restoring the merkle tree roots. The operator can just call `commitBlock` without a proof, but the operator includes a deposit instead. The operator then needs to submit the proof within some time limit (e.g. 120 seconds) or he loses his deposit (which needs to be substantial). This allows for
+- faster settlement of rings because operators don't need to wait on the proof generation before they can publish the settlements (and thus also the new merkle tree states) onchain.
+- the proof generation can be parallelized. Multiple operators can generate a proof at the same time. This isn't possible otherwise because the initial state needs to be known at proof generation time.
 
-1. Faster settlement of rings because operators don't need to wait on the proof generation before they can publish the settlements transaction (and thus also the new Merkel tree states) onchain.
+There is **NO** risk of losing funds for users. The worst that can happen is that the state is reversed to the latest state that was successfully proven. All rings that were settled afterwards are automatically reverted by restoring the merkle roots. Blocks with deposits that were reverted need to be re-submitted and withdrawals are only allowed on finalized state.
 
-1. The proof generation can be parallelized.  This isn't possible otherwise because the initial state needs to be known at proof generation time.
+# Design
 
-There is **NO** risk of losing funds for users. The worst that can happen is that the state is reversed to the latest state that was successfully proven. All rings that were settled afterwards are automatically reverted by restoring the Merkel roots. Blocks with deposits that were reverted need to be re-submitted and withdrawals are only allowed on finalized state.
+## Token registration
 
-
-## Token Registration
-
-Before a token can be used in the protocol, it needs to be registered so a small token ID of 2 bytes can be used instead. We ensure the token is not already registered. Ether (ETH), Wrapped Ether (WETH), and LRC are registered automiatically.
+Before a token can be used in the protocol it needs to be registered so a small token ID of 2 bytes can be used instead. We ensure the token is not already registered.
 
 We further limit the token ID to just 12 bits (i.e. a maximum of 4096 tokens) to increase the performance of the circuits.
 
-// TODO(brecht): the token registration part can be deleted as it is not an essential part of the design, it's more of a implementation choice.
-
-To limit abuse, an amount of LRC needs to be burned. The more tokens are registered, the higher the fee to register a token. This ensures registering a token is very cheap if the function is not abused, and if it is abused then it will get more and more expensive which will limit the use to only useful token registrations.
-
+To limit abuse, an amount of LRC needs to be burned. The more tokens are registered, the higher the fee to register a token. This ensures registering a token is very cheap if the function is not abused, and if it is abused than it will get more and more expensive which will limit the use to only useful token registrations.
 ```
 // Fee
 uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_BASE           = 100 ether;
 uint public constant TOKEN_REGISTRATION_FEE_IN_LRC_DELTA          = 10 ether;
-function getLRCFeeForRegisteringOneMoreToken() public view returns (uint)
+function getTokenRegistrationFee() public view returns (uint)
 {
     // Increase the fee the more tokens are registered
     return TOKEN_REGISTRATION_FEE_IN_LRC_BASE.add(TOKEN_REGISTRATION_FEE_IN_LRC_DELTA.mul(tokens.length));
 }
 ```
-
 Burnrates are stored onchain in `TokenRegistry`. 3 tokens are pre-registered and have a fixed tier:
 - ETH: tier 3
 - WETH: tier 3
 - LRC: tier 1
 
-## Accounts Merkel tree
+## Accounts merkle tree
 
 ![Accounts tree](https://i.imgur.com/0FyNcRo.png)
 
 (burnBalance is not part anymore of the Balance leaf, please ignore this value)
 
-I went through a lot of iterations for the Merkel tree structure, currently the one shown above is used. There's a lot of ways the Merkel tree can be structured (or can be even split up in multiple trees, like a separate tree for the trading history, or a separate tree for the fees). I think the one above has a good balance between complexity, proving times and user-friendliness.
+I went through a lot of iterations for the merkle tree structure, currently the one shown above is used. There's a lot of ways the merkle tree can be structured (or can be even split up in multiple trees, like a separate tree for the trading history, or a separate tree for the fees). I think the one above has a good balance between complexity, proving times and user-friendliness.
 
 - Only a single account needed for all tokens that are or will be registered
 - No special handling for anything. Every actor in the loopring ecosystem has an account in the same tree.
-- While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances Merkel root is stored inside the account leaf). The same is useful for wallets, ringmatchers and operators because these also pay/receive fees in different tokens.
+- While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances merkle root is stored inside the account leaf). The same is useful for wallets, ringmatchers and operators because these also pay/receive fees in different tokens.
 - The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this quite small sub-tree. The trading-history is not part of the account leaf because that way we'd only have 2^16 leafs for all tokens together.
 - No need for multiple account trees to lock accounts to a single wallet. The walletID stored in the account is used for this together with dual-authoring accounts that only the owner of the wallet can create see [Wallets](#wallets) for more info).
 
 ## Account creation
 
-Before the user can start trading he needs to create an account. An account allows a user to trade any token that is registered (or will be registered in the future). The account is added to the Accounts Merkel tree.
+Before the user can start trading he needs to create an account. An account allows a user to trade any token that is registered (or will be registered in the future). The account is added to the Accounts merkle tree.
 
 Creating an account is a special case for depositing. When creating an account a user can immediately deposit funds for a token.
 
@@ -107,7 +104,7 @@ This is done by calling the `deposit` function on the smart contract and adding 
 
 Note that we can **directly support ETH** for trading, no need to wrap it in WETH when using offchain balances.
 
-We also store the deposit information onchain so users can withdraw these deposited balances in withdrawal mode when they are were not yet added in the Accounts Merkel tree.
+We also store the deposit information onchain so users can withdraw these deposited balances in withdrawal mode when they are were not yet added in the Accounts merkle tree.
 
 See [here](#depositwithdraw-block-handling) how blocks are handled.
 
@@ -173,7 +170,7 @@ If the order never left the DEX and the user trusts the DEX than the order can s
 
 ## Withdrawal mode
 
-The operator may stop submitting new blocks at any time. When some conditions are met (TBD), all functionality for the state is halted and only withdrawing funds is possible. Anyone is able to withdraw funds from the contract by submitting an inclusion proof in the Accounts Merkel tree (the funds will be send to the account owner like usually).
+The operator may stop submitting new blocks at any time. When some conditions are met (TBD), all functionality for the state is halted and only withdrawing funds is possible. Anyone is able to withdraw funds from the contract by submitting an inclusion proof in the Accounts merkle tree (the funds will be send to the account owner like usually).
 
 ## Signature types
 
@@ -183,9 +180,9 @@ Currently this is EDDSA (7,000 constraints), which is a bit cheaper than ECDSA s
 
 ## ValidSince / ValidUntil
 
-A block and its proof is always made for a fixed input. The operator cannot accurately know on what timestamp the block will be processed on the Ethereum blockchain, but he needs a fixed timestamp to create a block and its proof (the chosen timestamp impacts which orders are valid and invalid).
+A block and its proof is always made for a fixed input. The operator cannot accurately know on what timestamp the block will be processed on the ethereum blockchain, but he needs a fixed timestamp to create a block and its proof (the chosen timestamp impacts which orders are valid and invalid).
 
-We do however know the approximate time the block will be processed on the Ethereum blockchain. Next to the data for the block the operator also includes the timestamp the block was generated for. This timestamp is checked against the timestamp onchain and if it's close enough the block is accepted:
+We do however know the approximate time the block will be processed on the ethereum blockchain. Next to the data for the block the operator also includes the timestamp the block was generated for. This timestamp is checked against the timestamp onchain and if it's close enough the block is accepted:
 
 ```
 uint32 public constant TIMESTAMP_WINDOW_SIZE_IN_SECONDS      = 1 minutes;
@@ -197,7 +194,7 @@ require(block.timestamp > now - TIMESTAMP_WINDOW_SIZE_IN_SECONDS &&
 
 Fees are stored in the wallet/dual-author accounts of the wallet/ringmatcher. These accounts are special as anyone can request a withdrawal onchain. In `withdraw` we check if the account is a wallet/dual-author account to see if we need to burn part of the balance.
 
-Once withdrawn from the Merkel tree the balances are stored onchain in the Exchange contract so the BurnManager can withdraw them using `withdrawTheBurn`.
+Once withdrawn from the merkle tree the balances are stored onchain in the Exchange contract so the BurnManager can withdraw them using `withdrawTheBurn`.
 
 ## Brokers
 
@@ -207,7 +204,7 @@ The account system is used for this. Users can create a special account for a br
 
 ## States
 
-Block submission needs to be done sequentially so Merkel trees can be updated correctly. To allow concurrent settling of orders by different independent parties we allow separate states for the Merkel trees that can give contention.
+Block submission needs to be done sequentially so merkle trees can be updated correctly. To allow concurrent settling of orders by different independent parties we allow separate states for the merkle trees that can give contention.
 
 Anyone can register a new state. The owner of the state can set the deposit / offchain withdrawal fees by calling `setStateFees`.
 The owner of the state can also close the state at any time. The state will immediately enter withdrawal mode.
@@ -292,7 +289,7 @@ The **nonce** of the account is increased by 1 for these operations.
 
 ### Fee
 
-The fee paid to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ringmatchers pays a fee in ETH to the Ethereum miners, the ringmatcher now pays a fee to the operator. **Any token can be used to pay the fee.**
+The fee paid to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ringmatchers pays a fee in ETH to the ethereum miners, the ringmatcher now pays a fee to the operator. **Any token can be used to pay the fee.**
 
 ## Circuit permutations
 
@@ -357,7 +354,7 @@ Once the block the deposit/withdraw block was committed in is finalized anyone c
 
 ## Onchain data
 
-**Data availability is ensured for ALL Merkel trees for ALL States**.
+**Data availability is ensured for ALL merkle trees for ALL States**.
 
 #### Ring settlement data
 For every Ring (2 orders):
@@ -488,20 +485,20 @@ Only when the block is finalized is the filling of the order irreversible.
 
 The first thing a user needs to do is create an account. The user has the option to deposit tokens directly to this account. These will be used as his offchain balance available in the newly created account. The user also has the option to not send any funds, this is useful when the user just needs an account to receive tokens or he wants to use the account with onchain balances.
 
-`deposit` is called on the contract. Here a new account is created onchain (the onchain account information does not contain any balance information because the balance will only be used and updated in the Merkel tree) and the necessary data is hashed together that needs to be used for creating the account in the Accounts Merkel tree in the circuit. The amount of tokens the user deposits to the contract will be stored in the leaf of the Accounts Merkel tree with address `account ID` (together with the rest of the account information).
+`deposit` is called on the contract. Here a new account is created onchain (the onchain account information does not contain any balance information because the balance will only be used and updated in the merkle tree) and the necessary data is hashed together that needs to be used for creating the account in the Accounts merkle tree in the circuit. The amount of tokens the user deposits to the contract will be stored in the leaf of the Accounts merkle tree with address `account ID` (together with the rest of the account information).
 
-The Accounts Merkel tree has not yet been updated. This needs to be done by the operator in the circuit and can never be done by a user. The smart contract decides when the operator needs to add the account to the Merkel tree in the circuit so the account can actually be used. As long as the account is not added to the Merkel tree the account cannot be used.
+The Accounts merkle tree has not yet been updated. This needs to be done by the operator in the circuit and can never be done by a user. The smart contract decides when the operator needs to add the account to the merkle tree in the circuit so the account can actually be used. As long as the account is not added to the merkle tree the account cannot be used.
 
 The operator can stop working before this is done however. That's why the amount deposited should be stored somewhere onchain so that the user can withdraw these funds in withdrawal mode.
 
-But the operator wants to earn fees so he creates a block that adds the account to the Merkel tree when it is expected by the smart contract. After the account is added in the circuit, it can immediately be used.
+But the operator wants to earn fees so he creates a block that adds the account to the merkle tree when it is expected by the smart contract. After the account is added in the circuit, it can immediately be used.
 
 The account balance is updated between trades as you'd expect.
 
 The user then wants to withdraw (a part of) the balance. He can let the operator know onchain, or he can just send a request offchain. The only difference is that when the request is made offchain the operator can choose when to do the withdrawal so there is no guarantee when it will be done. In any case, there will be delay between the request for withdrawal and when the operator includes the withdrawal in a block. In this period the operator is free to keep using the account to settle rings.
 
 After some time the operator includes the withdrawal in a block. Two things are done when this happens:
-- The balance in the Accounts Merkel tree is subtracted with the amount withdrawn in the circuit (if possible of course, otherwise nothing is withdrawn)
+- The balance in the Accounts merkle tree is subtracted with the amount withdrawn in the circuit (if possible of course, otherwise nothing is withdrawn)
 - The smart contract adds the amount that is withdrawn to a list stored onchain for that block specifically.
 
 The withdrawn amount is stored in a list because the user is still not able to actually withdraw it yet! The user is only able to withdraw it when the block is finalized, which means that state is completely irreversible.
@@ -511,7 +508,7 @@ This mechanism is needed to support delayed proof submission. If the proof would
 Once the operators have submitted all the proofs necessary for the block containing the withdrawal to be finalized, the user is finally able to call `withdraw` onchain with the necessary information when the withdrawal was done to get the tokens out of the smart contract.
 
 Let's now look at the case where the withdrawal request was done by an operator, but the block containing the withdrawal needs to be reverted for some reason (e.g. the operator submits an invalid proof for the block). Two things happen automatically by the revert:
-- The Merkel tree root is restored as it was before the withdrawal. The balance is restored.
+- The merkle tree root is restored as it was before the withdrawal. The balance is restored.
 - The list of withdrawals we stored onchain for the reverted block are thrown away when reverting. A user was never able to withdraw from these in `withdraw` because the block associated with the witdrawn list was never marked as finalized.
 
 ## Order sharing with Dual Authoring
@@ -537,7 +534,7 @@ A scenario where this would be very helpful is for a service that offers liquidi
 
 Simple wallets probably don't want to pay for the infrastructure to sign rings all the time for sharing their orders. So these will still share the dual author keys. But to prevent collisions etc... they should only share the keys with a single ringmatcher/DEX.
 
-This order sharing is only possible when the orders use the same Merkel trees and operators, so this is not possible for independent DEXs. But it's a big advantage for everyone to use the same Merkel trees, even though they have less control over the operator.
+This order sharing is only possible when the orders use the same merkle trees and operators, so this is not possible for independent DEXs. But it's a big advantage for everyone to use the same merkle trees, even though they have less control over the operator.
 
 Recap:
 - DEX/Wallet/Ringmatcher can keep track of his orders and the balances of his users because every order that is used needs to pass through him
