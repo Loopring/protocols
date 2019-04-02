@@ -301,7 +301,8 @@ contract IExchange
     ///            - None
     ///
     ///        The 'onchain data availability' data (if enabled) is added
-    ///        at the end.
+    ///        at the end. This allows anyone to recreate the merkle tree
+    ///        just by using data published on the Ethereum blockchain.
     ///
     ///        For SETTLEMENT blocks add the following data:
     ///            - Operator account ID: 3 bytes
