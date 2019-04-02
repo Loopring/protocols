@@ -271,6 +271,17 @@ library ExchangeBlocks
 
         bytes32 publicDataHash = sha256(data);
 
+        // Only store the approved withdrawal data onchain
+        if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
+            blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAW)) {
+            uint start = 4 + 32 + 32 + 3 + 32 + 32 + 4 + 4;
+            uint length = (3 + 2 + 12) * numElements;
+            assembly {
+                data := add(data, start)
+                mstore(data, length)
+            }
+        }
+
         // Create a new block with the updated merkle roots
         ExchangeData.Block memory newBlock = ExchangeData.Block(
             merkleRootAfter,
