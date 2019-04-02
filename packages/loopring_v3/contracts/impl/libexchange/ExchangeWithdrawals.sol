@@ -296,7 +296,7 @@ library ExchangeWithdrawals
         uint32 blockIdx
         )
         public
-        returns (uint feeAmount)
+        returns (uint feeAmountToOperator)
     {
         // require(msg.sender == exchangeOwner, "UNAUTHORIZED");
         require(blockIdx > 0 && blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
@@ -306,28 +306,46 @@ library ExchangeWithdrawals
         require(requestedBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
         require(requestedBlock.blockFeeWithdrawn == false, "FEE_WITHDRAWN_ALREADY");
 
-        feeAmount = 0;
+        uint feeAmount = 0;
+        uint32 lastRequestTimestamp = 0;
         if(requestedBlock.numDepositRequestsCommitted > previousBlock.numDepositRequestsCommitted) {
             feeAmount = S.depositChain[requestedBlock.numDepositRequestsCommitted - 1].accumulatedFee.sub(
                 S.depositChain[previousBlock.numDepositRequestsCommitted - 1].accumulatedFee
             );
+            lastRequestTimestamp = S.depositChain[requestedBlock.numDepositRequestsCommitted - 1].timestamp;
         } else if(requestedBlock.numWithdrawalRequestsCommitted > previousBlock.numWithdrawalRequestsCommitted) {
             feeAmount = S.withdrawalChain[requestedBlock.numWithdrawalRequestsCommitted - 1].accumulatedFee.sub(
                 S.withdrawalChain[previousBlock.numWithdrawalRequestsCommitted - 1].accumulatedFee
             );
+            lastRequestTimestamp = S.withdrawalChain[requestedBlock.numDepositRequestsCommitted - 1].timestamp;
         } else {
             revert("BLOCK_HAS_NO_OPERATOR_FEE");
         }
 
+        // Calculate how much of the fee the operator gets for the block
+        uint32 blockTimestamp = requestedBlock.timestamp;
+        uint32 startTime = lastRequestTimestamp + 5 minutes;
+        uint fine = 0;
+        if (blockTimestamp > startTime) {
+            fine = feeAmount.mul(blockTimestamp - startTime) / 30 minutes;
+        }
+        uint feeAmountToBurn = (fine > feeAmount) ? feeAmount : fine;
+        feeAmountToOperator = feeAmount - feeAmountToBurn;
+
         // Make sure it can't be withdrawn again
         requestedBlock.blockFeeWithdrawn = true;
 
+        // Burn part of the fee by sending it to the loopring contract
+        if (feeAmountToBurn > 0) {
+            address payable payableLoopringAddress = address(uint160(address(S.loopring)));
+            payableLoopringAddress.transfer(feeAmountToBurn);
+        }
         // Transfer the fee to the operator
-        S.operator.transfer(feeAmount);
+        if (feeAmountToOperator > 0) {
+            S.operator.transfer(feeAmountToOperator);
+        }
 
         emit BlockFeeWithdrawn(blockIdx, feeAmount);
-
-        return feeAmount;
     }
 
     function distributeWithdrawals(
