@@ -93,16 +93,9 @@ library ExchangeGenesis
 
         S.accounts.push(defaultAccount);
 
-        // emit AccountUpdated(
-        //     address(0),
-        //     uint24(0),
-        //     uint256(0),
-        //     uint256(0)
-        // );
-
         // Call these after the main state has been set up
-        S.registerToken(address(0));
-        S.registerToken(loopring.wethAddress());
-        S.registerToken(S.lrcAddress);
+        S.registerTokenInternal(address(0), 0);
+        S.registerTokenInternal(loopring.wethAddress(), 0);
+        S.registerTokenInternal(S.lrcAddress, 0);
     }
 }
