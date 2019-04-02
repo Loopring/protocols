@@ -148,6 +148,15 @@ contract Exchange is IExchange, Ownable
         );
     }
 
+    // TODO(daniel): figure out whehter a deposit of 0 should be forced for
+    // account creation (both normal accounts and fee recipient account).
+    function createFeeRecipientAccount()
+        public
+        returns (uint24 accountID)
+    {
+        accountID = state.createFeeRecipientAccount();
+    }
+
     // -- Balances --
     function isAccountBalanceCorrect(
         uint256 merkleRoot,

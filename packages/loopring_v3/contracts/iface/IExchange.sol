@@ -140,7 +140,8 @@ contract IExchange
     /// @dev Submit an onchain request to create a new account for msg.sender or
     ///      update its existing account by replacing its trading public key.
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
-    /// @param  pubKeyY The second part of the account's trading EdDSA public key
+    /// @param  pubKeyY The second part of the account's trading EdDSA public key.
+    ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
     /// @return accountID The account's ID
     /// @return isAccountNew True if this account is newly created, false if the account existed
     function createOrUpdateAccount(
@@ -153,6 +154,13 @@ contract IExchange
             uint24 accountID,
             bool   isAccountNew
         );
+
+    /// @dev Create a fee receipient account for msg.sender.
+    ///      For fee recipient accounts, their pubKeyX and pubKeyY are both `1`.
+    /// @return accountID The account's ID
+    function createFeeRecipientAccount()
+        public
+        returns (uint24 accountID);
 
     // -- Balances --
     /// @dev Verifies that the given information is stored in the merkle tree with
