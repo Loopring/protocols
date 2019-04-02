@@ -88,6 +88,8 @@ contract Exchange is IExchange, Ownable
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
             uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
+            uint32 FEE_BLOCK_FINE_START_TIME,
+            uint32 FEE_BLOCK_FINE_MAX_DURATION,
             uint   MAX_NUM_TOKENS
         )
     {
@@ -99,6 +101,8 @@ contract Exchange is IExchange, Ownable
             ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED(),
             ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(),
             ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
+            ExchangeData.FEE_BLOCK_FINE_START_TIME(),
+            ExchangeData.FEE_BLOCK_FINE_MAX_DURATION(),
             ExchangeData.MAX_NUM_TOKENS()
         );
     }

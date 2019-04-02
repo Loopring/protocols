@@ -108,6 +108,8 @@ contract IExchange
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
             uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
+            uint32 FEE_BLOCK_FINE_START_TIME,
+            uint32 FEE_BLOCK_FINE_MAX_DURATION,
             uint   MAX_NUM_TOKENS
         );
 
