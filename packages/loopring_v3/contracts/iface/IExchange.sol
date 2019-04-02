@@ -277,7 +277,74 @@ contract IExchange
     /// @param blockType The type of the new block
     /// @param numElements The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
-    /// @param data The data for this block - TODO(brecht): We need to document the data layout.
+    /// @param data The data for this block -
+    ///        For all block types:
+    ///            - Exchange ID: 4 bytes
+    ///            - Old merkle root: 32 bytes
+    ///            - New merkle root: 32 bytes
+    ///        For SETTLEMENT blocks add the following data:
+    ///            - timestamp used in the block: 4 bytes
+    ///        For DEPOSIT blocks add the following data:
+    ///            - Starting hash: 32 bytes
+    ///            - Ending hash: 32 bytes
+    ///            - Start index (in deposit chain): 4 bytes
+    ///            - Number of deposits processed: 4 bytes
+    ///        For ONCHAIN_WITHDRAW blocks add the following data:
+    ///            - Starting hash: 32 bytes
+    ///            - Ending hash: 32 bytes
+    ///            - Start index (in withdrawal chain): 4 bytes
+    ///            - Number of withdrawals processed: 4 bytes
+    ///            - For every withdrawal:
+    ///                - Account ID: 3 bytes
+    ///                - Token ID: 2 bytes
+    ///                - Amount: 12 bytes
+    ///        For OFFCHAIN_WITHDRAW blocks add the following data:
+    ///            - None
+    ///        For CANCEL blocks add the following data:
+    ///            - None
+    ///
+    ///        The 'onchain data availability' data (if enabled) is added
+    ///        at the end.
+    ///
+    ///        For SETTLEMENT blocks add the following data:
+    ///            - Operator account ID: 3 bytes
+    ///            - For every ring
+    ///                - Ring-matcher account ID: 3 bytes
+    ///                - Fee-recipient account ID: 3 bytes
+    ///                - Token ID (fee to operator): 2 bytes
+    ///                - Fee amount: 12 bytes
+    ///                - Margin (paid by first order): 12 bytes
+    ///                - For both Orders:
+    ///                    - Account ID: 3 bytes
+    ///                    - Wallet account ID: 3 bytes
+    ///                    - TokenS: 2 bytes
+    ///                    - TokenF: 2 bytes
+    ///                    - Order ID: 4 bytes
+    ///                    - FillS: 12 bytes
+    ///                    - FillF: 12 bytes
+    ///                    - WalletSplitPercentage: 1 byte
+    ///                    - WaiveFeePercentage: 1 byte
+    ///        For DEPOSIT blocks add the following data:
+    ///            - None
+    ///        For ONCHAIN_WITHDRAW blocks add the following data:
+    ///            - None
+    ///        For OFFCHAIN_WITHDRAWAL blocks add the following data:
+    ///            - Operator account ID: 3 bytes
+    ///            - For every withdrawal:
+    ///                - Wallet account ID: 3 bytes
+    ///                - Fee token ID: 2 bytes
+    ///                - Fee amount: 12 bytes
+    ///                - WalletSplitPercentage: 1 byte
+    ///        For CANCEL blocks add the following data:
+    ///            - Operator account ID: 3 bytes
+    ///            - For every cancel:
+    ///                - Account ID: 3 bytes
+    ///                - Token ID: 2 bytes
+    ///                - Order ID: 4 bytes
+    ///                - Wallet Account ID: 3 bytes
+    ///                - Fee token ID: 2 bytes
+    ///                - Fee amount: 12 bytes
+    ///                - WalletSplitPercentage: 1 byte
     function commitBlock(
         uint8 blockType,
         uint16 numElements,

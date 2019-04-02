@@ -142,10 +142,14 @@ contract("Exchange", (accounts: string[]) => {
     const items = eventArr.map((eventObj: any) => {
       return [eventObj.args.accountID, eventObj.args.tokenID, eventObj.args.amount];
     });
-    assert.equal(items.length, 1, "A single Withdraw event should have been emitted");
-    assert.equal(items[0][0].toNumber(), accountID, "accountID should match");
-    // assert.equal(items[0][1].toNumber(), tokenID, "tokenID should match");
-    assert(items[0][2].eq(expectedAmount), "amount should match");
+    if (expectedAmount.gt(new BN(0))) {
+      assert.equal(items.length, 1, "A single WithdrawalCompleted event should have been emitted");
+      assert.equal(items[0][0].toNumber(), accountID, "accountID should match");
+      // assert.equal(items[0][1].toNumber(), tokenID, "tokenID should match");
+      assert(items[0][2].eq(expectedAmount), "amount should match");
+    } else {
+      assert.equal(items.length, 0, "No WithdrawalCompleted event should have been emitted");
+    }
   };
 
   const withdrawChecked = async (blockIdx: number, slotIdx: number,

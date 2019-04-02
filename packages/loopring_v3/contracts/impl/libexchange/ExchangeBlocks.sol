@@ -185,7 +185,6 @@ library ExchangeBlocks
         uint32 numDepositRequestsCommitted = currentBlock.numDepositRequestsCommitted;
         uint32 numWithdrawalRequestsCommitted = currentBlock.numWithdrawalRequestsCommitted;
 
-        // TODO(brecht): double check this logic
         // Check if the operator is forced to commit a deposit or withdraw block
         // We give priority to withdrawals. If a withdraw block is forced it needs to
         // be processed first, even if there is also a deposit block forced.
@@ -271,6 +270,17 @@ library ExchangeBlocks
         }
 
         bytes32 publicDataHash = sha256(data);
+
+        // Only store the approved withdrawal data onchain
+        if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
+            blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAW)) {
+            uint start = 4 + 32 + 32 + 3 + 32 + 32 + 4 + 4;
+            uint length = (3 + 2 + 12) * numElements;
+            assembly {
+                data := add(data, start)
+                mstore(data, length)
+            }
+        }
 
         // Create a new block with the updated merkle roots
         ExchangeData.Block memory newBlock = ExchangeData.Block(

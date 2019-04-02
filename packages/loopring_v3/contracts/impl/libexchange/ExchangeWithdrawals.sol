@@ -247,10 +247,9 @@ library ExchangeWithdrawals
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
         // Get the withdraw data of the given slot
-        // TODO(brecht): optimize
+        // TODO(brecht): optimize SLOAD/SSTORE of bytes in storage
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 4 + 32 + 32 + 3 + 32 + 32 + 4 + 4 + (3 + 2 + 12) * (slotIdx + 1);
-        // uint offset = 143+ 17 * (slotIdx + 1);
+        uint offset = (3 + 2 + 12) * (slotIdx + 1);
         require(offset < withdrawals.length + 32, "INVALID_SLOT_IDX");
         uint data;
         assembly {

@@ -32,7 +32,8 @@ library ExchangeData
         SETTLEMENT,
         DEPOSIT,
         ONCHAIN_WITHDRAW,
-        OFFCHAIN_WITHDRAW
+        OFFCHAIN_WITHDRAW,
+        CANCEL
     }
 
     enum BlockState
@@ -123,7 +124,11 @@ library ExchangeData
         // The approved withdrawal data. Needs to be stored onchain so this data is available
         // once the block is finalized and the funds can be withdrawn using the info stored
         // in this data.
-        // TODO(brecht): document the layout in this byte array.
+        // For every withdrawal (there are numElements withdrawals),
+        // stored sequentially after each other:
+        //    - Account ID: 3 bytes
+        //    - Token ID: 2 bytes
+        //    - Amount: 12 bytes
         bytes  withdrawals;
     }
 
