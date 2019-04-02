@@ -317,7 +317,7 @@ library ExchangeWithdrawals
             feeAmount = S.withdrawalChain[requestedBlock.numWithdrawalRequestsCommitted - 1].accumulatedFee.sub(
                 S.withdrawalChain[previousBlock.numWithdrawalRequestsCommitted - 1].accumulatedFee
             );
-            lastRequestTimestamp = S.withdrawalChain[requestedBlock.numDepositRequestsCommitted - 1].timestamp;
+            lastRequestTimestamp = S.withdrawalChain[requestedBlock.numWithdrawalRequestsCommitted - 1].timestamp;
         } else {
             revert("BLOCK_HAS_NO_OPERATOR_FEE");
         }
