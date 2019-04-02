@@ -57,7 +57,6 @@ contract Exchange is IExchange, Ownable
         bool    _onchainDataAvailability
         )
         public
-        payable
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
