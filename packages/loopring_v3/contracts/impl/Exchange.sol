@@ -82,7 +82,8 @@ contract Exchange is IExchange, Ownable
         pure
         returns (
             uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
-            uint16 MAX_OPEN_REQUESTS,
+            uint16 MAX_OPEN_DEPOSIT_REQUESTS,
+            uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
             uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
@@ -92,7 +93,8 @@ contract Exchange is IExchange, Ownable
     {
         return (
             ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            ExchangeData.MAX_OPEN_REQUESTS(),
+            ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS(),
+            ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS(),
             ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE(),
             ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED(),
             ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(),
@@ -570,5 +572,21 @@ contract Exchange is IExchange, Ownable
         returns (uint costLRC)
     {
         costLRC = state.getDowntimeCostLRC(durationSeconds);
+    }
+
+    function getRequestStats()
+        external
+        view
+        returns(
+            uint numDepositRequestsProcessed,
+            uint numAvailableDepositSlots,
+            uint numWithdrawalRequestsProcessed,
+            uint numAvailableWithdrawalSlots
+        )
+    {
+        numDepositRequestsProcessed = state.getNumDepositRequestsProcessed();
+        numAvailableDepositSlots = state.getNumAvailableDepositSlots();
+        numWithdrawalRequestsProcessed = state.getNumWithdrawalRequestsProcessed();
+        numAvailableWithdrawalSlots = state.getNumAvailableWithdrawalSlots();
     }
 }
