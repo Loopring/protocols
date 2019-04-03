@@ -61,6 +61,7 @@ contract BasicToken is ERC20Basic {
     using SafeMath for uint256;
     mapping(address => uint256) balances;
     uint256 totalSupply_;
+    uint256 burnedTotalNum_;
 
     /**
      * @dev total number of tokens in existence
@@ -69,12 +70,21 @@ contract BasicToken is ERC20Basic {
         return totalSupply_;
     }
 
+    /**
+     * @dev total number of tokens already burned
+     */
+    function totalBurned() public view returns (uint256) {
+        return burnedTotalNum_;
+    }
+
     function burn(uint256 _value) public returns (bool) {
         require(_value <= balances[msg.sender]);
 
         address burner = msg.sender;
         balances[burner] = balances[burner].sub(_value);
         totalSupply_ = totalSupply_.sub(_value);
+        burnedTotalNum_ = burnedTotalNum_.add(_value);
+        
         emit Burn(burner, _value);
         return true;
     }
@@ -138,6 +148,7 @@ contract StandardToken is ERC20, BasicToken {
             allowed[_owner][msg.sender] = allowed[_owner][msg.sender].sub(_value);
         }
         totalSupply_ = totalSupply_.sub(_value);
+        burnedTotalNum_ = burnedTotalNum_.add(_value);
 
         emit Burn(_owner, _value);
         return true;

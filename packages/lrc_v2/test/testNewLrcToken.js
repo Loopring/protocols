@@ -56,10 +56,13 @@ contract("NewLRCToken", async (accounts) => {
   it("totalSupply should be decrease when an address burn its LRC token", async () => {
     const from = accounts[0];
     const totalSupplyBeforeBN = await lrcToken.totalSupply();
+    const totalBurnedBeforeBN = await lrcToken.totalBurned();
     const burnAmountBN = numberToBN(10000e18);
     await lrcToken.burn(burnAmountBN, {from: from});
     const totalSupplyAfterBN = await lrcToken.totalSupply();
+    const totalBurnedAfterBN = await lrcToken.totalBurned();
     assert((totalSupplyBeforeBN.sub(totalSupplyAfterBN)).eq(burnAmountBN), "burn amount not equal to balance decrease amount");
+    assert((totalBurnedAfterBN.sub(totalBurnedBeforeBN)).eq(burnAmountBN), "burn amount not equal to totalBurned increase amount");
   });
 
   it("transfer LRC to 0x0 address will equivalent to burn its LRC token", async () => {
