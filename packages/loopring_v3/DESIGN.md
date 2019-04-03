@@ -248,7 +248,7 @@ Fees that are paid by order owners that are subject to fee-burning (i.e. all fee
 
 ### Off-chain Withdrawal Request
 
-A request for a withdrawal is sent off-chain to the operator. The operator should include the withdrawal in a reasonable time in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.**
+A request for a withdrawal is sent off-chain to the operator. The operator should include the withdrawal in a reasonable time in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.** The wallet can receive a part of the fee paid to the operator.
 
 The nonce of the account is increased after the withdrawal is processed.
 
@@ -291,9 +291,9 @@ The ring settlement is just as in protocol 2 with some limitations:
 
 Orders and order-matching are still completely off-chain.
 
-Rings are automatically scaled to fill the orders as much as possible with the funds available in the Merkle tree at the time of settlement. The order that pays the margin (if there is any) needs to be the first order in the ring.
+**Rings are automatically scaled** to fill the orders as much as possible with the funds available in the Merkle tree at the time of settlement. The order that pays the margin (if there is any) needs to be the first order in the ring.
 
-We fully support partial order filling. How much an order is filled is [stored in the Merkle tree](#Trading-History). No need for users to re-sign anything if the order wasn't filled completely in a single ring, a user only needs to sign his order a single time. The order can be included in as many rings as necessary until it is completely filled.
+**Partial order filling** is fully supported. How much an order is filled is [stored in the Merkle tree](#Trading-History). No need for users to re-sign anything if the order wasn't filled completely in a single ring, a user only needs to sign his order a single time. The order can be included in as many rings as necessary until it is completely filled.
 
 ### Rings accepted in the circuit
 
@@ -387,7 +387,7 @@ Orders can be short-lived and the order owner can safely keep recreating orders 
 
 ### Off-chain cancel request
 
-The user sends a request for cancelling an order. The operator should include the cancellation as soon as possible in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.**
+The user sends a request for cancelling an order. The operator should include the cancellation as soon as possible in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.** The wallet can receive a part of the fee paid to the operator.
 
 The nonce of the account is increased after the cancel is processed.
 
@@ -472,17 +472,17 @@ Ring-Matchers collect as many orders as possible sent to him by wallets (or crea
 Ring-Matchers need to create a normal account so they can pay the operator (and receive the burn rate free margin). They also need to create a fee-recipient account
 to receive the matching fee from orders (because the burn rate needs to be applied on these funds when withdrawing).
 
-### Fee
-
 The fee paid by the ring-matcher to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ring-matchers pays a fee in ETH to the Ethereum miners, the ring-matcher now pays a fee to the operator. **Any token can be used to pay the fee.**
 
 ## Trading History
 
 Every account has a trading history tree with 2^14 leafs **for every token**. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. The orderID is stored in a 32-bit value. We allow the user to overwrite the existing trading history stored at `orderID % 2^14` if `order.orderID > tradeHistory.orderID`. If `order.orderID < tradeHistory.orderID` the order is automatically cancelled. If `order.orderID == tradeHistory.orderID` we use the trading history stored in the leaf. This allows the account to create 2^32 unique orders for every token, the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
 
+While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities.
+
 ### Order Aliasing
 
-While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities. The account owner can even choose to reuse the same orderID in multiple orders. We call this order aliasing.
+The account owner can choose to reuse the same orderID in multiple orders. We call this Order Aliasing.
 
 #### Safely updating the validUntil time of an order
 
@@ -494,7 +494,7 @@ This is especially a problem because [the operator can set the timestamp that is
 
 A user could create an order selling X tokenZ for either N tokenA or M tokenB (or even more tokens) while using the same orderID. The user is guaranteed never to spend more than X tokenZ, but will have bought [0, N] tokenA and/or [0, M] tokenA.
 
-A realistic use case would be for selling some token for one of the available stable coins. Or selling some token for ETH and WETH. In these casse the user doesn't really care which token specifically he buys, but he increases his chance of finding a matching order.
+A realistic use case would be for selling some token for one of the available stable coins. Or selling some token for ETH and WETH. In these cases the user doesn't really care which specific token he buys, but he increases his chance of finding a matching order.
 
 ## On-chain Deposit/Withdraw Request Handling
 
