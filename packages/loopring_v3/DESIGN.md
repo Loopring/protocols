@@ -45,7 +45,7 @@ A Merkle tree is used to store all the permanent data needed in the circuits.
 - No special handling for anything. Every actor in the Loopring ecosystem has an account in the same tree.
 - A single nonce for every account (instead of e.g. a nonce for every token a user owns) allowing off-chain requests to be ordered on the account level, which is what users will expect.
 - While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances Merkle root is stored inside the account leaf). The same is useful for wallets, ring-matchers and operators because these also pay/receive fees in different tokens.
-- The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this small sub-tree. The trading-history is not part of the account leaf because that way we'd only have 2^14 leafs for all tokens together. Note that account owners can create [a lot more orders](#Order-Aliasing) for each token than the 2^14 slots available in this tree!
+- The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this small sub-tree. The trading-history is not part of the account leaf because that way we'd only have 2^14 leafs for all tokens together. Note that account owners can create [a lot more orders](#Trading-History) for each token than the 2^14 slots available in this tree!
 
 ## Blocks
 
@@ -90,6 +90,27 @@ The operator can be a simple Ethereum address or can be a complex contract allow
 The operator contract can also be used to enforce an off-chain data-availability system. A simple scheme could be that multiple parties need to sign off on a block before it can be committed. This can be checked in the operator contract. As long as one member is trustworthy and actually shares the data then data-availability is ensured.
 
 The operator creates a block and submits it on-chain by calling `commitBlock`. He then has at most `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds to submit a proof for the block using `verifyBlock`. A proof can be submitted any time between when the block is committed and `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds afterwards, verifying a block does not need to be done in the same order as they are committed. If a block isn't proven in time `revertBlock` needs to be called by the operator within `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE` seconds the block was committed. When a block is successfully reverted the complete stake of the exchange is burned. If the operator fails to call `revertBlock` in time the exchange will automatically go into withdrawal mode. If there are any unverified blocks anyone can call `burnStake` to still burn the stake.
+
+### Restrictions imposed on the Operator
+
+The operator needs all the order data to generate the proof. We need a way to prevent the operator from re-creating rings with him as the recipient of the ring matching fees.
+
+To allow orders to be matched by any criteria by a ring-matcher we also need a mechanism to prevent operators to re-order the sequence in which the rings are settled while enforcing the ring can only be settled a single time.
+
+#### Restrict order matching
+
+We use **dual-authoring** here. Orders can only be matched in rings signed by the private key corresponding to the public key stored in the order.
+For dual-authoring we also use EdDSA keys.
+
+#### Enforced sequence of ring settlements
+
+We use a **nonce** here. The nonce of the ring-matcher account paying the operator is used. The ring signed by the ring-matcher contains a nonce. The nonce in the next ring that is settled for this ring-matcher needs to be the nonce of the previous ring that was settled incremented by 1.  A ring-matcher can have multiple accounts to have more control how rings can be processed by the operator (e.g. an account per trading pair).
+
+Note that doing an off-chain withdraw also increments the nonce value. A ring-matcher thus may want to limit himself to on-chain withdrawals so the nonce value of the account remains the same.
+
+#### Only allow off-chain requests to be used once
+
+The **nonce** of the account is increased by 1 for these operations. The expected nonce is stored in the off-chain request which is signed by the account owner.
 
 ## Exchanges
 
@@ -170,6 +191,8 @@ The token tiers are stored in the Loopring contract. All tokens are tier 4 by de
 - LRC: tier 1
 
 LRC has the lowest burn rate by default. The burn rate for a token can be lowered by upgrading the tier of the token. This can be done by calling `buydownTokenBurnRate`. The cost to upgrade the token a single tier is `tierUpgradeCostBips * LRC.totalSupply()`. The burn rate for a token can be found by calling `getTokenBurnRate`.
+
+Only the fees paid by the order owners are subject to fee burning. The business model among wallets, ring-matchers and operators can be negotiated off-chain and can be totally detached from the protocol.
 
 ## Signatures
 
@@ -270,7 +293,7 @@ Orders and order-matching are still completely off-chain.
 
 Rings are automatically scaled to fill the orders as much as possible with the funds available in the Merkle tree at the time of settlement. The order that pays the margin (if there is any) needs to be the first order in the ring.
 
-We fully support partial order filling. How much an order is filled is [stored in the Merkle tree](#Order-Aliasing). No need for users to re-sign anything if the order wasn't filled completely in a single ring. The order can be included in as many rings as necessary until it is completely filled. A user only needs to sign his order a single time.
+We fully support partial order filling. How much an order is filled is [stored in the Merkle tree](#Trading-History). No need for users to re-sign anything if the order wasn't filled completely in a single ring, a user only needs to sign his order a single time. The order can be included in as many rings as necessary until it is completely filled.
 
 ### Rings accepted in the circuit
 
@@ -404,7 +427,7 @@ Only the party with the dual-author keys can actually use the order in a ring. E
 
 ### Creating an order with a larger orderID in the same trading history slot
 
-See [Order Aliasing](#Order-Aliasing) how the trading history is stored. If an order with a larger orderID is used in a ring settlement at the same trading history slot as a previous order, the previous order is automatically cancelled.
+Please see [Trading History](#Trading-History) to see how the trading history is stored. If an order with a larger orderID is used in a ring settlement at the same trading history slot as a previous order, the previous order is automatically cancelled.
 
 ### The DEX removes the order in the order-book
 
@@ -453,40 +476,21 @@ to receive the matching fee from orders (because the burn rate needs to be appli
 
 The fee paid by the ring-matcher to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ring-matchers pays a fee in ETH to the Ethereum miners, the ring-matcher now pays a fee to the operator. **Any token can be used to pay the fee.**
 
-### Restrictions
+## Trading History
 
-The operator needs all the order data to generate the proof. We need a way to prevent the operator from re-creating rings with him as the recipient of the ring matching fees.
+Every account has a trading history tree with 2^14 leafs **for every token**. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. The orderID is stored in a 32-bit value. We allow the user to overwrite the existing trading history stored at `orderID % 2^14` if `order.orderID > tradeHistory.orderID`. If `order.orderID < tradeHistory.orderID` the order is automatically cancelled. If `order.orderID == tradeHistory.orderID` we use the trading history stored in the leaf. This allows the account to create 2^32 unique orders for every token, the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
 
-To allow orders to be matched by any criteria by a ring-matcher we also need a mechanism to prevent operators to re-order the sequence in which the rings are settled while enforcing the ring can only be settled a single time.
+### Order Aliasing
 
-#### Restrict order matching
+While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities. The account owner can even choose to reuse the same orderID in multiple orders. We call this order aliasing.
 
-We use **dual-authoring** here. Orders can only be matched in rings signed by the private key corresponding to the public key stored in the order.
-For dual-authoring we also use EdDSA keys.
-
-#### Restrict the sequence of ring settlements
-
-We use a **nonce** here. The nonce of the ring-matcher account paying the operator is used. The ring signed by the ring-matcher contains a nonce. The nonce in the next ring that is settled for this ring-matcher needs to be the nonce of the previous ring that was settled incremented by 1.  A ring-matcher can have multiple accounts to have more control how rings can be processed by the operator (e.g. an account per trading pair).
-
-Note that doing an off-chain withdraw also increments the nonce value. A ring-matcher thus may want to limit himself to on-chain withdrawals so the nonce value of the account remains the same.
-
-#### Only allow cancels/off-chain withdrawal requests to be used once by an operator
-
-The **nonce** of the account is increased by 1 for these operations. The expected nonce is stored in the off-chain request which is signed by the account owner.
-
-## Order Aliasing
-
-Every account has a trading history tree with 2^14 leafs for every token. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. The orderID is stored in a 32-bit value. We allow the user to overwrite the existing trading history stored at `orderID % 2^14` if `order.orderID > tradeHistory.orderID`. If `order.orderID < tradeHistory.orderID` the order is automatically cancelled. This allows the account to create 2^32 unique orders for every token, the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
-
-While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities:
-
-### Safely updating the validUntil time of an order
+#### Safely updating the validUntil time of an order
 
 For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely by creating a new order with a new validUntil value, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderID.
 
 This is especially a problem because [the operator can set the timestamp that is tested on-chain within a certain window](#validsincevaliduntil). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders. The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants. Order Aliasing fixes this problem without having to calculate multiple hashes (e.g. order hash with time information and without).
 
-### The possibility for some simple filling logic between orders
+#### The possibility for some simple filling logic between orders
 
 A user could create an order selling X tokenZ for either N tokenA or M tokenB (or even more tokens) while using the same orderID. The user is guaranteed never to spend more than X tokenZ, but will have bought [0, N] tokenA and/or [0, M] tokenA.
 
