@@ -633,7 +633,7 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 
 ### Future improvements
 
-These numbers will go down significantly, even in the near future.
+These numbers will improve significantly, even in the near future.
 - The numbers above are still done on a Merkle tree with [deeper depths](https://github.com/Loopring/protocols/issues/49), which increases the number of constraints quite a bit
 - [More efficient hash functions](https://github.com/Loopring/protocols/issues/49) may be usable which would drastically decrease the number of constraints.
 - Our fee model is quite complex, using **a lot** of token transfers. We can create circuits with a [simplified fee model](https://github.com/Loopring/protocols/issues/50). This, again, will greatly decrease the number of constraints.
