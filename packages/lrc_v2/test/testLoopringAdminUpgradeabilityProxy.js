@@ -22,8 +22,6 @@ contract("LoopringAdminUpgradeabilityProxy", async (accounts) => {
     // console.log("loopringAdminUpgradeabilityProxy:", loopringAdminUpgradeabilityProxy.address);
 
     proxyInstance = await LrcToken.at(loopringAdminUpgradeabilityProxy.address);
-
-    // console.log("proxyInstance:", proxyInstance.address);
   });
 
   it("should be able to get name, decimals and totalSupply", async () => {
@@ -53,7 +51,14 @@ contract("LoopringAdminUpgradeabilityProxy", async (accounts) => {
     const receiver = accounts[1];
     const banlanceBeforeBN = await proxyInstance.balanceOf(receiver);
     const transferAmountBN = numberToBN(100e18);
+    const blockNumber = await web3.eth.getBlockNumber();
     await proxyInstance.transfer(receiver, transferAmountBN, {from: from});
+    const events = await proxyInstance.getPastEvents("Transfer", { fromBlock: blockNumber });
+    // console.log("from:", from);
+    //console.log("transfer events from:", events[0].args.from);
+    const proxyTransferFrom = events[0].args.from;
+    assert(from, proxyTransferFrom, "transfer from not equal");
+
     const balanceAfterBN = await proxyInstance.balanceOf(receiver);
     assert(transferAmountBN.eq(balanceAfterBN.sub(banlanceBeforeBN)), "transfer amount not match");
   });
