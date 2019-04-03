@@ -84,17 +84,19 @@ library ExchangeDeposits
         timestamp = request.timestamp;
     }
 
+    // This function should allow 0-value deposit for both normal accounts as
+    // well as fee recipient accounts.
     function depositTo(
         ExchangeData.State storage S,
+        bool    allowFeeRecipientAccount,
         address recipient,
         address tokenAddress,
-        uint96  amount,
+        uint96  amount,  // can be zero
         uint    additionalFeeETH
         )
         public
     {
         require(recipient != address(0), "ZERO_ADDRESS");
-        require(amount > 0, "ZERO_VALUE");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
@@ -105,6 +107,11 @@ library ExchangeDeposits
 
         uint24 accountID = S.getAccountID(recipient);
         ExchangeData.Account storage account = S.accounts[accountID];
+
+        require(
+            allowFeeRecipientAccount || !ExchangeAccounts.isFeeRecipientAccount(account),
+            "INVALID_ACCOUNT_TYPE"
+        );
 
         transferDeposit(
             S,

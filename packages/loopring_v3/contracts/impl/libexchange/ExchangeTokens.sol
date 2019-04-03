@@ -120,6 +120,11 @@ library ExchangeTokens
         public
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
+
+        require(tokenAddress != address(0), "ETHER_CANNOT_BE_DISABLED");
+        require(tokenAddress != S.loopring.wethAddress(), "WETH_CANNOT_BE_DISABLED");
+        require(tokenAddress != S.loopring.lrcAddress(), "LRC_CANNOT_BE_DISABLED");
+
         uint16 tokenID = getTokenID(S, tokenAddress);
         ExchangeData.Token storage token = S.tokens[tokenID - 1];
         require(!token.depositDisabled, "TOKEN_DEPOSIT_ALREADY_DISABLED");
