@@ -97,7 +97,8 @@ library ExchangeTokens
         view
         returns (uint16 tokenID)
     {
-        // These if-else will enable us to change WETH/LRC address later in Loopring contract.
+        // These if-else will enable us to change the WETH/LRC addresses
+        //  later in Loopring contract.
         if (tokenAddress == address(0)) {
             tokenID = uint16(1);
         } else if (tokenAddress == S.loopring.wethAddress()) {
@@ -118,9 +119,8 @@ library ExchangeTokens
         view
         returns (address)
     {
-        // These if-else will enable us to change WETH/LRC address later in Loopring contract.
-        require(tokenID != 0, "INVALID_TOKEN_ID");
-
+        // These if-else will enable us to change the WETH/LRC addresses
+        //  later in Loopring contract.
         if (tokenID == 1) {
             return address(0);
         } else if (tokenID == 2) {
@@ -128,7 +128,7 @@ library ExchangeTokens
         } else if (tokenID == 3) {
             return S.loopring.lrcAddress();
         } else {
-            require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
+            require(tokenID > 0 && tokenID <= S.tokens.length, "INVALID_TOKEN_ID");
             return S.tokens[tokenID - 1].token;
         }
     }
