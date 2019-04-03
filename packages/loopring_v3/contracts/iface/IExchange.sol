@@ -40,7 +40,8 @@ contract IExchange
 
     event TokenRegistered(
         address indexed token,
-        uint16  indexed tokenId
+        uint16  indexed tokenId,
+        uint8           decimals
     );
 
     event OperatorChanged(
@@ -213,7 +214,7 @@ contract IExchange
     /// @return tokenID The token's ID in this exchanges.
     /// @return isAccountNew True if this account is newly created, false if the account existed
     function registerToken(
-        address tokenAddress
+        address payable tokenAddress
         )
         external
         returns (uint16 tokenID);

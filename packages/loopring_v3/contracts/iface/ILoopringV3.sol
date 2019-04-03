@@ -79,8 +79,8 @@ contract ILoopringV3
     mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
 
     uint    public totalStake                   = 0;
-    address public lrcAddress                   = address(0);
-    address public wethAddress                  = address(0);
+    address payable public lrcAddress           = address(0);
+    address payable public wethAddress          = address(0);
     address public exchangeDeployerAddress      = address(0);
     address public blockVerifierAddress         = address(0);
     uint    public exchangeCreationCostLRC      = 0;

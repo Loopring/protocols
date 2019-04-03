@@ -36,8 +36,8 @@ contract LoopringV3 is ILoopringV3, Ownable
 
     // -- Constructor --
     constructor(
-        address _lrcAddress,
-        address _wethAddress,
+        address payable _lrcAddress,
+        address payable _wethAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,

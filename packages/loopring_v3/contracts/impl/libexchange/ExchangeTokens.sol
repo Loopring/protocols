@@ -18,9 +18,8 @@ pragma solidity 0.5.2;
 
 
 import "../../lib/BurnableERC20.sol";
-import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/ERC20Token.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/NoDefaultFunc.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
@@ -36,7 +35,8 @@ library ExchangeTokens
 
     event TokenRegistered(
         address indexed token,
-        uint16  indexed tokenId
+        uint16  indexed tokenId,
+        uint8           decimals
     );
 
     function getLRCFeeForRegisteringOneMoreToken(
@@ -53,7 +53,7 @@ library ExchangeTokens
 
     function registerToken(
         ExchangeData.State storage S,
-        address tokenAddress
+        address payable tokenAddress
         )
         public
         returns (uint16 tokenID)
@@ -67,7 +67,7 @@ library ExchangeTokens
 
     function registerToken(
         ExchangeData.State storage S,
-        address tokenAddress,
+        address payable tokenAddress,
         uint    amountToBurn
         )
         internal
@@ -86,7 +86,11 @@ library ExchangeTokens
         tokenID = uint16(S.tokens.length);
         S.tokenToTokenId[tokenAddress] = tokenID;
 
-        emit TokenRegistered(tokenAddress, tokenID);
+        emit TokenRegistered(
+            tokenAddress,
+            tokenID,
+            ERC20Token(tokenAddress).decimals()
+        );
     }
 
     function getTokenID(

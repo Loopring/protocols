@@ -207,7 +207,7 @@ contract Exchange is IExchange, Ownable
     }
 
     function registerToken(
-        address tokenAddress
+        address payable tokenAddress
         )
         external
         onlyOwner
