@@ -109,7 +109,7 @@ library ExchangeTokens
         view
         returns (address)
     {
-        require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
+        require(tokenID != 0 && tokenID <= S.tokens.length, "INVALID_TOKEN_ID");
         return S.tokens[tokenID - 1].token;
     }
 
