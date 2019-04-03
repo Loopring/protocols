@@ -99,12 +99,12 @@ To allow orders to be matched by any criteria by a ring-matcher we also need a m
 
 #### Restrict order matching
 
-We use **dual-authoring** here. Orders can only be matched in rings signed by the private key corresponding to the public key stored in the order.
+We use [dual-authoring](https://medium.com/loopring-protocol/dual-authoring-looprings-solution-to-front-running-d0fc9c348ef1) here. Orders can only be matched in rings signed by the private key corresponding to the public key stored in the order.
 For dual-authoring we also use EdDSA keys.
 
 #### Enforced sequence of ring settlements
 
-We use a **nonce** here. The nonce of the ring-matcher account paying the operator is used. The ring signed by the ring-matcher contains a nonce. The nonce in the next ring that is settled for this ring-matcher needs to be the nonce of the previous ring that was settled incremented by 1.  A ring-matcher can have multiple accounts to have more control how rings can be processed by the operator (e.g. an account per trading pair).
+We use a **nonce**. The nonce of the ring-matcher account paying the operator is used. The ring signed by the ring-matcher contains a nonce. The nonce in the next ring that is settled for this ring-matcher needs to be the nonce of the previous ring that was settled incremented by 1.  A ring-matcher can have multiple accounts to have more control how rings can be processed by the operator (e.g. an account per trading pair).
 
 Note that doing an off-chain withdraw also increments the nonce value. A ring-matcher thus may want to limit himself to on-chain withdrawals so the nonce value of the account remains the same.
 
@@ -135,7 +135,7 @@ The stake ensures that the exchange behaves correctly. This is done by
 - using a part of the stake to ensure the operator automatically distributes the withdrawals of users
 - only allows the stake to be withdrawn when the exchange is shutdown by automatically returning the funds of all its users
 
-Exchanges with a large stake have a lot to lose by not playing by the rules and nothing to gain because the operator/owner can never steal funds for itself.
+Exchanges with a large stake have a lot to lose by not playing by the rules and have nothing to gain because the operator/owner can never steal funds for itself.
 
 #### Withdrawing the stake
 
@@ -153,7 +153,7 @@ This also guards users against data-availability problems. Even if the Merkle tr
 
 The exchange owner can put the exchange temporarily in a suspended state. This can, for example, be used to update the back-end of the exchange.
 
-When the exchange is suspended users cannot do any on-chain requests anymore. Additionaly, the operator is not allowed to commit any ring settlement blocks to prevent the exchange owner from abusing this system. The operator still needs to process any open on-chain requests and needs to prove any unverified blocks, otherwise the exchange runs the risk of getting into withdrawal mode, which is irreversible.
+When the exchange is suspended users cannot do any on-chain requests anymore. Additionaly, the operator is not allowed to commit any ring settlement blocks to prevent the exchange owner from abusing this system. The operator still needs to process all on-chain requests that are still open and needs to prove any unverified blocks, otherwise the exchange runs the risk of getting into withdrawal mode, which is irreversible.
 
 The exchange owner can call `purchaseDowntime` to burn LRC in return for downtime. `getDowntimeCostLRC` can be used to find out how much LRC needs to be sent to put the exchange in downtime for a certain amount of time. `getRemainingDowntime` can be called to find out how much time the exchange will still remain in maintenance mode.
 
@@ -179,7 +179,7 @@ The following on-chain requests can require a fee to be paid in ETH to the excha
 
 An Exchange is allowed to freely set the fees for any of the above. However, for withdrawals the Loopring contract enforces a maximum fee. This is to ensure an Exchange cannot stop users from withdrawing by setting an extremely high withdrawal fee.
 
-Any function requiring a fee on-chain can be sent ETH. If the user sends more ETH than required (e.g. because the exact fee amount in hard to manually set) the surplus is immediately sent back.
+Any function requiring a fee on-chain can be sent ETH. If the user sends more ETH than required (e.g. because the exact fee amount in hard to manually set) then the surplus is immediately sent back.
 
 ## Fee Model
 
@@ -198,7 +198,7 @@ Only the fees paid by the order owners are subject to fee burning. The business 
 
 Currently we use EdDSA keys (7,000 constraints to verify a signature), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). We may switch to ECDSA signatures if possible because users would not need to create (and store) a separate keypair specifically for our sidechain.
 
-We store the data for a EdDSA signature like this:
+The data for an EdDSA signature is stored like this:
 
 ```
 Signature {
@@ -211,7 +211,7 @@ Signature {
 ## Account creation
 
 Before the user can start trading he needs to create an account. An account allows a user to trade any token that is registered (or will be registered in the future).
-The account is linked to the `msg.sender` that created the account, creating a one-to-one mapping between Ethereum addresses and accounts. Any future interaction with the account on-chain needs to be done using the same `msg.sender`.
+The account is linked to the `msg.sender` that created the account, creating a one-to-one mapping between Ethereum addresses and accounts. Any future interaction with the account on-chain that needs authentication needs to be done using the same `msg.sender`.
 
 The account needs an EdDSA public key. This public key will be stored in the Merkle tree for the account. Every request made for the account in off-chain requests (like orders) need to be signed using the corresponding private key. EdDSA is used because it is more efficient in circuits.
 
@@ -241,10 +241,9 @@ totalFine = Loopring.withdrawalFineLRC() * numWithdrawalRequestsInBlock
 ```
 50% of the fine is used to reward the caller of the function for distributing the withdrawals, the other 50% is burned.
 
-### Fee-burning
+### Fee Burning
 
-Fees that are paid by order owners that are subject to fee-burning (i.e. all fee payments except the margin and the payment from the ring-matcher to the operator) and need to be transferred to a fee-recipient account. When withdrawing tokens from these kind of accounts a part of the balance is burned (the amount burned depends on the burn rate of the token). If the token is LRC we burn the amount immediately by calling `burn` on the LRC contract, otherwise we send the amount to the Loopring contract. There it can be withdrawn by the Loopring contract owner by calling `withdrawTheBurn` so that is can be used to buy LRC and burn it. In the future these funds will be sold directly on-chain and decentralized by using [Loopring's Oedax (Open-Ended Dutch Auction eXchange) protocol](https://medium.com/loopring-protocol/oedax-looprings-open-ended-dutch-auction-exchange-model-d92cebbd3667).
-
+When withdrawing funds from a fee-recipient account a part of the balance is [burned](#fee-model). If the token is LRC we burn the amount immediately by calling `burn` on the LRC contract, otherwise we send the amount to the Loopring contract. There it can be withdrawn by the Loopring contract owner by calling `withdrawTheBurn` so that it can be used to buy LRC and burn it. In the future these funds will be sold directly on-chain in a decentralized way by using [Loopring's Oedax (Open-Ended Dutch Auction eXchange) protocol](https://medium.com/loopring-protocol/oedax-looprings-open-ended-dutch-auction-exchange-model-d92cebbd3667).
 
 ### Off-chain Withdrawal Request
 
@@ -255,10 +254,10 @@ The nonce of the account is increased after the withdrawal is processed.
 ```
 OffchainWithdrawal {
   exchangeID (32bit)
-  accountID (24bit)
+  accountID (20bit)
   tokenID (8bit)
   amount (96bit)
-  walletAccountID (24bit)
+  walletAccountID (20bit)
   feeTokenID (8bit)
   fee (96bit)
   walletSplitPercentage (7bit)
@@ -316,8 +315,8 @@ List of causes that will result in no actual ring settlement, but are still acce
 Order {
   exchangeID (32bit)
   orderID (32bit)
-  accountID (24bit)
-  walletAccountID (24bit)
+  accountID (20bit)
+  walletAccountID (20bit)
   dualAuthPublicKeyX (254bit)
   dualAuthPublicKeyY (254bit)
   tokenS (8bit)
@@ -353,10 +352,10 @@ Ring {
   orderB_hash (254bit)
   orderA_waiveFeePercentage (7bit)
   orderB_waiveFeePercentage (7bit)
-  accountID (24bit)
+  accountID (20bit)
   tokenID (8bit)
   fee (96bit)
-  feeRecipientAccountID (24bit)
+  feeRecipientAccountID (20bit)
   nonce (32bit)
 }
 ```
@@ -393,14 +392,14 @@ The nonce of the account is increased after the cancel is processed.
 
 ```
 CancelRequest {
-  stateID (32bit)
-  accountID (24bit)
+  exchangeID (32bit)
+  accountID (20bit)
   orderTokenID (8bit)
   orderID (32bit)
-  walletAccountID (24bit)
+  walletAccountID (20bit)
   feeTokenID (8bit)
   fee (96bit)
-  walletSplitPercentage (24bit)
+  walletSplitPercentage (7bit)
   nonce (32bit)
   zero-padding (2bit)
 }
@@ -427,52 +426,11 @@ Only the party with the dual-author keys can actually use the order in a ring. E
 
 ### Creating an order with a larger orderID in the same trading history slot
 
-Please see [Trading History](#Trading-History) to see how the trading history is stored. If an order with a larger orderID is used in a ring settlement at the same trading history slot as a previous order, the previous order is automatically cancelled.
+If an order with a larger orderID is used in a ring settlement at the same trading history slot as a previous order, the previous order is automatically cancelled. Please read [Trading History](#Trading-History) to learn more about how the trading history is stored.
 
 ### The DEX removes the order in the order-book
 
 If the order never left the DEX and the user trusts the DEX than the order can simply be removed from the order book.
-
-## Withdrawal mode
-
-The operator may stop submitting new blocks and proving already committed blocks at any time. If that happens we need to ensure users can still withdraw their funds.
-
-An exchange can go in withdrawal mode when any of the conditions below are true:
-- An on-chain request (either deposit or withdrawal) is open for longer than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE`
-- A block remains unfinalized for longer than `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE`
-
-Once in withdrawal mode almost all functionality of the exchange is stopped. The operator cannot commit any blocks anymore.
-Users can withdraw their funds using the state of the last finalized block:
-- Balances still stored in the Merkle tree can be withdrawn with a Merkle proof by calling `withdrawFromMerkleTree` or `withdrawFromMerkleTreeFor`.
-- Deposits not yet included in a finalized block can be withdrawn using `withdrawFromDepositRequest`
-- Approved withdrawals can manually be withdrawn (even when not in withdrawal mode) using `withdrawFromApprovedWithdrawal`
-
-## ValidSince/ValidUntil
-
-A block and its proof is always made for a fixed input. The operator cannot accurately know on what timestamp the block will be processed on the Ethereum blockchain, but he needs a fixed timestamp to create a block and its proof (the chosen timestamp impacts which orders are valid and invalid).
-
-We do however know the approximate time the block will be committed on the Ethereum blockchain. When committing the block the operator also includes the timestamp he used in the block (as a part of the public data). This timestamp is checked against the timestamp on-chain and if the difference is less than `TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS` the block can be committed.
-
-## Brokers
-
-A broker is someone that can manage orders for an account it does not own.
-
-The account system is used for this. Users can create a special account for a broker and deposit funds the broker is able to use. This is done by setting `account.publicKey` to the public key of the broker instead of the order owner. To stop the broker from being able to fill orders the balance can be withdrawn or the public key stored in the account can be changed.
-
-## Wallets
-
-Wallets are the where orders are created. The wallet can insert its account to receive a part of the fees paid by the order owner.
-
-Wallets need to create a fee recipient account to receive the wallet fees of the order. This account can be included in the order.
-
-## Ring-Matchers
-
-Ring-Matchers collect as many orders as possible sent to him by wallets (or created by himself). In this large pool of orders he finds 2 (or more, depending on the protocol version) orders that can be matched with each other (so the orders are filled as expected by the users, this is enforced by the protocol). We call this a ring.
-
-Ring-Matchers need to create a normal account so they can pay the operator (and receive the burn rate free margin). They also need to create a fee-recipient account
-to receive the matching fee from orders (because the burn rate needs to be applied on these funds when withdrawing).
-
-The fee paid by the ring-matcher to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ring-matchers pays a fee in ETH to the Ethereum miners, the ring-matcher now pays a fee to the operator. **Any token can be used to pay the fee.**
 
 ## Trading History
 
@@ -488,7 +446,7 @@ The account owner can choose to reuse the same orderID in multiple orders. We ca
 
 For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely by creating a new order with a new validUntil value, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderID.
 
-This is especially a problem because [the operator can set the timestamp that is tested on-chain within a certain window](#validsincevaliduntil). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders. The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants. Order Aliasing fixes this problem without having to calculate multiple hashes (e.g. order hash with time information and without).
+This is especially a problem because [the operator can set the timestamp](#Timestamp-in-Circuits) that is tested on-chain within a certain window. So even when the validSince/validUntil times don't overlap it could still be possible for an operator to fill multiple orders. The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants. Order Aliasing fixes this problem without having to calculate multiple hashes (e.g. order hash with time information and without).
 
 #### The possibility for some simple filling logic between orders
 
@@ -524,6 +482,47 @@ function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { 
 function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
 function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
 ```
+
+## Withdrawal mode
+
+The operator may stop submitting new blocks and proving already committed blocks at any time. If that happens we need to ensure users can still withdraw their funds.
+
+An exchange can go in withdrawal mode when any of the conditions below are true:
+- An on-chain request (either deposit or withdrawal) is open for longer than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE`
+- A block remains unfinalized for longer than `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE`
+
+Once in withdrawal mode almost all functionality of the exchange is stopped. The operator cannot commit any blocks anymore.
+Users can withdraw their funds using the state of the last finalized block:
+- Balances still stored in the Merkle tree can be withdrawn with a Merkle proof by calling `withdrawFromMerkleTree` or `withdrawFromMerkleTreeFor`.
+- Deposits not yet included in a finalized block can be withdrawn using `withdrawFromDepositRequest`
+- Approved withdrawals can manually be withdrawn (even when not in withdrawal mode) using `withdrawFromApprovedWithdrawal`
+
+## Wallets
+
+Wallets are where users create orders. The wallet can insert its account to receive a part of the fees paid by the order owner.
+
+Wallets need to create a fee-recipient account to receive the wallet fees of the order. This account can be included in the order.
+
+## Ring-Matchers
+
+Ring-Matchers collect as many orders as possible sent to him by wallets (or created by himself). In this large pool of orders he finds 2 (or more, depending on the protocol version) orders that can be matched with each other (so the orders are filled as expected by the users, this is enforced by the protocol). We call this a ring.
+
+Ring-Matchers need to create a normal account so they can pay the operator (and receive the burn rate free margin). They also need to create a fee-recipient account
+to receive the matching fee from orders (because the burn rate needs to be applied on these funds when withdrawing).
+
+The fee paid by the ring-matcher to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ring-matchers pays a fee in ETH to the Ethereum miners, the ring-matcher now pays a fee to the operator. **Any token can be used to pay the fee.**
+
+## Brokers
+
+A broker is someone that can manage orders for an account it does not own.
+
+The account system is used for this. Users can create a special account for a broker and deposit funds the broker is able to use. This is done by setting `account.publicKey` to the public key of the broker instead of the order owner. To stop the broker from being able to fill orders the balance can be withdrawn or the public key stored in the account can be changed.
+
+## Timestamp in Circuits
+
+A block and its proof is always made for a fixed input. The operator cannot accurately know on what timestamp the block will be processed on the Ethereum blockchain, but he needs a fixed timestamp to create a block and its proof (the chosen timestamp impacts which orders are valid and invalid).
+
+We do however know the approximate time the block will be committed on the Ethereum blockchain. When committing the block the operator also includes the timestamp he used in the block (as a part of the public data). This timestamp is checked against the timestamp on-chain and if the difference is less than `TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS` the block can be committed.
 
 ## On-chain data
 
@@ -614,7 +613,7 @@ These numbers can be improved by packing the data more tightly.
 
 ### Constraints limit
 
-We can only efficiently prove circuits with a maximum of 256,000,000 constraints on-chain. Currently our most expensive ring settlement circuit uses ~650,000 constraints:
+We can only prove circuits with a maximum of 256,000,000 constraints on-chain efficiently. Currently our **most expensive** ring settlement circuit uses ~650,000 constraints/ring:
 - 256,000,000 / ~650,000 = ~400 rings/block
 
 ### Results
@@ -636,8 +635,8 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 
 These numbers will go down significantly, even in the near future.
 - The numbers above are still done on a Merkle tree with [deeper depths](https://github.com/Loopring/protocols/issues/49), which increases the number of constraints quite a bit
-- [More efficient hash functions may be usable](https://github.com/Loopring/protocols/issues/49) which would drastically decrease the number of constraints.
-- Our fee model is quite complex, using **a lot** of token transfers. [We can create circuits with a simplified fee model](https://github.com/Loopring/protocols/issues/50). This, again, will greatly decrease the number of constraints.
+- [More efficient hash functions](https://github.com/Loopring/protocols/issues/49) may be usable which would drastically decrease the number of constraints.
+- Our fee model is quite complex, using **a lot** of token transfers. We can create circuits with a [simplified fee model](https://github.com/Loopring/protocols/issues/50). This, again, will greatly decrease the number of constraints.
 
 With these improvements we will be able to do **~10,000-20,000 rings/Ethereum block or ~1000 rings/second** without on-chain data-availability. And this is even without [recursive SNARKs](https://ethresear.ch/t/reducing-the-verification-cost-of-a-snark-through-hierarchical-aggregation/5128). Once this is possible on Ethereum the throughput can increase another order of magnitude.
 
