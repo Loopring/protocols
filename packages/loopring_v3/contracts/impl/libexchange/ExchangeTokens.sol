@@ -119,6 +119,8 @@ library ExchangeTokens
         returns (address)
     {
         // These if-else will enable us to change WETH/LRC address later in Loopring contract.
+        require(tokenID != 0, "INVALID_TOKEN_ID");
+
         if (tokenID == 1) {
             return address(0);
         } else if (tokenID == 2) {
