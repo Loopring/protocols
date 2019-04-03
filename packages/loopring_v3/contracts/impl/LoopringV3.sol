@@ -59,7 +59,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
         tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);
 
-        updateSettings(
+        updateSettingsInternal(
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _tierUpgradeCostBips,
@@ -82,23 +82,19 @@ contract LoopringV3 is ILoopringV3, Ownable
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta
         )
-        public
+        external
         onlyOwner
     {
-        require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
-        require(0 != _exchangeCreationCostLRC, "ZERO_VALUE");
-        require(10 >= _tierUpgradeCostBips, "VALUE_TOO_LARGE");
-
-        blockVerifierAddress = _blockVerifierAddress;
-        exchangeCreationCostLRC = _exchangeCreationCostLRC;
-        tierUpgradeCostBips = _tierUpgradeCostBips;
-        maxWithdrawalFee = _maxWithdrawalFee;
-        downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
-        withdrawalFineLRC = _withdrawalFineLRC;
-        tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
-        tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
-
-        emit SettingsUpdated(now);
+        updateSettingsInternal(
+            _blockVerifierAddress,
+            _exchangeCreationCostLRC,
+            _tierUpgradeCostBips,
+            _maxWithdrawalFee,
+            _downtimePriceLRCPerDay,
+            _withdrawalFineLRC,
+            _tokenRegistrationFeeLRCBase,
+            _tokenRegistrationFeeLRCDelta
+        );
     }
 
     function createExchange(
@@ -354,6 +350,32 @@ contract LoopringV3 is ILoopringV3, Ownable
     }
 
     // == Internal Functions ==
+    function updateSettingsInternal(
+        address _blockVerifierAddress,
+        uint    _exchangeCreationCostLRC,
+        uint16  _tierUpgradeCostBips,
+        uint    _maxWithdrawalFee,
+        uint    _downtimePriceLRCPerDay,
+        uint    _withdrawalFineLRC,
+        uint    _tokenRegistrationFeeLRCBase,
+        uint    _tokenRegistrationFeeLRCDelta
+        )
+        private
+    {
+        require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
+
+        blockVerifierAddress = _blockVerifierAddress;
+        exchangeCreationCostLRC = _exchangeCreationCostLRC;
+        tierUpgradeCostBips = _tierUpgradeCostBips;
+        maxWithdrawalFee = _maxWithdrawalFee;
+        downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
+        withdrawalFineLRC = _withdrawalFineLRC;
+        tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
+        tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
+
+        emit SettingsUpdated(now);
+    }
+
     function getExchangeAddress(
         uint exchangeId
         )
