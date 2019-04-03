@@ -148,13 +148,22 @@ contract Exchange is IExchange, Ownable
         );
     }
 
-    // TODO(daniel): figure out whehter a deposit of 0 should be forced for
-    // account creation (both normal accounts and fee recipient account).
     function createFeeRecipientAccount()
         public
         returns (uint24 accountID)
     {
         accountID = state.createFeeRecipientAccount();
+
+        // We need to create a 0-value Ether deposit so this account will
+        // become part of the offchain Merkle tree -- fee recipiient accounts cannot
+        // receive further deposits.
+        state.depositTo(
+            true, // allowFeeRecipientAccount
+            msg.sender,
+            address(0),
+            0,
+            state.accountCreationFeeETH
+        );
     }
 
     // -- Balances --
@@ -365,7 +374,13 @@ contract Exchange is IExchange, Ownable
         } else {
             additionalFeeETH = state.accountUpdateFeeETH;
         }
-        state.depositTo(msg.sender, token, amount, additionalFeeETH);
+        state.depositTo(
+            false, // allowFeeRecipientAccount
+            msg.sender,
+            token,
+            amount,
+            additionalFeeETH
+        );
     }
 
     function deposit(
@@ -375,7 +390,13 @@ contract Exchange is IExchange, Ownable
         external
         payable
     {
-        state.depositTo(msg.sender, token, amount, 0);
+        state.depositTo(
+            false, // allowFeeRecipientAccount
+            msg.sender,
+            token,
+            amount,
+            0
+        );
     }
 
     function depositTo(
@@ -386,7 +407,13 @@ contract Exchange is IExchange, Ownable
         external
         payable
     {
-        state.depositTo(recipient, tokenAddress, amount, 0);
+        state.depositTo(
+            false, // allowFeeRecipientAccount
+            recipient,
+            tokenAddress,
+            amount,
+            0
+        );
     }
 
     // -- Withdrawals --

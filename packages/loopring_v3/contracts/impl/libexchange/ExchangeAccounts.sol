@@ -102,7 +102,7 @@ library ExchangeAccounts
     {
         require(S.ownerToAccountId[msg.sender] == 0, "ACCOUNT_EXISTS");
         // use `1` for both pubKeyX and pubKeyY for fee recipient accounts.
-        accountID = createAccount(S, 1, 1, true);
+        accountID = createAccount(S, 1, 1, false);
     }
 
     function createAccount(
