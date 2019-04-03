@@ -97,8 +97,17 @@ library ExchangeTokens
         view
         returns (uint16 tokenID)
     {
-        tokenID = S.tokenToTokenId[tokenAddress];
-        require(tokenID != 0, "TOKEN_NOT_FOUND");
+        // These if-else will enable us to change WETH/LRC address later in Loopring contract.
+        if (tokenAddress == address(0)) {
+            tokenID = uint16(1);
+        } else if (tokenAddress == S.loopring.wethAddress()) {
+            tokenID = uint16(2);
+        } else if (tokenAddress == S.loopring.lrcAddress()) {
+            tokenID = uint16(3);
+        } else {
+            tokenID = S.tokenToTokenId[tokenAddress];
+            require(tokenID != 0, "TOKEN_NOT_FOUND");
+        }
     }
 
     function getTokenAddress(
@@ -109,8 +118,17 @@ library ExchangeTokens
         view
         returns (address)
     {
-        require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
-        return S.tokens[tokenID - 1].token;
+        // These if-else will enable us to change WETH/LRC address later in Loopring contract.
+        if (tokenID == 1) {
+            return address(0);
+        } else if (tokenID == 2) {
+            return S.loopring.wethAddress();
+        } else if (tokenID == 3) {
+            return S.loopring.lrcAddress();
+        } else {
+            require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
+            return S.tokens[tokenID - 1].token;
+        }
     }
 
     function disableTokenDeposit(
