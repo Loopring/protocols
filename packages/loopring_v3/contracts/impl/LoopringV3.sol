@@ -34,6 +34,43 @@ contract LoopringV3 is ILoopringV3, Ownable
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
+    // -- Constructor --
+    constructor(
+        address _lrcAddress,
+        address _wethAddress,
+        address _blockVerifierAddress,
+        uint    _exchangeCreationCostLRC,
+        uint16  _tierUpgradeCostBips,
+        uint    _maxWithdrawalFee,
+        uint    _downtimePriceLRCPerDay,
+        uint    _withdrawalFineLRC,
+        uint    _tokenRegistrationFeeLRCBase,
+        uint    _tokenRegistrationFeeLRCDelta
+        )
+        public
+    {
+        require(address(0) != _lrcAddress, "ZERO_ADDRESS");
+        require(address(0) != _wethAddress, "ZERO_ADDRESS");
+
+        lrcAddress = _lrcAddress;
+        wethAddress = _wethAddress;
+
+        tokens[lrcAddress] = Token(lrcAddress, 1, 0xFFFFFFFF);
+        tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
+        tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);
+
+        updateSettings(
+            _blockVerifierAddress,
+            _exchangeCreationCostLRC,
+            _tierUpgradeCostBips,
+            _maxWithdrawalFee,
+            _downtimePriceLRCPerDay,
+            _withdrawalFineLRC,
+            _tokenRegistrationFeeLRCBase,
+            _tokenRegistrationFeeLRCDelta
+        );
+    }
+
     // == Public Functions ==
     function updateSettings(
         address _blockVerifierAddress,
@@ -45,7 +82,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta
         )
-        external
+        public
         onlyOwner
     {
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
