@@ -102,8 +102,6 @@ contract ILoopringV3
     ///      Warning: theese new values will be used by existing and
     ///      new Loopring exchanges.
     function updateSettings(
-        address _lrcAddress,
-        address _wethAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,

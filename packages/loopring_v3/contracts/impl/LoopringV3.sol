@@ -36,8 +36,6 @@ contract LoopringV3 is ILoopringV3, Ownable
 
     // == Public Functions ==
     function updateSettings(
-        address _lrcAddress,
-        address _wethAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint16  _tierUpgradeCostBips,
@@ -50,18 +48,10 @@ contract LoopringV3 is ILoopringV3, Ownable
         external
         onlyOwner
     {
-        require(address(0) != _lrcAddress, "ZERO_ADDRESS");
-        require(address(0) != _wethAddress, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
         require(0 != _exchangeCreationCostLRC, "ZERO_VALUE");
         require(10 >= _tierUpgradeCostBips, "VALUE_TOO_LARGE");
 
-        delete tokens[lrcAddress];
-        delete tokens[wethAddress];
-        delete tokens[address(0)];    // ETH
-
-        lrcAddress = _lrcAddress;
-        wethAddress = _wethAddress;
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         tierUpgradeCostBips = _tierUpgradeCostBips;
@@ -70,10 +60,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         withdrawalFineLRC = _withdrawalFineLRC;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
         tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
-
-        tokens[lrcAddress] = Token(lrcAddress, 1, 0xFFFFFFFF);
-        tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
-        tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);    // ETH
 
         emit SettingsUpdated(now);
     }
