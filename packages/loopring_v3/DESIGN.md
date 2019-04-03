@@ -2,55 +2,108 @@
 # Loopring 3.0
 
 ## Introduction
-In Loopring Protocol 3 we want to improve the throughput of the protocol significantly. We do this by using zk-SNARKs -- as much work as possible is done offchain, and we only verify the work onchain.
+In Loopring Protocol 3 we want to improve the throughput of the protocol significantly. We do this by using zk-SNARKs -- as much work as possible is done off-chain, and we only verify the work on-chain.
 
-For the best performance, we only support offchain balances. These are balances that are stored in Merkle trees. Users can deposit and withdraw tokens to our smart contracts, and their balance will be updated in the Merkle trees. This way we can transfer tokens between users just by updating the Merkle tree offchain, there is no need for expensive token transfers onchain.
+For the highest throughput, we only support off-chain balances. These are balances that are stored in Merkle trees. Users can deposit and withdraw tokens to our smart contracts, and their balance will be updated in the Merkle trees. This way we can transfer tokens between users just by updating the Merkle tree off-chain, there is no need for expensive token transfers on-chain.
 
-In the long run, we still want to support onchain transfers due to reasons such as:
+In the long run, we still want to support on-chain transfers due to reasons such as:
 
 - It may be impossible to deposit/withdraw security tokens to the smart contract
 - Users may prefer to keep funds in their regular wallets for security reasons
 
-Note that there is never any risk of losing funds when depositing to the smart contract. Both options are trustless and secure.
+Note that there is never any risk of losing funds when depositing to the smart contract. Both options are trust-less and secure.
 
-Data availability for the Merkle tree is an option that can be turned on or off by operators. When data availability is enabled, anyone can recreate the Merkle trees just by using the data published onchain.
+Data availability for the Merkle tree is an option that can be turned on or off when creating an exchange built on Loopring. When data availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
 
 ## New Development
 
 Things change quickly.
 
-One of the main drawbacks of SNARKs compared to STARKs is the trusted setup. This problem seems to be largely solved. ([Sonic: Nearly Trustless Setup](https://www.benthamsgaze.org/2019/02/07/introducing-sonic-a-practical-zk-snark-with-a-nearly-trustless-setup/)). It remains to be seen if the better proving times of STARKs will be important in the future or not (proving times for SNARKs may be a non-issue or could be improved as well).
+One of the main drawbacks of SNARKs compared to STARKs is the trusted setup. This problem seems to be largely solved. ([Sonic: Nearly Trustless Setup](https://www.benthamsgaze.org/2019/02/07/introducing-sonic-a-practical-zk-snark-with-a-nearly-trustless-setup/)). It remains to be seen if the better proving times of STARKs will be important in the future or not (proving times for SNARKs may be a non-issue or could be improved as well). Currently STARKs also have a much larger minimal cost for verifying a proof on-chain (starts at 2,500,000-4,000,000 gas compared to just 500,000 gas for SNARKs, leaving a much smaller part for on-chain data-availability).
 
-Bellman is also being used more and more instead of libsnark for creating the circuits. They work mostly the same (manually programming the constraints). We should use the library/framework with the best support and best features. Currently, I feel this is still libsnark.
+Bellman is also being used more and more instead of libsnark for creating the circuits. They work mostly the same (manually programming the constraints). We should use the library/framework with the best support and ease of use, while still allowing efficient circuits to be generated. The current implementation uses libsnark with the help of [ethsnarks](https://github.com/HarryR/ethsnarks).
 
-## Trading with Offchain Balances
+## Trading with Off-chain Balances
 
 ### Apparent Immediate Finality
-Offchain balances are guaranteed to be available for a short time in the future (until a withdrawal), which enables a CEX like experience. A DEX can settle a ring offchain and immediately show the final results to the user without having to wait for the onchain settlement confirmation. Using onchain balances, users can modify their balances/allowances directly by interfacing with the blockchain, therefore finality is only achieved when the ring settlement is confirmed onchain.
+Off-chain balances are guaranteed to be available for a short time in the future (until a withdrawal), which allows for a CEX like experience. A DEX can settle a ring off-chain and immediately show the final results to the user without having to wait for the on-chain settlement confirmation. Using on-chain balances, users can modify their balances/allowances directly by interfacing with the blockchain, therefore finality is only achieved when the ring settlement is confirmed on-chain.
 
 ### Higher Throughput & Lower Cost
-An offchain token transfer takes only a minimal cost for generating the proof for updating a Merkle tree. The cost of a single onchain token transfer, however, takes roughly 20,000 gas, and checking the balance/allowance of the sender takes roughly another 5,000 gas. These costs significantly limit the possible throughput and increase the cost of rings settlement.
-
-### Concurrent Proof Generation
-We don't need the proof immediately when settling rings because we can easily revert the state back by restoring the Merkle tree roots. The operator can just call `commitBlock` without a proof. The operator then needs to submit the proof within some time limit (e.g. 1 hour) or he loses funds some way. This allows for
-- faster settlement of rings because operators don't need to wait on the proof generation before they can publish the settlements (and thus also the new Merkle tree states) onchain.
-- the proof generation can be parallelized. Multiple operators can generate a proof at the same time. This isn't possible otherwise because the initial state needs to be known at proof generation time.
-
-There is **NO** risk of losing funds for users. The worst that can happen is that the state is reversed to the latest finalized state. All rings that were settled afterwards are automatically reverted by restoring the Merkle roots. Blocks with onchain requests that were reverted need to be re-submitted and withdrawals are only allowed on finalized state.
+An off-chain token transfer takes only a minimal cost for generating the proof for updating a Merkle tree. The cost of a single on-chain token transfer, however, takes roughly 20,000 gas, and checking the balance/allowance of the sender takes roughly another 5,000 gas. These costs significantly limit the possible throughput and increase the cost of rings settlement.
 
 # Design
 
-The Loopring contract is the creater of all exchanges build on top of the Loopring protocol. This contract contains data and functionality shared over all exchanges (like the token tiers for the burnrate) and also enforces some very limited restrictions on exchanges (like a maximum withdrawal fee).
+## Merkle Tree
+
+A Merkle tree is used to store all the permanent data needed in the circuits.
+
+![Merkle Tree](https://i.imgur.com/RcoayPR.png)
+
+ There are a lot of ways the Merkle tree can be structured (or can be even split up in multiple trees, like a separate tree for the trading history, or a separate tree for the fees). The Merkle tree above has a good balance between complexity, proving times and user-friendliness.
+
+- Only a single account needed for all tokens that are or will be registered
+- No special handling for anything. Every actor in the Loopring ecosystem has an account in the same tree.
+- A single nonce for every account (instead of e.g. a nonce for every token a user owns) allowing off-chain requests to be ordered on the account level, which is what users will expect.
+- While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances Merkle root is stored inside the account leaf). The same is useful for wallets, ring-matchers and operators because these also pay/receive fees in different tokens.
+- The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this small sub-tree. The trading-history is not part of the account leaf because that way we'd only have 2^14 leafs for all tokens together. Note that account owners can create [a lot more orders](#Order-Aliasing) for each token than the 2^14 slots available in this tree!
+
+## Blocks
+
+Work of a certain type (e.g. depositing, or ring settlements) is batched together in a block. All data necessary for all types of work is stored in the Merkle tree. A block changes the Merkle tree from the existing state to the new state by doing the state changes required in all the work in the block. These state changes can be verified on-chain by generating a ZK proof using a circuit. Only the Merkle root is stored on-chain. The actor responsible for creating and committing blocks is called the operator.
+
+### Circuit permutations
+
+A circuit always does the same. There's no way to do dynamic loops or branching. Let's take the ring settlement circuit as an example:
+- The circuit always settles a fixed number of rings
+- The rings always contain the predetermined number of orders
+
+We have 5 circuits:
+- Trade (aka Settlement)
+- Deposit
+- Off-chain withdraw
+- On-chain withdraw
+- Cancel
+
+Circuits with and without on-chain data availability are available. We also support a couple of different block sizes for each circuit type to reduce the proving time with otherwise padded large blocks (or long delays until the block can be completely filled).
+
+### Committing and Verifying Blocks On-chain
+
+Creating a proof for a block can take a long time. If the proof needs to be available at the same time the state is updated on-chain we limit the maximum throughput of the system by the proof generation time. But we don't need the proof immediately. If a block is committed that isn't verified in time we can easily revert the state by going back to a finalized block which is guaranteed to be a valid state. This allows for
+- faster settlement of rings because operators don't need to wait on the proof generation before they can publish the settlements (and thus also the new Merkle tree states) on-chain.
+- the parallelization of the the proof generation. Multiple operators can generate a proof at the same time. This isn't possible otherwise because the initial state needs to be known at proof generation time.
+
+We use a simple commit and verify scheme. A block can be in 3 states:
+- Committed: The block has been committed on-chain but not yet proven
+- Verified: The block has been committed and has been proven, but a block that was committed before this block has not yet been verified.
+- Finalized: The block and all previous blocks have been proven.
+
+Proofs do not need to be submitted in order. The proof can be submitted anytime from the start the block was committed until the maximum proof generation time has passed.
+
+There is **NO** risk of losing funds for users. The worst that can happen is that the state is reversed to the latest finalized state. All rings that were settled afterwards are automatically reverted by restoring the Merkle roots. Blocks with on-chain requests that were reverted need to be re-submitted and withdrawals are only allowed on finalized blocks.
+
+## Operators
+
+The operator is responsible for creating, committing and proving blocks. Blocks need to be submitted on-chain and the correctness of the work in a block needs to be proven. This is done by creating a proof.
+
+The operator can be a simple Ethereum address or can be a complex contract allowing multiple operators to work together to submit and prove blocks. It is left up to the exchange how this is set up.
+
+The operator contract can also be used to enforce an off-chain data-availability system. A simple scheme could be that multiple parties need to sign off on a block before it can be committed. This can be checked in the operator contract. As long as one member is trustworthy and actually shares the data then data-availability is ensured.
+
+The operator creates a block and submits it on-chain by calling `commitBlock`. He then has at most `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds to submit a proof for the block using `verifyBlock`. A proof can be submitted any time between when the block is committed and `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds afterwards, verifying a block does not need to be done in the same order as they are committed. If a block isn't proven in time `revertBlock` needs to be called by the operator within `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE` seconds the block was committed. When a block is successfully reverted the complete stake of the exchange is burned. If the operator fails to call `revertBlock` in time the exchange will automatically go into withdrawal mode. If there are any unverified blocks anyone can call `burnStake` to still burn the stake.
 
 ## Exchanges
 
-Block submission needs to be done sequentially so Merkle trees can be updated correctly. To allow concurrent settling of orders by different independent parties we allow the creation of standalone exchange contracts. Every exchange operates completely independent.
+Block submission needs to be done sequentially so the Merkle tree can be updated from a known old state to a new state. To allow concurrent settling of orders by different independent parties we allow the creation of stand-alone exchange contracts. Every exchange operates completely independent.
+
+Note that user accounts and orders cannot be shared over different exchanges. Exchanges can decide to use the same Exchange contract so orders and users accounts can be shared if they desire.
+
+The Loopring contract is the creator of all exchanges build on top of the Loopring protocol. This contract contains data and functionality shared over all exchanges (like the token tiers for the burn rate) and also enforces some very limited restrictions on exchanges (like a maximum withdrawal fee).
 
 ### Exchange Creation
 
 Anyone can create a new Exchange by calling `createExchange` on the Loopring contract. A small amount of LRC may need to be burned to create a new Exchange.
 
-An exchange has an owner and an operator. The owner is the only one who can call some functions related to the more business side of things, like registring tokens, putting the exchange in maintenance mode and setting the operator. The operator is responsible for committing and proving blocks.
+An exchange has an owner and an operator. The owner is the only one who can call some functions related to the more business side of things, like registering tokens, putting the exchange in maintenance mode and setting the operator. The operator is responsible for committing and proving blocks.
 
 ### Exchange Staking
 
@@ -66,19 +119,20 @@ Exchanges with a large stake have a lot to lose by not playing by the rules and 
 #### Withdrawing the stake
 
 The stake of an exchange can only be withdrawn when the exchange was shutdown correctly. This is done as follows:
-- The exchange owner sets the state to a shutdown state. This stops users from submitting new onchain requests
-- All remaining open onchain requests are processed, no other blocks can be committed.
+- The exchange owner sets the state to a shutdown state. This stops users from submitting new on-chain requests
+- All remaining open on-chain requests are processed, no other blocks can be committed.
 - Only special withdraw blocks can be committed. These withdrawals not only withdraw the complete balance for a token in an account, it also resets the trading history root, the account public key and the account nonce.
 - If the complete tree is reset to its initial state (`currentBlock.merkleRoot == genesisBlock.merkleRoot`) and all blocks are proven the exchange owner is allowed to withdraw the exchange stake.
 
-This also guards users against data-availability problems. Even if the merkle tree cannot be rebuilt by anyone but the operator, this mechanism still ensures all funds will be returned to the users, otherwise the exchange loses the amount staked.
-todo(Daniel): this would be a good reason to always allow burning the stake of the exchange in withdrawal mode. Currently the stake can only be burned in withdrawal mode if there are unverified blocks.
+This also guards users against data-availability problems. Even if the Merkle tree cannot be rebuilt by anyone but the operator, this mechanism still ensures all funds will be returned to the users, otherwise the exchange loses the amount staked.
+
+> Q(Daniel): this would be a good reason to always allow burning the stake of the exchange in withdrawal mode. Currently the stake can only be burned in withdrawal mode if there are unverified blocks.
 
 ### Maintenance Mode
 
-The exchange owner can put the exchange temporarily in a suspended state. This can, for example, be used to update the backend of the exchange.
+The exchange owner can put the exchange temporarily in a suspended state. This can, for example, be used to update the back-end of the exchange.
 
-When the exchange is suspended users cannot do any onchain requests anymore. Additionaly, the operator is not allowed to commit any ring settlement blocks to prevent the exchange owner from abusing this system. The operator still needs to process any open onchain requests and needs to prove any unverified blocks, otherwise the exchange runs the risk of getting into withdrawal mode, which is irreversible.
+When the exchange is suspended users cannot do any on-chain requests anymore. Additionaly, the operator is not allowed to commit any ring settlement blocks to prevent the exchange owner from abusing this system. The operator still needs to process any open on-chain requests and needs to prove any unverified blocks, otherwise the exchange runs the risk of getting into withdrawal mode, which is irreversible.
 
 The exchange owner can call `purchaseDowntime` to burn LRC in return for downtime. `getDowntimeCostLRC` can be used to find out how much LRC needs to be sent to put the exchange in downtime for a certain amount of time. `getRemainingDowntime` can be called to find out how much time the exchange will still remain in maintenance mode.
 
@@ -88,15 +142,15 @@ Before a token can be used in the exchange it needs to be registered so a small 
 
 We limit the token ID to just 8 bits (i.e. a maximum of ETH + 255 tokens) to increase the performance of the circuits. It's possible that a small amount of LRC needs to be burned for registering a token. This can be checked by calling `getLRCFeeForRegisteringOneMoreToken`, this is however left up to the Loopring contract.
 
-### Disable token deposits
+### Token Deposit Disabling
 
 The exchange owner can disable deposits of a certain token by calling `disableTokenDeposit`. Depositing can be enabled again by calling `enableTokenDeposit`. This can be useful to stop supporting a certain token. Withdrawals for a token can never be disabled (unless temporarily in [maintenance mode](#maintenance-mode)).
 
-### Onchain fees
+### On-chain fees
 
 The owner of the exchange can set the fees for his exchange by calling `setFees`.
 
-The following onchain requests can require a fee to be paid in ETH to the exchange:
+The following on-chain requests can require a fee to be paid in ETH to the exchange:
 - Account creation
 - Account update
 - Depositing
@@ -104,54 +158,57 @@ The following onchain requests can require a fee to be paid in ETH to the exchan
 
 An Exchange is allowed to freely set the fees for any of the above. However, for withdrawals the Loopring contract enforces a maximum fee. This is to ensure an Exchange cannot stop users from withdrawing by setting an extremely high withdrawal fee.
 
-Any function requiring a fee onchain can be sent ETH. If the user sends more ETH than required (e.g. because the exact fee amount in hard to manually set) the surplus is immediately sent back.
+Any function requiring a fee on-chain can be sent ETH. If the user sends more ETH than required (e.g. because the exact fee amount in hard to manually set) the surplus is immediately sent back.
 
-## Token Tiers
+## Fee Model
 
-We support the [flexible fee model introduced in protocol 2](https://medium.com/loopring-protocol/explaining-looprings-new-fee-model-b48b89a58858). Using this model the trading fee can be paid in any token, but certain tokens have lower burnrate than others.
+We support the [flexible fee model introduced in protocol 2](https://medium.com/loopring-protocol/explaining-looprings-new-fee-model-b48b89a58858) for trading. Using this model the trading fee can be paid in any token, but certain tokens have a lower burn rate than others.
 
 The token tiers are stored in the Loopring contract. All tokens are tier 4 by default, but 3 tokens have a fixed tier:
 - ETH: tier 3
 - WETH: tier 3
 - LRC: tier 1
 
-LRC has the lowest burnrate by default. The burnrate for a token can be lowered by upgrading the tier of the token. This can be done by calling `buydownTokenBurnRate`. The cost to upgrade the token a single tier is `tierUpgradeCostBips * LRC.totalSupply()`.
+LRC has the lowest burn rate by default. The burn rate for a token can be lowered by upgrading the tier of the token. This can be done by calling `buydownTokenBurnRate`. The cost to upgrade the token a single tier is `tierUpgradeCostBips * LRC.totalSupply()`. The burn rate for a token can be found by calling `getTokenBurnRate`.
 
-## Merkle Tree
+## Signatures
 
-![Merkle Tree](https://i.imgur.com/RcoayPR.png)
+Currently we use EdDSA keys (7,000 constraints to verify a signature), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). We may switch to ECDSA signatures if possible because users would not need to create (and store) a separate keypair specifically for our sidechain.
 
-The Merkle tree above is used to store the data needed in the circuits. There are a lot of ways the Merkle tree can be structured (or can be even split up in multiple trees, like a separate tree for the trading history, or a separate tree for the fees). The Merkle tree above has a good balance between complexity, proving times and user-friendliness.
+We store the data for a EdDSA signature like this:
 
-- Only a single account needed for all tokens that are or will be registered
-- No special handling for anything. Every actor in the loopring ecosystem has an account in the same tree.
-- While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances Merkle root is stored inside the account leaf). The same is useful for wallets, ring-matchers and operators because these also pay/receive fees in different tokens.
-- The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this small sub-tree. The trading-history is not part of the account leaf because that way we'd only have 2^14 leafs for all tokens together.
+```
+Signature {
+  Rx (256bit)
+  Ry (256bit)
+  s (256bit)
+}
+```
 
 ## Account creation
 
 Before the user can start trading he needs to create an account. An account allows a user to trade any token that is registered (or will be registered in the future).
-The account is linked to the `msg.sender` that created the account, creating a one-to-one mapping between Ethereum addresses and accounts. Any future interaction with the account onchain needs to be done using the same `msg.sender`.
+The account is linked to the `msg.sender` that created the account, creating a one-to-one mapping between Ethereum addresses and accounts. Any future interaction with the account on-chain needs to be done using the same `msg.sender`.
 
-The account needs an EdDSA public key. This public key will be stored in the Merkle tree for the account. Every request made for the account in offchain requests (like orders) need to be signed using the corresponding private key. EdDSA is used because it is more efficient in circuits.
+The account needs an EdDSA public key. This public key will be stored in the Merkle tree for the account. Every request made for the account in off-chain requests (like orders) need to be signed using the corresponding private key. EdDSA is used because it is more efficient in circuits.
 
-An account can be created using `createOrUpdateAccount`. When creating an account a user can also immediately deposit funds using `updateAccountAndDeposit` as both are handled by the same circuit. `updateAccountAndDeposit` can also be used by users to update his EdDSA public key which is used for signing offchain requests.
+An account can be created using `createOrUpdateAccount`. When creating an account a user can also immediately deposit funds using `updateAccountAndDeposit` as both are handled by the same circuit. `updateAccountAndDeposit` can also be used by users to update the EdDSA public key which is used for signing off-chain requests.
 
 If the account is used to receive fees that are subject to fee-burning (i.e. all fees except the margin and the fee paid by the ring-matcher to the operator) than the account needs to be a special fee-recipient account. This type of account can be created by calling `createFeeRecipientAccount`.
 
 ## Depositing
 
-A user can deposit funds by calling `deposit`. If ERC-20 tokens are deposited the user first needs to approve the Exchange contract so the contract can transfer them to the contract using `transferFrom`. **ETH is supported**, no need to wrap it in WETH when using offchain balances.
+A user can deposit funds by calling `deposit`. If ERC-20 tokens are deposited the user first needs to approve the Exchange contract so the contract can transfer them to the contract using `transferFrom`. **ETH is supported**, no need to wrap it in WETH when using off-chain balances.
 
 A user can also choose to deposit to the account of someone else by calling `depositTo`.
 
-The balance for the token in the account will be updated once it's included in a block. See [here](#onchain-depositwithdraw-request-handling) how onchain requests are handled.
+The balance for the token in the account will be updated once it's included in a block. See [here](#on-chain-depositwithdraw-request-handling) how on-chain requests are handled.
 
-We store the deposit information onchain so users can withdraw from these deposited balances in withdrawal mode when the request didn't get included in a finalized block (see [withdrawal mode](#withdrawal-mode)).
+We store the deposit information on-chain so users can withdraw from these deposited balances in withdrawal mode when the request didn't get included in a finalized block (see [withdrawal mode](#withdrawal-mode)).
 
 ## Withdrawing
 
-The user requests a withdrawal either onchain or by sending the operator a withdrawal request offchain. Once the operator has included this request in a block and the block is finalized the tokens can be withdrawn by anyone by calling `withdrawFromApprovedWithdrawal` (and the tokens will be sent to the account owner).
+The user requests a withdrawal either on-chain or off-chain by sending the operator a withdrawal request. Once the operator has included this request in a block and the block is finalized the tokens can be withdrawn by anyone by calling `withdrawFromApprovedWithdrawal` (and the tokens will be sent to the account owner).
 
 ### Automatic distribution of withdrawals
 
@@ -159,16 +216,16 @@ Normally users should not need to call `withdrawFromApprovedWithdrawal` manually
 ```
 totalFine = Loopring.withdrawalFineLRC() * numWithdrawalRequestsInBlock
 ```
-50% of these tokens are used to reward the caller of the function for distributing the withdrawals, the other 50% is burned.
+50% of the fine is used to reward the caller of the function for distributing the withdrawals, the other 50% is burned.
 
 ### Fee-burning
 
-Fees that are paid by order owners that are subject to fee-burning (i.e. all fee payments except the margin and the payment from the ring-matcher to the operator) need to be transferred to a fee-recipient account. When withdrawing tokens from these kind of accounts a part of the balance is burned (the amount burned depends on the burnrate of the token). If the token is LRC we burn the amount immediately by calling `burn` on the LRC contract, otherwise we send the amount to the Loopring contract. There it can be withdrawn by the Loopring contract owner by calling `withdrawTheBurn` so that is can be used to buy LRC and burn it. In the future these funds will be sold directly onchain and decentralized by using ([Loopring's Oedax (Open-Ended Dutch Auction eXchange) protocol](https://medium.com/loopring-protocol/oedax-looprings-open-ended-dutch-auction-exchange-model-d92cebbd3667)).
+Fees that are paid by order owners that are subject to fee-burning (i.e. all fee payments except the margin and the payment from the ring-matcher to the operator) and need to be transferred to a fee-recipient account. When withdrawing tokens from these kind of accounts a part of the balance is burned (the amount burned depends on the burn rate of the token). If the token is LRC we burn the amount immediately by calling `burn` on the LRC contract, otherwise we send the amount to the Loopring contract. There it can be withdrawn by the Loopring contract owner by calling `withdrawTheBurn` so that is can be used to buy LRC and burn it. In the future these funds will be sold directly on-chain and decentralized by using [Loopring's Oedax (Open-Ended Dutch Auction eXchange) protocol](https://medium.com/loopring-protocol/oedax-looprings-open-ended-dutch-auction-exchange-model-d92cebbd3667).
 
 
-#### Offchain Withdrawal Request
+### Off-chain Withdrawal Request
 
-A request for a withdrawal is sent offchain to the operator. The operator should include the withdrawal in a reasonable time in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.**
+A request for a withdrawal is sent off-chain to the operator. The operator should include the withdrawal in a reasonable time in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.**
 
 The nonce of the account is increased after the withdrawal is processed.
 
@@ -186,7 +243,7 @@ OffchainWithdrawal {
 }
 ```
 
-An offchain withdrawal is hashed using pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
+An off-chain withdrawal is hashed using pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
 
 ```
 SignedOffchainWithdrawal {
@@ -197,21 +254,25 @@ SignedOffchainWithdrawal {
 
 `SignedOffchainWithdrawal`s can be sent to the Operators for commitment.
 
-#### Onchain Withdrawal Request
+### On-chain Withdrawal Request
 
-A user calls `withdraw` and the request is added to the withdrawal chain. See [here](#onchain-depositwithdraw-request-handling) how onchain requests are handled.
+A user calls `withdraw` and the request is added to the withdrawal chain. See [here](#on-chain-depositwithdraw-request-handling) how on-chain requests are handled.
 
 ## Ring Settlement
 
 The ring settlement is just as in protocol 2 with some limitations:
 - Only 2 order rings
 - No P2P orders (always use fee token)
-- No onchain registration of orders
+- No on-chain registration of orders
 - No fee waiving mechanism with negative percentages (which would pay using order fees, greatly increasing the number of constraints)
 
-Rings are still automatically scaled to fill the orders as much as possible with the available funds in the merkle tree at the time of settlement. The order that pays the margin (if there is any) needs to be the first order in the ring.
+Orders and order-matching are still completely off-chain.
 
-### Orders accepted in the circuit
+Rings are automatically scaled to fill the orders as much as possible with the funds available in the Merkle tree at the time of settlement. The order that pays the margin (if there is any) needs to be the first order in the ring.
+
+We fully support partial order filling. How much an order is filled is [stored in the Merkle tree](#Order-Aliasing). No need for users to re-sign anything if the order wasn't filled completely in a single ring. The order can be included in as many rings as necessary until it is completely filled. A user only needs to sign his order a single time.
+
+### Rings accepted in the circuit
 
 Only 'valid' rings can be included in a circuit. With 'valid' we mean rings and orders that are completely valid (signatures correct, order data correct,...), but may not result in actually filling the orders. As a general rule of thumb: if the ring-matcher cannot fully control the parameter used for the rings settlement we allow the ring settlement to gently fail by not doing any token transfers. Rings that are never valid cannot be included in a block.
 
@@ -225,19 +286,7 @@ List of causes that will result in no actual ring settlement, but are still acce
 - The account owner of an order does not have enough funds
 - The orders cannot be matched correctly
 
-### Data
-
-#### Signature
-
-The data for a EdDSA signature:
-
-```
-Signature {
-  Rx (256bit)
-  Ry (256bit)
-  s (256bit)
-}
-```
+### Off-chain Data
 
 #### Orders
 ```
@@ -305,16 +354,15 @@ SignedRing {
 
 `SignedRing`s can be sent to the Operators for settlement.
 
-
 ## Cancelling orders
 
 There are many ways an order can be cancelled.
 
-### validSince/validUntil
+### Limit validity in time
 
 Orders can be short-lived and the order owner can safely keep recreating orders with new validSince/validUntil times using [Order Aliasing](#Order-Aliasing) as long as they need to be kept alive.
 
-### Offchain cancel request
+### Off-chain cancel request
 
 The user sends a request for cancelling an order. The operator should include the cancellation as soon as possible in a block, though no guarantees can be made to the user when it will be included. **The user can pay a fee in any token he wants to the operator.**
 
@@ -348,17 +396,17 @@ SignedCancelRequest {
 
 ### Updating the Account info
 
-The account information can be updated with a new EdDSA public key which invalidates all orders and offchain requests of the account.
+The account information can be updated with a new EdDSA public key which invalidates all orders and off-chain requests of the account.
+
+### The party with the dual-author keys stops signing rings containing the order
+
+Only the party with the dual-author keys can actually use the order in a ring. Especially in an order-sharing setup like described [here](#Order-sharing-with-Dual-Authoring) this would be very useful. Anybody can become a 'Wallet' and create orders using their own personal dual-author addresses so they remain in complete control of their orders.
 
 ### Creating an order with a larger orderID in the same trading history slot
 
 See [Order Aliasing](#Order-Aliasing) how the trading history is stored. If an order with a larger orderID is used in a ring settlement at the same trading history slot as a previous order, the previous order is automatically cancelled.
 
-### Wallet stops signing rings with the dual-author address
-
-Only the party with the dual-author keys can actually use the order in a ring. Especially in an order-sharing setup like described [here](#Order-sharing-with-Dual-Authoring) this would be very useful. Anybody can become a 'wallet', so big traders can use their own personal dual-author addresses and remain in complete control of their orders.
-
-### The DEX removes the order in the order book
+### The DEX removes the order in the order-book
 
 If the order never left the DEX and the user trusts the DEX than the order can simply be removed from the order book.
 
@@ -367,7 +415,7 @@ If the order never left the DEX and the user trusts the DEX than the order can s
 The operator may stop submitting new blocks and proving already committed blocks at any time. If that happens we need to ensure users can still withdraw their funds.
 
 An exchange can go in withdrawal mode when any of the conditions below are true:
-- An onchain request (either deposit or withdrawal) is open for longer than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE`
+- An on-chain request (either deposit or withdrawal) is open for longer than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE`
 - A block remains unfinalized for longer than `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE`
 
 Once in withdrawal mode almost all functionality of the exchange is stopped. The operator cannot commit any blocks anymore.
@@ -376,49 +424,38 @@ Users can withdraw their funds using the state of the last finalized block:
 - Deposits not yet included in a finalized block can be withdrawn using `withdrawFromDepositRequest`
 - Approved withdrawals can manually be withdrawn (even when not in withdrawal mode) using `withdrawFromApprovedWithdrawal`
 
-## Signatures
-
-Currently we use EdDSA keys (7,000 constraints to verify a signature), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). We may switch to ECDSA signatures if possible because users would not need to create (and store) a separate keypair specifically for our sidechain.
-
-## ValidSince / ValidUntil
+## ValidSince/ValidUntil
 
 A block and its proof is always made for a fixed input. The operator cannot accurately know on what timestamp the block will be processed on the Ethereum blockchain, but he needs a fixed timestamp to create a block and its proof (the chosen timestamp impacts which orders are valid and invalid).
 
-We do however know the approximate time the block will be committed on the Ethereum blockchain. Next to the data for the block the operator also includes the timestamp the block was generated for. This timestamp is checked against the timestamp onchain and if the difference is less than `TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS` the block can be committed.
+We do however know the approximate time the block will be committed on the Ethereum blockchain. When committing the block the operator also includes the timestamp he used in the block (as a part of the public data). This timestamp is checked against the timestamp on-chain and if the difference is less than `TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS` the block can be committed.
 
 ## Brokers
 
-Allows a broker to sign orders for someone else.
+A broker is someone that can manage orders for an account it does not own.
 
 The account system is used for this. Users can create a special account for a broker and deposit funds the broker is able to use. This is done by setting `account.publicKey` to the public key of the broker instead of the order owner. To stop the broker from being able to fill orders the balance can be withdrawn or the public key stored in the account can be changed.
 
 ## Wallets
 
+Wallets are the where orders are created. The wallet can insert its account to receive a part of the fees paid by the order owner.
+
 Wallets need to create a fee recipient account to receive the wallet fees of the order. This account can be included in the order.
 
 ## Ring-Matchers
 
-Ring-Matchers need to create a normal account so they can pay the operator (and recieve the burnrate-free margin). They also need to create a fee recipient account
-to receive the matching fee from orders (because the burnrate needs to be applied on these funds when withdrawing).
+Ring-Matchers collect as many orders as possible sent to him by wallets (or created by himself). In this large pool of orders he finds 2 (or more, depending on the protocol version) orders that can be matched with each other (so the orders are filled as expected by the users, this is enforced by the protocol). We call this a ring.
 
-## The Operator
+Ring-Matchers need to create a normal account so they can pay the operator (and receive the burn rate free margin). They also need to create a fee-recipient account
+to receive the matching fee from orders (because the burn rate needs to be applied on these funds when withdrawing).
 
-Every exchange has an operator. The operator is responsible for creating and proving blocks. Blocks need to be submitted onchain and the correctness of the work in a block needs to be proven. This is done by creating a proof.
+### Fee
 
-A block can be in 3 states:
-- Committed: The block has been committed onchain but not yet proven
-- Verified: The block has been committed and has been proven, but a block that was committed before this block has not yet been verified.
-- Finalized: This block and all previous blocks have been proven.
-
-In practice the operator creates a block and submits it onchain by calling `commitBlock`. He then has at most `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds to submit a proof for the block using `verifyBlock`. A proof can be submitted any time between when the block is committed and `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds afterwards, verifying a block does not need to be done in the same order as they are committed. If a block isn't proven in time `revertBlock` needs to be called by the operator within `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE` seconds the block was committed. When a block is successfully reverted the complete stake of the exchange is burned. If the operator fails to call `revertBlock` in time the exchange will automatically go into withdrawal mode. If there are any unverified blocks anyone can call `burnStake` to still burn the stake.
-
-The operator can be a simple Ethereum address or can be a complex contract allowing multiple people to work together to submit and prove blocks. It is left up to the exchange how this is set up.
-
-The operator contract can also be used to enforce an offchain data-availability system. A simple scheme could be that multiple parties need to sign off on a block before it can be committed. This can be checked in the contract. As long as one member is trustworthy and actually shares the data than data-availability is ensured.
+The fee paid by the ring-matcher to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ring-matchers pays a fee in ETH to the Ethereum miners, the ring-matcher now pays a fee to the operator. **Any token can be used to pay the fee.**
 
 ### Restrictions
 
-The operator needs all the order data to generate the proof. We need a way to prevent the operator from creating new rings with him as the recipient of the ring matching fees.
+The operator needs all the order data to generate the proof. We need a way to prevent the operator from re-creating rings with him as the recipient of the ring matching fees.
 
 To allow orders to be matched by any criteria by a ring-matcher we also need a mechanism to prevent operators to re-order the sequence in which the rings are settled while enforcing the ring can only be settled a single time.
 
@@ -427,38 +464,19 @@ To allow orders to be matched by any criteria by a ring-matcher we also need a m
 We use **dual-authoring** here. Orders can only be matched in rings signed by the private key corresponding to the public key stored in the order.
 For dual-authoring we also use EdDSA keys.
 
-#### Restrict sequence of ring settlements
+#### Restrict the sequence of ring settlements
 
 We use a **nonce** here. The nonce of the ring-matcher account paying the operator is used. The ring signed by the ring-matcher contains a nonce. The nonce in the next ring that is settled for this ring-matcher needs to be the nonce of the previous ring that was settled incremented by 1.  A ring-matcher can have multiple accounts to have more control how rings can be processed by the operator (e.g. an account per trading pair).
 
-Note that doing an offchain withdraw also increments the nonce value. A ring-matcher thus may want to limit himself to onchain withdrawals so the nonce value of the account remains the same.
+Note that doing an off-chain withdraw also increments the nonce value. A ring-matcher thus may want to limit himself to on-chain withdrawals so the nonce value of the account remains the same.
 
-#### Only allow cancels/offchain withdrawal requests to be used once by an operator
+#### Only allow cancels/off-chain withdrawal requests to be used once by an operator
 
-The **nonce** of the account is increased by 1 for these operations. The expected nonce is stored in the offchain request which is signed by the account owner.
-
-### Fee
-
-The fee paid by the ring-matcher to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ring-matchers pays a fee in ETH to the Ethereum miners, the ring-matcher now pays a fee to the operator. **Any token can be used to pay the fee.**
-
-## Circuit permutations
-
-A circuit always does the same. There's no way to do dynamic loops. Let's take the ring settlement circuit as an example:
-- The circuit always settles a fixed number of rings
-- The rings always contain the predetermined number of orders
-
-Currently there are 5 circuits:
-- Trade (aka Settlement)
-- Deposit
-- Offchain withdraw
-- Onchain withdraw
-- Cancel
-
-Circuits with and without onchain data availability are made. We also support a couple of different block sizes for each circuit type.
+The **nonce** of the account is increased by 1 for these operations. The expected nonce is stored in the off-chain request which is signed by the account owner.
 
 ## Order Aliasing
 
-Every account has a trading history tree with 2^14 leafs for every token. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. The orderID is actually stored in a 32-bit value. We allow the user to overwrite the existing trading history stored at `orderID % 2^14` if `order.orderID > tradeHistory.orderID`. If `order.orderID < tradeHistory.orderID` the order is automatically cancelled. This allows the account to create 2^32 unique orders for every token, the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
+Every account has a trading history tree with 2^14 leafs for every token. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. The orderID is stored in a 32-bit value. We allow the user to overwrite the existing trading history stored at `orderID % 2^14` if `order.orderID > tradeHistory.orderID`. If `order.orderID < tradeHistory.orderID` the order is automatically cancelled. This allows the account to create 2^32 unique orders for every token, the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
 
 While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities:
 
@@ -466,32 +484,31 @@ While this was done for performance reasons (so we don't have to have a trading 
 
 For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely by creating a new order with a new validUntil value, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderID.
 
-This especially a problem because the operator can set the timestamp that is tested onchain within a certain window (see [here](#validSince--validUntil)). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders. The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants. Order Aliasing fixes this problem without having to calculate multiple hashes (e.g. order hash with time information and without).
+This is especially a problem because [the operator can set the timestamp that is tested on-chain within a certain window](#validsincevaliduntil). So even when the validSince/validUntil doesn't overlap it could still be possible for an operator to fill multiple orders. The order owner also doesn't know how much the first order is going to be filled until it is invalid. Until then, he cannot create the new order if he doesn't want to buy/sell more than he actually wants. Order Aliasing fixes this problem without having to calculate multiple hashes (e.g. order hash with time information and without).
 
 ### The possibility for some simple filling logic between orders
 
 A user could create an order selling X tokenZ for either N tokenA or M tokenB (or even more tokens) while using the same orderID. The user is guaranteed never to spend more than X tokenZ, but will have bought [0, N] tokenA and/or [0, M] tokenA.
 
-A realistic use case would be for selling some token for one of the available stable coins. Or selling some token for ETH and WETH. In these casse the user doesn't really care which token specifically he buys, but increases his chance of finding a matching order.
+A realistic use case would be for selling some token for one of the available stable coins. Or selling some token for ETH and WETH. In these casse the user doesn't really care which token specifically he buys, but he increases his chance of finding a matching order.
 
+## On-chain Deposit/Withdraw Request Handling
 
-## Onchain Deposit/Withdraw Request Handling
-
-Onchain deposit/withdrawal requests are added to a small 'blockchain' onchain. We have separate chain for deposits and withdrawals. For every request we store the following:
+On-chain deposit and withdrawal requests are added to a small 'blockchain' on-chain. We use separate chains for deposits and withdrawals. For every request we store the following:
 - The accumulated hash: The hash of the request data hashed together with the accumulated hash of the previous request.
 - The accumulated fee: The fee of the request added to the the accumulated fee of the previous request.
 - The timestamp the request was added.
 
-This setup allows the operator to process any number of requests in a block that he wants (though only a limited number of requests/block are supported, we pad with dummy requests onchain to always fill a complete block). The circuits use the starting accumulated hash and the ending accumulated hash (after padding) as public input. The fee the operator receives for all the requests can easily be calculated by substracting the accumulated fees of the last and first requests.
+This setup allows the operator to process any number of requests in a block that he wants (though only a limited number of requests/block type are supported to limit the number of circuits, padding is done when needed). The circuits use the starting accumulated hash and the ending accumulated hash (after padding) as public input. The fee the operator receives for all the requests can easily be calculated by subtracting the accumulated fees of the last and first requests.
 
-All requests are handled FIFO in their corresponding chain (deposit/withdrawal chain).
+All requests are handled FIFO in their corresponding chain (deposit or withdrawal chain).
 
-Once the block containing the deposits/withdrawals is finalized the operator can call `withdrawBlockFee` to collect the fees.
+Once the block containing the deposits/withdrawals is finalized the operator can call `withdrawBlockFee` to collect the fee earned by processing the requests.
 
-Because we want onchain requests to be handled as quickly as possible by the operator, we enforce some limitations on him. However, we also don't want to let operators be overwhelmed by the number of onchain requests. The following rules apply:
-- The maximum number of open onchain requests is limited by `MAX_OPEN_DEPOSIT_REQUESTS` and `MAX_OPEN_WITHDRAWAL_REQUESTS`. Anyone can check if there available slots by calling `getNumAvailableWithdrawalSlots` or `getNumAvailableDepositSlots`.
-- If there is an open onchain request older than `MAX_AGE_REQUEST_UNTIL_FORCED` then the operator can only commit blocks containing requests like this. Priority is given to withdrawals if there are deposit and withdrawal requests forced.
-- The total fee paid to the operator (the sum of all fees of all requests processed in the block) is reduced the older the requests in the block are. As a starting point for this reduction the last processed request in the block is used. If the block is committed less than `FEE_BLOCK_FINE_START_TIME` seconds afterwards the operator receives the complete fee. If not, the fee is linearly reduces for a total time of `FEE_BLOCK_FINE_MAX_DURATION`. From then on the operator does not reveive any fee at all. The fine paid by the operator is burned (i.e. sold for LRC and then the LRC is burned).
+Because we want on-chain requests to be handled as quickly as possible by the operator, we enforce some limitations on him. However, we also don't want to let operators be overwhelmed by the number of on-chain requests. The following rules apply:
+- The maximum number of open on-chain requests is limited by `MAX_OPEN_DEPOSIT_REQUESTS` and `MAX_OPEN_WITHDRAWAL_REQUESTS`. Anyone can check if there available slots by calling `getNumAvailableWithdrawalSlots` or `getNumAvailableDepositSlots`.
+- If there is an open on-chain request older than `MAX_AGE_REQUEST_UNTIL_FORCED` then the operator can only commit blocks containing requests like this. Priority is given to withdrawals if there are deposit and withdrawal requests forced.
+- The total fee paid to the operator (the sum of all fees of all requests processed in the block) is reduced the older the requests in the block are. As a starting point for this reduction the last processed request in the block is used. If the block is committed less than `FEE_BLOCK_FINE_START_TIME` seconds afterwards the operator receives the complete fee. If not, the fee is linearly reduced for a total time of `FEE_BLOCK_FINE_MAX_DURATION`. From then on the operator does not reveive any fee at all. The fine paid by the operator is burned (i.e. sold for LRC and then the LRC is burned).
 - If any request that is still open is older than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE` we automatically go into withdrawal mode.
 
 Current values:
@@ -504,19 +521,9 @@ function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 m
 function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
 ```
 
-## Delayed Proof Submission
+## On-chain data
 
-Creating a proof can take a long time. If the proof needs to be available at the same time the state is updated onchain we limit the maximum throughput of the system by the proof generation time. But we don't need the proof immediately. This allows different operators to work together much more efficiently:
-- The selected operator that is allowed to commit work can change quickly. If the operator wants to do work than he can quickly commit that work onchain without needing the time to also generate the proof immediately.
-- Different operators can be busy generating proofs for different work
-
-We use a simple commit and proof scheme. The operator commits all necessary data onchain and updates the state. The other operators now have all the data they need to start working on their own block.
-
-Proofs do not need to be submitted in order. The proof can be submitted anytime from the start the block was committed until the maximum proof generation time has passed.
-
-## Onchain data
-
-#### Ring settlement data
+#### Data-availability for ring settlements
 
 ```
 - Operator account ID: 3 bytes
@@ -542,7 +549,7 @@ Proofs do not need to be submitted in order. The proof can be submitted anytime 
 
 We can save some more bytes (e.g. on the large values of the margin and the fees, these can be packed much more efficiently) so we can probably get this down to ~80 bytes/ring.
 
-#### Order cancellation data
+#### Data-availability for order concellations
 ```
 - Operator account ID: 3 bytes
 - For every cancel:
@@ -575,40 +582,71 @@ This is already quite cheap, but can be greatly improved by packing the fee valu
     - Fee amount: 12 bytes
     - WalletSplitPercentage: 1 byte
 ```
-- => Onchain: **17 bytes/withdrawal**
-- => Onchain withdrawal calldata cost: 17 * 68 = **1156 gas/onchain withdrawal**
-- => offchain: **35 bytes/withdrawal**
-- => Offchain withdrawal calldata cost: 35 * 68 = **2380 gas/offchain withdrawal**
+- => On-chain: **17 bytes/withdrawal**
+- => On-chain withdrawal calldata cost: 17 * 68 = **1156 gas/on-chain withdrawal**
+- => With data-availability: **35 bytes/withdrawal**
+- => With data-availability calldata cost: 35 * 68 = **2380 gas/off-chain withdrawal**
 
 
-The approved withdrawal calldata also needs to be stored onchain so that the data can be used when actually withdrawing the tokens when allowed (storing 32 bytes of data costs 20,000 gas):
+The approved withdrawal calldata also needs to be stored on-chain so that the data can be used when actually withdrawing the tokens when allowed (storing 32 bytes of data costs 20,000 gas):
 - => Data storage cost: (17 / 32) * 20,000 = **10,625 gas/withdrawal**
 
-## Performance (ring settlements)
+## Throughput (Ring Settlements)
 
-### Onchain data
+The throughput is limited by:
+- The cost of the data we have to send in the calldata for the on-chain data-availability
+- The 256,000,000 constraints limit that allows efficient proof verification on-onchain.
 
-Maximum gas consumption in an Ethereum block: 8,000,000 gas
-- Verifying a proof + some state updates/querying: 600,000 gas
-- => (8,000,000 - 600,000) / 7,616 = 971 rings/block = ~65 rings/second
+Without data-availability we are only limited by the number of constraints in a single block.
 
-### Constraints
+The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is generated every ~15 seconds.
 
-We can only efficiently prove circuits with a maximum of 256,000,000 constraints onchain.
-- 256,000,000 / ~650,000 = ~400 rings
+### On-chain data-availability limit
 
-So in a block we are currently limited by the number of constraints used in the circuit. Verifying a proof costs _only_ ~600,000 gas so this is actually not that bad
+- Verifying a proof + some state updates/querying: ~600,000 gas
+- => (8,000,000 - 600,000) / 7,616 = 971 rings/Ethereum block = ~65 rings/second
 
-TODO: some more numbers / setups
+These numbers can be improved by packing the data more tightly.
 
-### Proof generation
+### Constraints limit
+
+We can only efficiently prove circuits with a maximum of 256,000,000 constraints on-chain. Currently our most expensive ring settlement circuit uses ~650,000 constraints:
+- 256,000,000 / ~650,000 = ~400 rings/block
+
+### Results
+
+In a single block we are currently limited by the number of constraints used in the circuit. Verifying a proof costs _only_ ~600,000 gas so multiple blocks can be committed if needed.
+
+Using 2 blocks with on-chain data-availability:
+- => (8,000,000 - 600,000 * 2) / 7,616 = ~900 rings/Ethereum block = **~60 rings/second**
+
+Without on-chain data-availability we can commit a lot of blocks:
+- => 8,000,000 / 600,000 = ~13 blocks/Ethereum block
+- = ~400 rings/block * 13 blocks/Ethereum block = ~5200 rings/Ethereum block = **~350 rings/second**
+
+For comparison, let's calculate the achievable throughput of the previous Loopring protocols that did the ring settlements completely on-chain.
+- Gas cost/ring settlement: ~300,000 gas
+- => 8,000,000 / 300,000 = 26 rings/Ethereum block = **~2 rings/second**
+
+### Future improvements
+
+These numbers will go down significantly, even in the near future.
+- The numbers above are still done on a Merkle tree with [deeper depths](https://github.com/Loopring/protocols/issues/49), which increases the number of constraints quite a bit
+- [More efficient hash functions may be usable](https://github.com/Loopring/protocols/issues/49) which would drastically decrease the number of constraints.
+- Our fee model is quite complex, using **a lot** of token transfers. [We can create circuits with a simplified fee model](https://github.com/Loopring/protocols/issues/50). This, again, will greatly decrease the number of constraints.
+
+With these improvements we will be able to do **~10,000-20,000 rings/Ethereum block or ~1000 rings/second** without on-chain data-availability. And this is even without [recursive SNARKs](https://ethresear.ch/t/reducing-the-verification-cost-of-a-snark-through-hierarchical-aggregation/5128). Once this is possible on Ethereum the throughput can increase another order of magnitude.
+
+For an order of magnitude improvement with on-chain data-availability we are dependent on Ethereum. [Proposals](https://ethereum-magicians.org/t/reduce-the-cost-of-transaction-data/2868) to lower the calldata cost are already in the making.
+
+### Proof generation cost
 
 From [Matter Labs](https://medium.com/matter-labs/introducing-matter-testnet-502fab5a6f17):
 > [about circuits with 256 million constraints] "the computation took 20 minutes on a 72-core AWS server".
 
-> At the target latency of 5 min at 100 TPS we estimate the offchain part to be approximately 0.001 USD. This estimate is very conservative.
+> At the target latency of 5 min at 100 TPS we estimate the off-chain part to be approximately 0.001 USD. This estimate is very conservative.
 
-Ring settlements are about ~5x more expensive than the simple token transfers they are talking about, but this will still be pretty cheap.
+Ring settlements are ~5x more expensive than simple token transfers, but this will still be pretty cheap.
 
 # Case studies
 
@@ -632,7 +670,7 @@ The DEX matches the order with another order, signs the ring using the ring-matc
 The DEX could now show an extra 'Verified" symbol for the filling of the order.
 
 An order can be in the following states:
-- **Unmatched** in an orderbook
+- **Unmatched** in an order-book
 - **Matched** by the DEX
 - **Commited** in a block sent in `commitBlock`
 - **Verified** in a block by a proof in `verifyBlock`
@@ -644,31 +682,31 @@ Only when the block is finalized is the ring settlement irreversible.
 
 The first thing a user needs to do is create an account. The user has the option to directly deposit tokens to this newly account.
 
-`updateAccountAndDeposit` is called on the exchange contract. A new account is created onchain (the onchain account information does not contain any balance information because the balance will only be used and updated in the Merkle tree) and the necessary data is hashed together that needs to be used for creating the account in the Merkle tree in the circuit. The amount of tokens the user deposits to the contract will be stored in the leaf of the Merkle tree with address `accountID` (together with the rest of the account information).
+`updateAccountAndDeposit` is called on the exchange contract. A new account is created on-chain (the on-chain account information does not contain any balance information because the balance will only be used and updated in the Merkle tree) and the necessary data is hashed together that needs to be used for creating the account in the Merkle tree in the circuit. The amount of tokens the user deposits to the contract will be stored in the leaf of the Merkle tree with address `accountID` (together with the rest of the account information).
 
-The Merkle tree has not yet been updated. This needs to be done by the operator by commiting a deposit block containing the deposit by the user. As long as the account is not added to the Merkle tree the account cannot be used.
+The Merkle tree has not yet been updated. This needs to be done by the operator by committing a deposit block containing the deposit by the user. As long as the account is not added to the Merkle tree the account cannot be used.
 
-The operator can stop working before this is done however. That's why the amount deposited is stored somewhere onchain so that the user can withdraw these funds in withdrawal mode.
+The operator can stop working before this is done however. That's why the amount deposited is stored somewhere on-chain so that the user can withdraw these funds in withdrawal mode.
 
 But the operator wants to earn fees so he creates a block that adds the account to the Merkle tree. After the account is added in the circuit, it can immediately be used.
 
 The account balance is updated between trades as you'd expect.
 
-The user then wants to withdraw (a part of) the balance. He can let the operator know onchain, or he can just send a request offchain. The only difference is that when the request is made offchain the operator can choose when to do the withdrawal so there is no guarantee when it will be done. In any case, there will be delay between the request for withdrawal and when the operator includes the withdrawal in a block. In this period the operator is free to keep using the balances in the account to settle rings.
+The user then wants to withdraw (a part of) the balance. He can let the operator know on-chain, or he can just send a request off-chain. The only difference is that when the request is made off-chain the operator can choose when to do the withdrawal so there is no guarantee when it will be done. In any case, there will be delay between the request for withdrawal and when the operator includes the withdrawal in a block. In this period the operator is free to keep using the balances in the account to settle rings.
 
 After some time the operator includes the withdrawal in a block. Two things are done when this happens:
 - The balance in the Accounts Merkle tree is subtracted with the amount withdrawn in the circuit (if possible of course, otherwise nothing is withdrawn)
-- The smart contract adds the amount that is withdrawn to a list stored onchain.
+- The smart contract adds the amount that is withdrawn to a list stored on-chain.
 
 The withdrawn amount is stored in a list because the user is still not able to actually withdraw it yet! The user is only allowed to withdraw it when the block is finalized, which means that the block can never be reverted.
 
 This mechanism is needed to support delayed proof submission. If the proof is available immediately when the block is committed the new state would always be verified valid and the amount that can be withdrawn correct. But with delayed proof submission we are only certain the block is correct and irreversible when all blocks before it and including the block containing the withdrawal are proven.
 
-Once the operators have submitted all the proofs necessary for the block containing the withdrawal to be finalized, the user is finally able to call `withdrawFromApprovedWithdrawal` onchain with the necessary information when the withdrawal was done to get the tokens out of the smart contract.
+Once the operators have submitted all the proofs necessary for the block containing the withdrawal to be finalized, the user is finally able to call `withdrawFromApprovedWithdrawal` on-chain with the necessary information when the withdrawal was done to get the tokens out of the smart contract.
 
 Let's now look at the case where the withdrawal request was done by an operator, but the block containing the withdrawal needs to be reverted. Two things happen automatically by the revert:
 - The Merkle tree root is restored as it was before the withdrawal. The balance is restored.
-- The list of withdrawals we stored onchain for the reverted block are thrown away when reverting. A user was never able to withdraw from these in `withdrawFromApprovedWithdrawal` because the block associated with the witdraw list was never marked as finalized.
+- The list of withdrawals we stored on-chain for the reverted block are thrown away when reverting. A user was never able to withdraw from these in `withdrawFromApprovedWithdrawal` because the block associated with the withdraw list was never marked as finalized.
 
 ## Order sharing with Dual-Authoring
 
@@ -676,7 +714,7 @@ Very similar as in protocol 2, but used a bit differently.
 
 Automatically sharing orders between DEXs can be problematic, mainly because of collisions. For example, DEX B could decide it wants to use an order of DEX A and creates a ring and sends it to the operator. But at the same time, DEX C could have also decided to use the same order in a different ring. In the best case, both rings can be settled. But it's also possible only one of the rings can be settled because the shared order cannot be filled for the fill amount specified in the second ring. Or because the balance of the order owners isn't sufficient anymore. This uncertainty makes it so that a DEX needs to wait longer to show the result of a trade to the user. It's also hard for a DEX to track the state of a shared order and of the balances of its users if they can be modified at any time without is knowledge.
 
-A solution for this could be dual authoring. But, we don't share the dual author keys with anyone. When a ring-matcher wants to create a ring using orders of wallet A and wallet B then the ring needs to be signed by wallet A **and** wallet B **independently**. This negotiation would be completely offchain.
+A solution for this could be dual authoring. But, we don't share the dual author keys with anyone. When a ring-matcher wants to create a ring using orders of wallet A and wallet B then the ring needs to be signed by wallet A **and** wallet B **independently**. This negotiation would be completely off-chain.
 
 The protocol would be something like this. DEX A signs a ring using orders of DEX A and DEX B and sends it to DEX B. DEX B can now decide if he wants to share the order with DEX A or not in the given ring. If not, DEX B simply sends a message back that there is no deal. If DEX B does want to share the order, he can sign the ring as well. The ring is now signed by DEX A and DEX B (the DEXs of the orders in the ring) and the ring can be sent to the operator for settlement. DEX B now sends the doubly signed ring back to DEX A so the DEX can be sure the ring will be settled (or DEX A could just monitor the rings submitted to the operators).
 
@@ -693,11 +731,11 @@ A scenario where this would be very helpful is for a service that offers liquidi
 
 Simple wallets probably don't want to pay for the infrastructure to sign rings all the time for sharing their orders. So these will still share the dual author keys. But to prevent collisions etc... they should only share the keys with a single ring-matcher/DEX.
 
-This order sharing is only possible when the orders use the same Merkle trees and operators, so this is not possible for independent DEXs. But it's a big advantage for everyone to use the same Merkle trees, even though they have less control over the operator.
+This order sharing is only possible when orders are created for the same exchange contract, so it's a big advantage for multiple parties to decide to use the same Exchange contract to maximize liquidity.
 
 Recap:
 - DEXs/Wallets/Ring-matchers can keep track of his orders and the balances of his users because every order that is used needs to pass through him
-- Orders are cancelled by not signing any rings anymore with the order, which only the wallet can do
-- No collisions
+- Orders are cancelled by not signing any rings anymore with the order, which only the party with the dual-author keys stored in the order can do
+- No collisions (if all parties act correctly)
 - Fine-grained order sharing with the possibility of a fee
 - Same order can be shared multiple times in multiple rings with multiple parties
