@@ -606,7 +606,8 @@ The approved withdrawal calldata also needs to be stored on-chain so that the da
 ## Throughput (Ring Settlements)
 
 The throughput is limited by:
-- The cost of the data we have to send in the calldata for the on-chain data-availability
+
+- The cost of the data we have to send in the calldata for the on-chain data-availability.
 - The 256,000,000 constraints limit that allows efficient proof verification on-on-chain.
 
 Without data-availability we are only limited by the number of constraints in a single block.
@@ -692,7 +693,7 @@ Only when the block is finalized is the ring settlement irreversible.
 
 # Deposit and Withdrawal process
 
-The first thing a user needs to do is create an account. The user has the option to directly deposit tokens to this newly account.
+The first thing a user needs to do is create an account. The user has the option to directly deposit tokens to this new account to be created.
 
 `updateAccountAndDeposit` is called on the exchange contract. A new account is created on-chain (the on-chain account information does not contain any balance information because the balance will only be used and updated in the Merkle tree) and the necessary data is hashed together that needs to be used for creating the account in the Merkle tree in the circuit. The amount of tokens the user deposits to the contract will be stored in the leaf of the Merkle tree with address `accountID` (together with the rest of the account information).
 
