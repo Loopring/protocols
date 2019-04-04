@@ -116,7 +116,7 @@ The **nonce** of the account is increased by 1 for these operations. The expecte
 
 ## Exchanges
 
-Block submission needs to be done sequentially so the Merkle tree can be updated from a known old state to a new state. To allow concurrent settling of orders by different independent parties we allow the creation of stand-alone exchange contracts. Every exchange operates completely independent.
+Block submission needs to be done sequentially so the Merkle tree can be updated from a known old state to a new state. To allow concurrent settling of orders by different independent parties we allow the creation of stand-alone exchange contracts. Every exchange operates completely independently.
 
 Note that user accounts and orders cannot be shared over different exchanges. Exchanges can decide to use the same Exchange contract so orders and users accounts can be shared if they desire.
 
@@ -143,9 +143,9 @@ Exchanges with a large stake have a lot to lose by not playing by the rules and 
 
 The stake of an exchange can only be withdrawn when the exchange was shutdown correctly. This is done as follows:
 - The exchange owner sets the state to a shutdown state. This stops users from submitting new on-chain requests
-- All remaining open on-chain requests are processed, no other blocks can be committed.
-- Only special withdraw blocks can be committed. These withdrawals not only withdraw the complete balance for a token in an account, it also resets the trading history root, the account public key and the account nonce.
-- If the complete tree is reset to its initial state (`currentBlock.merkleRoot == genesisBlock.merkleRoot`) and all blocks are proven the exchange owner is allowed to withdraw the exchange stake.
+- All remaining open on-chain requests are processed, no other types of blocks can be committed.
+- Only special withdrawal blocks can be committed. These withdrawals not only withdraw the complete balance for a token in an account, it also resets the trading history root, the account public key, and the account nonce.
+- If the complete tree is reset to its initial state (`currentBlock.merkleRoot == genesisBlock.merkleRoot`) and all blocks are proven the exchange owner is allowed to withdraw the full stake.
 
 This also guards users against data-availability problems. Even if the Merkle tree cannot be rebuilt by anyone but the operator, this mechanism still ensures all funds will be returned to the users, otherwise the exchange loses the amount staked.
 
@@ -157,7 +157,9 @@ The exchange owner can put the exchange temporarily in a suspended state. This c
 
 When the exchange is suspended users cannot do any on-chain requests anymore. Additionaly, the operator is not allowed to commit any ring settlement blocks to prevent the exchange owner from abusing this system. The operator still needs to process all on-chain requests that are still open and needs to prove any unverified blocks, otherwise the exchange runs the risk of getting into withdrawal mode, which is irreversible.
 
-The exchange owner can call `purchaseDowntime` to burn LRC in return for downtime. `getDowntimeCostLRC` can be used to find out how much LRC needs to be sent to put the exchange in downtime for a certain amount of time. `getRemainingDowntime` can be called to find out how much time the exchange will still remain in maintenance mode.
+The exchange owner can call `purchaseDowntime` to burn LRC in return for downtime. `getDowntimeCostLRC` can be used to find out how much LRC needs to be sent to put the exchange in downtime for a certain amount of time. `purchaseDowntime` can be called multiple times to extend the down time. `getRemainingDowntime` can be called to find out how much time the exchange will still remain in maintenance mode.
+
+The exchange will get out of the maintainance mode automatically after all down time has been used. There is currently no way to force the exchange out of this mode immediately, which can be improved in future releases.
 
 ### Token Registration
 
@@ -179,7 +181,7 @@ The following on-chain requests can require a fee to be paid in ETH to the excha
 - Depositing
 - Withdrawing
 
-An Exchange is allowed to freely set the fees for any of the above. However, for withdrawals the Loopring contract enforces a maximum fee. This is to ensure an Exchange cannot stop users from withdrawing by setting an extremely high withdrawal fee.
+An Exchange is allowed to freely set the fees for any of the above. However, for withdrawals the Loopring contract enforces a maximum fee. This is to ensure an exchange cannot stop users from withdrawing by setting an extremely high withdrawal fee.
 
 Any function requiring a fee on-chain can be sent ETH. If the user sends more ETH than required (e.g. because the exact fee amount in hard to manually set) then the surplus is immediately sent back.
 
@@ -194,7 +196,7 @@ The token tiers are stored in the Loopring contract. All tokens are tier 4 by de
 
 LRC has the lowest burn rate by default. The burn rate for a token can be lowered by upgrading the tier of the token. This can be done by calling `buydownTokenBurnRate`. The cost to upgrade the token a single tier is `tierUpgradeCostBips * LRC.totalSupply()`. The burn rate for a token can be found by calling `getTokenBurnRate`.
 
-Only the fees paid by the order owners are subject to fee burning. The business model among wallets, ring-matchers and operators can be negotiated off-chain and can be totally detached from the protocol.
+Only the fees paid by the order owners are subject to fee burning; margins are not. The business model among wallets, ring-matchers and operators can be negotiated off-chain and can be totally detached from the protocol.
 
 ## Signatures
 
