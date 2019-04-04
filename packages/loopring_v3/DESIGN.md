@@ -13,7 +13,7 @@ In the long run, we still want to support on-chain transfers due to reasons such
 
 Note that there is never any risk of losing funds when depositing to the smart contract. Both options are trust-less and secure.
 
-Data availability for the Merkle tree is an option that can be turned on or off when creating an exchange built on Loopring. When data availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
+Data availability for the Merkle tree is an option that can be turned on or off when creating an exchange built on Loopring. When data-availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
 
 ## New Development
 
@@ -65,7 +65,7 @@ We have 5 circuits:
 - On-chain withdrawal
 - Order Cancellation
 
-Circuits with and without on-chain data availability are available. We also support a couple of different block sizes for each circuit type to reduce the proving time without pading too many non-op works (or long delays until the block can be completely filled).
+Circuits with and without on-chain data-availability are available. We also support a couple of different block sizes for each circuit type to reduce the proving time without pading too many non-op works (or long delays until the block can be completely filled).
 
 ### Committing and Verifying Blocks On-chain
 
