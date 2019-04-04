@@ -29,11 +29,11 @@ library ExchangeData
     // -- Enums --
     enum BlockType
     {
-        SETTLEMENT,
+        RING_SETTLEMENT,
         DEPOSIT,
-        ONCHAIN_WITHDRAW,
-        OFFCHAIN_WITHDRAW,
-        CANCEL
+        ONCHAIN_WITHDRAWAL,
+        OFFCHAIN_WITHDRAWAL,
+        ORDER_CANCELLATION
     }
 
     enum BlockState
