@@ -200,7 +200,9 @@ Only the fees paid by the order owners are subject to fee burning; margins are n
 
 ## Signatures
 
-Currently we use EdDSA keys (7,000 constraints to verify a signature), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). We may switch to ECDSA signatures if possible because users would not need to create (and store) a separate keypair specifically for our sidechain.
+Currently we use EdDSA keys (7,000 constraints to verify a signature), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). We may switch to ECDSA signatures if possible because users would not need to create (and store) a separate trading keypair.
+
+The introduction of trading keypairs does have a benefit: orders no longer needs to be signed by a user Etheruem private keys, DEX interface thus no longer need to access to those Ethereum private keys. This is more secure for both users and DEXes.
 
 The data for an EdDSA signature is stored like this:
 
