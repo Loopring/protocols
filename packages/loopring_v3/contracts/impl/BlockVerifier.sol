@@ -52,8 +52,7 @@ contract BlockVerifier is IBlockVerifier, Ownable
         returns (bool)
     {
         // TODO(brecht)
-        require(blockType == uint8(1) /* COMMITTED */, "INVALID_BLOCK_STATE");
-        return true;
+        return blockType == uint8(1) /* COMMITTED */;
     }
 
     function verifyProof(
