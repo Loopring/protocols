@@ -38,6 +38,10 @@ library ExchangeData
 
     enum BlockState
     {
+        // This value should never be seen onchain, but we want to reserve 0 so the
+        // relayer can use this as the default for new blocks.
+        UNCOMMITTED,
+    
         // The default state when a new block is included onchain.
         COMMITTED,
 
