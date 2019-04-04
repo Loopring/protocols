@@ -19,7 +19,7 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 - Use any ERC20 token or Ether as trading fee to reduce friction（inherited from 2.0)
 - DEX can buy down fee token burn rate (inherited from 2.0)
 - Enhanced version of dual authoring prevent orders/trades from being stolen by middleman (enhanced on top of 2.0)
-- Greatly reduce gas fee for DEX settlement by 30x (with data-availability) or 200x (without data-availability) -- this may be optimized to 1000x in the near future.
+- On current Ethereum mainnet, throughout is about 60 trades/second with on-chain data availability, and ~350 trades/second without data availability -- which can be further optimized in the near future.
 - Built-in mechanism to force DEX operators to fulfill duties in time (especially for handling deposits and withdrawals)
 - Support DEX operators to stake tokens to "buy" credit
 - Support a "maintainance mode" for DEX operators to upgrade backends within a time window
