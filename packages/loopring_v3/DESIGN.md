@@ -13,7 +13,7 @@ In the long run, we still want to support on-chain transfers due to reasons such
 
 Note that there is never any risk of losing funds when depositing to the smart contract. Both options are trust-less and secure.
 
-Data availability for the Merkle tree is an option that can be turned on or off when creating an exchange built on Loopring. When data availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
+Data availability for the Merkle tree is an option that can be turned on or off when creating an exchange built on Loopring. When data-availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
 
 ## New Development
 
@@ -47,9 +47,10 @@ A Merkle tree is used to store all the permanent data needed in the circuits.
 - While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances Merkle root is stored inside the account leaf). The same is useful for wallets, ring-matchers and operators because these also pay/receive fees in different tokens.
 - The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this small sub-tree. The trading-history is not part of the account leaf because that way we'd only have 2^14 leafs for all tokens together. Note that account owners can create [a lot more orders](#Trading-History) for each token than the 2^14 slots available in this tree!
 
+
 ## Blocks
 
-Work of a certain type (e.g. depositing, or ring settlements) is batched together in a block. All data necessary for all types of work is stored in the Merkle tree. A block changes the Merkle tree from the existing state to the new state by doing the state changes required in all the work in the block. These state changes can be verified on-chain by generating a ZK proof using a circuit. Only the Merkle root is stored on-chain. The actor responsible for creating and committing blocks is called the operator.
+Work of a certain type (e.g. depositing, or ring settlements) is batched together in a block (which is not to be confused with an Ethereum block). All data necessary for all types of work is stored in the Merkle tree. A block changes the Merkle tree from the existing state to the new state by doing the state changes required in all the work in the block. These state changes can be verified on-chain by generating a ZK proof using a circuit. Only the Merkle root is stored on-chain. The actor responsible for creating and committing blocks is called the operator.
 
 ### Circuit permutations
 
@@ -58,13 +59,13 @@ A circuit always does the same. There's no way to do dynamic loops or branching.
 - The rings always contain the predetermined number of orders
 
 We have 5 circuits:
-- Trade (aka Settlement)
+- Rring Settlement (aka Trade)
 - Deposit
-- Off-chain withdraw
-- On-chain withdraw
-- Cancel
+- Off-chain withdrawal
+- On-chain withdrawal
+- Order Cancellation
 
-Circuits with and without on-chain data availability are available. We also support a couple of different block sizes for each circuit type to reduce the proving time with otherwise padded large blocks (or long delays until the block can be completely filled).
+Circuits with and without on-chain data-availability are available. We also support a couple of different block sizes for each circuit type to reduce the proving time without pading too many non-op works (or long delays until the block can be completely filled).
 
 ### Committing and Verifying Blocks On-chain
 
@@ -89,7 +90,7 @@ The operator can be a simple Ethereum address or can be a complex contract allow
 
 The operator contract can also be used to enforce an off-chain data-availability system. A simple scheme could be that multiple parties need to sign off on a block before it can be committed. This can be checked in the operator contract. As long as one member is trustworthy and actually shares the data then data-availability is ensured.
 
-The operator creates a block and submits it on-chain by calling `commitBlock`. He then has at most `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds to submit a proof for the block using `verifyBlock`. A proof can be submitted any time between when the block is committed and `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds afterwards, verifying a block does not need to be done in the same order as they are committed. If a block isn't proven in time `revertBlock` needs to be called by the operator within `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE` seconds the block was committed. When a block is successfully reverted the complete stake of the exchange is burned. If the operator fails to call `revertBlock` in time the exchange will automatically go into withdrawal mode. If there are any unverified blocks anyone can call `burnStake` to still burn the stake.
+The operator creates a block and submits it on-chain by calling `commitBlock`. He then has at most `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds to submit a proof for the block using `verifyBlock`. A proof can be submitted any time between when the block is committed and `MAX_PROOF_GENERATION_TIME_IN_SECONDS` seconds afterwards, verifying a block does not need to be done in the same order as they are committed. If a block isn't proven in time `revertBlock` needs to be called by the operator within `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE` seconds the block was committed. When a block is successfully reverted the complete stake of the exchange is burned. If the operator fails to call `revertBlock` in time the exchange will automatically go into withdrawal mode. If there are any unverified blocks anyone can call `burnStake` to still burn exchange's stake.
 
 ### Restrictions imposed on the Operator
 
@@ -114,7 +115,7 @@ The **nonce** of the account is increased by 1 for these operations. The expecte
 
 ## Exchanges
 
-Block submission needs to be done sequentially so the Merkle tree can be updated from a known old state to a new state. To allow concurrent settling of orders by different independent parties we allow the creation of stand-alone exchange contracts. Every exchange operates completely independent.
+Block submission needs to be done sequentially so the Merkle tree can be updated from a known old state to a new state. To allow concurrent settling of orders by different independent parties we allow the creation of stand-alone exchange contracts. Every exchange operates completely independently.
 
 Note that user accounts and orders cannot be shared over different exchanges. Exchanges can decide to use the same Exchange contract so orders and users accounts can be shared if they desire.
 
@@ -141,13 +142,11 @@ Exchanges with a large stake have a lot to lose by not playing by the rules and 
 
 The stake of an exchange can only be withdrawn when the exchange was shutdown correctly. This is done as follows:
 - The exchange owner sets the state to a shutdown state. This stops users from submitting new on-chain requests
-- All remaining open on-chain requests are processed, no other blocks can be committed.
-- Only special withdraw blocks can be committed. These withdrawals not only withdraw the complete balance for a token in an account, it also resets the trading history root, the account public key and the account nonce.
-- If the complete tree is reset to its initial state (`currentBlock.merkleRoot == genesisBlock.merkleRoot`) and all blocks are proven the exchange owner is allowed to withdraw the exchange stake.
+- All remaining open on-chain requests are processed, no other types of blocks can be committed.
+- Only special withdrawal blocks can be committed. These withdrawals not only withdraw the complete balance for a token in an account, it also resets the trading history root, the account public key, and the account nonce.
+- If the complete tree is reset to its initial state (`currentBlock.merkleRoot == genesisBlock.merkleRoot`) and all blocks are proven the exchange owner is allowed to withdraw the full stake.
 
 This also guards users against data-availability problems. Even if the Merkle tree cannot be rebuilt by anyone but the operator, this mechanism still ensures all funds will be returned to the users, otherwise the exchange loses the amount staked.
-
-> Q(Daniel): this would be a good reason to always allow burning the stake of the exchange in withdrawal mode. Currently the stake can only be burned in withdrawal mode if there are unverified blocks.
 
 ### Maintenance Mode
 
@@ -155,7 +154,9 @@ The exchange owner can put the exchange temporarily in a suspended state. This c
 
 When the exchange is suspended users cannot do any on-chain requests anymore. Additionaly, the operator is not allowed to commit any ring settlement blocks to prevent the exchange owner from abusing this system. The operator still needs to process all on-chain requests that are still open and needs to prove any unverified blocks, otherwise the exchange runs the risk of getting into withdrawal mode, which is irreversible.
 
-The exchange owner can call `purchaseDowntime` to burn LRC in return for downtime. `getDowntimeCostLRC` can be used to find out how much LRC needs to be sent to put the exchange in downtime for a certain amount of time. `getRemainingDowntime` can be called to find out how much time the exchange will still remain in maintenance mode.
+The exchange owner can call `purchaseDowntime` to burn LRC in return for downtime. `getDowntimeCostLRC` can be used to find out how much LRC needs to be sent to put the exchange in downtime for a certain amount of time. `purchaseDowntime` can be called multiple times to extend the down time. `getRemainingDowntime` can be called to find out how much time the exchange will still remain in maintenance mode.
+
+The exchange will get out of the maintainance mode automatically after all down time has been used. There is currently no way to force the exchange out of this mode immediately, which can be improved in future releases.
 
 ### Token Registration
 
@@ -177,7 +178,7 @@ The following on-chain requests can require a fee to be paid in ETH to the excha
 - Depositing
 - Withdrawing
 
-An Exchange is allowed to freely set the fees for any of the above. However, for withdrawals the Loopring contract enforces a maximum fee. This is to ensure an Exchange cannot stop users from withdrawing by setting an extremely high withdrawal fee.
+An Exchange is allowed to freely set the fees for any of the above. However, for withdrawals the Loopring contract enforces a maximum fee. This is to ensure an exchange cannot stop users from withdrawing by setting an extremely high withdrawal fee.
 
 Any function requiring a fee on-chain can be sent ETH. If the user sends more ETH than required (e.g. because the exact fee amount in hard to manually set) then the surplus is immediately sent back.
 
@@ -192,11 +193,13 @@ The token tiers are stored in the Loopring contract. All tokens are tier 4 by de
 
 LRC has the lowest burn rate by default. The burn rate for a token can be lowered by upgrading the tier of the token. This can be done by calling `buydownTokenBurnRate`. The cost to upgrade the token a single tier is `tierUpgradeCostBips * LRC.totalSupply()`. The burn rate for a token can be found by calling `getTokenBurnRate`.
 
-Only the fees paid by the order owners are subject to fee burning. The business model among wallets, ring-matchers and operators can be negotiated off-chain and can be totally detached from the protocol.
+Only the fees paid by the order owners are subject to fee burning; margins are not. The business model among wallets, ring-matchers and operators can be negotiated off-chain and can be totally detached from the protocol.
 
 ## Signatures
 
-Currently we use EdDSA keys (7,000 constraints to verify a signature), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). We may switch to ECDSA signatures if possible because users would not need to create (and store) a separate keypair specifically for our sidechain.
+Currently we use EdDSA keys (7,000 constraints to verify a signature), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). We may switch to ECDSA signatures if possible because users would not need to create (and store) a separate trading keypair.
+
+The introduction of trading keypairs does have a benefit: orders no longer needs to be signed by a user Etheruem private keys, DEX interface thus no longer need to access to those Ethereum private keys. This is more secure for both users and DEXes.
 
 The data for an EdDSA signature is stored like this:
 
@@ -213,11 +216,11 @@ Signature {
 Before the user can start trading he needs to create an account. An account allows a user to trade any token that is registered (or will be registered in the future).
 The account is linked to the `msg.sender` that created the account, creating a one-to-one mapping between Ethereum addresses and accounts. Any future interaction with the account on-chain that needs authentication needs to be done using the same `msg.sender`.
 
-The account needs an EdDSA public key. This public key will be stored in the Merkle tree for the account. Every request made for the account in off-chain requests (like orders) need to be signed using the corresponding private key. EdDSA is used because it is more efficient in circuits.
+The account needs an EdDSA public key. This public key will be stored in the Merkle tree for the account. Every request made for the account in off-chain requests (like orders) need to be signed using the corresponding private key.
 
 An account can be created using `createOrUpdateAccount`. When creating an account a user can also immediately deposit funds using `updateAccountAndDeposit` as both are handled by the same circuit. `updateAccountAndDeposit` can also be used by users to update the EdDSA public key which is used for signing off-chain requests.
 
-If the account is used to receive fees that are subject to fee-burning (i.e. all fees except the margin and the fee paid by the ring-matcher to the operator) than the account needs to be a special fee-recipient account. This type of account can be created by calling `createFeeRecipientAccount`.
+If the account is used to receive fees that are subject to fee-burning (i.e. all fees except the margin and the fee paid by the ring-matcher to the operator), then the account needs to be a special fee-recipient account. This type of account can be created by calling `createFeeRecipientAccount`.
 
 ## Depositing
 
@@ -243,7 +246,7 @@ totalFine = Loopring.withdrawalFineLRC() * numWithdrawalRequestsInBlock
 
 ### Fee Burning
 
-When withdrawing funds from a fee-recipient account a part of the balance is [burned](#fee-model). If the token is LRC we burn the amount immediately by calling `burn` on the LRC contract, otherwise we send the amount to the Loopring contract. There it can be withdrawn by the Loopring contract owner by calling `withdrawTheBurn` so that it can be used to buy LRC and burn it. In the future these funds will be sold directly on-chain in a decentralized way by using [Loopring's Oedax (Open-Ended Dutch Auction eXchange) protocol](https://medium.com/loopring-protocol/oedax-looprings-open-ended-dutch-auction-exchange-model-d92cebbd3667).
+When withdrawing funds from a fee-recipient account a part of the balance is [burned](#fee-model). If the token is LRC we burn the amount immediately by calling `burn` on the LRC token contract, otherwise we send the amount to the Loopring contract. There it can be withdrawn by the Loopring contract owner by calling `withdrawTheBurn` so that it can be used to buy LRC and burn it. In the future these funds will be sold directly on-chain in a decentralized way by using [Loopring's Oedax (Open-Ended Dutch Auction eXchange) protocol](https://medium.com/loopring-protocol/oedax-looprings-open-ended-dutch-auction-exchange-model-d92cebbd3667).
 
 ### Off-chain Withdrawal Request
 
@@ -265,11 +268,11 @@ OffchainWithdrawal {
 }
 ```
 
-An off-chain withdrawal is hashed using pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
+An off-chain withdrawal is hashed using Pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
 
 ```
 SignedOffchainWithdrawal {
-  OffchainWithdrawal offchainWithdrawal
+  OffchainWithdrawal offChainWithdrawal
   Signature sig
 }
 ```
@@ -283,14 +286,14 @@ A user calls `withdraw` and the request is added to the withdrawal chain. See [h
 ## Ring Settlement
 
 The ring settlement is just as in protocol 2 with some limitations:
-- Only 2 order rings
+- Only 2-order rings
 - No P2P orders (always use fee token)
 - No on-chain registration of orders
 - No fee waiving mechanism with negative percentages (which would pay using order fees, greatly increasing the number of constraints)
 
 Orders and order-matching are still completely off-chain.
 
-**Rings are automatically scaled** to fill the orders as much as possible with the funds available in the Merkle tree at the time of settlement. The order that pays the margin (if there is any) needs to be the first order in the ring.
+**Rings are automatically scaled** to fill the orders as much as possible with the funds available in the Merkle tree at the time of settlement. The order that pays the margin (if there is any) needs to be the first order in the ring (we use the price of the second order as the trading price).
 
 **Partial order filling** is fully supported. How much an order is filled is [stored in the Merkle tree](#Trading-History). No need for users to re-sign anything if the order wasn't filled completely in a single ring, a user only needs to sign his order a single time. The order can be included in as many rings as necessary until it is completely filled.
 
@@ -307,6 +310,8 @@ List of causes that will result in no actual ring settlement, but are still acce
 - The amount sold is 0 or the amount bought is 0
 - The account owner of an order does not have enough funds
 - The orders cannot be matched correctly
+
+For these types of rings, a fee is still collected by the operator from the ring-matcher's accounts.
 
 ### Off-chain Data
 
@@ -332,7 +337,7 @@ Order {
 }
 ```
 
-An order is hashed using pedersen in the sequence given above. The hash is signed by the order Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA.
+An order is hashed using Pedersen in the sequence given above. The hash is signed by the order Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA.
 
 ```
 SignedOrder {
@@ -360,13 +365,15 @@ Ring {
 }
 ```
 
-A ring is hashed using pedersen in the sequence given above. The hash is signed by
+A ring is hashed using Pedersen in the sequence given above. The hash is signed by
 - by the Ring-Matcher using the private key associated with the public key stored in `account[accountID]` with EdDSA
 - by the dual-author private key of orderA with EdDSA
 - by the dual-author private key of orderB with EdDSA
 
 ```
 SignedRing {
+  Order orderA
+  Order orderB
   Ring ring
   Signature sigRingMatcher
   Signature sigDualAuthorA
@@ -405,7 +412,7 @@ CancelRequest {
 }
 ```
 
-A cancel request is hashed using pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
+A cancel request is hashed using Pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
 
 ```
 SignedCancelRequest {
@@ -430,7 +437,7 @@ If an order with a larger orderID is used in a ring settlement at the same tradi
 
 ### The DEX removes the order in the order-book
 
-If the order never left the DEX and the user trusts the DEX than the order can simply be removed from the order book.
+If the order never left the DEX and the user trusts the DEX then the order can simply be removed from the order book.
 
 ## Trading History
 
@@ -485,7 +492,7 @@ function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 3
 
 ## Withdrawal mode
 
-The operator may stop submitting new blocks and proving already committed blocks at any time. If that happens we need to ensure users can still withdraw their funds.
+The operator may stop submitting new blocks and proofs at any time. If that happens we need to ensure users can still withdraw their funds.
 
 An exchange can go in withdrawal mode when any of the conditions below are true:
 - An on-chain request (either deposit or withdrawal) is open for longer than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE`
@@ -510,7 +517,7 @@ Ring-Matchers collect as many orders as possible sent to him by wallets (or crea
 Ring-Matchers need to create a normal account so they can pay the operator (and receive the burn rate free margin). They also need to create a fee-recipient account
 to receive the matching fee from orders (because the burn rate needs to be applied on these funds when withdrawing).
 
-The fee paid by the ring-matcher to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ring-matchers pays a fee in ETH to the Ethereum miners, the ring-matcher now pays a fee to the operator. **Any token can be used to pay the fee.**
+The fee paid by the ring-matcher to the operator is completely independent of the fee paid by the orders. Just like in protocol 2 the ring-matchers pays a fee in ETH to the Ethereum miners, the ring-matcher now pays a fee to the operator. **Any registered token can be used to pay the fee.**
 
 ## Brokers
 
@@ -597,8 +604,9 @@ The approved withdrawal calldata also needs to be stored on-chain so that the da
 ## Throughput (Ring Settlements)
 
 The throughput is limited by:
-- The cost of the data we have to send in the calldata for the on-chain data-availability
-- The 256,000,000 constraints limit that allows efficient proof verification on-onchain.
+
+- The cost of the data we have to send in the calldata for the on-chain data-availability.
+- The 256,000,000 constraints limit that allows efficient proof verification on-on-chain.
 
 Without data-availability we are only limited by the number of constraints in a single block.
 
@@ -607,7 +615,7 @@ The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is genera
 ### On-chain data-availability limit
 
 - Verifying a proof + some state updates/querying: ~600,000 gas
-- => (8,000,000 - 600,000) / 7,616 = 971 rings/Ethereum block = ~65 rings/second
+- => (8,000,000 - 600,000) / 7,616 = **971 rings/Ethereum block = ~65 rings/second**
 
 These numbers can be improved by packing the data more tightly.
 
@@ -683,7 +691,7 @@ Only when the block is finalized is the ring settlement irreversible.
 
 # Deposit and Withdrawal process
 
-The first thing a user needs to do is create an account. The user has the option to directly deposit tokens to this newly account.
+The first thing a user needs to do is create an account. The user has the option to directly deposit tokens to this new account to be created.
 
 `updateAccountAndDeposit` is called on the exchange contract. A new account is created on-chain (the on-chain account information does not contain any balance information because the balance will only be used and updated in the Merkle tree) and the necessary data is hashed together that needs to be used for creating the account in the Merkle tree in the circuit. The amount of tokens the user deposits to the contract will be stored in the leaf of the Merkle tree with address `accountID` (together with the rest of the account information).
 
