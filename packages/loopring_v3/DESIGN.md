@@ -257,7 +257,7 @@ A request for a withdrawal is sent off-chain to the operator. The operator shoul
 The nonce of the account is increased after the withdrawal is processed.
 
 ```
-Off-chainWithdrawal {
+OffchainWithdrawal {
   exchangeID (32bit)
   accountID (20bit)
   tokenID (8bit)
@@ -273,13 +273,13 @@ Off-chainWithdrawal {
 An off-chain withdrawal is hashed using Pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
 
 ```
-SignedOff-chainWithdrawal {
-  Off-chainWithdrawal off-chainWithdrawal
+SignedOffchainWithdrawal {
+  OffchainWithdrawal offChainWithdrawal
   Signature sig
 }
 ```
 
-`SignedOff-chainWithdrawal`s can be sent to the Operators for commitment.
+`SignedOffchainWithdrawal`s can be sent to the Operators for commitment.
 
 ### On-chain Withdrawal Request
 
