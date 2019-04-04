@@ -14,12 +14,14 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 - Multiple onchain DEX instances instead of one (different from 2.0)
 - Onchain deposits + onchain/offchain withdrawals
 - Offchain order cancellation
+- Allow partial order matching and offchain order-scaling
 - Multiple circuit permutations for different request batch sizes
 - Use any ERC20 token or Ether as trading fee （inherited from 2.0)
 - DEX can buy down burn rate (inherited from 2.0)
 - Dual authoring to prevent orders/trades from being stolen is still supported (inherit from 2.0)
 - Greatly reduce gas fee for DEX settlement by 100x (with data-availability) or 1000x (without data-availability)
 - 100% secure
+- and more...
 
 ## Build
 
