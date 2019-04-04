@@ -9,18 +9,18 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 
 ## Top Features
 
-- Onchain data-availability supported
-- All ERC20 tokens and Ether supported by default
-- Multiple onchain DEX instances instead of one (different from 2.0)
-- Onchain deposits + onchain/offchain withdrawals
-- Offchain order cancellation
-- Allow partial order matching and offchain order-scaling
+- Onchain data-availability (DEXes can opt out for even greater throughput & lower cost)
+- All ERC20 tokens and Ether are supported by default
+- Multiple onchain DEX instances with isolated state and dedicated event stream (different from 2.0)
+- Onchain deposits + onchain & offchain withdrawals support
+- Very cheep offchain order cancellation as well as order time-to-lve support
+- Allow partial order matching (partial fill) and offchain order-scaling
 - Multiple circuit permutations for different request batch sizes
-- Use any ERC20 token or Ether as trading fee （inherited from 2.0)
-- DEX can buy down burn rate (inherited from 2.0)
-- Dual authoring to prevent orders/trades from being stolen is still supported (inherit from 2.0)
+- Use any ERC20 token or Ether as trading fee to reduce friction（inherited from 2.0)
+- DEX can buy down fee token burn rate (inherited from 2.0)
+- Dual authoring support to prevent orders/trades from being stolen by middleman (inherit from 2.0)
 - Greatly reduce gas fee for DEX settlement by 100x (with data-availability) or 1000x (without data-availability)
-- 100% secure
+- 100% secure for end users, even when DEX operators are evil
 - and more...
 
 ## Build
