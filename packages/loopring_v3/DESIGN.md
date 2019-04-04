@@ -148,8 +148,6 @@ The stake of an exchange can only be withdrawn when the exchange was shutdown co
 
 This also guards users against data-availability problems. Even if the Merkle tree cannot be rebuilt by anyone but the operator, this mechanism still ensures all funds will be returned to the users, otherwise the exchange loses the amount staked.
 
-> Q(Daniel): this would be a good reason to always allow burning the stake of the exchange in withdrawal mode. Currently the stake can only be burned in withdrawal mode if there are unverified blocks.
-
 ### Maintenance Mode
 
 The exchange owner can put the exchange temporarily in a suspended state. This can, for example, be used to update the back-end of the exchange.
@@ -617,7 +615,7 @@ The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is genera
 ### On-chain data-availability limit
 
 - Verifying a proof + some state updates/querying: ~600,000 gas
-- => (8,000,000 - 600,000) / 7,616 = 971 rings/Ethereum block = ~65 rings/second
+- => (8,000,000 - 600,000) / 7,616 = **971 rings/Ethereum block = ~65 rings/second**
 
 These numbers can be improved by packing the data more tightly.
 
