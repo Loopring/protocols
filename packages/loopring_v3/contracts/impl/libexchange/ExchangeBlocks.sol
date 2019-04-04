@@ -197,7 +197,7 @@ library ExchangeBlocks
         }
 
         if (blockType == uint(ExchangeData.BlockType.RING_SETTLEMENT)) {
-            require(now >= S.disableUserRequestsUntil, "RING_SETTLEMENT_SUSPENDED");
+            require(now >= S.disableUserRequestsUntil, "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
             assembly {
                 inputTimestamp := and(mload(add(data, 75)), 0xFFFFFFFF)
@@ -267,6 +267,10 @@ library ExchangeBlocks
                 mstore(add(data, 135), endingHash)
             }
             numWithdrawalRequestsCommitted = uint32(startIdx + count);
+        } else if (blockType == uint(ExchangeData.BlockType.ORDER_CANCELLATION)) {
+            // Do nothing
+        } else {
+            revert("UNSUPPORTED_BLOCK_TYPE");
         }
 
         bytes32 publicDataHash = sha256(data);
