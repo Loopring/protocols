@@ -219,7 +219,7 @@ Signature {
 Before the user can start trading he needs to create an account. An account allows a user to trade any token that is registered (or will be registered in the future).
 The account is linked to the `msg.sender` that created the account, creating a one-to-one mapping between Ethereum addresses and accounts. Any future interaction with the account on-chain that needs authentication needs to be done using the same `msg.sender`.
 
-The account needs an EdDSA public key. This public key will be stored in the Merkle tree for the account. Every request made for the account in off-chain requests (like orders) need to be signed using the corresponding private key. EdDSA is used because it is more efficient in circuits.
+The account needs an EdDSA public key. This public key will be stored in the Merkle tree for the account. Every request made for the account in off-chain requests (like orders) need to be signed using the corresponding private key.
 
 An account can be created using `createOrUpdateAccount`. When creating an account a user can also immediately deposit funds using `updateAccountAndDeposit` as both are handled by the same circuit. `updateAccountAndDeposit` can also be used by users to update the EdDSA public key which is used for signing off-chain requests.
 
@@ -249,7 +249,7 @@ totalFine = Loopring.withdrawalFineLRC() * numWithdrawalRequestsInBlock
 
 ### Fee Burning
 
-When withdrawing funds from a fee-recipient account a part of the balance is [burned](#fee-model). If the token is LRC we burn the amount immediately by calling `burn` on the LRC contract, otherwise we send the amount to the Loopring contract. There it can be withdrawn by the Loopring contract owner by calling `withdrawTheBurn` so that it can be used to buy LRC and burn it. In the future these funds will be sold directly on-chain in a decentralized way by using [Loopring's Oedax (Open-Ended Dutch Auction eXchange) protocol](https://medium.com/loopring-protocol/oedax-looprings-open-ended-dutch-auction-exchange-model-d92cebbd3667).
+When withdrawing funds from a fee-recipient account a part of the balance is [burned](#fee-model). If the token is LRC we burn the amount immediately by calling `burn` on the LRC token contract, otherwise we send the amount to the Loopring contract. There it can be withdrawn by the Loopring contract owner by calling `withdrawTheBurn` so that it can be used to buy LRC and burn it. In the future these funds will be sold directly on-chain in a decentralized way by using [Loopring's Oedax (Open-Ended Dutch Auction eXchange) protocol](https://medium.com/loopring-protocol/oedax-looprings-open-ended-dutch-auction-exchange-model-d92cebbd3667).
 
 ### Off-chain Withdrawal Request
 
@@ -271,7 +271,7 @@ Off-chainWithdrawal {
 }
 ```
 
-An off-chain withdrawal is hashed using pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
+An off-chain withdrawal is hashed using Pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
 
 ```
 SignedOff-chainWithdrawal {
@@ -289,14 +289,14 @@ A user calls `withdraw` and the request is added to the withdrawal chain. See [h
 ## Ring Settlement
 
 The ring settlement is just as in protocol 2 with some limitations:
-- Only 2 order rings
+- Only 2-order rings
 - No P2P orders (always use fee token)
 - No on-chain registration of orders
 - No fee waiving mechanism with negative percentages (which would pay using order fees, greatly increasing the number of constraints)
 
 Orders and order-matching are still completely off-chain.
 
-**Rings are automatically scaled** to fill the orders as much as possible with the funds available in the Merkle tree at the time of settlement. The order that pays the margin (if there is any) needs to be the first order in the ring.
+**Rings are automatically scaled** to fill the orders as much as possible with the funds available in the Merkle tree at the time of settlement. The order that pays the margin (if there is any) needs to be the first order in the ring (we use the price of the second order as the trading price).
 
 **Partial order filling** is fully supported. How much an order is filled is [stored in the Merkle tree](#Trading-History). No need for users to re-sign anything if the order wasn't filled completely in a single ring, a user only needs to sign his order a single time. The order can be included in as many rings as necessary until it is completely filled.
 
@@ -313,6 +313,8 @@ List of causes that will result in no actual ring settlement, but are still acce
 - The amount sold is 0 or the amount bought is 0
 - The account owner of an order does not have enough funds
 - The orders cannot be matched correctly
+
+For these types of rings, a fee is still collected by the operator from the ring-matcher's accounts.
 
 ### Off-chain Data
 
@@ -338,7 +340,7 @@ Order {
 }
 ```
 
-An order is hashed using pedersen in the sequence given above. The hash is signed by the order Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA.
+An order is hashed using Pedersen in the sequence given above. The hash is signed by the order Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA.
 
 ```
 SignedOrder {
@@ -366,7 +368,7 @@ Ring {
 }
 ```
 
-A ring is hashed using pedersen in the sequence given above. The hash is signed by
+A ring is hashed using Pedersen in the sequence given above. The hash is signed by
 - by the Ring-Matcher using the private key associated with the public key stored in `account[accountID]` with EdDSA
 - by the dual-author private key of orderA with EdDSA
 - by the dual-author private key of orderB with EdDSA
@@ -411,7 +413,7 @@ CancelRequest {
 }
 ```
 
-A cancel request is hashed using pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
+A cancel request is hashed using Pedersen in the sequence given above. The hash is signed by the Owner using the private key associated with the public key stored in `account[accountID]` with EdDSA
 
 ```
 SignedCancelRequest {
