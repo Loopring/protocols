@@ -47,7 +47,6 @@ A Merkle tree is used to store all the permanent data needed in the circuits.
 - While trading, 3 token balances are modified for a user (tokenS, tokenB, tokenF). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 3 times. The account itself is modified only a single time (the balances Merkle root is stored inside the account leaf). The same is useful for wallets, ring-matchers and operators because these also pay/receive fees in different tokens.
 - The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this small sub-tree. The trading-history is not part of the account leaf because that way we'd only have 2^14 leafs for all tokens together. Note that account owners can create [a lot more orders](#Trading-History) for each token than the 2^14 slots available in this tree!
 
-The current configuration would allow up to 1,048,576 (2^20) unique addresses (accounts), 256 (2^8)tokens, and 16,384 (2^14)unique order ids per account (this is not an issue, please see (order aliasing](#Order-Aliasing)).
 
 ## Blocks
 
@@ -223,7 +222,7 @@ The account needs an EdDSA public key. This public key will be stored in the Mer
 
 An account can be created using `createOrUpdateAccount`. When creating an account a user can also immediately deposit funds using `updateAccountAndDeposit` as both are handled by the same circuit. `updateAccountAndDeposit` can also be used by users to update the EdDSA public key which is used for signing off-chain requests.
 
-If the account is used to receive fees that are subject to fee-burning (i.e. all fees except the margin and the fee paid by the ring-matcher to the operator) than the account needs to be a special fee-recipient account. This type of account can be created by calling `createFeeRecipientAccount`.
+If the account is used to receive fees that are subject to fee-burning (i.e. all fees except the margin and the fee paid by the ring-matcher to the operator), then the account needs to be a special fee-recipient account. This type of account can be created by calling `createFeeRecipientAccount`.
 
 ## Depositing
 
@@ -375,6 +374,8 @@ A ring is hashed using Pedersen in the sequence given above. The hash is signed 
 
 ```
 SignedRing {
+  Order orderA
+  Order orderB
   Ring ring
   Signature sigRingMatcher
   Signature sigDualAuthorA
@@ -438,7 +439,7 @@ If an order with a larger orderID is used in a ring settlement at the same tradi
 
 ### The DEX removes the order in the order-book
 
-If the order never left the DEX and the user trusts the DEX than the order can simply be removed from the order book.
+If the order never left the DEX and the user trusts the DEX then the order can simply be removed from the order book.
 
 ## Trading History
 

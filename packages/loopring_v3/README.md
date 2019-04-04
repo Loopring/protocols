@@ -23,6 +23,7 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 - Built-in mechanism to force DEX operators to fulfill duties in time (especially for handling deposits and withdrawals)
 - Support DEX operators to stake tokens to "buy" credit
 - Support a "maintainance mode" for DEX operators to upgrade backends within a time window
+- Support a unique feature called Order Aliasing (new to 3.0)
 - 100% secure for end users, even when DEX operators are evil (same as 2.0)
 - and more...
 
