@@ -468,8 +468,7 @@ contract IExchange
     ///      and create the deposit to the offchain account.
     ////
     ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
-    ///               tokens in total. If that happens, the user may lose money and the
-    ///               exchange may never get all its stake back.
+    ///               tokens in total. If that happens, the user may lose token.
     ///               This token balance upper limit, however, is large enought for most scenarios.
     ///
     /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
@@ -488,8 +487,7 @@ contract IExchange
     ///      and create the deposit to the offchain account.
     ///
     ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
-    ///               tokens in total. If that happens, the user may lose money and the
-    ///               exchange may never get all its stake back.
+    ///               tokens in total. If that happens, the user may lose token.
     ///               This token balance upper limit, however, is large enought for most scenarios.
     ///
     /// @param recipient The address of the recipient
