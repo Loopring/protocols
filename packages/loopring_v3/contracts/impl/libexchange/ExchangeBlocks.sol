@@ -188,7 +188,7 @@ library ExchangeBlocks
         // Check if the operator is forced to commit a deposit or withdraw block
         // We give priority to withdrawals. If a withdraw block is forced it needs to
         // be processed first, even if there is also a deposit block forced.
-        if (blockType != uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) &&
+        if (blockType != uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) &&
             isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
             revert("WITHDRAWAL_BLOCK_COMMIT_FORCED");
         } else if (blockType != uint(ExchangeData.BlockType.DEPOSIT) &&
@@ -196,7 +196,7 @@ library ExchangeBlocks
             revert("DEPOSIT_BLOCK_COMMIT_FORCED");
         }
 
-        if (blockType == uint(ExchangeData.BlockType.SETTLEMENT)) {
+        if (blockType == uint(ExchangeData.BlockType.RING_SETTLEMENT)) {
             require(now >= S.disableUserRequestsUntil, "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
             assembly {
@@ -238,7 +238,7 @@ library ExchangeBlocks
                 mstore(add(data, 132), endingHash)
             }
             numDepositRequestsCommitted = uint32(startIdx + count);
-        } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW)) {
+        } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
             uint startIdx = 0;
             uint count = 0;
             assembly {
@@ -267,13 +267,19 @@ library ExchangeBlocks
                 mstore(add(data, 135), endingHash)
             }
             numWithdrawalRequestsCommitted = uint32(startIdx + count);
+        } else if (blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) {
+            // Do nothing
+        } else if (blockType == uint(ExchangeData.BlockType.ORDER_CANCELLATION)) {
+            // Do nothing
+        } else {
+            revert("UNSUPPORTED_BLOCK_TYPE");
         }
 
         bytes32 publicDataHash = sha256(data);
 
         // Only store the approved withdrawal data onchain
-        if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
-            blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAW)) {
+        if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) ||
+            blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) {
             uint start = 4 + 32 + 32 + 3 + 32 + 32 + 4 + 4;
             uint length = (3 + 2 + 12) * numElements;
             assembly {
@@ -294,8 +300,8 @@ library ExchangeBlocks
             numWithdrawalRequestsCommitted,
             false,
             0,
-            (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
-             blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAW)) ? data : new bytes(0)
+            (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) ||
+             blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) ? data : new bytes(0)
         );
 
         S.blocks.push(newBlock);

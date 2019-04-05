@@ -295,14 +295,14 @@ contract IExchange
     ///            - Exchange ID: 4 bytes
     ///            - Old merkle root: 32 bytes
     ///            - New merkle root: 32 bytes
-    ///        For SETTLEMENT blocks add the following data:
+    ///        For RING_SETTLEMENT blocks add the following data:
     ///            - timestamp used in the block: 4 bytes
     ///        For DEPOSIT blocks add the following data:
     ///            - Starting hash: 32 bytes
     ///            - Ending hash: 32 bytes
     ///            - Start index (in deposit chain): 4 bytes
     ///            - Number of deposits processed: 4 bytes
-    ///        For ONCHAIN_WITHDRAW blocks add the following data:
+    ///        For ONCHAIN_WITHDRAWAL blocks add the following data:
     ///            - Starting hash: 32 bytes
     ///            - Ending hash: 32 bytes
     ///            - Start index (in withdrawal chain): 4 bytes
@@ -311,16 +311,16 @@ contract IExchange
     ///                - Account ID: 3 bytes
     ///                - Token ID: 2 bytes
     ///                - Amount: 12 bytes
-    ///        For OFFCHAIN_WITHDRAW blocks add the following data:
+    ///        For OFFCHAIN_WITHDRAWAL blocks add the following data:
     ///            - None
-    ///        For CANCEL blocks add the following data:
+    ///        For ORDER_CANCELLATION blocks add the following data:
     ///            - None
     ///
     ///        The 'onchain data availability' data (if enabled) is added
     ///        at the end. This allows anyone to recreate the merkle tree
     ///        just by using data published on the Ethereum blockchain.
     ///
-    ///        For SETTLEMENT blocks add the following data:
+    ///        For RING_SETTLEMENT blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every ring
     ///                - Ring-matcher account ID: 3 bytes
@@ -340,16 +340,16 @@ contract IExchange
     ///                    - WaiveFeePercentage: 1 byte
     ///        For DEPOSIT blocks add the following data:
     ///            - None
-    ///        For ONCHAIN_WITHDRAW blocks add the following data:
+    ///        For ONCHAIN_WITHDRAWAL blocks add the following data:
     ///            - None
-    ///        For OFFCHAIN_WITHDRAWAL blocks add the following data:
+    ///        For OFFCHAIN_WITHDRAWALAL blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every withdrawal:
     ///                - Wallet account ID: 3 bytes
     ///                - Fee token ID: 2 bytes
     ///                - Fee amount: 12 bytes
     ///                - WalletSplitPercentage: 1 byte
-    ///        For CANCEL blocks add the following data:
+    ///        For ORDER_CANCELLATION blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every cancel:
     ///                - Account ID: 3 bytes

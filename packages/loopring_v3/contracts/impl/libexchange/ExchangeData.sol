@@ -29,25 +29,29 @@ library ExchangeData
     // -- Enums --
     enum BlockType
     {
-        SETTLEMENT,
+        RING_SETTLEMENT,
         DEPOSIT,
-        ONCHAIN_WITHDRAW,
-        OFFCHAIN_WITHDRAW,
-        CANCEL
+        ONCHAIN_WITHDRAWAL,
+        OFFCHAIN_WITHDRAWAL,
+        ORDER_CANCELLATION
     }
 
     enum BlockState
     {
+        // This value should never be seen onchain, but we want to reserve 0 so the
+        // relayer can use this as the default for new blocks.
+        NEW,            // = 0
+
         // The default state when a new block is included onchain.
-        COMMITTED,
+        COMMITTED,      // = 1
 
         // A valid ZK proof has been submitted for this block.
-        VERIFIED,
+        VERIFIED,       // = 2
 
         // A block's state will become FINALIZED when and only when this block is VERIFIED
         // and all previous blocks in the chain have become FINAZLIED. The genesis block is
         // FINAZLIED by default.
-        FINALIZED
+        FINALIZED       // = 3
     }
 
     // -- Structs --

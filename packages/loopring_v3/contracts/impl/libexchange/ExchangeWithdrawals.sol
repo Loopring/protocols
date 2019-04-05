@@ -369,8 +369,8 @@ library ExchangeWithdrawals
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
 
         // Check if this is a withdraw block
-        require(withdrawBlock.blockType == uint8(ExchangeData.BlockType.ONCHAIN_WITHDRAW) ||
-                withdrawBlock.blockType == uint8(ExchangeData.BlockType.OFFCHAIN_WITHDRAW), "INVALID_BLOCK_TYPE");
+        require(withdrawBlock.blockType == uint8(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) ||
+                withdrawBlock.blockType == uint8(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL), "INVALID_BLOCK_TYPE");
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
         // Check if the witdrawals were already completely distributed
