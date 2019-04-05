@@ -59,13 +59,13 @@ A circuit always does the same. There's no way to do dynamic loops or branching.
 - The rings always contain the predetermined number of orders
 
 We have 5 circuits:
-- Rring Settlement (aka Trade)
+- Ring Settlement (aka Trade)
 - Deposit
 - Off-chain withdrawal
 - On-chain withdrawal
 - Order Cancellation
 
-Circuits with and without on-chain data-availability are available. We also support a couple of different block sizes for each circuit type to reduce the proving time without pading too many non-op works (or long delays until the block can be completely filled).
+Circuits with and without on-chain data-availability are available. We also support a couple of different block sizes for each circuit type to reduce the proving time without padding too many non-op works (or long delays until the block can be completely filled).
 
 ### Committing and Verifying Blocks On-chain
 
@@ -156,7 +156,7 @@ When the exchange is suspended users cannot do any on-chain requests anymore. Ad
 
 The exchange owner can call `purchaseDowntime` to burn LRC in return for downtime. `getDowntimeCostLRC` can be used to find out how much LRC needs to be sent to put the exchange in downtime for a certain amount of time. `purchaseDowntime` can be called multiple times to extend the down time. `getRemainingDowntime` can be called to find out how much time the exchange will still remain in maintenance mode.
 
-The exchange will get out of the maintainance mode automatically after all down time has been used. There is currently no way to force the exchange out of this mode immediately, which can be improved in future releases.
+The exchange will get out of the maintenance mode automatically after all down time has been used. There is currently no way to force the exchange out of this mode immediately, which can be improved in future releases.
 
 ### Token Registration
 
@@ -199,7 +199,7 @@ Only the fees paid by the order owners are subject to fee burning; margins are n
 
 Currently we use EdDSA keys (7,000 constraints to verify a signature), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). We may switch to ECDSA signatures if possible because users would not need to create (and store) a separate trading keypair.
 
-The introduction of trading keypairs does have a benefit: orders no longer needs to be signed by a user Etheruem private keys, DEX interface thus no longer need to access to those Ethereum private keys. This is more secure for both users and DEXes.
+The introduction of trading keypairs does have a benefit: orders no longer need to be signed by a user's Ethereum private key, DEX interfaces thus no longer need access to those Ethereum private keys. This is more secure for both users and DEXes.
 
 The data for an EdDSA signature is stored like this:
 
@@ -559,7 +559,7 @@ We do however know the approximate time the block will be committed on the Ether
 
 We can save some more bytes (e.g. on the large values of the margin and the fees, these can be packed much more efficiently) so we can probably get this down to ~80 bytes/ring.
 
-#### Data-availability for order concellations
+#### Data-availability for order cancellations
 ```
 - Operator account ID: 3 bytes
 - For every cancel:
@@ -735,7 +735,7 @@ The protocol could allow the payment of an additional fee for the use of the ord
 
 A scenario where this would be very helpful is for a service that offers liquidity from some place (e.g. a bot for a CEX). This service would offer orders to multiple DEXs and can decide on any criteria how it wants to share its orders.
 
-![Order sharing](https://i.imgur.com/Lm5yyto.png)
+![Order sharing](https://i.imgur.com/2XrQHLa.png)
 
 - **Red arrows**: order sharing by negotiation (needs to be online to share orders)
 - **Black arrows**: order sharing by sharing the dual author key (does not need to be online to share orders)
