@@ -74,7 +74,9 @@ contract IExchange
         uint32  indexed depositIdx,
         uint24  indexed accountID,
         uint16  indexed tokenID,
-        uint96          amount
+        uint96          amount,
+        uint            pubKeyX,
+        uint            pubKeyY
     );
 
     event BlockFeeWithdrawn(
