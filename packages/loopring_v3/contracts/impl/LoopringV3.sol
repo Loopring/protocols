@@ -349,6 +349,11 @@ contract LoopringV3 is ILoopringV3, Ownable
         }
     }
 
+    function()
+        external
+        payable
+    {}
+
     // == Internal Functions ==
     function updateSettingsInternal(
         address _blockVerifierAddress,

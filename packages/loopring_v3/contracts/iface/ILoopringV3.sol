@@ -264,4 +264,9 @@ contract ILoopringV3
         address payable recipient
         )
         external;
+
+    /// @dev Allow ETH to be sent directly to this contract (for burning)
+    function()
+        external
+        payable;
 }

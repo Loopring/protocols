@@ -48,8 +48,6 @@ public:
 
     TradeHistoryTrimmingGadget tradeHistory;
 
-    VariableT nonce;
-
     VariableT balanceS;
     VariableT balanceB;
     VariableT balanceF;
@@ -98,8 +96,6 @@ public:
         tradeHistoryOrderID(make_variable(pb, FMT(prefix, ".tradeHistoryOrderID"))),
 
         tradeHistory(pb, constants, tradeHistoryFilled, tradeHistoryCancelled, tradeHistoryOrderID, orderID.packed, FMT(prefix, ".tradeHistory")),
-
-        nonce(make_variable(pb, FMT(prefix, ".nonce"))),
 
         balanceS(make_variable(pb, FMT(prefix, ".balanceS"))),
         balanceB(make_variable(pb, FMT(prefix, ".balanceB"))),
@@ -165,8 +161,6 @@ public:
         pb.val(tradeHistoryOrderID) = order.tradeHistoryOrderID;
 
         tradeHistory.generate_r1cs_witness();
-
-        pb.val(nonce) = order.nonce;
 
         pb.val(balanceS) = order.balanceS;
         pb.val(balanceB) = order.balanceB;

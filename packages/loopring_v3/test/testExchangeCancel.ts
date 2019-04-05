@@ -55,7 +55,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
     });
 
   });

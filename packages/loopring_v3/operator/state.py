@@ -864,6 +864,12 @@ class State(object):
 
         account = self.getAccount(accountID)
         balanceUpdate = account.updateBalance(token, amount)
+
+        # Update keys
+        account.secretKey = str(secretKey)
+        account.publicKeyX = str(publicKeyX)
+        account.publicKeyY = str(publicKeyY)
+
         self._accountsTree.update(accountID, account.hash())
 
         accountAfter = copyAccountInfo(account)

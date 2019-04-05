@@ -113,11 +113,13 @@ public:
     UpdateBalanceGadget updateBalanceS_A;
     UpdateBalanceGadget updateBalanceB_A;
     UpdateBalanceGadget updateBalanceF_A;
+    VariableT nonce_A;
     UpdateAccountGadget updateAccount_A;
 
     UpdateBalanceGadget updateBalanceS_B;
     UpdateBalanceGadget updateBalanceB_B;
     UpdateBalanceGadget updateBalanceF_B;
+    VariableT nonce_B;
     UpdateAccountGadget updateAccount_B;
 
     VariableT nonce_WA;
@@ -269,9 +271,10 @@ public:
                          {balanceF_A_before, tradingHistoryRootF_A},
                          {balanceF_MA.X, tradingHistoryRootF_A},
                          FMT(prefix, ".updateBalanceF_A")),
+        nonce_A(make_variable(pb, FMT(prefix, ".nonce_A"))),
         updateAccount_A(pb, _accountsRoot, orderA.accountID.bits,
-                        {orderA.publicKey.x, orderA.publicKey.y, orderA.nonce, balancesRootA},
-                        {orderA.publicKey.x, orderA.publicKey.y, orderA.nonce, updateBalanceF_A.getNewRoot()},
+                        {orderA.publicKey.x, orderA.publicKey.y, nonce_A, balancesRootA},
+                        {orderA.publicKey.x, orderA.publicKey.y, nonce_A, updateBalanceF_A.getNewRoot()},
                         FMT(prefix, ".updateAccount_A")),
 
         // Update OwnerB
@@ -287,9 +290,10 @@ public:
                          {balanceF_B_before, tradingHistoryRootF_B},
                          {balanceF_MB.X, tradingHistoryRootF_B},
                          FMT(prefix, ".updateBalanceF_B")),
+        nonce_B(make_variable(pb, FMT(prefix, ".nonce_B"))),
         updateAccount_B(pb, updateAccount_A.result(), orderB.accountID.bits,
-                        {orderB.publicKey.x, orderB.publicKey.y, orderB.nonce, balancesRootB},
-                        {orderB.publicKey.x, orderB.publicKey.y, orderB.nonce, updateBalanceF_B.getNewRoot()},
+                        {orderB.publicKey.x, orderB.publicKey.y, nonce_B, balancesRootB},
+                        {orderB.publicKey.x, orderB.publicKey.y, nonce_B, updateBalanceF_B.getNewRoot()},
                         FMT(prefix, ".updateAccount_B")),
 
         // Update WalletA
@@ -504,12 +508,14 @@ public:
         updateTradeHistoryB.generate_r1cs_witness(ringSettlement.tradeHistoryUpdate_B.proof);
 
         // Update OwnerA
+        pb.val(nonce_A) = ringSettlement.accountUpdate_A.before.nonce;
         updateBalanceS_A.generate_r1cs_witness(ringSettlement.balanceUpdateS_A.proof);
         updateBalanceB_A.generate_r1cs_witness(ringSettlement.balanceUpdateB_A.proof);
         updateBalanceF_A.generate_r1cs_witness(ringSettlement.balanceUpdateF_A.proof);
         updateAccount_A.generate_r1cs_witness(ringSettlement.accountUpdate_A.proof);
 
         // Update OwnerB
+        pb.val(nonce_B) = ringSettlement.accountUpdate_B.before.nonce;
         updateBalanceS_B.generate_r1cs_witness(ringSettlement.balanceUpdateS_B.proof);
         updateBalanceB_B.generate_r1cs_witness(ringSettlement.balanceUpdateB_B.proof);
         updateBalanceF_B.generate_r1cs_witness(ringSettlement.balanceUpdateF_B.proof);

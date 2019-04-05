@@ -159,7 +159,8 @@ contract IExchange
     ///      For fee recipient accounts, their pubKeyX and pubKeyY are both `1`.
     /// @return accountID The account's ID
     function createFeeRecipientAccount()
-        public
+        external
+        payable
         returns (uint24 accountID);
 
     // -- Balances --

@@ -71,7 +71,19 @@ module.exports = function(deployer, network, accounts) {
       ]);
     }).then(() => {
       return Promise.all([
-        deployer.deploy(LoopringV3),
+        deployer.deploy(
+          LoopringV3,
+          LRCToken.address,
+          WETHToken.address,
+          BlockVerifier.address,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+        ),
       ]);
     });
   }

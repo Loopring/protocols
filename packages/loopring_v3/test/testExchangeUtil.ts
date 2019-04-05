@@ -38,6 +38,7 @@ export class ExchangeTestUtil {
   public exchange: any;
   public exchangeOwner: string;
   public exchangeOperator: string;
+  public exchangeId: number;
 
   public minerAccountID: number[] = [];
   public feeRecipientAccountID: number[] = [];
@@ -84,14 +85,14 @@ export class ExchangeTestUtil {
 
     // Initialize Loopring
     await this.loopringV3.updateSettings(
-      this.lrcAddress,
-      this.wethAddress,
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
       new BN(0),
       new BN(web3.utils.toWei("0.02", "ether")),
       new BN(web3.utils.toWei("10000", "ether")),
       new BN(web3.utils.toWei("2", "ether")),
+      new BN(0),
+      new BN(0),
       {from: this.testContext.deployer},
     );
 
@@ -172,7 +173,7 @@ export class ExchangeTestUtil {
     // Make a dual author account for the wallet
     const walletDeposit = await this.deposit(realmID, owner,
                                              "1", "1", "1",
-                                             this.zeroAddress, new BN(1));
+                                             this.zeroAddress, new BN(0));
     const wallet: Wallet = {
       owner,
       walletAccountID: walletDeposit.accountID,
@@ -196,7 +197,7 @@ export class ExchangeTestUtil {
     // Make an account to receive fees
     const feeRecipientDeposit = await this.deposit(realmID, feeRecipient,
                                                    "1", "1", "1",
-                                                   this.zeroAddress, new BN(1));
+                                                   this.zeroAddress, new BN(0));
 
     return [minerDeposit.accountID, feeRecipientDeposit.accountID];
   }
@@ -443,25 +444,31 @@ export class ExchangeTestUtil {
       );
       // pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
     } else {
-      const tx = await this.exchange.updateAccountAndDeposit(
-        new BN(publicKeyX),
-        new BN(publicKeyY),
-        token,
-        web3.utils.toBN(amount),
-        {from: owner, value: ethToSend},
-      );
-      // pjs.logInfo("\x1b[46m%s\x1b[0m", "[DepositAndCreate] Gas used: " + tx.receipt.gasUsed);
+      if (publicKeyX === "1" && publicKeyY === "1") {
+        const tx = await this.exchange.createFeeRecipientAccount({from: owner, value: ethToSend});
+        assert(amount.isZero(), "Cannot deposit to fee recipient");
+      } else {
+        const tx = await this.exchange.updateAccountAndDeposit(
+          new BN(publicKeyX),
+          new BN(publicKeyY),
+          token,
+          web3.utils.toBN(amount),
+          {from: owner, value: ethToSend},
+        );
+        // pjs.logInfo("\x1b[46m%s\x1b[0m", "[DepositAndCreate] Gas used: " + tx.receipt.gasUsed);
+      }
     }
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "DepositRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.accountID];
+      return [eventObj.args.accountID, eventObj.args.depositIdx];
     });
 
     const depositInfo: DepositInfo = {
       accountID: items[0][0].toNumber(),
       depositBlockIdx: 0,
       slotIdx: 0,
+      depositIdx: items[0][1].toNumber(),
     };
 
     this.addDeposit(this.pendingDeposits[realmID], depositInfo.depositBlockIdx, depositInfo.accountID,
@@ -662,7 +669,7 @@ export class ExchangeTestUtil {
       proofFlattened,
       {from: this.exchangeOperator},
     );
-    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
 
     return proofFilename;
   }
@@ -907,8 +914,8 @@ export class ExchangeTestUtil {
       bs.addNumber(block.operatorAccountID, 3);
       bs.addNumber(0, 32);
       bs.addNumber(0, 32);
-      bs.addNumber(startIndex, 4);
-      bs.addNumber(numRequestsProcessed, 4);
+      bs.addNumber(onchain ? startIndex : 0, 4);
+      bs.addNumber(onchain ? numRequestsProcessed : 0, 4);
       for (const withdrawal of block.withdrawals) {
         bs.addNumber(withdrawal.accountID, 3);
         bs.addNumber(withdrawal.tokenID, 2);
@@ -1175,7 +1182,7 @@ export class ExchangeTestUtil {
       for (const cancel of cancels) {
         bs.addNumber(cancel.accountID, 3);
         bs.addNumber(cancel.orderTokenID, 2);
-        bs.addNumber(cancel.orderID, 2);
+        bs.addNumber(cancel.orderID, 4);
         bs.addNumber(cancel.walletAccountID, 3);
         bs.addNumber(cancel.feeTokenID, 2);
         bs.addBN(cancel.fee, 12);
@@ -1247,14 +1254,15 @@ export class ExchangeTestUtil {
 
     const eventArr: any = await this.getEventsFromContract(this.loopringV3, "ExchangeCreated", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.exchangeAddress];
+      return [eventObj.args.exchangeAddress, eventObj.args.exchangeId];
     });
     const exchangeAddress = items[0][0];
-    const realmID = 1;
+    const realmID = items[0][1].toNumber();
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
     this.exchangeOwner = owner;
     this.exchangeOperator = owner;
+    this.exchangeId = realmID;
 
     await this.registerTokens();
 
@@ -1288,20 +1296,20 @@ export class ExchangeTestUtil {
     return tokenID;
   }
 
-  public async revertBlock(realmID: number, blockIdx: number) {
+  public async revertBlock(blockIdx: number) {
     await this.exchange.revertBlock(
-      web3.utils.toBN(realmID),
       web3.utils.toBN(blockIdx),
+      {from: this.exchangeOperator},
     );
-    console.log("[State " + realmID + "] Reverted to block " + (blockIdx - 1));
-    this.pendingBlocks[realmID] = [];
+    console.log("Reverted to block " + (blockIdx - 1));
+    this.pendingBlocks[this.exchangeId] = [];
   }
 
   public async withdrawFromMerkleTree(owner: string, token: string) {
     const accountID = await this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
-    const realmID = 1;
+    const realmID = this.exchangeId;
 
     const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     const filename = "withdraw_proof.json";
@@ -1328,11 +1336,9 @@ export class ExchangeTestUtil {
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawFromMerkleTree] Gas used: " + tx.receipt.gasUsed);
   }
 
-  public async withdrawFromPendingDeposit(realmID: number, depositBlockIdx: number, slotIdx: number) {
-    await this.exchange.withdrawFromPendingDeposit(
-      web3.utils.toBN(realmID),
-      web3.utils.toBN(depositBlockIdx),
-      web3.utils.toBN(slotIdx),
+  public async withdrawFromDepositRequest(requestIdx: number) {
+    await this.exchange.withdrawFromDepositRequest(
+      web3.utils.toBN(requestIdx),
     );
   }
 

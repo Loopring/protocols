@@ -51,7 +51,7 @@ contract Exchange is IExchange, Ownable
     // -- Constructor --
     constructor(
         uint    _id,
-        address _loopringAddress,
+        address payable _loopringAddress,
         address _owner,
         address payable _operator,
         bool    _onchainDataAvailability
@@ -149,7 +149,8 @@ contract Exchange is IExchange, Ownable
     }
 
     function createFeeRecipientAccount()
-        public
+        external
+        payable
         returns (uint24 accountID)
     {
         accountID = state.createFeeRecipientAccount();

@@ -116,7 +116,7 @@ library ExchangeWithdrawals
         ExchangeData.Account storage account = S.accounts[accountID];
 
         // Check ETH value sent, can be larger than the expected withdraw fee
-        require(msg.value >= S.withdrawalFeeETH, "INVALID_VALUE");
+        require(msg.value >= S.withdrawalFeeETH, "INSUFFICIENT_FEE");
         // Send surplus of ETH back to the sender
         if (msg.value > S.withdrawalFeeETH) {
             msg.sender.transfer(msg.value.sub(S.withdrawalFeeETH));
@@ -212,9 +212,10 @@ library ExchangeWithdrawals
         ExchangeData.Block storage lastFinalizedBlock = S.blocks[S.numBlocksFinalized - 1];
         assert(lastFinalizedBlock.state == ExchangeData.BlockState.FINALIZED);
 
-        require (depositRequestIdx < lastFinalizedBlock.numDepositRequestsCommitted, "REQUEST_COMMITTED_ALREADY");
+        require(depositRequestIdx >= lastFinalizedBlock.numDepositRequestsCommitted, "REQUEST_INCLUDED_IN_FINALIZED_BLOCK");
 
-        ExchangeData.Deposit storage _deposit = S.deposits[depositRequestIdx];
+        // The deposit info is stored at depositRequestIdx - 1
+        ExchangeData.Deposit storage _deposit = S.deposits[depositRequestIdx.sub(1)];
 
         uint amount = _deposit.amount;
         require(amount > 0, "WITHDRAWN_ALREADY");
