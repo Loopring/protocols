@@ -466,6 +466,11 @@ contract IExchange
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
+    ////
+    ///      Warning: the DEX UI should warn the user not to deposit more than 2^96 - 1
+    ///               tokens in total. If that happens, the user may lose money and the
+    ///               exchange may never get all its stake back.
+    ///               This token balance upper limit, however, is large enought for most scenarios.
     ///
     /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
@@ -481,6 +486,11 @@ contract IExchange
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
+    ///
+    ///      Warning: the DEX UI should warn the user not to deposit more than 2^96 - 1
+    ///               tokens in total. If that happens, the user may lose money and the
+    ///               exchange may never get all its stake back.
+    ///               This token balance upper limit, however, is large enought for most scenarios.
     ///
     /// @param recipient The address of the recipient
     /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
