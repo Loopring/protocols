@@ -40,7 +40,9 @@ library ExchangeDeposits
         uint32  indexed depositIdx,
         uint24  indexed accountID,
         uint16  indexed tokenID,
-        uint96          amount
+        uint96          amount,
+        uint            pubKeyX,
+        uint            pubKeyY
     );
 
     function getNumDepositRequestsProcessed(
@@ -154,7 +156,9 @@ library ExchangeDeposits
             uint32(S.depositChain.length - 1),
             accountID,
             tokenID,
-            amount
+            amount,
+            account.pubKeyX,
+            account.pubKeyY
         );
     }
 
