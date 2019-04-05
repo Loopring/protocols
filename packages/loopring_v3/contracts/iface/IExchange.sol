@@ -467,7 +467,7 @@ contract IExchange
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
     ////
-    ///      Warning: the DEX UI should warn the user not to deposit more than 2^96 - 1
+    ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
     ///               tokens in total. If that happens, the user may lose money and the
     ///               exchange may never get all its stake back.
     ///               This token balance upper limit, however, is large enought for most scenarios.
@@ -487,7 +487,7 @@ contract IExchange
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
     ///
-    ///      Warning: the DEX UI should warn the user not to deposit more than 2^96 - 1
+    ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
     ///               tokens in total. If that happens, the user may lose money and the
     ///               exchange may never get all its stake back.
     ///               This token balance upper limit, however, is large enought for most scenarios.
