@@ -160,8 +160,8 @@ library ExchangeWithdrawals
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[24] memory accountPath,
-        uint256[12] memory balancePath
+        uint256[20] memory accountPath,
+        uint256[8] memory balancePath
         )
         public
     {

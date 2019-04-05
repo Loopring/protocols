@@ -28,6 +28,11 @@ public:
     const VariableT _100;
     const VariableT emptyTradeHistory;
 
+    const VariableArrayT padding_0;
+    const VariableArrayT padding_00;
+    const VariableArrayT accountPadding;
+    const VariableArrayT tokenPadding;
+
     Constants(
         ProtoboardT& pb,
         const std::string& prefix
@@ -37,7 +42,11 @@ public:
         zero(make_variable(pb, FieldT::zero(), FMT(prefix, ".zero"))),
         one(make_variable(pb, FieldT::one(), FMT(prefix, ".one"))),
         _100(make_variable(pb, ethsnarks::FieldT(100), FMT(prefix, "._100"))),
-        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyTradeHistory")))
+        emptyTradeHistory(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyTradeHistory"))),
+        padding_0(1, zero),
+        padding_00(2, zero),
+        accountPadding(4, zero),
+        tokenPadding(8, zero)
     {
 
     }

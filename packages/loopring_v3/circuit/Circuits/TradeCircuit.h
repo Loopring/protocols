@@ -28,9 +28,6 @@ public:
 
     const VariableT accountsRoot;
 
-    VariableArrayT uint16_padding;
-    VariableArrayT percentage_padding;
-
     const VariableT tradingHistoryRootS_A;
     const VariableT tradingHistoryRootB_A;
     const VariableT tradingHistoryRootF_A;
@@ -160,12 +157,9 @@ public:
 
         constants(_constants),
 
-        uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
-        percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
-
         publicKey(pb, FMT(prefix, ".publicKey")),
-        minerAccountID(pb, 24, FMT(prefix, ".minerAccountID")),
-        feeRecipientAccountID(pb, 24, FMT(prefix, ".feeRecipientAccountID")),
+        minerAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".minerAccountID")),
+        feeRecipientAccountID(pb, NUM_BITS_ACCOUNT, FMT(prefix, ".feeRecipientAccountID")),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
         fee(pb, NUM_BITS_AMOUNT, FMT(prefix, ".fee")),
         nonce_before(pb, NUM_BITS_NONCE, FMT(prefix, ".nonce_before")),
@@ -381,32 +375,32 @@ public:
     {
         return
         {
-            minerAccountID.bits,
-            feeRecipientAccountID.bits,
-            uint16_padding, tokenID,
+            constants.accountPadding, minerAccountID.bits,
+            constants.accountPadding, feeRecipientAccountID.bits,
+            constants.tokenPadding, tokenID,
             fee.bits,
 
             margin.bits,
 
-            orderA.accountID.bits,
-            orderA.walletAccountID,
-            uint16_padding, orderA.tokenS.bits,
-            uint16_padding, orderA.tokenF.bits,
+            constants.accountPadding, orderA.accountID.bits,
+            constants.accountPadding, orderA.walletAccountID,
+            constants.tokenPadding, orderA.tokenS.bits,
+            constants.tokenPadding, orderA.tokenF.bits,
             orderA.orderID.bits,
             fillS_A.bits,
             fillF_A.bits,
-            percentage_padding, orderA.walletSplitPercentage.bits,
-            percentage_padding, orderA.waiveFeePercentage.bits,
+            constants.padding_0, orderA.walletSplitPercentage.bits,
+            constants.padding_0, orderA.waiveFeePercentage.bits,
 
-            orderB.accountID.bits,
-            orderB.walletAccountID,
-            uint16_padding, orderB.tokenS.bits,
-            uint16_padding, orderB.tokenF.bits,
+            constants.accountPadding, orderB.accountID.bits,
+            constants.accountPadding, orderB.walletAccountID,
+            constants.tokenPadding, orderB.tokenS.bits,
+            constants.tokenPadding, orderB.tokenF.bits,
             orderB.orderID.bits,
             fillS_B.bits,
             fillF_B.bits,
-            percentage_padding, orderB.walletSplitPercentage.bits,
-            percentage_padding, orderB.waiveFeePercentage.bits
+            constants.padding_0, orderB.walletSplitPercentage.bits,
+            constants.padding_0, orderB.waiveFeePercentage.bits
         };
     }
 
@@ -722,6 +716,7 @@ public:
         publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
+        publicData.add(constants.accountPadding);
         publicData.add(operatorAccountID.bits);
         publicData.add(timestamp.bits);
         for (size_t j = 0; j < numRings; j++)

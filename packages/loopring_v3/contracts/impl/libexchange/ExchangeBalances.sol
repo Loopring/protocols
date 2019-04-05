@@ -37,8 +37,8 @@ library ExchangeBalances
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[24] memory accountPath,
-        uint256[12] memory balancePath
+        uint256[20] memory accountPath,
+        uint256[8] memory balancePath
         )
         public
         pure
@@ -67,8 +67,8 @@ library ExchangeBalances
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[24] memory accountPath,
-        uint256[12] memory balancePath
+        uint256[20] memory accountPath,
+        uint256[8] memory balancePath
         )
         public
         pure
@@ -96,7 +96,7 @@ library ExchangeBalances
         uint16 tokenID,
         uint balance,
         uint tradeHistoryRoot,
-        uint256[12] memory balancePath
+        uint256[8] memory balancePath
         )
         internal
         pure
@@ -112,7 +112,7 @@ library ExchangeBalances
 
         // Calculate merkle root of balances tree
         uint tokenAddress = tokenID;
-        for (uint depth = 0; depth < 12; depth++) {
+        for (uint depth = 0; depth < 8; depth++) {
             if (tokenAddress & 1 == 1) {
                 balanceItem = hashImpl(balancePath[depth], balanceItem, IVs[depth]);
             } else {
@@ -129,7 +129,7 @@ library ExchangeBalances
         uint256 pubKeyY,
         uint nonce,
         uint balancesRoot,
-        uint256[24] memory accountPath
+        uint256[20] memory accountPath
         )
         internal
         pure
@@ -146,7 +146,7 @@ library ExchangeBalances
         uint256 accountItem = MiMC.Hash(accountLeafElements, 1);
 
         uint accountAddress = accountID;
-        for (uint depth = 0; depth < 24; depth++) {
+        for (uint depth = 0; depth < 20; depth++) {
             if (accountAddress & 1 == 1) {
                 accountItem = hashImpl(accountPath[depth], accountItem, IVs[depth]);
             } else {
