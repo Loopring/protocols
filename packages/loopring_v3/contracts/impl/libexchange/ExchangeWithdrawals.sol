@@ -39,12 +39,12 @@ library ExchangeWithdrawals
     using ExchangeTokens    for ExchangeData.State;
 
     event BlockFeeWithdrawn(
-        uint32  indexed blockIdx,
+        uint    indexed blockIdx,
         uint            amount
     );
 
     event WithdrawalRequested(
-        uint32  indexed withdrawalIdx,
+        uint    indexed withdrawalIdx,
         uint24  indexed accountID,
         uint16  indexed tokenID,
         uint96          amount
@@ -203,7 +203,7 @@ library ExchangeWithdrawals
 
     function withdrawFromDepositRequest(
         ExchangeData.State storage S,
-        uint depositRequestIdx
+        uint depositIdx
         )
         public
     {
@@ -212,10 +212,10 @@ library ExchangeWithdrawals
         ExchangeData.Block storage lastFinalizedBlock = S.blocks[S.numBlocksFinalized - 1];
         assert(lastFinalizedBlock.state == ExchangeData.BlockState.FINALIZED);
 
-        require(depositRequestIdx >= lastFinalizedBlock.numDepositRequestsCommitted, "REQUEST_INCLUDED_IN_FINALIZED_BLOCK");
+        require(depositIdx >= lastFinalizedBlock.numDepositRequestsCommitted, "REQUEST_INCLUDED_IN_FINALIZED_BLOCK");
 
-        // The deposit info is stored at depositRequestIdx - 1
-        ExchangeData.Deposit storage _deposit = S.deposits[depositRequestIdx.sub(1)];
+        // The deposit info is stored at depositIdx - 1
+        ExchangeData.Deposit storage _deposit = S.deposits[depositIdx.sub(1)];
 
         uint amount = _deposit.amount;
         require(amount > 0, "WITHDRAWN_ALREADY");
@@ -293,7 +293,7 @@ library ExchangeWithdrawals
 
     function withdrawBlockFee(
         ExchangeData.State storage S,
-        uint32 blockIdx
+        uint blockIdx
         )
         public
         returns (uint feeAmountToOperator)

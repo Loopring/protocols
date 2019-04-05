@@ -114,7 +114,7 @@ library ExchangeBlocks
 
     function revertBlock(
         ExchangeData.State storage S,
-        uint32 blockIdx
+        uint blockIdx
         )
         public
     {
@@ -182,8 +182,8 @@ library ExchangeBlocks
         }
         require(merkleRootBefore == currentBlock.merkleRoot, "INVALID_MERKLE_ROOT");
 
-        uint32 numDepositRequestsCommitted = currentBlock.numDepositRequestsCommitted;
-        uint32 numWithdrawalRequestsCommitted = currentBlock.numWithdrawalRequestsCommitted;
+        uint numDepositRequestsCommitted = currentBlock.numDepositRequestsCommitted;
+        uint numWithdrawalRequestsCommitted = currentBlock.numWithdrawalRequestsCommitted;
 
         // Check if the operator is forced to commit a deposit or withdraw block
         // We give priority to withdrawals. If a withdraw block is forced it needs to
@@ -237,7 +237,7 @@ library ExchangeBlocks
                 mstore(add(data, 100), startingHash)
                 mstore(add(data, 132), endingHash)
             }
-            numDepositRequestsCommitted = uint32(startIdx + count);
+            numDepositRequestsCommitted = startIdx + count;
         } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
             uint startIdx = 0;
             uint count = 0;
@@ -311,14 +311,14 @@ library ExchangeBlocks
 
     function isDepositRequestForced(
         ExchangeData.State storage S,
-        uint32 depositRequestIdx
+        uint depositIdx
         )
         private
         view
         returns (bool)
     {
-        if (depositRequestIdx < S.depositChain.length) {
-            return S.depositChain[depositRequestIdx].timestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED());
+        if (depositIdx < S.depositChain.length) {
+            return S.depositChain[depositIdx].timestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED());
         } else {
             return false;
         }
@@ -326,14 +326,14 @@ library ExchangeBlocks
 
     function isWithdrawalRequestForced(
         ExchangeData.State storage S,
-        uint32 withdrawRequestIdx
+        uint withdrawIdx
         )
         private
         view
         returns (bool)
     {
-        if (withdrawRequestIdx < S.withdrawalChain.length) {
-            return S.withdrawalChain[withdrawRequestIdx].timestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED());
+        if (withdrawIdx < S.withdrawalChain.length) {
+            return S.withdrawalChain[withdrawIdx].timestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED());
         } else {
             return false;
         }
