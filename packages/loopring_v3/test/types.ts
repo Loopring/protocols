@@ -197,4 +197,5 @@ export interface DepositInfo {
   accountID: number;
   depositBlockIdx: number;
   slotIdx: number;
+  depositIdx: number;
 }

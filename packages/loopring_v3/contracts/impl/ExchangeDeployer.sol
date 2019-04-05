@@ -29,7 +29,7 @@ library ExchangeDeployer
 {
     function deployExchange(
         uint    exchangeId,
-        address loopringAddress,
+        address payable loopringAddress,
         address owner,
         address payable operator,
         bool    onchainDataAvailability

@@ -37,7 +37,7 @@ library ExchangeGenesis
     function initializeGenesisBlock(
         ExchangeData.State storage S,
         uint    _id,
-        address _loopringAddress,
+        address payable _loopringAddress,
         address payable _operator,
         bool    _onchainDataAvailability
         )

@@ -10,10 +10,23 @@ contract("Exchange", (accounts: string[]) => {
   let realmID = 0;
   const zeroAddress = "0x" + "00".repeat(20);
 
+  const bVerify = true;
+
+  const verify = async () => {
+    if (bVerify) {
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+    }
+  };
+
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
     realmID = 1;
+  });
+
+  beforeEach(async () => {
+    // Fresh Exchange for each test
+    realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
   });
 
   describe("Trade", function() {
@@ -51,7 +64,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("Matchable (orderA < orderB)", async () => {
@@ -86,7 +99,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("Matchable (orderA > orderB)", async () => {
@@ -122,6 +135,8 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
+
+      await verify();
     });
 
     it("No funds available", async () => {
@@ -155,7 +170,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("No fee funds available", async () => {
@@ -189,7 +204,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("Insufficient fee funds available", async () => {
@@ -227,7 +242,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("tokenF == tokenS (sufficient funds)", async () => {
@@ -265,6 +280,8 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
+
+      await verify();
     });
 
     it("tokenF == tokenS (insufficient funds)", async () => {
@@ -302,6 +319,8 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
+
+      await verify();
     });
 
     it("tokenF == tokenB (amountF <= amountB)", async () => {
@@ -338,6 +357,8 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
+
+      await verify();
     });
 
     it("tokenF == tokenB (amountF > amountB)", async () => {
@@ -374,6 +395,8 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
+
+      await verify();
     });
 
     it("orderA.wallet == orderB.wallet", async () => {
@@ -409,7 +432,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("WalletSplitPercentage == 0", async () => {
@@ -444,7 +467,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("WalletSplitPercentage == 100", async () => {
@@ -479,7 +502,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("allOrNone (successful)", async () => {
@@ -513,7 +536,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("allOrNone (unsuccessful)", async () => {
@@ -548,7 +571,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("waiveFeePercentage == 100", async () => {
@@ -583,7 +606,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("Self-trading (same tokenF, sufficient balance)", async () => {
@@ -625,7 +648,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("Self-trading (same tokenF, insufficient balance)", async () => {
@@ -667,7 +690,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("selling token with decimals == 0", async () => {
@@ -702,7 +725,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("fillAmountB rounding error > 1%", async () => {
@@ -738,7 +761,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("fillAmountB is 0 because of rounding error", async () => {
@@ -774,55 +797,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
-    });
-
-    it("Separate state", async () => {
-      const differentRealmID = await exchangeTestUtil.createExchange(
-        exchangeTestUtil.testContext.stateOwners[1],
-        true,
-        new BN(web3.utils.toWei("0.0001", "ether")),
-        new BN(web3.utils.toWei("0.0001", "ether")),
-      );
-      const [minerAccountID, feeRecipientAccountID] = await exchangeTestUtil.createRingMatcher(
-        differentRealmID,
-        exchangeTestUtil.testContext.ringMatchers[1],
-        exchangeTestUtil.testContext.feeRecipients[1],
-      );
-      const ring: RingInfo = {
-        orderA:
-          {
-            differentRealmID,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("110", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            amountF: new BN(web3.utils.toWei("100", "ether")),
-          },
-        orderB:
-          {
-            differentRealmID,
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("90", "ether")),
-          },
-          minerAccountID,
-          feeRecipientAccountID,
-        expected: {
-          orderA: { filledFraction: 1.0, margin: new BN(web3.utils.toWei("10", "ether")) },
-          orderB: { filledFraction: 1.0 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("tokenS/tokenB mismatch", async () => {
@@ -892,7 +867,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("validUntil < now", async () => {
@@ -928,7 +903,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("validSince > now", async () => {
@@ -965,7 +940,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("Multiple rings", async () => {
@@ -1030,7 +1005,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("Order filled in multiple rings", async () => {
@@ -1086,7 +1061,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
     it("Trimmed OrderID", async () => {
@@ -1149,7 +1124,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await verify();
     });
 
   });

@@ -133,7 +133,7 @@ library ExchangeBlocks
         // Check if this block is verified too late
         require(
             now > specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            "PROOF_TOO_LATE"
+            "PROOF_NOT_TOO_LATE"
         );
 
         // Burn the complete stake of the exchange

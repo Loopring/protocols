@@ -200,8 +200,8 @@ public:
         padding.bits.fill_with_bits_of_field_element(pb, 0);
         padding.generate_r1cs_witness_from_bits();
 
-        pb.val(publicKey.x) = cancellation.publicKey.x;
-        pb.val(publicKey.y) = cancellation.publicKey.y;
+        pb.val(publicKey.x) = cancellation.accountUpdate_A.before.publicKey.x;
+        pb.val(publicKey.y) = cancellation.accountUpdate_A.before.publicKey.y;
 
         accountID.fill_with_bits_of_field_element(pb, cancellation.accountUpdate_A.accountID);
         orderTokenID.fill_with_bits_of_field_element(pb, cancellation.balanceUpdateT_A.tokenID);

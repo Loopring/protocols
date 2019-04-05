@@ -7,16 +7,16 @@ contract("Exchange", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
 
-  const revertBlockChecked = async (realmID: number, block: Block) => {
+  const revertBlockChecked = async (block: Block) => {
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
 
-    const blockIdxBefore = (await exchangeTestUtil.exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
+    const blockIdxBefore = (await exchangeTestUtil.exchange.getBlockHeight()).toNumber();
     const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
     const lrcSupplyBefore = await LRC.totalSupply();
 
-    await exchangeTestUtil.revertBlock(realmID, block.blockIdx);
+    await exchangeTestUtil.revertBlock(block.blockIdx);
 
-    const blockIdxAfter = (await exchangeTestUtil.exchange.getBlockHeight(web3.utils.toBN(realmID))).toNumber();
+    const blockIdxAfter = (await exchangeTestUtil.exchange.getBlockHeight()).toNumber();
     const lrcBalanceAfter = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
     const lrcSupplyAfter = await LRC.totalSupply();
 
@@ -66,14 +66,13 @@ contract("Exchange", (accounts: string[]) => {
       // Try to revert proven blocks
       for (const block of blocksVerified) {
         await expectThrow(
-          exchangeTestUtil.revertBlock(realmID, block.blockIdx),
-          "INVALID_BLOCKSTATE",
+          exchangeTestUtil.revertBlock(block.blockIdx),
+          "INVALID_BLOCK_STATE",
         );
       }
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const wallet = exchangeTestUtil.wallets[realmID][0];
       const token = "LRC";
       const balance = new BN(web3.utils.toWei("7.1", "ether"));
 
@@ -87,7 +86,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to notify too early
       await expectThrow(
-        exchangeTestUtil.revertBlock(realmID, blocksA[0].blockIdx),
+        exchangeTestUtil.revertBlock(blocksA[0].blockIdx),
         "PROOF_NOT_TOO_LATE",
       );
 
@@ -95,7 +94,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1);
 
       // Revert the block again, now correctly
-      await revertBlockChecked(realmID, blocksA[0]);
+      await revertBlockChecked(blocksA[0]);
 
       // Submit some other work now first
       await exchangeTestUtil.sendRing(realmID, ring);
