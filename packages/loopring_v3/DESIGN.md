@@ -659,7 +659,7 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 | :----- |:-------------: |:---------------:| :-------------:|
 |Trades per Ethereum Block| ~26      | ~900 - ~1200 |      ~7000|
 | Trades per Second | ~2      | ~60 - ~80        |           ~450 |
-| Costper Trade | ~300,000 gas | ~8890 - ~6670 gas | ~1150 gas|
+| Cost per Trade | ~300,000 gas | ~8890 - ~6670 gas | ~1150 gas|
 | Cost in USD per Trade <br> (1ETH=164USD) | ~0.1 | ~0.003* | ~0.0004* |
 
 * *Cost in USD per Trade* in the table does not cover off-chain proof generation.
