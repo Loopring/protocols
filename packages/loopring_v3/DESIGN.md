@@ -621,8 +621,8 @@ These numbers can be improved by packing the data more tightly.
 
 ### Constraints limit
 
-We can only prove circuits with a maximum of 256,000,000 constraints on-chain efficiently. Currently our **most expensive** ring settlement circuit uses ~650,000 constraints/ring:
-- 256,000,000 / ~650,000 = ~400 rings/block
+We can only prove circuits with a maximum of 256,000,000 constraints on-chain efficiently. Currently our **most expensive** ring settlement circuit uses ~525,000 constraints/ring:
+- 256,000,000 / ~650,000 = ~500 rings/block
 
 ### Results
 
@@ -631,9 +631,10 @@ In a single block we are currently limited by the number of constraints used in 
 Using 2 blocks with on-chain data-availability:
 - => (8,000,000 - 600,000 * 2) / 7,616 = ~900 rings/Ethereum block = **~60 rings/second**
 
-Without on-chain data-availability we can commit a lot of blocks:
+Without data-availability our **most expensive** ring settlement circuit uses ~475,000 constraints/ring (cheaper than with data-availability because we don't have to hash the data-availability data in the circuit). We can commit a lot of blocks like this in a single Ethereum block:
 - => 8,000,000 / 600,000 = ~13 blocks/Ethereum block
-- = ~400 rings/block * 13 blocks/Ethereum block = ~5200 rings/Ethereum block = **~350 rings/second**
+- 256,000,000 / ~475,000 = ~550 rings/block
+- = ~550 rings/block * 13 blocks/Ethereum block = ~7000 rings/Ethereum block = **~450 rings/second**
 
 For comparison, let's calculate the achievable throughput of the previous Loopring protocols that did the ring settlements completely on-chain.
 - Gas cost/ring settlement: ~300,000 gas
@@ -642,7 +643,6 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 ### Future improvements
 
 These numbers will improve significantly, even in the near future.
-- The numbers above are still done on a Merkle tree with [deeper depths](https://github.com/Loopring/protocols/issues/49), which increases the number of constraints quite a bit
 - [More efficient hash functions](https://github.com/Loopring/protocols/issues/49) may be usable which would drastically decrease the number of constraints.
 - Our fee model is quite complex, using **a lot** of token transfers. We can create circuits with a [simplified fee model](https://github.com/Loopring/protocols/issues/50). This, again, will greatly decrease the number of constraints.
 
