@@ -533,6 +533,12 @@ We do however know the approximate time the block will be committed on the Ether
 
 ## On-chain Data
 
+From the yellow paper:
+- 4 gas is paid for every zero byte of data or code for a transaction
+- 68 gas is paid for every non-zero byte of data or code for a transaction
+
+In the calculations below we use 68 gas/byte for our data-availability data. Please note that these numbers are **worst case** numbers. We currently don't pack the data-availability data very tightly so there will be a lot of zeros. The gas cost in practice will be significantly lower (up to ~30% lower).
+
 #### Data-availability for ring settlements
 
 ```
@@ -615,7 +621,7 @@ The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is genera
 ### On-chain Data-availability Limit
 
 - Verifying a proof + some state updates/querying: ~600,000 gas
-- => (8,000,000 - 600,000) / 7,616 = **971 rings/Ethereum block = ~65 rings/second**
+- => (8,000,000 - 600,000) / 7,616 = **971 rings/Ethereum block = ~65 rings/second (worst case)**
 
 These numbers can be improved by packing the data more tightly.
 
@@ -634,7 +640,9 @@ Our **most expensive** ring settlement circuit without data-availability support
 In a single block we are currently limited by the number of constraints used in the circuit. Verifying a proof costs _only_ ~600,000 gas so multiple blocks can be committed if needed.
 
 Using 2 blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
-- => (8,000,000 - 600,000 * 2) / 7,616 = ~900 rings/Ethereum block = **~60 rings/second**
+- => (8,000,000 - 600,000 * 2) / 7,616 = ~900 rings/Ethereum block = **~60 rings/second (worst case)**
+
+Note again that these are worst case numbers. The data will contain a lot of zeros which will make it possible to commit more than 2 blocks/Ethereum block. In practice we expect this number to be closer to **~80 rings/second (expected)**
 
 Without data-availability we are limited by how many blocks (and thus by how many rings/block) we can verify in a single Ethereum block:
 - => 8,000,000 / 600,000 = ~13 blocks/Ethereum block
@@ -647,7 +655,7 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 
 
 
-|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability)  | Loopring 3.0 <br> (w/o Data Availability)  |
+|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) <br> (worst case)  | Loopring 3.0 <br> (w/o Data Availability)  |
 | :----- |:-------------: |:---------------:| :-------------:|
 |Trades per Ethereum Block| ~26      | ~900 |      ~7000|
 | Trades per Second | ~2      | ~60        |           ~450 |
