@@ -112,11 +112,11 @@ library ExchangeData
 
         // The number of onchain deposit requests that have been processed
         // up to and including this block.
-        uint   numDepositRequestsCommitted;
+        uint32 numDepositRequestsCommitted;
 
         // The number of onchain withdrawal requests that have been processed
         // up to and including this block.
-        uint   numWithdrawalRequestsCommitted;
+        uint32 numWithdrawalRequestsCommitted;
 
         // Stores whether the fee earned by the operator for processing onchain requests
         // is withdrawn or not.

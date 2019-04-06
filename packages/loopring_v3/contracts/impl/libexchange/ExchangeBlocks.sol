@@ -182,8 +182,8 @@ library ExchangeBlocks
         }
         require(merkleRootBefore == currentBlock.merkleRoot, "INVALID_MERKLE_ROOT");
 
-        uint numDepositRequestsCommitted = currentBlock.numDepositRequestsCommitted;
-        uint numWithdrawalRequestsCommitted = currentBlock.numWithdrawalRequestsCommitted;
+        uint32 numDepositRequestsCommitted = uint32(currentBlock.numDepositRequestsCommitted);
+        uint32 numWithdrawalRequestsCommitted = uint32(currentBlock.numWithdrawalRequestsCommitted);
 
         // Check if the operator is forced to commit a deposit or withdraw block
         // We give priority to withdrawals. If a withdraw block is forced it needs to
@@ -237,7 +237,7 @@ library ExchangeBlocks
                 mstore(add(data, 100), startingHash)
                 mstore(add(data, 132), endingHash)
             }
-            numDepositRequestsCommitted = startIdx + count;
+            numDepositRequestsCommitted = uint32(startIdx + count);
         } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
             uint startIdx = 0;
             uint count = 0;
