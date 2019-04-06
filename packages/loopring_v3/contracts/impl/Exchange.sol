@@ -312,7 +312,7 @@ contract Exchange is IExchange, Ownable
     }
 
     function revertBlock(
-        uint32 blockIdx
+        uint blockIdx
         )
         external
         onlyOperator
@@ -505,11 +505,11 @@ contract Exchange is IExchange, Ownable
     }
 
     function withdrawFromDepositRequest(
-        uint depositRequestIdx
+        uint depositIdx
         )
         external
     {
-        state.withdrawFromDepositRequest(depositRequestIdx);
+        state.withdrawFromDepositRequest(depositIdx);
     }
 
     function withdrawFromApprovedWithdrawal(
@@ -525,7 +525,7 @@ contract Exchange is IExchange, Ownable
     }
 
     function withdrawBlockFee(
-        uint32 blockIdx
+        uint blockIdx
         )
         external
         returns (uint feeAmount)

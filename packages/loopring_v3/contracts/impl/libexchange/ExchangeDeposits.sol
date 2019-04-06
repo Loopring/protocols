@@ -37,7 +37,7 @@ library ExchangeDeposits
     using ExchangeTokens    for ExchangeData.State;
 
     event DepositRequested(
-        uint32  indexed depositIdx,
+        uint    indexed depositIdx,
         uint24  indexed accountID,
         uint16  indexed tokenID,
         uint96          amount,

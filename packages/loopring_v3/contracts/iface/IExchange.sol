@@ -71,7 +71,7 @@ contract IExchange
     );
 
     event DepositRequested(
-        uint32  indexed depositIdx,
+        uint    indexed depositIdx,
         uint24  indexed accountID,
         uint16  indexed tokenID,
         uint96          amount,
@@ -80,12 +80,12 @@ contract IExchange
     );
 
     event BlockFeeWithdrawn(
-        uint32  indexed blockIdx,
+        uint    indexed blockIdx,
         uint            amount
     );
 
     event WithdrawalRequested(
-        uint32  indexed withdrawalIdx,
+        uint    indexed withdrawalIdx,
         uint24  indexed accountID,
         uint16  indexed tokenID,
         uint96          amount
@@ -398,7 +398,7 @@ contract IExchange
     /// @param blockIdx The 0-based index of the block that does not have a valid proof within
     ///        MAX_PROOF_GENERATION_TIME_IN_SECONDS seconds.
     function revertBlock(
-        uint32 blockIdx
+        uint blockIdx
         )
         external;
 
@@ -610,10 +610,10 @@ contract IExchange
     ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
     ///      committing blocks and is not able to commit anymore blocks).
     ///
-    /// @param  depositRequestIdx The index of the deposit request (as given in the
-    ///                           depositIdx field in the DepositRequested event)
+    /// @param  depositIdx The index of the deposit request (as given in the
+    ///                    depositIdx field in the DepositRequested event)
     function withdrawFromDepositRequest(
-        uint depositRequestIdx
+        uint depositIdx
         )
         external;
 
@@ -653,7 +653,7 @@ contract IExchange
     /// @param  blockIdx The block index to withdraw the funds for
     /// @return feeAmount The amount of ETH earned in the block and sent to the operator
     function withdrawBlockFee(
-        uint32 blockIdx
+        uint blockIdx
         )
         external
         returns (uint feeAmount);
