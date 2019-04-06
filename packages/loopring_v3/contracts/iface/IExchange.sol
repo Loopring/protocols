@@ -112,7 +112,8 @@ contract IExchange
             uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
             uint32 FEE_BLOCK_FINE_START_TIME,
             uint32 FEE_BLOCK_FINE_MAX_DURATION,
-            uint   MAX_NUM_TOKENS
+            uint   MAX_NUM_TOKENS,
+            uint   MAX_NUM_ACCOUNTS
         );
 
     // -- Mode --
@@ -188,8 +189,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[24] calldata accountPath,
-        uint256[12] calldata balancePath
+        uint256[20] calldata accountPath,
+        uint256[8] calldata balancePath
         )
         external
         pure
@@ -575,8 +576,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[24] calldata accountPath,
-        uint256[12] calldata balancePath
+        uint256[20] calldata accountPath,
+        uint256[8] calldata balancePath
         )
         external;
 
@@ -603,8 +604,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[24] calldata accountPath,
-        uint256[12] calldata balancePath
+        uint256[20] calldata accountPath,
+        uint256[8] calldata balancePath
         )
         external;
 

@@ -55,6 +55,7 @@ public:
     ForceLeqGadget validateWalletSplitPercentage;
     ForceLeqGadget validateWaiveFeePercentage;
 
+    const VariableArrayT message;
     SignatureVerifier signatureVerifier;
 
     OrderGadget(
@@ -104,14 +105,13 @@ public:
         validateWalletSplitPercentage(pb, walletSplitPercentage.packed, constants._100, NUM_BITS_PERCENTAGE, FMT(prefix, ".validateWalletSplitPercentage")),
         validateWaiveFeePercentage(pb, waiveFeePercentage.packed, constants._100, NUM_BITS_PERCENTAGE, FMT(prefix, ".validateWaiveFeePercentage")),
 
-        signatureVerifier(pb, params, publicKey,
-                          flatten({realmID.bits, orderID.bits, accountID.bits, walletAccountID,
-                          dualAuthPublicKeyX.bits, dualAuthPublicKeyY.bits,
-                          tokenS.bits, tokenB.bits, tokenF.bits,
-                          amountS.bits, amountB.bits, amountF.bits,
-                          allOrNone.bits, validSince.bits, validUntil.bits,
-                          walletSplitPercentage.bits}),
-                          FMT(prefix, ".signatureVerifier"))
+        message(flatten({realmID.bits, orderID.bits, accountID.bits, walletAccountID,
+                         dualAuthPublicKeyX.bits, dualAuthPublicKeyY.bits,
+                         tokenS.bits, tokenB.bits, tokenF.bits,
+                         amountS.bits, amountB.bits, amountF.bits,
+                         allOrNone.bits, validSince.bits, validUntil.bits,
+                         walletSplitPercentage.bits, constants.padding_00})),
+        signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier"))
     {
 
     }

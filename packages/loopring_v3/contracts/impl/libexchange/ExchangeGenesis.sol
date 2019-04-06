@@ -57,7 +57,7 @@ library ExchangeGenesis
         S.lrcAddress = loopring.lrcAddress();
 
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
-            0x035cfa8f3dc9086ce9e24bc8b49d757b03fb830ee2902084e213849b05dd708f,
+            0x06ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3,
             0x0,
             ExchangeData.BlockState.FINALIZED,
             0xFF,

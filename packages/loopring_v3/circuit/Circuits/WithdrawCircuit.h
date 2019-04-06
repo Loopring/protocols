@@ -27,10 +27,6 @@ public:
 
     const Constants& constants;
 
-    libsnark::dual_variable_gadget<FieldT> padding;
-    VariableArrayT uint16_padding;
-    VariableArrayT percentage_padding;
-
     bool onchain;
 
     VariableArrayT accountID;
@@ -90,10 +86,6 @@ public:
         onchain(_onchain),
 
         constants(_constants),
-
-        padding(pb, 1, FMT(prefix, ".padding")),
-        uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
-        percentage_padding(make_var_array(pb, 1, FMT(prefix, ".percentage_padding"))),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
@@ -188,7 +180,7 @@ public:
 
         // Signature
         message(flatten({_realmID, accountID, tokenID, amountRequested.bits, walletAccountID,
-                         feeTokenID, fee.bits, walletSplitPercentage.bits, nonce_before.bits})),
+                         feeTokenID, fee.bits, walletSplitPercentage.bits, nonce_before.bits, constants.padding_0})),
         signatureVerifier(pb, params, jubjub::VariablePointT(accountBefore.publicKeyX, accountBefore.publicKeyY), message, FMT(prefix, ".signatureVerifier"))
     {
 
@@ -206,23 +198,28 @@ public:
 
     const std::vector<VariableArrayT> getPublicDataGeneral() const
     {
-        return {accountID, uint16_padding, tokenID, amountWithdrawn.bits};
+        return {constants.accountPadding, accountID,
+                constants.tokenPadding, tokenID,
+                amountWithdrawn.bits};
     }
 
     const std::vector<VariableArrayT> getPublicDataOffchain() const
     {
-        return {walletAccountID, uint16_padding, feeTokenID, fee.bits, percentage_padding, walletSplitPercentage.bits};
+        return {constants.accountPadding, walletAccountID,
+                constants.tokenPadding, feeTokenID,
+                fee.bits,
+                constants.padding_0, walletSplitPercentage.bits};
     }
 
     const std::vector<VariableArrayT> getOnchainData() const
     {
-        return {accountID, uint16_padding, tokenID, amountRequested.bits};
+        return {constants.accountPadding, accountID,
+                constants.tokenPadding, tokenID,
+                amountRequested.bits};
     }
 
     void generate_r1cs_witness(const Withdrawal& withdrawal)
     {
-        uint16_padding.fill_with_bits_of_ulong(pb, 0);
-
         accountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_A.accountID);
         tokenID.fill_with_bits_of_field_element(pb, withdrawal.balanceUpdateW_A.tokenID);
         walletAccountID.fill_with_bits_of_field_element(pb, withdrawal.accountUpdate_W.accountID);
@@ -233,8 +230,6 @@ public:
         walletSplitPercentage.generate_r1cs_witness_from_bits();
         amountRequested.bits.fill_with_bits_of_field_element(pb, withdrawal.amount);
         amountRequested.generate_r1cs_witness_from_bits();
-        padding.bits.fill_with_bits_of_field_element(pb, 0);
-        padding.generate_r1cs_witness_from_bits();
 
         // User
         pb.val(balanceFBefore.tradingHistory) = withdrawal.balanceUpdateF_A.before.tradingHistoryRoot;
@@ -286,8 +281,6 @@ public:
 
     void generate_r1cs_constraints()
     {
-        padding.generate_r1cs_constraints(true);
-
         fee.generate_r1cs_constraints(true);
         nonce_before.generate_r1cs_constraints(true);
 
@@ -330,6 +323,7 @@ class WithdrawCircuitGadget : public GadgetT
 public:
     jubjub::Params params;
 
+    bool onchainDataAvailability;
     unsigned int numAccounts;
     bool onchain;
     std::vector<WithdrawGadget> withdrawals;
@@ -393,8 +387,9 @@ public:
         }
     }
 
-    void generate_r1cs_constraints(int numAccounts)
+    void generate_r1cs_constraints(bool onchainDataAvailability, int numAccounts)
     {
+        this->onchainDataAvailability = onchainDataAvailability;
         this->numAccounts = numAccounts;
 
         pb.set_input_sizes(1);
@@ -408,7 +403,6 @@ public:
         publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
-        publicData.add(operatorAccountID.bits);
         for (size_t j = 0; j < numAccounts; j++)
         {
             VariableT withdrawalAccountsRoot = (j == 0) ? merkleRootBefore.packed : withdrawals.back().getNewAccountsRoot();
@@ -452,11 +446,6 @@ public:
         }
         else
         {
-            publicData.add(withdrawalBlockHashStart);
-            publicData.add(withdrawalBlockHashStart);
-            publicData.add(startIndex.bits);
-            publicData.add(count.bits);
-
             updateAccount_O = new UpdateAccountGadget(pb, withdrawals.back().getNewAccountsRoot(), operatorAccountID.bits,
                 {publicKey.x, publicKey.y, nonce, balancesRoot_before},
                 {publicKey.x, publicKey.y, nonce, withdrawals.back().getNewOperatorBalancesRoot()},
@@ -469,9 +458,11 @@ public:
         {
             publicData.add(withdrawal.getPublicDataGeneral());
         }
-        if (!onchain)
+        if (!onchain && onchainDataAvailability)
         {
             // Now store the data specifically for offchain withdrawals
+            publicData.add(constants.accountPadding);
+            publicData.add(operatorAccountID.bits);
             for (auto& withdrawal : withdrawals)
             {
                 publicData.add(withdrawal.getPublicDataOffchain());

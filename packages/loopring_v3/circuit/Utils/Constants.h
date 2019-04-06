@@ -3,9 +3,9 @@
 
 namespace Loopring
 {
-    static const unsigned int TREE_DEPTH_TRADING_HISTORY = 16;
-    static const unsigned int TREE_DEPTH_ACCOUNTS = 24;
-    static const unsigned int TREE_DEPTH_TOKENS = 12;
+    static const unsigned int TREE_DEPTH_TRADING_HISTORY = 14;
+    static const unsigned int TREE_DEPTH_ACCOUNTS = 20;
+    static const unsigned int TREE_DEPTH_TOKENS = 8;
 
     static const unsigned int NUM_BITS_AMOUNT = 96;
     static const unsigned int NUM_BITS_ACCOUNT = TREE_DEPTH_ACCOUNTS;
@@ -15,7 +15,7 @@ namespace Loopring
     static const unsigned int NUM_BITS_NONCE = 32;
     static const unsigned int NUM_BITS_PERCENTAGE = 7;
 
-    static const char* EMPTY_TRADE_HISTORY = "20873493930479413702173406318080544943433811476627345625793184813275733379280";
+    static const char* EMPTY_TRADE_HISTORY = "188097087402145139130644985590333847214863843126209099263932665475118736309";
 }
 
 #endif

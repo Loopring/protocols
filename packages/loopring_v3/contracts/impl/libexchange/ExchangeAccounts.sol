@@ -116,6 +116,7 @@ library ExchangeAccounts
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
+        require(S.accounts.length < ExchangeData.MAX_NUM_ACCOUNTS(), "ACCOUNTS_FULL");
 
         require(S.ownerToAccountId[msg.sender] == 0, "ACCOUNT_EXISTS");
 
@@ -209,8 +210,8 @@ library ExchangeAccounts
         uint32 nonce,
         uint96 balance,
         uint256 tradeHistoryRoot,
-        uint256[24] memory accountPath,
-        uint256[12] memory balancePath
+        uint256[20] memory accountPath,
+        uint256[8] memory balancePath
         )
         public
         view

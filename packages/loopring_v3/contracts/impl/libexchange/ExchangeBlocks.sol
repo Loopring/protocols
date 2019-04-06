@@ -200,7 +200,7 @@ library ExchangeBlocks
             require(now >= S.disableUserRequestsUntil, "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
             assembly {
-                inputTimestamp := and(mload(add(data, 75)), 0xFFFFFFFF)
+                inputTimestamp := and(mload(add(data, 72)), 0xFFFFFFFF)
             }
             require(
                 inputTimestamp > now - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
@@ -242,8 +242,8 @@ library ExchangeBlocks
             uint startIdx = 0;
             uint count = 0;
             assembly {
-                startIdx := and(mload(add(data, 139)), 0xFFFFFFFF)
-                count := and(mload(add(data, 143)), 0xFFFFFFFF)
+                startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
+                count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
             require (startIdx == numWithdrawalRequestsCommitted, "INVALID_REQUEST_RANGE");
             require (count <= numElements, "INVALID_REQUEST_RANGE");
@@ -263,8 +263,8 @@ library ExchangeBlocks
                 );
             }
             assembly {
-                mstore(add(data, 103), startingHash)
-                mstore(add(data, 135), endingHash)
+                mstore(add(data, 100), startingHash)
+                mstore(add(data, 132), endingHash)
             }
             numWithdrawalRequestsCommitted = uint32(startIdx + count);
         } else if (blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) {
@@ -280,7 +280,10 @@ library ExchangeBlocks
         // Only store the approved withdrawal data onchain
         if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) ||
             blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) {
-            uint start = 4 + 32 + 32 + 3 + 32 + 32 + 4 + 4;
+            uint start = 4 + 32 + 32;
+            if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
+                start += 32 + 32 + 4 + 4;
+            }
             uint length = (3 + 2 + 12) * numElements;
             assembly {
                 data := add(data, start)

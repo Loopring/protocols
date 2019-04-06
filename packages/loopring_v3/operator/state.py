@@ -11,9 +11,9 @@ from ethsnarks.field import FQ
 from ethsnarks.mimc import mimc_hash
 from ethsnarks.merkletree import MerkleTree
 
-TREE_DEPTH_TRADING_HISTORY = 16
-TREE_DEPTH_ACCOUNTS = 24
-TREE_DEPTH_TOKENS = 12
+TREE_DEPTH_TRADING_HISTORY = 14
+TREE_DEPTH_ACCOUNTS = 20
+TREE_DEPTH_TOKENS = 8
 
 def copyBalanceInfo(leaf):
     c = copy.deepcopy(leaf)
@@ -55,7 +55,7 @@ class BalanceLeaf(object):
         self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
         self._tradeHistoryLeafs = {}
-        #print("Empty trading tree: " + str(self._tradingHistoryTree._root))
+        # print("Empty trading tree: " + str(self._tradingHistoryTree._root))
 
     def hash(self):
         return mimc_hash([int(self.balance), int(self._tradingHistoryTree._root)], 1)
@@ -315,12 +315,12 @@ class Order(object):
     def message(self):
         msg_parts = [
                         FQ(int(self.realmID), 1<<32), FQ(int(self.orderID), 1<<32),
-                        FQ(int(self.accountID), 1<<24), FQ(int(self.walletAccountID), 1<<24),
+                        FQ(int(self.accountID), 1<<20), FQ(int(self.walletAccountID), 1<<20),
                         FQ(int(self.dualAuthPublicKeyX), 1<<254), FQ(int(self.dualAuthPublicKeyY), 1<<254),
-                        FQ(int(self.tokenS), 1<<12), FQ(int(self.tokenB), 1<<12), FQ(int(self.tokenF), 1<<12),
+                        FQ(int(self.tokenS), 1<<8), FQ(int(self.tokenB), 1<<8), FQ(int(self.tokenF), 1<<8),
                         FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96), FQ(int(self.amountF), 1<<96),
                         FQ(int(self.allOrNone), 1<<1), FQ(int(self.validSince), 1<<32), FQ(int(self.validUntil), 1<<32),
-                        FQ(int(self.walletSplitPercentage), 1<<7)
+                        FQ(int(self.walletSplitPercentage), 1<<7), FQ(int(0), 1<<2)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -364,8 +364,8 @@ class Ring(object):
         msg_parts = [
                         FQ(int(self.orderA.hash), 1<<254), FQ(int(self.orderB.hash), 1<<254),
                         FQ(int(self.orderA.waiveFeePercentage), 1<<7), FQ(int(self.orderB.waiveFeePercentage), 1<<7),
-                        FQ(int(self.minerAccountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.fee), 1<<96),
-                        FQ(int(self.feeRecipientAccountID), 1<<24),
+                        FQ(int(self.minerAccountID), 1<<20), FQ(int(self.tokenID), 1<<8), FQ(int(self.fee), 1<<96),
+                        FQ(int(self.feeRecipientAccountID), 1<<20),
                         FQ(int(self.nonce), 1<<32)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
@@ -476,10 +476,10 @@ class Withdrawal(object):
 
     def message(self):
         msg_parts = [FQ(int(self.realmID), 1<<32),
-                     FQ(int(self.accountID), 1<<24), FQ(int(self.tokenID), 1<<12), FQ(int(self.amount), 1<<96),
-                     FQ(int(self.walletAccountID), 1<<24), FQ(int(self.feeTokenID), 1<<12),
+                     FQ(int(self.accountID), 1<<20), FQ(int(self.tokenID), 1<<8), FQ(int(self.amount), 1<<96),
+                     FQ(int(self.walletAccountID), 1<<20), FQ(int(self.feeTokenID), 1<<8),
                      FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32)]
+                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<1)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
@@ -527,10 +527,10 @@ class Cancellation(object):
 
 
     def message(self):
-        msg_parts = [FQ(int(self.realmID), 1<<32), FQ(int(self.accountID), 1<<24),
-                     FQ(int(self.orderTokenID), 1<<12), FQ(int(self.orderID), 1<<32), FQ(int(self.dualAuthorAccountID), 1<<24),
-                     FQ(int(self.feeTokenID), 1<<12), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<1)]
+        msg_parts = [FQ(int(self.realmID), 1<<32), FQ(int(self.accountID), 1<<20),
+                     FQ(int(self.orderTokenID), 1<<8), FQ(int(self.orderID), 1<<32), FQ(int(self.dualAuthorAccountID), 1<<20),
+                     FQ(int(self.feeTokenID), 1<<8), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
+                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<2)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):

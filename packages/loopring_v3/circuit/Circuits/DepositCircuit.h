@@ -19,10 +19,10 @@ namespace Loopring
 class DepositGadget : public GadgetT
 {
 public:
+    const Constants& constants;
+
     VariableArrayT accountID;
     VariableArrayT tokenID;
-
-    VariableArrayT uint16_padding;
 
     libsnark::dual_variable_gadget<FieldT> amount;
     libsnark::dual_variable_gadget<FieldT> publicKeyX;
@@ -37,13 +37,13 @@ public:
 
     DepositGadget(
         ProtoboardT& pb,
-        const Constants& constants,
+        const Constants& _constants,
         const VariableT& root,
         const std::string& prefix
     ) :
         GadgetT(pb, prefix),
 
-        uint16_padding(make_var_array(pb, 16 - TREE_DEPTH_TOKENS, FMT(prefix, ".uint16_padding"))),
+        constants(_constants),
 
         accountID(make_var_array(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".accountID"))),
         tokenID(make_var_array(pb, TREE_DEPTH_TOKENS, FMT(prefix, ".tokenID"))),
@@ -85,15 +85,14 @@ public:
 
     const std::vector<VariableArrayT> getOnchainData() const
     {
-        return {accountID, publicKeyX.bits, publicKeyY.bits,
-                uint16_padding, tokenID,
+        return {constants.accountPadding, accountID,
+                publicKeyX.bits, publicKeyY.bits,
+                constants.tokenPadding, tokenID,
                 amount.bits};
     }
 
     void generate_r1cs_witness(const Deposit& deposit)
     {
-        uint16_padding.fill_with_bits_of_ulong(pb, 0);
-
         accountID.fill_with_bits_of_field_element(pb, deposit.accountUpdate.accountID);
         tokenID.fill_with_bits_of_field_element(pb, deposit.balanceUpdate.tokenID);
 

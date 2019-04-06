@@ -106,6 +106,7 @@ def ringFromJSON(jRing, state):
 
 def deposit(state, data):
     export = DepositExport()
+    export.onchainDataAvailability = data["onchainDataAvailability"]
     export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
     export.startHash = str(data["startHash"])
@@ -130,6 +131,7 @@ def deposit(state, data):
 
 def withdraw(onchain, state, data):
     export = WithdrawalExport(onchain)
+    export.onchainDataAvailability = data["onchainDataAvailability"]
     export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
     export.startHash = str(data["startHash"])
@@ -167,6 +169,7 @@ def withdraw(onchain, state, data):
 
 def cancel(state, data):
     export = CancelExport()
+    export.onchainDataAvailability = data["onchainDataAvailability"]
     export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
     export.operatorAccountID = int(data["operatorAccountID"])
@@ -200,6 +203,7 @@ def cancel(state, data):
 
 def trade(state, data):
     export = TradeExport()
+    export.onchainDataAvailability = data["onchainDataAvailability"]
     export.realmID = state.realmID
     export.merkleRootBefore = str(state.getRoot())
     export.timestamp = int(data["timestamp"])
