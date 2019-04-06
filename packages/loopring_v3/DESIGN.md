@@ -621,19 +621,23 @@ These numbers can be improved by packing the data more tightly.
 
 ### Constraints limit
 
-We can only prove circuits with a maximum of 256,000,000 constraints on-chain efficiently. Currently our **most expensive** ring settlement circuit uses ~525,000 constraints/ring:
-- 256,000,000 / ~650,000 = ~500 rings/block
+We can only prove circuits with a maximum of 256,000,000 constraints on-chain efficiently.
+
+Currently our **most expensive** ring settlement circuit with data-availability support uses ~525,000 constraints/ring:
+- 256,000,000 / ~525,000 = ~500 rings/block
+
+Our **most expensive** ring settlement circuit without data-availability support uses ~475,000 constraints/ring (this is cheaper than with data-availability because we don't have to hash the data-availability data in the circuit):
+- 256,000,000 / ~475,000 = ~550 rings/block
 
 ### Results
 
 In a single block we are currently limited by the number of constraints used in the circuit. Verifying a proof costs _only_ ~600,000 gas so multiple blocks can be committed if needed.
 
-Using 2 blocks with on-chain data-availability:
+Using 2 blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
 - => (8,000,000 - 600,000 * 2) / 7,616 = ~900 rings/Ethereum block = **~60 rings/second**
 
-Without data-availability our **most expensive** ring settlement circuit uses ~475,000 constraints/ring (cheaper than with data-availability because we don't have to hash the data-availability data in the circuit). We can commit a lot of blocks like this in a single Ethereum block:
+Without data-availability we are limited by how many blocks (and thus by how many rings/block) we can verify in a single Ethereum block:
 - => 8,000,000 / 600,000 = ~13 blocks/Ethereum block
-- 256,000,000 / ~475,000 = ~550 rings/block
 - = ~550 rings/block * 13 blocks/Ethereum block = ~7000 rings/Ethereum block = **~450 rings/second**
 
 For comparison, let's calculate the achievable throughput of the previous Loopring protocols that did the ring settlements completely on-chain.
