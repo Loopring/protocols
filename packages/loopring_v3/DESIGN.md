@@ -1,6 +1,3 @@
-
-# Loopring 3.0
-
 ## Table of Contents
 
    * [Loopring 3.0](#loopring-30)
@@ -76,6 +73,8 @@
       * [Deposit and Withdrawal Process](#deposit-and-withdrawal-process)
       * [Order Sharing with Dual-Authoring](#order-sharing-with-dual-authoring)
 
+
+# Loopring 3.0
 
 ## Introduction
 In Loopring Protocol 3 we want to improve the throughput of the protocol significantly. We do this by using zk-SNARKs -- as much work as possible is done off-chain, and we only verify the work on-chain.
